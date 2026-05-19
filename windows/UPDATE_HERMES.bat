@@ -26,6 +26,11 @@ exit /b 1
 :run_update
 rem NousResearch upstream/main mergen (niet alleen fork origin). Zie windows\UPSTREAM_SYNC.md
 set "HERMES_UPDATE_FROM_UPSTREAM=1"
+rem Voorkomt "Toegang geweigerd" op hermes.exe tijdens uv pip (andere vensters/gateway).
+echo [INFO] Andere Hermes-processen stoppen ^(gateway, open sessies^)...
+"%CONDA_EXE%" run -n hermes-env --no-capture-output hermes gateway stop 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0stop_other_hermes_processes.ps1"
+if errorlevel 1 echo [WARN] Kon niet alle Hermes-processen stoppen; update gaat door.
 rem --no-capture-output: anders blijft het scherm lang leeg (conda buffert tot het child-proces klaar is).
 echo.
 echo [INFO] hermes update — NousResearch upstream/main + dependencies

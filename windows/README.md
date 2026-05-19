@@ -5,7 +5,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 ## Eerste installatie
 
 | Startpunt | Script |
-|-----------|--------|
+| --------- | ------ |
 | Hoofd-setup | `SETUP_HERMES.bat` → `setup_hermes_windows.ps1` |
 | Wizard | `HERMES_SETUP_WIZARD.bat` |
 | One-liner (remote) | `scripts/windows/install-jamel.ps1` (zie `DELEN_MET_VRIENDEN.md`) |
@@ -13,7 +13,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 ## Dagelijks gebruik
 
 | Taak | Script |
-|------|--------|
+| ---- | ------ |
 | Hermes starten | `launch_hermes.bat` / `run_hermes.ps1` |
 | RAG-index bijwerken | `scripts/update_knowledge.bat` |
 | Doctor / fixes | `DOCTOR_FIX.bat` |
@@ -22,7 +22,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 ## Onderhoud
 
 | Taak | Script |
-|------|--------|
+| ---- | ------ |
 | Backups | `MANAGE_BACKUPS.bat` |
 | Lokale assets herstellen | `RESTORE_FROM_BACKUP.bat` |
 | Taakbalk-snelkoppelingen vernieuwen | `REFRESH_TASKBAR_SHORTCUTS.bat` |

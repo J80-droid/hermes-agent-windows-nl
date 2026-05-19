@@ -29,7 +29,7 @@ hermes update
 ## Wat zit er in deze fork?
 
 | Component | Uitleg |
-|---|---|
+| --------- | ------ |
 | `scripts/windows/` | Setup-toolkit: logo, shortcuts, taakbalk-iconen |
 | `.cursorrules` | Nederlandstalige RAG-citatieregels |
 | `scripts/install.ps1` | Aangepast: cloned deze fork i.p.v. NousResearch |

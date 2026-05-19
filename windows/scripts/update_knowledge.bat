@@ -92,14 +92,8 @@ if errorlevel 1 (
 rem Zelfde pad doorgeven aan Python ^(ingest / kb_schema^) als hierboven gebruikt bij wis.
 set "HERMES_LANCEDB_PATH=%HERMES_LANCEDB%"
 
-rem Parallel MarkItDown / ingest-tuning ^(optioneel; zie scripts/rag_pipeline/ACTIVATION.md^).
-if defined HERMES_RAG_CONVERT_WORKERS (
-  echo [INFO] HERMES_RAG_CONVERT_WORKERS=%HERMES_RAG_CONVERT_WORKERS% ^(parallel MarkItDown per golf^)
-) else (
-  echo [INFO] Tip topsnelheid: CMD `set HERMES_RAG_CONVERT_WORKERS=4` of PowerShell `$env:HERMES_RAG_CONVERT_WORKERS=4` vóór dit script ^(4-8, RAM-afhankelijk^).
-)
-if defined HERMES_RAG_CONVERT_HEARTBEAT_SEC echo [INFO] HERMES_RAG_CONVERT_HEARTBEAT_SEC=%HERMES_RAG_CONVERT_HEARTBEAT_SEC%
-if defined HERMES_RAG_EMBED_BATCH echo [INFO] HERMES_RAG_EMBED_BATCH=%HERMES_RAG_EMBED_BATCH%
+rem Institutioneel: HERMES_RAG_PERF_PROFILE ^(safe|balanced|fast|off^); expliciete env wint.
+for /f "delims=" %%L in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0rag_ingest_perf_defaults.ps1" -EmitCmd 2^>nul') do %%L
 
 echo [RAG-UPDATE] [INFO] Start LanceDB-ingest ^(idempotente upsert per bronbestand^)...
 echo [INFO] Start ingest: python scripts\rag_pipeline\ingest.py

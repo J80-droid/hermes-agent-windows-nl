@@ -22,7 +22,7 @@ Scripts in deze map:
 ### Omgevingsvariabelen (institutioneel)
 
 | Variabele | Default | Betekenis |
-|-----------|---------|-----------|
+| --------- | ------- | --------- |
 | `HERMES_RAG_INCREMENTAL` | `1` | Alleen gewijzigde bronnen opnieuw indexeren |
 | `HERMES_RAG_FORCE_FULL` | `0` | `1` = volledige scan (negeert incrementeel) |
 | `HERMES_RAG_ORPHAN_CLEANUP` | `1` | Oude chunks per bron verwijderen na upsert |
@@ -30,6 +30,12 @@ Scripts in deze map:
 | `HERMES_RAG_HASH_FULL_MAX_MB` | `32` | Volledige SHA-256 onder deze grootte; daarboven fingerprint |
 | `HERMES_WHISPER_MODEL` | `medium` | faster-whisper model (kwaliteit; `large-v3` trager/nauwkeuriger) |
 | `HERMES_RAG_PREFER_SIDECAR` | `0` | `1` = gebruik `.vtt`/`.srt` i.p.v. Whisper (sneller, niet standaard) |
+| `HERMES_RAG_PERF_PROFILE` | `balanced` | Preset vóór ingest: `safe`, `balanced`, `fast`, `off` — zie `windows/scripts/rag_ingest_perf_defaults.ps1` |
+| `HERMES_RAG_CONVERT_WORKERS` | `1` (ingest.py); `balanced` zet CPU-afhankelijk (2–8) | Parallel MarkItDown per golf; cap in ingest: `min(cpu, 8)` |
+| `HERMES_RAG_EMBED_BATCH` | `64` | Embedding-batchgrootte; cap in ingest: `512` |
+| `HERMES_RAG_CONVERT_HEARTBEAT_SEC` | `3.0` | Heartbeat tijdens parallelle conversie; `0` = uit |
+
+**Performance:** `update_knowledge.bat` roept `rag_ingest_perf_defaults.ps1` aan na conda-activate. Expliciet gezette env-variabelen worden **niet** overschreven. Taakplanner: `set HERMES_RAG_PERF_PROFILE=safe` of `set HERMES_NONINTERACTIVE=1` + `HERMES_RAG_FRESH=1`.
 
 **Schema-upgrade:** bestond `knowledge_base` al **zonder** kolom `id`, dan stopt `ingest.py` met een foutmelding — eenmalig database wissen (**J** / `HERMES_RAG_FRESH=1`) of map handmatig verwijderen, daarna opnieuw indexeren.
 
@@ -51,7 +57,7 @@ flowchart LR
 ## 100%-checklist (code vs. jouw run)
 
 | # | Onderdeel | In repo (code) | Jouw run (verplicht voor E2E) |
-|---|-----------|----------------|-------------------------------|
+| - | --------- | -------------- | ----------------------------- |
 | 1 | CLI/Web bron-chips (`cli.py`, `web/…/Markdown.tsx`) | Ja — `[Bron: …]` → backticks | — |
 | 2 | `pyproject.toml` extra `[rag]` | Ja — `pip install -e ".[rag]"` | Eenmalig in `hermes-env` |
 | 3 | Automatische MCP + RAG-deps | Ja — `install-jamel.ps1` / `setup_hermes_windows.ps1` → `install_rag_extras.ps1` | Nieuwe sessie na install |
@@ -66,7 +72,7 @@ Zonder **A+B+C** is de keten nooit 100% operationeel — ook niet met perfecte c
 ## Institutioneel (P3 — mitigaties in repo)
 
 | Risico | Mitigatie |
-|--------|-----------|
+| ------ | --------- |
 | conda vs. uv `.venv` | `install_rag_extras.ps1` → `pip install -e ".[rag]"` op **beide** (`rag_python_resolve.ps1`) |
 | MCP relatief pad / verkeerde cwd | `register_mcp_config.py` — **absoluut** pad naar `mcp_server.py` + env `HERMES_REPO_ROOT`, `HERMES_LANCEDB_PATH` |
 | Whisper/ffmpeg | `[rag]` bevat `faster-whisper`; **ffmpeg** moet op PATH (winget/choco) |
@@ -141,7 +147,7 @@ Alle commando’s in **één** geactiveerde shell; `cd` eerst naar de Hermes-rep
 Alles onder `~/data/raw_source_files` wordt per extensie gescand. **Autoritatieve lijst:** [`source_formats.py`](source_formats.py) (`PLAIN_SUFFIXES`, `MARKITDOWN_SUFFIXES`, `AUDIO_SUFFIXES`, `VIDEO_SUFFIXES`).
 
 | Route | Extensies (samenvatting) |
-|--------|---------------------------|
+| ----- | ------------------------ |
 | **UTF-8 tekst** | `.txt`, `.md`, `.json`, `.jsonl`, `.log`, `.csv`, `.tsv`, `.yaml`, `.yml`, `.toml`, `.ini`, `.rst`, `.adoc`, ondertitels `.vtt`, `.srt`, `.sbv` |
 | **MarkItDown → Markdown** | **Office:** `.docx`, `.doc`, `.docm`, `.dotx`, `.dotm`, `.rtf`, `.xlsx`, `.xls`, `.xlsm`, `.xlsb`, `.pptx`, `.ppt`, `.pptm`, `.ppsx`, `.pps`, `.msg`, `.eml` · **OpenDocument:** `.odt`, `.ods`, `.odp` · **Web/PDF:** `.pdf`, `.html`, `.htm`, `.xml`, `.rss`, `.atom` · **Overig:** `.epub`, `.ipynb`, `.zip` · **Beeld:** `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`, `.tif`, `.tiff`, `.heic` |
 | **Whisper + ffmpeg** | **Audio:** `.mp3`, `.m4a`, `.wav`, `.ogg`, `.flac`, `.aac`, `.wma`, `.aiff`, `.opus`, … · **Video:** `.mp4`, `.mov`, `.mkv`, `.webm`, `.avi`, `.wmv`, `.mpeg`, `.3gp`, … |

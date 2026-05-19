@@ -62,6 +62,8 @@ $files = @(
     'backup_hermes.ps1',
     'restore_from_backup.ps1',
     'apply_team_display.ps1',
+    'stop_other_hermes_processes.ps1',
+    'rag_ingest_perf_defaults.ps1',
     'team_display.defaults',
     'SKIP_TEAM_DISPLAY_AFTER_UPDATE.example',
     'create_shortcut.ps1',

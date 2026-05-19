@@ -7276,12 +7276,40 @@ def _is_windows() -> bool:
 
 
 def _venv_scripts_dir() -> Path | None:
-    """Return the venv Scripts directory if we're running inside the project venv."""
-    venv_dir = PROJECT_ROOT / "venv"
-    if not venv_dir.is_dir():
-        return None
-    scripts = venv_dir / ("Scripts" if _is_windows() else "bin")
-    return scripts if scripts.is_dir() else None
+    """Return the Scripts/bin dir whose entry-point shims uv may rewrite on install.
+
+    Windows blocks replacing a running ``hermes.exe``; ``_quarantine_running_hermes_exe``
+    must target the *active* environment (conda env, project ``venv``, etc.), not only
+    ``PROJECT_ROOT/venv``.
+    """
+    bin_name = "Scripts" if _is_windows() else "bin"
+    candidates: list[Path] = []
+
+    prefix_scripts = Path(sys.prefix) / bin_name
+    if prefix_scripts.is_dir():
+        candidates.append(prefix_scripts)
+
+    exe_parent = Path(sys.executable).resolve().parent
+    if exe_parent.name.lower() == bin_name.lower() and exe_parent.is_dir():
+        candidates.append(exe_parent)
+
+    project_scripts = PROJECT_ROOT / "venv" / bin_name
+    if project_scripts.is_dir():
+        candidates.append(project_scripts)
+
+    seen: set[Path] = set()
+    for scripts in candidates:
+        if scripts in seen:
+            continue
+        seen.add(scripts)
+        if any(shim.exists() for shim in _hermes_exe_shims(scripts)):
+            return scripts
+
+    # No shims yet (first install) — still return the env uv is installing into.
+    for scripts in candidates:
+        if scripts.is_dir():
+            return scripts
+    return None
 
 
 def _hermes_exe_shims(scripts_dir: Path) -> list[Path]:
@@ -7297,6 +7325,50 @@ def _hermes_exe_shims(scripts_dir: Path) -> list[Path]:
         scripts_dir / "hermes.exe",
         scripts_dir / "hermes-gateway.exe",
     ]
+
+
+def _stop_peer_hermes_processes_for_update() -> None:
+    """Stop gateway and other Hermes instances so uv can replace entry-point shims on Windows."""
+    if not _is_windows():
+        return
+
+    print("→ Preparing for update (stopping other Hermes processes)...")
+    try:
+        from hermes_cli.gateway import stop_profile_gateway
+
+        if stop_profile_gateway():
+            print("  ✓ Gateway stopped")
+    except Exception as exc:
+        logger.debug("Gateway stop skipped: %s", exc)
+
+    script = PROJECT_ROOT / "windows" / "stop_other_hermes_processes.ps1"
+    if not script.is_file():
+        return
+
+    result = subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(script),
+            "-KeepPid",
+            str(os.getpid()),
+        ],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    for line in (result.stdout or "").splitlines():
+        line = line.strip()
+        if line:
+            print(f"  {line}")
+    if result.returncode != 0:
+        err = (result.stderr or "").strip().splitlines()
+        if err:
+            print(f"  ⚠ {err[0]}")
 
 
 def _quarantine_running_hermes_exe(scripts_dir: Path) -> list[tuple[Path, Path]]:
@@ -8120,6 +8192,8 @@ def _cmd_update_impl(args, gateway_mode: bool):
     print("⚕ Updating Hermes Agent...")
     print()
 
+    _stop_peer_hermes_processes_for_update()
+
     # Pre-update backup — runs before any git/file mutation so users can
     # always roll back to the exact state they had before this update.
     _run_pre_update_backup(args)
@@ -8210,7 +8284,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                 )
         else:
 
-            print("â†’ Fetching updates...")
+            print("→ Fetching updates...")
             fetch_result = subprocess.run(
                 git_cmd + ["fetch", "origin"],
                 cwd=PROJECT_ROOT,
@@ -8220,16 +8294,16 @@ def _cmd_update_impl(args, gateway_mode: bool):
             if fetch_result.returncode != 0:
                 stderr = fetch_result.stderr.strip()
                 if "Could not resolve host" in stderr or "unable to access" in stderr:
-                    print("âœ— Network error â€” cannot reach the remote repository.")
+                    print("✗ Network error — cannot reach the remote repository.")
                     print(f"  {stderr.splitlines()[0]}" if stderr else "")
                 elif (
                     "Authentication failed" in stderr or "could not read Username" in stderr
                 ):
                     print(
-                        "âœ— Authentication failed â€” check your git credentials or SSH key."
+                        "✗ Authentication failed — check your git credentials or SSH key."
                     )
                 else:
-                    print(f"âœ— Failed to fetch updates from origin.")
+                    print("✗ Failed to fetch updates from origin.")
                     if stderr:
                         print(f"  {stderr.splitlines()[0]}")
                 sys.exit(1)
@@ -8254,7 +8328,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     if current_branch == "HEAD"
                     else f"branch '{current_branch}'"
                 )
-                print(f"  âš  Currently on {label} â€” switching to main for update...")
+                print(f"  âš  Currently on {label} — switching to main for update...")
                 # Stash before checkout so uncommitted work isn't lost
                 auto_stash_ref = _stash_local_changes_if_needed(git_cmd, PROJECT_ROOT)
                 subprocess.run(
@@ -8302,10 +8376,10 @@ def _cmd_update_impl(args, gateway_mode: bool):
                         text=True,
                         check=False,
                     )
-                print("âœ“ Already up to date!")
+                print("✓ Already up to date!")
                 return
 
-            print(f"â†’ Found {commit_count} new commit(s)")
+            print(f"→ Found {commit_count} new commit(s)")
 
             # Snapshot critical state (state.db, config, pairing JSONs, etc.)
             # before pulling so a user can recover if something goes wrong.
@@ -8318,12 +8392,12 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
                 snap_id = create_quick_snapshot(label="pre-update")
                 if snap_id:
-                    print(f"  âœ“ Pre-update snapshot: {snap_id}")
+                    print(f"  ✓ Pre-update snapshot: {snap_id}")
             except Exception as exc:
                 # Never let a snapshot failure block an update.
                 logger.debug("Pre-update snapshot failed: %s", exc)
 
-            print("â†’ Pulling updates...")
+            print("→ Pulling updates...")
             update_succeeded = False
             # Capture the pre-pull SHA so we can auto-roll-back if the new code
             # has a syntax error in a critical-path file (PR #28452 incident:
@@ -8339,7 +8413,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     text=True,
                 )
                 if pull_result.returncode != 0:
-                    # ff-only failed â€” local and remote have diverged (e.g. upstream
+                    # ff-only failed — local and remote have diverged (e.g. upstream
                     # force-pushed or rebase).  Since local changes are already
                     # stashed, reset to match the remote exactly.
                     print(
@@ -8352,7 +8426,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                         text=True,
                     )
                     if reset_result.returncode != 0:
-                        print(f"âœ— Failed to reset to origin/{branch}.")
+                        print(f"✗ Failed to reset to origin/{branch}.")
                         if reset_result.stderr.strip():
                             print(f"  {reset_result.stderr.strip()}")
                         print(
@@ -8371,7 +8445,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                 )
                 if not syntax_ok:
                     print()
-                    print("âœ— Pulled code has a syntax error in a critical file:")
+                    print("✗ Pulled code has a syntax error in a critical file:")
                     print(f"  {failing_path}")
                     if syntax_error:
                         # py_compile errors can be multi-line; show the first
@@ -8380,7 +8454,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                             print(f"    {line}")
                     if pre_pull_sha:
                         print()
-                        print(f"â†’ Rolling back to {pre_pull_sha[:10]}...")
+                        print(f"→ Rolling back to {pre_pull_sha[:10]}...")
                         rollback_result = subprocess.run(
                             git_cmd + ["reset", "--hard", pre_pull_sha],
                             cwd=PROJECT_ROOT,
@@ -8388,23 +8462,23 @@ def _cmd_update_impl(args, gateway_mode: bool):
                             text=True,
                         )
                         if rollback_result.returncode == 0:
-                            print("  âœ“ Rollback complete â€” your install is unchanged.")
+                            print("  ✓ Rollback complete — your install is unchanged.")
                             print("  Try ``hermes update`` again later once a fix lands.")
                         else:
-                            print("  âœ— Rollback failed. Recover manually with:")
+                            print("  ✗ Rollback failed. Recover manually with:")
                             print(f"    cd {PROJECT_ROOT} && git reset --hard {pre_pull_sha}")
                             if rollback_result.stderr.strip():
                                 print(f"    ({rollback_result.stderr.strip().splitlines()[0]})")
                     else:
                         print()
-                        print("  Could not capture pre-pull SHA â€” recover manually with:")
+                        print("  Could not capture pre-pull SHA — recover manually with:")
                         print(f"    cd {PROJECT_ROOT} && git reflog && git reset --hard <prev-sha>")
                     sys.exit(1)
 
                 update_succeeded = True
             finally:
                 if auto_stash_ref is not None:
-                    # Don't attempt stash restore if the code update itself failed â€”
+                    # Don't attempt stash restore if the code update itself failed —
                     # working tree is in an unknown state.
                     if not update_succeeded:
                         print(
@@ -8422,13 +8496,13 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
             _invalidate_update_cache()
 
-            # Clear stale .pyc bytecode cache â€” prevents ImportError on gateway
+            # Clear stale .pyc bytecode cache — prevents ImportError on gateway
             # restart when updated source references names that didn't exist in
             # the old bytecode (e.g. get_hermes_home added to hermes_constants).
             removed = _clear_bytecode_cache(PROJECT_ROOT)
             if removed:
                 print(
-                    f"  âœ“ Cleared {removed} stale __pycache__ director{'y' if removed == 1 else 'ies'}"
+                    f"  ✓ Cleared {removed} stale __pycache__ director{'y' if removed == 1 else 'ies'}"
                 )
 
         # Fork upstream sync logic (only when not already merged from upstream)

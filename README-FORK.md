@@ -9,7 +9,7 @@ Deze fork is de **enige goedgekeurde bron** voor Hermes-installaties binnen dit 
 ### Wat is toegevoegd ten opzichte van upstream
 
 | Component | Locatie | Beschrijving |
-|---|---|---|
+| --------- | ------- | ------------ |
 | Windows setup toolkit | `scripts/windows/` | Logo, snelkoppelingen, taakbalk-iconen, Conda/.venv-detectie |
 | RAG citatieregels | `.cursorrules` | Nederlandstalige bronvermelding en presentatie-eisen |
 | Aangepaste installer | `scripts/install.ps1` | Clone deze fork i.p.v. upstream |
@@ -53,7 +53,7 @@ hermes --help          # Alle beschikbare commando's
 Drie manieren, gesorteerd van veilig naar geavanceerd:
 
 | Methode | Commando | Beschrijving |
-|---|---|---|
+| ------- | -------- | ------------ |
 | **Aanbevolen** | `irm https://raw.githubusercontent.com/.../update-jamel.ps1 \| iex` | Keuzemenu bij lokale wijzigingen |
 | **Simpel** | `hermes update` | Ingebouwd Hermes-commando |
 | **Manueel** | `git pull origin main && uv pip install -e '.[all]'` | Voor gevorderden |
@@ -93,7 +93,7 @@ Gebruikers ontvangen de update via een van bovenstaande methodes.
 Hermes splitst bewust code en data:
 
 | Wat | Locatie | In Git? |
-|---|---|---|
+| --- | ------- | ------ |
 | Code | `%LOCALAPPDATA%\hermes\hermes-agent\` | Ja |
 | Data (config, skills, geheugen, sessies) | `%USERPROFILE%\.hermes\` | Nee |
 

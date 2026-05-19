@@ -81,14 +81,13 @@ export function PageHeaderProvider({
             >
               <h1
                 className={cn(
-                  "font-expanded min-w-0 text-sm font-bold tracking-[0.08em] text-midground",
+                  "font-expanded min-w-0 text-sm font-bold tracking-[0.08em] text-midground mix-blend-plus-lighter",
                   afterTitle && isEnvRoute
                     ? "max-w-full sm:min-w-0 sm:shrink sm:truncate"
                     : afterTitle
                       ? "shrink truncate"
                       : "truncate",
                 )}
-                style={{ mixBlendMode: "plus-lighter" }}
               >
                 {displayTitle}
               </h1>

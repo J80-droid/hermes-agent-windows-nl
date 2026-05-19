@@ -1,10 +1,10 @@
 # Toont welke Hermes-checkout actief is (dev vs install-clone) en MCP-config locatie.
+#Requires -Version 5.1
 $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "rag_python_resolve.ps1")
 
 $devRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $installClone = Join-Path $env:LOCALAPPDATA "hermes\hermes-agent"
-$nousClone = Join-Path $env:LOCALAPPDATA "hermes\hermes-agent"
 
 Write-Host "=== Hermes RAG diagnose ===" -ForegroundColor Cyan
 Write-Host "Dev-repo (fork):     $devRoot"

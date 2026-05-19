@@ -1,4 +1,5 @@
-# Optioneel (P4): na wijzigingen in bronmap -> incrementele ingest (debounce).
+# Optioneel (P4): na wijzigingen in bronmap, incrementele ingest (debounce).
+#Requires -Version 5.1
 param(
     [int]$DebounceSeconds = 120
 )
@@ -11,6 +12,7 @@ $root = (Resolve-Path -LiteralPath $root).Path
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $updateBat = Join-Path $PSScriptRoot "update_knowledge.bat"
 
+Write-Host "[INFO] Hermes repo: $repoRoot"
 Write-Host "[INFO] Watch: $root"
 Write-Host "[INFO] Debounce: ${DebounceSeconds}s -> $updateBat"
 Write-Host "[INFO] Ctrl+C om te stoppen"

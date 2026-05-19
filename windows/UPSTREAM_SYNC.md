@@ -24,7 +24,7 @@ git remote -v
 Verwacht:
 
 | Remote | URL |
-|--------|-----|
+| ------ | --- |
 | `origin` | `https://github.com/J80-droid/hermes-agent-windows-nl.git` |
 | `upstream` | `https://github.com/NousResearch/hermes-agent.git` |
 
@@ -82,7 +82,7 @@ Daarna optioneel nog `windows\hermes_update.bat` voor deps.
 ## Wat `hermes update` wél / niet doet
 
 | Situatie | Gedrag |
-|----------|--------|
+| -------- | ------ |
 | **`windows\hermes_update.bat`** | Altijd **`upstream/main`** (NousResearch) mergen, daarna deps |
 | **`hermes update` zonder env-var** | Nog steeds **`origin`** (fork) — zoals upstream Hermes |
 | Eigen RAG-commits | Blijven behouden via **merge** (niet `reset --hard` op upstream) |
@@ -97,7 +97,7 @@ Bij merge van Nous in jouw fork botsen vaak **jouw fork-only** paden met upstrea
 ### Hoge prioriteit (RAG — meestal **jouw versie behouden**)
 
 | Pad | Richtlijn |
-|-----|-----------|
+| --- | --------- |
 | `scripts/rag_pipeline/**` | **Behoud fork** (ingest, MCP, ACTIVATION, RAG-tests) |
 | `windows/scripts/update_knowledge.bat` | **Behoud fork** |
 | `windows/scripts/install_rag_extras.ps1` | **Behoud fork** |
@@ -111,7 +111,7 @@ Bij merge van Nous in jouw fork botsen vaak **jouw fork-only** paden met upstrea
 ### Meestal upstream overnemen (tenzij bewust aangepast)
 
 | Pad | Richtlijn |
-|-----|-----------|
+| --- | --------- |
 | `hermes_cli/main.py` (grote upstream fixes) | Meestal **theirs** / upstream, daarna RAG-hooks opnieuw checken |
 | `gateway/**`, `tools/**` | Vaak **upstream**; test messaging na merge |
 | `tests/**` (niet onder `tests/rag_pipeline/`) | Vaak **upstream** |
@@ -149,7 +149,7 @@ git fetch upstream
 git rev-list --left-right --count HEAD...upstream/main
 ```
 
-Uitvoer `A	B`:
+Uitvoer `A  B` (twee getallen, gescheiden door spatie):
 
 - **A** = commits op jouw branch die upstream niet heeft (jouw fork-werk).
 - **B** = commits op upstream die jij nog niet hebt (**achterstand op Nous**).

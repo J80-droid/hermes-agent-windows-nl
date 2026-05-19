@@ -3,8 +3,8 @@
 # ============================================================================
 # Met wow-effecten: typewriter, kleurcodering, confetti, ASCII-logo, dashboard
 #
-# Gebruik:
-#   irm https://raw.githubusercontent.com/J80-droid/hermes-agent-windows-nl/main/scripts/windows/install-jamel.ps1 | iex
+# Gebruik (one-liner):
+#   iex (Invoke-RestMethod https://raw.githubusercontent.com/J80-droid/hermes-agent-windows-nl/main/scripts/windows/install-jamel.ps1)
 # ============================================================================
 
 $ErrorActionPreference = "Stop"
@@ -112,7 +112,7 @@ function Show-Confetti {
     if (-not $height) { $height = 24 }
 
     try {
-        $originalX = [Console]::CursorLeft
+        $null = [Console]::CursorLeft
         $originalY = [Console]::CursorTop
 
         for ($frame = 0; $frame -lt 40; $frame++) {
@@ -217,6 +217,7 @@ Show-Typewriter -Text "  ══════════════════�
 Show-Typewriter -Text "     HERMES AGENT  —  WINDOWS INSTALLER  —  JAMEL'S FORK   " -Color $HERMES_AMBER -DelayMs 4
 Show-Typewriter -Text "  ═════════════════════════════════════════════════════════" -Color $HERMES_GOLD -DelayMs 2
 Show-Typewriter -Text "" -Color $HERMES_WHITE -DelayMs 0
+Show-Typewriter -Text "  Fork: $JamelRepo" -Color "DarkGray" -DelayMs 6
 Show-Typewriter -Text "  Voorbereiden van de installatie-omgeving..." -Color $HERMES_ORANGE -DelayMs 12
 Show-Typewriter -Text "  Dit kan enkele minuten duren. Even geduld a.u.b." -Color "Gray" -DelayMs 10
 Show-Typewriter -Text "" -Color $HERMES_WHITE -DelayMs 0
@@ -226,11 +227,6 @@ Show-Typewriter -Text "" -Color $HERMES_WHITE -DelayMs 0
 # ═══════════════════════════════════════════════════════════════════════════
 
 Show-FaseHeader -Fase "STAP 1/3  —  Installatiescript downloaden" -Color $HERMES_AMBER
-
-$downloadBlock = {
-    param($Url, $OutFile)
-    Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing
-}
 
 try {
     $null = Show-Spinner -Block {
