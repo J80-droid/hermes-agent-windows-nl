@@ -1278,6 +1278,14 @@ def _launch_tui(
     if "--expose-gc" not in _tokens:
         _tokens.append("--expose-gc")
     env["NODE_OPTIONS"] = " ".join(_tokens)
+    # HERMES_TUI_RESUME is an internal hand-off from the Python wrapper to the
+    # Ink app.  Because we start from os.environ.copy(), an exported/stale value
+    # in the user's shell would otherwise make a plain `hermes --tui` try to
+    # resume a non-existent session and leave the UI at "error: session not
+    # found" with no live session.  Only forward a resume id that argparse
+    # resolved for this invocation; direct `node ui-tui/dist/entry.js` users can
+    # still set HERMES_TUI_RESUME themselves.
+    env.pop("HERMES_TUI_RESUME", None)
     if resume_session_id:
         env["HERMES_TUI_RESUME"] = resume_session_id
 
@@ -2022,7 +2030,7 @@ def select_provider_and_model(args=None):
     elif selected_provider == "openai-codex":
         _model_flow_openai_codex(config, current_model)
     elif selected_provider == "xai-oauth":
-        _model_flow_xai_oauth(config, current_model)
+        _model_flow_xai_oauth(config, current_model, args=args)
     elif selected_provider == "qwen-oauth":
         _model_flow_qwen_oauth(config, current_model)
     elif selected_provider == "minimax-oauth":
@@ -2142,7 +2150,6 @@ _AUX_TASKS: list[tuple[str, str, str]] = [
     ("vision", "Vision", "image/screenshot analysis"),
     ("compression", "Compression", "context summarization"),
     ("web_extract", "Web extract", "web page summarization"),
-    ("session_search", "Session search", "past-conversation recall"),
     ("approval", "Approval", "smart command approval"),
     ("mcp", "MCP", "MCP tool reasoning"),
     ("title_generation", "Title generation", "session titles"),
@@ -2904,7 +2911,7 @@ def _model_flow_openai_codex(config, current_model=""):
         print("No change.")
 
 
-def _model_flow_xai_oauth(_config, current_model=""):
+def _model_flow_xai_oauth(_config, current_model="", *, args=None):
     """xAI Grok OAuth (SuperGrok Subscription) provider: ensure logged in, then pick model."""
     from hermes_cli.auth import (
         get_xai_oauth_auth_status,
@@ -2935,7 +2942,15 @@ def _model_flow_xai_oauth(_config, current_model=""):
             print("Starting a fresh xAI OAuth login...")
             print()
             try:
-                mock_args = argparse.Namespace()
+                # Forward CLI flags from ``hermes model --manual-paste``
+                # / ``--no-browser`` / ``--timeout`` into the loopback
+                # login. Without this, browser-only remotes (#26923)
+                # can't reach the manual-paste path via ``hermes model``.
+                mock_args = argparse.Namespace(
+                    manual_paste=bool(getattr(args, "manual_paste", False)),
+                    no_browser=bool(getattr(args, "no_browser", False)),
+                    timeout=getattr(args, "timeout", None),
+                )
                 _login_xai_oauth(
                     mock_args,
                     PROVIDER_REGISTRY["xai-oauth"],
@@ -2953,7 +2968,11 @@ def _model_flow_xai_oauth(_config, current_model=""):
         print("Not logged into xAI Grok OAuth (SuperGrok Subscription). Starting login...")
         print()
         try:
-            mock_args = argparse.Namespace()
+            mock_args = argparse.Namespace(
+                manual_paste=bool(getattr(args, "manual_paste", False)),
+                no_browser=bool(getattr(args, "no_browser", False)),
+                timeout=getattr(args, "timeout", None),
+            )
             _login_xai_oauth(mock_args, PROVIDER_REGISTRY["xai-oauth"])
         except SystemExit:
             print("Login cancelled or failed.")
@@ -5857,6 +5876,67 @@ def _clear_bytecode_cache(root: Path) -> int:
     return removed
 
 
+# Critical files that every ``hermes`` invocation imports at startup. If any
+# of these fail to parse after a pull, the CLI is bricked — the user can't
+# even run ``hermes update`` again to roll forward. The post-pull syntax
+# guard validates these and auto-rolls-back on failure.
+_UPDATE_CRITICAL_FILES = (
+    "hermes_cli/main.py",
+    "hermes_cli/config.py",
+    "hermes_cli/__init__.py",
+    "cli.py",
+    "run_agent.py",
+    "model_tools.py",
+    "toolsets.py",
+    "hermes_constants.py",
+)
+
+
+def _capture_head_sha(git_cmd, cwd) -> str | None:
+    """Return the current HEAD SHA, or None if it can't be resolved."""
+    try:
+        result = subprocess.run(
+            git_cmd + ["rev-parse", "HEAD"],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip() or None
+    except (subprocess.CalledProcessError, OSError):
+        return None
+
+
+def _validate_critical_files_syntax(root) -> tuple[bool, str | None, str | None]:
+    """Compile each file in ``_UPDATE_CRITICAL_FILES`` to catch SyntaxErrors.
+
+    These are the files imported on every ``hermes`` startup; if any of them
+    has a syntax error (orphan merge-conflict markers, bad ref to a name
+    that no longer exists, etc.) the CLI can't bootstrap at all. We validate
+    them after a successful ``git pull`` so we can auto-roll-back instead of
+    leaving the user with a bricked install.
+
+    Returns ``(ok, failing_path, error_message)``. ``ok=True`` means every
+    file parsed cleanly.
+    """
+    import py_compile
+
+    root = Path(root)
+    for relpath in _UPDATE_CRITICAL_FILES:
+        path = root / relpath
+        if not path.exists():
+            # Missing file is suspicious but not necessarily fatal — a future
+            # refactor may legitimately remove one of these. Skip and move on.
+            continue
+        try:
+            py_compile.compile(str(path), doraise=True)
+        except py_compile.PyCompileError as exc:
+            return False, str(path), str(exc)
+        except OSError as exc:
+            return False, str(path), f"could not read: {exc}"
+    return True, None, None
+
+
 def _gateway_prompt(prompt_text: str, default: str = "", timeout: float = 300.0) -> str:
     """File-based IPC prompt for gateway mode.
 
@@ -6858,6 +6938,12 @@ def _merge_upstream_main(git_cmd: list[str], cwd: Path) -> bool:
         if merge.stderr.strip():
             print(f"  {merge.stderr.strip().splitlines()[0]}")
         print("  Los conflicten op (zie windows/UPSTREAM_SYNC.md) en run update opnieuw.")
+        subprocess.run(
+            git_cmd + ["merge", "--abort"],
+            cwd=cwd,
+            capture_output=True,
+        )
+        print("  Merge afgebroken — werkmap terug naar schone staat (zonder conflict-markers).")
         return False
 
     print("✓ Merged latest NousResearch changes into local main")
@@ -8123,7 +8209,8 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     f"  ✓ Cleared {removed} stale __pycache__ director{'y' if removed == 1 else 'ies'}"
                 )
         else:
-            print("→ Fetching updates from origin (fork)...")
+
+            print("â†’ Fetching updates...")
             fetch_result = subprocess.run(
                 git_cmd + ["fetch", "origin"],
                 cwd=PROJECT_ROOT,
@@ -8133,16 +8220,16 @@ def _cmd_update_impl(args, gateway_mode: bool):
             if fetch_result.returncode != 0:
                 stderr = fetch_result.stderr.strip()
                 if "Could not resolve host" in stderr or "unable to access" in stderr:
-                    print("✗ Network error — cannot reach the remote repository.")
+                    print("âœ— Network error â€” cannot reach the remote repository.")
                     print(f"  {stderr.splitlines()[0]}" if stderr else "")
                 elif (
                     "Authentication failed" in stderr or "could not read Username" in stderr
                 ):
                     print(
-                        "✗ Authentication failed — check your git credentials or SSH key."
+                        "âœ— Authentication failed â€” check your git credentials or SSH key."
                     )
                 else:
-                    print(f"✗ Failed to fetch updates from origin.")
+                    print(f"âœ— Failed to fetch updates from origin.")
                     if stderr:
                         print(f"  {stderr.splitlines()[0]}")
                 sys.exit(1)
@@ -8167,7 +8254,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     if current_branch == "HEAD"
                     else f"branch '{current_branch}'"
                 )
-                print(f"  ⚠ Currently on {label} — switching to main for update...")
+                print(f"  âš  Currently on {label} â€” switching to main for update...")
                 # Stash before checkout so uncommitted work isn't lost
                 auto_stash_ref = _stash_local_changes_if_needed(git_cmd, PROJECT_ROOT)
                 subprocess.run(
@@ -8215,10 +8302,10 @@ def _cmd_update_impl(args, gateway_mode: bool):
                         text=True,
                         check=False,
                     )
-                print("✓ Already up to date!")
+                print("âœ“ Already up to date!")
                 return
 
-            print(f"→ Found {commit_count} new commit(s)")
+            print(f"â†’ Found {commit_count} new commit(s)")
 
             # Snapshot critical state (state.db, config, pairing JSONs, etc.)
             # before pulling so a user can recover if something goes wrong.
@@ -8231,13 +8318,19 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
                 snap_id = create_quick_snapshot(label="pre-update")
                 if snap_id:
-                    print(f"  ✓ Pre-update snapshot: {snap_id}")
+                    print(f"  âœ“ Pre-update snapshot: {snap_id}")
             except Exception as exc:
                 # Never let a snapshot failure block an update.
                 logger.debug("Pre-update snapshot failed: %s", exc)
 
-            print("→ Pulling updates...")
+            print("â†’ Pulling updates...")
             update_succeeded = False
+            # Capture the pre-pull SHA so we can auto-roll-back if the new code
+            # has a syntax error in a critical-path file (PR #28452 incident:
+            # orphan merge-conflict markers in hermes_cli/config.py bricked
+            # every user who ran ``hermes update`` for the 7 minutes between
+            # the bad commit and the fix landing).
+            pre_pull_sha = _capture_head_sha(git_cmd, PROJECT_ROOT)
             try:
                 pull_result = subprocess.run(
                     git_cmd + ["pull", "--ff-only", "origin", branch],
@@ -8246,11 +8339,11 @@ def _cmd_update_impl(args, gateway_mode: bool):
                     text=True,
                 )
                 if pull_result.returncode != 0:
-                    # ff-only failed — local and remote have diverged (e.g. upstream
+                    # ff-only failed â€” local and remote have diverged (e.g. upstream
                     # force-pushed or rebase).  Since local changes are already
                     # stashed, reset to match the remote exactly.
                     print(
-                        "  ⚠ Fast-forward not possible (history diverged), resetting to match remote..."
+                        "  âš  Fast-forward not possible (history diverged), resetting to match remote..."
                     )
                     reset_result = subprocess.run(
                         git_cmd + ["reset", "--hard", f"origin/{branch}"],
@@ -8259,21 +8352,63 @@ def _cmd_update_impl(args, gateway_mode: bool):
                         text=True,
                     )
                     if reset_result.returncode != 0:
-                        print(f"✗ Failed to reset to origin/{branch}.")
+                        print(f"âœ— Failed to reset to origin/{branch}.")
                         if reset_result.stderr.strip():
                             print(f"  {reset_result.stderr.strip()}")
                         print(
                             "  Try manually: git fetch origin && git reset --hard origin/main"
                         )
                         sys.exit(1)
+
+                # Post-pull syntax guard: validate critical-path files actually
+                # parse before declaring the update successful. If a bad commit
+                # made it through CI (e.g. admin-merge bypass of a failing
+                # ruff check), this catches it on the user side and rolls back
+                # so the CLI stays bootable. The user can then retry ``hermes
+                # update`` later once a fix lands upstream.
+                syntax_ok, failing_path, syntax_error = _validate_critical_files_syntax(
+                    PROJECT_ROOT
+                )
+                if not syntax_ok:
+                    print()
+                    print("âœ— Pulled code has a syntax error in a critical file:")
+                    print(f"  {failing_path}")
+                    if syntax_error:
+                        # py_compile errors can be multi-line; show the first
+                        # ~6 lines so the user sees the actual SyntaxError text.
+                        for line in str(syntax_error).splitlines()[:6]:
+                            print(f"    {line}")
+                    if pre_pull_sha:
+                        print()
+                        print(f"â†’ Rolling back to {pre_pull_sha[:10]}...")
+                        rollback_result = subprocess.run(
+                            git_cmd + ["reset", "--hard", pre_pull_sha],
+                            cwd=PROJECT_ROOT,
+                            capture_output=True,
+                            text=True,
+                        )
+                        if rollback_result.returncode == 0:
+                            print("  âœ“ Rollback complete â€” your install is unchanged.")
+                            print("  Try ``hermes update`` again later once a fix lands.")
+                        else:
+                            print("  âœ— Rollback failed. Recover manually with:")
+                            print(f"    cd {PROJECT_ROOT} && git reset --hard {pre_pull_sha}")
+                            if rollback_result.stderr.strip():
+                                print(f"    ({rollback_result.stderr.strip().splitlines()[0]})")
+                    else:
+                        print()
+                        print("  Could not capture pre-pull SHA â€” recover manually with:")
+                        print(f"    cd {PROJECT_ROOT} && git reflog && git reset --hard <prev-sha>")
+                    sys.exit(1)
+
                 update_succeeded = True
             finally:
                 if auto_stash_ref is not None:
-                    # Don't attempt stash restore if the code update itself failed —
+                    # Don't attempt stash restore if the code update itself failed â€”
                     # working tree is in an unknown state.
                     if not update_succeeded:
                         print(
-                            f"  ℹ️  Local changes preserved in stash (ref: {auto_stash_ref})"
+                            f"  â„¹ï¸�  Local changes preserved in stash (ref: {auto_stash_ref})"
                         )
                         print(f"  Restore manually with: git stash apply")
                     else:
@@ -8287,13 +8422,13 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
             _invalidate_update_cache()
 
-            # Clear stale .pyc bytecode cache — prevents ImportError on gateway
+            # Clear stale .pyc bytecode cache â€” prevents ImportError on gateway
             # restart when updated source references names that didn't exist in
             # the old bytecode (e.g. get_hermes_home added to hermes_constants).
             removed = _clear_bytecode_cache(PROJECT_ROOT)
             if removed:
                 print(
-                    f"  ✓ Cleared {removed} stale __pycache__ director{'y' if removed == 1 else 'ies'}"
+                    f"  âœ“ Cleared {removed} stale __pycache__ director{'y' if removed == 1 else 'ies'}"
                 )
 
         # Fork upstream sync logic (only when not already merged from upstream)
@@ -8601,6 +8736,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
                 launch_detached_profile_gateway_restart,
                 _get_service_pids,
                 _graceful_restart_via_sigusr1,
+                _wait_for_gateway_exit,
             )
             import signal as _signal
 
@@ -9019,6 +9155,21 @@ def _cmd_update_impl(args, gateway_mode: bool):
                         os.kill(pid, _signal.SIGTERM)
                     except (ProcessLookupError, PermissionError):
                         pass
+                # Wait for the old process to fully exit before the watcher
+                # spawns the new gateway.  Telegram holds the previous
+                # getUpdates long-poll session open on its servers for up to
+                # ~30s after the client disconnects.  If the new gateway
+                # connects before that window expires it receives a 409
+                # Conflict, which _handle_polling_conflict() recovers from
+                # via back-off retries — but a brief wait here reduces the
+                # chance of hitting that path at all, especially on fast
+                # machines where the watcher loop restarts in < 1s.
+                # We wait up to 5s for the process to exit (the OS-level
+                # close, not the Telegram server-side expiry), then let the
+                # watcher take over.  The Telegram adapter's retry logic
+                # handles any remaining 409s if the server session is still
+                # live when the new gateway polls.
+                _wait_for_gateway_exit(timeout=5.0, force_after=None)
                 killed_pids.add(pid)
                 relaunched_profiles.append(proc.profile)
 
@@ -10017,7 +10168,7 @@ def _build_provider_choices() -> list[str]:
 # to parse.
 _BUILTIN_SUBCOMMANDS = frozenset(
     {
-        "acp", "auth", "backup", "checkpoints", "claw", "completion",
+        "acp", "auth", "backup", "bundles", "checkpoints", "claw", "completion",
         "computer-use",
         "config", "cron", "curator", "dashboard", "debug", "doctor",
         "dump", "fallback", "gateway", "hooks", "import", "insights",
@@ -10165,6 +10316,16 @@ def main():
         "--no-browser",
         action="store_true",
         help="Do not attempt to open the browser automatically during Nous login",
+    )
+    model_parser.add_argument(
+        "--manual-paste",
+        action="store_true",
+        help=(
+            "For loopback OAuth providers (xai-oauth, ...): skip the local "
+            "callback listener and paste the failed callback URL from your "
+            "browser instead. Use on browser-only remotes (Cloud Shell, "
+            "Codespaces, EC2 Instance Connect, ...). See #26923."
+        ),
     )
     model_parser.add_argument(
         "--timeout",
@@ -10389,7 +10550,7 @@ def main():
     proxy_start.add_argument(
         "--provider",
         default="nous",
-        help="Upstream provider (default: nous). See `hermes proxy providers`.",
+        help="Upstream provider: nous or xai (default: nous). See `hermes proxy providers`.",
     )
     proxy_start.add_argument(
         "--host",
@@ -10627,6 +10788,17 @@ def main():
         "--no-browser",
         action="store_true",
         help="Do not auto-open a browser for OAuth login",
+    )
+    auth_add.add_argument(
+        "--manual-paste",
+        action="store_true",
+        help=(
+            "Skip the loopback callback listener and paste the failed "
+            "callback URL from your browser instead. Use this on "
+            "browser-only remotes (GCP Cloud Shell, GitHub Codespaces, "
+            "EC2 Instance Connect, ...) where 127.0.0.1 on the remote "
+            "isn't reachable from your laptop. See #26923."
+        ),
     )
     auth_add.add_argument(
         "--timeout", type=float, help="OAuth/network timeout in seconds"
@@ -11429,6 +11601,22 @@ Examples:
             skills_command(args)
 
     skills_parser.set_defaults(func=cmd_skills)
+
+    # =========================================================================
+    # bundles command — skill bundles (alias /<name> for multiple skills)
+    # =========================================================================
+    bundles_parser = subparsers.add_parser(
+        "bundles",
+        help="Create, list, and manage skill bundles (aliases for multiple skills)",
+        description=(
+            "Skill bundles let you load several skills under one slash "
+            "command. `/<bundle>` from the CLI or gateway loads every "
+            "referenced skill at once."
+        ),
+    )
+    from hermes_cli.bundles import register_cli as _bundles_register, bundles_command
+    _bundles_register(bundles_parser)
+    bundles_parser.set_defaults(func=bundles_command)
 
     # =========================================================================
     # plugins command
@@ -12796,7 +12984,7 @@ Examples:
 
             discover_plugins()
         except Exception:
-            logger.debug(
+            logger.warning(
                 "plugin discovery failed at CLI startup",
                 exc_info=True,
             )
