@@ -25,3 +25,5 @@ SETUP_HERMES.bat
 Daarna RAG: `windows\scripts\install_rag_extras.ps1` (pip `[rag]` + MCP), `windows\scripts\update_knowledge.bat` (index; rooktest: `scripts\rag_pipeline\ACTIVATION.md`).
 
 **Eén checkout:** start altijd via `windows\launch_hermes.bat` in **deze** dev-repo. Diagnose: `windows\scripts\which_hermes_repo.ps1`. De map `%LOCALAPPDATA%\hermes\hermes-agent` (Nous `origin`) is een **andere** clone — niet mengen met fork/RAG zonder bewuste keuze.
+
+**Nous-updates ontvangen:** fork is OK — sync periodiek met upstream. Zie **[UPSTREAM_SYNC.md](UPSTREAM_SYNC.md)** (`git merge upstream/main`, conflict-tips RAG, checklist na merge).

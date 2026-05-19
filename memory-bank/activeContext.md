@@ -14,5 +14,8 @@ Gebruik dezelfde checkout voor MCP/ingest die je activeert. `install_rag_extras.
 2. `install_rag_extras.ps1` of `register_lancedb_mcp.ps1` → nieuwe Hermes-sessie.
 3. Rooktest: expliciet `search_knowledge` op `VWO Elite` / dossierzin.
 
+## Upstream Nous
+Zie `windows/UPSTREAM_SYNC.md` — fork + `upstream` remote; `hermes update` ≠ automatische Nous-merge bij eigen RAG-commits.
+
 ## Technische gaps (P3+)
-Zie `scripts/rag_pipeline/ACTIVATION.md` — watch-folder, klikbare file:-links, volledige uv.lock-sync bij upstream merge.
+Zie `scripts/rag_pipeline/ACTIVATION.md` — watch-folder, klikbare file:-links.
