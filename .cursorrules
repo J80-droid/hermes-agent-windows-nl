@@ -1,0 +1,22 @@
+# Hermes — RAG / LanceDB-knowledge (MCP)
+
+Bij het genereren van een **chronologie**, **feitenoverzicht** of **juridische analyse** op basis van de MCP-tool **`search_knowledge`**, ben je **VERPLICHT** om achter **elk specifiek feit of elke datum** direct een **inline referentie** te plaatsen in de vorm:
+
+`[Bron: <bestandsnaam>]`
+
+- Gebruik de **bestandsnaam exact** zoals in de tool-output (`bron_bestand` / `inline_citeer_sjabloon`); geen hash of `#chunk_id` in de zichtbare tekst.
+- Geen feiten zonder bracket-citatie; geen verzonnen bronnen.
+
+Laat feiten en bewijsstukken op deze manier **onweerlegbaar traceerbaar** zijn.
+
+## VERGELIJKINGS-EIS (dossierblokken — geen Markdown-tabel)
+
+Wanneer **feiten** worden afgezet tegen een **procedureel of juridisch kader** (CAO, Wbk, wet, …): **geen** Markdown-tabel. Gebruik **verticale dossierblokken** zoals in `LANCEDB_RAG_STRICT_CITATION_GUIDANCE` in `agent/prompt_builder.py` — kopregels **Feitelijke handeling:** en **Toepasselijke norm:**, inhoud met **`[Bron: <bestandsnaam>]`**, opeenvolgende vergelijkingen gescheiden met een regel **`---`**.
+
+## LEESBAARHEID-EIS (lijsten)
+
+Bij genummerde lijsten of bulletpoints: **titel, label of datum vet op een eigen regel**, daarna een **lege regel**, daarna pas de inhoudelijke toelichting. Geen fragiele post-processing op opsommingen in de CLI; dit is **prompt-afgedwongen**.
+
+## Hermes TUI (presentatie)
+
+In Markdown-rendermodus zet de CLI niet-al-gebacktickte `[Bron: …]` automatisch tussen backticks zodat Rich ze als **inline code / chips** toont.
