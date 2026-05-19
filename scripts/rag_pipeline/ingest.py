@@ -399,7 +399,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
     if _max_b is not None:
         print(
             f"{C_CYAN}[INFO]{C_RESET} Max. bestandsgrootte: {_max_b // (1024 * 1024)} MB "
-            f"(HERMES_RAG_MAX_FILE_MB; 0 = onbeperkt)"
+            f"(HERMES_RAG_MAX_FILE_MB; weglaten = onbeperkt)"
         )
     print(
         f"{C_CYAN}[INFO]{C_RESET} Semantische chunking actief (max. ca. {max_words} woorden per chunk)."

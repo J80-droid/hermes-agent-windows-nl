@@ -77,14 +77,21 @@ SKIP_SUFFIXES: frozenset[str] = frozenset(
 
 
 def max_file_bytes() -> int | None:
-    """Max. bestandsgrootte; None = geen limiet. Zet HERMES_RAG_MAX_FILE_MB (default 150)."""
-    raw = (os.environ.get("HERMES_RAG_MAX_FILE_MB") or "150").strip()
-    if raw.lower() in ("0", "none", "off", "unlimited", ""):
+    """Max. bestandsgrootte; None = geen limiet (standaard — alle bronnen meenemen).
+
+    Alleen beperken als HERMES_RAG_MAX_FILE_MB expliciet op een positief getal staat
+    (bijv. 150 voor zware omgevingen).
+    """
+    raw = os.environ.get("HERMES_RAG_MAX_FILE_MB")
+    if raw is None or not str(raw).strip():
+        return None
+    raw = str(raw).strip()
+    if raw.lower() in ("0", "none", "off", "unlimited"):
         return None
     try:
         mb = float(raw)
     except ValueError:
-        mb = 150.0
+        return None
     if mb <= 0:
         return None
     return int(mb * 1024 * 1024)

@@ -8,7 +8,7 @@ Scripts in deze map:
 
 - `ingest.py` — orchestratie: scan, chunking, upsert, voortgang.
 - `source_formats.py` — centrale extensiematrix (plain / MarkItDown / media).
-- `ingest_config.py` — uitsluitingen (`node_modules`, `~$*`, binaries) en **`HERMES_RAG_MAX_FILE_MB`** (default 150).
+- `ingest_config.py` — uitsluitingen (`node_modules`, `~$*`, binaries); optioneel **`HERMES_RAG_MAX_FILE_MB`** (standaard **geen** limiet).
 - `ingest_handlers.py` — MarkItDown + optionele **pandoc**-fallback voor legacy Office/OpenDocument.
 - `ingest_state.py` — incrementele ingest (`mtime`/`size`/content-fingerprint) in `HERMES_LANCEDB_PATH/.hermes_rag_ingest_state.json`.
 - `orphan_cleanup.py` — verwijdert oude chunk-`id`s na inkrimpen of verwijderen van een bron.
@@ -26,7 +26,7 @@ Scripts in deze map:
 | `HERMES_RAG_INCREMENTAL` | `1` | Alleen gewijzigde bronnen opnieuw indexeren |
 | `HERMES_RAG_FORCE_FULL` | `0` | `1` = volledige scan (negeert incrementeel) |
 | `HERMES_RAG_ORPHAN_CLEANUP` | `1` | Oude chunks per bron verwijderen na upsert |
-| `HERMES_RAG_MAX_FILE_MB` | `150` | Overslaan boven X MB; `0` = onbeperkt |
+| `HERMES_RAG_MAX_FILE_MB` | *(niet gezet)* | Geen limiet — **alle** bronnen. Zet bijv. `150` om bestanden boven 150 MB over te slaan |
 | `HERMES_RAG_HASH_FULL_MAX_MB` | `32` | Volledige SHA-256 onder deze grootte; daarboven fingerprint |
 | `HERMES_WHISPER_MODEL` | `medium` | faster-whisper model |
 
@@ -69,7 +69,7 @@ Alles onder `~/data/raw_source_files` wordt per extensie gescand. **Autoritatiev
 | **MarkItDown → Markdown** | **Office:** `.docx`, `.doc`, `.docm`, `.dotx`, `.dotm`, `.rtf`, `.xlsx`, `.xls`, `.xlsm`, `.xlsb`, `.pptx`, `.ppt`, `.pptm`, `.ppsx`, `.pps`, `.msg`, `.eml` · **OpenDocument:** `.odt`, `.ods`, `.odp` · **Web/PDF:** `.pdf`, `.html`, `.htm`, `.xml`, `.rss`, `.atom` · **Overig:** `.epub`, `.ipynb`, `.zip` · **Beeld:** `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`, `.tif`, `.tiff`, `.heic` |
 | **Whisper + ffmpeg** | **Audio:** `.mp3`, `.m4a`, `.wav`, `.ogg`, `.flac`, `.aac`, `.wma`, `.aiff`, `.opus`, … · **Video:** `.mp4`, `.mov`, `.mkv`, `.webm`, `.avi`, `.wmv`, `.mpeg`, `.3gp`, … |
 
-**Niet geïndexeerd (bewust):** binaries (`.exe`, `.dll`, …), databases (`.sqlite`, `.parquet`), archieven `.7z`/`.rar` (wel `.zip` via MarkItDown), Office-lock `~$*`, mappen `.git` / `node_modules` / `__pycache__`, bestanden groter dan **`HERMES_RAG_MAX_FILE_MB`** (default **150**; zet op `0` voor onbeperkt).
+**Niet geïndexeerd (bewust):** binaries (`.exe`, `.dll`, …), databases (`.sqlite`, `.parquet`), archieven `.7z`/`.rar` (wel `.zip` via MarkItDown), Office-lock `~$*`, mappen `.git` / `node_modules` / `__pycache__`. **Grootte:** standaard geen maximum; optioneel `HERMES_RAG_MAX_FILE_MB=150` (of ander getal) om zeer grote bestanden over te slaan.
 
 Voor **MarkItDown** is `pip install "markitdown[all]"` aanbevolen; voor legacy `.doc`/OpenDocument optioneel **`pandoc`** op PATH (fallback via `ingest_handlers.py`). Voor **media**: leg `gesprek.vtt` of `gesprek.srt` naast `gesprek.mp3` — dan geen Whisper. Bij conversiefouten: `[WARN]` en door.
 
