@@ -28,7 +28,8 @@ Scripts in deze map:
 | `HERMES_RAG_ORPHAN_CLEANUP` | `1` | Oude chunks per bron verwijderen na upsert |
 | `HERMES_RAG_MAX_FILE_MB` | *(niet gezet)* | Geen limiet — **alle** bronnen. Zet bijv. `150` om bestanden boven 150 MB over te slaan |
 | `HERMES_RAG_HASH_FULL_MAX_MB` | `32` | Volledige SHA-256 onder deze grootte; daarboven fingerprint |
-| `HERMES_WHISPER_MODEL` | `medium` | faster-whisper model |
+| `HERMES_WHISPER_MODEL` | `medium` | faster-whisper model (kwaliteit; `large-v3` trager/nauwkeuriger) |
+| `HERMES_RAG_PREFER_SIDECAR` | `0` | `1` = gebruik `.vtt`/`.srt` i.p.v. Whisper (sneller, niet standaard) |
 
 **Schema-upgrade:** bestond `knowledge_base` al **zonder** kolom `id`, dan stopt `ingest.py` met een foutmelding — eenmalig database wissen (**J** / `HERMES_RAG_FRESH=1`) of map handmatig verwijderen, daarna opnieuw indexeren.
 
@@ -71,7 +72,7 @@ Alles onder `~/data/raw_source_files` wordt per extensie gescand. **Autoritatiev
 
 **Niet geïndexeerd (bewust):** binaries (`.exe`, `.dll`, …), databases (`.sqlite`, `.parquet`), archieven `.7z`/`.rar` (wel `.zip` via MarkItDown), Office-lock `~$*`, mappen `.git` / `node_modules` / `__pycache__`. **Grootte:** standaard geen maximum; optioneel `HERMES_RAG_MAX_FILE_MB=150` (of ander getal) om zeer grote bestanden over te slaan.
 
-Voor **MarkItDown** is `pip install "markitdown[all]"` aanbevolen; voor legacy `.doc`/OpenDocument optioneel **`pandoc`** op PATH (fallback via `ingest_handlers.py`). Voor **media**: leg `gesprek.vtt` of `gesprek.srt` naast `gesprek.mp3` — dan geen Whisper. Bij conversiefouten: `[WARN]` en door.
+Voor **MarkItDown** is `pip install "markitdown[all]"` aanbevolen; voor legacy `.doc`/OpenDocument optioneel **`pandoc`** op PATH (fallback via `ingest_handlers.py`). Voor **media**: standaard **Whisper** (maximale transcriptie-kwaliteit uit de audio). `.vtt`/`.srt` alleen als Whisper ontbreekt/faalt, of expliciet `HERMES_RAG_PREFER_SIDECAR=1` (sneller, kan minder detail hebben). Bij conversiefouten: `[WARN]` en door.
 
 ## Windows: snelkoppeling (taakbalk)
 

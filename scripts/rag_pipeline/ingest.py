@@ -548,40 +548,66 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                 upd(1)
 
     def _process_media_file(file_path: Path) -> None:
-        if not _HAS_AUDIO_TRANSCRIBER:
-            _ingest_log_loop(
-                f"{C_YELLOW}[WARN]{C_RESET} Audio-transcriber niet beschikbaar "
-                f"(faster-whisper ontbreekt in hermes-env), overslaan: {file_path}",
-                pbar,
-            )
-            _finalize_file(file_path, None, "faster-whisper niet geinstalleerd", None)
-            return
+        """Media: standaard Whisper (kwaliteit); ondertitel-sidecar alleen als fallback of expliciet."""
         temp_txt_path: Optional[Path] = None
-        try:
+        prefer_sidecar = _env_truthy("HERMES_RAG_PREFER_SIDECAR")
+
+        if prefer_sidecar:
             sidecar_text, sidecar_path = read_media_text_via_sidecar(file_path)
             if sidecar_text is not None:
                 _ingest_log_loop(
-                    f"{C_DIM}[INFO] [ONDERTITELS]{C_RESET} {sidecar_path.name} i.p.v. Whisper voor "
-                    f"{file_path.name}{C_DIM} …{C_RESET}",
+                    f"{C_DIM}[INFO] [ONDERTITELS]{C_RESET} {sidecar_path.name} "
+                    f"(HERMES_RAG_PREFER_SIDECAR=1) voor {file_path.name}{C_DIM} …{C_RESET}",
                     pbar,
                 )
                 _finalize_file(file_path, sidecar_text, None, None)
                 return
+
+        if _HAS_AUDIO_TRANSCRIBER:
+            try:
+                _ingest_log_loop(
+                    f"{C_DIM}[INFO] [TRANSCRIBEREN]{C_RESET} Whisper: {file_path.name}{C_DIM} …{C_RESET}",
+                    pbar,
+                )
+                transcript = transcribe_media_file(file_path)
+                temp_txt_path = write_transcript_to_temp(file_path, transcript)
+                _finalize_file(file_path, transcript, None, temp_txt_path)
+                return
+            except Exception as e:
+                if temp_txt_path is not None:
+                    temp_txt_path.unlink(missing_ok=True)
+                    temp_txt_path = None
+                _ingest_log_loop(
+                    f"{C_YELLOW}[WARN]{C_RESET} Whisper mislukt voor {file_path} ({type(e).__name__}): {e}",
+                    pbar,
+                )
+                sidecar_text, sidecar_path = read_media_text_via_sidecar(file_path)
+                if sidecar_text is not None:
+                    _ingest_log_loop(
+                        f"{C_DIM}[INFO] [ONDERTITELS]{C_RESET} fallback na Whisper-fout: "
+                        f"{sidecar_path.name}{C_DIM} …{C_RESET}",
+                        pbar,
+                    )
+                    _finalize_file(file_path, sidecar_text, None, None)
+                    return
+                _finalize_file(file_path, None, f"{type(e).__name__}: {e}", None)
+                return
+
+        sidecar_text, sidecar_path = read_media_text_via_sidecar(file_path)
+        if sidecar_text is not None:
             _ingest_log_loop(
-                f"{C_DIM}[INFO] [TRANSCRIBEREN]{C_RESET} {file_path.name}{C_DIM} …{C_RESET}",
+                f"{C_DIM}[INFO] [ONDERTITELS]{C_RESET} {sidecar_path.name} "
+                f"(geen Whisper) voor {file_path.name}{C_DIM} …{C_RESET}",
                 pbar,
             )
-            transcript = transcribe_media_file(file_path)
-            temp_txt_path = write_transcript_to_temp(file_path, transcript)
-            _finalize_file(file_path, transcript, None, temp_txt_path)
-        except Exception as e:
-            if temp_txt_path is not None:
-                temp_txt_path.unlink(missing_ok=True)
-            _ingest_log_loop(
-                f"{C_YELLOW}[WARN]{C_RESET} Transcriptie mislukt voor {file_path} ({type(e).__name__}): {e}",
-                pbar,
-            )
-            _finalize_file(file_path, None, f"{type(e).__name__}: {e}", None)
+            _finalize_file(file_path, sidecar_text, None, None)
+            return
+
+        _ingest_log_loop(
+            f"{C_YELLOW}[WARN]{C_RESET} Geen Whisper en geen ondertitel-sidecar voor {file_path}",
+            pbar,
+        )
+        _finalize_file(file_path, None, "geen transcriptie beschikbaar", None)
 
     wave_i = 0
     n_all = len(to_process)
