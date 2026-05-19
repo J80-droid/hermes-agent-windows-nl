@@ -1,0 +1,9 @@
+# Lokaal / gegenereerd — niet versioneren
+*.lnk
+*_last_run.log
+last_pytest_run.log
+*.corrupt.bak
+_backup_last_run.log
+hermes_logo_backup.ico
+hermes_logo_restore.ico
+hermes_logo_update.ico

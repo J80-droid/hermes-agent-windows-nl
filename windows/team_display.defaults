@@ -1,0 +1,12 @@
+# Team Hermes CLI display — key=value (één per regel). Lege regels en # worden overgeslagen.
+# Pas aan naar jullie afspraak; daarna APPLY_TEAM_DISPLAY.bat of (optioneel) na UPDATE_HERMES.bat.
+# Geen geheimen hier — alleen display.* waarden.
+#
+# streaming=false: bij final_response_markdown=render toont token-streaming in de klassieke CLI
+# ruwe markdown (###, **); Rich-markdown komt alleen op het eindpaneel. Hermes dwingt render+streaming
+# bij load_config al af; expliciet false houdt team-config voorspelbaar.
+
+streaming=false
+final_response_markdown=render
+compact=true
+skin=slate

@@ -1,0 +1,7 @@
+# Opt-out voor de post-update stap in UPDATE_HERMES.bat
+#
+# Hernoem dit bestand naar:  SKIP_TEAM_DISPLAY_AFTER_UPDATE  (zonder .example)
+# of maak een leeg bestand met die naam in windows\
+#
+# Dan wordt na een geslaagde hermes update GEEN apply_team_display.ps1 meer gedraaid
+# (handig als je bewust afwijkende display.* wilt behouden).
