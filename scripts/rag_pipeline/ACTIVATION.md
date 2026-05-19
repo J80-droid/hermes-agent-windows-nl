@@ -6,14 +6,29 @@ Dit document is de **in-repo** kopie van het activatieplan (Cursor-plan: *LanceD
 
 Scripts in deze map:
 
-- `ingest.py` — indexeert bronnen naar LanceDB (tabel `knowledge_base`); standaard `~/data/raw_source_files` → `~/data/my_lancedb`, override met **`HERMES_RAG_RAW_SOURCE`** / **`HERMES_LANCEDB_PATH`**. Per bronbestand: **deterministische `id` per chunk** + **`merge_insert`** (upsert). Extensies en uitsluitingen: **`source_formats.py`** + **`ingest_config.py`**.
+- `ingest.py` — orchestratie: scan, chunking, upsert, voortgang.
 - `source_formats.py` — centrale extensiematrix (plain / MarkItDown / media).
 - `ingest_config.py` — uitsluitingen (`node_modules`, `~$*`, binaries) en **`HERMES_RAG_MAX_FILE_MB`** (default 150).
+- `ingest_handlers.py` — MarkItDown + optionele **pandoc**-fallback voor legacy Office/OpenDocument.
+- `ingest_state.py` — incrementele ingest (`mtime`/`size`/content-fingerprint) in `HERMES_LANCEDB_PATH/.hermes_rag_ingest_state.json`.
+- `orphan_cleanup.py` — verwijdert oude chunk-`id`s na inkrimpen of verwijderen van een bron.
+- `subtitle_sidecar.py` — `.vtt`/`.srt` vóór Whisper; geen dubbele index naast media.
 - `audio_transcriber.py` — lokale audio/video via faster-whisper + ffmpeg.
 - `mcp_server.py` — stdio MCP-server met tool `search_knowledge`.
 - `kb_schema.py` — gedeeld `KnowledgeSchema` (velden **`id`**, `text`, `vector`, `source`), padconstanten en `list_all_table_names()` (LanceDB `list_tables()` API).
 
-**Idempotente upsert:** elke chunk krijgt een vaste **`id`** = SHA-256 van `(<relatief pad als POSIX>\\0#<chunk-index>)`. Bij heringest overschrijft **`merge_insert(..., on='id')`** bestaande rijen met dezelfde id en voegt nieuwe toe. Daardoor is optie **N** in `update_knowledge.bat` normaal **zonder dubbele embeddings** voor dezelfde chunk. **Let op:** als een bron **inkrimpt** (minder chunks na herschrijving), kunnen **oudere chunk-indexen** voor dat pad als zogenaamde orphans in de tabel blijven staan; gebruik desgewenst eenmalig **J** / leegmaken, of een toekomstige opruimstrategie per bron.
+**Idempotente upsert:** elke chunk krijgt een vaste **`id`** = SHA-256 van `(<relatief pad>\\0#<chunk-index>)`. **`merge_insert(..., on='id')`** werkt bestaande rijen bij. **Orphan cleanup** (standaard aan) verwijdert chunk-`id`s die niet meer in de nieuwste chunk-set van die bron zitten. **Incrementele ingest** (standaard aan) slaat ongewijzigde bronnen over via ingest-staat naast LanceDB.
+
+### Omgevingsvariabelen (institutioneel)
+
+| Variabele | Default | Betekenis |
+|-----------|---------|-----------|
+| `HERMES_RAG_INCREMENTAL` | `1` | Alleen gewijzigde bronnen opnieuw indexeren |
+| `HERMES_RAG_FORCE_FULL` | `0` | `1` = volledige scan (negeert incrementeel) |
+| `HERMES_RAG_ORPHAN_CLEANUP` | `1` | Oude chunks per bron verwijderen na upsert |
+| `HERMES_RAG_MAX_FILE_MB` | `150` | Overslaan boven X MB; `0` = onbeperkt |
+| `HERMES_RAG_HASH_FULL_MAX_MB` | `32` | Volledige SHA-256 onder deze grootte; daarboven fingerprint |
+| `HERMES_WHISPER_MODEL` | `medium` | faster-whisper model |
 
 **Schema-upgrade:** bestond `knowledge_base` al **zonder** kolom `id`, dan stopt `ingest.py` met een foutmelding — eenmalig database wissen (**J** / `HERMES_RAG_FRESH=1`) of map handmatig verwijderen, daarna opnieuw indexeren.
 
@@ -56,7 +71,7 @@ Alles onder `~/data/raw_source_files` wordt per extensie gescand. **Autoritatiev
 
 **Niet geïndexeerd (bewust):** binaries (`.exe`, `.dll`, …), databases (`.sqlite`, `.parquet`), archieven `.7z`/`.rar` (wel `.zip` via MarkItDown), Office-lock `~$*`, mappen `.git` / `node_modules` / `__pycache__`, bestanden groter dan **`HERMES_RAG_MAX_FILE_MB`** (default **150**; zet op `0` voor onbeperkt).
 
-Voor **MarkItDown** is `pip install "markitdown[all]"` aanbevolen; voor scans/beelden optionele vision/OCR-deps. Bij conversiefouten: `[WARN]` en door naar het volgende bestand.
+Voor **MarkItDown** is `pip install "markitdown[all]"` aanbevolen; voor legacy `.doc`/OpenDocument optioneel **`pandoc`** op PATH (fallback via `ingest_handlers.py`). Voor **media**: leg `gesprek.vtt` of `gesprek.srt` naast `gesprek.mp3` — dan geen Whisper. Bij conversiefouten: `[WARN]` en door.
 
 ## Windows: snelkoppeling (taakbalk)
 
@@ -134,6 +149,7 @@ Als Hermes bij vragen over jouw lokale kennis toch **VWO.com / Google / curl** g
 
 ## Changelog (technisch)
 
+- `ingest_state.py`, `orphan_cleanup.py`, `subtitle_sidecar.py`, `ingest_handlers.py`: incrementele ingest, orphan cleanup, ondertitel-prioriteit, pandoc-fallback.
 - `source_formats.py` + `ingest_config.py`: volledige Office/OpenDocument-dekking, media, ondertitels, uitsluitingen en max. bestandsgrootte; `ingest.py` importeert centrale sets.
 - `ingest.py`: uitgebreide extensiematrix (Excel incl. `.xls`/`.xlsm`, PowerPoint `.pptx`, CSV, web `.html`/`.htm`, `.xml`, Outlook `.msg`); één MarkItDown-route via `_MARKITDOWN_SUFFIXES`.
 - `ingest.py`: PDF en DOCX via **MarkItDown** (`MarkItDown().convert` → `text_content`); statische import (fail fast); overslaan bij lege conversie-output.

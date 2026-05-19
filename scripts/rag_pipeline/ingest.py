@@ -100,7 +100,11 @@ except ImportError:
     _HAS_AUDIO_TRANSCRIBER = False
 
 from ingest_config import filter_ingest_candidates, max_file_bytes
+from ingest_handlers import convert_document
+from ingest_state import IngestState, incremental_ingest_enabled, orphan_cleanup_enabled
+from orphan_cleanup import delete_all_chunks_for_source, delete_orphan_chunks_for_source
 from source_formats import MARKITDOWN_SUFFIXES, MEDIA_SUFFIXES, supported_extension_globs
+from subtitle_sidecar import filter_subtitles_indexed_via_media, read_media_text_via_sidecar
 
 # Semantische chunking: kleinere, coherentere stukken dan vaste woordvensters.
 DEFAULT_MAX_WORDS = 400
@@ -311,16 +315,8 @@ def _upsert_rows_with_embed_progress(
         _upsert_chunk_rows(table, part)
 
 
-def _convert_markitdown_one(path: Path) -> tuple[str, str | None]:
-    """Eén MarkItDown-conversie met eigen instantie (thread-safe bij parallelle workers)."""
-    try:
-        mc = MarkItDown()
-        result = mc.convert(str(path))
-        raw_text = getattr(result, "text_content", None)
-        text = raw_text if isinstance(raw_text, str) else ""
-        return (text, None)
-    except Exception as e:
-        return ("", f"{type(e).__name__}: {e}")
+def _relative_source(file_path: Path, root: Path) -> str:
+    return str(file_path.relative_to(root))
 
 
 def _read_plain_utf8(file_path: Path, pbar: object) -> str | None:
@@ -397,7 +393,6 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
         print(f"{C_CYAN}[INFO]{C_RESET} Nieuwe tabel '{TABLE_NAME}' succesvol aangemaakt.")
 
     supported_extensions = supported_extension_globs()
-    md_converter = MarkItDown()
 
     print(f"{C_CYAN}[INFO]{C_RESET} Scannen van directory: {source_directory}")
     _max_b = max_file_bytes()
@@ -413,7 +408,34 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
     any_indexed = False
 
     all_files = _collect_rag_source_files(path, supported_extensions)
-    print(f"{C_CYAN}[INFO]{C_RESET} Te verwerken bestanden: {len(all_files)}")
+    all_files, subtitle_dup_skip = filter_subtitles_indexed_via_media(all_files)
+    if subtitle_dup_skip:
+        print(
+            f"{C_CYAN}[INFO]{C_RESET} Ondertitels gekoppeld aan media (geen dubbele index): "
+            f"{subtitle_dup_skip} bestand(en) overgeslagen."
+        )
+
+    current_sources = {_relative_source(p, path) for p in all_files}
+    ingest_state = IngestState.load()
+    to_process: list[Path] = []
+    skipped_unchanged = 0
+    if incremental_ingest_enabled():
+        for fp in all_files:
+            rel = _relative_source(fp, path)
+            if ingest_state.needs_processing(rel, fp):
+                to_process.append(fp)
+            else:
+                skipped_unchanged += 1
+        if skipped_unchanged:
+            print(
+                f"{C_CYAN}[INFO]{C_RESET} Incrementele ingest: {skipped_unchanged} ongewijzigde "
+                f"bron(nen) overgeslagen (`HERMES_RAG_INCREMENTAL=1`; volledige scan: "
+                f"`HERMES_RAG_FORCE_FULL=1`)."
+            )
+    else:
+        to_process = all_files
+
+    print(f"{C_CYAN}[INFO]{C_RESET} Te verwerken bestanden: {len(to_process)} (scan totaal: {len(all_files)})")
     _cpu = os.cpu_count() or 4
     conv_workers = _int_env_positive("HERMES_RAG_CONVERT_WORKERS", 1, cap=min(_cpu, 8))
     embed_batch = _int_env_positive("HERMES_RAG_EMBED_BATCH", 64, cap=512)
@@ -429,7 +451,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
     _tqdm_file = sys.stderr if _TTY_ERR else sys.stdout if _TTY_OUT else sys.stderr
     _use_bar_color = bool(C_CYAN and _TTY_PROGRESS)
     pbar = _tqdm(
-        total=len(all_files),
+        total=len(to_process),
         desc="[RAG-PROGRESS] Indexeren van kennisdomeinen",
         unit="bestand",
         disable=not _TTY_PROGRESS,
@@ -474,7 +496,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                 return
 
             try:
-                relative_source = file_path.relative_to(path)
+                relative_source = _relative_source(file_path, path)
             except ValueError as e:
                 _ingest_log_loop(
                     f"{C_YELLOW}[WARN]{C_RESET} Pad relatief maken mislukt voor {file_path}: {e}",
@@ -500,6 +522,19 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
             _upsert_rows_with_embed_progress(
                 table, rows, str(relative_source), pbar, embed_batch=embed_batch
             )
+            if orphan_cleanup_enabled():
+                removed = delete_orphan_chunks_for_source(
+                    table, str(relative_source), [r["id"] for r in rows]
+                )
+                if removed:
+                    _ingest_log_loop(
+                        f"{C_DIM}[INFO]{C_RESET} Orphan cleanup: {removed} oude chunk(s) "
+                        f"verwijderd voor {relative_source}",
+                        pbar,
+                    )
+            ingest_state.record_success(
+                str(relative_source), file_path, chunk_count=len(rows)
+            )
             any_indexed = True
             _ingest_log_loop(
                 f"{C_GREEN}[RAG-UPDATE] [OK]{C_RESET} Kennisbron succesvol geïndexeerd/bijgewerkt: {relative_source}",
@@ -523,6 +558,15 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
             return
         temp_txt_path: Optional[Path] = None
         try:
+            sidecar_text, sidecar_path = read_media_text_via_sidecar(file_path)
+            if sidecar_text is not None:
+                _ingest_log_loop(
+                    f"{C_DIM}[INFO] [ONDERTITELS]{C_RESET} {sidecar_path.name} i.p.v. Whisper voor "
+                    f"{file_path.name}{C_DIM} …{C_RESET}",
+                    pbar,
+                )
+                _finalize_file(file_path, sidecar_text, None, None)
+                return
             _ingest_log_loop(
                 f"{C_DIM}[INFO] [TRANSCRIBEREN]{C_RESET} {file_path.name}{C_DIM} …{C_RESET}",
                 pbar,
@@ -540,10 +584,10 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
             _finalize_file(file_path, None, f"{type(e).__name__}: {e}", None)
 
     wave_i = 0
-    n_all = len(all_files)
+    n_all = len(to_process)
 
     while wave_i < n_all:
-        wave = all_files[wave_i : wave_i + conv_workers]
+        wave = to_process[wave_i : wave_i + conv_workers]
         wave_i += len(wave)
         for file_path in wave:
             if file_path.suffix.lower() in _MEDIA_SUFFIXES:
@@ -564,7 +608,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                             f"{C_DIM}[INFO] [CONVERTEREN]{C_RESET} MarkItDown: {file_path.name}{C_DIM} …{C_RESET}",
                             pbar,
                         )
-                        pending[ex.submit(_convert_markitdown_one, file_path)] = file_path
+                        pending[ex.submit(convert_document, file_path)] = file_path
                     else:
                         plain = _read_plain_utf8(file_path, pbar)
                         _finalize_file(file_path, plain, None, None)
@@ -613,19 +657,25 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                         f"{C_DIM}[INFO] [CONVERTEREN]{C_RESET} MarkItDown: {file_path.name}{C_DIM} …{C_RESET}",
                         pbar,
                     )
-                    try:
-                        result = md_converter.convert(str(file_path))
-                        raw_text = getattr(result, "text_content", None)
-                        text = raw_text if isinstance(raw_text, str) else ""
-                        _finalize_file(file_path, text, None, None)
-                    except Exception as e:
-                        _finalize_file(file_path, "", f"{type(e).__name__}: {e}", None)
+                    text, err = convert_document(file_path)
+                    _finalize_file(file_path, text, err, None)
                 else:
                     plain = _read_plain_utf8(file_path, pbar)
                     _finalize_file(file_path, plain, None, None)
 
-    if any_indexed:
-        print(f"{C_GREEN}[OK]{C_RESET} Ingestie-scan afgerond (upsert per bronbestand).")
+    removed_sources = ingest_state.prune_removed_sources(current_sources)
+    for rel in removed_sources:
+        if orphan_cleanup_enabled():
+            n = delete_all_chunks_for_source(table, rel)
+            if n:
+                print(
+                    f"{C_CYAN}[INFO]{C_RESET} Verwijderd uit index (bron weg uit scan): {rel} "
+                    f"({n} chunk(s))"
+                )
+    ingest_state.save()
+
+    if any_indexed or skipped_unchanged:
+        print(f"{C_GREEN}[OK]{C_RESET} Ingestie-scan afgerond (upsert + orphan cleanup + ingest-staat).")
     else:
         print(f"{C_YELLOW}[WARN]{C_RESET} Geen compatibele data gevonden om te indexeren.")
 
