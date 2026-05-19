@@ -37,33 +37,32 @@ git fetch upstream
 
 ---
 
-## Standaard sync (aanbevolen: merge)
+## Standaard sync: `windows\hermes_update.bat`
+
+Het batchbestand zet **`HERMES_UPDATE_FROM_UPSTREAM=1`** en roept `hermes update` aan. Dat doet:
+
+1. **`git fetch upstream`** + **`git merge upstream/main`** (NousResearch — niet alleen fork `origin`)
+2. Python-afhankelijkheden opnieuw installeren (zoals `hermes update` altijd deed)
 
 ```cmd
 cd D:\A.I\APPS\Hermes_agent_WS\hermes-agent
-
-git fetch upstream
-git fetch origin
-
-git status
-git merge upstream/main
-```
-
-Na conflicten oplossen:
-
-```cmd
-git push origin main
-```
-
-Daarna in dezelfde repo:
-
-```cmd
 windows\hermes_update.bat
 ```
 
-of `hermes update` (met conda/venv actief).
+Bij merge-conflicten: los ze op, commit, run het batchbestand opnieuw.
 
 **Nieuwe Hermes-sessie** starten na grote updates.
+
+### Handmatige merge (zelfde als het batchbestand stap 1)
+
+```cmd
+cd D:\A.I\APPS\Hermes_agent_WS\hermes-agent
+git fetch upstream
+git merge upstream/main
+git push origin main
+```
+
+Daarna optioneel nog `windows\hermes_update.bat` voor deps.
 
 ---
 
@@ -82,13 +81,12 @@ of `hermes update` (met conda/venv actief).
 
 ## Wat `hermes update` wél / niet doet
 
-| Gedrag | Uitleg |
-|--------|--------|
-| Pull van `origin` | Ja — jouw fork op GitHub |
-| Automatisch `upstream/main` mergen | **Nee** als je fork **eigen commits** heeft (RAG/Windows) — Hermes beschermt je wijzigingen |
-| Stash lokale wijzigingen | Kan — kies bij prompt **y** alleen als je lokale edits wilt behouden |
-
-Bij melding *“Your fork has N commits not on upstream”*: voer handmatig **`git merge upstream/main`** uit (dit document).
+| Situatie | Gedrag |
+|----------|--------|
+| **`windows\hermes_update.bat`** | Altijd **`upstream/main`** (NousResearch) mergen, daarna deps |
+| **`hermes update` zonder env-var** | Nog steeds **`origin`** (fork) — zoals upstream Hermes |
+| Eigen RAG-commits | Blijven behouden via **merge** (niet `reset --hard` op upstream) |
+| Conflicten bij merge | Update stopt — handmatig oplossen (`UPSTREAM_SYNC.md` conflict-tabel) |
 
 ---
 

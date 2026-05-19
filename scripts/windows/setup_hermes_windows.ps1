@@ -306,7 +306,9 @@ function Write-HermesUpdateCmdBat {
     $path = Join-Path $WindowsDir "hermes_update.bat"
     $bat = @'
 @echo off
-setlocal
+setlocal EnableExtensions
+rem Altijd NousResearch upstream/main (HERMES_UPDATE_FROM_UPSTREAM=1)
+set "HERMES_UPDATE_FROM_UPSTREAM=1"
 cd /d "%~dp0.."
 if not exist "%~dp0launch_hermes.bat" (
   echo [ERROR] launch_hermes.bat ontbreekt in windows\
