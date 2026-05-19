@@ -12,4 +12,5 @@
 
 ## Operationeel (gebruiker)
 - [ ] Ingest 1668 bronnen volledig (eerdere run ~435 unieke bronnen; Kantonrechter ~0 geïndexeerd)
-- [ ] Rooktest in live Hermes-sessie (B+C)
+- [x] MCP geregistreerd via `register_mcp_config.py` (check: `which_hermes_repo.ps1`)
+- [ ] Rooktest in live Hermes-sessie (B+C) na nieuwe sessie

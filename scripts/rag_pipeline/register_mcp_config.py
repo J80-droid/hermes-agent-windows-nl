@@ -30,6 +30,7 @@ def main() -> int:
         sys.path.insert(0, repo_str)
 
     from hermes_cli.mcp_config import _save_mcp_server
+    from hermes_constants import get_hermes_home
 
     ldb = (os.environ.get("HERMES_LANCEDB_PATH") or "").strip()
     if not ldb:
@@ -47,7 +48,8 @@ def main() -> int:
             },
         },
     )
-    print("[OK] lancedb-knowledge opgeslagen in Hermes MCP-config (absoluut pad + env).")
+    cfg = get_hermes_home() / "config.yaml"
+    print(f"[OK] lancedb-knowledge in {cfg} (absoluut pad + env).")
     return 0
 
 

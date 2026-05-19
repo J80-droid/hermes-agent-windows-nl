@@ -75,7 +75,11 @@ Zonder **A+B+C** is de keten nooit 100% operationeel — ook niet met perfecte c
 | LanceDB-lock bij wissen | Waarschuwing in batch; sluit Hermes + MCP |
 | Dev-repo vs. install-clone | `install_rag_extras.ps1` toont beide paden; werk in de checkout die je start |
 | CI regressie | GitHub job `rag`: unit tests + `rag_integration` + `web/scripts/test-rag-citations.mjs` |
-| `uv lock` met `[all,rag]` | **Niet combineerbaar** (markitdown vs. youtube pin) — gebruik `uv pip install -e ".[dev,rag]"` of conda `pip install -e ".[rag]"` |
+| `uv lock` met `[all,rag]` | **Niet combineerbaar** — `[rag]` gebruikt `markitdown==0.1.5`; daarna apart `pip install "markitdown[all]"`. `uv lock` voor `[dev,rag]` werkt wel (zie `uv.lock`). |
+| Twee config-paden | Hermes kan `~/.hermes/config.yaml` **of** `%LOCALAPPDATA%\hermes\config.yaml` gebruiken — `which_hermes_repo.ps1` |
+| Klikbare bron (P4) | `HERMES_RAG_BRON_FILE_LINKS=1` + `HERMES_RAG_RAW_SOURCE` → `[Bron: naam](file:///...)` |
+| Watch-folder (P4) | `windows\scripts\watch_rag_sources.ps1` (debounce → `update_knowledge.bat`) |
+| Gateway/Telegram chips | Web-dashboard: `Markdown.tsx`; messaging-platforms: nog geen bron-chips |
 
 ## Rooktest (5 commando’s, vanuit repo-root, conda `hermes-env`)
 

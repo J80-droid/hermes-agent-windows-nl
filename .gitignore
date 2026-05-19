@@ -80,6 +80,7 @@ docs/superpowers/*
 .hermeslocal/
 watch_hermes.ps1
 render_colors.py
+tests/cli/test_cli_config_profile_root_merge.py
 hermes_launch.log
 hermes_runtime.log
 hermes_setup.log

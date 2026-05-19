@@ -104,7 +104,9 @@ mcp = ["mcp==1.26.0"]
 rag = [
   "lancedb==0.30.2",
   "sentence-transformers==5.5.0",
-  "markitdown[all]==0.1.5",
+  # Geen markitdown[all] hier: conflicteert met [all] (youtube-transcript-api pins).
+  # Na uv/pip [rag]: ook `pip install "markitdown[all]==0.1.5"` (install_rag_extras.ps1 doet dit).
+  "markitdown==0.1.5",
   "pyarrow==24.0.0",
   "hermes-agent[mcp]",
   # Media-ingest (ingest.py / audio_transcriber); ffmpeg blijft systeem-binary op PATH.
