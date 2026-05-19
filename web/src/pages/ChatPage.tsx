@@ -823,11 +823,8 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
           className={cn(
             "relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg",
             "p-2 sm:p-3",
+            "bg-[#0d2626] shadow-[0_8px_32px_rgba(0,0,0,0.4)]",
           )}
-          style={{
-            backgroundColor: TERMINAL_THEME.background,
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
-          }}
         >
           <div
             ref={hostRef}

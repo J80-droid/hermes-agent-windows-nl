@@ -1018,7 +1018,9 @@ DEFAULT_CONFIG = {
         "show_reasoning": False,
         "streaming": False,
         "timestamps": False,      # Show [HH:MM] on user and assistant labels
-        "final_response_markdown": "strip",  # render | strip | raw
+        # render | strip | raw — "render" + streaming:true is incompatible with
+        # the classic CLI (Rich Markdown only on the final panel); load_config forces streaming off.
+        "final_response_markdown": "strip",
         # Preserve recent classic CLI output across Ctrl+L, /redraw, and
         # terminal resize full-screen clears. Disable if a terminal emulator
         # behaves badly with replayed scrollback.
@@ -4231,6 +4233,58 @@ def _normalize_max_turns_config(config: Dict[str, Any]) -> Dict[str, Any]:
     return config
 
 
+def _truthy_display_bool(value: Any) -> bool:
+    """Interpret display.* boolean-like YAML values after merge or env expansion."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str):
+        return value.strip().lower() in ("1", "true", "yes", "on")
+    return bool(value)
+
+
+def _normalize_display_markdown_streaming(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Turn off display.streaming when final_response_markdown is render.
+
+    The classic Hermes CLI prints streamed assistant tokens as plain lines;
+    Rich ``Markdown`` is only used on the final ``Panel``. With both enabled,
+    users see raw ``###`` / ``**`` and the formatted panel is skipped.
+    """
+    if not isinstance(config, dict):
+        return config
+    config = dict(config)
+    raw_disp = config.get("display")
+    if not isinstance(raw_disp, dict):
+        return config
+    display = dict(raw_disp)
+
+    raw_mode = display.get("final_response_markdown", "")
+    if isinstance(raw_mode, str):
+        mode = raw_mode.strip().lower()
+    else:
+        mode = str(raw_mode or "").strip().lower()
+
+    if mode == "render" and _truthy_display_bool(display.get("streaming", False)):
+        display["streaming"] = False
+        logger.warning(
+            "display.streaming was true while display.final_response_markdown is 'render'; "
+            "streaming is incompatible with Rich markdown in the classic CLI, so streaming "
+            "was forced to false. Use final_response_markdown 'strip' or 'raw' if you need "
+            "token streaming."
+        )
+
+    config["display"] = display
+    return config
+
+
+def _normalize_post_merge_config(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Run post-merge normalizers: display/streaming invariant, max_turns, root model keys."""
+    return _normalize_root_model_keys(
+        _normalize_max_turns_config(_normalize_display_markdown_streaming(config))
+    )
+
+
 def cfg_get(cfg: Optional[Dict[str, Any]], *keys: str, default: Any = None) -> Any:
     """Traverse nested dict keys safely, returning ``default`` on any miss.
 
@@ -4359,7 +4413,7 @@ def load_config() -> Dict[str, Any]:
             except Exception as e:
                 _warn_config_parse_failure(config_path, e)
 
-        normalized = _normalize_root_model_keys(_normalize_max_turns_config(config))
+        normalized = _normalize_post_merge_config(config)
         expanded = _expand_env_vars(normalized)
         _LAST_EXPANDED_CONFIG_BY_PATH[path_key] = copy.deepcopy(expanded)
         if cache_key is not None:
@@ -4454,9 +4508,9 @@ def save_config(config: Dict[str, Any]):
 
         ensure_hermes_home()
         config_path = get_config_path()
-        current_normalized = _normalize_root_model_keys(_normalize_max_turns_config(config))
+        current_normalized = _normalize_post_merge_config(config)
         normalized = current_normalized
-        raw_existing = _normalize_root_model_keys(_normalize_max_turns_config(read_raw_config()))
+        raw_existing = _normalize_post_merge_config(read_raw_config())
         if raw_existing:
             normalized = _preserve_env_ref_templates(
                 normalized,

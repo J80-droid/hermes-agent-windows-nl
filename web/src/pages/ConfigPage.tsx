@@ -448,6 +448,8 @@ export default function ConfigPage() {
             type="file"
             accept=".json"
             className="hidden"
+            title={t.config.importConfig}
+            aria-label={t.config.importConfig}
             onChange={handleImport}
           />
           {!yamlMode &&
@@ -524,6 +526,8 @@ export default function ConfigPage() {
                 value={yamlText}
                 onChange={(e) => setYamlText(e.target.value)}
                 spellCheck={false}
+                title={t.config.rawYaml}
+                aria-label={t.config.rawYaml}
               />
             )}
           </CardContent>

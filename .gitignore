@@ -73,3 +73,17 @@ models-dev-upstream/
 hermes_cli/tui_dist/*
 hermes_cli/scripts/
 docs/superpowers/*
+
+# Lokale Windows-setup / runtime (niet committen)
+.hermes_windows_setup_fingerprint
+.hermes_windows_tinker_install_fail
+.hermeslocal/
+hermes_launch.log
+hermes_runtime.log
+hermes_setup.log
+config.yaml
+memory/
+profiles/
+backups/
+temp_input.txt
+tinker-atropos/

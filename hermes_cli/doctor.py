@@ -481,7 +481,25 @@ def run_doctor(args):
             check_ok(name, "(optional)")
         except ImportError:
             check_warn(name, "(optional, not installed)")
-    
+
+    if sys.platform == "win32":
+        tinker_pyproject = PROJECT_ROOT / "tinker-atropos" / "pyproject.toml"
+        if tinker_pyproject.is_file():
+            try:
+                __import__("tinker_atropos")
+            except ImportError:
+                marker = PROJECT_ROOT / ".hermes_windows_tinker_install_fail"
+                hint = ""
+                if marker.is_file():
+                    hint = (
+                        f" Remove {marker.name} or re-run windows/setup with --force-tinker "
+                        "after a successful `git lfs pull` in tinker-atropos."
+                    )
+                check_warn(
+                    "Optional RL package tinker-atropos is not importable",
+                    "(often Git LFS quota or missing LFS objects)." + hint,
+                )
+
     _section("Configuration Files")
     # Check ~/.hermes/.env (primary location for user config)
     env_path = HERMES_HOME / '.env'

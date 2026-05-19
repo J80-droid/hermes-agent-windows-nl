@@ -6662,6 +6662,21 @@ def _restore_stashed_changes(
             "  Restoring them may reapply local customizations onto the updated codebase."
         )
         print("  Review the result afterward if Hermes behaves unexpectedly.")
+        print()
+        print("  Uitleg (kort, Nederlands):")
+        print(
+            "  · y (of Enter) = ja: zet mijn aanpassingen terug op de nieuwe code. "
+            "Handig als je je werk wilt houden. Kijk daarna even of alles nog goed voelt (git status)."
+        )
+        print(
+            "  · n = nee, nog niet terugzetten. De nieuwe code blijft zoals van internet, "
+            "zonder jouw oude aanpassingen erop. Je aanpassingen blijven bewaard in de stash; "
+            "je kunt ze later zelf terugzetten."
+        )
+        print(
+            "  Kort: y = terugzetten nu · n = wachten, eerst schone update bekijken."
+        )
+        print()
         print("Restore local changes now? [Y/n]")
         if input_fn is not None:
             response = input_fn("Restore local changes now? [Y/n]", "y")

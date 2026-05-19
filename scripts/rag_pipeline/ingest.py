@@ -1,0 +1,639 @@
+import hashlib
+import os
+import re
+import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import Optional
+
+import lancedb
+import pyarrow as pa
+from markitdown import MarkItDown
+
+
+def _env_truthy(name: str) -> bool:
+    v = os.environ.get(name)
+    if v is None or str(v).strip() == "":
+        return False
+    return str(v).strip().lower() not in ("0", "false", "no", "n", "off")
+
+
+def _int_env_positive(name: str, default: int, *, cap: int | None = None) -> int:
+    raw = (os.environ.get(name) or str(default)).strip()
+    try:
+        v = int(raw)
+    except ValueError:
+        v = default
+    v = max(1, v)
+    if cap is not None:
+        v = min(v, cap)
+    return v
+
+
+def _float_env_nonnegative(name: str, default: float) -> float:
+    raw = (os.environ.get(name) or str(default)).strip()
+    try:
+        v = float(raw)
+    except ValueError:
+        v = default
+    return max(0.0, v)
+
+
+# Kleuren: `print()` gaat naar stdout; tqdm vaak naar stderr. Alleen op stderr.isatty()
+# te testen geeft op sommige Windows/conda/cmd-combinaties grijs/wit (stderr ≠ TTY).
+# Respecteer https://no-color.org/ — NO_COLOR wint altijd.
+_TTY_OUT = sys.stdout.isatty()
+_TTY_ERR = sys.stderr.isatty()
+_FORCE_COLOR = _env_truthy("FORCE_COLOR") or _env_truthy("HERMES_FORCE_COLOR")
+_USE_COLOR = ("NO_COLOR" not in os.environ) and (_FORCE_COLOR or _TTY_OUT or _TTY_ERR)
+_LOG_IO = sys.stderr if _TTY_ERR else sys.stdout if _TTY_OUT else sys.stderr
+_TTY_PROGRESS = _TTY_OUT or _TTY_ERR
+
+try:
+    import colorama
+
+    if _USE_COLOR:
+        colorama.init()
+except ImportError:
+    pass
+
+if _USE_COLOR:
+    C_GREEN = "\033[92m"
+    C_CYAN = "\033[96m"
+    C_YELLOW = "\033[93m"
+    C_RED = "\033[91m"
+    C_DIM = "\033[2m"
+    C_RESET = "\033[0m"
+else:
+    C_GREEN = C_CYAN = C_YELLOW = C_RED = C_DIM = C_RESET = ""
+
+try:
+    from tqdm import tqdm as _tqdm
+except ImportError:
+    # Optioneel: `pip install tqdm` voor voortgangsbalk bij grote bulk-ingest.
+    class _TqdmShim:
+        __slots__ = ("disable", "fp")
+
+        def __init__(self, **_kwargs: object) -> None:
+            self.disable = True
+            self.fp = None
+
+        def update(self, n: int = 1) -> None:
+            return None
+
+        def set_postfix_str(self, *_a: object, **_k: object) -> None:
+            return None
+
+    def _tqdm(*args: object, **kwargs: object):  # type: ignore[misc]
+        if args:
+            return args[0]
+        return _TqdmShim(**kwargs)
+
+from kb_schema import DB_PATH, TABLE_NAME, KnowledgeSchema, list_all_table_names
+
+try:
+    from audio_transcriber import transcribe_media_file, write_transcript_to_temp
+
+    _HAS_AUDIO_TRANSCRIBER = True
+except ImportError:
+    _HAS_AUDIO_TRANSCRIBER = False
+
+from ingest_config import filter_ingest_candidates, max_file_bytes
+from source_formats import MARKITDOWN_SUFFIXES, MEDIA_SUFFIXES, supported_extension_globs
+
+# Semantische chunking: kleinere, coherentere stukken dan vaste woordvensters.
+DEFAULT_MAX_WORDS = 400
+
+_MARKITDOWN_SUFFIXES = MARKITDOWN_SUFFIXES
+_MEDIA_SUFFIXES = MEDIA_SUFFIXES
+
+# Fenced code (``` ... ```): als éénheid behouden waar mogelijk; anders op \n\n binnen het blok.
+_CODE_FENCE = re.compile(r"```[a-zA-Z0-9_+-]*\s*\n?([\s\S]*?)```", re.MULTILINE)
+# Markdown koppen ## t/m ######
+_MD_HEADING_SPLIT = re.compile(r"(?m)^(?=(?:#{2,6}\s))")
+# Zin-einde (incl. ellipsis) gevolgd door witruimte
+_SENTENCE_SPLIT = re.compile(r"(?<=[.!?…])\s+")
+
+
+def _word_count(text: str) -> int:
+    return len(text.split())
+
+
+def _iter_fenced_and_prose(text: str):
+    """Wisselt tussen ruwe tekst (False) en volledige ```-fence inclusief backticks (True)."""
+    last = 0
+    for m in _CODE_FENCE.finditer(text):
+        if m.start() > last:
+            yield text[last:m.start()], False
+        yield m.group(0), True
+        last = m.end()
+    if last < len(text):
+        yield text[last:], False
+
+
+def _pack_units(
+    units: list[str],
+    max_words: int,
+    joiner: str,
+) -> list[str]:
+    """Voeg opeenvolgende eenheden samen tot max_words; te grote eenheid apart opsplitsen."""
+    out: list[str] = []
+    buf: list[str] = []
+    wc = 0
+    for u in units:
+        u = u.strip()
+        if not u:
+            continue
+        uw = _word_count(u)
+        if uw > max_words:
+            if buf:
+                out.append(joiner.join(buf))
+                buf = []
+                wc = 0
+            out.extend(_split_oversized(u, max_words))
+        elif wc + uw > max_words:
+            if buf:
+                out.append(joiner.join(buf))
+            buf = [u]
+            wc = uw
+        else:
+            buf.append(u)
+            wc += uw
+    if buf:
+        out.append(joiner.join(buf))
+    return out
+
+
+def _split_oversized(unit: str, max_words: int) -> list[str]:
+    parts = [p.strip() for p in _SENTENCE_SPLIT.split(unit) if p.strip()]
+    if len(parts) <= 1:
+        return _split_by_lines_or_words(unit, max_words)
+    return _pack_units(parts, max_words, joiner=" ")
+
+
+def _split_by_lines_or_words(unit: str, max_words: int) -> list[str]:
+    lines = [ln.strip() for ln in unit.split("\n") if ln.strip()]
+    if len(lines) > 1:
+        return _pack_units(lines, max_words, joiner="\n")
+    words = unit.split()
+    if not words:
+        return []
+    out: list[str] = []
+    for i in range(0, len(words), max_words):
+        chunk = " ".join(words[i : i + max_words])
+        if chunk.strip():
+            out.append(chunk)
+    return out
+
+
+def _chunk_prose(text: str, max_words: int) -> list[str]:
+    text = text.replace("\r\n", "\n").replace("\r", "\n").strip()
+    if not text:
+        return []
+    units: list[str] = []
+    for section in _MD_HEADING_SPLIT.split(text):
+        section = section.strip()
+        if not section:
+            continue
+        for para in re.split(r"\n{2,}", section):
+            p = para.strip()
+            if p:
+                units.append(p)
+    return _pack_units(units, max_words, joiner="\n\n")
+
+
+def _chunk_code_fence(block: str, max_words: int) -> list[str]:
+    block = block.strip()
+    if not block:
+        return []
+    if _word_count(block) <= max_words:
+        return [block]
+    inner_parts = [p.strip() for p in block.split("\n\n") if p.strip()]
+    if len(inner_parts) > 1:
+        return _pack_units(inner_parts, max_words, joiner="\n\n")
+    return _split_by_lines_or_words(block, max_words)
+
+
+def _collect_rag_source_files(path: Path, extensions: list[str]) -> list[Path]:
+    """Verzamelt bronbestanden, past uitsluitingen toe, sorteert voor stabiele volgorde."""
+    seen: set[object] = set()
+    out: list[Path] = []
+    for ext in extensions:
+        for file_path in path.rglob(ext):
+            try:
+                key = file_path.resolve()
+            except OSError:
+                key = file_path
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(file_path)
+    out.sort(key=lambda p: str(p).casefold())
+    filtered, skipped = filter_ingest_candidates(out)
+    if skipped:
+        parts = ", ".join(f"{k}={v}" for k, v in sorted(skipped.items()))
+        print(f"{C_YELLOW}[WARN]{C_RESET} Overgeslagen na scan: {parts}")
+    return filtered
+
+
+def _set_ingest_progress_postfix(pbar: object, file_path: Path, root: Path, max_chars: int = 72) -> None:
+    """Toont het actieve bronpad in tqdm (blijft staan tijdens zware MarkItDown/embedding-stappen)."""
+    if not hasattr(pbar, "set_postfix_str"):
+        return
+    try:
+        rel = file_path.relative_to(root)
+        label = rel.as_posix()
+    except ValueError:
+        label = str(file_path)
+    if len(label) > max_chars:
+        label = "…" + label[-(max_chars - 1) :]
+    styled = f"{C_DIM}{label}{C_RESET}" if C_DIM else label
+    pbar.set_postfix_str(styled, refresh=True)
+
+
+def _chunk_row_id(relative_source: str, chunk_index: int) -> str:
+    """Deterministische sleutel: zelfde bron + chunk-index => zelfde id (veilig voor upsert)."""
+    rel = Path(relative_source).as_posix()
+    return hashlib.sha256(f"{rel}\0#{chunk_index}".encode("utf-8")).hexdigest()
+
+
+def _schema_has_id(schema: pa.Schema) -> bool:
+    return "id" in schema.names
+
+
+def _upsert_chunk_rows(table, rows: list[dict]) -> None:
+    if not rows:
+        return
+    table.merge_insert("id").when_matched_update_all().when_not_matched_insert_all().execute(rows)
+
+
+def _upsert_rows_with_embed_progress(
+    table,
+    rows: list[dict],
+    relative_source: str,
+    pbar: object,
+    embed_batch: int,
+) -> None:
+    """Voert merge_insert uit; bij veel chunks tussenloggen zodat [EMBEDDEN] niet 'stil' voelt."""
+    n = len(rows)
+    if n == 0:
+        return
+    b = max(1, embed_batch)
+    if n <= b:
+        _ingest_log_loop(
+            f"{C_DIM}[INFO] [EMBEDDEN]{C_RESET} LanceDB + sentence-transformers: {n} chunk(s), "
+            f"{relative_source}{C_DIM} …{C_RESET}",
+            pbar,
+        )
+        _ingest_log_loop(
+            f"{C_CYAN}[INFO]{C_RESET} Upsert {n} chunk(s) voor bron: {relative_source} (merge_insert op id)...",
+            pbar,
+        )
+        _upsert_chunk_rows(table, rows)
+        return
+
+    _ingest_log_loop(
+        f"{C_DIM}[INFO] [EMBEDDEN]{C_RESET} {n} chunk(s) in batches van {b}: {relative_source}{C_DIM} …{C_RESET}",
+        pbar,
+    )
+    for i in range(0, n, b):
+        part = rows[i : i + b]
+        lo, hi = i + 1, i + len(part)
+        _ingest_log_loop(
+            f"{C_DIM}[INFO] [EMBEDDEN]{C_RESET} batch {lo}–{hi} / {n} — {relative_source}{C_DIM} …{C_RESET}",
+            pbar,
+        )
+        _ingest_log_loop(
+            f"{C_CYAN}[INFO]{C_RESET} Upsert {len(part)} chunk(s) (merge_insert op id)...",
+            pbar,
+        )
+        _upsert_chunk_rows(table, part)
+
+
+def _convert_markitdown_one(path: Path) -> tuple[str, str | None]:
+    """Eén MarkItDown-conversie met eigen instantie (thread-safe bij parallelle workers)."""
+    try:
+        mc = MarkItDown()
+        result = mc.convert(str(path))
+        raw_text = getattr(result, "text_content", None)
+        text = raw_text if isinstance(raw_text, str) else ""
+        return (text, None)
+    except Exception as e:
+        return ("", f"{type(e).__name__}: {e}")
+
+
+def _read_plain_utf8(file_path: Path, pbar: object) -> str | None:
+    """Leest UTF-8 platte tekst; `None` bij fout (waarschuwing al gelogd)."""
+    _ingest_log_loop(
+        f"{C_DIM}[INFO] [LEZEN]{C_RESET} UTF-8: {file_path.name}{C_DIM} …{C_RESET}",
+        pbar,
+    )
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except OSError as e:
+        _ingest_log_loop(
+            f"{C_YELLOW}[WARN]{C_RESET} Bestand niet leesbaar (IO): {file_path}: {e}",
+            pbar,
+        )
+        return None
+    except UnicodeDecodeError as e:
+        _ingest_log_loop(
+            f"{C_YELLOW}[WARN]{C_RESET} Geen geldige UTF-8: {file_path}: {e}",
+            pbar,
+        )
+        return None
+
+
+def semantic_chunk_document(text: str, max_words: int = DEFAULT_MAX_WORDS) -> list[str]:
+    """
+    Splits tekst op natuurlijke grenzen: fenced code, Markdown-koppen (##+),
+    alinea's (dubbele newline), zinnen en zo nodig regels/woorden — met max. ~max_words woorden per chunk.
+    """
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    chunks: list[str] = []
+    for segment, is_fence in _iter_fenced_and_prose(text):
+        if is_fence:
+            chunks.extend(_chunk_code_fence(segment, max_words))
+        else:
+            chunks.extend(_chunk_prose(segment, max_words))
+    return [c for c in chunks if c.strip()]
+
+
+def _ingest_log_loop(message: str, pbar: object) -> None:
+    """Log tijdens tqdm: gebruik tqdm.write zodat de voortgangsbalk niet verspringt (geen print-waterfall)."""
+    fp = getattr(pbar, "fp", None) or _LOG_IO
+    if hasattr(pbar, "set_postfix_str") and not getattr(pbar, "disable", True):
+        try:
+            from tqdm import tqdm
+
+            tqdm.write(message, file=fp)
+        except ImportError:
+            print(message, file=fp)
+    else:
+        print(message, file=fp)
+
+
+def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS):
+    """Scant de bronmap, verwerkt bestanden en schrijft naar LanceDB met idempotente upsert op `id`."""
+    print(f"{C_CYAN}[INFO]{C_RESET} Initialiseren databaseverbinding op: {DB_PATH}")
+    db = lancedb.connect(DB_PATH)
+
+    if TABLE_NAME in list_all_table_names(db):
+        table = db.open_table(TABLE_NAME)
+        print(f"{C_CYAN}[INFO]{C_RESET} Bestaande tabel '{TABLE_NAME}' geopend.")
+        if not _schema_has_id(table.schema):
+            print(
+                f"{C_RED}[ERROR]{C_RESET} De bestaande tabel mist de kolom 'id' (oud schema vóór upsert-architectuur)."
+            )
+            print(
+                f"{C_RED}[ERROR]{C_RESET} Kies eenmalig 'J' / zet HERMES_RAG_FRESH=1 in update_knowledge.bat, "
+                "of verwijder handmatig de LanceDB-map; daarna opnieuw ingest."
+            )
+            sys.exit(2)
+    else:
+        table = db.create_table(TABLE_NAME, schema=KnowledgeSchema)
+        print(f"{C_CYAN}[INFO]{C_RESET} Nieuwe tabel '{TABLE_NAME}' succesvol aangemaakt.")
+
+    supported_extensions = supported_extension_globs()
+    md_converter = MarkItDown()
+
+    print(f"{C_CYAN}[INFO]{C_RESET} Scannen van directory: {source_directory}")
+    _max_b = max_file_bytes()
+    if _max_b is not None:
+        print(
+            f"{C_CYAN}[INFO]{C_RESET} Max. bestandsgrootte: {_max_b // (1024 * 1024)} MB "
+            f"(HERMES_RAG_MAX_FILE_MB; 0 = onbeperkt)"
+        )
+    print(
+        f"{C_CYAN}[INFO]{C_RESET} Semantische chunking actief (max. ca. {max_words} woorden per chunk)."
+    )
+    path = Path(source_directory)
+    any_indexed = False
+
+    all_files = _collect_rag_source_files(path, supported_extensions)
+    print(f"{C_CYAN}[INFO]{C_RESET} Te verwerken bestanden: {len(all_files)}")
+    _cpu = os.cpu_count() or 4
+    conv_workers = _int_env_positive("HERMES_RAG_CONVERT_WORKERS", 1, cap=min(_cpu, 8))
+    embed_batch = _int_env_positive("HERMES_RAG_EMBED_BATCH", 64, cap=512)
+    hb_sec = _float_env_nonnegative("HERMES_RAG_CONVERT_HEARTBEAT_SEC", 3.0)
+    if conv_workers > 1:
+        print(
+            f"{C_CYAN}[INFO]{C_RESET} MarkItDown parallel per golf: max. {conv_workers} bestand(en) tegelijk "
+            f"(`HERMES_RAG_CONVERT_WORKERS`). Conversie: `as_completed` + optionele heartbeat "
+            f"(`HERMES_RAG_CONVERT_HEARTBEAT_SEC`={hb_sec}s; zet op 0 om uit te zetten). "
+            f"Embeddings: batches van max. {embed_batch} chunks (`HERMES_RAG_EMBED_BATCH`)."
+        )
+
+    _tqdm_file = sys.stderr if _TTY_ERR else sys.stdout if _TTY_OUT else sys.stderr
+    _use_bar_color = bool(C_CYAN and _TTY_PROGRESS)
+    pbar = _tqdm(
+        total=len(all_files),
+        desc="[RAG-PROGRESS] Indexeren van kennisdomeinen",
+        unit="bestand",
+        disable=not _TTY_PROGRESS,
+        file=_tqdm_file,
+        dynamic_ncols=True,
+        **({"colour": "cyan"} if _use_bar_color else {}),
+    )
+
+    parallel_conv = conv_workers > 1
+
+    def _finalize_file(
+        file_path: Path,
+        content: str | None,
+        md_err: str | None,
+        temp_txt_path: Optional[Path] = None,
+    ) -> None:
+        nonlocal any_indexed
+        _set_ingest_progress_postfix(pbar, file_path, path)
+        try:
+            if md_err is not None:
+                _ingest_log_loop(
+                    f"{C_YELLOW}[WARN]{C_RESET} MarkItDown-conversie mislukt voor {file_path}: {md_err}",
+                    pbar,
+                )
+                return
+            if content is None:
+                return
+            if not content.strip():
+                _ingest_log_loop(
+                    f"{C_YELLOW}[WARN]{C_RESET} Lege inhoud na inlezen/conversie, overslaan: {file_path}",
+                    pbar,
+                )
+                return
+
+            try:
+                chunks = semantic_chunk_document(content, max_words=max_words)
+            except Exception as e:
+                _ingest_log_loop(
+                    f"{C_YELLOW}[WARN]{C_RESET} Chunking mislukt voor {file_path} ({type(e).__name__}): {e}",
+                    pbar,
+                )
+                return
+
+            try:
+                relative_source = file_path.relative_to(path)
+            except ValueError as e:
+                _ingest_log_loop(
+                    f"{C_YELLOW}[WARN]{C_RESET} Pad relatief maken mislukt voor {file_path}: {e}",
+                    pbar,
+                )
+                return
+
+            rows: list[dict] = [
+                {
+                    "id": _chunk_row_id(str(relative_source), i),
+                    "text": chunk,
+                    "source": str(relative_source),
+                }
+                for i, chunk in enumerate(chunks)
+            ]
+            if not rows:
+                _ingest_log_loop(
+                    f"{C_YELLOW}[WARN]{C_RESET} Geen chunk-output na chunking, overslaan: {relative_source}",
+                    pbar,
+                )
+                return
+
+            _upsert_rows_with_embed_progress(
+                table, rows, str(relative_source), pbar, embed_batch=embed_batch
+            )
+            any_indexed = True
+            _ingest_log_loop(
+                f"{C_GREEN}[RAG-UPDATE] [OK]{C_RESET} Kennisbron succesvol geïndexeerd/bijgewerkt: {relative_source}",
+                pbar,
+            )
+        finally:
+            if temp_txt_path is not None:
+                temp_txt_path.unlink(missing_ok=True)
+            upd = getattr(pbar, "update", None)
+            if callable(upd):
+                upd(1)
+
+    def _process_media_file(file_path: Path) -> None:
+        if not _HAS_AUDIO_TRANSCRIBER:
+            _ingest_log_loop(
+                f"{C_YELLOW}[WARN]{C_RESET} Audio-transcriber niet beschikbaar "
+                f"(faster-whisper ontbreekt in hermes-env), overslaan: {file_path}",
+                pbar,
+            )
+            _finalize_file(file_path, None, "faster-whisper niet geinstalleerd", None)
+            return
+        temp_txt_path: Optional[Path] = None
+        try:
+            _ingest_log_loop(
+                f"{C_DIM}[INFO] [TRANSCRIBEREN]{C_RESET} {file_path.name}{C_DIM} …{C_RESET}",
+                pbar,
+            )
+            transcript = transcribe_media_file(file_path)
+            temp_txt_path = write_transcript_to_temp(file_path, transcript)
+            _finalize_file(file_path, transcript, None, temp_txt_path)
+        except Exception as e:
+            if temp_txt_path is not None:
+                temp_txt_path.unlink(missing_ok=True)
+            _ingest_log_loop(
+                f"{C_YELLOW}[WARN]{C_RESET} Transcriptie mislukt voor {file_path} ({type(e).__name__}): {e}",
+                pbar,
+            )
+            _finalize_file(file_path, None, f"{type(e).__name__}: {e}", None)
+
+    wave_i = 0
+    n_all = len(all_files)
+
+    while wave_i < n_all:
+        wave = all_files[wave_i : wave_i + conv_workers]
+        wave_i += len(wave)
+        for file_path in wave:
+            if file_path.suffix.lower() in _MEDIA_SUFFIXES:
+                _process_media_file(file_path)
+        md_list = [p for p in wave if p.suffix.lower() in _MARKITDOWN_SUFFIXES]
+        use_md_pool = parallel_conv and len(md_list) > 1
+        pool_workers = max(1, min(conv_workers, len(md_list)))
+
+        if use_md_pool:
+            with ThreadPoolExecutor(max_workers=pool_workers) as ex:
+                pending: dict = {}
+                for file_path in wave:
+                    suf = file_path.suffix.lower()
+                    if suf in _MEDIA_SUFFIXES:
+                        continue
+                    if suf in _MARKITDOWN_SUFFIXES:
+                        _ingest_log_loop(
+                            f"{C_DIM}[INFO] [CONVERTEREN]{C_RESET} MarkItDown: {file_path.name}{C_DIM} …{C_RESET}",
+                            pbar,
+                        )
+                        pending[ex.submit(_convert_markitdown_one, file_path)] = file_path
+                    else:
+                        plain = _read_plain_utf8(file_path, pbar)
+                        _finalize_file(file_path, plain, None, None)
+
+                if not pending:
+                    continue
+
+                done_ev = threading.Event()
+                bt: threading.Thread | None = None
+                total_md_tasks = len(pending)
+                if hb_sec > 0:
+
+                    def _heartbeat() -> None:
+                        while not done_ev.wait(timeout=hb_sec):
+                            alive = sum(1 for f in pending if not f.done())
+                            if alive <= 0:
+                                break
+                            _ingest_log_loop(
+                                f"{C_DIM}[INFO] [CONVERTEREN]{C_RESET} nog bezig: {alive}/{total_md_tasks} "
+                                f"MarkItDown-taak(en) in deze golf{C_DIM} …{C_RESET}",
+                                pbar,
+                            )
+
+                    bt = threading.Thread(target=_heartbeat, daemon=True)
+                    bt.start()
+
+                try:
+                    for fut in as_completed(pending):
+                        fp = pending[fut]
+                        try:
+                            text, err = fut.result()
+                        except Exception as e:
+                            text, err = "", f"{type(e).__name__}: {e}"
+                        _finalize_file(fp, text, err, None)
+                finally:
+                    done_ev.set()
+                    if bt is not None:
+                        bt.join(timeout=1.0)
+        else:
+            for file_path in wave:
+                suf = file_path.suffix.lower()
+                if suf in _MEDIA_SUFFIXES:
+                    continue
+                if suf in _MARKITDOWN_SUFFIXES:
+                    _ingest_log_loop(
+                        f"{C_DIM}[INFO] [CONVERTEREN]{C_RESET} MarkItDown: {file_path.name}{C_DIM} …{C_RESET}",
+                        pbar,
+                    )
+                    try:
+                        result = md_converter.convert(str(file_path))
+                        raw_text = getattr(result, "text_content", None)
+                        text = raw_text if isinstance(raw_text, str) else ""
+                        _finalize_file(file_path, text, None, None)
+                    except Exception as e:
+                        _finalize_file(file_path, "", f"{type(e).__name__}: {e}", None)
+                else:
+                    plain = _read_plain_utf8(file_path, pbar)
+                    _finalize_file(file_path, plain, None, None)
+
+    if any_indexed:
+        print(f"{C_GREEN}[OK]{C_RESET} Ingestie-scan afgerond (upsert per bronbestand).")
+    else:
+        print(f"{C_YELLOW}[WARN]{C_RESET} Geen compatibele data gevonden om te indexeren.")
+
+
+if __name__ == "__main__":
+    _raw = (os.getenv("HERMES_RAG_RAW_SOURCE") or "").strip()
+    DATA_SRC = os.path.normpath(
+        os.path.expanduser(os.path.expandvars(_raw if _raw else "~/data/raw_source_files"))
+    )
+    os.makedirs(DATA_SRC, exist_ok=True)
+    process_and_ingest(DATA_SRC)
