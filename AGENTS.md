@@ -2,6 +2,12 @@
 
 Instructions for AI coding assistants and developers working on the hermes-agent codebase.
 
+## LanceDB RAG (deze fork)
+
+- Index: `windows/scripts/update_knowledge.bat` → `scripts/rag_pipeline/ingest.py` (zie `scripts/rag_pipeline/ACTIVATION.md`).
+- MCP: `hermes mcp add lancedb-knowledge --command python --args scripts/rag_pipeline/mcp_server.py` (hermes-env).
+- Citatieregels: `.cursorrules` + `LANCEDB_RAG_STRICT_CITATION_GUIDANCE` in `agent/prompt_builder.py` (actief wanneer tool `search_knowledge` geladen is).
+
 ## Development Environment
 
 ```bash

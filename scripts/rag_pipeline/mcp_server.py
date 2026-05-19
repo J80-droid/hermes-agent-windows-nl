@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 
 import lancedb
 from mcp.server.fastmcp import FastMCP
@@ -21,22 +22,33 @@ def _ensure_knowledge_table():
     return db.create_table(TABLE_NAME, schema=KnowledgeSchema)
 
 
+def _source_basename(source: str) -> str:
+    return Path(str(source).replace("\\", "/")).name or "Onbekend"
+
+
 table = _ensure_knowledge_table()
 
 
 @mcp.tool()
 def search_knowledge(query: str, limit: int = 5) -> str:
     """
-    Zoekt in de lokale LanceDB database naar relevante informatie.
-    Gebruik dit wanneer je diepgaande data nodig hebt uit de GB's aan opgeslagen bestanden.
+    Zoekt in de lokale LanceDB-database naar relevante passages uit geïndexeerde bronbestanden.
+    Gebruik dit voor feiten, chronologie en juridische analyse; citeer met [Bron: bestandsnaam].
     """
     try:
         results = table.search(query).limit(limit).to_list()
 
         output = []
         for res in results:
+            source = res.get("source", "Onbekend")
+            text = res.get("text", "")
+            basename = _source_basename(str(source))
+            cite = f"[Bron: {basename}]"
             output.append(
-                f"Bron: {res.get('source', 'Onbekend')}\nInhoud: {res.get('text', '')}"
+                f"bron_bestand: {basename}\n"
+                f"bron_pad: {source}\n"
+                f"inline_citeer_sjabloon: {cite}\n"
+                f"Inhoud: {text}"
             )
 
         return "\n---\n".join(output) if output else "Geen resultaten gevonden."

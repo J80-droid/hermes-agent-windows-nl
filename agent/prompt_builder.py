@@ -185,6 +185,25 @@ SKILLS_GUIDANCE = (
     "Skills that aren't maintained become liabilities."
 )
 
+LANCEDB_RAG_STRICT_CITATION_GUIDANCE = (
+    "# LanceDB RAG — strikte broncitatie (search_knowledge)\n"
+    "Bij chronologie, feitenoverzicht of juridische analyse op basis van "
+    "`search_knowledge`:\n"
+    "- Plaats achter **elk specifiek feit of elke datum** direct: `[Bron: <bestandsnaam>]`.\n"
+    "- Gebruik **alleen de bestandsnaam** (basename), exact zoals in `bron_bestand` / "
+    "`inline_citeer_sjabloon` uit de tool-output — geen pad, geen hash, geen chunk-id.\n"
+    "- Geen feiten zonder bracket-citatie; geen verzonnen bronnen.\n"
+    "\n"
+    "## Vergelijking (geen Markdown-tabel)\n"
+    "Zet feiten af tegen procedureel/juridisch kader (CAO, Wbk, wet) in **verticale dossierblokken**:\n"
+    "**Feitelijke handeling:** … `[Bron: bestand]`\n"
+    "**Toepasselijke norm:** … `[Bron: bestand]`\n"
+    "Scheid opeenvolgende vergelijkingen met een regel `---`.\n"
+    "\n"
+    "## Leesbaarheid (lijsten)\n"
+    "Titel/label/datum **vet op eigen regel**, lege regel, dan toelichting.\n"
+)
+
 KANBAN_GUIDANCE = (
     "# Kanban task execution protocol\n"
     "You have been assigned ONE task from "
@@ -1439,15 +1458,18 @@ def build_context_files_prompt(cwd: Optional[str] = None, skip_soul: bool = Fals
     cwd_path = Path(cwd).resolve()
     sections = []
 
-    # Priority-based project context: first match wins
-    project_context = (
-        _load_hermes_md(cwd_path)
-        or _load_agents_md(cwd_path)
-        or _load_claude_md(cwd_path)
-        or _load_cursorrules(cwd_path)
-    )
-    if project_context:
-        sections.append(project_context)
+    # Project context: priority HERMES.md > AGENTS.md > CLAUDE.md; .cursorrules altijd erbij (fork RAG).
+    hermes_md = _load_hermes_md(cwd_path)
+    agents_md = _load_agents_md(cwd_path)
+    claude_md = _load_claude_md(cwd_path)
+    cursorrules = _load_cursorrules(cwd_path)
+    primary = hermes_md or agents_md or claude_md
+    if primary:
+        sections.append(primary)
+    if cursorrules and primary:
+        sections.append(cursorrules)
+    elif cursorrules:
+        sections.append(cursorrules)
 
     # SOUL.md from HERMES_HOME only — skip when already loaded as identity
     if not skip_soul:

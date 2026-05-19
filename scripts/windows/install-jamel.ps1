@@ -292,6 +292,8 @@ Show-Typewriter -Text "    hermes chat              Start de chat (CLI)" -Color 
 Show-Typewriter -Text "    hermes setup --full      Volledige setup wizard" -Color "Gray" -DelayMs 5
 Show-Typewriter -Text "    hermes --tui             Interactieve TUI" -Color "Gray" -DelayMs 5
 Show-Typewriter -Text "    hermes update            Update naar nieuwste versie" -Color "Gray" -DelayMs 5
+Show-Typewriter -Text "    windows\scripts\update_knowledge.bat   LanceDB RAG-index bijwerken" -Color "Gray" -DelayMs 5
+Show-Typewriter -Text "    (eenmalig) hermes mcp add lancedb-knowledge ...  zie scripts\rag_pipeline\ACTIVATION.md" -Color "DarkGray" -DelayMs 4
 Show-Typewriter -Text "" -Color $HERMES_WHITE -DelayMs 0
 Show-Typewriter -Text "  Voor updates: draai" -Color $HERMES_ORANGE -DelayMs 8
 Show-Typewriter -Text "    irm .../update-jamel.ps1 | iex" -Color "Gray" -DelayMs 5

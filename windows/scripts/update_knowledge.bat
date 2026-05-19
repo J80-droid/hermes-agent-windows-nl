@@ -2,7 +2,7 @@
 setlocal EnableExtensions
 
 rem LanceDB RAG: herbouw index vanaf hermes-agent root (ongeacht startlocatie van dit .bat).
-rem Institutioneel: zie scripts/rag_pipeline/ACTIVATION.md en windows/INSTITUTIONAL_OPTION1.md (RAG-sectie).
+rem Institutioneel: zie scripts/rag_pipeline/ACTIVATION.md en windows/INSTITUTIONAL.md (RAG-sectie).
 cd /d "%~dp0..\.."
 
 echo [INFO] Werkmap: %CD%
