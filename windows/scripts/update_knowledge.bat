@@ -45,7 +45,7 @@ if /i "%FRISSE_START%"=="J" (
   if exist "%HERMES_LANCEDB%" (
     call :WipeLanceDb "%HERMES_LANCEDB%"
     if errorlevel 1 (
-      pause
+      if /i not "%HERMES_NONINTERACTIVE%"=="1" pause
       exit /b 1
     )
   ) else (
@@ -76,7 +76,7 @@ if not defined HERMES_ACTIVATE_BAT_RESOLVED if exist "%LOCALAPPDATA%\anaconda3\S
 if not defined HERMES_ACTIVATE_BAT_RESOLVED (
   echo [ERROR] Geen conda Scripts\activate.bat gevonden.
   echo        Zet machine-breed HERMES_ACTIVATE_BAT of HERMES_CONDA_ROOT, of installeer Miniconda/Anaconda op een standaardlocatie.
-  pause
+  if /i not "%HERMES_NONINTERACTIVE%"=="1" pause
   exit /b 1
 )
 
@@ -85,7 +85,7 @@ echo [INFO] Activeer conda-omgeving %HERMES_CONDA_ENV%...
 call "%HERMES_ACTIVATE_BAT_RESOLVED%" %HERMES_CONDA_ENV%
 if errorlevel 1 (
   echo [INFO] Conda-activering mislukt.
-  pause
+  if /i not "%HERMES_NONINTERACTIVE%"=="1" pause
   exit /b 1
 )
 
@@ -100,12 +100,12 @@ echo [INFO] Start ingest: python scripts\rag_pipeline\ingest.py
 python scripts\rag_pipeline\ingest.py
 if errorlevel 1 (
   echo [INFO] Ingest eindigde met fout ^(exit %ERRORLEVEL%^).
-  pause
+  if /i not "%HERMES_NONINTERACTIVE%"=="1" pause
   exit /b %ERRORLEVEL%
 )
 
 echo [OK] Ingestie-scan afgerond ^(upsert + orphan cleanup + ingest-staat^).
-pause
+if /i not "%HERMES_NONINTERACTIVE%"=="1" pause
 endlocal
 goto :EOF
 
