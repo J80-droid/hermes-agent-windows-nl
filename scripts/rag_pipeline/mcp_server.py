@@ -1,10 +1,10 @@
 import sys
-from pathlib import Path
 
 import lancedb
 from mcp.server.fastmcp import FastMCP
 
 from kb_schema import DB_PATH, TABLE_NAME, KnowledgeSchema, list_all_table_names
+from rag_display import inline_citeer_sjabloon, source_basename
 
 mcp = FastMCP("LanceDB-Knowledge-Server")
 
@@ -20,10 +20,6 @@ def _ensure_knowledge_table():
         file=sys.stderr,
     )
     return db.create_table(TABLE_NAME, schema=KnowledgeSchema)
-
-
-def _source_basename(source: str) -> str:
-    return Path(str(source).replace("\\", "/")).name or "Onbekend"
 
 
 table = _ensure_knowledge_table()
@@ -42,8 +38,8 @@ def search_knowledge(query: str, limit: int = 5) -> str:
         for res in results:
             source = res.get("source", "Onbekend")
             text = res.get("text", "")
-            basename = _source_basename(str(source))
-            cite = f"[Bron: {basename}]"
+            basename = source_basename(str(source))
+            cite = inline_citeer_sjabloon(str(source))
             output.append(
                 f"bron_bestand: {basename}\n"
                 f"bron_pad: {source}\n"

@@ -482,6 +482,18 @@ if ($runHermesWizard -and -not $batLaunchedFromCmd) {
     if ($wizExit -ne 0) { exit $wizExit }
 }
 
+$ragExtras = Join-Path $root "windows\scripts\install_rag_extras.ps1"
+if ((Test-Path -LiteralPath $ragExtras) -and -not $WhatIf) {
+    Write-Host ""
+    Write-Host "[INFO] RAG: pip extra [rag] + MCP lancedb-knowledge..." -ForegroundColor Cyan
+    try {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $ragExtras -RepoRoot $root -Quiet
+        Write-Host "[OK] RAG-extras (pip + MCP waar mogelijk)." -ForegroundColor Green
+    } catch {
+        Write-Warning "RAG-extras mislukt — handmatig: windows\scripts\install_rag_extras.ps1"
+    }
+}
+
 Write-Host ""
 Write-Host 'Klaar: windows\setup_hermes_windows.bat + Hermes Open Setup.lnk + Hermes - * - naar taakbalk slepen.lnk (wit icoon).' -ForegroundColor Cyan
 Write-Host 'Tip: draai daarna windows\REFRESH_TASKBAR_SHORTCUTS.bat zodat ook overige Hermes-icoontjes wit update-icoon pakken als hermes_taskbar_white.ico bestaat.' -ForegroundColor DarkGray

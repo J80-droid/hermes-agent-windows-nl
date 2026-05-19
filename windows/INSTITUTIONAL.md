@@ -22,4 +22,4 @@ cd hermes-agent\windows
 SETUP_HERMES.bat
 ```
 
-Daarna RAG: `scripts\update_knowledge.bat` (of taakbalk-.lnk lokaal aanmaken via `REFRESH_TASKBAR_SHORTCUTS.bat`).
+Daarna RAG: `windows\scripts\install_rag_extras.ps1` (pip `[rag]` + MCP), `windows\scripts\update_knowledge.bat` (index; rooktest: `scripts\rag_pipeline\ACTIVATION.md`).

@@ -100,6 +100,14 @@ pty = [
 ]
 honcho = ["honcho-ai==2.0.1"]
 mcp = ["mcp==1.26.0"]
+# LanceDB RAG (ingest + lancedb-knowledge MCP) — lazy via ACTIVATION of `pip install -e ".[rag]"`.
+rag = [
+  "lancedb==0.30.2",
+  "sentence-transformers==5.5.0",
+  "markitdown[all]==0.1.5",
+  "pyarrow==24.0.0",
+  "hermes-agent[mcp]",
+]
 homeassistant = ["aiohttp==3.13.3"]
 sms = ["aiohttp==3.13.3"]
 # Computer use — macOS background desktop control via cua-driver (MCP stdio).

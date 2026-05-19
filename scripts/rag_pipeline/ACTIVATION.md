@@ -48,11 +48,69 @@ flowchart LR
   ingest --> mcp
 ```
 
+## 100%-checklist (code vs. jouw run)
+
+| # | Onderdeel | In repo (code) | Jouw run (verplicht voor E2E) |
+|---|-----------|----------------|-------------------------------|
+| 1 | CLI/Web bron-chips (`cli.py`, `web/…/Markdown.tsx`) | Ja — `[Bron: …]` → backticks | — |
+| 2 | `pyproject.toml` extra `[rag]` | Ja — `pip install -e ".[rag]"` | Eenmalig in `hermes-env` |
+| 3 | Automatische MCP + RAG-deps | Ja — `install-jamel.ps1` / `setup_hermes_windows.ps1` → `install_rag_extras.ps1` | Nieuwe sessie na install |
+| 4 | `tests/rag_pipeline/` (pytest) | Ja | `pytest tests/rag_pipeline/ -q` |
+| 5 | Rooktest (5 commando’s) | Ja — hieronder | Alle 5 stappen doorlopen |
+| A | `update_knowledge.bat` tot einde | — | Log: `[OK] Ingestie-scan afgerond` |
+| B | MCP + nieuwe Hermes-sessie | Script registreert MCP | `hermes mcp test lancedb-knowledge` OK |
+| C | `search_knowledge` op bekende zin | — | Antwoord met `[Bron: …]` uit index |
+
+Zonder **A+B+C** is de keten nooit 100% operationeel — ook niet met perfecte code.
+
+## Rooktest (5 commando’s, vanuit repo-root, conda `hermes-env`)
+
+Alle commando’s in **één** geactiveerde shell; `cd` eerst naar de Hermes-repo-root (waar `scripts/` relatief klopt).
+
+1. **Dependencies (eenmalig of na upgrade):**
+
+   ```text
+   pip install -e ".[rag]"
+   ```
+
+   Alternatief handmatig: `pip install lancedb sentence-transformers "markitdown[all]"` + `pip install mcp` (of `hermes-agent[mcp]`).
+
+2. **Index bijwerken** (laat tot `[OK]` / einde lopen; bij grote media kan dit uren duren):
+
+   ```text
+   windows\scripts\update_knowledge.bat
+   ```
+
+   Of: `python scripts/rag_pipeline/ingest.py` met dezelfde env-variabelen als het batchbestand.
+
+3. **MCP registreren** (eenmalig; Windows met volledig python-pad):
+
+   ```text
+   powershell -ExecutionPolicy Bypass -File windows\scripts\register_lancedb_mcp.ps1
+   ```
+
+   Handmatig equivalent: zie stap 5 hieronder.
+
+4. **MCP controleren:**
+
+   ```text
+   hermes mcp list
+   hermes mcp test lancedb-knowledge
+   ```
+
+5. **Nieuwe Hermes-sessie + gerichte tool-vraag** (split-venster of `hermes` CLI):
+
+   ```text
+   Voer search_knowledge uit op de query 'VWO Elite' en citeer met [Bron: bestandsnaam].
+   ```
+
+   Verwachting: antwoord uit **lokale** index (rookbestand `test.txt` of jouw bronnen), niet een willekeurige marketingpagina van het web.
+
 ## Workflowtip: smoke-test
 
 1. Map: `~/data/raw_source_files` (bijv. op Windows `%USERPROFILE%\data\raw_source_files`).
 2. Bestand `test.txt` met bijvoorbeeld: *VWO Elite is een geavanceerd platform gebouwd door Jamel. Het lanceert in 2026.*
-3. Voer daarna de stappen hieronder uit.
+3. Voer daarna de rooktest hierboven of de stappen hieronder uit.
 
 ## Bronbestanden: drie gouden regels
 
@@ -93,11 +151,12 @@ Het batchbestand vraagt eerst **J/N** (tenzij **`HERMES_RAG_FRESH`** gezet is: `
 3. **Dependencies:**
 
    ```text
-   pip install lancedb mcp sentence-transformers
-   pip install "markitdown[all]"
+   pip install -e ".[rag]"
    ```
 
-   **Fail fast:** `ingest.py` importeert `markitdown` statisch bovenaan. Ontbreekt het pakket, faalt het script direct bij start — niet pas na een lange scan. Op Windows PowerShell zijn de **aanhalingstekens** rond `markitdown[all]` verplicht.
+   (Installeert o.a. `lancedb`, `sentence-transformers`, `markitdown[all]`, `pyarrow` en `mcp` via `pyproject.toml` extra `rag`.)
+
+   **Fail fast:** `ingest.py` importeert `markitdown` statisch bovenaan. Ontbreekt het pakket, faalt het script direct bij start — niet pas na een lange scan.
 
 4. **Ingestie:**
 

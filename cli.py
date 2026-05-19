@@ -1627,9 +1627,26 @@ def _terminal_width_for_streaming() -> int:
     return max(20, cols - len(_STREAM_PAD) - 2)
 
 
+def _wrap_bron_citations_for_display(text: str) -> str:
+    """Backtick-wrap `[Bron: …]` voor inline-code chips in Rich-markdown."""
+    try:
+        from pathlib import Path as _Path
+
+        _rag_dir = _Path(__file__).resolve().parent / "scripts" / "rag_pipeline"
+        if str(_rag_dir) not in sys.path:
+            sys.path.insert(0, str(_rag_dir))
+        from rag_display import wrap_bron_citations_for_markdown_display
+
+        return wrap_bron_citations_for_markdown_display(text)
+    except Exception:
+        return text
+
+
 def _render_final_assistant_content(text: str, mode: str = "render"):
     """Render final assistant content as markdown, stripped text, or raw text."""
     from rich.markdown import Markdown
+
+    text = _wrap_bron_citations_for_display(text or "")
 
     # Estimate the cells available to the rendered table.  The Panel
     # used by the background-task / final-response path has 4 cells of

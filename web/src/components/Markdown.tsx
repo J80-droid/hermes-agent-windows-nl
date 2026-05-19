@@ -1,4 +1,5 @@
 import { useMemo, type ReactNode } from "react";
+import { wrapBronCitationsForDisplay } from "../lib/ragCitations";
 
 /**
  * Lightweight markdown renderer for LLM output.
@@ -18,7 +19,11 @@ export function Markdown({
   highlightTerms?: string[];
   streaming?: boolean;
 }) {
-  const blocks = useMemo(() => parseBlocks(content), [content]);
+  const displayContent = useMemo(
+    () => wrapBronCitationsForDisplay(content),
+    [content],
+  );
+  const blocks = useMemo(() => parseBlocks(displayContent), [displayContent]);
   const caret = streaming ? <StreamingCaret /> : null;
 
   return (
