@@ -63,6 +63,20 @@ flowchart LR
 
 Zonder **A+B+C** is de keten nooit 100% operationeel — ook niet met perfecte code.
 
+## Institutioneel (P3 — mitigaties in repo)
+
+| Risico | Mitigatie |
+|--------|-----------|
+| conda vs. uv `.venv` | `install_rag_extras.ps1` → `pip install -e ".[rag]"` op **beide** (`rag_python_resolve.ps1`) |
+| MCP relatief pad / verkeerde cwd | `register_mcp_config.py` — **absoluut** pad naar `mcp_server.py` + env `HERMES_REPO_ROOT`, `HERMES_LANCEDB_PATH` |
+| Whisper/ffmpeg | `[rag]` bevat `faster-whisper`; **ffmpeg** moet op PATH (winget/choco) |
+| Oud schema zonder `id` | `python scripts/rag_pipeline/schema_migrate.py` (inspect / `--backup-and-reset`) |
+| Taakplanner wacht op J/N | `set HERMES_NONINTERACTIVE=1` of `HERMES_RAG_FRESH=0` vóór `update_knowledge.bat` |
+| LanceDB-lock bij wissen | Waarschuwing in batch; sluit Hermes + MCP |
+| Dev-repo vs. install-clone | `install_rag_extras.ps1` toont beide paden; werk in de checkout die je start |
+| CI regressie | GitHub job `rag`: unit tests + `rag_integration` + `web/scripts/test-rag-citations.mjs` |
+| `uv lock` met `[all,rag]` | **Niet combineerbaar** (markitdown vs. youtube pin) — gebruik `uv pip install -e ".[dev,rag]"` of conda `pip install -e ".[rag]"` |
+
 ## Rooktest (5 commando’s, vanuit repo-root, conda `hermes-env`)
 
 Alle commando’s in **één** geactiveerde shell; `cd` eerst naar de Hermes-repo-root (waar `scripts/` relatief klopt).

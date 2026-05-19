@@ -53,6 +53,28 @@ jobs:
           OPENAI_API_KEY: ""
           NOUS_API_KEY: ""
 
+  rag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86  # v5
+
+      - name: Set up Python 3.11
+        run: uv python install 3.11
+
+      - name: Install RAG extra and run tests
+        run: |
+          uv venv .venv --python 3.11
+          source .venv/bin/activate
+          uv pip install -e ".[dev,rag]"
+          python -m pytest tests/rag_pipeline/ -q --tb=short -m "not rag_integration"
+          python -m pytest tests/rag_pipeline/test_integration_search.py -q --tb=short -m rag_integration
+          node web/scripts/test-rag-citations.mjs
+
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 15

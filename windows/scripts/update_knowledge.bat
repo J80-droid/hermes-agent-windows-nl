@@ -15,7 +15,9 @@ if defined HERMES_LANCEDB_PATH (
 )
 
 rem Non-interactief: zet HERMES_RAG_FRESH=1/true/yes/j voor wis, 0/n voor behoud (taakplanner/CI).
+rem Taakplanner: zet HERMES_NONINTERACTIVE=1 (default N) of expliciet HERMES_RAG_FRESH=0|1.
 set "FRISSE_START="
+if not defined HERMES_RAG_FRESH if /i "%HERMES_NONINTERACTIVE%"=="1" set "HERMES_RAG_FRESH=0"
 if defined HERMES_RAG_FRESH (
   echo [INFO] HERMES_RAG_FRESH=%HERMES_RAG_FRESH% ^(non-interactief^)
   if /i "%HERMES_RAG_FRESH%"=="1" set "FRISSE_START=J"
@@ -38,6 +40,7 @@ if defined HERMES_RAG_FRESH (
 )
 
 if /i "%FRISSE_START%"=="J" (
+  echo [WARN] Sluit Hermes en MCP lancedb-knowledge vóór wissen ^(LanceDB-lock^).
   echo [INFO] Oude database wordt verwijderd: "%HERMES_LANCEDB%"
   if exist "%HERMES_LANCEDB%" (
     call :WipeLanceDb "%HERMES_LANCEDB%"
@@ -107,7 +110,7 @@ if errorlevel 1 (
   exit /b %ERRORLEVEL%
 )
 
-echo [OK] Ingest afgerond.
+echo [OK] Ingestie-scan afgerond ^(upsert + orphan cleanup + ingest-staat^).
 pause
 endlocal
 goto :EOF

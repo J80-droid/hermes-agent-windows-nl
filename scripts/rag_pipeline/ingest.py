@@ -384,8 +384,8 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                 f"{C_RED}[ERROR]{C_RESET} De bestaande tabel mist de kolom 'id' (oud schema vóór upsert-architectuur)."
             )
             print(
-                f"{C_RED}[ERROR]{C_RESET} Kies eenmalig 'J' / zet HERMES_RAG_FRESH=1 in update_knowledge.bat, "
-                "of verwijder handmatig de LanceDB-map; daarna opnieuw ingest."
+                f"{C_RED}[ERROR]{C_RESET} Kies eenmalig 'J' / HERMES_RAG_FRESH=1, of: "
+                "python scripts/rag_pipeline/schema_migrate.py --backup-and-reset"
             )
             sys.exit(2)
     else:

@@ -8,11 +8,20 @@ from rag_display import inline_citeer_sjabloon, source_basename
 
 mcp = FastMCP("LanceDB-Knowledge-Server")
 
-db = lancedb.connect(DB_PATH)
+_db: lancedb.DBConnection | None = None
+_table = None
+
+
+def _get_db() -> lancedb.DBConnection:
+    global _db
+    if _db is None:
+        _db = lancedb.connect(DB_PATH)
+    return _db
 
 
 def _ensure_knowledge_table():
     """Opent `knowledge_base` of maakt een lege tabel met KnowledgeSchema aan (geen crash)."""
+    db = _get_db()
     if TABLE_NAME in list_all_table_names(db):
         return db.open_table(TABLE_NAME)
     print(
@@ -22,7 +31,18 @@ def _ensure_knowledge_table():
     return db.create_table(TABLE_NAME, schema=KnowledgeSchema)
 
 
-table = _ensure_knowledge_table()
+def _get_knowledge_table():
+    global _table
+    if _table is None:
+        _table = _ensure_knowledge_table()
+    return _table
+
+
+def reset_knowledge_table_cache() -> None:
+    """Tests/integration: cache legen na wijziging HERMES_LANCEDB_PATH."""
+    global _db, _table
+    _db = None
+    _table = None
 
 
 @mcp.tool()
@@ -32,7 +52,7 @@ def search_knowledge(query: str, limit: int = 5) -> str:
     Gebruik dit voor feiten, chronologie en juridische analyse; citeer met [Bron: bestandsnaam].
     """
     try:
-        results = table.search(query).limit(limit).to_list()
+        results = _get_knowledge_table().search(query).limit(limit).to_list()
 
         output = []
         for res in results:
