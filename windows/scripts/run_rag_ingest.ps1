@@ -67,14 +67,14 @@ Write-Host "[INFO] Ingest via conda env: $CondaEnv"
 Write-Host "[INFO] Log (UTF-8): $LogPath"
 Write-Host "[INFO] Live: $env:HERMES_LANCEDB_PATH\rag_ingest_live_status.json"
 
+if (Test-Path $LogPath) { Remove-Item -LiteralPath $LogPath -Force -ErrorAction SilentlyContinue }
 $exit = 0
 try {
-    $output = & cmd /c $tmpBat 2>&1
-    if ($null -ne $LASTEXITCODE) { $exit = [int]$LASTEXITCODE }
-    $output | ForEach-Object { Write-Output $_ }
-    if ($null -ne $output) {
-        @($output) | Out-File -FilePath $LogPath -Encoding utf8
+    & cmd /c $tmpBat 2>&1 | ForEach-Object {
+        Write-Output $_
+        Add-Content -LiteralPath $LogPath -Value $_ -Encoding utf8
     }
+    if ($null -ne $LASTEXITCODE) { $exit = [int]$LASTEXITCODE }
 } finally {
     Remove-Item -LiteralPath $tmpBat -Force -ErrorAction SilentlyContinue
 }
