@@ -56,6 +56,12 @@ def _pandoc_to_markdown(path: Path) -> tuple[str, str | None]:
 
 def _convert_document_impl(path: Path) -> tuple[str, str | None, str]:
     """Returns (text, error, ocr_method)."""
+    try:
+        from ingest_live_progress import set_step
+
+        set_step("MarkItDown")
+    except ImportError:
+        pass
     text, err = convert_markitdown_one(path)
     if err is None and text.strip():
         return text, None, ""
@@ -72,6 +78,12 @@ def _convert_document_impl(path: Path) -> tuple[str, str | None, str]:
     if text.strip():
         return text, None, ""
 
+    try:
+        from ingest_live_progress import set_step
+
+        set_step("OCR/PyMuPDF")
+    except ImportError:
+        pass
     fallback, ocr_note = extract_fallback_text(path)
     if fallback.strip():
         return fallback, None, ocr_note or "fallback"

@@ -94,6 +94,8 @@ if ($EmitCmd) {
     if (-not $env:HERMES_RAG_CONVERT_TIMEOUT_SEC) { Write-Output "set HERMES_RAG_CONVERT_TIMEOUT_SEC=300" }
     if (-not $env:HERMES_RAG_STATE_CHECKPOINT) { Write-Output "set HERMES_RAG_STATE_CHECKPOINT=25" }
     if (-not $env:HERMES_RAG_MAX_CHUNKS_PER_SOURCE) { Write-Output "set HERMES_RAG_MAX_CHUNKS_PER_SOURCE=800" }
+    if (-not $env:HERMES_RAG_LIVE_TICK_SEC) { Write-Output "set HERMES_RAG_LIVE_TICK_SEC=3" }
+    if (-not $env:HERMES_RAG_LIVE_LOG) { Write-Output "set HERMES_RAG_LIVE_LOG=1" }
 } else {
     Write-Host $info
 }

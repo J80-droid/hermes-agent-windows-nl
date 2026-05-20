@@ -72,6 +72,7 @@ except ImportError:
 from ingest_config import filter_ingest_candidates, max_file_bytes
 from ingest_handlers import convert_document
 from ingest_ocr import stub_text_from_empty_file
+from ingest_live_progress import FileActivityTracker, set_active_tracker, set_step
 from ingest_runtime import (
     FileJobTimeout,
     allow_parallel_convert,
@@ -257,6 +258,7 @@ def _upsert_rows_with_embed_progress(
     if n == 0:
         return
     b = max(1, embed_batch)
+    set_step("Embedden")
     if n <= b:
         log_during_progress(
             f"{C_DIM}[INFO] [EMBEDDEN]{C_RESET} LanceDB + sentence-transformers: {n} chunk(s), "
@@ -292,9 +294,10 @@ def _relative_source(file_path: Path, root: Path) -> str:
     return normalize_relative_source(str(file_path.relative_to(root)))
 
 
-def _read_plain_utf8(file_path: Path, pbar: object) -> str | None:
-    """Leest UTF-8 platte tekst; `None` bij fout (waarschuwing al gelogd)."""
-    log_during_progress(
+    def _read_plain_utf8(file_path: Path, pbar: object) -> str | None:
+        """Leest UTF-8 platte tekst; `None` bij fout (waarschuwing al gelogd)."""
+        set_step("Lezen")
+        log_during_progress(
         f"{C_DIM}[INFO] [LEZEN]{C_RESET} UTF-8: {file_path.name}{C_DIM} …{C_RESET}",
         pbar,
     )
@@ -415,8 +418,8 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
     _ui_info(
         f"Modus: {'parallel MarkItDown' if parallel else 'sequentieel (institutioneel)'} | "
         f"workers={conv_workers} | embed batch {embed_batch} | "
-        f"timeout/bron={int(file_timeout)}s (0=uit) | heartbeat {hb_sec}s | "
-        f"live status in LanceDB-map | detail: HERMES_RAG_VERBOSE=1"
+        f"timeout/bron={int(file_timeout)}s (0=uit) | "
+        f"live [LIVE]-tick elke 3s + postfix ⏳ | detail: HERMES_RAG_VERBOSE=1"
     )
 
     print_phase("Indexeren")
@@ -493,6 +496,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                     pbar,
                 )
 
+            set_step("Chunking")
             try:
                 chunks = semantic_chunk_document(content, max_words=max_words)
             except Exception as e:
@@ -535,6 +539,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                 )
                 rows = rows[:cap]
 
+            set_step("Embedden")
             _upsert_rows_with_embed_progress(
                 table, rows, str(relative_source), pbar, embed_batch=embed_batch
             )
@@ -579,6 +584,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
 
         if _HAS_AUDIO_TRANSCRIBER:
             try:
+                set_step("Whisper")
                 log_during_progress(
                     f"{C_DIM}[INFO] [TRANSCRIBEREN]{C_RESET} Whisper: {file_path.name}{C_DIM} …{C_RESET}",
                     pbar,
@@ -629,11 +635,15 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
             _process_media_file(file_path)
             return
         if suf in _MARKITDOWN_SUFFIXES:
+            set_step("MarkItDown")
             log_during_progress(
                 f"{C_DIM}[INFO] [CONVERTEREN]{C_RESET} MarkItDown: {file_path.name}{C_DIM} …{C_RESET}",
                 pbar,
+                force=True,
             )
             text, err, ocr_m = convert_document(file_path)
+            if ocr_m:
+                set_step(f"OCR ({ocr_m})")
             _finalize_file(file_path, text, err, None, ocr_method=ocr_m)
             return
         plain = _read_plain_utf8(file_path, pbar)
@@ -641,19 +651,14 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
 
     n_all = len(to_process)
     gc_every = gc_every_n_files()
+    live = FileActivityTracker(pbar)
+    live.start()
+    set_active_tracker(live)
 
     try:
         for idx, file_path in enumerate(to_process, start=1):
             rel = _relative_source(file_path, path)
-            set_progress_file(pbar, file_path, path, phase="Bezig")
-            write_live_status(
-                phase="index",
-                index=idx,
-                total=n_all,
-                relative_source=rel,
-                step="start",
-                extra=file_path.name,
-            )
+            live.begin_file(idx, n_all, file_path, rel)
             try:
                 run_file_job(lambda fp=file_path: _process_one_file(fp))
             except FileJobTimeout as e:
@@ -672,16 +677,10 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                 )
                 _record_skip(file_path, "processing_error", f"{type(e).__name__}: {e}")
             finally:
+                live.end_file()
                 upd = getattr(pbar, "update", None)
                 if callable(upd):
                     upd(1)
-                write_live_status(
-                    phase="index",
-                    index=idx,
-                    total=n_all,
-                    relative_source=rel,
-                    step="done",
-                )
                 if gc_every > 0 and idx % gc_every == 0:
                     gc.collect()
 
@@ -695,6 +694,8 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                         f"({n} chunk(s))"
                     )
     finally:
+        live.stop()
+        set_active_tracker(None)
         if ingest_state.entries:
             ingest_state.save()
             n_entries = len(ingest_state.entries)

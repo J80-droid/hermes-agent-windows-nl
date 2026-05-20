@@ -118,6 +118,14 @@ def error(message: str) -> None:
     print(f"{C_RED}[ERROR]{C_RESET} {message}", file=LOG_IO)
 
 
+def format_elapsed(seconds: float) -> str:
+    s = max(0, int(seconds))
+    if s < 3600:
+        return f"{s // 60:02d}:{s % 60:02d}"
+    h, rem = divmod(s, 3600)
+    return f"{h}:{rem // 60:02d}:{rem % 60:02d}"
+
+
 def create_file_progress(total: int):
     """tqdm with explicit n/total (e.g. 3/1669) and Hermes gold bar."""
     fp = sys.stderr if _tty_err() else sys.stdout if _tty_out() else sys.stderr
@@ -171,6 +179,54 @@ def set_progress_file(pbar: object, file_path: Path, root: Path, phase: str = ""
         styled = f"{C_DIM}{styled}{C_RESET}"
     if hasattr(pbar, "set_postfix_str"):
         pbar.set_postfix_str(styled, refresh=True)
+
+
+def set_progress_activity(
+    pbar: object,
+    *,
+    elapsed_sec: float,
+    step: str,
+    filename: str,
+    index: int,
+    total: int,
+    size_mb: float | None = None,
+) -> None:
+    """Postfix: loopt nog — elapsed + stap + bestand (zichtbaar bij zware PDF's)."""
+    elapsed_s = format_elapsed(elapsed_sec)
+    name = filename if len(filename) <= 36 else "…" + filename[-35:]
+    size_part = f" {size_mb}MB" if size_mb is not None else ""
+    text = f"⏳ {elapsed_s} · {step}{size_part} · {name}"
+    if C_AMBER:
+        text = f"{C_AMBER}{text}{C_RESET}"
+    if hasattr(pbar, "set_postfix_str"):
+        pbar.set_postfix_str(text, refresh=True)
+
+
+def write_live_tick(
+    pbar: object,
+    *,
+    index: int,
+    total: int,
+    elapsed_sec: float,
+    step: str,
+    filename: str,
+    size_mb: float | None = None,
+) -> None:
+    """Periodieke [LIVE]-regel in terminal + log (bewijs dat het niet vastzit)."""
+    elapsed_s = format_elapsed(elapsed_sec)
+    size_part = f" · {size_mb} MB" if size_mb is not None else ""
+    msg = (
+        f"{C_CYAN}[LIVE]{C_RESET} {index}/{total} · {C_AMBER}{elapsed_s}{C_RESET} · "
+        f"{step}{size_part} · {filename}"
+    )
+    fp = getattr(pbar, "fp", None) or LOG_IO
+    if hasattr(pbar, "set_postfix_str") and not getattr(pbar, "disable", True):
+        try:
+            tqdm_lib.write(msg, file=fp)
+        except Exception:
+            print(msg, file=fp)
+    else:
+        print(msg, file=fp)
 
 
 def set_progress_phase_count(pbar: object, phase: str, current: int, total: int) -> None:

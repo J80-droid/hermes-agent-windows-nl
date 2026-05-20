@@ -49,6 +49,8 @@ Scripts in deze map:
 
 **Institutioneel (2026-05):** sequentiële verwerking per bron, live status `rag_ingest_live_status.json`, checkpoints, timeouts, OCR/stub-rapport. `update_knowledge.bat` logt UTF-8 via `Tee-Object`.
 
+**Live zichtbaarheid:** elke 3s `[LIVE] 12/1030 · 05:12 · MarkItDown · bestand.pdf` + postfix `⏳ 05:12 · stap · bestand` — zo zie je direct of een zware PDF nog loopt of vastzit (`HERMES_RAG_LIVE_TICK_SEC`, `HERMES_RAG_LIVE_LOG=0` om log-regels uit te zetten).
+
 **Overgeslagen rapport:** na ingest `rag_ingest_skipped_report.json` + `.md` in de LanceDB-map. Achteraf: `windows\scripts\report_rag_skipped.bat` of `report_rag_skipped.py`.
 
 **0-byte verwijs-.txt:** stub-tekst uit bestandsnaam wordt wél geïndexeerd (Productie N → zie DEEL …).
