@@ -46,6 +46,10 @@ if (-not $SkipPip) {
         if ($LASTEXITCODE -ne 0) {
             Write-RagMsg "[WARN] markitdown[all] apart mislukt - Office/PDF kan beperkt zijn." "Yellow"
         }
+        & $py -m pip install "colorama>=0.4.6" "tqdm>=4.66"
+        if ($LASTEXITCODE -ne 0) {
+            Write-RagMsg "[WARN] colorama/tqdm mislukt - RAG-terminal kan zonder kleuren/balk." "Yellow"
+        }
     }
     if ($pythons.Count -gt 0) {
         $n = $pythons.Count

@@ -114,6 +114,9 @@ if exist "%USERPROFILE%\Hermes\tessdata\nld.traineddata" (
 rem Institutioneel: safe default, sequentieel, timeouts, UTF-8 log ^(geen UTF-16^).
 set "PYTHONUNBUFFERED=1"
 set "PYTHONUTF8=1"
+set "HERMES_FORCE_COLOR=1"
+set "FORCE_COLOR=1"
+rem ANSI-kleuren + gouden tqdm-balk ^(ook via PowerShell-pipe; zie ingest_ui.py^).
 if not defined HERMES_RAG_PERF_PROFILE set "HERMES_RAG_PERF_PROFILE=safe"
 for /f "delims=" %%L in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0rag_ingest_perf_defaults.ps1" -EmitCmd 2^>nul') do %%L
 

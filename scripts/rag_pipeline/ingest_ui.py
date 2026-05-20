@@ -21,17 +21,24 @@ def _tty_err() -> bool:
     return sys.stderr.isatty()
 
 
+def _force_rich_ui() -> bool:
+    """Kleuren + tqdm ook wanneer stdout via PowerShell-pipe loopt (update_knowledge.bat)."""
+    if "NO_COLOR" in os.environ:
+        return False
+    return _env_truthy("FORCE_COLOR") or _env_truthy("HERMES_FORCE_COLOR")
+
+
 def _use_color() -> bool:
     if "NO_COLOR" in os.environ:
         return False
-    if _env_truthy("FORCE_COLOR") or _env_truthy("HERMES_FORCE_COLOR"):
+    if _force_rich_ui():
         return True
     return _tty_out() or _tty_err()
 
 
 USE_COLOR = _use_color()
-LOG_IO = sys.stderr if _tty_err() else sys.stdout if _tty_out() else sys.stderr
-TTY_PROGRESS = _tty_out() or _tty_err()
+LOG_IO = sys.stderr if (_tty_err() or _force_rich_ui()) else sys.stdout if _tty_out() else sys.stderr
+TTY_PROGRESS = _tty_out() or _tty_err() or _force_rich_ui()
 VERBOSE = _env_truthy("HERMES_RAG_VERBOSE")
 
 if USE_COLOR:

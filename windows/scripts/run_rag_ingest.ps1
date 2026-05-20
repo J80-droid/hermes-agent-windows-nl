@@ -67,6 +67,9 @@ $cmd = @"
 call "$activate" $CondaEnv
 if errorlevel 1 exit /b 1
 cd /d "$RepoRoot"
+set HERMES_FORCE_COLOR=1
+set FORCE_COLOR=1
+set PYTHONIOENCODING=utf-8
 python -u scripts\rag_pipeline\ingest.py
 exit /b %ERRORLEVEL%
 "@
@@ -82,7 +85,7 @@ $writer = New-RagIngestLogWriter -LogPath $LogPath
 $exit = 0
 try {
     & cmd /c $tmpBat 2>&1 | ForEach-Object {
-        # stderr (torch-waarschuwingen) is geen fout — niet als ErrorRecord doorgeven.
+        # stderr (torch-waarschuwingen) is geen fout — platte string, geen RemoteException-regel.
         $line = if ($_ -is [System.Management.Automation.ErrorRecord]) {
             $_.ToString()
         } elseif ($_ -is [string]) {
@@ -90,7 +93,11 @@ try {
         } else {
             $_.ToString()
         }
-        Write-Output $line
+        if ([string]::IsNullOrWhiteSpace($line)) { return }
+        if ($line -match '^(System\.Management\.Automation\.RemoteException|CategoryInfo|FullyQualifiedErrorId)') {
+            return
+        }
+        Write-Host $line
         $writer.WriteLine($line)
         $writer.Flush()
     }
