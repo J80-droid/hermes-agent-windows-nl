@@ -97,6 +97,7 @@ if errorlevel 1 (
 
 rem Zelfde pad doorgeven aan Python ^(ingest / kb_schema^) als hierboven gebruikt bij wis.
 set "HERMES_LANCEDB_PATH=%HERMES_LANCEDB%"
+if not defined HERMES_RAG_RAW_SOURCE set "HERMES_RAG_RAW_SOURCE=%USERPROFILE%\data\raw_source_files"
 
 rem Institutioneel: safe default, sequentieel, timeouts, UTF-8 log ^(geen UTF-16^).
 set "PYTHONUNBUFFERED=1"
@@ -108,13 +109,12 @@ set "RAG_LOG=%~dp0rag_ingest_run.log"
 set "HERMES_RAG_INGEST_LOG=%RAG_LOG%"
 
 echo [RAG-UPDATE] [INFO] Start LanceDB-ingest ^(idempotente upsert per bronbestand^)...
-echo [INFO] Start ingest: python scripts\rag_pipeline\ingest.py
+echo [INFO] Bronmap: %HERMES_RAG_RAW_SOURCE%
 echo [INFO] Log ^(UTF-8^): %RAG_LOG%
 echo [INFO] Live status: %HERMES_LANCEDB%\rag_ingest_live_status.json
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$env:PYTHONUNBUFFERED='1'; $env:PYTHONUTF8='1';" ^
-  "python scripts/rag_pipeline/ingest.py 2>&1 | Tee-Object -FilePath '%RAG_LOG%' -Encoding utf8"
+rem Ingest via hermes-env ^(conda^) — niet losse powershell-python ^(verkeerde interpreter^).
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0run_rag_ingest.ps1" -LogPath "%RAG_LOG%" -CondaEnv "%HERMES_CONDA_ENV%"
 set ERR=%ERRORLEVEL%
 if %ERR% neq 0 (
   echo [INFO] Ingest eindigde met fout ^(exit %ERR%^).

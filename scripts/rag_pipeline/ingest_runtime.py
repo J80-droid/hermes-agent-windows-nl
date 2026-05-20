@@ -16,6 +16,7 @@ from kb_schema import DB_PATH
 T = TypeVar("T")
 
 STATUS_BASENAME = "rag_ingest_live_status.json"
+_run_started_at: str | None = None
 
 
 def _env_float(name: str, default: float) -> float:
@@ -97,6 +98,12 @@ def run_file_job(fn: Callable[[], T], *, timeout_sec: float | None = None) -> T:
             raise FileJobTimeout(f"timeout na {int(limit)}s") from e
 
 
+def reset_live_status_clock() -> None:
+    """Reset run-start voor live_status.json (aanroepen bij start index-fase)."""
+    global _run_started_at
+    _run_started_at = None
+
+
 def write_live_status(
     *,
     phase: str,
@@ -106,14 +113,17 @@ def write_live_status(
     step: str,
     extra: str = "",
 ) -> None:
+    global _run_started_at
     now = datetime.now(timezone.utc).isoformat()
+    if _run_started_at is None:
+        _run_started_at = now
     LiveStatus(
         phase=phase,
         current_index=index,
         total=total,
         relative_source=relative_source,
         step=step,
-        started_at=now,
+        started_at=_run_started_at,
         updated_at=now,
         pid=os.getpid(),
         extra=extra,

@@ -79,6 +79,7 @@ from ingest_runtime import (
     file_timeout_sec,
     gc_every_n_files,
     max_chunks_per_source,
+    reset_live_status_clock,
     run_file_job,
     write_live_status,
 )
@@ -279,6 +280,7 @@ def _upsert_rows_with_embed_progress(
     for i in range(0, n, b):
         part = rows[i : i + b]
         lo, hi = i + 1, i + len(part)
+        set_step(f"Embedden {hi}/{n}")
         log_during_progress(
             f"{C_DIM}[INFO] [EMBEDDEN]{C_RESET} batch {lo}–{hi} / {n} — {relative_source}{C_DIM} …{C_RESET}",
             pbar,
@@ -294,10 +296,10 @@ def _relative_source(file_path: Path, root: Path) -> str:
     return normalize_relative_source(str(file_path.relative_to(root)))
 
 
-    def _read_plain_utf8(file_path: Path, pbar: object) -> str | None:
-        """Leest UTF-8 platte tekst; `None` bij fout (waarschuwing al gelogd)."""
-        set_step("Lezen")
-        log_during_progress(
+def _read_plain_utf8(file_path: Path, pbar: object) -> str | None:
+    """Leest UTF-8 platte tekst; `None` bij fout (waarschuwing al gelogd)."""
+    set_step("Lezen")
+    log_during_progress(
         f"{C_DIM}[INFO] [LEZEN]{C_RESET} UTF-8: {file_path.name}{C_DIM} …{C_RESET}",
         pbar,
     )
@@ -406,7 +408,6 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
     _cpu = os.cpu_count() or 4
     conv_workers = _int_env_positive("HERMES_RAG_CONVERT_WORKERS", 1, cap=min(_cpu, 8))
     embed_batch = _int_env_positive("HERMES_RAG_EMBED_BATCH", 64, cap=512)
-    hb_sec = _float_env_nonnegative("HERMES_RAG_CONVERT_HEARTBEAT_SEC", 3.0)
     print_banner(
         total_files=len(to_process),
         scan_total=len(all_files),
@@ -414,15 +415,20 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
         workers=conv_workers,
     )
     file_timeout = file_timeout_sec()
-    parallel = allow_parallel_convert() and conv_workers > 1
+    if allow_parallel_convert() and conv_workers > 1:
+        _ui_warn(
+            "HERMES_RAG_ALLOW_PARALLEL=1 wordt genegeerd: ingest draait sequentieel per bron "
+            "(stabielheid). Alleen HERMES_RAG_CONVERT_WORKERS > 1 beïnvloedt nog geen parallelle loop."
+        )
     _ui_info(
-        f"Modus: {'parallel MarkItDown' if parallel else 'sequentieel (institutioneel)'} | "
-        f"workers={conv_workers} | embed batch {embed_batch} | "
+        f"Modus: sequentieel per bron (institutioneel) | "
+        f"workers={conv_workers} (convert-config) | embed batch {embed_batch} | "
         f"timeout/bron={int(file_timeout)}s (0=uit) | "
         f"live [LIVE]-tick elke 3s + postfix ⏳ | detail: HERMES_RAG_VERBOSE=1"
     )
 
     print_phase("Indexeren")
+    reset_live_status_clock()
     pbar = create_file_progress(len(to_process))
     skip_report = SkipReport()
 
@@ -475,6 +481,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                 )
                 return
             if content is None:
+                _record_skip(file_path, "no_content", "geen tekst na conversie/lezen")
                 return
             if not content.strip():
                 log_during_progress(
@@ -504,6 +511,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                     f"{C_YELLOW}[WARN]{C_RESET} Chunking mislukt voor {file_path} ({type(e).__name__}): {e}",
                     pbar,
                 )
+                _record_skip(file_path, "chunking_failed", f"{type(e).__name__}: {e}")
                 return
 
             try:
@@ -513,6 +521,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                     f"{C_YELLOW}[WARN]{C_RESET} Pad relatief maken mislukt voor {file_path}: {e}",
                     pbar,
                 )
+                _record_skip(file_path, "path_error", str(e))
                 return
 
             rows: list[dict] = [
@@ -528,6 +537,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                     f"{C_YELLOW}[WARN]{C_RESET} Geen chunk-output na chunking, overslaan: {relative_source}",
                     pbar,
                 )
+                _record_skip(file_path, "no_chunks", str(relative_source))
                 return
 
             cap = max_chunks_per_source()
@@ -647,6 +657,9 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
             _finalize_file(file_path, text, err, None, ocr_method=ocr_m)
             return
         plain = _read_plain_utf8(file_path, pbar)
+        if plain is None:
+            _record_skip(file_path, "read_failed", "UTF-8 lezen mislukt")
+            return
         _finalize_file(file_path, plain, None, None)
 
     n_all = len(to_process)
