@@ -78,14 +78,19 @@ Write-Host "[INFO] Log (UTF-8): $LogPath"
 Write-Host "[INFO] Live: $env:HERMES_LANCEDB_PATH\rag_ingest_live_status.json"
 
 if (Test-Path $LogPath) { Remove-Item -LiteralPath $LogPath -Force -ErrorAction SilentlyContinue }
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+$writer = [System.IO.StreamWriter]::new($LogPath, $false, $utf8NoBom)
 $exit = 0
 try {
     & cmd /c $tmpBat 2>&1 | ForEach-Object {
-        Write-Output $_
-        Add-Content -LiteralPath $LogPath -Value $_ -Encoding utf8
+        $line = if ($_ -is [string]) { $_ } else { $_.ToString() }
+        Write-Output $line
+        $writer.WriteLine($line)
+        $writer.Flush()
     }
     if ($null -ne $LASTEXITCODE) { $exit = [int]$LASTEXITCODE }
 } finally {
+    $writer.Dispose()
     Remove-Item -LiteralPath $tmpBat -Force -ErrorAction SilentlyContinue
 }
 
