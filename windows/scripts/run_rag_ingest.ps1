@@ -6,7 +6,8 @@ param(
     [string]$RepoRoot = ""
 )
 
-$ErrorActionPreference = "Stop"
+# Niet "Stop": cmd/python schrijven waarschuwingen naar stderr (torch e.d.) — dat is geen fout.
+$ErrorActionPreference = "Continue"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $scriptDir "..\..")).Path
@@ -70,7 +71,10 @@ $exit = 0
 try {
     $output = & cmd /c $tmpBat 2>&1
     if ($null -ne $LASTEXITCODE) { $exit = [int]$LASTEXITCODE }
-    $output | Tee-Object -FilePath $LogPath -Encoding utf8 | ForEach-Object { $_ }
+    $output | ForEach-Object { Write-Output $_ }
+    if ($null -ne $output) {
+        @($output) | Out-File -FilePath $LogPath -Encoding utf8
+    }
 } finally {
     Remove-Item -LiteralPath $tmpBat -Force -ErrorAction SilentlyContinue
 }
