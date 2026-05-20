@@ -1,0 +1,13 @@
+# Hermes-agent: editor encoding (Cursor/VS Code leest .editorconfig)
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+
+[windows/scripts/rag_ingest_run.log]
+charset = utf-8
+end_of_line = crlf
+
+[**/*_ingest*.log]
+charset = utf-8

@@ -9,6 +9,7 @@ param(
 # Niet "Stop": cmd/python schrijven waarschuwingen naar stderr (torch e.d.) — dat is geen fout.
 $ErrorActionPreference = "Continue"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+. (Join-Path $scriptDir "rag_log_encoding.ps1")
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $scriptDir "..\..")).Path
 }
@@ -77,9 +78,7 @@ Write-Host "[INFO] Ingest via conda env: $CondaEnv"
 Write-Host "[INFO] Log (UTF-8): $LogPath"
 Write-Host "[INFO] Live: $env:HERMES_LANCEDB_PATH\rag_ingest_live_status.json"
 
-if (Test-Path $LogPath) { Remove-Item -LiteralPath $LogPath -Force -ErrorAction SilentlyContinue }
-$utf8NoBom = New-Object System.Text.UTF8Encoding $false
-$writer = [System.IO.StreamWriter]::new($LogPath, $false, $utf8NoBom)
+$writer = New-RagIngestLogWriter -LogPath $LogPath
 $exit = 0
 try {
     & cmd /c $tmpBat 2>&1 | ForEach-Object {

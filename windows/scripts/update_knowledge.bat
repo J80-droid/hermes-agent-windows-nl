@@ -119,7 +119,8 @@ set "HERMES_RAG_INGEST_LOG=%RAG_LOG%"
 
 echo [RAG-UPDATE] [INFO] Start LanceDB-ingest ^(idempotente upsert per bronbestand^)...
 echo [INFO] Bronmap: %HERMES_RAG_RAW_SOURCE%
-echo [INFO] Log ^(UTF-8^): %RAG_LOG%
+echo [INFO] Log ^(UTF-8 zonder BOM^): %RAG_LOG%
+echo [INFO] Cursor: open log als UTF-8 ^(zie .editorconfig^), niet UTF-16.
 echo [INFO] Live status: %HERMES_LANCEDB%\rag_ingest_live_status.json
 
 rem Ingest via hermes-env ^(conda^) — niet losse powershell-python ^(verkeerde interpreter^).

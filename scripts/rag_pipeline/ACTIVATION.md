@@ -47,7 +47,7 @@ Scripts in deze map:
 | `HERMES_RAG_STATE_CHECKPOINT` | `25` | Ingest-staat wegschrijven elke N succesvolle bronnen |
 | `HERMES_RAG_SKIP_REPORT` | *(LanceDB-map)* | JSON+MD-rapport overgeslagen bronnen (PDF/PNG-lijst) |
 
-**Institutioneel (2026-05):** sequentiële verwerking per bron, live status `rag_ingest_live_status.json`, checkpoints, timeouts, OCR/stub-rapport. `update_knowledge.bat` logt UTF-8 via `Tee-Object`.
+**Institutioneel (2026-05):** sequentiële verwerking per bron, live status `rag_ingest_live_status.json`, checkpoints, timeouts, OCR/stub-rapport. Log: `windows/scripts/rag_ingest_run.log` als **UTF-8 zonder BOM** (`run_rag_ingest.ps1` + `.editorconfig`). In Cursor: encoding **UTF-8** (niet UTF-16).
 
 **Live zichtbaarheid:** elke 3s `[LIVE] 12/1030 · 05:12 · MarkItDown · bestand.pdf` + postfix `⏳ 05:12 · stap · bestand` — zo zie je direct of een zware PDF nog loopt of vastzit (`HERMES_RAG_LIVE_TICK_SEC`, `HERMES_RAG_LIVE_LOG=0` om log-regels uit te zetten).
 

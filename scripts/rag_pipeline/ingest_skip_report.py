@@ -121,10 +121,12 @@ class SkipReport:
 
 
 def read_ingest_log_text(log_path: Path) -> str:
-    """Lees ingest-log (UTF-16 LE met BOM van CMD, of UTF-8)."""
+    """Lees ingest-log (UTF-8 zonder BOM, of legacy UTF-16 LE)."""
     raw = log_path.read_bytes()
     if raw.startswith(b"\xff\xfe") or raw.startswith(b"\xfe\xff"):
         return raw.decode("utf-16", errors="replace")
+    if raw.startswith(b"\xef\xbb\xbf"):
+        return raw[3:].decode("utf-8", errors="replace")
     return raw.decode("utf-8", errors="replace")
 
 
