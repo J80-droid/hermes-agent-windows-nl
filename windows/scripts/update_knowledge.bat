@@ -137,6 +137,9 @@ echo [INFO] Log ^(UTF-8 zonder BOM^): %RAG_LOG%
 echo [INFO] Cursor: open log als UTF-8 ^(zie .editorconfig^), niet UTF-16.
 echo [INFO] Live status: %HERMES_LANCEDB%\rag_ingest_live_status.json
 
+rem ANSI-kleuren in console ^(VT-mode^) vóór ingest-output.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0enable_console_ansi.ps1" 2>nul
+
 rem Ingest via hermes-env ^(conda^) — niet losse powershell-python ^(verkeerde interpreter^).
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0run_rag_ingest.ps1" -LogPath "%RAG_LOG%" -CondaEnv "%HERMES_CONDA_ENV%"
 set ERR=%ERRORLEVEL%

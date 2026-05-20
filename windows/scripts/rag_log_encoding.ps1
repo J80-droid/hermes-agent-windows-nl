@@ -1,4 +1,16 @@
 # Gedeelde UTF-8 (zonder BOM) log-hulp — voorkomt mojibake in Cursor/VS Code.
+function Strip-RagAnsi {
+    param([string]$Text)
+    if (-not $Text) { return $Text }
+    return [regex]::Replace($Text, '\x1b\[[0-9;?]*[ -/]*[@-~]', '')
+}
+
+function Write-RagConsoleLine {
+    param([string]$Line)
+    # Log = plat tekst; console = ANSI (VT moet aan staan via enable_console_ansi.ps1).
+    [Console]::WriteLine($Line)
+}
+
 function New-RagIngestLogWriter {
     param([Parameter(Mandatory)][string]$LogPath)
     if (Test-Path -LiteralPath $LogPath) {

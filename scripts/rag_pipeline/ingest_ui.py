@@ -53,13 +53,21 @@ if USE_COLOR:
 else:
     C_GOLD = C_AMBER = C_CYAN = C_GREEN = C_YELLOW = C_RED = C_DIM = C_RESET = ""
 
-try:
-    import colorama
+def _init_colorama() -> None:
+    if not USE_COLOR or sys.platform != "win32":
+        return
+    try:
+        import colorama
 
-    if USE_COLOR:
-        colorama.init()
-except ImportError:
-    pass
+        if hasattr(colorama, "just_fix_windows_console"):
+            colorama.just_fix_windows_console()
+        else:
+            colorama.init()
+    except ImportError:
+        pass
+
+
+_init_colorama()
 
 try:
     from tqdm import tqdm as tqdm_lib
@@ -137,19 +145,29 @@ def create_file_progress(total: int):
     """tqdm with explicit n/total (e.g. 3/1669) and Hermes gold bar."""
     fp = sys.stderr if _tty_err() else sys.stdout if _tty_out() else sys.stderr
     desc = f"{C_GOLD}RAG Index{C_RESET}" if USE_COLOR else "RAG Index"
+    if USE_COLOR:
+        bar_fmt = (
+            f"{C_GOLD}{{desc}}{C_RESET} {{percentage:3.0f}}%|"
+            f"{C_AMBER}{{bar:28}}{C_RESET}| {C_CYAN}{{n_fmt}}{C_RESET}/"
+            f"{C_CYAN}{{total_fmt}}{C_RESET} [{C_DIM}{{elapsed}}<{{remaining}}{C_RESET}]"
+            f"{{postfix}}"
+        )
+    else:
+        bar_fmt = (
+            "{desc} {percentage:3.0f}%|{bar:28}| {n_fmt}/{total_fmt} "
+            "[{elapsed}<{remaining}]{postfix}"
+        )
     bar_kw: dict = {
         "total": total,
-        "desc": desc,
+        "desc": desc if not USE_COLOR else "RAG Index",
         "unit": "bron",
         "disable": not TTY_PROGRESS,
         "file": fp,
         "dynamic_ncols": True,
-        "bar_format": (
-            "{desc} {percentage:3.0f}%|{bar:28}| {n_fmt}/{total_fmt} "
-            "[{elapsed}<{remaining}]{postfix}"
-        ),
+        "bar_format": bar_fmt,
+        "ascii": not USE_COLOR,
     }
-    if USE_COLOR:
+    if USE_COLOR and (_tty_err() or _tty_out()):
         bar_kw["colour"] = "yellow"
     return tqdm_lib(**bar_kw)
 

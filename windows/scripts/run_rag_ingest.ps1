@@ -10,6 +10,7 @@ param(
 $ErrorActionPreference = "Continue"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $scriptDir "rag_log_encoding.ps1")
+. (Join-Path $scriptDir "enable_console_ansi.ps1")
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $scriptDir "..\..")).Path
 }
@@ -97,8 +98,8 @@ try {
         if ($line -match '^(System\.Management\.Automation\.RemoteException|CategoryInfo|FullyQualifiedErrorId)') {
             return
         }
-        Write-Host $line
-        $writer.WriteLine($line)
+        Write-RagConsoleLine $line
+        $writer.WriteLine((Strip-RagAnsi $line))
         $writer.Flush()
     }
     if ($null -ne $LASTEXITCODE) { $exit = [int]$LASTEXITCODE }
