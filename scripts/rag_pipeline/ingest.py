@@ -72,7 +72,13 @@ except ImportError:
 
 from ingest_config import filter_ingest_candidates, max_file_bytes
 from ingest_handlers import convert_document
-from ingest_state import IngestState, incremental_ingest_enabled, orphan_cleanup_enabled
+from ingest_state import (
+    IngestState,
+    checkpoint_interval,
+    incremental_ingest_enabled,
+    orphan_cleanup_enabled,
+    state_file_path,
+)
 from orphan_cleanup import delete_all_chunks_for_source, delete_orphan_chunks_for_source
 from source_formats import MARKITDOWN_SUFFIXES, MEDIA_SUFFIXES, supported_extension_globs
 from subtitle_sidecar import filter_subtitles_indexed_via_media, read_media_text_via_sidecar
@@ -550,19 +556,70 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
     wave_i = 0
     n_all = len(to_process)
 
-    while wave_i < n_all:
-        wave = to_process[wave_i : wave_i + conv_workers]
-        wave_i += len(wave)
-        for file_path in wave:
-            if file_path.suffix.lower() in _MEDIA_SUFFIXES:
-                _process_media_file(file_path)
-        md_list = [p for p in wave if p.suffix.lower() in _MARKITDOWN_SUFFIXES]
-        use_md_pool = parallel_conv and len(md_list) > 1
-        pool_workers = max(1, min(conv_workers, len(md_list)))
+    try:
+        while wave_i < n_all:
+            wave = to_process[wave_i : wave_i + conv_workers]
+            wave_i += len(wave)
+            for file_path in wave:
+                if file_path.suffix.lower() in _MEDIA_SUFFIXES:
+                    _process_media_file(file_path)
+            md_list = [p for p in wave if p.suffix.lower() in _MARKITDOWN_SUFFIXES]
+            use_md_pool = parallel_conv and len(md_list) > 1
+            pool_workers = max(1, min(conv_workers, len(md_list)))
 
-        if use_md_pool:
-            with ThreadPoolExecutor(max_workers=pool_workers) as ex:
-                pending: dict = {}
+            if use_md_pool:
+                with ThreadPoolExecutor(max_workers=pool_workers) as ex:
+                    pending: dict = {}
+                    for file_path in wave:
+                        suf = file_path.suffix.lower()
+                        if suf in _MEDIA_SUFFIXES:
+                            continue
+                        if suf in _MARKITDOWN_SUFFIXES:
+                            log_during_progress(
+                                f"{C_DIM}[INFO] [CONVERTEREN]{C_RESET} MarkItDown: {file_path.name}{C_DIM} …{C_RESET}",
+                                pbar,
+                            )
+                            pending[ex.submit(convert_document, file_path)] = file_path
+                        else:
+                            plain = _read_plain_utf8(file_path, pbar)
+                            _finalize_file(file_path, plain, None, None)
+
+                    if not pending:
+                        continue
+
+                    done_ev = threading.Event()
+                    bt: threading.Thread | None = None
+                    total_md_tasks = len(pending)
+                    if hb_sec > 0:
+
+                        def _heartbeat() -> None:
+                            while not done_ev.wait(timeout=hb_sec):
+                                alive = sum(1 for f in pending if not f.done())
+                                if alive <= 0:
+                                    break
+                                set_progress_phase_count(
+                                    pbar,
+                                    "MarkItDown",
+                                    total_md_tasks - alive,
+                                    total_md_tasks,
+                                )
+
+                        bt = threading.Thread(target=_heartbeat, daemon=True)
+                        bt.start()
+
+                    try:
+                        for fut in as_completed(pending):
+                            fp = pending[fut]
+                            try:
+                                text, err = fut.result()
+                            except Exception as e:
+                                text, err = "", f"{type(e).__name__}: {e}"
+                            _finalize_file(fp, text, err, None)
+                    finally:
+                        done_ev.set()
+                        if bt is not None:
+                            bt.join(timeout=1.0)
+            else:
                 for file_path in wave:
                     suf = file_path.suffix.lower()
                     if suf in _MEDIA_SUFFIXES:
@@ -572,72 +629,31 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                             f"{C_DIM}[INFO] [CONVERTEREN]{C_RESET} MarkItDown: {file_path.name}{C_DIM} …{C_RESET}",
                             pbar,
                         )
-                        pending[ex.submit(convert_document, file_path)] = file_path
+                        text, err = convert_document(file_path)
+                        _finalize_file(file_path, text, err, None)
                     else:
                         plain = _read_plain_utf8(file_path, pbar)
                         _finalize_file(file_path, plain, None, None)
 
-                if not pending:
-                    continue
-
-                done_ev = threading.Event()
-                bt: threading.Thread | None = None
-                total_md_tasks = len(pending)
-                if hb_sec > 0:
-
-                    def _heartbeat() -> None:
-                        while not done_ev.wait(timeout=hb_sec):
-                            alive = sum(1 for f in pending if not f.done())
-                            if alive <= 0:
-                                break
-                            set_progress_phase_count(
-                                pbar,
-                                "MarkItDown",
-                                total_md_tasks - alive,
-                                total_md_tasks,
-                            )
-
-                    bt = threading.Thread(target=_heartbeat, daemon=True)
-                    bt.start()
-
-                try:
-                    for fut in as_completed(pending):
-                        fp = pending[fut]
-                        try:
-                            text, err = fut.result()
-                        except Exception as e:
-                            text, err = "", f"{type(e).__name__}: {e}"
-                        _finalize_file(fp, text, err, None)
-                finally:
-                    done_ev.set()
-                    if bt is not None:
-                        bt.join(timeout=1.0)
-        else:
-            for file_path in wave:
-                suf = file_path.suffix.lower()
-                if suf in _MEDIA_SUFFIXES:
-                    continue
-                if suf in _MARKITDOWN_SUFFIXES:
-                    log_during_progress(
-                        f"{C_DIM}[INFO] [CONVERTEREN]{C_RESET} MarkItDown: {file_path.name}{C_DIM} …{C_RESET}",
-                        pbar,
+        removed_sources = ingest_state.prune_removed_sources(current_sources)
+        for rel in removed_sources:
+            if orphan_cleanup_enabled():
+                n = delete_all_chunks_for_source(table, rel)
+                if n:
+                    print(
+                        f"{C_CYAN}[INFO]{C_RESET} Verwijderd uit index (bron weg uit scan): {rel} "
+                        f"({n} chunk(s))"
                     )
-                    text, err = convert_document(file_path)
-                    _finalize_file(file_path, text, err, None)
-                else:
-                    plain = _read_plain_utf8(file_path, pbar)
-                    _finalize_file(file_path, plain, None, None)
-
-    removed_sources = ingest_state.prune_removed_sources(current_sources)
-    for rel in removed_sources:
-        if orphan_cleanup_enabled():
-            n = delete_all_chunks_for_source(table, rel)
-            if n:
+    finally:
+        if ingest_state.entries:
+            ingest_state.save()
+            n_entries = len(ingest_state.entries)
+            every = checkpoint_interval()
+            if every > 0:
                 print(
-                    f"{C_CYAN}[INFO]{C_RESET} Verwijderd uit index (bron weg uit scan): {rel} "
-                    f"({n} chunk(s))"
+                    f"{C_CYAN}[INFO]{C_RESET} Ingest-staat opgeslagen ({n_entries} bronnen): "
+                    f"{state_file_path()} (checkpoint elke {every} bronnen + bij afsluiten)."
                 )
-    ingest_state.save()
 
     if hasattr(pbar, "close"):
         pbar.close()

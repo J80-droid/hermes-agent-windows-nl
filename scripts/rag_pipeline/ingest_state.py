@@ -31,6 +31,16 @@ def orphan_cleanup_enabled() -> bool:
     return _env_truthy("HERMES_RAG_ORPHAN_CLEANUP", default="1")
 
 
+def checkpoint_interval() -> int:
+    """Schrijf ingest-staat elke N succesvolle bronnen (0 = alleen bij save()/einde)."""
+    raw = (os.environ.get("HERMES_RAG_STATE_CHECKPOINT") or "25").strip()
+    try:
+        n = int(raw)
+    except ValueError:
+        n = 25
+    return max(0, n)
+
+
 def _hash_full_max_bytes() -> int:
     raw = (os.environ.get("HERMES_RAG_HASH_FULL_MAX_MB") or "32").strip()
     try:
@@ -65,6 +75,7 @@ def file_content_fingerprint(path: Path) -> str:
 class IngestState:
     def __init__(self, entries: dict[str, dict[str, Any]] | None = None) -> None:
         self.entries: dict[str, dict[str, Any]] = entries or {}
+        self._pending_checkpoint: int = 0
 
     @classmethod
     def load(cls) -> IngestState:
@@ -114,20 +125,44 @@ class IngestState:
             return prev.get("content_hash") != fp
         return False
 
+    def _entry_for_path(self, path: Path, *, chunk_count: int) -> dict[str, Any]:
+        st = path.stat()
+        return {
+            "mtime_ns": st.st_mtime_ns,
+            "size": st.st_size,
+            "content_hash": file_content_fingerprint(path),
+            "chunk_count": chunk_count,
+        }
+
     def record_success(
         self,
         relative_source: str,
         path: Path,
         *,
         chunk_count: int,
+        checkpoint: bool = True,
     ) -> None:
-        st = path.stat()
-        self.entries[relative_source] = {
-            "mtime_ns": st.st_mtime_ns,
-            "size": st.st_size,
-            "content_hash": file_content_fingerprint(path),
-            "chunk_count": chunk_count,
-        }
+        self.entries[relative_source] = self._entry_for_path(path, chunk_count=chunk_count)
+        if checkpoint:
+            self.maybe_checkpoint_save()
+
+    def maybe_checkpoint_save(self) -> None:
+        """Periodieke persist zodat een crash/OOM niet alle voortgang wist."""
+        every = checkpoint_interval()
+        if every <= 0:
+            return
+        self._pending_checkpoint += 1
+        if self._pending_checkpoint >= every:
+            self.save()
+            self._pending_checkpoint = 0
+
+    def bootstrap_entry(self, relative_source: str, path: Path, *, chunk_count: int = 0) -> bool:
+        """Registreer bron vanuit bestaande index (geen LanceDB-herindex)."""
+        try:
+            self.entries[relative_source] = self._entry_for_path(path, chunk_count=chunk_count)
+            return True
+        except OSError:
+            return False
 
     def prune_removed_sources(self, current_sources: set[str]) -> list[str]:
         removed = [k for k in self.entries if k not in current_sources]
