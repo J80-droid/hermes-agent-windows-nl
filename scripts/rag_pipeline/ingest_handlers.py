@@ -5,9 +5,12 @@ from __future__ import annotations
 import shutil
 import subprocess
 import tempfile
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from pathlib import Path
 
 from markitdown import MarkItDown
+
+from ingest_ocr import convert_timeout_sec, extract_fallback_text
 
 # Als MarkItDown faalt, probeer pandoc (indien op PATH)
 PANDOC_FALLBACK_SUFFIXES: frozenset[str] = frozenset(
@@ -51,18 +54,43 @@ def _pandoc_to_markdown(path: Path) -> tuple[str, str | None]:
         return (out_md.read_text(encoding="utf-8", errors="replace"), None)
 
 
-def convert_document(path: Path) -> tuple[str, str | None]:
-    """MarkItDown eerst; bij falen optioneel pandoc voor legacy Office/OpenDocument."""
+def _convert_document_impl(path: Path) -> tuple[str, str | None, str]:
+    """Returns (text, error, ocr_method)."""
     text, err = convert_markitdown_one(path)
     if err is None and text.strip():
-        return text, None
+        return text, None, ""
     suf = path.suffix.lower()
-    if suf not in PANDOC_FALLBACK_SUFFIXES:
-        return text, err
-    ptext, perr = _pandoc_to_markdown(path)
-    if perr is None and ptext.strip():
-        return ptext, None
+    if suf in PANDOC_FALLBACK_SUFFIXES:
+        ptext, perr = _pandoc_to_markdown(path)
+        if perr is None and ptext.strip():
+            return ptext, None, ""
+        combined = err or ""
+        if perr:
+            combined = f"{combined}; pandoc: {perr}" if combined else f"pandoc: {perr}"
+        text = text or ptext
+        err = combined or err
+    if text.strip():
+        return text, None, ""
+
+    fallback, ocr_note = extract_fallback_text(path)
+    if fallback.strip():
+        return fallback, None, ocr_note or "fallback"
     combined = err or ""
-    if perr:
-        combined = f"{combined}; pandoc: {perr}" if combined else f"pandoc: {perr}"
-    return text or ptext, combined or "lege conversie"
+    if ocr_note:
+        combined = f"{combined}; {ocr_note}" if combined else ocr_note
+    return text or "", combined or "lege conversie", ocr_note or ""
+
+
+def convert_document(path: Path) -> tuple[str, str | None, str]:
+    """MarkItDown → pandoc (Office) → PyMuPDF/Tesseract. Returns (text, err, ocr_method)."""
+    timeout = convert_timeout_sec()
+    if timeout <= 0:
+        t, e, m = _convert_document_impl(path)
+        return t, e, m
+    with ThreadPoolExecutor(max_workers=1) as ex:
+        fut = ex.submit(_convert_document_impl, path)
+        try:
+            t, e, m = fut.result(timeout=timeout)
+            return t, e, m
+        except FuturesTimeoutError:
+            return "", f"timeout na {int(timeout)}s", ""

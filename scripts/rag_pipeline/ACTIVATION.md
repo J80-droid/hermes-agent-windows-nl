@@ -35,6 +35,16 @@ Scripts in deze map:
 | `HERMES_RAG_EMBED_BATCH` | `64` | Embedding-batchgrootte; cap in ingest: `512` |
 | `HERMES_RAG_CONVERT_HEARTBEAT_SEC` | `3.0` | Heartbeat tijdens parallelle conversie; `0` = uit |
 | `HERMES_RAG_VERBOSE` | `0` | `1` = uitgebreide regels per bestand; `0` = compact (balk + ✓/WARN) |
+| `HERMES_RAG_PYMUPDF` | `1` | Na lege MarkItDown: PDF-tekstlaag via PyMuPDF (`pip install pymupdf`, zit in `[rag]`) |
+| `HERMES_RAG_OCR` | `1` | Scans/beeld: Tesseract op PATH + `pip install pytesseract pillow` (optioneel) |
+| `HERMES_RAG_OCR_LANG` | `nld+eng` | Tesseract-taal(pakketten) |
+| `HERMES_RAG_CONVERT_TIMEOUT_SEC` | `600` | Max. seconden per bestand (MarkItDown+OCR); `0` = geen limiet |
+| `HERMES_RAG_STATE_CHECKPOINT` | `25` | Ingest-staat wegschrijven elke N succesvolle bronnen |
+| `HERMES_RAG_SKIP_REPORT` | *(LanceDB-map)* | JSON+MD-rapport overgeslagen bronnen (PDF/PNG-lijst) |
+
+**Overgeslagen rapport:** na ingest `rag_ingest_skipped_report.json` + `.md` in de LanceDB-map. Achteraf uit log: `python scripts/rag_pipeline/report_rag_skipped.py` (leest standaard `windows/scripts/rag_ingest_run.log`).
+
+**0-byte verwijs-.txt:** stub-tekst uit bestandsnaam wordt wél geïndexeerd (Productie N → zie DEEL …).
 
 **UI:** `ingest.py` toont een gouden voortgangsbalk `n/totaal` (zoals `install-jamel.ps1`). In een interactieve terminal; bij redirect naar log blijven tekstregels zichtbaar.
 

@@ -107,6 +107,7 @@ rag = [
   # Geen markitdown[all] hier: conflicteert met [all] (youtube-transcript-api pins).
   # Na uv/pip [rag]: ook `pip install "markitdown[all]==0.1.5"` (install_rag_extras.ps1 doet dit).
   "markitdown==0.1.5",
+  "pymupdf==1.25.5",
   "pyarrow==24.0.0",
   "hermes-agent[mcp]",
   # Media-ingest (ingest.py / audio_transcriber); ffmpeg blijft systeem-binary op PATH.

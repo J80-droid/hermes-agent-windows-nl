@@ -72,6 +72,8 @@ except ImportError:
 
 from ingest_config import filter_ingest_candidates, max_file_bytes
 from ingest_handlers import convert_document
+from ingest_ocr import stub_text_from_empty_file
+from ingest_skip_report import SkipReport, default_report_path
 from ingest_state import (
     IngestState,
     checkpoint_interval,
@@ -290,7 +292,12 @@ def _read_plain_utf8(file_path: Path, pbar: object) -> str | None:
     )
     try:
         with open(file_path, "r", encoding="utf-8") as f:
-            return f.read()
+            text = f.read()
+        if not text.strip():
+            stub = stub_text_from_empty_file(file_path)
+            if stub:
+                return stub
+        return text
     except OSError as e:
         log_during_progress(
             f"{C_YELLOW}[WARN]{C_RESET} Bestand niet leesbaar (IO): {file_path}: {e}",
@@ -403,14 +410,41 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
 
     print_phase("Indexeren")
     pbar = create_file_progress(len(to_process))
+    skip_report = SkipReport()
 
     parallel_conv = conv_workers > 1
+
+    def _file_size(path: Path) -> int | None:
+        try:
+            return path.stat().st_size
+        except OSError:
+            return None
+
+    def _record_skip(
+        file_path: Path,
+        reason: str,
+        detail: str = "",
+        *,
+        ocr_attempted: bool = False,
+        ocr_method: str = "",
+    ) -> None:
+        skip_report.add(
+            file_path,
+            path,
+            reason=reason,
+            detail=detail,
+            size_bytes=_file_size(file_path),
+            ocr_attempted=ocr_attempted,
+            ocr_method=ocr_method,
+        )
 
     def _finalize_file(
         file_path: Path,
         content: str | None,
         md_err: str | None,
         temp_txt_path: Optional[Path] = None,
+        *,
+        ocr_method: str = "",
     ) -> None:
         nonlocal any_indexed
         set_progress_file(pbar, file_path, path)
@@ -420,6 +454,13 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                     f"{C_YELLOW}[WARN]{C_RESET} MarkItDown-conversie mislukt voor {file_path}: {md_err}",
                     pbar,
                 )
+                _record_skip(
+                    file_path,
+                    "convert_failed",
+                    md_err,
+                    ocr_attempted=bool(ocr_method),
+                    ocr_method=ocr_method,
+                )
                 return
             if content is None:
                 return
@@ -428,7 +469,20 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                     f"{C_YELLOW}[WARN]{C_RESET} Lege inhoud na inlezen/conversie, overslaan: {file_path}",
                     pbar,
                 )
+                suf = file_path.suffix.lower()
+                _record_skip(
+                    file_path,
+                    "empty_after_convert",
+                    ocr_method or "markitdown+fallback",
+                    ocr_attempted=suf in {".pdf", ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".webp"},
+                    ocr_method=ocr_method,
+                )
                 return
+            if ocr_method:
+                log_during_progress(
+                    f"{C_CYAN}[INFO]{C_RESET} OCR/fallback ({ocr_method}): {file_path.name}",
+                    pbar,
+                )
 
             try:
                 chunks = semantic_chunk_document(content, max_words=max_words)
@@ -611,11 +665,11 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                     try:
                         for fut in as_completed(pending):
                             fp = pending[fut]
-                            try:
-                                text, err = fut.result()
-                            except Exception as e:
-                                text, err = "", f"{type(e).__name__}: {e}"
-                            _finalize_file(fp, text, err, None)
+                        try:
+                            text, err, ocr_m = fut.result()
+                        except Exception as e:
+                            text, err, ocr_m = "", f"{type(e).__name__}: {e}", ""
+                        _finalize_file(fp, text, err, None, ocr_method=ocr_m)
                     finally:
                         done_ev.set()
                         if bt is not None:
@@ -630,8 +684,8 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                             f"{C_DIM}[INFO] [CONVERTEREN]{C_RESET} MarkItDown: {file_path.name}{C_DIM} …{C_RESET}",
                             pbar,
                         )
-                        text, err = convert_document(file_path)
-                        _finalize_file(file_path, text, err, None)
+                    text, err, ocr_m = convert_document(file_path)
+                    _finalize_file(file_path, text, err, None, ocr_method=ocr_m)
                     else:
                         plain = _read_plain_utf8(file_path, pbar)
                         _finalize_file(file_path, plain, None, None)
@@ -655,6 +709,13 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                     f"{C_CYAN}[INFO]{C_RESET} Ingest-staat opgeslagen ({n_entries} bronnen): "
                     f"{state_file_path()} (checkpoint elke {every} bronnen + bij afsluiten)."
                 )
+        if skip_report.entries:
+            report_path = skip_report.write()
+            print(
+                f"{C_CYAN}[INFO]{C_RESET} Overgeslagen-rapport: {report_path} "
+                f"({len(skip_report.entries)} bronnen; PDF/PNG-lijst: "
+                f"{report_path.with_suffix('.md')})"
+            )
 
     if hasattr(pbar, "close"):
         pbar.close()
