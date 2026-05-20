@@ -7425,8 +7425,24 @@ def _stop_peer_hermes_processes_for_update() -> None:
             print(f"  ⚠ {err[0]}")
 
 
+def _get_update_exclude_pids() -> set[int]:
+    """PIDs that belong to this ``hermes update`` invocation (self + ancestors).
+
+    ``conda run hermes`` on Windows often leaves a ``hermes.exe`` launcher in the
+    parent chain while ``os.getpid()`` is the ``python.exe`` child. Without
+    excluding ancestors, the concurrent-instance gate false-positives on that
+    wrapper (see #26670 / fork UPDATE_HERMES.bat).
+    """
+    try:
+        from hermes_cli.gateway import _get_ancestor_pids
+
+        return _get_ancestor_pids()
+    except Exception:
+        return {os.getpid()}
+
+
 def _detect_concurrent_hermes_instances(
-    scripts_dir: Path, *, exclude_pid: int | None = None
+    scripts_dir: Path, *, exclude_pids: set[int] | None = None
 ) -> list[tuple[int, str]]:
     """Find other live processes whose .exe is one of our entry-point shims.
 
@@ -7439,8 +7455,9 @@ def _detect_concurrent_hermes_instances(
 
     This helper enumerates processes whose ``exe`` matches one of the venv's
     shims (``hermes.exe`` / ``hermes-gateway.exe``) and returns ``(pid,
-    process_name)`` pairs. The caller's own PID is excluded so the running
-    ``hermes update`` invocation never reports itself.
+    process_name)`` pairs.     The caller's PID and its ancestor chain are excluded so the running
+    ``hermes update`` invocation (and ``conda run`` / launcher parents) are
+    never reported as concurrent.
 
     Returns an empty list off-Windows, on missing psutil, or when no other
     instances exist. Never raises — process enumeration is best-effort.
@@ -7453,8 +7470,8 @@ def _detect_concurrent_hermes_instances(
     except Exception:
         return []
 
-    if exclude_pid is None:
-        exclude_pid = os.getpid()
+    if exclude_pids is None:
+        exclude_pids = _get_update_exclude_pids()
 
     # Resolve every shim path to its canonical form once for cheap comparison.
     shim_paths: set[str] = set()
@@ -7479,7 +7496,7 @@ def _detect_concurrent_hermes_instances(
             continue
         pid = info.get("pid")
         exe = info.get("exe")
-        if not exe or pid is None or pid == exclude_pid:
+        if not exe or pid is None or pid in exclude_pids:
             continue
         try:
             exe_norm = str(Path(exe).resolve()).lower()
