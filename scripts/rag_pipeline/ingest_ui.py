@@ -139,21 +139,22 @@ def create_file_progress(total: int):
     return tqdm_lib(**bar_kw)
 
 
-def log_during_progress(pbar: object, message: str, *, force: bool = False) -> None:
+def log_during_progress(message: str, pbar: object, *, force: bool = False) -> None:
     """Write without breaking the progress bar. Skip detail unless verbose."""
-    if not force and not VERBOSE and "[WARN]" not in message and "[ERROR]" not in message:
-        if "[OK]" in message or "Kennisbron succesvol" in message:
+    msg = str(message)
+    if not force and not VERBOSE and "[WARN]" not in msg and "[ERROR]" not in msg:
+        if "[OK]" in msg or "Kennisbron succesvol" in msg:
             pass  # always show per-file OK in compact mode
-        elif "[INFO]" in message or "[CONVERTEREN]" in message or "[EMBEDDEN]" in message or "[LEZEN]" in message:
+        elif "[INFO]" in msg or "[CONVERTEREN]" in msg or "[EMBEDDEN]" in msg or "[LEZEN]" in msg:
             return
     fp = getattr(pbar, "fp", None) or LOG_IO
     if hasattr(pbar, "set_postfix_str") and not getattr(pbar, "disable", True):
         try:
-            tqdm_lib.write(message, file=fp)
+            tqdm_lib.write(msg, file=fp)
         except Exception:
-            print(message, file=fp)
+            print(msg, file=fp)
     else:
-        print(message, file=fp)
+        print(msg, file=fp)
 
 
 def set_progress_file(pbar: object, file_path: Path, root: Path, phase: str = "") -> None:
