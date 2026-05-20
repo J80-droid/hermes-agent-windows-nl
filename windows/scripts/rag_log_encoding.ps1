@@ -13,13 +13,16 @@ function Repair-RagIngestLogEncoding {
     if (-not (Test-Path -LiteralPath $LogPath)) { return }
     $bytes = [System.IO.File]::ReadAllBytes($LogPath)
     if ($bytes.Length -eq 0) { return }
-    $text = if ($bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) {
-        [System.Text.Encoding]::Unicode.GetString($bytes, 2, $bytes.Length - 2)
-    } elseif ($bytes[0] -eq 0xFE -and $bytes[1] -eq 0xFF) {
-        [System.Text.Encoding]::BigEndianUnicode.GetString($bytes, 2, $bytes.Length - 2)
+    if ($bytes.Length -ge 2 -and $bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) {
+        $text = [System.Text.Encoding]::Unicode.GetString($bytes, 2, $bytes.Length - 2)
+    } elseif ($bytes.Length -ge 2 -and $bytes[0] -eq 0xFE -and $bytes[1] -eq 0xFF) {
+        $text = [System.Text.Encoding]::BigEndianUnicode.GetString($bytes, 2, $bytes.Length - 2)
     } else {
-        $utf8 = New-Object System.Text.UTF8Encoding $true
-        $utf8.GetString($bytes)
+        while ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+            $bytes = $bytes[3..($bytes.Length - 1)]
+        }
+        $utf8 = New-Object System.Text.UTF8Encoding $false
+        $text = $utf8.GetString($bytes)
     }
     $utf8NoBom = New-Object System.Text.UTF8Encoding $false
     [System.IO.File]::WriteAllText($LogPath, $text, $utf8NoBom)
