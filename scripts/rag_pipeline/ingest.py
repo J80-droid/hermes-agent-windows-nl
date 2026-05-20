@@ -1,9 +1,8 @@
+import gc
 import hashlib
 import os
 import re
 import sys
-import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Optional
 
@@ -73,6 +72,15 @@ except ImportError:
 from ingest_config import filter_ingest_candidates, max_file_bytes
 from ingest_handlers import convert_document
 from ingest_ocr import stub_text_from_empty_file
+from ingest_runtime import (
+    FileJobTimeout,
+    allow_parallel_convert,
+    file_timeout_sec,
+    gc_every_n_files,
+    max_chunks_per_source,
+    run_file_job,
+    write_live_status,
+)
 from ingest_skip_report import SkipReport, default_report_path
 from ingest_state import (
     IngestState,
@@ -402,17 +410,18 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
         db_path=DB_PATH,
         workers=conv_workers,
     )
-    if conv_workers > 1:
-        _ui_info(
-            f"Parallel MarkItDown: max. {conv_workers} tegelijk | embed batch {embed_batch} | "
-            f"heartbeat {hb_sec}s (0=uit) | detail: HERMES_RAG_VERBOSE=1"
-        )
+    file_timeout = file_timeout_sec()
+    parallel = allow_parallel_convert() and conv_workers > 1
+    _ui_info(
+        f"Modus: {'parallel MarkItDown' if parallel else 'sequentieel (institutioneel)'} | "
+        f"workers={conv_workers} | embed batch {embed_batch} | "
+        f"timeout/bron={int(file_timeout)}s (0=uit) | heartbeat {hb_sec}s | "
+        f"live status in LanceDB-map | detail: HERMES_RAG_VERBOSE=1"
+    )
 
     print_phase("Indexeren")
     pbar = create_file_progress(len(to_process))
     skip_report = SkipReport()
-
-    parallel_conv = conv_workers > 1
 
     def _file_size(path: Path) -> int | None:
         try:
@@ -517,6 +526,15 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                 )
                 return
 
+            cap = max_chunks_per_source()
+            if cap > 0 and len(rows) > cap:
+                log_during_progress(
+                    f"{C_YELLOW}[WARN]{C_RESET} {len(rows)} chunks → cap {cap} voor {relative_source} "
+                    f"(HERMES_RAG_MAX_CHUNKS_PER_SOURCE)",
+                    pbar,
+                )
+                rows = rows[:cap]
+
             _upsert_rows_with_embed_progress(
                 table, rows, str(relative_source), pbar, embed_batch=embed_batch
             )
@@ -542,9 +560,6 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
         finally:
             if temp_txt_path is not None:
                 temp_txt_path.unlink(missing_ok=True)
-            upd = getattr(pbar, "update", None)
-            if callable(upd):
-                upd(1)
 
     def _process_media_file(file_path: Path) -> None:
         """Media: standaard Whisper (kwaliteit); ondertitel-sidecar alleen als fallback of expliciet."""
@@ -608,87 +623,67 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
         )
         _finalize_file(file_path, None, "geen transcriptie beschikbaar", None)
 
-    wave_i = 0
+    def _process_one_file(file_path: Path) -> None:
+        suf = file_path.suffix.lower()
+        if suf in _MEDIA_SUFFIXES:
+            _process_media_file(file_path)
+            return
+        if suf in _MARKITDOWN_SUFFIXES:
+            log_during_progress(
+                f"{C_DIM}[INFO] [CONVERTEREN]{C_RESET} MarkItDown: {file_path.name}{C_DIM} …{C_RESET}",
+                pbar,
+            )
+            text, err, ocr_m = convert_document(file_path)
+            _finalize_file(file_path, text, err, None, ocr_method=ocr_m)
+            return
+        plain = _read_plain_utf8(file_path, pbar)
+        _finalize_file(file_path, plain, None, None)
+
     n_all = len(to_process)
+    gc_every = gc_every_n_files()
 
     try:
-        while wave_i < n_all:
-            wave = to_process[wave_i : wave_i + conv_workers]
-            wave_i += len(wave)
-            for file_path in wave:
-                if file_path.suffix.lower() in _MEDIA_SUFFIXES:
-                    _process_media_file(file_path)
-            md_list = [p for p in wave if p.suffix.lower() in _MARKITDOWN_SUFFIXES]
-            use_md_pool = parallel_conv and len(md_list) > 1
-            pool_workers = max(1, min(conv_workers, len(md_list)))
-
-            if use_md_pool:
-                with ThreadPoolExecutor(max_workers=pool_workers) as ex:
-                    pending: dict = {}
-                    for file_path in wave:
-                        suf = file_path.suffix.lower()
-                        if suf in _MEDIA_SUFFIXES:
-                            continue
-                        if suf in _MARKITDOWN_SUFFIXES:
-                            log_during_progress(
-                                f"{C_DIM}[INFO] [CONVERTEREN]{C_RESET} MarkItDown: {file_path.name}{C_DIM} …{C_RESET}",
-                                pbar,
-                            )
-                            pending[ex.submit(convert_document, file_path)] = file_path
-                        else:
-                            plain = _read_plain_utf8(file_path, pbar)
-                            _finalize_file(file_path, plain, None, None)
-
-                    if not pending:
-                        continue
-
-                    done_ev = threading.Event()
-                    bt: threading.Thread | None = None
-                    total_md_tasks = len(pending)
-                    if hb_sec > 0:
-
-                        def _heartbeat() -> None:
-                            while not done_ev.wait(timeout=hb_sec):
-                                alive = sum(1 for f in pending if not f.done())
-                                if alive <= 0:
-                                    break
-                                set_progress_phase_count(
-                                    pbar,
-                                    "MarkItDown",
-                                    total_md_tasks - alive,
-                                    total_md_tasks,
-                                )
-
-                        bt = threading.Thread(target=_heartbeat, daemon=True)
-                        bt.start()
-
-                    try:
-                        for fut in as_completed(pending):
-                            fp = pending[fut]
-                        try:
-                            text, err, ocr_m = fut.result()
-                        except Exception as e:
-                            text, err, ocr_m = "", f"{type(e).__name__}: {e}", ""
-                        _finalize_file(fp, text, err, None, ocr_method=ocr_m)
-                    finally:
-                        done_ev.set()
-                        if bt is not None:
-                            bt.join(timeout=1.0)
-            else:
-                for file_path in wave:
-                    suf = file_path.suffix.lower()
-                    if suf in _MEDIA_SUFFIXES:
-                        continue
-                    if suf in _MARKITDOWN_SUFFIXES:
-                        log_during_progress(
-                            f"{C_DIM}[INFO] [CONVERTEREN]{C_RESET} MarkItDown: {file_path.name}{C_DIM} …{C_RESET}",
-                            pbar,
-                        )
-                    text, err, ocr_m = convert_document(file_path)
-                    _finalize_file(file_path, text, err, None, ocr_method=ocr_m)
-                    else:
-                        plain = _read_plain_utf8(file_path, pbar)
-                        _finalize_file(file_path, plain, None, None)
+        for idx, file_path in enumerate(to_process, start=1):
+            rel = _relative_source(file_path, path)
+            set_progress_file(pbar, file_path, path, phase="Bezig")
+            write_live_status(
+                phase="index",
+                index=idx,
+                total=n_all,
+                relative_source=rel,
+                step="start",
+                extra=file_path.name,
+            )
+            try:
+                run_file_job(lambda fp=file_path: _process_one_file(fp))
+            except FileJobTimeout as e:
+                log_during_progress(
+                    f"{C_YELLOW}[WARN]{C_RESET} Timeout per bron, overslaan: {file_path} ({e})",
+                    pbar,
+                    force=True,
+                )
+                _record_skip(file_path, "file_timeout", str(e))
+            except Exception as e:
+                log_during_progress(
+                    f"{C_YELLOW}[WARN]{C_RESET} Fout bij verwerken, overslaan: {file_path} "
+                    f"({type(e).__name__}: {e})",
+                    pbar,
+                    force=True,
+                )
+                _record_skip(file_path, "processing_error", f"{type(e).__name__}: {e}")
+            finally:
+                upd = getattr(pbar, "update", None)
+                if callable(upd):
+                    upd(1)
+                write_live_status(
+                    phase="index",
+                    index=idx,
+                    total=n_all,
+                    relative_source=rel,
+                    step="done",
+                )
+                if gc_every > 0 and idx % gc_every == 0:
+                    gc.collect()
 
         removed_sources = ingest_state.prune_removed_sources(current_sources)
         for rel in removed_sources:

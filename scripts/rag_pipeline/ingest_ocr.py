@@ -29,8 +29,16 @@ def pymupdf_fallback_enabled() -> bool:
     return _env_truthy("HERMES_RAG_PYMUPDF", default="1")
 
 
+def pymupdf_max_pages() -> int:
+    raw = (os.environ.get("HERMES_RAG_PYMUPDF_MAX_PAGES") or "80").strip()
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return 80
+
+
 def convert_timeout_sec() -> float:
-    raw = (os.environ.get("HERMES_RAG_CONVERT_TIMEOUT_SEC") or "600").strip()
+    raw = (os.environ.get("HERMES_RAG_CONVERT_TIMEOUT_SEC") or "300").strip()
     try:
         v = float(raw)
     except ValueError:
@@ -46,7 +54,11 @@ def _extract_pdf_pymupdf(path: Path) -> tuple[str, str]:
     try:
         doc = fitz.open(path)
         try:
-            parts = [page.get_text("text") for page in doc]
+            limit = pymupdf_max_pages()
+            n = min(len(doc), limit)
+            parts = [doc.load_page(i).get_text("text") for i in range(n)]
+            if len(doc) > n:
+                parts.append(f"[… {len(doc) - n} pagina's overgeslagen (HERMES_RAG_PYMUPDF_MAX_PAGES={limit})]")
         finally:
             doc.close()
         text = "\n".join(p for p in parts if p).strip()

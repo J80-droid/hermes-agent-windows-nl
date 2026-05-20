@@ -6,7 +6,8 @@ param(
 )
 
 function Get-RagPerfValues {
-    $profile = if ($env:HERMES_RAG_PERF_PROFILE) { $env:HERMES_RAG_PERF_PROFILE.Trim().ToLowerInvariant() } else { 'balanced' }
+    # Institutioneel default: safe (sequentieel, lage RAM, timeouts via update_knowledge.bat)
+    $profile = if ($env:HERMES_RAG_PERF_PROFILE) { $env:HERMES_RAG_PERF_PROFILE.Trim().ToLowerInvariant() } else { 'safe' }
 
     $cpu = [Environment]::ProcessorCount
     if ($cpu -lt 1) { $cpu = 4 }
@@ -17,7 +18,7 @@ function Get-RagPerfValues {
 
     switch ($profile) {
         'safe' {
-            $workers = 1
+            $workers = 2
             $embedBatch = 32
             $heartbeat = 5
         }
@@ -88,6 +89,11 @@ if ($EmitCmd) {
     if ($vals.Workers) { Write-Output "set HERMES_RAG_CONVERT_WORKERS=$($vals.Workers)" }
     if ($vals.EmbedBatch) { Write-Output "set HERMES_RAG_EMBED_BATCH=$($vals.EmbedBatch)" }
     if ($vals.Heartbeat) { Write-Output "set HERMES_RAG_CONVERT_HEARTBEAT_SEC=$($vals.Heartbeat)" }
+    if (-not $env:HERMES_RAG_ALLOW_PARALLEL) { Write-Output "set HERMES_RAG_ALLOW_PARALLEL=0" }
+    if (-not $env:HERMES_RAG_FILE_TIMEOUT_SEC) { Write-Output "set HERMES_RAG_FILE_TIMEOUT_SEC=1200" }
+    if (-not $env:HERMES_RAG_CONVERT_TIMEOUT_SEC) { Write-Output "set HERMES_RAG_CONVERT_TIMEOUT_SEC=300" }
+    if (-not $env:HERMES_RAG_STATE_CHECKPOINT) { Write-Output "set HERMES_RAG_STATE_CHECKPOINT=25" }
+    if (-not $env:HERMES_RAG_MAX_CHUNKS_PER_SOURCE) { Write-Output "set HERMES_RAG_MAX_CHUNKS_PER_SOURCE=800" }
 } else {
     Write-Host $info
 }

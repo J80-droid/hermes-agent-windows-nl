@@ -98,19 +98,34 @@ if errorlevel 1 (
 rem Zelfde pad doorgeven aan Python ^(ingest / kb_schema^) als hierboven gebruikt bij wis.
 set "HERMES_LANCEDB_PATH=%HERMES_LANCEDB%"
 
-rem Institutioneel: HERMES_RAG_PERF_PROFILE ^(safe|balanced|fast|off^); expliciete env wint.
+rem Institutioneel: safe default, sequentieel, timeouts, UTF-8 log ^(geen UTF-16^).
+set "PYTHONUNBUFFERED=1"
+set "PYTHONUTF8=1"
+if not defined HERMES_RAG_PERF_PROFILE set "HERMES_RAG_PERF_PROFILE=safe"
 for /f "delims=" %%L in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0rag_ingest_perf_defaults.ps1" -EmitCmd 2^>nul') do %%L
+
+set "RAG_LOG=%~dp0rag_ingest_run.log"
+set "HERMES_RAG_INGEST_LOG=%RAG_LOG%"
 
 echo [RAG-UPDATE] [INFO] Start LanceDB-ingest ^(idempotente upsert per bronbestand^)...
 echo [INFO] Start ingest: python scripts\rag_pipeline\ingest.py
-python scripts\rag_pipeline\ingest.py
-if errorlevel 1 (
-  echo [INFO] Ingest eindigde met fout ^(exit %ERRORLEVEL%^).
+echo [INFO] Log ^(UTF-8^): %RAG_LOG%
+echo [INFO] Live status: %HERMES_LANCEDB%\rag_ingest_live_status.json
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$env:PYTHONUNBUFFERED='1'; $env:PYTHONUTF8='1';" ^
+  "python scripts/rag_pipeline/ingest.py 2>&1 | Tee-Object -FilePath '%RAG_LOG%' -Encoding utf8"
+set ERR=%ERRORLEVEL%
+if %ERR% neq 0 (
+  echo [INFO] Ingest eindigde met fout ^(exit %ERR%^).
   if /i not "%HERMES_NONINTERACTIVE%"=="1" pause
-  exit /b %ERRORLEVEL%
+  exit /b %ERR%
 )
 
 echo [OK] Ingestie-scan afgerond ^(upsert + orphan cleanup + ingest-staat^).
+if exist "%HERMES_LANCEDB%\rag_ingest_skipped_report.md" (
+  echo [INFO] Overgeslagen PDF/PNG: %HERMES_LANCEDB%\rag_ingest_skipped_report.md
+)
 if /i not "%HERMES_NONINTERACTIVE%"=="1" pause
 endlocal
 goto :EOF

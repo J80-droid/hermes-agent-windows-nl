@@ -30,19 +30,26 @@ Scripts in deze map:
 | `HERMES_RAG_HASH_FULL_MAX_MB` | `32` | Volledige SHA-256 onder deze grootte; daarboven fingerprint |
 | `HERMES_WHISPER_MODEL` | `medium` | faster-whisper model (kwaliteit; `large-v3` trager/nauwkeuriger) |
 | `HERMES_RAG_PREFER_SIDECAR` | `0` | `1` = gebruik `.vtt`/`.srt` i.p.v. Whisper (sneller, niet standaard) |
-| `HERMES_RAG_PERF_PROFILE` | `balanced` | Preset vóór ingest: `safe`, `balanced`, `fast`, `off` — zie `windows/scripts/rag_ingest_perf_defaults.ps1` |
-| `HERMES_RAG_CONVERT_WORKERS` | `1` (ingest.py); `balanced` zet CPU-afhankelijk (2–8) | Parallel MarkItDown per golf; cap in ingest: `min(cpu, 8)` |
-| `HERMES_RAG_EMBED_BATCH` | `64` | Embedding-batchgrootte; cap in ingest: `512` |
-| `HERMES_RAG_CONVERT_HEARTBEAT_SEC` | `3.0` | Heartbeat tijdens parallelle conversie; `0` = uit |
+| `HERMES_RAG_PERF_PROFILE` | **`safe`** | Preset: `safe` (institutioneel), `balanced`, `fast`, `off` — `rag_ingest_perf_defaults.ps1` |
+| `HERMES_RAG_ALLOW_PARALLEL` | **`0`** | `1` = oude parallelle MarkItDown-golven (niet aanbevolen; kan hangen) |
+| `HERMES_RAG_FILE_TIMEOUT_SEC` | **`1200`** | Harde timeout per bron (convert+chunk+embed); `0` = uit |
+| `HERMES_RAG_CONVERT_WORKERS` | `2` (safe) | Alleen relevant bij `HERMES_RAG_ALLOW_PARALLEL=1` |
+| `HERMES_RAG_EMBED_BATCH` | `32` (safe) | Embedding-batch; cap in ingest: `512` |
+| `HERMES_RAG_CONVERT_HEARTBEAT_SEC` | `5` (safe) | Heartbeat bij parallelle modus |
+| `HERMES_RAG_MAX_CHUNKS_PER_SOURCE` | `800` | Voorkomt geheugenproblemen bij enorme documenten |
+| `HERMES_RAG_PYMUPDF_MAX_PAGES` | `80` | Max. PDF-pagina's voor PyMuPDF-fallback |
+| `HERMES_RAG_GC_EVERY` | `10` | `gc.collect()` elke N bronnen (Windows/RAM) |
 | `HERMES_RAG_VERBOSE` | `0` | `1` = uitgebreide regels per bestand; `0` = compact (balk + ✓/WARN) |
 | `HERMES_RAG_PYMUPDF` | `1` | Na lege MarkItDown: PDF-tekstlaag via PyMuPDF (`pip install pymupdf`, zit in `[rag]`) |
 | `HERMES_RAG_OCR` | `1` | Scans/beeld: Tesseract op PATH + `pip install pytesseract pillow` (optioneel) |
 | `HERMES_RAG_OCR_LANG` | `nld+eng` | Tesseract-taal(pakketten) |
-| `HERMES_RAG_CONVERT_TIMEOUT_SEC` | `600` | Max. seconden per bestand (MarkItDown+OCR); `0` = geen limiet |
+| `HERMES_RAG_CONVERT_TIMEOUT_SEC` | `300` | Timeout alleen conversie-stap (MarkItDown+OCR) |
 | `HERMES_RAG_STATE_CHECKPOINT` | `25` | Ingest-staat wegschrijven elke N succesvolle bronnen |
 | `HERMES_RAG_SKIP_REPORT` | *(LanceDB-map)* | JSON+MD-rapport overgeslagen bronnen (PDF/PNG-lijst) |
 
-**Overgeslagen rapport:** na ingest `rag_ingest_skipped_report.json` + `.md` in de LanceDB-map. Achteraf uit log: `python scripts/rag_pipeline/report_rag_skipped.py` (leest standaard `windows/scripts/rag_ingest_run.log`).
+**Institutioneel (2026-05):** sequentiële verwerking per bron, live status `rag_ingest_live_status.json`, checkpoints, timeouts, OCR/stub-rapport. `update_knowledge.bat` logt UTF-8 via `Tee-Object`.
+
+**Overgeslagen rapport:** na ingest `rag_ingest_skipped_report.json` + `.md` in de LanceDB-map. Achteraf: `windows\scripts\report_rag_skipped.bat` of `report_rag_skipped.py`.
 
 **0-byte verwijs-.txt:** stub-tekst uit bestandsnaam wordt wél geïndexeerd (Productie N → zie DEEL …).
 
