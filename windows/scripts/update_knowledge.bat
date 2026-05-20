@@ -99,6 +99,14 @@ rem Zelfde pad doorgeven aan Python ^(ingest / kb_schema^) als hierboven gebruik
 set "HERMES_LANCEDB_PATH=%HERMES_LANCEDB%"
 if not defined HERMES_RAG_RAW_SOURCE set "HERMES_RAG_RAW_SOURCE=%USERPROFILE%\data\raw_source_files"
 
+rem Tesseract OCR ^(UB Mannheim^) voor scan-PDF/PNG; nld via tessdata.
+if exist "C:\Program Files\Tesseract-OCR\tesseract.exe" (
+  set "PATH=C:\Program Files\Tesseract-OCR;%PATH%"
+)
+if exist "%USERPROFILE%\Hermes\tessdata\nld.traineddata" (
+  set "TESSDATA_PREFIX=%USERPROFILE%\Hermes\"
+)
+
 rem Institutioneel: safe default, sequentieel, timeouts, UTF-8 log ^(geen UTF-16^).
 set "PYTHONUNBUFFERED=1"
 set "PYTHONUTF8=1"

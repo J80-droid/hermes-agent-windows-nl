@@ -44,6 +44,15 @@ if (-not $activate) {
 
 $env:PYTHONUNBUFFERED = "1"
 $env:PYTHONUTF8 = "1"
+$tesseractBin = "C:\Program Files\Tesseract-OCR"
+if (Test-Path $tesseractBin) {
+    $env:PATH = "$tesseractBin;$env:PATH"
+}
+$userTess = Join-Path $env:USERPROFILE "Hermes"
+$nld = Join-Path $userTess "tessdata\nld.traineddata"
+if (Test-Path $nld) {
+    $env:TESSDATA_PREFIX = "$userTess\"
+}
 if (-not $env:HERMES_RAG_PERF_PROFILE) { $env:HERMES_RAG_PERF_PROFILE = "safe" }
 
 # Perf defaults (zelfde als update_knowledge.bat)
