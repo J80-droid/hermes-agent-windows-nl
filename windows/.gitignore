@@ -1,6 +1,7 @@
 # Lokaal / gegenereerd — niet versioneren
 *.lnk
 *_last_run.log
+rag_ingest_run.log
 last_pytest_run.log
 *.corrupt.bak
 _backup_last_run.log
