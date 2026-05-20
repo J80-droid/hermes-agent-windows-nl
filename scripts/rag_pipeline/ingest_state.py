@@ -56,6 +56,11 @@ def state_file_path() -> Path:
     return Path(DB_PATH) / STATE_BASENAME
 
 
+def normalize_relative_source(relative_source: str) -> str:
+    """Eenduidige sleutel voor state/LanceDB (forward slashes, ook op Windows)."""
+    return str(relative_source).replace("\\", "/")
+
+
 def file_content_fingerprint(path: Path) -> str:
     """SHA-256 van inhoud (kleine bestanden) of deterministische fp bij grote bestanden."""
     st = path.stat()
@@ -91,7 +96,12 @@ class IngestState:
         raw = data.get("sources")
         if not isinstance(raw, dict):
             return cls()
-        return cls(entries={str(k): dict(v) for k, v in raw.items() if isinstance(v, dict)})
+        entries = {
+            normalize_relative_source(str(k)): dict(v)
+            for k, v in raw.items()
+            if isinstance(v, dict)
+        }
+        return cls(entries=entries)
 
     def save(self) -> None:
         p = state_file_path()
@@ -113,7 +123,8 @@ class IngestState:
     def needs_processing(self, relative_source: str, path: Path) -> bool:
         if not incremental_ingest_enabled():
             return True
-        prev = self.entries.get(relative_source)
+        rel = normalize_relative_source(relative_source)
+        prev = self.entries.get(rel)
         if prev is None:
             return True
         try:
@@ -142,7 +153,8 @@ class IngestState:
         chunk_count: int,
         checkpoint: bool = True,
     ) -> None:
-        self.entries[relative_source] = self._entry_for_path(path, chunk_count=chunk_count)
+        rel = normalize_relative_source(relative_source)
+        self.entries[rel] = self._entry_for_path(path, chunk_count=chunk_count)
         if checkpoint:
             self.maybe_checkpoint_save()
 
@@ -159,13 +171,15 @@ class IngestState:
     def bootstrap_entry(self, relative_source: str, path: Path, *, chunk_count: int = 0) -> bool:
         """Registreer bron vanuit bestaande index (geen LanceDB-herindex)."""
         try:
-            self.entries[relative_source] = self._entry_for_path(path, chunk_count=chunk_count)
+            rel = normalize_relative_source(relative_source)
+            self.entries[rel] = self._entry_for_path(path, chunk_count=chunk_count)
             return True
         except OSError:
             return False
 
     def prune_removed_sources(self, current_sources: set[str]) -> list[str]:
-        removed = [k for k in self.entries if k not in current_sources]
+        normalized_current = {normalize_relative_source(s) for s in current_sources}
+        removed = [k for k in self.entries if k not in normalized_current]
         for k in removed:
             del self.entries[k]
         return removed

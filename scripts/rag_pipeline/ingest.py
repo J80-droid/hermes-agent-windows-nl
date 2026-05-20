@@ -76,6 +76,7 @@ from ingest_state import (
     IngestState,
     checkpoint_interval,
     incremental_ingest_enabled,
+    normalize_relative_source,
     orphan_cleanup_enabled,
     state_file_path,
 )
@@ -278,7 +279,7 @@ def _upsert_rows_with_embed_progress(
 
 
 def _relative_source(file_path: Path, root: Path) -> str:
-    return str(file_path.relative_to(root))
+    return normalize_relative_source(str(file_path.relative_to(root)))
 
 
 def _read_plain_utf8(file_path: Path, pbar: object) -> str | None:
@@ -364,7 +365,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
             f"{subtitle_dup_skip} bestand(en) overgeslagen."
         )
 
-    current_sources = {_relative_source(p, path) for p in all_files}
+    current_sources = {normalize_relative_source(_relative_source(p, path)) for p in all_files}
     ingest_state = IngestState.load()
     to_process: list[Path] = []
     skipped_unchanged = 0
