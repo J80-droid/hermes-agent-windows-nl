@@ -51,7 +51,8 @@ if (Test-Path $tesseractBin) {
 $userTess = Join-Path $env:USERPROFILE "Hermes"
 $nld = Join-Path $userTess "tessdata\nld.traineddata"
 if (Test-Path $nld) {
-    $env:TESSDATA_PREFIX = "$userTess\"
+    # pytesseract: TESSDATA_PREFIX = map met eng.traineddata / nld.traineddata
+    $env:TESSDATA_PREFIX = Join-Path $userTess "tessdata"
 }
 if (-not $env:HERMES_RAG_PERF_PROFILE) { $env:HERMES_RAG_PERF_PROFILE = "safe" }
 

@@ -19,6 +19,25 @@ def _env_truthy(name: str, *, default: str = "1") -> bool:
     return raw.lower() not in ("0", "false", "no", "n", "off")
 
 
+def _ensure_tesseract_env() -> None:
+    """Zet TESSDATA_PREFIX + PATH; pytesseract verwacht de map met .traineddata-bestanden."""
+    bin_dir = Path(r"C:\Program Files\Tesseract-OCR")
+    if bin_dir.is_dir() and not shutil.which("tesseract"):
+        os.environ["PATH"] = f"{bin_dir};{os.environ.get('PATH', '')}"
+    user_tess = Path.home() / "Hermes" / "tessdata"
+    nld = user_tess / "nld.traineddata"
+    if not nld.is_file():
+        return
+    prefix = (os.environ.get("TESSDATA_PREFIX") or "").strip()
+    if prefix and (Path(prefix) / "nld.traineddata").is_file():
+        return
+    parent = Path(prefix) if prefix else None
+    if parent and (parent / "tessdata" / "nld.traineddata").is_file():
+        os.environ["TESSDATA_PREFIX"] = str(parent / "tessdata")
+        return
+    os.environ["TESSDATA_PREFIX"] = str(user_tess)
+
+
 def ocr_tesseract_enabled() -> bool:
     """Tesseract-OCR (scans/beeld-PDF). Uit met HERMES_RAG_OCR=0."""
     return _env_truthy("HERMES_RAG_OCR", default="1")
@@ -70,6 +89,7 @@ def _extract_pdf_pymupdf(path: Path) -> tuple[str, str]:
 
 
 def _extract_image_tesseract(path: Path) -> tuple[str, str]:
+    _ensure_tesseract_env()
     if not shutil.which("tesseract"):
         return "", "tesseract niet op PATH (install Tesseract OCR voor scans)"
     try:
@@ -89,6 +109,7 @@ def _extract_image_tesseract(path: Path) -> tuple[str, str]:
 
 
 def _extract_pdf_tesseract(path: Path, *, max_pages: int = 25) -> tuple[str, str]:
+    _ensure_tesseract_env()
     if not shutil.which("tesseract"):
         return "", "tesseract niet op PATH"
     try:

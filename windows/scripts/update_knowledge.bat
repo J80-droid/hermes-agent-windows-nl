@@ -104,7 +104,8 @@ if exist "C:\Program Files\Tesseract-OCR\tesseract.exe" (
   set "PATH=C:\Program Files\Tesseract-OCR;%PATH%"
 )
 if exist "%USERPROFILE%\Hermes\tessdata\nld.traineddata" (
-  set "TESSDATA_PREFIX=%USERPROFILE%\Hermes\"
+  rem pytesseract verwacht de map met .traineddata-bestanden, niet de parent Hermes\
+  set "TESSDATA_PREFIX=%USERPROFILE%\Hermes\tessdata"
 )
 
 rem Institutioneel: safe default, sequentieel, timeouts, UTF-8 log ^(geen UTF-16^).
