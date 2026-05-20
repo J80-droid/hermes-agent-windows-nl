@@ -34,6 +34,9 @@ Scripts in deze map:
 | `HERMES_RAG_CONVERT_WORKERS` | `1` (ingest.py); `balanced` zet CPU-afhankelijk (2–8) | Parallel MarkItDown per golf; cap in ingest: `min(cpu, 8)` |
 | `HERMES_RAG_EMBED_BATCH` | `64` | Embedding-batchgrootte; cap in ingest: `512` |
 | `HERMES_RAG_CONVERT_HEARTBEAT_SEC` | `3.0` | Heartbeat tijdens parallelle conversie; `0` = uit |
+| `HERMES_RAG_VERBOSE` | `0` | `1` = uitgebreide regels per bestand; `0` = compact (balk + ✓/WARN) |
+
+**UI:** `ingest.py` toont een gouden voortgangsbalk `n/totaal` (zoals `install-jamel.ps1`). In een interactieve terminal; bij redirect naar log blijven tekstregels zichtbaar.
 
 **Performance:** `update_knowledge.bat` roept `rag_ingest_perf_defaults.ps1` aan na conda-activate. Expliciet gezette env-variabelen worden **niet** overschreven. Taakplanner: `set HERMES_RAG_PERF_PROFILE=safe` of `set HERMES_NONINTERACTIVE=1` + `HERMES_RAG_FRESH=1`.
 

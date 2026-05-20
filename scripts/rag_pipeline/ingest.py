@@ -40,55 +40,26 @@ def _float_env_nonnegative(name: str, default: float) -> float:
     return max(0.0, v)
 
 
-# Kleuren: `print()` gaat naar stdout; tqdm vaak naar stderr. Alleen op stderr.isatty()
-# te testen geeft op sommige Windows/conda/cmd-combinaties grijs/wit (stderr ≠ TTY).
-# Respecteer https://no-color.org/ — NO_COLOR wint altijd.
-_TTY_OUT = sys.stdout.isatty()
-_TTY_ERR = sys.stderr.isatty()
-_FORCE_COLOR = _env_truthy("FORCE_COLOR") or _env_truthy("HERMES_FORCE_COLOR")
-_USE_COLOR = ("NO_COLOR" not in os.environ) and (_FORCE_COLOR or _TTY_OUT or _TTY_ERR)
-_LOG_IO = sys.stderr if _TTY_ERR else sys.stdout if _TTY_OUT else sys.stderr
-_TTY_PROGRESS = _TTY_OUT or _TTY_ERR
-
-try:
-    import colorama
-
-    if _USE_COLOR:
-        colorama.init()
-except ImportError:
-    pass
-
-if _USE_COLOR:
-    C_GREEN = "\033[92m"
-    C_CYAN = "\033[96m"
-    C_YELLOW = "\033[93m"
-    C_RED = "\033[91m"
-    C_DIM = "\033[2m"
-    C_RESET = "\033[0m"
-else:
-    C_GREEN = C_CYAN = C_YELLOW = C_RED = C_DIM = C_RESET = ""
-
-try:
-    from tqdm import tqdm as _tqdm
-except ImportError:
-    # Optioneel: `pip install tqdm` voor voortgangsbalk bij grote bulk-ingest.
-    class _TqdmShim:
-        __slots__ = ("disable", "fp")
-
-        def __init__(self, **_kwargs: object) -> None:
-            self.disable = True
-            self.fp = None
-
-        def update(self, n: int = 1) -> None:
-            return None
-
-        def set_postfix_str(self, *_a: object, **_k: object) -> None:
-            return None
-
-    def _tqdm(*args: object, **kwargs: object):  # type: ignore[misc]
-        if args:
-            return args[0]
-        return _TqdmShim(**kwargs)
+from ingest_ui import (
+    C_CYAN,
+    C_DIM,
+    C_GREEN,
+    C_RED,
+    C_RESET,
+    C_YELLOW,
+    LOG_IO as _LOG_IO,
+    TTY_PROGRESS as _TTY_PROGRESS,
+    compact_ok_line,
+    create_file_progress,
+    info as _ui_info,
+    log_during_progress,
+    ok as _ui_ok,
+    print_banner,
+    print_phase,
+    set_progress_file,
+    set_progress_phase_count,
+    warn as _ui_warn,
+)
 
 from kb_schema import DB_PATH, TABLE_NAME, KnowledgeSchema, list_all_table_names
 
@@ -241,21 +212,6 @@ def _collect_rag_source_files(path: Path, extensions: list[str]) -> list[Path]:
     return filtered
 
 
-def _set_ingest_progress_postfix(pbar: object, file_path: Path, root: Path, max_chars: int = 72) -> None:
-    """Toont het actieve bronpad in tqdm (blijft staan tijdens zware MarkItDown/embedding-stappen)."""
-    if not hasattr(pbar, "set_postfix_str"):
-        return
-    try:
-        rel = file_path.relative_to(root)
-        label = rel.as_posix()
-    except ValueError:
-        label = str(file_path)
-    if len(label) > max_chars:
-        label = "…" + label[-(max_chars - 1) :]
-    styled = f"{C_DIM}{label}{C_RESET}" if C_DIM else label
-    pbar.set_postfix_str(styled, refresh=True)
-
-
 def _chunk_row_id(relative_source: str, chunk_index: int) -> str:
     """Deterministische sleutel: zelfde bron + chunk-index => zelfde id (veilig voor upsert)."""
     rel = Path(relative_source).as_posix()
@@ -285,30 +241,30 @@ def _upsert_rows_with_embed_progress(
         return
     b = max(1, embed_batch)
     if n <= b:
-        _ingest_log_loop(
+        log_during_progress(
             f"{C_DIM}[INFO] [EMBEDDEN]{C_RESET} LanceDB + sentence-transformers: {n} chunk(s), "
             f"{relative_source}{C_DIM} …{C_RESET}",
             pbar,
         )
-        _ingest_log_loop(
+        log_during_progress(
             f"{C_CYAN}[INFO]{C_RESET} Upsert {n} chunk(s) voor bron: {relative_source} (merge_insert op id)...",
             pbar,
         )
         _upsert_chunk_rows(table, rows)
         return
 
-    _ingest_log_loop(
+    log_during_progress(
         f"{C_DIM}[INFO] [EMBEDDEN]{C_RESET} {n} chunk(s) in batches van {b}: {relative_source}{C_DIM} …{C_RESET}",
         pbar,
     )
     for i in range(0, n, b):
         part = rows[i : i + b]
         lo, hi = i + 1, i + len(part)
-        _ingest_log_loop(
+        log_during_progress(
             f"{C_DIM}[INFO] [EMBEDDEN]{C_RESET} batch {lo}–{hi} / {n} — {relative_source}{C_DIM} …{C_RESET}",
             pbar,
         )
-        _ingest_log_loop(
+        log_during_progress(
             f"{C_CYAN}[INFO]{C_RESET} Upsert {len(part)} chunk(s) (merge_insert op id)...",
             pbar,
         )
@@ -321,7 +277,7 @@ def _relative_source(file_path: Path, root: Path) -> str:
 
 def _read_plain_utf8(file_path: Path, pbar: object) -> str | None:
     """Leest UTF-8 platte tekst; `None` bij fout (waarschuwing al gelogd)."""
-    _ingest_log_loop(
+    log_during_progress(
         f"{C_DIM}[INFO] [LEZEN]{C_RESET} UTF-8: {file_path.name}{C_DIM} …{C_RESET}",
         pbar,
     )
@@ -329,13 +285,13 @@ def _read_plain_utf8(file_path: Path, pbar: object) -> str | None:
         with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
     except OSError as e:
-        _ingest_log_loop(
+        log_during_progress(
             f"{C_YELLOW}[WARN]{C_RESET} Bestand niet leesbaar (IO): {file_path}: {e}",
             pbar,
         )
         return None
     except UnicodeDecodeError as e:
-        _ingest_log_loop(
+        log_during_progress(
             f"{C_YELLOW}[WARN]{C_RESET} Geen geldige UTF-8: {file_path}: {e}",
             pbar,
         )
@@ -357,28 +313,14 @@ def semantic_chunk_document(text: str, max_words: int = DEFAULT_MAX_WORDS) -> li
     return [c for c in chunks if c.strip()]
 
 
-def _ingest_log_loop(message: str, pbar: object) -> None:
-    """Log tijdens tqdm: gebruik tqdm.write zodat de voortgangsbalk niet verspringt (geen print-waterfall)."""
-    fp = getattr(pbar, "fp", None) or _LOG_IO
-    if hasattr(pbar, "set_postfix_str") and not getattr(pbar, "disable", True):
-        try:
-            from tqdm import tqdm
-
-            tqdm.write(message, file=fp)
-        except ImportError:
-            print(message, file=fp)
-    else:
-        print(message, file=fp)
-
-
 def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS):
     """Scant de bronmap, verwerkt bestanden en schrijft naar LanceDB met idempotente upsert op `id`."""
-    print(f"{C_CYAN}[INFO]{C_RESET} Initialiseren databaseverbinding op: {DB_PATH}")
+    _ui_info(f"Initialiseren databaseverbinding op: {DB_PATH}")
     db = lancedb.connect(DB_PATH)
 
     if TABLE_NAME in list_all_table_names(db):
         table = db.open_table(TABLE_NAME)
-        print(f"{C_CYAN}[INFO]{C_RESET} Bestaande tabel '{TABLE_NAME}' geopend.")
+        _ui_info(f"Bestaande tabel '{TABLE_NAME}' geopend.")
         if not _schema_has_id(table.schema):
             print(
                 f"{C_RED}[ERROR]{C_RESET} De bestaande tabel mist de kolom 'id' (oud schema vóór upsert-architectuur)."
@@ -390,11 +332,12 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
             sys.exit(2)
     else:
         table = db.create_table(TABLE_NAME, schema=KnowledgeSchema)
-        print(f"{C_CYAN}[INFO]{C_RESET} Nieuwe tabel '{TABLE_NAME}' succesvol aangemaakt.")
+        _ui_info(f"Nieuwe tabel '{TABLE_NAME}' succesvol aangemaakt.")
 
     supported_extensions = supported_extension_globs()
 
-    print(f"{C_CYAN}[INFO]{C_RESET} Scannen van directory: {source_directory}")
+    print_phase("Scan bronmap")
+    _ui_info(f"Directory: {source_directory}")
     _max_b = max_file_bytes()
     if _max_b is not None:
         print(
@@ -435,30 +378,24 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
     else:
         to_process = all_files
 
-    print(f"{C_CYAN}[INFO]{C_RESET} Te verwerken bestanden: {len(to_process)} (scan totaal: {len(all_files)})")
     _cpu = os.cpu_count() or 4
     conv_workers = _int_env_positive("HERMES_RAG_CONVERT_WORKERS", 1, cap=min(_cpu, 8))
     embed_batch = _int_env_positive("HERMES_RAG_EMBED_BATCH", 64, cap=512)
     hb_sec = _float_env_nonnegative("HERMES_RAG_CONVERT_HEARTBEAT_SEC", 3.0)
+    print_banner(
+        total_files=len(to_process),
+        scan_total=len(all_files),
+        db_path=DB_PATH,
+        workers=conv_workers,
+    )
     if conv_workers > 1:
-        print(
-            f"{C_CYAN}[INFO]{C_RESET} MarkItDown parallel per golf: max. {conv_workers} bestand(en) tegelijk "
-            f"(`HERMES_RAG_CONVERT_WORKERS`). Conversie: `as_completed` + optionele heartbeat "
-            f"(`HERMES_RAG_CONVERT_HEARTBEAT_SEC`={hb_sec}s; zet op 0 om uit te zetten). "
-            f"Embeddings: batches van max. {embed_batch} chunks (`HERMES_RAG_EMBED_BATCH`)."
+        _ui_info(
+            f"Parallel MarkItDown: max. {conv_workers} tegelijk | embed batch {embed_batch} | "
+            f"heartbeat {hb_sec}s (0=uit) | detail: HERMES_RAG_VERBOSE=1"
         )
 
-    _tqdm_file = sys.stderr if _TTY_ERR else sys.stdout if _TTY_OUT else sys.stderr
-    _use_bar_color = bool(C_CYAN and _TTY_PROGRESS)
-    pbar = _tqdm(
-        total=len(to_process),
-        desc="[RAG-PROGRESS] Indexeren van kennisdomeinen",
-        unit="bestand",
-        disable=not _TTY_PROGRESS,
-        file=_tqdm_file,
-        dynamic_ncols=True,
-        **({"colour": "cyan"} if _use_bar_color else {}),
-    )
+    print_phase("Indexeren")
+    pbar = create_file_progress(len(to_process))
 
     parallel_conv = conv_workers > 1
 
@@ -469,10 +406,10 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
         temp_txt_path: Optional[Path] = None,
     ) -> None:
         nonlocal any_indexed
-        _set_ingest_progress_postfix(pbar, file_path, path)
+        set_progress_file(pbar, file_path, path)
         try:
             if md_err is not None:
-                _ingest_log_loop(
+                log_during_progress(
                     f"{C_YELLOW}[WARN]{C_RESET} MarkItDown-conversie mislukt voor {file_path}: {md_err}",
                     pbar,
                 )
@@ -480,7 +417,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
             if content is None:
                 return
             if not content.strip():
-                _ingest_log_loop(
+                log_during_progress(
                     f"{C_YELLOW}[WARN]{C_RESET} Lege inhoud na inlezen/conversie, overslaan: {file_path}",
                     pbar,
                 )
@@ -489,7 +426,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
             try:
                 chunks = semantic_chunk_document(content, max_words=max_words)
             except Exception as e:
-                _ingest_log_loop(
+                log_during_progress(
                     f"{C_YELLOW}[WARN]{C_RESET} Chunking mislukt voor {file_path} ({type(e).__name__}): {e}",
                     pbar,
                 )
@@ -498,7 +435,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
             try:
                 relative_source = _relative_source(file_path, path)
             except ValueError as e:
-                _ingest_log_loop(
+                log_during_progress(
                     f"{C_YELLOW}[WARN]{C_RESET} Pad relatief maken mislukt voor {file_path}: {e}",
                     pbar,
                 )
@@ -513,7 +450,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                 for i, chunk in enumerate(chunks)
             ]
             if not rows:
-                _ingest_log_loop(
+                log_during_progress(
                     f"{C_YELLOW}[WARN]{C_RESET} Geen chunk-output na chunking, overslaan: {relative_source}",
                     pbar,
                 )
@@ -527,7 +464,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                     table, str(relative_source), [r["id"] for r in rows]
                 )
                 if removed:
-                    _ingest_log_loop(
+                    log_during_progress(
                         f"{C_DIM}[INFO]{C_RESET} Orphan cleanup: {removed} oude chunk(s) "
                         f"verwijderd voor {relative_source}",
                         pbar,
@@ -536,9 +473,10 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                 str(relative_source), file_path, chunk_count=len(rows)
             )
             any_indexed = True
-            _ingest_log_loop(
-                f"{C_GREEN}[RAG-UPDATE] [OK]{C_RESET} Kennisbron succesvol geïndexeerd/bijgewerkt: {relative_source}",
+            log_during_progress(
+                compact_ok_line(relative_source, len(rows)),
                 pbar,
+                force=True,
             )
         finally:
             if temp_txt_path is not None:
@@ -555,7 +493,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
         if prefer_sidecar:
             sidecar_text, sidecar_path = read_media_text_via_sidecar(file_path)
             if sidecar_text is not None:
-                _ingest_log_loop(
+                log_during_progress(
                     f"{C_DIM}[INFO] [ONDERTITELS]{C_RESET} {sidecar_path.name} "
                     f"(HERMES_RAG_PREFER_SIDECAR=1) voor {file_path.name}{C_DIM} …{C_RESET}",
                     pbar,
@@ -565,7 +503,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
 
         if _HAS_AUDIO_TRANSCRIBER:
             try:
-                _ingest_log_loop(
+                log_during_progress(
                     f"{C_DIM}[INFO] [TRANSCRIBEREN]{C_RESET} Whisper: {file_path.name}{C_DIM} …{C_RESET}",
                     pbar,
                 )
@@ -577,13 +515,13 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                 if temp_txt_path is not None:
                     temp_txt_path.unlink(missing_ok=True)
                     temp_txt_path = None
-                _ingest_log_loop(
+                log_during_progress(
                     f"{C_YELLOW}[WARN]{C_RESET} Whisper mislukt voor {file_path} ({type(e).__name__}): {e}",
                     pbar,
                 )
                 sidecar_text, sidecar_path = read_media_text_via_sidecar(file_path)
                 if sidecar_text is not None:
-                    _ingest_log_loop(
+                    log_during_progress(
                         f"{C_DIM}[INFO] [ONDERTITELS]{C_RESET} fallback na Whisper-fout: "
                         f"{sidecar_path.name}{C_DIM} …{C_RESET}",
                         pbar,
@@ -595,7 +533,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
 
         sidecar_text, sidecar_path = read_media_text_via_sidecar(file_path)
         if sidecar_text is not None:
-            _ingest_log_loop(
+            log_during_progress(
                 f"{C_DIM}[INFO] [ONDERTITELS]{C_RESET} {sidecar_path.name} "
                 f"(geen Whisper) voor {file_path.name}{C_DIM} …{C_RESET}",
                 pbar,
@@ -603,7 +541,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
             _finalize_file(file_path, sidecar_text, None, None)
             return
 
-        _ingest_log_loop(
+        log_during_progress(
             f"{C_YELLOW}[WARN]{C_RESET} Geen Whisper en geen ondertitel-sidecar voor {file_path}",
             pbar,
         )
@@ -630,7 +568,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                     if suf in _MEDIA_SUFFIXES:
                         continue
                     if suf in _MARKITDOWN_SUFFIXES:
-                        _ingest_log_loop(
+                        log_during_progress(
                             f"{C_DIM}[INFO] [CONVERTEREN]{C_RESET} MarkItDown: {file_path.name}{C_DIM} …{C_RESET}",
                             pbar,
                         )
@@ -652,10 +590,11 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                             alive = sum(1 for f in pending if not f.done())
                             if alive <= 0:
                                 break
-                            _ingest_log_loop(
-                                f"{C_DIM}[INFO] [CONVERTEREN]{C_RESET} nog bezig: {alive}/{total_md_tasks} "
-                                f"MarkItDown-taak(en) in deze golf{C_DIM} …{C_RESET}",
+                            set_progress_phase_count(
                                 pbar,
+                                "MarkItDown",
+                                total_md_tasks - alive,
+                                total_md_tasks,
                             )
 
                     bt = threading.Thread(target=_heartbeat, daemon=True)
@@ -679,7 +618,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                 if suf in _MEDIA_SUFFIXES:
                     continue
                 if suf in _MARKITDOWN_SUFFIXES:
-                    _ingest_log_loop(
+                    log_during_progress(
                         f"{C_DIM}[INFO] [CONVERTEREN]{C_RESET} MarkItDown: {file_path.name}{C_DIM} …{C_RESET}",
                         pbar,
                     )
@@ -700,10 +639,12 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                 )
     ingest_state.save()
 
+    if hasattr(pbar, "close"):
+        pbar.close()
     if any_indexed or skipped_unchanged:
-        print(f"{C_GREEN}[OK]{C_RESET} Ingestie-scan afgerond (upsert + orphan cleanup + ingest-staat).")
+        _ui_ok("Ingestie-scan afgerond (upsert + orphan cleanup + ingest-staat).")
     else:
-        print(f"{C_YELLOW}[WARN]{C_RESET} Geen compatibele data gevonden om te indexeren.")
+        _ui_warn("Geen compatibele data gevonden om te indexeren.")
 
 
 if __name__ == "__main__":

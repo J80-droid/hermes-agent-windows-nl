@@ -5,6 +5,12 @@ rem LanceDB RAG: herbouw index vanaf hermes-agent root (ongeacht startlocatie va
 rem Institutioneel: zie scripts/rag_pipeline/ACTIVATION.md en windows/INSTITUTIONAL.md (RAG-sectie).
 cd /d "%~dp0..\.."
 
+chcp 65001 >nul
+for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do set "ESC=%%b"
+echo.
+echo %ESC%[93m====================================================
+echo  Hermes RAG: LanceDB kennisindex bijwerken
+echo ====================================================%ESC%[0m
 echo [INFO] Werkmap: %CD%
 
 rem Zelfde logica als kb_schema.py: HERMES_LANCEDB_PATH of default %USERPROFILE%\data\my_lancedb.
