@@ -96,6 +96,8 @@ if ($EmitCmd) {
     if (-not $env:HERMES_RAG_MAX_CHUNKS_PER_SOURCE) { Write-Output "set HERMES_RAG_MAX_CHUNKS_PER_SOURCE=800" }
     if (-not $env:HERMES_RAG_LIVE_TICK_SEC) { Write-Output "set HERMES_RAG_LIVE_TICK_SEC=3" }
     if (-not $env:HERMES_RAG_LIVE_LOG) { Write-Output "set HERMES_RAG_LIVE_LOG=1" }
+    if (-not $env:HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR) { Write-Output "set HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR=1" }
+    if (-not $env:HERMES_RAG_PREFER_SIDECAR) { Write-Output "set HERMES_RAG_PREFER_SIDECAR=1" }
 } else {
     Write-Host $info
 }

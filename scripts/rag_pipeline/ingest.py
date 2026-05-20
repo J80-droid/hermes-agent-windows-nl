@@ -576,21 +576,36 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
             if temp_txt_path is not None:
                 temp_txt_path.unlink(missing_ok=True)
 
-    def _process_media_file(file_path: Path) -> None:
-        """Media: standaard Whisper (kwaliteit); ondertitel-sidecar alleen als fallback of expliciet."""
-        temp_txt_path: Optional[Path] = None
-        prefer_sidecar = _env_truthy("HERMES_RAG_PREFER_SIDECAR")
+    def _skip_whisper_without_sidecar() -> bool:
+        """Institutioneel safe: geen urenlange Whisper zonder .vtt/.srt (HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR=1)."""
+        return _env_truthy("HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR")
 
-        if prefer_sidecar:
-            sidecar_text, sidecar_path = read_media_text_via_sidecar(file_path)
-            if sidecar_text is not None:
-                log_during_progress(
-                    f"{C_DIM}[INFO] [ONDERTITELS]{C_RESET} {sidecar_path.name} "
-                    f"(HERMES_RAG_PREFER_SIDECAR=1) voor {file_path.name}{C_DIM} …{C_RESET}",
-                    pbar,
-                )
-                _finalize_file(file_path, sidecar_text, None, None)
-                return
+    def _process_media_file(file_path: Path) -> None:
+        """Media: eerst ondertitel-sidecar; Whisper alleen als sidecar ontbreekt (tenzij skip ingesteld)."""
+        temp_txt_path: Optional[Path] = None
+
+        sidecar_text, sidecar_path = read_media_text_via_sidecar(file_path)
+        if sidecar_text is not None:
+            log_during_progress(
+                f"{C_DIM}[INFO] [ONDERTITELS]{C_RESET} {sidecar_path.name} "
+                f"voor {file_path.name}{C_DIM} …{C_RESET}",
+                pbar,
+            )
+            _finalize_file(file_path, sidecar_text, None, None)
+            return
+
+        if _skip_whisper_without_sidecar():
+            log_during_progress(
+                f"{C_YELLOW}[WARN]{C_RESET} Geen sidecar (.vtt/.srt); Whisper overgeslagen "
+                f"(HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR=1): {file_path.name}",
+                pbar,
+            )
+            _record_skip(
+                file_path,
+                "media_no_sidecar",
+                "Whisper uit (safe); zet HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR=0 voor transcriptie",
+            )
+            return
 
         if _HAS_AUDIO_TRANSCRIBER:
             try:

@@ -34,6 +34,8 @@ if defined HERMES_RAG_FRESH (
   if /i "%HERMES_RAG_FRESH%"=="n" set "FRISSE_START=N"
   if /i "%HERMES_RAG_FRESH%"=="no" set "FRISSE_START=N"
   if not defined FRISSE_START set "FRISSE_START=N"
+  echo [INFO] Modus: %FRISSE_START% ^(HERMES_RAG_FRESH, non-interactief^)
+  goto :choice_done
 ) else (
   rem ANSI-escape helper (werkt in Windows 10+ Terminal en moderne CMD)
   for /f %%a in ('echo prompt $E ^| cmd') do set "ESC=%%a"
@@ -44,6 +46,7 @@ if defined HERMES_RAG_FRESH (
   echo.
   set /p FRISSE_START="Kies J of N: "
 )
+:choice_done
 
 if /i "%FRISSE_START%"=="J" (
   echo [WARN] Sluit Hermes en MCP lancedb-knowledge vóór wissen ^(LanceDB-lock^).
@@ -117,8 +120,16 @@ for /f "delims=" %%L in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%
 set "RAG_LOG=%~dp0rag_ingest_run.log"
 set "HERMES_RAG_INGEST_LOG=%RAG_LOG%"
 
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0check_rag_ingest_running.ps1" 2>nul
+if errorlevel 1 (
+  echo [ERROR] Stop de lopende ingest eerst ^(of: taskkill /F /PID uit melding^).
+  if /i not "%HERMES_NONINTERACTIVE%"=="1" pause
+  exit /b 1
+)
+
 echo [RAG-UPDATE] [INFO] Start LanceDB-ingest ^(idempotente upsert per bronbestand^)...
 echo [INFO] Bronmap: %HERMES_RAG_RAW_SOURCE%
+echo [INFO] Media: sidecar eerst; Whisper uit zonder .vtt/.srt ^(HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR=1^).
 echo [INFO] Log ^(UTF-8 zonder BOM^): %RAG_LOG%
 echo [INFO] Cursor: open log als UTF-8 ^(zie .editorconfig^), niet UTF-16.
 echo [INFO] Live status: %HERMES_LANCEDB%\rag_ingest_live_status.json
@@ -134,8 +145,19 @@ if %ERR% neq 0 (
 
 echo [OK] Ingestie-scan afgerond ^(upsert + orphan cleanup + ingest-staat^).
 if exist "%HERMES_LANCEDB%\rag_ingest_skipped_report.md" (
-  echo [INFO] Overgeslagen PDF/PNG: %HERMES_LANCEDB%\rag_ingest_skipped_report.md
+  echo [INFO] Overgeslagen bronnen: %HERMES_LANCEDB%\rag_ingest_skipped_report.md
 )
+
+echo.
+echo [INFO] Post-verify: hermes mcp test lancedb-knowledge ...
+hermes mcp test lancedb-knowledge
+set MCP_ERR=%ERRORLEVEL%
+if %MCP_ERR% neq 0 (
+  echo [WARN] MCP-test mislukt ^(exit %MCP_ERR%^). Controleer Hermes-config en of de index niet leeg is.
+) else (
+  echo [OK] MCP lancedb-knowledge bereikbaar.
+)
+
 if /i not "%HERMES_NONINTERACTIVE%"=="1" pause
 endlocal
 goto :EOF

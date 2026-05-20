@@ -82,7 +82,14 @@ $writer = New-RagIngestLogWriter -LogPath $LogPath
 $exit = 0
 try {
     & cmd /c $tmpBat 2>&1 | ForEach-Object {
-        $line = if ($_ -is [string]) { $_ } else { $_.ToString() }
+        # stderr (torch-waarschuwingen) is geen fout — niet als ErrorRecord doorgeven.
+        $line = if ($_ -is [System.Management.Automation.ErrorRecord]) {
+            $_.ToString()
+        } elseif ($_ -is [string]) {
+            $_
+        } else {
+            $_.ToString()
+        }
         Write-Output $line
         $writer.WriteLine($line)
         $writer.Flush()

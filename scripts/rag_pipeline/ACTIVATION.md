@@ -29,7 +29,8 @@ Scripts in deze map:
 | `HERMES_RAG_MAX_FILE_MB` | *(niet gezet)* | Geen limiet — **alle** bronnen. Zet bijv. `150` om bestanden boven 150 MB over te slaan |
 | `HERMES_RAG_HASH_FULL_MAX_MB` | `32` | Volledige SHA-256 onder deze grootte; daarboven fingerprint |
 | `HERMES_WHISPER_MODEL` | `medium` | faster-whisper model (kwaliteit; `large-v3` trager/nauwkeuriger) |
-| `HERMES_RAG_PREFER_SIDECAR` | `0` | `1` = gebruik `.vtt`/`.srt` i.p.v. Whisper (sneller, niet standaard) |
+| `HERMES_RAG_PREFER_SIDECAR` | `1` | Sidecar wordt altijd eerst geprobeerd; deze vlag is legacy (zelfde gedrag) |
+| `HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR` | **`1`** (safe) | Geen Whisper op `.m4a`/media zonder `.vtt`/`.srt` (voorkomt uren per bestand); `0` = Whisper alsnog |
 | `HERMES_RAG_PERF_PROFILE` | **`safe`** | Preset: `safe` (institutioneel), `balanced`, `fast`, `off` — `rag_ingest_perf_defaults.ps1` |
 | `HERMES_RAG_ALLOW_PARALLEL` | **`0`** | `1` = oude parallelle MarkItDown-golven (niet aanbevolen; kan hangen) |
 | `HERMES_RAG_FILE_TIMEOUT_SEC` | **`1200`** | Harde timeout per bron (convert+chunk+embed); `0` = uit |
