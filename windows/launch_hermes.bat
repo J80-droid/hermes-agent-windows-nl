@@ -8,8 +8,7 @@ for %%I in ("%WIN_SCR%..") do set "REPO_ROOT=%%~fI"
 set "HERMES_DIR=%REPO_ROOT%\"
 cd /d "%REPO_ROOT%"
 
-rem Zelfde LanceDB- en bronmap als ingest / MCP (override: zet variabelen in omgeving of hierboven).
-if not defined HERMES_LANCEDB_PATH set "HERMES_LANCEDB_PATH=%USERPROFILE%\data\my_lancedb"
+rem RAG: per-domein via profiles + domains.yaml (geen globale my_lancedb default).
 if not defined HERMES_RAG_RAW_SOURCE set "HERMES_RAG_RAW_SOURCE=%USERPROFILE%\data\raw_source_files"
 
 rem Gateway / TUI-subprocessen: expliciet hermes-env python (voorkomt `python` = kapotte OS-installatie).

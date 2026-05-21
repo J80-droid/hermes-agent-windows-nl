@@ -1,204 +1,76 @@
 @echo off
+rem LanceDB RAG — per-domein via %%USERPROFILE%%\data\domains.yaml
+rem Gebruik: update_knowledge.bat [domein| --list | --mcp-test | --media-only]
 setlocal EnableExtensions
-
-rem LanceDB RAG: herbouw index vanaf hermes-agent root (ongeacht startlocatie van dit .bat).
-rem Institutioneel: zie scripts/rag_pipeline/ACTIVATION.md en windows/INSTITUTIONAL.md (RAG-sectie).
-cd /d "%~dp0..\.."
-
 chcp 65001 >nul
-for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do set "ESC=%%b"
-echo.
-echo %ESC%[93m====================================================
-echo  Hermes RAG: LanceDB kennisindex bijwerken
-echo ====================================================%ESC%[0m
-echo [INFO] Werkmap: %CD%
+title Hermes RAG - kennis bijwerken
 
-rem Zelfde logica als kb_schema.py: HERMES_LANCEDB_PATH of default %USERPROFILE%\data\my_lancedb.
-if defined HERMES_LANCEDB_PATH (
-  set "HERMES_LANCEDB=%HERMES_LANCEDB_PATH%"
-) else (
-  set "HERMES_LANCEDB=%USERPROFILE%\data\my_lancedb"
+call "%~dp0rag\_resolve_hermes_repo.bat"
+if errorlevel 1 goto :finish_err
+
+if /i "%~1"=="--list" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0update_knowledge.ps1" -List
+  set "RAG_EXIT=%ERRORLEVEL%"
+  goto :finish
+)
+if /i "%~1"=="--mcp-test" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0update_knowledge.ps1" -McpVerifyOnly -All
+  set "RAG_EXIT=%ERRORLEVEL%"
+  goto :finish
 )
 
-rem Non-interactief: zet HERMES_RAG_FRESH=1/true/yes/j voor wis, 0/n voor behoud (taakplanner/CI).
-rem Taakplanner: zet HERMES_NONINTERACTIVE=1 (default N) of expliciet HERMES_RAG_FRESH=0|1.
-set "FRISSE_START="
-if not defined HERMES_RAG_FRESH if /i "%HERMES_NONINTERACTIVE%"=="1" set "HERMES_RAG_FRESH=0"
-if defined HERMES_RAG_FRESH (
-  echo [INFO] HERMES_RAG_FRESH=%HERMES_RAG_FRESH% ^(non-interactief^)
-  if /i "%HERMES_RAG_FRESH%"=="1" set "FRISSE_START=J"
-  if /i "%HERMES_RAG_FRESH%"=="true" set "FRISSE_START=J"
-  if /i "%HERMES_RAG_FRESH%"=="yes" set "FRISSE_START=J"
-  if /i "%HERMES_RAG_FRESH%"=="j" set "FRISSE_START=J"
-  if /i "%HERMES_RAG_FRESH%"=="0" set "FRISSE_START=N"
-  if /i "%HERMES_RAG_FRESH%"=="n" set "FRISSE_START=N"
-  if /i "%HERMES_RAG_FRESH%"=="no" set "FRISSE_START=N"
-  if not defined FRISSE_START set "FRISSE_START=N"
-  echo [INFO] Modus: %FRISSE_START% ^(HERMES_RAG_FRESH, non-interactief^)
-  goto :choice_done
-) else (
-  rem ANSI-escape helper (werkt in Windows 10+ Terminal en moderne CMD)
-  for /f %%a in ('echo prompt $E ^| cmd') do set "ESC=%%a"
-  echo.
-  echo %ESC%[36mDatabase keuze:%ESC%[0m
-  echo %ESC%[92m  J = Ja  %ESC%[0m- Wis ALLES en indexeer opnieuw (frisse start)
-  echo %ESC%[93m  N = Nee %ESC%[0m- Alleen nieuwe/gewijzigde bestanden (snel)
-  echo.
-  set /p FRISSE_START="Kies J of N: "
+if not exist "%USERPROFILE%\data\domains.yaml" (
+  echo [ERROR] domains.yaml ontbreekt: %USERPROFILE%\data\domains.yaml
+  echo        Kopieer vanuit documentatie of herstel via setup.
+  set "RAG_EXIT=1"
+  goto :finish
 )
-:choice_done
 
-if /i "%FRISSE_START%"=="J" (
-  echo [WARN] Sluit Hermes en MCP lancedb-knowledge vóór wissen ^(LanceDB-lock^).
-  echo [INFO] Oude database wordt verwijderd: "%HERMES_LANCEDB%"
-  if exist "%HERMES_LANCEDB%" (
-    call :WipeLanceDb "%HERMES_LANCEDB%"
-    if errorlevel 1 (
-      if /i not "%HERMES_NONINTERACTIVE%"=="1" pause
-      exit /b 1
-    )
-  ) else (
-    echo [INFO] Geen bestaande database-map; overslaan verwijderen.
+if not defined HERMES_RAG_FRESH (
+  echo ====================================================
+  echo  Hermes RAG - kennis bijwerken
+  echo ====================================================
+  echo  Config: %USERPROFILE%\data\domains.yaml
+  echo.
+  echo  J = Frisse start ^(database wissen, alles opnieuw^)
+  echo  N = Alleen gewijzigde/nieuwe bestanden ^(snel^)
+  echo.
+  choice /c JN /n /m "Kies J of N: "
+  if errorlevel 2 (set "HERMES_RAG_FRESH=n") else (set "HERMES_RAG_FRESH=j")
+)
+
+if /i "%~1"=="--media-only" (
+  if "%~2"=="" (
+    echo [ERROR] Geef een domein: update_knowledge.bat legal --media-only
+    set "RAG_EXIT=1"
+    goto :finish
   )
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0update_knowledge.ps1" -Domain "%~2" -MediaOnly
+  goto :after_run
+)
+if /i "%~2"=="--media-only" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0update_knowledge.ps1" -Domain "%~1" -MediaOnly
+  goto :after_run
+)
+if "%~1"=="" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0update_knowledge.ps1" -All
 ) else (
-  echo [RAG-UPDATE] [INFO] Idempotente upsert gestart ^(bestaande chunks worden overschreven, nieuwe toegevoegd^)...
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0update_knowledge.ps1" -Domain "%~1"
 )
+:after_run
+set "RAG_EXIT=%ERRORLEVEL%"
+goto :finish
 
-rem Conda: HERMES_ACTIVATE_BAT ^(volledig pad^) of HERMES_CONDA_ROOT ^(installatiemap^); anders gangbare locaties.
-set "HERMES_ACTIVATE_BAT_RESOLVED="
-if defined HERMES_ACTIVATE_BAT if exist "%HERMES_ACTIVATE_BAT%" set "HERMES_ACTIVATE_BAT_RESOLVED=%HERMES_ACTIVATE_BAT%"
-if not defined HERMES_ACTIVATE_BAT_RESOLVED if defined HERMES_CONDA_ROOT if exist "%HERMES_CONDA_ROOT%\Scripts\activate.bat" (
-  set "HERMES_ACTIVATE_BAT_RESOLVED=%HERMES_CONDA_ROOT%\Scripts\activate.bat"
-)
-if not defined HERMES_ACTIVATE_BAT_RESOLVED if exist "%USERPROFILE%\miniconda3\Scripts\activate.bat" (
-  set "HERMES_ACTIVATE_BAT_RESOLVED=%USERPROFILE%\miniconda3\Scripts\activate.bat"
-)
-if not defined HERMES_ACTIVATE_BAT_RESOLVED if exist "%USERPROFILE%\anaconda3\Scripts\activate.bat" (
-  set "HERMES_ACTIVATE_BAT_RESOLVED=%USERPROFILE%\anaconda3\Scripts\activate.bat"
-)
-if not defined HERMES_ACTIVATE_BAT_RESOLVED if exist "%LOCALAPPDATA%\miniconda3\Scripts\activate.bat" (
-  set "HERMES_ACTIVATE_BAT_RESOLVED=%LOCALAPPDATA%\miniconda3\Scripts\activate.bat"
-)
-if not defined HERMES_ACTIVATE_BAT_RESOLVED if exist "%LOCALAPPDATA%\anaconda3\Scripts\activate.bat" (
-  set "HERMES_ACTIVATE_BAT_RESOLVED=%LOCALAPPDATA%\anaconda3\Scripts\activate.bat"
-)
-if not defined HERMES_ACTIVATE_BAT_RESOLVED (
-  echo [ERROR] Geen conda Scripts\activate.bat gevonden.
-  echo        Zet machine-breed HERMES_ACTIVATE_BAT of HERMES_CONDA_ROOT, of installeer Miniconda/Anaconda op een standaardlocatie.
-  if /i not "%HERMES_NONINTERACTIVE%"=="1" pause
-  exit /b 1
-)
+:finish_err
+set "RAG_EXIT=1"
 
-if not defined HERMES_CONDA_ENV set "HERMES_CONDA_ENV=hermes-env"
-echo [INFO] Activeer conda-omgeving %HERMES_CONDA_ENV%...
-call "%HERMES_ACTIVATE_BAT_RESOLVED%" %HERMES_CONDA_ENV%
-if errorlevel 1 (
-  echo [INFO] Conda-activering mislukt.
-  if /i not "%HERMES_NONINTERACTIVE%"=="1" pause
-  exit /b 1
+:finish
+if /i not "%HERMES_NONINTERACTIVE%"=="1" (
+  echo.
+  if not "%RAG_EXIT%"=="0" (
+    echo [ERROR] RAG-update eindigde met fout ^(exit %RAG_EXIT%^).
+  )
+  echo Druk op een toets om te sluiten...
+  pause >nul
 )
-
-rem Zelfde pad doorgeven aan Python ^(ingest / kb_schema^) als hierboven gebruikt bij wis.
-set "HERMES_LANCEDB_PATH=%HERMES_LANCEDB%"
-if not defined HERMES_RAG_RAW_SOURCE set "HERMES_RAG_RAW_SOURCE=%USERPROFILE%\data\raw_source_files"
-
-rem Tesseract OCR ^(UB Mannheim^) voor scan-PDF/PNG; nld via tessdata.
-if exist "C:\Program Files\Tesseract-OCR\tesseract.exe" (
-  set "PATH=C:\Program Files\Tesseract-OCR;%PATH%"
-)
-if exist "%USERPROFILE%\Hermes\tessdata\nld.traineddata" (
-  rem pytesseract verwacht de map met .traineddata-bestanden, niet de parent Hermes\
-  set "TESSDATA_PREFIX=%USERPROFILE%\Hermes\tessdata"
-)
-
-rem Institutioneel: safe default, sequentieel, timeouts, UTF-8 log ^(geen UTF-16^).
-set "PYTHONUNBUFFERED=1"
-set "PYTHONUTF8=1"
-set "HERMES_FORCE_COLOR=1"
-set "FORCE_COLOR=1"
-rem ANSI-kleuren + gouden tqdm-balk ^(ook via PowerShell-pipe; zie ingest_ui.py^).
-if not defined HERMES_RAG_PERF_PROFILE set "HERMES_RAG_PERF_PROFILE=safe"
-for /f "delims=" %%L in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0rag_ingest_perf_defaults.ps1" -EmitCmd 2^>nul') do %%L
-
-set "RAG_LOG=%~dp0rag_ingest_run.log"
-set "HERMES_RAG_INGEST_LOG=%RAG_LOG%"
-
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0check_rag_ingest_running.ps1" 2>nul
-if errorlevel 1 (
-  echo [ERROR] Stop de lopende ingest eerst ^(of: taskkill /F /PID uit melding^).
-  if /i not "%HERMES_NONINTERACTIVE%"=="1" pause
-  exit /b 1
-)
-
-echo [RAG-UPDATE] [INFO] Start LanceDB-ingest ^(idempotente upsert per bronbestand^)...
-echo [INFO] Bronmap: %HERMES_RAG_RAW_SOURCE%
-echo [INFO] Media: sidecar eerst; Whisper uit zonder .vtt/.srt ^(HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR=1^).
-echo [INFO] Log ^(UTF-8 zonder BOM^): %RAG_LOG%
-echo [INFO] Cursor: open log als UTF-8 ^(zie .editorconfig^), niet UTF-16.
-echo [INFO] Live status: %HERMES_LANCEDB%\rag_ingest_live_status.json
-
-rem ANSI-kleuren in console ^(VT-mode^) vóór ingest-output.
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0enable_console_ansi.ps1" 2>nul
-
-rem Ingest via hermes-env ^(conda^) — niet losse powershell-python ^(verkeerde interpreter^).
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0run_rag_ingest.ps1" -LogPath "%RAG_LOG%" -CondaEnv "%HERMES_CONDA_ENV%"
-set ERR=%ERRORLEVEL%
-if %ERR% neq 0 (
-  echo [INFO] Ingest eindigde met fout ^(exit %ERR%^).
-  if /i not "%HERMES_NONINTERACTIVE%"=="1" pause
-  exit /b %ERR%
-)
-
-echo [OK] Ingestie-scan afgerond ^(upsert + orphan cleanup + ingest-staat^).
-if exist "%HERMES_LANCEDB%\rag_ingest_skipped_report.md" (
-  echo [INFO] Overgeslagen bronnen: %HERMES_LANCEDB%\rag_ingest_skipped_report.md
-)
-
-echo.
-echo [INFO] Post-verify: hermes mcp test lancedb-knowledge ...
-hermes mcp test lancedb-knowledge
-set MCP_ERR=%ERRORLEVEL%
-if %MCP_ERR% neq 0 (
-  echo [WARN] MCP-test mislukt ^(exit %MCP_ERR%^). Controleer Hermes-config en of de index niet leeg is.
-) else (
-  echo [OK] MCP lancedb-knowledge bereikbaar.
-)
-
-if /i not "%HERMES_NONINTERACTIVE%"=="1" pause
-endlocal
-goto :EOF
-
-rem Hernoem database-map eerst ^(Windows blokkeert rename bij open handles^); daarna rmdir op staging-naam.
-:WipeLanceDb
-setlocal EnableDelayedExpansion
-set "ROOT=%~1"
-for %%I in ("!ROOT!") do (
-  set "LDB_PARENT=%%~dpI"
-  set "LDB_LEAF=%%~nxI"
-)
-set "LDB_STAGING=!LDB_LEAF!.HERMES_TEMP_WIPE"
-pushd "!LDB_PARENT!" 2>nul
-if errorlevel 1 (
-  echo [ERROR] Kan de parentmap van de database niet openen: !LDB_PARENT!
-  endlocal
-  exit /b 1
-)
-if exist "!LDB_STAGING!" rmdir /s /q "!LDB_STAGING!" 2>nul
-ren "!LDB_LEAF!" "!LDB_STAGING!" 2>nul
-if errorlevel 1 (
-  echo [ERROR] Verwijderen mislukt. De database is waarschijnlijk in gebruik door een actieve Hermes- of MCP-sessie. Sluit deze sessies en probeer het opnieuw.
-  popd
-  endlocal
-  exit /b 1
-)
-rmdir /s /q "!LDB_STAGING!" 2>nul
-if errorlevel 1 (
-  echo [ERROR] Verwijderen mislukt. De database is waarschijnlijk in gebruik door een actieve Hermes- of MCP-sessie. Sluit deze sessies en probeer het opnieuw.
-  echo [WARN] Map staat mogelijk als !LDB_STAGING! in !LDB_PARENT! — ruim handmatig op na sluiten van sessies.
-  popd
-  endlocal
-  exit /b 1
-)
-popd
-endlocal
-exit /b 0
+exit /b %RAG_EXIT%

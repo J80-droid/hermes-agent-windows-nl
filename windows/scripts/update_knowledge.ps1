@@ -1,0 +1,55 @@
+# RAG-ingest via domains.yaml (%USERPROFILE%\data\domains.yaml)
+param(
+    [string[]]$Domain = @(),
+    [switch]$All,
+    [switch]$List,
+    [switch]$McpVerifyOnly,
+    [switch]$SkipMcpVerify,
+    [switch]$MediaOnly
+)
+
+$ErrorActionPreference = 'Stop'
+$repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+$env:HERMES_REPO = $repo
+
+$domainsYaml = if ($env:HERMES_DOMAINS_YAML) { $env:HERMES_DOMAINS_YAML } else { Join-Path $env:USERPROFILE 'data\domains.yaml' }
+$py = Join-Path $env:USERPROFILE 'miniconda3\envs\hermes-env\python.exe'
+$runner = Join-Path $repo 'scripts\rag_pipeline\run_domains_ingest.py'
+
+if (-not (Test-Path -LiteralPath $py)) {
+    Write-Host "[ERROR] Python niet gevonden: $py" -ForegroundColor Red
+    exit 1
+}
+if (-not (Test-Path -LiteralPath $runner)) {
+    Write-Host "[ERROR] Runner niet gevonden: $runner" -ForegroundColor Red
+    exit 1
+}
+if (-not (Test-Path -LiteralPath $domainsYaml)) {
+    Write-Host "[ERROR] domains.yaml niet gevonden: $domainsYaml" -ForegroundColor Red
+    Write-Host "        Maak %USERPROFILE%\data\domains.yaml aan (zie repo docs)." -ForegroundColor Yellow
+    exit 1
+}
+
+$env:HERMES_DOMAINS_YAML = $domainsYaml
+
+$argList = @($runner, '--domains-yaml', $domainsYaml)
+if ($SkipMcpVerify) { $env:HERMES_RAG_SKIP_MCP_VERIFY = '1' }
+if ($List) { $argList += '--list' }
+elseif ($McpVerifyOnly) {
+    if ($All) { $argList += '--all' }
+    elseif ($Domain.Count -gt 0) {
+        foreach ($d in $Domain) { $argList += '--domain', $d }
+    } else { $argList += '--all' }
+    $argList += '--mcp-verify-only'
+}
+elseif ($All) { $argList += '--all' }
+elseif ($Domain.Count -gt 0) {
+    foreach ($d in $Domain) { $argList += '--domain', $d }
+    if ($MediaOnly) { $argList += '--media-only' }
+} else {
+    Write-Host '[ERROR] Geef -All, -Domain naam, -List, of -McpVerifyOnly' -ForegroundColor Red
+    exit 1
+}
+
+& $py @argList
+exit $LASTEXITCODE

@@ -22,6 +22,8 @@ SKIP_PATH_DIR_NAMES: frozenset[str] = frozenset(
         ".vs",
         "dist",
         "build",
+        # Geen index uit quarantaine — preflight verplaatst naar canonieke paden
+        "_PROBLEMATISCHE_BESTANDEN",
     }
 )
 

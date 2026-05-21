@@ -1,5 +1,9 @@
 # Eén regel status voor lopende productie-ingest (live JSON + proces).
-param([string]$LivePath = "$env:USERPROFILE\data\my_lancedb\rag_ingest_live_status.json")
+param([string]$LivePath = "")
+if (-not $LivePath) {
+    if ($env:HERMES_LANCEDB_PATH) { $LivePath = Join-Path $env:HERMES_LANCEDB_PATH "rag_ingest_live_status.json" }
+    else { $LivePath = Join-Path $env:USERPROFILE "data\lancedb\legal\rag_ingest_live_status.json" }
+}
 
 if (-not (Test-Path $LivePath)) {
     Write-Host "[MONITOR] Geen live status: $LivePath (ingest nog niet in index-fase?)"

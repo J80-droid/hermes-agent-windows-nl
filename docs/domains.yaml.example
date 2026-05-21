@@ -1,0 +1,37 @@
+# Voorbeeld — kopieer naar %USERPROFILE%\data\domains.yaml en pas paden aan.
+version: '1.0'
+personal_brain:
+  path: ~/data/personal_brain
+  files:
+    - who_you_are.md
+    - what_you_want.md
+    - how_you_work.md
+    - boundaries.md
+
+core_domain:
+  name: core
+  description: Gedeelde kennis (Personal Brain + test.txt)
+  source_dir: 00_Core
+  lancedb_path: ~/data/lancedb/core
+  mcp_name: lancedb-core
+
+domains:
+  - name: legal
+    source_dir: 04_Legal_Corporate
+    description: Juridische bronnen
+    lancedb_path: ~/data/lancedb/legal
+    mcp_name: lancedb-legal
+    profile_name: legal
+    ingest_env:
+      HERMES_RAG_PDF_PYMUPDF_FIRST_MB: "5"
+      HERMES_RAG_PYMUPDF_MAX_PAGES: "250"
+      HERMES_RAG_CONVERT_TIMEOUT_SEC: "180"
+      HERMES_RAG_EMBED_BATCH: "16"
+    media_policy: whisper_when_missing
+    media_ingest_env:
+      HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR: "0"
+      HERMES_WHISPER_MODEL: small
+      HERMES_RAG_CONVERT_TIMEOUT_SEC: "3600"
+    quarantine_restore:
+      1.1 Verzoekschrift Zaak 25-00294-C2515 GC Rijk - Min. Buitenlandse Zaken El Mourif.pdf: Geschillencommissie Rijk/VERZOEKSCHRIFT J. EL MOURIF
+      1.1 Verzoekschrift Zaak 25-00294-C2515 GC Rijk - Min. Buitenlandse Zaken El Mourif_compressed.pdf: Geschillencommissie Rijk/VERZOEKSCHRIFT J. EL MOURIF

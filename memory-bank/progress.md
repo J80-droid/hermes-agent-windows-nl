@@ -4,15 +4,17 @@
 
 - [x] `pyproject.toml` extra `[rag]` (+ faster-whisper)
 - [x] pytest `tests/rag_pipeline/` + integratie `rag_integration`
-- [x] CLI/Web bron-chips
-- [x] `install_rag_extras.ps1` (dual Python, modelcache, ffmpeg-waarschuwing)
-- [x] MCP via `register_mcp_config.py` (absoluut pad, env)
-- [x] CI job `rag` in `.github/workflows/tests.yml`
-- [x] `schema_migrate.py`, taakplanner `HERMES_NONINTERACTIVE`
-- [x] Memory bank (deze map)
+- [x] Multi-domein ingest (`run_domains_ingest.py`, `domains_config.py`, `domains.yaml`)
+- [x] Quarantaine-restore (`source_layout.py`, `quarantine_restore` in yaml)
+- [x] Media-beleid Whisper (`media_policy: whisper_when_missing` voor legal)
+- [x] Eindrapport na ingest (`ingest_run_summary.py`)
+- [x] HTML-fallback na MarkItDown-fout
+- [x] MCP per profile (`lancedb-<domein>`)
+- [x] Windows launchers (`update_knowledge.bat` / `.ps1`, `windows/scripts/rag/`)
 
 ## Operationeel (gebruiker)
 
-- [ ] Ingest 1668 bronnen volledig (eerdere run ~435 unieke bronnen; Kantonrechter ~0 geïndexeerd)
-- [x] MCP geregistreerd via `register_mcp_config.py` (check: `which_hermes_repo.ps1`)
-- [ ] Rooktest in live Hermes-sessie (B+C) na nieuwe sessie
+- [x] Legal LanceDB: ~1625 bronnen, Verzoekschrift op canoniek pad
+- [ ] Legal: 40 media nog indexeren (Whisper-run met `media_policy: whisper_when_missing`)
+- [ ] Overige 8 domeinen bulk-ingest (N)
+- [ ] Rooktest `hermes -p legal chat` met `search_knowledge`

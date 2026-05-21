@@ -2,15 +2,40 @@
 
 from __future__ import annotations
 
+import os
+import re
 import shutil
 import subprocess
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+from html.parser import HTMLParser
 from pathlib import Path
 
 from markitdown import MarkItDown
 
 from ingest_ocr import convert_timeout_sec, extract_fallback_text
+
+
+def _pdf_pymupdf_first_mb() -> float:
+    """PDF's groter dan dit (MB) eerst via PyMuPDF/OCR — voorkomt MarkItDown-hang (FontBBox)."""
+    raw = (os.environ.get("HERMES_RAG_PDF_PYMUPDF_FIRST_MB") or "8").strip()
+    try:
+        return max(0.0, float(raw))
+    except ValueError:
+        return 8.0
+
+
+def _should_pymupdf_first(path: Path) -> bool:
+    if path.suffix.lower() != ".pdf":
+        return False
+    limit_mb = _pdf_pymupdf_first_mb()
+    if limit_mb <= 0:
+        return False
+    try:
+        size_mb = path.stat().st_size / (1024 * 1024)
+    except OSError:
+        return False
+    return size_mb >= limit_mb
 
 # Als MarkItDown faalt, probeer pandoc (indien op PATH)
 PANDOC_FALLBACK_SUFFIXES: frozenset[str] = frozenset(
@@ -24,6 +49,37 @@ PANDOC_FALLBACK_SUFFIXES: frozenset[str] = frozenset(
         ".xls",
     }
 )
+
+
+class _HTMLTextExtractor(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self._parts: list[str] = []
+
+    def handle_data(self, data: str) -> None:
+        if data and data.strip():
+            self._parts.append(data.strip())
+
+    def text(self) -> str:
+        return "\n".join(self._parts)
+
+
+def _html_to_text(path: Path) -> tuple[str, str | None]:
+    """Eenvoudige HTML-tekstextractie als MarkItDown faalt (mindmaps, export)."""
+    try:
+        raw = path.read_text(encoding="utf-8", errors="replace")
+    except OSError as e:
+        return "", f"{type(e).__name__}: {e}"
+    parser = _HTMLTextExtractor()
+    try:
+        parser.feed(raw)
+        parser.close()
+    except Exception as e:
+        return "", f"{type(e).__name__}: {e}"
+    text = re.sub(r"\n{3,}", "\n\n", parser.text()).strip()
+    if len(text) < 20:
+        return "", "te weinig tekst na HTML-parse"
+    return text, None
 
 
 def convert_markitdown_one(path: Path) -> tuple[str, str | None]:
@@ -54,8 +110,26 @@ def _pandoc_to_markdown(path: Path) -> tuple[str, str | None]:
         return (out_md.read_text(encoding="utf-8", errors="replace"), None)
 
 
+def _try_fallback(path: Path) -> tuple[str, str | None, str]:
+    try:
+        from ingest_live_progress import set_step
+
+        set_step("OCR/PyMuPDF")
+    except ImportError:
+        pass
+    fallback, ocr_note = extract_fallback_text(path)
+    if fallback.strip():
+        return fallback, None, ocr_note or "fallback"
+    return "", ocr_note or "lege fallback", ocr_note or ""
+
+
 def _convert_document_impl(path: Path) -> tuple[str, str | None, str]:
     """Returns (text, error, ocr_method)."""
+    if _should_pymupdf_first(path):
+        text, err, method = _try_fallback(path)
+        if text.strip():
+            return text, None, method
+        # Kleine rest via MarkItDown als fallback leeg blijft
     try:
         from ingest_live_progress import set_step
 
@@ -78,18 +152,16 @@ def _convert_document_impl(path: Path) -> tuple[str, str | None, str]:
     if text.strip():
         return text, None, ""
 
-    try:
-        from ingest_live_progress import set_step
-
-        set_step("OCR/PyMuPDF")
-    except ImportError:
-        pass
-    fallback, ocr_note = extract_fallback_text(path)
+    fallback, fb_err, ocr_note = _try_fallback(path)
     if fallback.strip():
         return fallback, None, ocr_note or "fallback"
+    if path.suffix.lower() in (".html", ".htm", ".xhtml"):
+        html_text, html_err = _html_to_text(path)
+        if html_text.strip():
+            return html_text, None, "html-parser"
     combined = err or ""
-    if ocr_note:
-        combined = f"{combined}; {ocr_note}" if combined else ocr_note
+    if fb_err:
+        combined = f"{combined}; {fb_err}" if combined else fb_err
     return text or "", combined or "lege conversie", ocr_note or ""
 
 
@@ -105,4 +177,7 @@ def convert_document(path: Path) -> tuple[str, str | None, str]:
             t, e, m = fut.result(timeout=timeout)
             return t, e, m
         except FuturesTimeoutError:
-            return "", f"timeout na {int(timeout)}s", ""
+            text, fb_err, method = _try_fallback(path)
+            if text.strip():
+                return text, None, method
+            return "", f"timeout na {int(timeout)}s; {fb_err or 'geen OCR-tekst'}", method

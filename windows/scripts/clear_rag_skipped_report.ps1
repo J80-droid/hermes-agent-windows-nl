@@ -4,7 +4,7 @@ param(
 )
 if (-not $LanceDbPath) {
     $LanceDbPath = if ($env:HERMES_LANCEDB_PATH) { $env:HERMES_LANCEDB_PATH }
-    else { Join-Path $env:USERPROFILE "data\my_lancedb" }
+    else { Join-Path $env:USERPROFILE "data\lancedb\core" }
 }
 $json = Join-Path $LanceDbPath "rag_ingest_skipped_report.json"
 $md = Join-Path $LanceDbPath "rag_ingest_skipped_report.md"

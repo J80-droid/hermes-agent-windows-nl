@@ -52,8 +52,14 @@ function New-HermesTaskbarShortcut {
     $iconLoc = Resolve-HermesShortcutIconLocation -IconSpec $IconSpec -RepoRoot $RepoRoot
     $WshShell = New-Object -ComObject WScript.Shell
     $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
-    $Shortcut.TargetPath = "cmd.exe"
-    $Shortcut.Arguments = "/c `"$LaunchBatPath`""
+    # .bat direct als target: taakbalk-pin werkt; cmd.exe /c pindt alleen "Opdrachtprompt".
+    if ($LaunchBatPath -match '\.bat$') {
+        $Shortcut.TargetPath = $LaunchBatPath
+        $Shortcut.Arguments = ''
+    } else {
+        $Shortcut.TargetPath = 'cmd.exe'
+        $Shortcut.Arguments = "/c `"$LaunchBatPath`""
+    }
     $Shortcut.WorkingDirectory = $RepoRoot
     $Shortcut.IconLocation = $iconLoc
     $Shortcut.Description = $Description
@@ -122,14 +128,14 @@ $shortcutBats = @(
     "windows\MANAGE_BACKUPS.bat",
     "windows\restore_local_assets.bat",
     "windows\UPDATE_HERMES.bat",
-    "windows\scripts\update_knowledge.bat"
+    "windows\RAG_KNOWLEDGE_UPDATE.bat"
 )
 $shortcutDescriptions = @(
     $startHermesDesc,
     "Hermes: fysieke backup uitvoeren (sleep naar taakbalk)",
     "Hermes: lokale scripts uit _local_assets herstellen (sleep naar taakbalk)",
     "Hermes: git/pip update via conda (sleep naar taakbalk)",
-    "LanceDB RAG: ingest (scripts/rag_pipeline/ingest.py) - sleep naar taakbalk"
+    "Hermes RAG: J=fris / N=incrementeel, alle domeinen - sleep naar taakbalk"
 )
 $shortcutIcons = @(
     (Join-Path $RepoRoot "windows\hermes_logo.ico"),

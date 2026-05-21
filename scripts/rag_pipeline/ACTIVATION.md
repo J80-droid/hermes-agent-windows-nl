@@ -7,6 +7,10 @@ Dit document is de **in-repo** kopie van het activatieplan (Cursor-plan: *LanceD
 Scripts in deze map:
 
 - `ingest.py` — orchestratie: scan, chunking, upsert, voortgang.
+- `run_domains_ingest.py` — multi-domein uit `domains.yaml`, quarantaine-preflight, MCP-verify.
+- `domains_config.py` — laadt domeinen + `media_policy`, `quarantine_restore`.
+- `source_layout.py` — quarantaine terug naar canonieke paden.
+- `ingest_run_summary.py` — eindrapport console + `rag_ingest_run_summary.json`.
 - `source_formats.py` — centrale extensiematrix (plain / MarkItDown / media).
 - `ingest_config.py` — uitsluitingen (`node_modules`, `~$*`, binaries); optioneel **`HERMES_RAG_MAX_FILE_MB`** (standaard **geen** limiet).
 - `ingest_handlers.py` — MarkItDown + optionele **pandoc**-fallback voor legacy Office/OpenDocument.
@@ -30,7 +34,7 @@ Scripts in deze map:
 | `HERMES_RAG_HASH_FULL_MAX_MB` | `32` | Volledige SHA-256 onder deze grootte; daarboven fingerprint |
 | `HERMES_WHISPER_MODEL` | `medium` | faster-whisper model (kwaliteit; `large-v3` trager/nauwkeuriger) |
 | `HERMES_RAG_PREFER_SIDECAR` | `1` | Sidecar wordt altijd eerst geprobeerd; deze vlag is legacy (zelfde gedrag) |
-| `HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR` | **`1`** (safe) | Geen Whisper op `.m4a`/media zonder `.vtt`/`.srt` (voorkomt uren per bestand); `0` = Whisper alsnog |
+| `HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR` | **`1`** (safe) | Geen Whisper op media zonder sidecar; per domein `media_policy: whisper_when_missing` zet `0` |
 | `HERMES_RAG_PERF_PROFILE` | **`safe`** | Preset: `safe` (institutioneel), `balanced`, `fast`, `off` — `rag_ingest_perf_defaults.ps1` |
 | `HERMES_RAG_ALLOW_PARALLEL` | **`0`** | `1` = oude parallelle MarkItDown-golven (niet aanbevolen; kan hangen) |
 | `HERMES_RAG_FILE_TIMEOUT_SEC` | **`1200`** | Harde timeout per bron (convert+chunk+embed); `0` = uit |
@@ -53,6 +57,14 @@ Scripts in deze map:
 **Live zichtbaarheid:** elke 3s `[LIVE] 12/1030 · 05:12 · MarkItDown · bestand.pdf` + postfix `⏳ 05:12 · stap · bestand` — zo zie je direct of een zware PDF nog loopt of vastzit (`HERMES_RAG_LIVE_TICK_SEC`, `HERMES_RAG_LIVE_LOG=0` om log-regels uit te zetten).
 
 **Overgeslagen rapport:** na ingest `rag_ingest_skipped_report.json` + `.md` in de LanceDB-map. Achteraf: `windows\scripts\report_rag_skipped.bat` of `report_rag_skipped.py`.
+
+**Eindrapport:** na elke run `rag_ingest_run_summary.json` + console-overzicht (gescand, geindexeerd, skips per reden, paden).
+
+**Domeinbeleid (`%USERPROFILE%\data\domains.yaml`, voorbeeld `docs/domains.yaml.example`):**
+
+- `quarantine_restore`: verplaatst `_PROBLEMATISCHE_BESTANDEN/*` vóór ingest naar canonieke paden.
+- `media_policy: whisper_when_missing` + `media_ingest_env`: Whisper voor audio/video zonder sidecar (legal).
+- Optioneel alleen media: `update_knowledge.bat legal --media-only`.
 
 **0-byte verwijs-.txt:** stub-tekst uit bestandsnaam wordt wél geïndexeerd (Productie N → zie DEEL …).
 
@@ -87,7 +99,7 @@ flowchart LR
 | 4 | `tests/rag_pipeline/` (pytest) | Ja | `pytest tests/rag_pipeline/ -q` |
 | 5 | Rooktest (5 commando’s) | Ja — hieronder | Alle 5 stappen doorlopen |
 | A | `update_knowledge.bat` tot einde | — | Log: `[OK] Ingestie-scan afgerond` |
-| B | MCP + nieuwe Hermes-sessie | Script registreert MCP | `hermes mcp test lancedb-knowledge` OK |
+| B | MCP + nieuwe Hermes-sessie | MCP in elk profiel (`domains.yaml`) | `update_knowledge.bat --mcp-test` OK |
 | C | `search_knowledge` op bekende zin | — | Antwoord met `[Bron: …]` uit index |
 
 Zonder **A+B+C** is de keten nooit 100% operationeel — ook niet met perfecte code.
@@ -97,7 +109,7 @@ Zonder **A+B+C** is de keten nooit 100% operationeel — ook niet met perfecte c
 | Risico | Mitigatie |
 | ------ | --------- |
 | conda vs. uv `.venv` | `install_rag_extras.ps1` → `pip install -e ".[rag]"` op **beide** (`rag_python_resolve.ps1`) |
-| MCP relatief pad / verkeerde cwd | `register_mcp_config.py` — **absoluut** pad naar `mcp_server.py` + env `HERMES_REPO_ROOT`, `HERMES_LANCEDB_PATH` |
+| MCP per domein | `domains.yaml` + profiel `mcp.servers`; verify via `register_mcp_config.py` / `--mcp-test` |
 | Whisper/ffmpeg | `[rag]` bevat `faster-whisper`; **ffmpeg** moet op PATH (winget/choco) |
 | Oud schema zonder `id` | `python scripts/rag_pipeline/schema_migrate.py` (inspect / `--backup-and-reset`) |
 | Taakplanner wacht op J/N | `set HERMES_NONINTERACTIVE=1` of `HERMES_RAG_FRESH=0` vóór `update_knowledge.bat` |
@@ -130,20 +142,15 @@ Alle commando’s in **één** geactiveerde shell; `cd` eerst naar de Hermes-rep
 
    Of: `python scripts/rag_pipeline/ingest.py` met dezelfde env-variabelen als het batchbestand.
 
-3. **MCP registreren** (eenmalig; Windows met volledig python-pad):
+3. **MCP controleren** (per domein uit `domains.yaml`):
 
    ```text
-   powershell -ExecutionPolicy Bypass -File windows\scripts\register_lancedb_mcp.ps1
+   windows\scripts\update_knowledge.bat --mcp-test
    ```
 
-   Handmatig equivalent: zie stap 5 hieronder.
+   Of: `powershell -File windows\scripts\register_lancedb_mcp.ps1`
 
-4. **MCP controleren:**
-
-   ```text
-   hermes mcp list
-   hermes mcp test lancedb-knowledge
-   ```
+4. **Hermes per profiel:**
 
 5. **Nieuwe Hermes-sessie + gerichte tool-vraag** (split-venster of `hermes` CLI):
 
@@ -181,9 +188,9 @@ Voor **MarkItDown** is `pip install "markitdown[all]"` aanbevolen; voor legacy `
 
 ## Windows: snelkoppeling (taakbalk)
 
-Na setup of na **`windows\REFRESH_TASKBAR_SHORTCUTS.bat`** staat in **`hermes-agent\windows\`** o.a. **`Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk`**. Die verwijst naar **`windows\scripts\update_knowledge.bat`** (conda `hermes-env` + `python scripts/rag_pipeline/ingest.py`). Sleep de `.lnk` naar de taakbalk voor één-klik herbouw van de LanceDB-index.
+Na setup of na **`windows\REFRESH_TASKBAR_SHORTCUTS.bat`** staat in **`hermes-agent\windows\`** o.a. **`Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk`** → **`windows\scripts\update_knowledge.bat`** (per-domein via **`%USERPROFILE%\data\domains.yaml`**).
 
-Het batchbestand vraagt eerst **J/N** (tenzij **`HERMES_RAG_FRESH`** gezet is: `1`/`true`/`yes`/`j` = wis, `0`/`n`/`no` = behoud — handig voor taakplanner/CI). **J** verwijdert de LanceDB-map (na rename-check op locks; zie script) — standaard **`%USERPROFILE%\data\my_lancedb`**, of **`HERMES_LANCEDB_PATH`**. **N** laat de map staan; **`ingest.py`** doet dan **upsert** op chunk-`id`, dus geen duplicate chunks voor dezelfde bron+index. Sluit processen die LanceDB openhouden (bijv. MCP `lancedb-knowledge`) voordat je **J** kiest, anders faalt het wissen met een duidelijke fouttekst.
+**J/N:** **`HERMES_RAG_FRESH=j`** wist per domein de map uit `domains.yaml` (`lancedb/<domein>/`). **N** = incrementele upsert. Sluit Hermes/MCP vóór **J** (LanceDB-lock).
 
 **Conda (geen hardcoded gebruikerspad):** het script zoekt `activate.bat` via **`HERMES_ACTIVATE_BAT`** (volledig pad), **`HERMES_CONDA_ROOT`**, of gangbare locaties onder `%USERPROFILE%` en `%LOCALAPPDATA%`. Omgevingsnaam standaard **`hermes-env`**; override met **`HERMES_CONDA_ENV`**.
 
@@ -211,28 +218,16 @@ Het batchbestand vraagt eerst **J/N** (tenzij **`HERMES_RAG_FRESH`** gezet is: `
    python scripts/rag_pipeline/ingest.py
    ```
 
-5. **Hermes MCP — correcte CLI-syntax** (`--command` = executable, `--args` = script + evt. meer args):
-
-   ```text
-   hermes mcp add lancedb-knowledge --command python --args scripts/rag_pipeline/mcp_server.py
-   ```
-
-   **Windows:** als `python` op het PATH **niet** dezelfde omgeving is als `hermes-env` (gebruikelijk fout: `ModuleNotFoundError: lancedb`), gebruik het **volledige pad** naar die interpreter, bijvoorbeeld:
-
-   ```text
-   hermes mcp add lancedb-knowledge --command %USERPROFILE%\miniconda3\envs\hermes-env\python.exe --args scripts/rag_pipeline/mcp_server.py
-   ```
-
-   Start Hermes bij voorkeur vanuit deze repo-root zodat relatieve `--args` kloppen.
+5. **MCP per profiel** (Optie B): elk domein heeft `lancedb-<domein>` in `%LOCALAPPDATA%\hermes\profiles\<naam>\config.yaml` — zie `domains.yaml`. Aanmaken via `hermes profile create` + MCP-blok (setup doet dit).
 
 6. **Verifiëren:**
 
    ```text
-   hermes mcp list
-   hermes mcp test lancedb-knowledge
+   windows\scripts\update_knowledge.bat --mcp-test
+   hermes -p legal mcp list
    ```
 
-   Start daarna een **nieuwe** Hermes-sessie om de tools te laden.
+   Post-ingest draait MCP-verify automatisch. Start daarna een **nieuwe** Hermes-sessie per profiel.
 
 ## Koppeling Hermes ↔ `search_knowledge` (waar het spaak loopt)
 

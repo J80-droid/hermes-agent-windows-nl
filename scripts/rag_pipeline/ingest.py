@@ -83,6 +83,7 @@ from ingest_runtime import (
     run_file_job,
     write_live_status,
 )
+from ingest_run_summary import build_summary_payload, write_and_print_summary
 from ingest_skip_report import SkipReport, default_report_path
 from ingest_state import (
     IngestState,
@@ -405,6 +406,14 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
     else:
         to_process = all_files
 
+    if _env_truthy("HERMES_RAG_MEDIA_ONLY"):
+        media_only_list = [fp for fp in to_process if fp.suffix.lower() in MEDIA_SUFFIXES]
+        print(
+            f"{C_CYAN}[INFO]{C_RESET} Media-only modus: {len(media_only_list)} van "
+            f"{len(to_process)} te verwerken bron(nen) (audio/video)."
+        )
+        to_process = media_only_list
+
     _cpu = os.cpu_count() or 4
     conv_workers = _int_env_positive("HERMES_RAG_CONVERT_WORKERS", 1, cap=min(_cpu, 8))
     embed_batch = _int_env_positive("HERMES_RAG_EMBED_BATCH", 64, cap=512)
@@ -431,6 +440,8 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
     reset_live_status_clock()
     pbar = create_file_progress(len(to_process))
     skip_report = SkipReport()
+    indexed_this_run = 0
+    removed_sources: list[str] = []
 
     def _file_size(path: Path) -> int | None:
         try:
@@ -464,7 +475,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
         *,
         ocr_method: str = "",
     ) -> None:
-        nonlocal any_indexed
+        nonlocal any_indexed, indexed_this_run
         set_progress_file(pbar, file_path, path)
         try:
             if md_err is not None:
@@ -567,6 +578,7 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                 str(relative_source), file_path, chunk_count=len(rows)
             )
             any_indexed = True
+            indexed_this_run += 1
             log_during_progress(
                 compact_ok_line(relative_source, len(rows)),
                 pbar,
@@ -740,6 +752,30 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
                 f"({len(skip_report.entries)} bronnen; PDF/PNG-lijst: "
                 f"{report_path.with_suffix('.md')})"
             )
+        else:
+            skip_report.write()
+
+        policy = os.environ.get("HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR", "1")
+        media_note = (
+            "Whisper aan voor media zonder sidecar"
+            if policy.strip().lower() in ("0", "false", "no")
+            else "Media zonder sidecar wordt overgeslagen (Whisper uit)"
+        )
+        payload = build_summary_payload(
+            domain=os.environ.get("RAG_DOMAIN", ""),
+            db_path=DB_PATH,
+            raw_source=str(path),
+            scan_total=len(all_files),
+            queued=len(to_process),
+            indexed_this_run=indexed_this_run,
+            unchanged_skipped=skipped_unchanged,
+            removed_from_index=removed_sources,
+            skip_report=skip_report,
+            total_sources_in_state=len(ingest_state.entries),
+            fresh_run=_env_truthy("HERMES_RAG_FRESH") or _env_truthy("HERMES_RAG_FORCE_FULL"),
+            media_policy_note=media_note,
+        )
+        write_and_print_summary(payload)
 
     if hasattr(pbar, "close"):
         pbar.close()

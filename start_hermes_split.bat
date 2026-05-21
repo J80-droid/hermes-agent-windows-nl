@@ -1,6 +1,6 @@
 @echo off
 rem Zelfde LanceDB- en bronmap als ingest / kb_schema / mcp_server (override: zet variabelen vóór dit script).
-if not defined HERMES_LANCEDB_PATH set "HERMES_LANCEDB_PATH=%USERPROFILE%\data\my_lancedb"
+rem LanceDB per domein via profile MCP (domains.yaml); geen globale default.
 if not defined HERMES_RAG_RAW_SOURCE set "HERMES_RAG_RAW_SOURCE=%USERPROFILE%\data\raw_source_files"
 rem Subprocessen / gateway: zelfde interpreter als hermes-env (geen kale `python` op PATH met kapotte stdlib).
 if not defined HERMES_CONDA_ENV set "HERMES_CONDA_ENV=hermes-env"

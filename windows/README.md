@@ -19,6 +19,26 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | Doctor / fixes | `DOCTOR_FIX.bat` |
 | Update fork | `UPDATE_HERMES.bat` / `hermes update` |
 
+## RAG (multi-domein)
+
+Config: **`%USERPROFILE%\data\domains.yaml`** (voorbeeld: `docs/domains.yaml.example`).
+
+| Commando | Betekenis |
+| -------- | --------- |
+| `scripts\update_knowledge.bat --list` | Toon alle domeinen |
+| `scripts\update_knowledge.bat --mcp-test` | MCP-verify alle domeinen |
+| `scripts\update_knowledge.bat` | Alle domeinen (J/N) |
+| `scripts\update_knowledge.bat legal` | Alleen domein `legal` |
+| `scripts\update_knowledge.bat legal --media-only` | Alleen media zonder sidecar (Whisper) |
+
+Na elke run:
+
+- **Eindrapport:** `%USERPROFILE%\data\lancedb\<domein>\rag_ingest_run_summary.json` + console
+- **Skips:** `rag_ingest_skipped_report.md` in dezelfde map
+- **Live status:** `rag_ingest_live_status.json`
+
+Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert `HERMES_RAG_FRESH`, incrementele ingest en conda-detectie.
+
 ## Onderhoud
 
 | Taak | Script |
@@ -27,10 +47,6 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | Lokale assets herstellen | `RESTORE_FROM_BACKUP.bat` |
 | Taakbalk-snelkoppelingen vernieuwen | `REFRESH_TASKBAR_SHORTCUTS.bat` |
 | Sentence-transformers cache warmen | `scripts/warm_sentence_transformers_cache.bat` |
-
-## RAG
-
-Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert `HERMES_RAG_FRESH`, `HERMES_RAG_INCREMENTAL` en conda-detectie.
 
 ## Tests
 
