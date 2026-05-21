@@ -1,6 +1,7 @@
-# Gedeeld manifest: welke repo-bestanden naar %USERPROFILE%\.hermes\_local_assets\ spiegelen.
+﻿# Gedeeld manifest: welke repo-bestanden naar %USERPROFILE%\.hermes\_local_assets\ spiegelen.
 # Gebruikt door sync_local_assets_to_backup.ps1 en restore_local_assets.ps1.
-# RelPath = pad onder windows\ tenzij DestRoot anders aangeeft.
+# RelPath = pad onder windows\ of repo-root (DestRoot = repo voor bv. scripts/windows/setup_hermes_windows.ps1).
+# Setup-PS1: scripts/windows/setup_hermes_windows.ps1 wordt na elke setup naar windows\ gespiegeld.
 
 function Get-HermesWindowsLocalAssetsManifest {
     $winFiles = @(
@@ -20,6 +21,8 @@ function Get-HermesWindowsLocalAssetsManifest {
         'VERIFY_WINDOWS_CHAIN.bat',
         'CREATE_DESKTOP_SHORTCUT.bat',
         'REFRESH_TASKBAR_SHORTCUTS.bat',
+        'FIX_TASKBAR_ICONS.bat',
+        'fix_hermes_taskbar_pins.ps1',
         'reset_hermes_memory.bat',
         'setup_hermes_windows.ps1',
         'run_hermes.ps1',
@@ -41,6 +44,7 @@ function Get-HermesWindowsLocalAssetsManifest {
         'hermes_logo_backup.ico',
         'hermes_logo_restore.ico',
         'hermes_logo_update.ico',
+        'hermes_taskbar_white.ico',
         'restore_local_assets.bat',
         'restore_local_assets.ps1',
         'sync_local_assets_to_backup.ps1',
@@ -52,10 +56,20 @@ function Get-HermesWindowsLocalAssetsManifest {
         'Hermes - backup - naar taakbalk slepen.lnk',
         'Hermes - lokale bestanden herstellen - naar taakbalk slepen.lnk',
         'Hermes - update - naar taakbalk slepen.lnk',
-        'Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk'
+        'Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk',
+        'Hermes - setup Windows - naar taakbalk slepen.lnk',
+        'Hermes - Open Setup - naar taakbalk slepen.lnk'
     ) | ForEach-Object { @{ RelPath = $_; DestRoot = 'windows' } }
 
-    $repoRootFiles = @('start_hermes.bat', 'start_hermes_split.bat') | ForEach-Object {
+    $repoRootFiles = @(
+        'start_hermes.bat',
+        'start_hermes_split.bat',
+        'scripts/windows/setup_hermes_windows.ps1',
+        'scripts/windows/bat-templates/Hermes_met_logo.bat.template',
+        'scripts/windows/bat-templates/launch_hermes.bat.template',
+        'scripts/windows/bat-templates/setup_hermes_windows.bat.template',
+        'scripts/windows/bat-templates/hermes_update.bat.template'
+    ) | ForEach-Object {
         @{ RelPath = $_; DestRoot = 'repo' }
     }
 
@@ -99,18 +113,21 @@ function Get-HermesWindowsLocalAssetsManifest {
     }
 }
 
-function Get-HermesCriticalWindowsRepoFiles {
-    @(
-        'windows\backup_hermes.ps1',
-        'windows\restore_from_backup.ps1',
-        'windows\MANAGE_BACKUPS.bat',
-        'windows\RESTORE_FROM_BACKUP.bat',
-        'windows\launch_hermes.bat',
-        'windows\sync_local_assets_to_backup.ps1',
-        'windows\restore_local_assets.ps1',
-        'windows\scripts\rag_ingest_perf_defaults.ps1',
-        'windows\upstream_sync.ps1',
-        'windows\UPSTREAM_SYNC.md',
+function Get-HermesCriticalWindowsRepoPath {
+    # Forward slashes in paden (IDE-vriendelijk; Join-Path normaliseert naar backslash).
+    return @(
+        'windows/backup_hermes.ps1',
+        'windows/restore_from_backup.ps1',
+        'windows/MANAGE_BACKUPS.bat',
+        'windows/RESTORE_FROM_BACKUP.bat',
+        'windows/launch_hermes.bat',
+        'windows/sync_local_assets_to_backup.ps1',
+        'windows/restore_local_assets.ps1',
+        'windows/scripts/rag_ingest_perf_defaults.ps1',
+        'windows/upstream_sync.ps1',
+        'windows/UPSTREAM_SYNC.md',
+        'windows/FIX_TASKBAR_ICONS.bat',
+        'windows/fix_hermes_taskbar_pins.ps1',
         'pyproject.toml'
     )
 }

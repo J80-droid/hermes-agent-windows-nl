@@ -1,4 +1,4 @@
-# Upstream-sync: preflight, hermes update, post-merge (fork Windows NL).
+﻿# Upstream-sync: preflight, hermes update, post-merge (fork Windows NL).
 # Normaal aanroepen via UPDATE_HERMES.bat of hermes_update.bat - niet handmatig Preflight.
 # Zie windows/UPSTREAM_SYNC.md
 param(

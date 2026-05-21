@@ -21,6 +21,8 @@ echo   2. Rechtsklik op de .lnk -^> "Vastmaken aan taakbalk"
 echo   Of: sleep naar Start, dan rechtsklik -^> Vastmaken aan taakbalk
 echo.
 echo Werkt slepen direct naar taakbalk niet? Gebruik rechtsklik-pin ^(cmd.exe-wrapper^).
-pause
+echo.
+echo Zie je nog een zwart H-icoon? Draai: FIX_TASKBAR_ICONS.bat ^(vernieuwt ook vastgezette pins^).
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0fix_hermes_taskbar_pins.ps1" -RepoRoot "%CD%" -Quiet
 pause
 exit /b 0

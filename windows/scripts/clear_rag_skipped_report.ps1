@@ -1,4 +1,4 @@
-# Leeg het overgeslagen-rapport (vóór nieuwe N-run met gefixte OCR).
+﻿# Leeg het overgeslagen-rapport (vóór nieuwe N-run met gefixte OCR).
 param(
     [string]$LanceDbPath = ""
 )

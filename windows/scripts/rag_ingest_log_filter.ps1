@@ -1,4 +1,4 @@
-# Filter bekende PyTorch/transformers-ruis uit RAG-ingest console + log.
+﻿# Filter bekende PyTorch/transformers-ruis uit RAG-ingest console + log.
 function Test-RagIngestNoiseLine {
     param([string]$Line)
     if (-not $Line) { return $false }

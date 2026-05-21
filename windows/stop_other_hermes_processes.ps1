@@ -1,4 +1,4 @@
-# Stop Hermes CLI/gateway processes before update (Windows file-lock workaround).
+﻿# Stop Hermes CLI/gateway processes before update (Windows file-lock workaround).
 # Called from UPDATE_HERMES.bat (kill all) and from hermes update -KeepPid <pid> (keep this tree).
 param(
     [int[]]$KeepPid = @()
@@ -6,7 +6,7 @@ param(
 
 $ErrorActionPreference = 'SilentlyContinue'
 
-function Get-AncestorPids {
+function Get-AncestorPidChain {
     param([int]$ProcessId)
     $list = [System.Collections.Generic.List[int]]::new()
     [void]$list.Add($ProcessId)
@@ -17,13 +17,15 @@ function Get-AncestorPids {
             [void]$list.Add($proc.ParentProcessId)
             $proc = Get-CimInstance Win32_Process -Filter "ProcessId=$($proc.ParentProcessId)"
         }
-    } catch {}
+    } catch {
+        $null = $_.Exception.Message
+    }
     return $list
 }
 
 $exclude = [System.Collections.Generic.HashSet[int]]::new()
 foreach ($kp in $KeepPid) {
-    foreach ($ancestor in (Get-AncestorPids -ProcessId $kp)) {
+    foreach ($ancestor in (Get-AncestorPidChain -ProcessId $kp)) {
         [void]$exclude.Add($ancestor)
     }
 }

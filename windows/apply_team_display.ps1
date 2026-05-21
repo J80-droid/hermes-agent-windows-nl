@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Zet team-display in ~/.hermes/config.yaml via `hermes config set` (idempotent).
 .NOTES

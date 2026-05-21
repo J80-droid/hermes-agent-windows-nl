@@ -55,6 +55,8 @@ VARIANTS: dict[str, tuple[int, int, int]] = {
     "hermes_logo_backup.ico": (255, 32, 140),
     "hermes_logo_restore.ico": (0, 210, 255),
     "hermes_logo_update.ico": (255, 160, 0),
+    # Wit Hermes-monogram (update + setup-snelkoppelingen); zelfde pipeline als gekleurde varianten.
+    "hermes_taskbar_white.ico": (248, 248, 252),
 }
 
 ICO_SIZES = (16, 24, 32, 48, 64, 128, 256)

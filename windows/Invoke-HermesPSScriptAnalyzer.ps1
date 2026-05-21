@@ -1,4 +1,4 @@
-# Dot-source dit bestand en roep Invoke-HermesPSScriptAnalyzer aan (zie RUN_AUDITS.ps1 / RUN_PSScriptAnalyzer.ps1).
+﻿# Dot-source dit bestand en roep Invoke-HermesPSScriptAnalyzer aan (zie RUN_AUDITS.ps1 / RUN_PSScriptAnalyzer.ps1).
 # Installeert **niet** automatisch via PSGallery (hangt vaak vast in IDE/headless). Zelf installeren, of -IfMissing Skip.
 
 function Invoke-HermesPSScriptAnalyzer {

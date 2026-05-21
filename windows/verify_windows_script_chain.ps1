@@ -1,7 +1,6 @@
-# Verify all .bat -> .ps1 chains under windows\ and critical backup files in git.
+﻿# Verify all .bat -> .ps1 chains under windows\ and critical backup files in git.
 param(
-    [string]$RepoRoot = '',
-    [switch]$Strict
+    [string]$RepoRoot = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -34,7 +33,7 @@ $failures = New-Object System.Collections.Generic.List[string]
 
 Write-Host "[INFO] Repo: $repo" -ForegroundColor Cyan
 Write-Host '[INFO] Kritieke bestanden in git...' -ForegroundColor Cyan
-foreach ($rel in Get-HermesCriticalWindowsRepoFiles) {
+foreach ($rel in Get-HermesCriticalWindowsRepoPath) {
     $full = Join-Path $repo ($rel -replace '/', '\')
     if (Test-Path -LiteralPath $full) {
         Write-Host "  [OK] $rel" -ForegroundColor Green

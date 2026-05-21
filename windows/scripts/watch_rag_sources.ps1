@@ -1,4 +1,4 @@
-# Optioneel (P4): na wijzigingen in bronmap, incrementele ingest (debounce).
+﻿# Optioneel (P4): na wijzigingen in bronmap, incrementele ingest (debounce).
 #Requires -Version 5.1
 param(
     [int]$DebounceSeconds = 120

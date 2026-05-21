@@ -1,4 +1,4 @@
-# Hermes Agent: taakbalk-snelkoppelingen (.lnk) in een doelmap (zelfde set als bij backup).
+﻿# Hermes Agent: taakbalk-snelkoppelingen (.lnk) in een doelmap (zelfde set als bij backup).
 # Standaarddoel: deze map (windows\) zodat gebruikers ze naar de taakbalk kunnen slepen.
 param(
     [string]$RepoRoot = '',
@@ -41,6 +41,7 @@ function Resolve-HermesShortcutIconLocation {
 }
 
 function New-HermesTaskbarShortcut {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory)][string]$ShortcutPath,
         [Parameter(Mandatory)][string]$RepoRoot,
@@ -49,6 +50,7 @@ function New-HermesTaskbarShortcut {
         [Parameter(Mandatory)][string]$IconSpec
     )
     if (-not (Test-Path -LiteralPath $LaunchBatPath)) { return $false }
+    if (-not $PSCmdlet.ShouldProcess($ShortcutPath, 'Create', 'Taskbar shortcut')) { return $false }
     $iconLoc = Resolve-HermesShortcutIconLocation -IconSpec $IconSpec -RepoRoot $RepoRoot
     $WshShell = New-Object -ComObject WScript.Shell
     $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
@@ -83,17 +85,33 @@ if (-not $RepoRoot.Trim()) {
 
 $windowsDirResolved = Join-Path $RepoRoot 'windows'
 $whiteIco = Join-Path $windowsDirResolved 'hermes_taskbar_white.ico'
-$updateIcon = if (Test-Path -LiteralPath $whiteIco) {
-    $whiteIco
-} else {
-    (Join-Path $RepoRoot 'windows\hermes_logo_update.ico')
-}
 $icoGenPy = Join-Path $windowsDirResolved 'tools\generate_colored_hermes_icons.py'
-if ((Test-Path -LiteralPath $icoGenPy) -and (Test-HermesWindowsIconRegenNeeded -RepoRoot $RepoRoot -WindowsDir $windowsDirResolved)) {
+# Legacy setup schreef een ~2KB "H"-stub; echte witte variant is ~270KB uit generate_colored_hermes_icons.py
+function Test-HermesTaskbarWhiteIcoStale {
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return $true }
+    try {
+        return ((Get-Item -LiteralPath $Path).Length -lt 12000)
+    } catch {
+        return $true
+    }
+}
+$needIconGen = (Test-Path -LiteralPath $icoGenPy) -and (
+    (Test-HermesWindowsIconRegenNeeded -RepoRoot $RepoRoot -WindowsDir $windowsDirResolved) -or
+    (Test-HermesTaskbarWhiteIcoStale -Path $whiteIco)
+)
+if ($needIconGen) {
     if (-not $Quiet) {
         Write-Host '  Icoonset vernieuwen (hermes_logo.ico liep achter op PNG of gekleurde .ico) ...' -ForegroundColor Gray
     }
     [void](Invoke-HermesColoredIconsFromPng -IconGeneratorPy $icoGenPy -Quiet:$Quiet)
+}
+$updateIcon = if ((Test-Path -LiteralPath $whiteIco) -and -not (Test-HermesTaskbarWhiteIcoStale -Path $whiteIco)) {
+    $whiteIco
+} elseif (Test-Path -LiteralPath (Join-Path $windowsDirResolved 'hermes_logo_update.ico')) {
+    (Join-Path $RepoRoot 'windows\hermes_logo_update.ico')
+} else {
+    (Join-Path $RepoRoot 'windows\hermes_logo.ico')
 }
 
 . (Join-Path $scriptDir 'launcher_config.ps1')

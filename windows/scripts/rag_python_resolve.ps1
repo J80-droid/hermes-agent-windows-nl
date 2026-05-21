@@ -1,4 +1,4 @@
-# Gedeelde Python-resolutie: conda hermes-env + optioneel uv/.venv (install-jamel clone).
+﻿# Gedeelde Python-resolutie: conda hermes-env + optioneel uv/.venv (install-jamel clone).
 # Dot-source: . "$PSScriptRoot\rag_python_resolve.ps1"
 
 function Get-HermesCondaPython {
@@ -30,7 +30,7 @@ function Get-HermesUvVenvPython {
     return $null
 }
 
-function Get-AllHermesRagPythons {
+function Get-HermesRagPython {
     param([string]$RepoRoot = "")
     $seen = @{}
     $out = @()

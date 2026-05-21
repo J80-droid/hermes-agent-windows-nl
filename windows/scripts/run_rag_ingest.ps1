@@ -1,4 +1,4 @@
-# LanceDB ingest vanuit hermes-env (conda) + UTF-8 log + correcte exitcode.
+﻿# LanceDB ingest vanuit hermes-env (conda) + UTF-8 log + correcte exitcode.
 # Aangeroepen door update_knowledge.bat — niet handmatig in een lege PowerShell zonder env.
 param(
     [string]$LogPath = "",
@@ -103,7 +103,7 @@ try {
             return
         }
         Write-RagConsoleLine $line
-        $writer.WriteLine((Strip-RagAnsi $line))
+        $writer.WriteLine((Clear-RagAnsi $line))
         $writer.Flush()
     }
     if ($null -ne $LASTEXITCODE) { $exit = [int]$LASTEXITCODE }

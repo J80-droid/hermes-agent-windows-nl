@@ -1,4 +1,4 @@
-# Korte E2E: temp bron + LanceDB, run_rag_ingest.ps1, live status, MCP search.
+﻿# Korte E2E: temp bron + LanceDB, run_rag_ingest.ps1, live status, MCP search.
 $ErrorActionPreference = "Continue"
 $repo = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $stamp = Get-Date -Format "yyyyMMdd_HHmmss"

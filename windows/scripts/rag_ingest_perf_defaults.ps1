@@ -1,13 +1,13 @@
-# Institutional RAG ingest performance defaults (override-friendly).
+﻿# Institutional RAG ingest performance defaults (override-friendly).
 # Called from update_knowledge.bat: use -EmitCmd so SET lines apply in the parent CMD session.
 # See scripts/rag_pipeline/ACTIVATION.md and windows/INSTITUTIONAL.md.
 param(
     [switch]$EmitCmd
 )
 
-function Get-RagPerfValues {
+function Get-RagPerfDefault {
     # Institutioneel default: safe (sequentieel, lage RAM, timeouts via update_knowledge.bat)
-    $profile = if ($env:HERMES_RAG_PERF_PROFILE) { $env:HERMES_RAG_PERF_PROFILE.Trim().ToLowerInvariant() } else { 'safe' }
+    $perfProfile = if ($env:HERMES_RAG_PERF_PROFILE) { $env:HERMES_RAG_PERF_PROFILE.Trim().ToLowerInvariant() } else { 'safe' }
 
     $cpu = [Environment]::ProcessorCount
     if ($cpu -lt 1) { $cpu = 4 }
@@ -16,7 +16,7 @@ function Get-RagPerfValues {
     $embedBatch = $null
     $heartbeat = $null
 
-    switch ($profile) {
+    switch ($perfProfile) {
         'safe' {
             $workers = 2
             $embedBatch = 32
@@ -43,8 +43,8 @@ function Get-RagPerfValues {
             $heartbeat = 3
         }
         default {
-            Write-Host "[WARN] Unknown HERMES_RAG_PERF_PROFILE='$profile'; using balanced"
-            $profile = 'balanced'
+            Write-Host "[WARN] Unknown HERMES_RAG_PERF_PROFILE='$perfProfile'; using balanced"
+            $perfProfile = 'balanced'
             $half = [Math]::Floor($cpu / 2)
             $workers = [Math]::Min([Math]::Max($half, 2), 8)
             $embedBatch = 64
@@ -52,7 +52,7 @@ function Get-RagPerfValues {
         }
     }
 
-    if ($profile -ne 'off') {
+    if ($perfProfile -ne 'off') {
         if (-not $env:HERMES_RAG_CONVERT_WORKERS) {
             $env:HERMES_RAG_CONVERT_WORKERS = [string]$workers
         }
@@ -65,7 +65,7 @@ function Get-RagPerfValues {
     }
 
     return @{
-        Profile    = $profile
+        Profile    = $perfProfile
         Cpu        = $cpu
         Workers    = $env:HERMES_RAG_CONVERT_WORKERS
         EmbedBatch = $env:HERMES_RAG_EMBED_BATCH
@@ -73,7 +73,7 @@ function Get-RagPerfValues {
     }
 }
 
-$vals = Get-RagPerfValues
+$vals = Get-RagPerfDefault
 
 if ($vals.Profile -eq 'off') {
     $msg = '[INFO] RAG perf profile=off (ingest.py defaults; set HERMES_RAG_PERF_PROFILE or explicit env to override)'

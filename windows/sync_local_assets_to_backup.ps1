@@ -1,4 +1,4 @@
-# Kopieert lokale Hermes-bestanden van de repo-map naar
+﻿# Kopieert lokale Hermes-bestanden van de repo-map naar
 # %USERPROFILE%\.hermes\_local_assets\ na Hermes-backup of na git reset.
 #
 # Paden: zie WindowsLocalAssetsManifest.ps1 (enige bron van waarheid).

@@ -1,4 +1,4 @@
-# Verifieer per-domein LanceDB MCP in Hermes-profiles (domains.yaml). Geen monoliet meer.
+﻿# Verifieer per-domein LanceDB MCP in Hermes-profiles (domains.yaml). Geen monoliet meer.
 param(
     [string]$RepoRoot = "",
     [switch]$Quiet

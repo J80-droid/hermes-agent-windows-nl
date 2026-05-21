@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # Hermes — institutioneel: één plek voor welk repo-root .bat “Start” gebruikt.
 # Wordt dot-gesourced door create_taskbar_shortcuts.ps1 en create_shortcut.ps1.
 # =============================================================================

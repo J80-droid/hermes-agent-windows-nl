@@ -1,4 +1,4 @@
-# Hermes Agent - Local Assets Restore Script
+﻿# Hermes Agent - Local Assets Restore Script
 # Kopieert bestanden van %USERPROFILE%\.hermes\_local_assets naar repo (manifest).
 #
 # Gebruik: powershell -NoProfile -ExecutionPolicy Bypass -File "windows\restore_local_assets.ps1"

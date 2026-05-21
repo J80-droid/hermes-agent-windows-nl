@@ -1,4 +1,4 @@
-# Gedeeld door sync_local_assets_to_backup.ps1 en create_taskbar_shortcuts.ps1
+﻿# Gedeeld door sync_local_assets_to_backup.ps1 en create_taskbar_shortcuts.ps1
 # Draait generate_colored_hermes_icons.py zodat hermes_logo.ico gelijk loopt met de PNG-gebaseerde varianten.
 
 function Get-HermesWindowsShellIcoLocation {
@@ -100,7 +100,7 @@ function Test-HermesWindowsIconRegenNeeded {
 
     # Alleen echte desync: gekleurde .ico's zijn ná generate vaak 0-2 s nieuwer dan main; dat is normaal.
     $skewSec = 4
-    foreach ($leaf in @('hermes_logo_backup.ico', 'hermes_logo_restore.ico', 'hermes_logo_update.ico')) {
+    foreach ($leaf in @('hermes_logo_backup.ico', 'hermes_logo_restore.ico', 'hermes_logo_update.ico', 'hermes_taskbar_white.ico')) {
         $p2 = Join-Path $WindowsDir $leaf
         if (-not (Test-Path -LiteralPath $p2)) { continue }
         $age = ((Get-Item -LiteralPath $p2).LastWriteTime - $iMain.LastWriteTime).TotalSeconds

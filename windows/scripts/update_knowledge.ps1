@@ -1,4 +1,4 @@
-# RAG-ingest via domains.yaml (%USERPROFILE%\data\domains.yaml)
+﻿# RAG-ingest via domains.yaml (%USERPROFILE%\data\domains.yaml)
 param(
     [string[]]$Domain = @(),
     [switch]$All,

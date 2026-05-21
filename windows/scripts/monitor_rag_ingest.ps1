@@ -1,4 +1,4 @@
-# Eén regel status voor lopende productie-ingest (live JSON + proces + run_state).
+﻿# Eén regel status voor lopende productie-ingest (live JSON + proces + run_state).
 param([string]$LivePath = "", [string]$DbPath = "")
 
 if (-not $DbPath -and $env:HERMES_LANCEDB_PATH) { $DbPath = $env:HERMES_LANCEDB_PATH }
@@ -16,13 +16,12 @@ if (-not $env:HERMES_REPO) {
 $py = Join-Path $env:USERPROFILE "miniconda3\envs\hermes-env\python.exe"
 $cli = Join-Path $env:HERMES_REPO "scripts\rag_pipeline\ingest_live_status.py"
 if ((Test-Path $py) -and (Test-Path $cli)) {
-    & $py $cli --db-path $DbPath --json | ForEach-Object {
-        if ($_ -match '^\s*\{') { $r = $_ | ConvertFrom-Json }
-    }
-    if ($r) {
-        Write-Host "[MONITOR] $($r.display_state): $($r.human)"
-        if ($r.display_state -eq 'running' -and $r.pid_alive) { exit 0 }
-        if ($r.display_state -eq 'completed') { exit 0 }
+    $jsonLine = & $py $cli --db-path $DbPath --json | Where-Object { $_.TrimStart().StartsWith('{') } | Select-Object -First 1
+    if ($jsonLine) {
+        $ragStatus = $jsonLine | ConvertFrom-Json
+        Write-Host "[MONITOR] $($ragStatus.display_state): $($ragStatus.human)"
+        if ($ragStatus.display_state -eq 'running' -and $ragStatus.pid_alive) { exit 0 }
+        if ($ragStatus.display_state -eq 'completed') { exit 0 }
         exit 1
     }
 }

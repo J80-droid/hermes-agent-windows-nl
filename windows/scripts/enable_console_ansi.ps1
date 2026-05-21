@@ -1,4 +1,4 @@
-# Windows-console: ANSI/VT aan (kleuren voor RAG-ingest + tqdm). PS 5.1+ compatibel.
+﻿# Windows-console: ANSI/VT aan (kleuren voor RAG-ingest + tqdm). PS 5.1+ compatibel.
 if ($PSVersionTable.PSVersion.Major -ge 7 -and $null -ne $PSStyle) {
     $PSStyle.OutputRendering = 'Ansi'
 }

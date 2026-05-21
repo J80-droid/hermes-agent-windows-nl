@@ -1,4 +1,4 @@
-# Hermes Agent — PSScriptAnalyzer op alle windows\*.ps1 (zelfde helper als RUN_AUDITS.ps1).
+﻿# Hermes Agent — PSScriptAnalyzer op alle windows\*.ps1 (zelfde helper als RUN_AUDITS.ps1).
 # Geen pytest: gebruik dit naast RUN_PYTEST.ps1 (snellere iteratie op Python zonder PS-lint elke keer).
 $ErrorActionPreference = 'Stop'
 

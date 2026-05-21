@@ -1,5 +1,5 @@
-# Gedeelde UTF-8 (zonder BOM) log-hulp — voorkomt mojibake in Cursor/VS Code.
-function Strip-RagAnsi {
+﻿# Gedeelde UTF-8 (zonder BOM) log-hulp — voorkomt mojibake in Cursor/VS Code.
+function Clear-RagAnsi {
     param([string]$Text)
     if (-not $Text) { return $Text }
     return [regex]::Replace($Text, '\x1b\[[0-9;?]*[ -/]*[@-~]', '')
@@ -12,12 +12,16 @@ function Write-RagConsoleLine {
 }
 
 function New-RagIngestLogWriter {
+    [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][string]$LogPath)
-    if (Test-Path -LiteralPath $LogPath) {
-        Remove-Item -LiteralPath $LogPath -Force -ErrorAction SilentlyContinue
+    if ($PSCmdlet.ShouldProcess($LogPath, 'Create', 'RAG ingest log')) {
+        if (Test-Path -LiteralPath $LogPath) {
+            Remove-Item -LiteralPath $LogPath -Force -ErrorAction SilentlyContinue
+        }
+        $utf8 = New-Object System.Text.UTF8Encoding $false
+        return [System.IO.StreamWriter]::new($LogPath, $false, $utf8)
     }
-    $utf8 = New-Object System.Text.UTF8Encoding $false
-    return [System.IO.StreamWriter]::new($LogPath, $false, $utf8)
+    return $null
 }
 
 function Repair-RagIngestLogEncoding {

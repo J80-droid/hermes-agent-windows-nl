@@ -1,4 +1,4 @@
-# Installeert pyproject [rag] op conda + uv .venv, MCP-config, modelcache (idempotent).
+﻿# Installeert pyproject [rag] op conda + uv .venv, MCP-config, modelcache (idempotent).
 param(
     [string]$RepoRoot = "",
     [switch]$SkipPip,
@@ -25,7 +25,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot "pyproject.toml"))) {
     Write-Error "Geen pyproject.toml in RepoRoot: $RepoRoot"
 }
 
-$pythons = @(Get-AllHermesRagPythons -RepoRoot $RepoRoot)
+$pythons = @(Get-HermesRagPython -RepoRoot $RepoRoot)
 if ($pythons.Count -eq 0) {
     Write-RagMsg "[WARN] Geen conda hermes-env of .venv gevonden - zet HERMES_PYTHON." "Yellow"
 }

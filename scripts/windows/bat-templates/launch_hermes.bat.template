@@ -1,0 +1,34 @@
+@echo off
+setlocal EnableExtensions EnableDelayedExpansion
+rem Minimaal gegenereerd door scripts\windows\setup_hermes_windows.ps1 (alleen als bestand ontbrak).
+set "WIN_SCR=%~dp0"
+for %%I in ("%WIN_SCR%..") do set "REPO_ROOT=%%~fI"
+cd /d "%REPO_ROOT%"
+
+if not defined HERMES_LANCEDB_PATH set "HERMES_LANCEDB_PATH=%USERPROFILE%\data\my_lancedb"
+if not defined HERMES_RAG_RAW_SOURCE set "HERMES_RAG_RAW_SOURCE=%USERPROFILE%\data\raw_source_files"
+
+if not defined HERMES_CONDA_ENV set "HERMES_CONDA_ENV=hermes-env"
+if not defined HERMES_PYTHON if exist "%USERPROFILE%\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe" set "HERMES_PYTHON=%USERPROFILE%\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe"
+if not defined HERMES_PYTHON if exist "%USERPROFILE%\anaconda3\envs\!HERMES_CONDA_ENV!\python.exe" set "HERMES_PYTHON=%USERPROFILE%\anaconda3\envs\!HERMES_CONDA_ENV!\python.exe"
+if not defined HERMES_PYTHON if exist "%LOCALAPPDATA%\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe" set "HERMES_PYTHON=%LOCALAPPDATA%\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe"
+if not defined HERMES_PYTHON if exist "%LOCALAPPDATA%\anaconda3\envs\!HERMES_CONDA_ENV!\python.exe" set "HERMES_PYTHON=%LOCALAPPDATA%\anaconda3\envs\!HERMES_CONDA_ENV!\python.exe"
+if defined HERMES_PYTHON set "HERMES_PYTHON_ENV=!HERMES_PYTHON!"
+
+if exist "%REPO_ROOT%\.venv\Scripts\python.exe" (
+  set "HERMES_PYTHON=%REPO_ROOT%\.venv\Scripts\python.exe"
+  set "HERMES_PYTHON_ENV=!HERMES_PYTHON!"
+)
+
+chcp 65001 >nul
+set "PYTHONIOENCODING=utf-8"
+if defined HERMES_PYTHON echo [INFO] HERMES_PYTHON=!HERMES_PYTHON!
+
+if not defined HERMES_PYTHON (
+  echo [ERROR] Geen HERMES_PYTHON en geen .venv. Installeer deps: zie CONTRIBUTING.md
+  pause
+  exit /b 1
+)
+
+"%HERMES_PYTHON%" "%REPO_ROOT%\cli.py" %*
+exit /b %ERRORLEVEL%
