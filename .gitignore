@@ -90,3 +90,6 @@ profiles/
 backups/
 temp_input.txt
 tinker-atropos/
+
+# Lokale referentie-PDF (niet in repo)
+docs/the-operators-guide-to-hermes-agent.pdf
