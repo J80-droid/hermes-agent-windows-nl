@@ -37,7 +37,17 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 | Backup | `hermes_logo_backup.ico` | Roze |
 | Restore | `hermes_logo_restore.ico` | Cyaan |
 
-Geen `hermes_taskbar_white.ico` in snelkoppelingen (H-stub in Explorer). Na wijziging: `FIX_TASKBAR_ICONS.bat` + F5 in Explorer.
+Geen `hermes_taskbar_white.ico` in snelkoppelingen (H-stub in Explorer).
+
+**Icoon leeg / witte pagina in Verkenner (geen preview):** corrupte ICO — herstel:
+
+```bat
+cd <repo>\hermes-agent
+conda run -n hermes-env python windows/tools/generate_colored_hermes_icons.py
+windows\FIX_TASKBAR_ICONS.bat
+```
+
+Daarna F5 in `windows\`. Gekleurde `.ico` na clone altijd opnieuw genereren (staan in `.gitignore`).
 
 ## Eenmalig na oude pin (UPDATE toont H)
 

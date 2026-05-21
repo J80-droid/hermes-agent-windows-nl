@@ -23,6 +23,17 @@ CRITICAL = [
 ]
 
 
+def test_hermes_logo_ico_readable_by_pillow():
+    """Regressie: multi-size ICO gaf corrupt BMP — Explorer toonde lege pagina-iconen."""
+    main = REPO / "windows/hermes_logo.ico"
+    if not main.is_file():
+        pytest.skip("hermes_logo.ico ontbreekt (genereer via generate_colored_hermes_icons.py)")
+    from PIL import Image
+
+    with Image.open(main) as im:
+        assert im.size == (256, 256)
+
+
 def test_taskbar_white_icon_from_png_pipeline():
     """Update-icoon moet PNG-pipeline zijn (~270KB), geen legacy 2KB H-stub."""
     white = REPO / "windows/hermes_taskbar_white.ico"

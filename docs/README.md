@@ -15,7 +15,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Windows-scripts en taakbalk | [../windows/README.md](../windows/README.md) |
 | User-data docs (STATUS/RECOVERY sync) | [USER_DATA_OPERATIONS.md](USER_DATA_OPERATIONS.md) |
 | IDE PSScriptAnalyzer (VS Code/Cursor) | [IDE_VSCODE_SETTINGS.example.json](IDE_VSCODE_SETTINGS.example.json) |
-| Hermes starten zonder conda in PATH | [../../HERMES_START.md](../../HERMES_START.md) |
+| Hermes starten zonder conda in PATH | [HERMES_START.md](HERMES_START.md) (kopie ook in workspace-root `HERMES_START.md`) |
 | Voortgang / checklist | [../memory-bank/progress.md](../memory-bank/progress.md) |
 
 ## Configuratie — twee lagen

@@ -463,18 +463,15 @@ def _patch_ico_bmp_append_and_mask(ico_path: Path) -> None:
 
 def _save_ico(pyramid_smallest_first: list[Image.Image], path: Path) -> None:
     """
-    Volledige piramide (16–256): Shell/.lnk gebruiken vaak 32/48px; alleen 256 geeft verkeerde cache-kleur.
-    ``bitmap_format='bmp'`` + ``_patch_ico_bmp_append_and_mask``; ``IconLocation`` blijft ``,0``.
+    Eén 256×256-laag: bewezen Windows/Explorer-compatibel na ``_patch_ico_bmp_append_and_mask``.
+    Multi-size ICO via Pillow+bmp brak Shell-preview (corrupt BMP header); niet opnieuw zonder aparte test.
+    ``IconLocation`` blijft ``,0``.
     """
-    layers = [
-        _finalize_transparency_for_windows_ico(im.convert("RGBA"))
-        for im in pyramid_smallest_first
-    ]
-    sizes = [(im.width, im.height) for im in layers]
-    layers[-1].save(
+    largest = _finalize_transparency_for_windows_ico(pyramid_smallest_first[-1].convert("RGBA"))
+    largest.save(
         path,
         format="ICO",
-        sizes=sizes,
+        sizes=[(256, 256)],
         bitmap_format="bmp",
     )
     _patch_ico_bmp_append_and_mask(path)
