@@ -34,7 +34,11 @@ if (-not $SkipPip) {
     foreach ($py in $pythons) {
         & $py -m pip --version 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) {
-            Write-RagMsg "[WARN] Geen pip op $py - overgeslagen (gebruik conda of: uv pip install -e `".[rag]`")." "Yellow"
+            if ($py -match '\\.venv\\') {
+                Write-RagMsg "[WARN] .venv zonder pip - overgeslagen (RAG via conda hermes-env is voldoende)." "Yellow"
+            } else {
+                Write-RagMsg "[WARN] Geen pip op $py - overgeslagen." "Yellow"
+            }
             continue
         }
         Write-RagMsg "[INFO] RAG-deps via: $py" "Cyan"

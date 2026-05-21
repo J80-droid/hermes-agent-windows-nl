@@ -317,8 +317,8 @@ if ((Test-Path -LiteralPath $ragExtras) -and -not $WhatIfPreference) {
 }
 
 Write-Host ""
-Write-Host 'Klaar: windows\setup_hermes_windows.bat + taakbalk-.lnk (goud/oranje/cyaan via create_taskbar_shortcuts.ps1).' -ForegroundColor Cyan
-Write-Host 'Tip: bij verkeerd taakbalk-icoon: windows\FIX_TASKBAR_ICONS.bat' -ForegroundColor DarkGray
+Write-Host 'Klaar: windows/setup_hermes_windows.bat + taakbalk-.lnk (goud/oranje/cyaan via create_taskbar_shortcuts.ps1).' -ForegroundColor Cyan
+Write-Host 'Tip: bij verkeerd taakbalk-icoon: windows/FIX_TASKBAR_ICONS.bat' -ForegroundColor DarkGray
 
 # Canoniek script staat in scripts\windows\; SETUP_HERMES.bat en launch_hermes.bat lezen windows\ kopie.
 $mirrorSetup = Join-Path $win 'setup_hermes_windows.ps1'

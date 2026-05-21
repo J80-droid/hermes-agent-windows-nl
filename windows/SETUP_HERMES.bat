@@ -14,8 +14,8 @@ echo [INFO] Optioneel als administrator voor espeak-ng / systeem-PATH.
 echo [INFO] Argumenten doorsturen, bv. --full-setup --with-doctor --pip-only
 echo.
 
-if exist "%~dp0..\scripts\windows\setup_hermes_windows.ps1" (
-  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0..\scripts\windows\setup_hermes_windows.ps1" %*
+if exist "%~dp0../scripts/windows/setup_hermes_windows.ps1" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0../scripts/windows/setup_hermes_windows.ps1" %*
 ) else (
   powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0setup_hermes_windows.ps1" %*
 )
