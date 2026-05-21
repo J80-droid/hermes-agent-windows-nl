@@ -25,6 +25,11 @@ Config: **`%USERPROFILE%\data\domains.yaml`** (voorbeeld: `docs/domains.yaml.exa
 
 | Commando | Betekenis |
 | -------- | --------- |
+| `docs\README.md` | Documentatie-index (RAG + config + profielen) |
+| `docs\RAG_TWEE_FASEN.md` | Beginners: bibliotheek vs. balie, twee fasen |
+| `docs\PROFILE_MODEL_INHERITANCE.md` | Model/provider centraal (niet per profiel) |
+| `docs\RAG_INSTITUTIONAL_ENV.md` | Env-defaults (stale 120s, quiet torch) — institutioneel |
+| `%USERPROFILE%\data\scripts\hermes.bat` | Hermes CLI zonder `conda` in PATH (`hermes-env`) |
 | `scripts\update_knowledge.bat --list` | Toon alle domeinen |
 | `scripts\update_knowledge.bat --mcp-test` | MCP-verify alle domeinen |
 | `scripts\update_knowledge.bat` | Alle domeinen (J/N) |
@@ -52,10 +57,22 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 
 `tests/RUN_PYTEST.bat`, `tests/RUN_PSScriptAnalyzer.bat` — logs staan in `.gitignore`.
 
+## Hermes-profielen en model
+
+| Onderwerp | Plek |
+| --------- | ---- |
+| Model/provider (alle profielen) | `%LOCALAPPDATA%\hermes\config.yaml` — `hermes model` |
+| Profiel legal/core (MCP) | `%LOCALAPPDATA%\hermes\profiles\<naam>\config.yaml` — **geen** `model:` |
+| Opruimen oude `model:` in profielen | `DOCTOR_FIX.bat` of `hermes doctor --fix` |
+
+Zie `docs\PROFILE_MODEL_INHERITANCE.md`.
+
 ## Configuratie
 
 - `launcher_config.ps1` — paden en omgeving
 - `team_display.defaults` — teamweergave (voorbeeld)
 - `PSScriptAnalyzerSettings.psd1` — lint-regels
+
+**Nacht/taakbalk:** `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` zet `HERMES_NONINTERACTIVE=1` en `HERMES_RAG_FRESH=n` (geen J/N). Regenereer `.lnk` via `create_taskbar_shortcuts.ps1`.
 
 Iconen: `hermes_logo.ico`, `hermes_taskbar_white.ico`. Geen `.lnk` in git — gegenereerd via `create_taskbar_shortcuts.ps1`.

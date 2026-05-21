@@ -1,11 +1,15 @@
 # =============================================================================
 # domains.yaml — enige bron van waarheid voor RAG multi-domein
+# Documentatie-index: docs/README.md
+# Twee fasen (index vs. chat): docs/RAG_TWEE_FASEN.md
+# Model (alle profielen): docs/PROFILE_MODEL_INHERITANCE.md — NIET in profiel-yaml
 # Kopieer naar: %USERPROFILE%\data\domains.yaml
 #
 # Nieuw domein toevoegen:
 #   1. Kopieer het blok onder "Sjabloon nieuw domein" naar domains:
 #   2. Maak raw_source_files\<source_dir>\ met bronbestanden
 #   3. Maak Hermes-profiel %LOCALAPPDATA%\hermes\profiles\<profile_name>\ + MCP in config.yaml
+#      (geen model: in config — model komt uit ~/.hermes/config.yaml, zie docs/PROFILE_MODEL_INHERITANCE.md)
 #   4. update_knowledge.bat --list  (moet het nieuwe domein tonen)
 #   5. update_knowledge.bat <naam>  of update_knowledge.bat (alle domeinen)
 #

@@ -1,24 +1,48 @@
-# Eén regel status voor lopende productie-ingest (live JSON + proces).
-param([string]$LivePath = "")
-if (-not $LivePath) {
-    if ($env:HERMES_LANCEDB_PATH) { $LivePath = Join-Path $env:HERMES_LANCEDB_PATH "rag_ingest_live_status.json" }
-    else { $LivePath = Join-Path $env:USERPROFILE "data\lancedb\legal\rag_ingest_live_status.json" }
+# Eén regel status voor lopende productie-ingest (live JSON + proces + run_state).
+param([string]$LivePath = "", [string]$DbPath = "")
+
+if (-not $DbPath -and $env:HERMES_LANCEDB_PATH) { $DbPath = $env:HERMES_LANCEDB_PATH }
+if (-not $DbPath) { $DbPath = Join-Path $env:USERPROFILE "data\lancedb\legal" }
+if (-not $LivePath) { $LivePath = Join-Path $DbPath "rag_ingest_live_status.json" }
+
+if (-not $env:HERMES_REPO) {
+    if (Test-Path (Join-Path $env:USERPROFILE "data\hermes_agent_repo.txt")) {
+        $env:HERMES_REPO = (Get-Content (Join-Path $env:USERPROFILE "data\hermes_agent_repo.txt") -Raw).Trim()
+    } else {
+        $env:HERMES_REPO = "D:\A.I\APPS\Hermes_agent_WS\hermes-agent"
+    }
+}
+
+$py = Join-Path $env:USERPROFILE "miniconda3\envs\hermes-env\python.exe"
+$cli = Join-Path $env:HERMES_REPO "scripts\rag_pipeline\ingest_live_status.py"
+if ((Test-Path $py) -and (Test-Path $cli)) {
+    & $py $cli --db-path $DbPath --json | ForEach-Object {
+        if ($_ -match '^\s*\{') { $r = $_ | ConvertFrom-Json }
+    }
+    if ($r) {
+        Write-Host "[MONITOR] $($r.display_state): $($r.human)"
+        if ($r.display_state -eq 'running' -and $r.pid_alive) { exit 0 }
+        if ($r.display_state -eq 'completed') { exit 0 }
+        exit 1
+    }
 }
 
 if (-not (Test-Path $LivePath)) {
-    Write-Host "[MONITOR] Geen live status: $LivePath (ingest nog niet in index-fase?)"
+    Write-Host "[MONITOR] Geen live status: $LivePath"
     exit 2
 }
 $live = Get-Content $LivePath -Raw -Encoding utf8 | ConvertFrom-Json
-$py = Get-Process -Id $live.pid -ErrorAction SilentlyContinue
+$state = if ($live.run_state) { $live.run_state } else { 'running' }
+if ($state -eq 'completed') {
+    Write-Host "[MONITOR] Afgerond: $($live.message)"
+    exit 0
+}
+$pyProc = Get-Process -Id $live.pid -ErrorAction SilentlyContinue
 $short = ($live.relative_source -replace '\\', '/') -split '/' | Select-Object -Last 1
 Write-Host "[MONITOR] $($live.current_index)/$($live.total) | $($live.step) | $short"
-Write-Host "          $($live.extra)"
-Write-Host "          updated: $($live.updated_at)"
-if ($py) {
-    Write-Host "          pid $($live.pid) CPU $([math]::Round($py.CPU,1))s RAM $([math]::Round($py.WorkingSet64/1MB)) MB"
-} else {
-    Write-Host "          pid $($live.pid) niet actief (klaar of gecrasht?)"
-    exit 1
+if ($pyProc) {
+    Write-Host "          pid $($live.pid) actief"
+    exit 0
 }
-exit 0
+Write-Host "          pid $($live.pid) niet actief (verouderd? run check_ingest_status)"
+exit 1

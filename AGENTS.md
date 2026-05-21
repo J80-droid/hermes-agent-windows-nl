@@ -7,6 +7,7 @@ Instructions for AI coding assistants and developers working on the hermes-agent
 - Index: `windows/scripts/update_knowledge.bat` → `scripts/rag_pipeline/ingest.py` (zie `scripts/rag_pipeline/ACTIVATION.md`).
 - RAG: `windows\scripts\update_knowledge.bat` (per-domein via `%USERPROFILE%\data\domains.yaml`).
 - MCP: per profiel `lancedb-<domein>` in profile `config.yaml` (niet globale `lancedb-knowledge`).
+- **Model/provider:** domeinprofielen **erven** van root `~/.hermes/config.yaml` — geen `model:` in `profiles/<naam>/config.yaml` (tenzij `model.inherit: false`). Code: `hermes_cli/profile_model_inheritance.py`; docs: `docs/PROFILE_MODEL_INHERITANCE.md`.
 - Citatieregels: `.cursorrules` + `LANCEDB_RAG_STRICT_CITATION_GUIDANCE` in `agent/prompt_builder.py` (actief wanneer tool `search_knowledge` geladen is).
 
 ## Development Environment

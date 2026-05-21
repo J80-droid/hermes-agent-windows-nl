@@ -9,6 +9,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'rag\rag_institutional_env.ps1')
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $env:HERMES_REPO = $repo
 

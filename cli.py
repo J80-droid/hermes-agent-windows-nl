@@ -615,6 +615,28 @@ def load_cli_config() -> Dict[str, Any]:
         if redact is not None:
             os.environ["HERMES_REDACT_SECRETS"] = str(redact).lower()
 
+    # Named profiles: model/provider from root ~/.hermes/config.yaml (not profile yaml).
+    try:
+        from hermes_cli.profile_model_inheritance import (
+            is_profile_hermes_home,
+            resolve_model_section,
+        )
+
+        if is_profile_hermes_home(_hermes_home) and not ignore_user_config:
+            _profile_user: dict = {}
+            if user_config_path.exists():
+                with open(user_config_path, encoding="utf-8") as _pf:
+                    import yaml as _yaml
+
+                    _profile_user = _yaml.safe_load(_pf) or {}
+            _resolved = resolve_model_section(
+                _profile_user if isinstance(_profile_user, dict) else None
+            )
+            if isinstance(_resolved, dict) and _resolved:
+                defaults["model"] = _resolved
+    except Exception:
+        pass
+
     return defaults
 
 # Load configuration at module startup
@@ -2585,9 +2607,14 @@ def save_config_value(key_path: str, value: any) -> bool:
         True if successful, False otherwise
     """
     # Use the same precedence as load_cli_config: user config first, then project config
-    user_config_path = _hermes_home / 'config.yaml'
-    project_config_path = Path(__file__).parent / 'cli-config.yaml'
-    config_path = user_config_path if user_config_path.exists() else project_config_path
+    try:
+        from hermes_cli.profile_model_inheritance import config_path_for_user_key
+
+        config_path = config_path_for_user_key(key_path)
+    except Exception:
+        user_config_path = _hermes_home / 'config.yaml'
+        project_config_path = Path(__file__).parent / 'cli-config.yaml'
+        config_path = user_config_path if user_config_path.exists() else project_config_path
     
     try:
         # Ensure parent directory exists (for ~/.hermes/config.yaml on first use)

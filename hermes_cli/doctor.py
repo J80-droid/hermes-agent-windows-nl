@@ -538,10 +538,20 @@ def run_doctor(args):
     if config_path.exists():
         check_ok(f"{_DHH}/config.yaml exists")
 
-        # Validate model.provider and model.default values
+        # Validate model.provider and model.default (profiles inherit from root)
         try:
             import yaml as _yaml
-            cfg = _yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+            from hermes_cli.profile_model_inheritance import is_profile_hermes_home
+
+            if is_profile_hermes_home(HERMES_HOME):
+                from hermes_cli.config import load_config as _load_config
+
+                cfg = _load_config()
+                check_info(
+                    "Inference model/provider: inherited from root ~/.hermes/config.yaml"
+                )
+            else:
+                cfg = _yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
             model_section = cfg.get("model") or {}
             provider_raw = (model_section.get("provider") or "").strip()
             provider = provider_raw.lower()
@@ -723,6 +733,52 @@ def run_doctor(args):
                 fixed_count += 1
             else:
                 check_warn("config.yaml not found", "(using defaults)")
+
+    # Stale model: blocks in domain profiles (ignored at runtime; clutters config)
+    try:
+        from hermes_constants import get_default_hermes_root
+        from hermes_cli.profile_model_inheritance import (
+            profile_has_explicit_model_override,
+            strip_all_profile_model_blocks,
+            _read_yaml,
+        )
+
+        profiles_root = get_default_hermes_root() / "profiles"
+        stale_profiles: list[str] = []
+        if profiles_root.is_dir():
+            for entry in sorted(profiles_root.iterdir()):
+                if not entry.is_dir():
+                    continue
+                raw = _read_yaml(entry / "config.yaml")
+                if "model" not in raw:
+                    continue
+                if profile_has_explicit_model_override(raw.get("model")):
+                    continue
+                stale_profiles.append(entry.name)
+        if stale_profiles:
+            joined = ", ".join(stale_profiles)
+            if should_fix:
+                removed = strip_all_profile_model_blocks()
+                if removed:
+                    check_ok(
+                        f"Removed ignored model: blocks from profile(s): {', '.join(removed)}"
+                    )
+                    fixed_count += len(removed)
+            else:
+                check_warn(
+                    "Profile config contains model: (ignored — use root config)",
+                    f"({joined})",
+                )
+                issues.append(
+                    "Remove model: from domain profile configs or run "
+                    "'hermes doctor --fix' (model is set in ~/.hermes/config.yaml only)."
+                )
+        elif profiles_root.is_dir() and any(
+            p.is_dir() for p in profiles_root.iterdir()
+        ):
+            check_ok("Domain profiles inherit model from root config")
+    except Exception:
+        pass
 
     # Check config version and stale keys
     config_path = HERMES_HOME / 'config.yaml'

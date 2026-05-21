@@ -52,7 +52,7 @@ Scripts in deze map:
 | `HERMES_RAG_STATE_CHECKPOINT` | `25` | Ingest-staat wegschrijven elke N succesvolle bronnen |
 | `HERMES_RAG_SKIP_REPORT` | *(LanceDB-map)* | JSON+MD-rapport overgeslagen bronnen (PDF/PNG-lijst) |
 
-**Institutioneel (2026-05):** sequentiële verwerking per bron, live status `rag_ingest_live_status.json`, checkpoints, timeouts, OCR/stub-rapport. Log: `windows/scripts/rag_ingest_run.log` als **UTF-8 zonder BOM** (`run_rag_ingest.ps1` + `.editorconfig`). In Cursor: encoding **UTF-8** (niet UTF-16).
+**Institutioneel (2026-05):** sequentiële verwerking per bron, live status `rag_ingest_live_status.json` met `run_state` (`running` / `completed` / `failed`), PID-check en reconciliatie (`ingest_live_status.py --reconcile`). Env-defaults centraal: `rag_institutional_defaults.py` + `docs/RAG_INSTITUTIONAL_ENV.md` (automatisch via `_rag_apply_institutional_env.bat` / `update_knowledge`). Log: **UTF-8 zonder BOM** (`run_rag_ingest.ps1` + `.editorconfig`).
 
 **Live zichtbaarheid:** elke 3s `[LIVE] 12/1030 · 05:12 · MarkItDown · bestand.pdf` + postfix `⏳ 05:12 · stap · bestand` — zo zie je direct of een zware PDF nog loopt of vastzit (`HERMES_RAG_LIVE_TICK_SEC`, `HERMES_RAG_LIVE_LOG=0` om log-regels uit te zetten).
 
@@ -218,7 +218,7 @@ Na setup of na **`windows\REFRESH_TASKBAR_SHORTCUTS.bat`** staat in **`hermes-ag
    python scripts/rag_pipeline/ingest.py
    ```
 
-5. **MCP per profiel** (Optie B): elk domein heeft `lancedb-<domein>` in `%LOCALAPPDATA%\hermes\profiles\<naam>\config.yaml` — zie `domains.yaml`. Aanmaken via `hermes profile create` + MCP-blok (setup doet dit).
+5. **MCP per profiel** (Optie B): elk domein heeft `lancedb-<domein>` in `%LOCALAPPDATA%\hermes\profiles\<naam>\config.yaml` — zie `domains.yaml`. Aanmaken via `hermes profile create` + MCP-blok (setup doet dit). **Geen `model:` in profiel-yaml** — model komt uit root `%LOCALAPPDATA%\hermes\config.yaml` (`docs/PROFILE_MODEL_INHERITANCE.md`).
 
 6. **Verifiëren:**
 
@@ -227,7 +227,7 @@ Na setup of na **`windows\REFRESH_TASKBAR_SHORTCUTS.bat`** staat in **`hermes-ag
    hermes -p legal mcp list
    ```
 
-   Post-ingest draait MCP-verify automatisch. Start daarna een **nieuwe** Hermes-sessie per profiel.
+   Post-ingest draait MCP-verify automatisch. Start daarna een **nieuwe** Hermes-sessie per profiel. Zorg dat root-model/provider klopt (`hermes model`); profiel-config bevat alleen MCP-pad, geen apart model.
 
 ## Koppeling Hermes ↔ `search_knowledge` (waar het spaak loopt)
 

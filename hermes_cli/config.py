@@ -4447,8 +4447,25 @@ def _load_config_impl(*, want_deepcopy: bool) -> Dict[str, Any]:
                     user_config.pop("max_turns", None)
 
                 config = _deep_merge(config, user_config)
+                try:
+                    from hermes_cli.profile_model_inheritance import (
+                        apply_profile_model_inheritance,
+                    )
+
+                    config = apply_profile_model_inheritance(config, user_config)
+                except Exception:
+                    pass
             except Exception as e:
                 _warn_config_parse_failure(config_path, e)
+        else:
+            try:
+                from hermes_cli.profile_model_inheritance import (
+                    apply_profile_model_inheritance,
+                )
+
+                config = apply_profile_model_inheritance(config, {})
+            except Exception:
+                pass
 
         normalized = _normalize_post_merge_config(config)
         expanded = _expand_env_vars(normalized)
@@ -4569,6 +4586,20 @@ def save_config(config: Dict[str, Any]):
                 raw_existing,
                 _LAST_EXPANDED_CONFIG_BY_PATH.get(str(config_path)),
             )
+
+        # Named profiles: inference model lives in root config, not profile yaml.
+        try:
+            from hermes_cli.profile_model_inheritance import (
+                save_model_section_to_root,
+                should_redirect_model_save_to_root,
+            )
+
+            if should_redirect_model_save_to_root():
+                model_section = normalized.pop("model", None)
+                if model_section is not None:
+                    save_model_section_to_root(model_section)
+        except Exception:
+            pass
 
         # Build optional commented-out sections for features that are off by
         # default or only relevant when explicitly configured.
@@ -5256,10 +5287,15 @@ def set_config_value(key: str, value: str):
         print(f"✓ Set {key} in {get_env_path()}")
         return
     
-    # Otherwise it goes to config.yaml
+    # Otherwise it goes to config.yaml (root when profile + model.* key)
+    try:
+        from hermes_cli.profile_model_inheritance import config_path_for_user_key
+
+        config_path = config_path_for_user_key(key)
+    except Exception:
+        config_path = get_config_path()
     # Read the raw user config (not merged with defaults) to avoid
     # dumping all default values back to the file
-    config_path = get_config_path()
     user_config = {}
     if config_path.exists():
         try:
@@ -5289,7 +5325,19 @@ def set_config_value(key: str, value: str):
     ensure_hermes_home()
     from utils import atomic_yaml_write
     atomic_yaml_write(config_path, user_config, sort_keys=False)
-    
+    try:
+        from hermes_cli.profile_model_inheritance import (
+            bust_config_caches,
+            is_global_model_config_key,
+            root_config_path,
+        )
+
+        bust_config_caches(config_path)
+        if is_global_model_config_key(key):
+            bust_config_caches(root_config_path())
+    except Exception:
+        pass
+
     # Keep .env in sync for keys that terminal_tool reads directly from env vars.
     # config.yaml is authoritative, but terminal_tool only reads TERMINAL_ENV etc.
     _config_to_env_sync = {

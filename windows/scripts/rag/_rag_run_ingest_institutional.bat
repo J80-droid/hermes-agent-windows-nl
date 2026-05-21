@@ -3,6 +3,7 @@ rem Kleuren, [LIVE], UTF-8 log, perf-safe — zelfde stack als institutionele RA
 setlocal EnableExtensions
 call "%~dp0_resolve_hermes_repo.bat"
 if errorlevel 1 exit /b 1
+call "%~dp0_rag_apply_institutional_env.bat"
 
 if not defined RAG_DOMAIN set "RAG_DOMAIN=rag"
 set "WIN_SCR=%HERMES_REPO%\windows\scripts"
@@ -25,8 +26,6 @@ set "PYTHONUNBUFFERED=1"
 set "PYTHONUTF8=1"
 set "HERMES_FORCE_COLOR=1"
 set "FORCE_COLOR=1"
-if not defined HERMES_RAG_PERF_PROFILE set "HERMES_RAG_PERF_PROFILE=safe"
-
 for /f "delims=" %%L in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%WIN_SCR%\rag_ingest_perf_defaults.ps1" -EmitCmd 2^>nul') do %%L
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%WIN_SCR%\check_rag_ingest_running.ps1" 2>nul

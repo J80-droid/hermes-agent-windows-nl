@@ -7,6 +7,7 @@ title Hermes RAG - kennis bijwerken
 
 call "%~dp0rag\_resolve_hermes_repo.bat"
 if errorlevel 1 goto :finish_err
+call "%~dp0rag\_rag_apply_institutional_env.bat"
 
 if /i "%~1"=="--list" (
   powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0update_knowledge.ps1" -List
@@ -14,6 +15,7 @@ if /i "%~1"=="--list" (
   goto :finish
 )
 if /i "%~1"=="--mcp-test" (
+  set "HERMES_NONINTERACTIVE=1"
   powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0update_knowledge.ps1" -McpVerifyOnly -All
   set "RAG_EXIT=%ERRORLEVEL%"
   goto :finish

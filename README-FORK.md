@@ -16,6 +16,8 @@ Deze fork is de **enige goedgekeurde bron** voor Hermes-installaties binnen dit 
 | One-command installateur | `scripts/windows/install-jamel.ps1` | Volledige installatie in een commando |
 | Update-script | `scripts/windows/update-jamel.ps1` | Conflictvrije updates met keuzemenu |
 | Aangepaste uninstaller | `hermes_cli/uninstall.py` | Herinstallatie-URL verwijst naar deze fork |
+| Profiel-model overerving | `hermes_cli/profile_model_inheritance.py` | Eén model in root config voor alle `-p <profiel>`-sessies |
+| RAG + profiel-docs (NL) | `docs/README.md`, `docs/PROFILE_MODEL_INHERITANCE.md` | Index, twee fasen, centraal model |
 
 ### Wat NIET is aangepast
 
@@ -95,7 +97,9 @@ Hermes splitst bewust code en data:
 | Wat | Locatie | In Git? |
 | --- | ------- | ------ |
 | Code | `%LOCALAPPDATA%\hermes\hermes-agent\` | Ja |
-| Data (config, skills, geheugen, sessies) | `%USERPROFILE%\.hermes\` | Nee |
+| Data (config, skills, geheugen, sessies) | `%LOCALAPPDATA%\hermes\` + `%USERPROFILE%\data\` (RAG) | Nee |
+
+**Model/provider:** altijd `%LOCALAPPDATA%\hermes\config.yaml`. Profielen onder `profiles\<naam>\` bevatten MCP en toolsets, geen vast `model:` — zie `docs/PROFILE_MODEL_INHERITANCE.md`.
 
 Bij elke update wordt alleen code overschreven. Persoonlijke data blijft altijd intact.
 

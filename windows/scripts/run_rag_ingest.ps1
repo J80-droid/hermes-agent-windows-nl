@@ -10,6 +10,7 @@ param(
 $ErrorActionPreference = "Continue"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $scriptDir "rag_log_encoding.ps1")
+. (Join-Path $scriptDir "rag_ingest_log_filter.ps1")
 . (Join-Path $scriptDir "enable_console_ansi.ps1")
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $scriptDir "..\..")).Path
@@ -57,6 +58,8 @@ if (Test-Path $nld) {
     $env:TESSDATA_PREFIX = Join-Path $userTess "tessdata"
 }
 if (-not $env:HERMES_RAG_PERF_PROFILE) { $env:HERMES_RAG_PERF_PROFILE = "safe" }
+if (-not $env:HERMES_RAG_QUIET_TORCH) { $env:HERMES_RAG_QUIET_TORCH = "1" }
+if (-not $env:TRANSFORMERS_VERBOSITY) { $env:TRANSFORMERS_VERBOSITY = "error" }
 
 # Perf defaults (zelfde als update_knowledge.bat)
 $perfScript = Join-Path $scriptDir "rag_ingest_perf_defaults.ps1"
@@ -95,6 +98,7 @@ try {
             $_.ToString()
         }
         if ([string]::IsNullOrWhiteSpace($line)) { return }
+        if (Test-RagIngestNoiseLine $line) { return }
         if ($line -match '^(System\.Management\.Automation\.RemoteException|CategoryInfo|FullyQualifiedErrorId)') {
             return
         }

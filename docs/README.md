@@ -1,0 +1,66 @@
+# Documentatie — Hermes-agent (Jamel fork, Windows NL)
+
+Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
+
+## Snel kiezen
+
+| Ik wil… | Document |
+|--------|----------|
+| Begrijpen: index vs. chat (twee fasen) | [RAG_TWEE_FASEN.md](RAG_TWEE_FASEN.md) |
+| Model/provider voor **alle** profielen instellen | [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md) |
+| Domeinen toevoegen (`domains.yaml`) | [domains.yaml.example](domains.yaml.example) |
+| RAG env-defaults (stale, torch-ruis) | [RAG_INSTITUTIONAL_ENV.md](RAG_INSTITUTIONAL_ENV.md) |
+| Technische ingest/MCP-stappen | [../scripts/rag_pipeline/ACTIVATION.md](../scripts/rag_pipeline/ACTIVATION.md) |
+| Windows-scripts en taakbalk | [../windows/README.md](../windows/README.md) |
+| Hermes starten zonder conda in PATH | [../../HERMES_START.md](../../HERMES_START.md) |
+| Voortgang / checklist | [../memory-bank/progress.md](../memory-bank/progress.md) |
+
+## Configuratie — twee lagen
+
+```mermaid
+flowchart TB
+  ROOT["%LOCALAPPDATA%\\hermes\\config.yaml\nmodel, provider, display"]
+  PROF["profiles\\<naam>\\config.yaml\nMCP, toolsets, agent, SOUL"]
+  YAML["%USERPROFILE%\\data\\domains.yaml\nbronpaden, LanceDB, ingest"]
+  ROOT --> PROF
+  YAML --> ING[update_knowledge.bat]
+  PROF --> CHAT[hermes -p naam]
+  ING --> LDB[(lancedb/domein)]
+  CHAT --> LDB
+```
+
+| Laag | Bestand | Bevat o.a. |
+|------|---------|------------|
+| **Root Hermes** | `%LOCALAPPDATA%\hermes\config.yaml` | `model`, `provider`, `display`, gateway |
+| **Domeinprofiel** | `%LOCALAPPDATA%\hermes\profiles\<naam>\config.yaml` | MCP `lancedb-<domein>`, toolsets, **geen** `model:` |
+| **RAG-batch** | `%USERPROFILE%\data\domains.yaml` | `source_dir`, `lancedb_path`, ingest-opties |
+
+**Model wijzigen:** altijd `hermes model` of root `config.yaml` — nooit per profiel hardcoden (tenzij `model.inherit: false`). Zie [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md).
+
+## Paden (Windows)
+
+| Concept | Pad |
+|---------|-----|
+| Hermes root | `%LOCALAPPDATA%\hermes\` |
+| Profiel `legal` | `%LOCALAPPDATA%\hermes\profiles\legal\` |
+| RAG-config | `%USERPROFILE%\data\domains.yaml` |
+| LanceDB legal | `%USERPROFILE%\data\lancedb\legal\` |
+| Bronnen legal | `%USERPROFILE%\data\raw_source_files\04_Legal_Corporate\` |
+| Repo (dev) | `D:\A.I\APPS\Hermes_agent_WS\hermes-agent\` |
+
+## Onderhoud
+
+- **Verouderd `model:` in profielen:** `hermes doctor --fix`
+- **Ingest-status:** `%USERPROFILE%\data\scripts\check_ingest_status.bat <domein>`
+- **Doctor:** `hermes doctor` of `windows\DOCTOR_FIX.bat`
+
+## Memory bank (agent-context)
+
+| Bestand | Inhoud |
+|---------|--------|
+| [../memory-bank/projectbrief.md](../memory-bank/projectbrief.md) | Scope en doelen |
+| [../memory-bank/productContext.md](../memory-bank/productContext.md) | Waarom twee fasen + centraal model |
+| [../memory-bank/systemPatterns.md](../memory-bank/systemPatterns.md) | Architectuurpatronen |
+| [../memory-bank/techContext.md](../memory-bank/techContext.md) | Stack en paden |
+| [../memory-bank/activeContext.md](../memory-bank/activeContext.md) | Huidige focus |
+| [../memory-bank/progress.md](../memory-bank/progress.md) | Checklist en status |

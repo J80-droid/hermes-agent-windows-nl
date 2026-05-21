@@ -128,14 +128,14 @@ $shortcutBats = @(
     "windows\MANAGE_BACKUPS.bat",
     "windows\restore_local_assets.bat",
     "windows\UPDATE_HERMES.bat",
-    "windows\RAG_KNOWLEDGE_UPDATE.bat"
+    "windows\RAG_KNOWLEDGE_UPDATE_NIGHT.bat"
 )
 $shortcutDescriptions = @(
     $startHermesDesc,
     "Hermes: fysieke backup uitvoeren (sleep naar taakbalk)",
     "Hermes: lokale scripts uit _local_assets herstellen (sleep naar taakbalk)",
     "Hermes: git/pip update via conda (sleep naar taakbalk)",
-    "Hermes RAG: J=fris / N=incrementeel, alle domeinen - sleep naar taakbalk"
+    "Hermes RAG: nacht-run (NONINTERACTIVE, incrementeel, alle domeinen) - sleep naar taakbalk"
 )
 $shortcutIcons = @(
     (Join-Path $RepoRoot "windows\hermes_logo.ico"),

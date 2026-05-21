@@ -23,6 +23,8 @@ All settings are stored in the `~/.hermes/` directory for easy access.
 └── logs/           # Logs (errors.log, gateway.log — secrets auto-redacted)
 ```
 
+Named profiles live under `~/.hermes/profiles/<name>/` with their own `config.yaml`, `.env`, and sessions. **Inference model and provider are inherited from root `~/.hermes/config.yaml`** unless that profile sets `model.inherit: false`. Do not duplicate `model:` in every profile — use `hermes model` once. See [Profiles — Model inheritance](./profiles#model-inheritance).
+
 ## Managing Configuration
 
 ```bash
@@ -39,7 +41,7 @@ hermes config set OPENROUTER_API_KEY sk-or-...  # Saves to .env
 ```
 
 :::tip
-The `hermes config set` command automatically routes values to the right file — API keys are saved to `.env`, everything else to `config.yaml`.
+The `hermes config set` command automatically routes values to the right file — API keys are saved to `.env`, everything else to `config.yaml`. Keys under `model.*` are saved to **root** `~/.hermes/config.yaml` when you are using a named profile (not into `profiles/<name>/config.yaml`).
 :::
 
 ## Configuration Precedence

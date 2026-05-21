@@ -451,20 +451,11 @@ def _read_distribution_meta(profile_dir: Path) -> tuple:
 
 
 def _read_config_model(profile_dir: Path) -> tuple:
-    """Read model/provider from a profile's config.yaml. Returns (model, provider)."""
-    config_path = profile_dir / "config.yaml"
-    if not config_path.exists():
-        return None, None
+    """Effectief model/provider (profiel erft van root ~/.hermes/config.yaml)."""
     try:
-        import yaml
-        with open(config_path, "r", encoding="utf-8") as f:
-            cfg = yaml.safe_load(f) or {}
-        model_cfg = cfg.get("model", {})
-        if isinstance(model_cfg, str):
-            return model_cfg, None
-        if isinstance(model_cfg, dict):
-            return model_cfg.get("default") or model_cfg.get("model"), model_cfg.get("provider")
-        return None, None
+        from hermes_cli.profile_model_inheritance import effective_model_provider
+
+        return effective_model_provider(profile_dir)
     except Exception:
         return None, None
 
@@ -773,6 +764,13 @@ def create_profile(
             )
         except Exception:
             pass  # non-fatal — user can describe later with `hermes profile describe`
+
+    try:
+        from hermes_cli.profile_model_inheritance import strip_model_block_from_profile_config
+
+        strip_model_block_from_profile_config(profile_dir)
+    except Exception:
+        pass
 
     return profile_dir
 

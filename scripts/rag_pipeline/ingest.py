@@ -79,10 +79,11 @@ from ingest_runtime import (
     file_timeout_sec,
     gc_every_n_files,
     max_chunks_per_source,
-    reset_live_status_clock,
+    finalize_live_status,
+    mark_ingest_started,
     run_file_job,
-    write_live_status,
 )
+from ingest_live_status import RUN_COMPLETED, RUN_FAILED, RUN_RUNNING
 from ingest_run_summary import build_summary_payload, write_and_print_summary
 from ingest_skip_report import SkipReport, default_report_path
 from ingest_state import (
@@ -437,7 +438,10 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
     )
 
     print_phase("Indexeren")
-    reset_live_status_clock()
+    mark_ingest_started(total=len(to_process))
+    _finalize_run_state = RUN_COMPLETED
+    _finalize_exit = 0
+    _finalize_msg = ""
     pbar = create_file_progress(len(to_process))
     skip_report = SkipReport()
     indexed_this_run = 0
@@ -696,93 +700,111 @@ def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS
     set_active_tracker(live)
 
     try:
-        for idx, file_path in enumerate(to_process, start=1):
-            rel = _relative_source(file_path, path)
-            live.begin_file(idx, n_all, file_path, rel)
-            try:
-                run_file_job(lambda fp=file_path: _process_one_file(fp))
-            except FileJobTimeout as e:
-                log_during_progress(
-                    f"{C_YELLOW}[WARN]{C_RESET} Timeout per bron, overslaan: {file_path} ({e})",
-                    pbar,
-                    force=True,
-                )
-                _record_skip(file_path, "file_timeout", str(e))
-            except Exception as e:
-                log_during_progress(
-                    f"{C_YELLOW}[WARN]{C_RESET} Fout bij verwerken, overslaan: {file_path} "
-                    f"({type(e).__name__}: {e})",
-                    pbar,
-                    force=True,
-                )
-                _record_skip(file_path, "processing_error", f"{type(e).__name__}: {e}")
-            finally:
-                live.end_file()
-                upd = getattr(pbar, "update", None)
-                if callable(upd):
-                    upd(1)
-                if gc_every > 0 and idx % gc_every == 0:
-                    gc.collect()
-
-        removed_sources = ingest_state.prune_removed_sources(current_sources)
-        for rel in removed_sources:
-            if orphan_cleanup_enabled():
-                n = delete_all_chunks_for_source(table, rel)
-                if n:
-                    print(
-                        f"{C_CYAN}[INFO]{C_RESET} Verwijderd uit index (bron weg uit scan): {rel} "
-                        f"({n} chunk(s))"
+        try:
+            for idx, file_path in enumerate(to_process, start=1):
+                rel = _relative_source(file_path, path)
+                live.begin_file(idx, n_all, file_path, rel)
+                try:
+                    run_file_job(lambda fp=file_path: _process_one_file(fp))
+                except FileJobTimeout as e:
+                    log_during_progress(
+                        f"{C_YELLOW}[WARN]{C_RESET} Timeout per bron, overslaan: {file_path} ({e})",
+                        pbar,
+                        force=True,
                     )
-    finally:
-        live.stop()
-        set_active_tracker(None)
-        if ingest_state.entries:
-            ingest_state.save()
-            n_entries = len(ingest_state.entries)
-            every = checkpoint_interval()
-            if every > 0:
+                    _record_skip(file_path, "file_timeout", str(e))
+                except Exception as e:
+                    log_during_progress(
+                        f"{C_YELLOW}[WARN]{C_RESET} Fout bij verwerken, overslaan: {file_path} "
+                        f"({type(e).__name__}: {e})",
+                        pbar,
+                        force=True,
+                    )
+                    _record_skip(file_path, "processing_error", f"{type(e).__name__}: {e}")
+                finally:
+                    live.end_file()
+                    upd = getattr(pbar, "update", None)
+                    if callable(upd):
+                        upd(1)
+                    if gc_every > 0 and idx % gc_every == 0:
+                        gc.collect()
+
+            removed_sources = ingest_state.prune_removed_sources(current_sources)
+            for rel in removed_sources:
+                if orphan_cleanup_enabled():
+                    n = delete_all_chunks_for_source(table, rel)
+                    if n:
+                        print(
+                            f"{C_CYAN}[INFO]{C_RESET} Verwijderd uit index (bron weg uit scan): {rel} "
+                            f"({n} chunk(s))"
+                        )
+        finally:
+            live.stop()
+            set_active_tracker(None)
+            if ingest_state.entries:
+                ingest_state.save()
+                n_entries = len(ingest_state.entries)
+                every = checkpoint_interval()
+                if every > 0:
+                    print(
+                        f"{C_CYAN}[INFO]{C_RESET} Ingest-staat opgeslagen ({n_entries} bronnen): "
+                        f"{state_file_path()} (checkpoint elke {every} bronnen + bij afsluiten)."
+                    )
+            if skip_report.entries:
+                report_path = skip_report.write()
                 print(
-                    f"{C_CYAN}[INFO]{C_RESET} Ingest-staat opgeslagen ({n_entries} bronnen): "
-                    f"{state_file_path()} (checkpoint elke {every} bronnen + bij afsluiten)."
+                    f"{C_CYAN}[INFO]{C_RESET} Overgeslagen-rapport: {report_path} "
+                    f"({len(skip_report.entries)} bronnen; PDF/PNG-lijst: "
+                    f"{report_path.with_suffix('.md')})"
                 )
-        if skip_report.entries:
-            report_path = skip_report.write()
-            print(
-                f"{C_CYAN}[INFO]{C_RESET} Overgeslagen-rapport: {report_path} "
-                f"({len(skip_report.entries)} bronnen; PDF/PNG-lijst: "
-                f"{report_path.with_suffix('.md')})"
+            else:
+                skip_report.write()
+
+            policy = os.environ.get("HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR", "1")
+            media_note = (
+                "Whisper aan voor media zonder sidecar"
+                if policy.strip().lower() in ("0", "false", "no")
+                else "Media zonder sidecar wordt overgeslagen (Whisper uit)"
             )
-        else:
-            skip_report.write()
-
-        policy = os.environ.get("HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR", "1")
-        media_note = (
-            "Whisper aan voor media zonder sidecar"
-            if policy.strip().lower() in ("0", "false", "no")
-            else "Media zonder sidecar wordt overgeslagen (Whisper uit)"
+            payload = build_summary_payload(
+                domain=os.environ.get("RAG_DOMAIN", ""),
+                db_path=DB_PATH,
+                raw_source=str(path),
+                scan_total=len(all_files),
+                queued=len(to_process),
+                indexed_this_run=indexed_this_run,
+                unchanged_skipped=skipped_unchanged,
+                removed_from_index=removed_sources,
+                skip_report=skip_report,
+                total_sources_in_state=len(ingest_state.entries),
+                fresh_run=_env_truthy("HERMES_RAG_FRESH") or _env_truthy("HERMES_RAG_FORCE_FULL"),
+                media_policy_note=media_note,
+            )
+            write_and_print_summary(payload)
+            _finalize_msg = (
+                f"indexed={indexed_this_run} skipped={len(skip_report.entries)} "
+                f"total_in_index={len(ingest_state.entries)}"
+            )
+    except Exception as e:
+        _finalize_run_state = RUN_FAILED
+        _finalize_exit = 1
+        _finalize_msg = f"{type(e).__name__}: {e}"
+        raise
+    finally:
+        finalize_live_status(
+            run_state=_finalize_run_state,
+            exit_code=_finalize_exit,
+            message=_finalize_msg,
+            current_index=len(to_process),
+            total=len(to_process),
         )
-        payload = build_summary_payload(
-            domain=os.environ.get("RAG_DOMAIN", ""),
-            db_path=DB_PATH,
-            raw_source=str(path),
-            scan_total=len(all_files),
-            queued=len(to_process),
-            indexed_this_run=indexed_this_run,
-            unchanged_skipped=skipped_unchanged,
-            removed_from_index=removed_sources,
-            skip_report=skip_report,
-            total_sources_in_state=len(ingest_state.entries),
-            fresh_run=_env_truthy("HERMES_RAG_FRESH") or _env_truthy("HERMES_RAG_FORCE_FULL"),
-            media_policy_note=media_note,
-        )
-        write_and_print_summary(payload)
-
-    if hasattr(pbar, "close"):
-        pbar.close()
-    if any_indexed or skipped_unchanged:
-        _ui_ok("Ingestie-scan afgerond (upsert + orphan cleanup + ingest-staat).")
-    else:
-        _ui_warn("Geen compatibele data gevonden om te indexeren.")
+        if hasattr(pbar, "close"):
+            pbar.close()
+        if _finalize_run_state == RUN_COMPLETED:
+            if any_indexed or skipped_unchanged:
+                _ui_ok("Ingestie-scan afgerond (upsert + orphan cleanup + ingest-staat).")
+            else:
+                _ui_warn("Geen compatibele data gevonden om te indexeren.")
 
 
 if __name__ == "__main__":

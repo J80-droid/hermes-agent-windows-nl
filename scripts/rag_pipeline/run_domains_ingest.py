@@ -24,6 +24,7 @@ from rag_mcp_verify import (
     verify_domain_mcp,
 )
 from ingest_run_summary import summary_path
+from rag_institutional_defaults import apply_institutional_env
 from source_layout import apply_media_policy_env, restore_quarantine_files
 
 
@@ -85,6 +86,11 @@ def ingest_domain(spec: DomainSpec, *, fresh: bool, media_only: bool = False) ->
 
 
 def main(argv: list[str] | None = None) -> int:
+    env = apply_institutional_env()
+    print(
+        f"[INFO] RAG institutional env: stale_sec={env['HERMES_RAG_LIVE_STALE_SEC']} "
+        f"quiet_torch={env['HERMES_RAG_QUIET_TORCH']} perf={env['HERMES_RAG_PERF_PROFILE']}"
+    )
     parser = argparse.ArgumentParser(description="RAG-ingest uit domains.yaml")
     parser.add_argument(
         "--domains-yaml",

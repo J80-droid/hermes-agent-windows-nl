@@ -1,6 +1,10 @@
 """Gedeeld LanceDB-schema en padconstanten voor ingest en MCP-server."""
 import os
 
+from rag_log_quiet import apply_torch_ingest_quiet
+
+apply_torch_ingest_quiet()
+
 import lancedb
 from lancedb.embeddings import get_registry
 from lancedb.pydantic import LanceModel, Vector

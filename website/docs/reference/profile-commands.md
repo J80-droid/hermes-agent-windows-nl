@@ -79,8 +79,8 @@ Creates a new profile.
 | Argument / Option | Description |
 |-------------------|-------------|
 | `<name>` | Name for the new profile. Must be a valid directory name (alphanumeric, hyphens, underscores). |
-| `--clone` | Copy `config.yaml`, `.env`, and `SOUL.md` from the current profile. |
-| `--clone-all` | Copy everything (config, memories, skills, sessions, state) from the current profile. |
+| `--clone` | Copy `config.yaml`, `.env`, and `SOUL.md` from the current profile. The `model:` block is **removed** from the new profile so inference settings inherit from root `~/.hermes/config.yaml`. |
+| `--clone-all` | Copy everything (config, memories, skills, sessions, state) from the current profile. Same `model:` stripping applies after copy. |
 | `--clone-from <profile>` | Clone from a specific profile instead of the current one. Used with `--clone` or `--clone-all`. |
 | `--no-alias` | Skip wrapper script creation. |
 | `--description "<text>"` | One- or two-sentence description of what this profile is good at. Used by the kanban orchestrator to route tasks based on role instead of profile name alone. Skip and add later via `hermes profile describe`. Persisted in `<profile_dir>/profile.yaml`. |
