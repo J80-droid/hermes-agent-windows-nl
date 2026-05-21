@@ -1,0 +1,23 @@
+---
+description: PowerShell paden in Hermes windows-scripts (IDE-parser veilig)
+globs: hermes-agent/**/*.ps1,hermes-agent/scripts/windows/**/*
+alwaysApply: false
+---
+
+# PowerShell paden (Hermes Windows)
+
+De VS Code/Cursor PowerShell-extensie markeert valse syntaxfouten wanneer een string **`\\s`** bevat (bijv. `windows\\setup`, `windows\\scripts`).
+
+## Regels
+
+1. In `.ps1`: gebruik **forward slashes** in pad-literals en commentaar: `windows/setup`, `scripts/windows/`, niet `windows\\setup`.
+2. Bouw paden met `Join-Path` en losse segmenten, geen `\\`-ketens in quotes.
+3. Regex in `.ps1`: geen `\\s+` in bron — gebruik `[ \\t]+` of `-split` (zie `verify_windows_script_chain.ps1`).
+4. **Canoniek setup:** alleen `scripts/windows/setup_hermes_windows.ps1` bewerken.
+5. `windows/setup_hermes_windows.ps1` is een **wrapper** (`@PSBoundParameters`, max. 40 regels); niet opnieuw volledig kopiëren.
+6. Beleid: `windows/HermesSetupScriptPolicy.ps1` — `VERIFY_WINDOWS_CHAIN.bat` faalt bij terugkerende volledige kopie.
+
+## Verificatie
+
+`windows/VERIFY_WINDOWS_CHAIN.bat` — pad-literals + setup single-source.
+`pytest tests/windows/test_setup_single_canonical_ps1.py`

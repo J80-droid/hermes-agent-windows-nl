@@ -71,7 +71,7 @@ function Invoke-HermesColoredIconsFromPng {
         $ErrorActionPreference = $prevEap
     }
     if (-not $ok -and -not $Quiet) {
-        Write-Host '  [WARN] Icoon-generator mislukt (Pillow ontbreekt?). Handmatig: python windows\tools\generate_colored_hermes_icons.py' -ForegroundColor Yellow
+        Write-Host '  [WARN] Icoon-generator mislukt (Pillow ontbreekt?). Handmatig: python windows/tools/generate_colored_hermes_icons.py' -ForegroundColor Yellow
     }
     return $ok
 }
@@ -114,7 +114,7 @@ function Test-HermesWindowsIconRegenNeeded {
 function Get-HermesTaskbarRoleIconPath {
     <#
     .SYNOPSIS
-        Pad naar .ico per taakbalk-rol (geen hermes_taskbar_white; Shell/Explorer toont die vaak als H-stub).
+        Pad naar .ico per taakbalk-rol. Update = hermes_logo_update.ico (wit/zilver); niet hermes_taskbar_white in .lnk.
     #>
     param(
         [Parameter(Mandatory)]

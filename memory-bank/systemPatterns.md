@@ -27,6 +27,14 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 - Servernaam `lancedb-<domein>` in profiel-config.
 - `HERMES_LANCEDB_PATH` in MCP-env = zelfde pad als `lancedb_path` in `domains.yaml`.
 
+## Windows setup (single source)
+
+- **Canoniek:** `scripts/windows/setup_hermes_windows.ps1` — alle setup-logica.
+- **Wrapper:** `windows/setup_hermes_windows.ps1` — alleen `& $canon @PSBoundParameters` (max. 40 regels).
+- **Beleid:** `windows/HermesSetupScriptPolicy.ps1`; gehandhaafd door `verify_windows_script_chain.ps1` + pytest.
+- **Entrypoints:** `SETUP_HERMES.bat`, `launch_hermes.bat` → canoniek PS1 (forward slashes in `.bat`).
+- **Verboden:** `Copy-Item $PSCommandPath` naar `windows/` (dubbele IDE/PSSA-lint).
+
 ## Veiligheid
 
 - Geen ingest + zware Kanban-werk op dezelfde LanceDB tegelijk (lock-risico).

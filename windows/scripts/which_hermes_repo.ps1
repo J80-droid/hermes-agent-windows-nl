@@ -39,5 +39,5 @@ if (Test-Path -LiteralPath $profilesRoot) {
 }
 
 Write-Host ""
-Write-Host "RAG starten: windows\scripts\update_knowledge.bat  (of taakbalk .lnk)" -ForegroundColor Yellow
+Write-Host "RAG starten: windows/scripts/update_knowledge.bat  (of taakbalk .lnk)" -ForegroundColor Yellow
 Write-Host "MCP test:    update_knowledge.bat --mcp-test" -ForegroundColor Yellow

@@ -55,7 +55,8 @@ flowchart TB
 ## Onderhoud
 
 - **Windows backup/script-keten:** `windows\VERIFY_WINDOWS_CHAIN.bat` (na pull of vóór backup)
-- **Na `git pull`:** `windows\POST_GIT_PULL.bat` (verify + taakbalk-iconen)
+- **Na `git pull`:** `windows/POST_GIT_PULL.bat` (verify + taakbalk-iconen)
+- **Windows-keten controleren:** `windows/VERIFY_WINDOWS_CHAIN.bat` (setup wrapper + `.bat`→`.ps1` + taakbalk-`.lnk`)
 - **Taakbalk-iconen:** `windows\FIX_TASKBAR_ICONS.bat` (pin via `.lnk`, niet `.bat`)
 - **Nous upstream-update:** `windows\UPDATE_HERMES.bat` (preflight + merge + RAG + taakbalk; zie `windows\UPSTREAM_SYNC.md`)
 - **P0+P1-pipeline (institutioneel):** `windows\scripts\institutional_p0_p1.bat`  

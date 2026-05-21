@@ -140,12 +140,12 @@ goto :docker_poll
 echo ----------------------------------------------------
 
 echo %CYAAN%[INFO] Step 1: Running environment setup...%RESET%
-rem Writes windows\ launchers / shortcuts via scripts\windows\setup_hermes_windows.ps1.
-rem Optional Hermes *config* wizard: run windows\setup_hermes_windows.bat --full-setup from cmd (not the same as this step).
+rem Setup: canoniek scripts/windows/setup_hermes_windows.ps1 (windows/setup_hermes_windows.ps1 = wrapper).
+rem Optional Hermes *config* wizard: run windows/setup_hermes_windows.bat --full-setup from cmd (not the same as this step).
 rem Optional flags on this ps1 ^(pip/submodules/doctor^): --full-setup, --pip-only, --with-doctor, etc.
 rem Optional: --pip-only, --with-doctor, --skip-submodules, --skip-tinker (minimal), --force-tinker (retry na fout)
 rem Model/API/config-wizard: windows\HERMES_SETUP_WIZARD.bat (hermes setup) — niet hetzelfde als deze stap.
-powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%\windows\setup_hermes_windows.ps1" !CLEAN_ARGS!
+powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/scripts/windows/setup_hermes_windows.ps1" !CLEAN_ARGS!
 if !errorLevel! neq 0 (
     echo %ROOD%[ERROR] Setup failed. Check hermes_setup.log for details.%RESET%
     echo [%DATE% %TIME%] ERROR: Setup failed with exit code !errorLevel! >> "%LAUNCH_LOG%"

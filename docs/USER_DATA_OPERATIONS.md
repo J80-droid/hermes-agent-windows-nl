@@ -20,6 +20,9 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 | Na `git pull` (andere machine of na grote wijziging) | `windows\POST_GIT_PULL.bat` |
 | Taakbalk-iconen | `windows\FIX_TASKBAR_ICONS.bat` |
 | Snelkoppelingen vernieuwen | `windows\REFRESH_TASKBAR_SHORTCUTS.bat` |
+| Setup (logica) | `scripts\windows\setup_hermes_windows.ps1` — **niet** volledig kopiëren naar `windows\` |
+
+**Setup PS1:** alleen `scripts/windows/setup_hermes_windows.ps1` bewerken; `windows/setup_hermes_windows.ps1` blijft wrapper. Controle: `VERIFY_WINDOWS_CHAIN.bat`.
 
 **Taakbalk:** pin altijd via `Hermes - * - naar taakbalk slepen.lnk` in `windows\`, niet door `.bat` te slepen (cmd-H-icoon).
 
@@ -29,7 +32,8 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 |-----|---------|-------|
 | Start, RAG | `hermes_logo.ico` | Goud |
 | Setup | `hermes_logo_setup.ico` | Groen |
-| Update | `hermes_logo_update.ico` | Oranje (sterk vs. goud) |
+| Setup | `hermes_logo_setup.ico` | Groen |
+| Update | `hermes_logo_update.ico` | Wit/zilver monogram |
 | Backup | `hermes_logo_backup.ico` | Roze |
 | Restore | `hermes_logo_restore.ico` | Cyaan |
 

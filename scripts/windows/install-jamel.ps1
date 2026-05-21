@@ -283,14 +283,14 @@ $repoPath = "$env:LOCALAPPDATA\hermes\hermes-agent"
 Show-SummaryDashboard -RepoPath $repoPath
 
 # RAG: pip extra [rag] + MCP lancedb-knowledge (idempotent; faalt niet de hele install)
-$ragExtras = Join-Path $repoPath "windows\scripts\install_rag_extras.ps1"
+$ragExtras = Join-Path $repoPath (Join-Path 'windows' (Join-Path 'scripts' 'install_rag_extras.ps1'))
 if (Test-Path -LiteralPath $ragExtras) {
     Show-Typewriter -Text "  LanceDB RAG: dependencies + MCP configureren..." -Color "Gray" -DelayMs 4
     try {
         & powershell -NoProfile -ExecutionPolicy Bypass -File $ragExtras -RepoRoot $repoPath -Quiet
         Show-Typewriter -Text "  [OK] RAG-stack geconfigureerd (zie ACTIVATION.md voor index)." -Color "DarkGray" -DelayMs 3
     } catch {
-        Show-Typewriter -Text "  [WARN] RAG-extras overgeslagen — handmatig: windows\scripts\install_rag_extras.ps1" -Color $HERMES_COPPER -DelayMs 0
+        Show-Typewriter -Text "  [WARN] RAG-extras overgeslagen — handmatig: windows/scripts/install_rag_extras.ps1" -Color $HERMES_COPPER -DelayMs 0
     }
 } else {
     Show-Typewriter -Text "  [INFO] RAG-scripts niet in clone — na pull: install_rag_extras.ps1" -Color "DarkGray" -DelayMs 3
@@ -302,8 +302,8 @@ Show-Typewriter -Text "    hermes chat              Start de chat (CLI)" -Color 
 Show-Typewriter -Text "    hermes setup --full      Volledige setup wizard" -Color "Gray" -DelayMs 5
 Show-Typewriter -Text "    hermes --tui             Interactieve TUI" -Color "Gray" -DelayMs 5
 Show-Typewriter -Text "    hermes update            Update naar nieuwste versie" -Color "Gray" -DelayMs 5
-Show-Typewriter -Text "    windows\scripts\update_knowledge.bat   LanceDB RAG-index bijwerken" -Color "Gray" -DelayMs 5
-Show-Typewriter -Text "    windows\scripts\update_knowledge.bat + nieuwe Hermes-sessie (rooktest: ACTIVATION.md)" -Color "DarkGray" -DelayMs 4
+Show-Typewriter -Text "    windows/scripts/update_knowledge.bat   LanceDB RAG-index bijwerken" -Color "Gray" -DelayMs 5
+Show-Typewriter -Text "    windows/scripts/update_knowledge.bat + nieuwe Hermes-sessie (rooktest: ACTIVATION.md)" -Color "DarkGray" -DelayMs 4
 Show-Typewriter -Text "" -Color $HERMES_WHITE -DelayMs 0
 Show-Typewriter -Text "  Voor updates: draai" -Color $HERMES_ORANGE -DelayMs 8
 Show-Typewriter -Text "    irm .../update-jamel.ps1 | iex" -Color "Gray" -DelayMs 5

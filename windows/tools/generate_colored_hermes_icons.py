@@ -5,7 +5,7 @@ Bouwt windows/hermes_logo.ico en gekleurde varianten uit assets/Hermes_logo.png.
   met Windows-snelkoppelingen; ICO-resource = **32bpp DIB + alpha** met volledige **AND-monomaan**
   (Pillow laat die weg → Shell toont soms een zwart vlak; we vullen die bytes na ``save`` aan).
   ``IconLocation`` = ``pad.ico,0``.
-- Backup / restore / update: zelfde beeld, **felle kleur** via HSV (hue naar doelkleur).
+- Backup / restore / setup: felle kleur via HSV; **update** = zilver/wit monogram (zelfde pipeline als taskbar_white).
 - Standaard: **cirkelmasker** — alles buiten de ingeschreven cirkel is transparant (geen vierkante hoeken
   in taakbalk/desktop). Overslaan: ``--full-square``.
 - **Bijna-zwart** binnen het canvas wordt zacht transparant gemaakt (typisch “logo op zwart vlak”),
@@ -54,14 +54,15 @@ except ImportError as e:
 VARIANTS: dict[str, tuple[int, int, int]] = {
     "hermes_logo_backup.ico": (255, 32, 140),
     "hermes_logo_restore.ico": (0, 210, 255),
-    "hermes_logo_update.ico": (255, 120, 0),
     "hermes_logo_setup.ico": (72, 220, 100),
-    # Wit monogram (niet in .lnk — Shell toont vaak H-stub).
+    # Zilver/wit via _brighten_desaturate (geen hue-shift naar wit — anders blauw in Explorer).
+    "hermes_logo_update.ico": (248, 248, 252),
     "hermes_taskbar_white.ico": (248, 248, 252),
 }
-# Extra verzadiging per variant (update moet duidelijk oranje zijn vs. gouden hermes_logo.ico).
+# Ico's die _brighten_desaturate gebruiken i.p.v. HSV-recolor.
+WHITE_MONOGRAM_ICONS = frozenset({"hermes_logo_update.ico", "hermes_taskbar_white.ico"})
+# Extra verzadiging per gekleurde variant.
 VARIANT_SAT_BOOST: dict[str, float] = {
-    "hermes_logo_update.ico": 1.28,
     "hermes_logo_setup.ico": 1.18,
     "hermes_logo_backup.ico": 1.15,
     "hermes_logo_restore.ico": 1.12,
@@ -369,6 +370,35 @@ def _recolor_hue_rgba(
     return out
 
 
+def _brighten_desaturate_rgba(im: Image.Image) -> Image.Image:
+    """Zilver/wit monogram (geen hue-shift naar wit — dat wordt blauw in Explorer)."""
+    out = im.copy()
+    px = out.load()
+    w, h = out.size
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            if a < 8:
+                continue
+            rn, gn, bn = r / 255.0, g / 255.0, b / 255.0
+            h0, s, v = colorsys.rgb_to_hsv(rn, gn, bn)
+            s2 = min(1.0, s * 0.15 + 0.02)
+            v2 = min(1.0, v * 0.95 + 0.22)
+            r2, g2, b2 = colorsys.hsv_to_rgb(h0, s2, v2)
+            lum = 0.299 * r2 + 0.587 * g2 + 0.114 * b2
+            mix = 0.72
+            r2 = r2 * (1.0 - mix) + lum * mix
+            g2 = g2 * (1.0 - mix) + lum * mix
+            b2 = b2 * (1.0 - mix) + lum * mix
+            px[x, y] = (
+                min(255, int(r2 * 255)),
+                min(255, int(g2 * 255)),
+                min(255, int(b2 * 255)),
+                a,
+            )
+    return out
+
+
 def _pyramid_from_master(master: Image.Image) -> list[Image.Image]:
     master = master.convert("RGBA")
     side = min(master.size)
@@ -433,14 +463,18 @@ def _patch_ico_bmp_append_and_mask(ico_path: Path) -> None:
 
 def _save_ico(pyramid_smallest_first: list[Image.Image], path: Path) -> None:
     """
-    Alleen 256×256: ``bitmap_format='bmp'`` + ``_patch_ico_bmp_append_and_mask`` — volledige
-    Windows-DIB in ICO (anders zwart vlak in Shell); ``IconLocation`` blijft ``,0``.
+    Volledige piramide (16–256): Shell/.lnk gebruiken vaak 32/48px; alleen 256 geeft verkeerde cache-kleur.
+    ``bitmap_format='bmp'`` + ``_patch_ico_bmp_append_and_mask``; ``IconLocation`` blijft ``,0``.
     """
-    largest = _finalize_transparency_for_windows_ico(pyramid_smallest_first[-1])
-    largest.save(
+    layers = [
+        _finalize_transparency_for_windows_ico(im.convert("RGBA"))
+        for im in pyramid_smallest_first
+    ]
+    sizes = [(im.width, im.height) for im in layers]
+    layers[-1].save(
         path,
         format="ICO",
-        sizes=[(256, 256)],
+        sizes=sizes,
         bitmap_format="bmp",
     )
     _patch_ico_bmp_append_and_mask(path)
@@ -531,11 +565,15 @@ def main() -> None:
     print(f"[OK] {out_main.name} — originele kleuren (256×256 ICO)")
 
     for filename, tint in VARIANTS.items():
-        tr, tg, tb = tint
-        boost = VARIANT_SAT_BOOST.get(filename, 1.08)
         layers: list[Image.Image] = []
-        for layer in base_pyramid:
-            layers.append(_recolor_hue_rgba(layer.copy(), tr, tg, tb, sat_boost=boost))
+        if filename in WHITE_MONOGRAM_ICONS:
+            for layer in base_pyramid:
+                layers.append(_brighten_desaturate_rgba(layer.copy()))
+        else:
+            tr, tg, tb = tint
+            boost = VARIANT_SAT_BOOST.get(filename, 1.08)
+            for layer in base_pyramid:
+                layers.append(_recolor_hue_rgba(layer.copy(), tr, tg, tb, sat_boost=boost))
         out_path = windows_dir / filename
         _save_ico(layers, out_path)
         print(f"[OK] {out_path.name} (256×256 ICO)")

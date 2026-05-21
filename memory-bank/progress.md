@@ -18,10 +18,11 @@
 - [x] Taakbalk nacht-run: `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` (`HERMES_NONINTERACTIVE=1`)
 - [x] Upstream-update keten: `windows/upstream_sync.ps1`, `UPDATE_HERMES.bat`, `UPSTREAM_SYNC.md`
 - [x] Taakbalk `.lnk`: `cmd.exe /c` wrapper (Win11 pin); `REFRESH_TASKBAR_SHORTCUTS.bat`; `FIX_TASKBAR_ICONS.bat`; `POST_GIT_PULL.bat`
-- [x] Taakbalk-iconen: gekleurde `.ico` per rol (geen wit in `.lnk`); `Get-HermesTaskbarRoleIconPath`; update/setup/backup gefixt
+- [x] Taakbalk-iconen: gekleurde `.ico` per rol (update=wit via `hermes_logo_update.ico`); multi-size ICO; `verify_taskbar_shortcut_icons.ps1`; `.lnk` delete+recreate in `fix_hermes_taskbar_pins.ps1`
+- [x] Setup single source: canoniek `scripts/windows/setup_hermes_windows.ps1`, wrapper `windows/setup_hermes_windows.ps1`, `HermesSetupScriptPolicy.ps1`, pytest `test_setup_single_canonical_ps1.py`
 - [x] User-data docs: `%USERPROFILE%\data\STATUS.md`, `RECOVERY.md`; `profiles\core\KANBAN_WORKFLOWS.md`; canoniek `docs/USER_DATA_OPERATIONS.md`
 - [x] IDE: `hermes-agent/.vscode/settings.json` + `docs/IDE_VSCODE_SETTINGS.example.json`
-- [x] Setup bat-templates (`scripts/windows/bat-templates/`), canoniek PS1 + spiegel; PSScriptAnalyzer 0 op `windows\**\*.ps1`
+- [x] Setup bat-templates (`scripts/windows/bat-templates/`); geen Copy-Item-spiegel meer; PSScriptAnalyzer 0 op `windows/**/*.ps1`
 - [x] pytest Windows: `timeout-method=thread`; `tests/windows/test_critical_windows_scripts.py`
 
 ## Operationeel (gebruiker)

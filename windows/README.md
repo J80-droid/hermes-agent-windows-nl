@@ -6,7 +6,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 
 | Startpunt | Script |
 | --------- | ------ |
-| Hoofd-setup | `SETUP_HERMES.bat` → `scripts\windows\setup_hermes_windows.ps1` (spiegel: `windows\setup_hermes_windows.ps1`) |
+| Hoofd-setup | `SETUP_HERMES.bat` → `scripts/windows/setup_hermes_windows.ps1` (wrapper: `windows/setup_hermes_windows.ps1`) |
 | Wizard | `HERMES_SETUP_WIZARD.bat` |
 | One-liner (remote) | `scripts/windows/install-jamel.ps1` (zie `DELEN_MET_VRIENDEN.md`) |
 
@@ -78,4 +78,4 @@ Zie `docs\PROFILE_MODEL_INHERITANCE.md`.
 
 **Nacht/taakbalk:** `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` zet `HERMES_NONINTERACTIVE=1` en `HERMES_RAG_FRESH=n` (geen J/N). Regenereer `.lnk` via `create_taskbar_shortcuts.ps1`.
 
-Iconen per taakbalk-`.lnk`: goud = start/RAG (`hermes_logo.ico`), groen = setup (`hermes_logo_setup.ico`), oranje = update (`hermes_logo_update.ico`), roze = backup, cyaan = restore. Genereer opnieuw: `python windows/tools/generate_colored_hermes_icons.py` daarna `FIX_TASKBAR_ICONS.bat` + F5 in Explorer.
+Iconen per taakbalk-`.lnk`: goud = start/RAG (`hermes_logo.ico`), groen = setup (`hermes_logo_setup.ico`), **wit/zilver** = update (`hermes_logo_update.ico`), roze = backup, cyaan = restore. `hermes_taskbar_white.ico` is alleen zilver/wit monogram (niet in `.lnk`). Controle: `scripts\verify_taskbar_shortcut_icons.ps1`. Genereer opnieuw: `conda run -n hermes-env python windows/tools/generate_colored_hermes_icons.py` daarna `FIX_TASKBAR_ICONS.bat` + F5 in Explorer.

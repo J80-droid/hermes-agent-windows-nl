@@ -10,7 +10,7 @@ Deze fork is de **enige goedgekeurde bron** voor Hermes-installaties binnen dit 
 
 | Component | Locatie | Beschrijving |
 | --------- | ------- | ------------ |
-| Windows setup toolkit | `scripts/windows/` | Logo, snelkoppelingen, taakbalk-iconen, Conda/.venv-detectie |
+| Windows setup toolkit | `scripts/windows/` | Canoniek `setup_hermes_windows.ps1`; `windows/` = wrapper + launchers; taakbalk-iconen |
 | RAG citatieregels | `.cursorrules` | Nederlandstalige bronvermelding en presentatie-eisen |
 | Aangepaste installer | `scripts/install.ps1` | Clone deze fork i.p.v. upstream |
 | One-command installateur | `scripts/windows/install-jamel.ps1` | Volledige installatie in een commando |

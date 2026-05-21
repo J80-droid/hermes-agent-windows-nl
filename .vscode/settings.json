@@ -5,7 +5,7 @@
     "*.psd1": "powershell"
   },
   "powershell.scriptAnalysis.enable": true,
-  "powershell.scriptAnalysis.settingsPath": "windows/PSScriptAnalyzerSettings.psd1",
+  "powershell.scriptAnalysis.settingsPath": "${workspaceFolder}/windows/PSScriptAnalyzerSettings.psd1",
   "powershell.analyzeOnlyOpenDocuments": true,
   "powershell.scriptAnalysis.useScriptPath": true
 }

@@ -70,3 +70,4 @@ if not defined HERMES_SETUP_NO_LAUNCH (
 echo [INFO] Dit venster blijft open. Typ exit om te sluiten, of gebruik het nieuwe Hermes-venster.
 cmd /k "cd /d ""!CD!"" && title Hermes Agent repo"
 exit /b 0
+

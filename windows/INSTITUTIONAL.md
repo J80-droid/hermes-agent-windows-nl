@@ -31,10 +31,22 @@ User-data docs (`%USERPROFILE%\data\STATUS.md`, `RECOVERY.md`) en profiel-Kanban
 
 **IDE:** `.vscode/settings.json` in repo-root (PSScriptAnalyzer → `windows/PSScriptAnalyzerSettings.psd1`). Workspace-parent: `docs/IDE_VSCODE_SETTINGS.example.json`.
 
-**Setup (twee entrypoints, bewust):**
+**Setup PS1 (single source of truth — future-proof):**
 
-- `SETUP_HERMES.bat` → `scripts\windows\setup_hermes_windows.ps1` (canoniek; spiegel naar `windows\` na run)
-- `setup_hermes_windows.bat` → zelfde PS1; gegenereerde `.bat`-inhoud uit `scripts\windows\bat-templates\`
+| Rol | Pad | Bewerken? |
+| --- | --- | --- |
+| **Canoniek** | `scripts/windows/setup_hermes_windows.ps1` | **Ja** — alle logica hier |
+| **Wrapper** | `windows/setup_hermes_windows.ps1` | **Nee** — alleen doorverwijzing (`@PSBoundParameters`, max. 40 regels) |
+| **Beleid** | `windows/HermesSetupScriptPolicy.ps1` | Tests + `VERIFY_WINDOWS_CHAIN` |
+| **Verboden** | `Copy-Item $PSCommandPath` → `windows/` | Nooit opnieuw introduceren (dubbele IDE/lint) |
+
+Entrypoints roepen **canoniek** aan (forward slashes in `.bat`):
+
+- `SETUP_HERMES.bat` → `scripts/windows/setup_hermes_windows.ps1` (fallback: wrapper)
+- `launch_hermes.bat` → `scripts/windows/setup_hermes_windows.ps1`
+- `setup_hermes_windows.bat` (template) → zelfde canoniek PS1
+
+Na `git pull`: `VERIFY_WINDOWS_CHAIN.bat` — faalt als iemand de wrapper per ongeluk weer volledig heeft gekopieerd (bv. oude backup-restore).
 
 ## Git vs. lokaal
 

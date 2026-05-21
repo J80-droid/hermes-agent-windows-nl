@@ -45,7 +45,7 @@ Na een geslaagde update draait de keten **`fix_hermes_taskbar_pins.ps1`** (`.lnk
 2. **`windows\Hermes - update - naar taakbalk slepen.lnk`** → rechtsklik → **Vastmaken aan taakbalk**.
 3. Of: **`FIX_TASKBAR_ICONS.bat`**.
 
-Taakbalk-.lnk gebruiken gekleurde `.ico`-varianten (goud/oranje/cyaan), **niet** `hermes_taskbar_white.ico` (Explorer toont die vaak als H-stub).
+Taakbalk-.lnk: update = `hermes_logo_update.ico` (wit/zilver). Gebruik **niet** `hermes_taskbar_white.ico` in `.lnk` (oude H-stub in Explorer).
 
 ## Standaard sync: `windows\UPDATE_HERMES.bat` of `hermes_update.bat`
 

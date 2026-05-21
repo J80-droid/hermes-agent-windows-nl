@@ -19,9 +19,44 @@ if (-not $RepoRoot.Trim()) {
 
 function Clear-HermesShellIconCache {
     $ie4u = Join-Path $env:SystemRoot 'System32/ie4uinit.exe'
-    if (-not (Test-Path -LiteralPath $ie4u)) { return }
-    Start-Process -FilePath $ie4u -ArgumentList '-show' -WindowStyle Hidden -ErrorAction SilentlyContinue | Out-Null
-    Start-Process -FilePath $ie4u -ArgumentList '-ClearIconCache' -WindowStyle Hidden -ErrorAction SilentlyContinue | Out-Null
+    if (Test-Path -LiteralPath $ie4u) {
+        Start-Process -FilePath $ie4u -ArgumentList '-show' -WindowStyle Hidden -ErrorAction SilentlyContinue | Out-Null
+        Start-Process -FilePath $ie4u -ArgumentList '-ClearIconCache' -WindowStyle Hidden -ErrorAction SilentlyContinue | Out-Null
+    }
+    try {
+        Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class HermesShellNotify {
+    [DllImport("shell32.dll")]
+    public static extern void SHChangeNotify(int eventId, uint flags, IntPtr item1, IntPtr item2);
+    public static void AssocChanged() { SHChangeNotify(0x08000000, 0x00001000, IntPtr.Zero, IntPtr.Zero); }
+}
+'@ -ErrorAction Stop
+        [HermesShellNotify]::AssocChanged()
+    } catch {
+        $null = $_.Exception.Message
+    }
+}
+
+function Remove-HermesTaskbarShortcutFiles {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([Parameter(Mandatory)][string]$Dir)
+    $names = @(
+        'Start Hermes - naar taakbalk slepen.lnk',
+        'Hermes - setup Windows - naar taakbalk slepen.lnk',
+        'Hermes - backup - naar taakbalk slepen.lnk',
+        'Hermes - lokale bestanden herstellen - naar taakbalk slepen.lnk',
+        'Hermes - update - naar taakbalk slepen.lnk',
+        'Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk',
+        'Hermes - Open Setup - naar taakbalk slepen.lnk'
+    )
+    foreach ($leaf in $names) {
+        $p = Join-Path $Dir $leaf
+        if ((Test-Path -LiteralPath $p) -and $PSCmdlet.ShouldProcess($p, 'Remove', 'Taskbar shortcut')) {
+            Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue
+        }
+    }
 }
 
 function Repair-HermesBatShortcut {
@@ -65,6 +100,15 @@ if (-not (Test-Path -LiteralPath $createPs1)) {
     exit 1
 }
 
+$icoGenPy = Join-Path $scriptDir (Join-Path 'tools' 'generate_colored_hermes_icons.py')
+if (Test-Path -LiteralPath $icoGenPy) {
+    if (-not $Quiet) {
+        Write-Host '[INFO] Icoonset opnieuw genereren (alle groottes voor .lnk)...' -ForegroundColor Gray
+    }
+    [void](Invoke-HermesColoredIconsFromPng -IconGeneratorPy $icoGenPy -Quiet)
+}
+
+Remove-HermesTaskbarShortcutFiles -Dir $scriptDir
 & $createPs1 -RepoRoot $RepoRoot -OutDir $scriptDir -Quiet:$Quiet
 
 $startBatFull = Join-Path $RepoRoot (Get-HermesStartLauncherRelativePath -RepoRoot $RepoRoot)
@@ -119,7 +163,7 @@ Clear-HermesShellIconCache
 
 if (-not $Quiet) {
     Write-Host ''
-    Write-Host 'Iconen: start/RAG=goud | setup=groen | update=oranje | backup=roze | restore=cyaan' -ForegroundColor Cyan
+    Write-Host 'Iconen: start/RAG=goud | setup=groen | update=wit | backup=roze | restore=cyaan' -ForegroundColor Cyan
     Write-Host 'Blijft een oud H zichtbaar: pin losmaken, .lnk opnieuw vastmaken (niet .bat slepen).' -ForegroundColor Gray
 }
 

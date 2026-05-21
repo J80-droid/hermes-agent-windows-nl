@@ -2,7 +2,7 @@
 
 ## Focus
 
-**P0+P1 afgerond**; **Windows institutioneel** (2026-05-21): upstream/update-keten, bat-templates, taakbalk-iconen via gekleurde `.ico` (geen `hermes_taskbar_white` in `.lnk`), `POST_GIT_PULL.bat`, `FIX_TASKBAR_ICONS.bat`, user-data docs gesynchroniseerd. **Git:** `main` = `origin/main` (o.a. `88a01809a` docs, daarna icon/institutional commits). Open: bronnen in 7 `raw_source_files`-mappen.
+**P0+P1 afgerond**; **Windows institutioneel** (2026-05-21): upstream/update-keten, setup **single source** (`scripts/windows/setup_hermes_windows.ps1` + wrapper + `HermesSetupScriptPolicy.ps1`), taakbalk-iconen (multi-size `.ico`, wit=update), `VERIFY_WINDOWS_CHAIN`, `POST_GIT_PULL`, `FIX_TASKBAR_ICONS`. Open: bronnen in 7 `raw_source_files`-mappen.
 
 ## Dev vs. install-clone
 
@@ -40,4 +40,4 @@
 | `FIX_TASKBAR_ICONS.bat` | Handmatig icoon + pins |
 | `.lnk` vastmaken | Niet `.bat` slepen (cmd-H) |
 
-Iconen: goud = start/setup/backup/RAG, oranje = update, cyaan = restore.
+Iconen: goud = start/RAG, groen = setup, wit = update, roze = backup, cyaan = restore. Setup bewerken: alleen `scripts/windows/setup_hermes_windows.ps1` (niet volledige kopie naar `windows/`).

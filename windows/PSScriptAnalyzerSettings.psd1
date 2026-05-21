@@ -4,6 +4,7 @@
         'PSAvoidUsingWriteHost',
         'PSUseSingularNouns',
         'PSUseAliasToAvoidAbbreviations',
-        'PSAvoidUsingAliases'
+        'PSAvoidUsingAliases',
+        'PSUseBOMForUnicodeEncodedFile'
     )
 }

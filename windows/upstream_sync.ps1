@@ -227,7 +227,7 @@ try {
                 if (-not (Test-Path -LiteralPath $py)) {
                     Write-Warn "Python niet gevonden: $py - sla RAG-postinstall over."
                 } else {
-                    $extras = Join-Path $repo 'windows\scripts\install_rag_extras.ps1'
+                    $extras = Join-Path $repo (Join-Path 'windows' (Join-Path 'scripts' 'install_rag_extras.ps1'))
                     if (Test-Path -LiteralPath $extras) {
                         Write-Step "RAG extras (MCP + [rag])..."
                         & $extras
@@ -244,7 +244,7 @@ try {
             }
 
             if ($script:UpstreamExitCode -eq 0 -and $McpTest) {
-                $bat = Join-Path $repo 'windows\scripts\update_knowledge.bat'
+                $bat = Join-Path $repo (Join-Path 'windows' (Join-Path 'scripts' 'update_knowledge.bat'))
                 if (Test-Path -LiteralPath $bat) {
                     Write-Step "MCP-probe alle domeinen..."
                     $env:HERMES_NONINTERACTIVE = '1'

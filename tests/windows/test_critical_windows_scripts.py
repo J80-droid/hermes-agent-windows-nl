@@ -17,6 +17,7 @@ CRITICAL = [
     "windows/sync_local_assets_to_backup.ps1",
     "windows/WindowsLocalAssetsManifest.ps1",
     "windows/verify_windows_script_chain.ps1",
+    "windows/HermesSetupScriptPolicy.ps1",
     "windows/scripts/rag_ingest_perf_defaults.ps1",
     "pyproject.toml",
 ]

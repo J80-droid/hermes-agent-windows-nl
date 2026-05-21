@@ -1,7 +1,7 @@
 ﻿# Gedeeld manifest: welke repo-bestanden naar %USERPROFILE%\.hermes\_local_assets\ spiegelen.
 # Gebruikt door sync_local_assets_to_backup.ps1 en restore_local_assets.ps1.
 # RelPath = pad onder windows\ of repo-root (DestRoot = repo voor bv. scripts/windows/setup_hermes_windows.ps1).
-# Setup-PS1: scripts/windows/setup_hermes_windows.ps1 wordt na elke setup naar windows\ gespiegeld.
+# Setup-PS1: canoniek scripts/windows/setup_hermes_windows.ps1; windows/setup_hermes_windows.ps1 = wrapper.
 
 function Get-HermesWindowsLocalAssetsManifest {
     $winFiles = @(
@@ -32,6 +32,7 @@ function Get-HermesWindowsLocalAssetsManifest {
         'apply_team_display.ps1',
         'stop_other_hermes_processes.ps1',
         'verify_windows_script_chain.ps1',
+        'HermesSetupScriptPolicy.ps1',
         'team_display.defaults',
         'SKIP_TEAM_DISPLAY_AFTER_UPDATE.example',
         'create_shortcut.ps1',
@@ -130,6 +131,10 @@ function Get-HermesCriticalWindowsRepoPath {
         'windows/FIX_TASKBAR_ICONS.bat',
         'windows/POST_GIT_PULL.bat',
         'windows/fix_hermes_taskbar_pins.ps1',
+        'windows/HermesSetupScriptPolicy.ps1',
+        'windows/scripts/verify_taskbar_shortcut_icons.ps1',
+        'windows/SETUP_HERMES.bat',
+        'scripts/windows/setup_hermes_windows.ps1',
         'pyproject.toml'
     )
 }

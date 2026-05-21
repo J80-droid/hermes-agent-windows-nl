@@ -52,6 +52,9 @@ function New-HermesTaskbarShortcut {
     if (-not (Test-Path -LiteralPath $LaunchBatPath)) { return $false }
     if (-not $PSCmdlet.ShouldProcess($ShortcutPath, 'Create', 'Taskbar shortcut')) { return $false }
     $iconLoc = Resolve-HermesShortcutIconLocation -IconSpec $IconSpec -RepoRoot $RepoRoot
+    if (Test-Path -LiteralPath $ShortcutPath) {
+        Remove-Item -LiteralPath $ShortcutPath -Force -ErrorAction SilentlyContinue
+    }
     $WshShell = New-Object -ComObject WScript.Shell
     $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
     # Taakbalk (Win10/11): .bat als TargetPath laat zich vaak NIET vastpinnen bij slepen.
@@ -64,9 +67,15 @@ function New-HermesTaskbarShortcut {
         $Shortcut.Arguments = "/c `"$LaunchBatPath`""
     }
     $Shortcut.WorkingDirectory = $RepoRoot
-    $Shortcut.IconLocation = $iconLoc
+    if ($iconLoc -and $iconLoc -notmatch '^cmd\.exe') {
+        $Shortcut.IconLocation = $iconLoc
+    }
     $Shortcut.Description = $Description
     $Shortcut.Save()
+    if ($iconLoc -and $iconLoc -notmatch '^cmd\.exe') {
+        $Shortcut.IconLocation = $iconLoc
+        $Shortcut.Save()
+    }
     [System.Runtime.InteropServices.Marshal]::ReleaseComObject($Shortcut) | Out-Null
     [System.Runtime.InteropServices.Marshal]::ReleaseComObject($WshShell) | Out-Null
     return $true

@@ -28,5 +28,5 @@ $regPy = Join-Path $RepoRoot "scripts\rag_pipeline\register_mcp_config.py"
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 if (-not $Quiet) {
-    Write-Host "[OK] Per-domein MCP gecontroleerd. Test: windows\scripts\update_knowledge.bat --mcp-test"
+    Write-Host "[OK] Per-domein MCP gecontroleerd. Test: windows/scripts/update_knowledge.bat --mcp-test"
 }

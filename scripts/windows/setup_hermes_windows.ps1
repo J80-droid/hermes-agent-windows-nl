@@ -1,21 +1,23 @@
 ﻿#requires -Version 5.1
+# INSTITUTIONEEL: enige setup-PS1 om te bewerken. Kopieer NOOIT naar windows/setup_hermes_windows.ps1
+# (die blijft een dunne wrapper in git; VERIFY_WINDOWS_CHAIN.bat faalt bij volledige kopie).
 <#
 .SYNOPSIS
-  Windows-setup: schrijft lokale bestanden onder <repo>\windows\ (gitignored) en
-  optioneel snelkoppelingen (Desktop + taakbalk-stijl in windows\).
+  Windows-setup: schrijft lokale bestanden onder <repo>/windows/ (gitignored) en
+  optioneel snelkoppelingen (Desktop + taakbalk-stijl in windows/).
 
 .DESCRIPTION
-  - Maakt windows\Hermes_met_logo.bat (ANSI wit logo; roept launch_hermes.bat aan).
-  - Schrijft windows\setup_hermes_windows.bat en windows\hermes_update.bat.
-  - Genereert hermes_taskbar_white.ico (wit monogram uit PNG via generate_colored_hermes_icons.py).
-  - Hermes - setup Windows / Hermes - update / **Open Setup** (naar taakbalk slepen).lnk in windows\.
+  - Maakt windows/Hermes_met_logo.bat (ANSI wit logo; roept launch_hermes.bat aan).
+  - Schrijft windows/setup_hermes_windows.bat en windows/hermes_update.bat.
+  - Genereert hermes_taskbar_white.ico (zilver/wit monogram; niet voor taakbalk-.lnk).
+  - Hermes - setup Windows / Hermes - update / **Open Setup** (naar taakbalk slepen).lnk in windows/.
   - Minimaal launch_hermes.bat alleen als het nog ontbreekt (tenzij -ForceLaunchBat).
   - Desktop: **Hermes Agent.lnk** + **Hermes Open Setup.lnk** tenzij -NoShortcut.
 
   Draai altijd de **.bat** vanuit Explorer (dubbelklik op .ps1 gebruikt vaak Restricted policy).
 
   - Optioneel: volledige **hermes setup --full** na de Windows-bestanden via **OPEN_SETUP.bat**
-    ^(zelfde cmd + zelfde Conda/.venv-Python als launch_hermes.bat^). Dubbelklik: **windows\OPEN_SETUP.bat**.
+    ^(zelfde cmd + zelfde Conda/.venv-Python als launch_hermes.bat^). Dubbelklik: **windows/OPEN_SETUP.bat**.
 
   Triggers: -FullSetup, HERMES_SETUP_FULL_SETUP=1, of op setup-batch: **--full-setup**.
 
@@ -101,6 +103,18 @@ function Get-HermesDesktopShortcutIcon {
     }
     Write-Warning 'hermes_logo.ico ontbreekt - draai: python windows/tools/generate_colored_hermes_icons.py'
     return ($env:SystemRoot + '\System32\imageres.dll,1')
+}
+
+function Get-HermesSetupShortcutIconLocation {
+    param([Parameter(Mandatory)][string]$WindowsDir)
+    $invoke = Join-Path $WindowsDir 'HermesIconGeneratorInvoke.ps1'
+    if (-not (Test-Path -LiteralPath $invoke)) {
+        return (Get-HermesDesktopShortcutIcon -WindowsDir $WindowsDir)
+    }
+    . $invoke
+    $loc = Get-HermesTaskbarRoleIconLocation -Role 'OpenSetup' -WindowsDir $WindowsDir
+    if ($loc) { return $loc }
+    return (Get-HermesDesktopShortcutIcon -WindowsDir $WindowsDir)
 }
 
 function New-ShellShortcut {
@@ -265,9 +279,10 @@ if (-not $NoShortcut) {
     if (Test-Path -LiteralPath $openBatWin) {
         $deskOs = [Environment]::GetFolderPath("Desktop")
         if ($deskOs) {
+            $openIconLoc = Get-HermesSetupShortcutIconLocation -WindowsDir $win
             $openLnkDesk = Join-Path $deskOs "Hermes Open Setup.lnk"
             New-ShellShortcut -LnkPath $openLnkDesk -TargetPath "cmd.exe" -Arguments ('/k "' + $openBatWin + '"') `
-                -WorkDir $root -IconLocation $iconLoc `
+                -WorkDir $root -IconLocation $openIconLoc `
                 -Description "Hermes - volledige setup-wizard (OPEN_SETUP)" -WhatIf:$WhatIfPreference
             if (-not $WhatIfPreference) {
                 Write-Host ('[OK] Snelkoppeling: ' + $openLnkDesk) -ForegroundColor Green
@@ -295,6 +310,13 @@ if (-not $NoTaskbarLinks) {
             Write-Host '[WhatIf] Zou fix_hermes_taskbar_pins.ps1 draaien' -ForegroundColor Yellow
         }
     }
+    $verifyTb = Join-Path $win (Join-Path 'scripts' 'verify_taskbar_shortcut_icons.ps1')
+    if ((Test-Path -LiteralPath $verifyTb) -and -not $WhatIfPreference) {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $verifyTb -RepoRoot $root -Quiet
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning 'Taakbalk-.lnk iconen wijken af — draai windows/FIX_TASKBAR_ICONS.bat'
+        }
+    }
 }
 
 $runHermesWizard = $FullSetup -or ($env:HERMES_SETUP_FULL_SETUP -eq '1')
@@ -317,14 +339,6 @@ if ((Test-Path -LiteralPath $ragExtras) -and -not $WhatIfPreference) {
 }
 
 Write-Host ""
-Write-Host 'Klaar: windows/setup_hermes_windows.bat + taakbalk-.lnk (goud/oranje/cyaan via create_taskbar_shortcuts.ps1).' -ForegroundColor Cyan
+Write-Host 'Klaar: windows/setup_hermes_windows.bat + taakbalk-.lnk (goud=start/RAG, groen=setup, wit=update, roze/cyaan=backup/restore).' -ForegroundColor Cyan
 Write-Host 'Tip: bij verkeerd taakbalk-icoon: windows/FIX_TASKBAR_ICONS.bat' -ForegroundColor DarkGray
-
-# Canoniek script staat in scripts\windows\; SETUP_HERMES.bat en launch_hermes.bat lezen windows\ kopie.
-$mirrorSetup = Join-Path $win 'setup_hermes_windows.ps1'
-if (-not $WhatIfPreference) {
-    Copy-Item -LiteralPath $PSCommandPath -Destination $mirrorSetup -Force
-    Write-Host ('[OK] Gespiegeld: ' + $mirrorSetup) -ForegroundColor Green
-} elseif ($WhatIfPreference) {
-    Write-Host ('[WhatIf] Zou spiegelen naar ' + $mirrorSetup) -ForegroundColor Yellow
-}
+Write-Host 'Canoniek: scripts/windows/setup_hermes_windows.ps1 (windows/setup_hermes_windows.ps1 = wrapper).' -ForegroundColor DarkGray
