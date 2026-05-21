@@ -1,0 +1,67 @@
+# Profielen en SOUL.md (domein-persona)
+
+Elk RAG-domein heeft een **Hermes-profiel** met eigen persona (`SOUL.md`), MCP (`lancedb-<domein>`) en toolsets. Dit staat **buiten de git-repo** op je machine.
+
+## Waar SOUL.md staat
+
+| Concept | Pad (Windows) |
+|--------|----------------|
+| Hermes root (default) | `%LOCALAPPDATA%\hermes\` |
+| Default SOUL | `%LOCALAPPDATA%\hermes\SOUL.md` |
+| Domeinprofiel `legal` | `%LOCALAPPDATA%\hermes\profiles\legal\SOUL.md` |
+| Domeinprofiel `philosophy` | `%LOCALAPPDATA%\hermes\profiles\philosophy\SOUL.md` |
+| … overige domeinen | `%LOCALAPPDATA%\hermes\profiles\<profile_name>\SOUL.md` |
+
+**Niet** `profiles\<naam>\memory\SOUL.md` — upstream gebruikt `SOUL.md` in de **profielroot** (`$HERMES_HOME/SOUL.md`).
+
+## Koppeling domein → profiel → SOUL
+
+Uit `%USERPROFILE%\data\domains.yaml` (veld `profile_name`):
+
+| Domein | Profiel | SOUL (voorbeeldpad) |
+|--------|---------|---------------------|
+| core | `core` | `...\profiles\core\SOUL.md` |
+| academics | `academics` | `...\profiles\academics\SOUL.md` |
+| operations | `operations` | `...\profiles\operations\SOUL.md` |
+| trading | `trading` | `...\profiles\trading\SOUL.md` |
+| legal | `legal` | `...\profiles\legal\SOUL.md` |
+| gaming | `gaming` | `...\profiles\gaming\SOUL.md` |
+| philosophy | `philosophy` | `...\profiles\philosophy\SOUL.md` |
+| logistics | `logistics` | `...\profiles\logistics\SOUL.md` |
+| ventures | `ventures` | `...\profiles\ventures\SOUL.md` |
+
+RAG-bronnen staan apart onder `%USERPROFILE%\data\raw_source_files\<source_dir>\`.
+
+## Bewerken en starten
+
+```powershell
+# Legal persona
+notepad "$env:LOCALAPPDATA\hermes\profiles\legal\SOUL.md"
+hermes -p legal chat
+
+# Philosophy
+notepad "$env:LOCALAPPDATA\hermes\profiles\philosophy\SOUL.md"
+hermes -p philosophy chat
+```
+
+Wijzigingen in SOUL.md werken het best in een **nieuwe sessie** (bestaande chats kunnen de oude system prompt nog gebruiken).
+
+## Wat hoort waar
+
+| Bestand | Rol |
+|---------|-----|
+| `%LOCALAPPDATA%\hermes\config.yaml` | Model, provider (alle profielen) |
+| `profiles\<naam>\config.yaml` | `mcp_servers`, toolsets — **geen** `model:` |
+| `profiles\<naam>\SOUL.md` | Persona, missie, tone, grenzen |
+| `%USERPROFILE%\data\domains.yaml` | Bronpaden, LanceDB, ingest |
+
+Zie ook [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md) en [RAG_TWEE_FASEN.md](RAG_TWEE_FASEN.md).
+
+## Nieuwe profiel-SOUL
+
+```bat
+hermes profile create mijn-domein --clone legal
+notepad %LOCALAPPDATA%\hermes\profiles\mijn-domein\SOUL.md
+```
+
+`doctor --fix` en `sync_profile_mcp_from_domains.py` raken SOUL niet aan.

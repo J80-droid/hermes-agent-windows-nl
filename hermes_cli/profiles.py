@@ -392,6 +392,49 @@ def remove_wrapper_script(name: str) -> bool:
     return False
 
 
+_ORPHAN_WRAPPER_RE = re.compile(r"hermes -p (\S+)", re.IGNORECASE)
+
+
+def iter_orphan_profile_wrappers(
+    wrapper_dir: Path | None = None,
+) -> list[tuple[str, str]]:
+    """Return ``(wrapper_filename, missing_profile_name)`` for stale aliases."""
+    root = wrapper_dir or _get_wrapper_dir()
+    orphans: list[tuple[str, str]] = []
+    if not root.is_dir():
+        return orphans
+    for wrapper in root.iterdir():
+        if not wrapper.is_file():
+            continue
+        try:
+            content = wrapper.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        if "hermes -p" not in content:
+            continue
+        match = _ORPHAN_WRAPPER_RE.search(content)
+        if not match:
+            continue
+        profile_name = match.group(1)
+        if not profile_exists(profile_name):
+            orphans.append((wrapper.name, profile_name))
+    return orphans
+
+
+def remove_orphan_profile_wrappers(
+    wrapper_dir: Path | None = None,
+) -> list[str]:
+    """Remove wrapper scripts whose target profile no longer exists.
+
+    Returns wrapper filenames that were removed (e.g. ``analyst``, ``reviewer``).
+    """
+    removed: list[str] = []
+    for wrapper_name, _profile in iter_orphan_profile_wrappers(wrapper_dir):
+        if remove_wrapper_script(wrapper_name):
+            removed.append(wrapper_name)
+    return removed
+
+
 # ---------------------------------------------------------------------------
 # ProfileInfo
 # ---------------------------------------------------------------------------

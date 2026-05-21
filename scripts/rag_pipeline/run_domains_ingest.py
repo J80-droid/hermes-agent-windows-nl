@@ -27,6 +27,35 @@ from ingest_run_summary import summary_path
 from rag_institutional_defaults import apply_institutional_env
 from source_layout import apply_media_policy_env, restore_quarantine_files
 
+# P1 bulk: domeinen zonder brondata overslaan (lege raw_source_files-mappen).
+INGEST_REMAINING_DOMAIN_NAMES = (
+    "academics",
+    "operations",
+    "trading",
+    "gaming",
+    "philosophy",
+    "logistics",
+    "ventures",
+)
+
+
+def _count_source_files(raw: Path) -> int:
+    if not raw.is_dir():
+        return -1
+    return sum(1 for p in raw.rglob("*") if p.is_file())
+
+
+def _filter_non_empty_specs(specs: list[DomainSpec]) -> list[DomainSpec]:
+    kept: list[DomainSpec] = []
+    for spec in specs:
+        _, raw, _ = resolve_domain_paths(spec)
+        n = _count_source_files(raw)
+        if n <= 0:
+            print(f"[SKIP] {spec.name}: geen bronbestanden in {raw}")
+            continue
+        kept.append(spec)
+    return kept
+
 
 def _repo_root() -> Path:
     return Path(__file__).resolve().parent.parent.parent
@@ -122,6 +151,16 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Alleen audio/video zonder sidecar (Whisper); gebruikt media_ingest_env uit yaml",
     )
+    parser.add_argument(
+        "--skip-empty",
+        action="store_true",
+        help="Sla domeinen over zonder bronbestanden in raw_source_files",
+    )
+    parser.add_argument(
+        "--ingest-remaining",
+        action="store_true",
+        help="Ingest P1-domeinen (academics … ventures); lege bronmappen worden overgeslagen",
+    )
     args = parser.parse_args(argv)
 
     if args.skip_mcp_verify:
@@ -136,12 +175,25 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{spec.name}: {spec.source_dir} [MCP: {mcp}]{desc}")
         return 0
 
-    if args.all:
+    if args.ingest_remaining:
+        specs = [get_domain(n, yaml_path) for n in INGEST_REMAINING_DOMAIN_NAMES]
+    elif args.all:
         specs = load_domains(yaml_path)
     elif args.domains:
         specs = [get_domain(n, yaml_path) for n in args.domains]
     else:
-        parser.error("Geef --all, --domain NAME, of --list")
+        parser.error("Geef --all, --domain NAME, --ingest-remaining, of --list")
+
+    if args.skip_empty or args.ingest_remaining:
+        specs = _filter_non_empty_specs(specs)
+        if not specs:
+            print("[WARN] Geen domeinen met bronbestanden — ingest overgeslagen.")
+            print(
+                "[INFO] Vul %USERPROFILE%\\data\\raw_source_files\\<source_dir> "
+                "en herhaal.",
+                file=sys.stderr,
+            )
+            return 0
 
     repo = _repo_root()
 

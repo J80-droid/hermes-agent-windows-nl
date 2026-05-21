@@ -127,7 +127,7 @@ exec "$PYTHON" -m pytest \
   -o "addopts=" \
   -n "$WORKERS" \
   --timeout=30 \
-  --timeout-method=signal \
+  --timeout-method=thread \
   --ignore=tests/integration \
   --ignore=tests/e2e \
   -m "not integration" \

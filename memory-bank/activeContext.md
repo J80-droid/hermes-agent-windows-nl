@@ -2,7 +2,7 @@
 
 ## Focus
 
-Legal RAG-ingest is **afgerond** (1665 bronnen, 0 skips). **Profiel-model** erft van root `~/.hermes/config.yaml`; documentatie geconsolideerd in `docs/README.md`. Volgende: rooktest chat → Kanban legal → bulk ingest overige 8 domeinen.
+**P0+P1 institutioneel afgerond** (2026-05-21): legal + core MCP OK; Kanban `t_9f206226` **done**. Bulk `--ingest-remaining` slaat lege domeinen over (`run_domains_ingest.py --ingest-remaining`). Enige open actie: bronbestanden in 7 `raw_source_files`-mappen.
 
 ## Dev vs. install-clone
 
@@ -16,6 +16,7 @@ Legal RAG-ingest is **afgerond** (1665 bronnen, 0 skips). **Profiel-model** erft
 |------|---------|
 | **Index** | `docs/README.md` |
 | Model alle profielen | `docs/PROFILE_MODEL_INHERITANCE.md` |
+| SOUL per profiel | `docs/PROFILE_SOUL.md` |
 | RAG twee fasen | `docs/RAG_TWEE_FASEN.md` |
 | RAG env | `docs/RAG_INSTITUTIONAL_ENV.md` |
 | Hermes start (bat) | `../../HERMES_START.md` |
@@ -24,16 +25,11 @@ Legal RAG-ingest is **afgerond** (1665 bronnen, 0 skips). **Profiel-model** erft
 
 ## Volgende stappen (volgorde)
 
-1. `hermes -p legal` — vraag iets uit het dossier; controleer `search_knowledge`
-2. `%USERPROFILE%\data\scripts\kanban_legal_zorgplicht.bat` (alleen als ingest niet draait)
-3. Nacht-run alle domeinen: taakbalk **Hermes - RAG kennis bijwerken** (`HERMES_NONINTERACTIVE=1`) of:
-   ```bat
-   set HERMES_NONINTERACTIVE=1
-   set HERMES_RAG_FRESH=n
-   windows\scripts\update_knowledge.bat
-   ```
-4. `windows\scripts\update_knowledge.bat --mcp-test`
-5. Status: `%USERPROFILE%\data\scripts\check_ingest_status.bat legal`
+1. **Bronnen:** vul `raw_source_files\01_Academics_Beta` … `08_Ventures_Incubator`
+2. **Ingest:** `windows\scripts\institutional_p0_p1.bat --ingest-remaining` (lege mappen worden overgeslagen)
+3. **MCP:** `update_knowledge.bat --mcp-test`
+4. **Kanban (klaar):** `hermes -p legal kanban show t_9f206226`
+5. Status: `check_ingest_status.bat <domein>`
 
 ## Taakbalk
 

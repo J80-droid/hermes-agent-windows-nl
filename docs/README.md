@@ -8,6 +8,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 |--------|----------|
 | Begrijpen: index vs. chat (twee fasen) | [RAG_TWEE_FASEN.md](RAG_TWEE_FASEN.md) |
 | Model/provider voor **alle** profielen instellen | [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md) |
+| SOUL.md per domeinprofiel (waar, bewerken) | [PROFILE_SOUL.md](PROFILE_SOUL.md) |
 | Domeinen toevoegen (`domains.yaml`) | [domains.yaml.example](domains.yaml.example) |
 | RAG env-defaults (stale, torch-ruis) | [RAG_INSTITUTIONAL_ENV.md](RAG_INSTITUTIONAL_ENV.md) |
 | Technische ingest/MCP-stappen | [../scripts/rag_pipeline/ACTIVATION.md](../scripts/rag_pipeline/ACTIVATION.md) |
@@ -43,6 +44,7 @@ flowchart TB
 |---------|-----|
 | Hermes root | `%LOCALAPPDATA%\hermes\` |
 | Profiel `legal` | `%LOCALAPPDATA%\hermes\profiles\legal\` |
+| SOUL legal | `%LOCALAPPDATA%\hermes\profiles\legal\SOUL.md` |
 | RAG-config | `%USERPROFILE%\data\domains.yaml` |
 | LanceDB legal | `%USERPROFILE%\data\lancedb\legal\` |
 | Bronnen legal | `%USERPROFILE%\data\raw_source_files\04_Legal_Corporate\` |
@@ -50,7 +52,13 @@ flowchart TB
 
 ## Onderhoud
 
+- **Windows backup/script-keten:** `windows\VERIFY_WINDOWS_CHAIN.bat` (na pull of vóór backup)
+- **P0+P1-pipeline (institutioneel):** `windows\scripts\institutional_p0_p1.bat`  
+  Sync MCP → doctor --fix → MCP-test alle domeinen → legal rooktest.  
+  Opties: `--ingest-remaining` (7 domeinen; **lege bronmappen worden overgeslagen**), `--kanban` (na geslaagde rooktest).
+- **Alleen MCP sync:** `python scripts\rag_pipeline\sync_profile_mcp_from_domains.py`
 - **Verouderd `model:` in profielen:** `hermes doctor --fix`
+- **Verouderd `mcp.servers`:** `hermes doctor --fix` of sync-script hierboven
 - **Ingest-status:** `%USERPROFILE%\data\scripts\check_ingest_status.bat <domein>`
 - **Doctor:** `hermes doctor` of `windows\DOCTOR_FIX.bat`
 

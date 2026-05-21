@@ -12,7 +12,7 @@ Toepassing: `windows/scripts/rag/_rag_apply_institutional_env.bat`, `rag_institu
 | Variabele | Default | Wanneer wijzigen |
 |-----------|---------|------------------|
 | `HERMES_RAG_LIVE_STALE_SEC` | `120` | Alleen **verhogen** (bijv. `300`) als live status ten onrechte als “verouderd” wordt gemeld terwijl ingest nog loopt op extreem trage PDF’s. **Niet verlagen** — te kort geeft valse “stale” meldingen. |
-| `HERMES_RAG_QUIET_TORCH` | `1` | Zet `0` alleen bij **debug** van PyTorch/embed (KernelPreference-waarschuwingen weer zichtbaar). Geen invloed op indexkwaliteit. |
+| `HERMES_RAG_QUIET_TORCH` | `1` | Zet `0` alleen bij **debug** van PyTorch/embed. Geen invloed op indexkwaliteit. |
 | `HERMES_RAG_PERF_PROFILE` | `safe` | `balanced` / `fast` alleen op een machine met veel RAM/CPU en na test op één domein. |
 | `HERMES_NONINTERACTIVE` | `1` (nacht/taakbalk) | Alleen in `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` — geen J/N-prompt. Handmatige run zonder deze var → wel J/N-keuze. |
 | `HERMES_RAG_FRESH` | `n` (nacht) | `j` alleen als je database **bewust** wilt wissen. |
@@ -45,7 +45,19 @@ set HERMES_RAG_QUIET_TORCH=0
 windows\scripts\update_knowledge.bat legal
 ```
 
+## PyTorch `W0521` / KernelPreference (cosmetisch)
+
+Bij `--mcp-test` of ingest kan één regel op stderr verschijnen:
+
+`W0521 ... KernelPreference ... register_constant() on Enum ... deprecated`
+
+- **Geen Hermes-fout** — waarschuwing uit `torch` bij laden van sentence-transformers.
+- **MCP blijft OK** als je `[OK] MCP lancedb-...` ziet.
+- **Oplossing niet nodig** voor productie; standaard `HERMES_RAG_QUIET_TORCH=1` dempt veel ruis bij ingest.
+- Later: torch/sentence-transformers updaten wanneer upstream het oplost.
+
 ## Zie ook
 
 - `docs/RAG_TWEE_FASEN.md` — twee fasen index vs. chat
+- `docs/PROFILE_SOUL.md` — persona per profiel
 - `scripts/rag_pipeline/ACTIVATION.md` — technische pipeline

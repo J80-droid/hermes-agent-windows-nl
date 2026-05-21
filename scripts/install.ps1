@@ -507,7 +507,6 @@ function Install-Git {
         }
 
         $downloadUrl = "https://github.com/git-for-windows/git/releases/download/$gitTag/$assetName"
-        $downloadExt = if ($downloadIsZip) { "zip" } else { "7z.exe" }
         $tmpFile = "$env:TEMP\$assetName"
         $gitDir = "$HermesHome\git"
 
@@ -1492,7 +1491,7 @@ function Install-NodeDeps {
     # PE file.  The invocation-operator & $npmExe routes through the
     # PowerShell command pipeline which DOES honour .cmd batch shims, so
     # it works uniformly for npm.cmd, npx.cmd, and bare .exe files.
-    function _Run-NpmInstall([string]$label, [string]$installDir, [string]$logPath, [string]$npmPath) {
+    function Invoke-NpmInstall([string]$label, [string]$installDir, [string]$logPath, [string]$npmPath) {
         Push-Location $installDir
         # Capture EAP outside the try block so the catch restore call always
         # has a meaningful value (see Install-Uv for the full rationale).
@@ -1556,7 +1555,7 @@ function Install-NodeDeps {
     if (Test-Path "$InstallDir\package.json") {
         Write-Info "Installing Node.js dependencies (browser tools)..."
         $browserLog = "$env:TEMP\hermes-npm-browser-$(Get-Random).log"
-        $browserNpmOk = _Run-NpmInstall "Browser tools" $InstallDir $browserLog $npmExe
+        $browserNpmOk = Invoke-NpmInstall "Browser tools" $InstallDir $browserLog $npmExe
 
         # Install Playwright Chromium (mirrors scripts/install.sh behaviour for
         # Linux).  Without this, tools/browser_tool.py::check_browser_requirements
@@ -1594,7 +1593,7 @@ function Install-NodeDeps {
                     # VM.  Tee the output to console + log so the user
                     # sees download progress in real time instead of
                     # staring at a silent prompt that looks hung.  See
-                    # _Run-NpmInstall above for the same pattern and
+                    # Invoke-NpmInstall above for the same pattern and
                     # the rationale behind stderr capture before the pipe.
                     Write-Info "(this can take several minutes; streaming progress below)"
                     # ; yes auto-accepts npx Need to install playwright@X.Y.Z
@@ -1660,7 +1659,7 @@ function Install-NodeDeps {
     if (Test-Path "$tuiDir\package.json") {
         Write-Info "Installing TUI dependencies..."
         $tuiLog = "$env:TEMP\hermes-npm-tui-$(Get-Random).log"
-        [void](_Run-NpmInstall "TUI" $tuiDir $tuiLog $npmExe)
+        [void](Invoke-NpmInstall "TUI" $tuiDir $tuiLog $npmExe)
     }
 }
 
@@ -2011,22 +2010,22 @@ function Write-Completion {
 # stages; NeedsUserInput tells UIs this stage prompts; either skip it
 # or arrange to provide answers another way.
 $InstallStages = @(
-    @{ Name = "uv";               Title = "Installing uv package manager";        Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-Uv" }
-    @{ Name = "python";           Title = "Verifying Python $PythonVersion";      Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-Python" }
-    @{ Name = "git";              Title = "Installing Git";                       Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-Git" }
-    @{ Name = "node";             Title = "Detecting Node.js";                    Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-Node" }
-    @{ Name = "system-packages";  Title = "Installing ripgrep and ffmpeg";        Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-SystemPackages" }
-    @{ Name = "repository";       Title = "Cloning Hermes repository";            Category = "install";      NeedsUserInput = $false; Worker = "Stage-Repository" }
-    @{ Name = "venv";             Title = "Creating Python virtual environment";  Category = "install";      NeedsUserInput = $false; Worker = "Stage-Venv" }
-    @{ Name = "dependencies";     Title = "Installing Python dependencies";       Category = "install";      NeedsUserInput = $false; Worker = "Stage-Dependencies" }
-    @{ Name = "node-deps";        Title = "Installing Node.js dependencies";      Category = "install";      NeedsUserInput = $false; Worker = "Stage-NodeDeps" }
-    @{ Name = "path";             Title = "Adding Hermes to PATH";                Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-Path" }
-    @{ Name = "config-templates"; Title = "Writing configuration templates";      Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-ConfigTemplates" }
-    @{ Name = "platform-sdks";    Title = "Installing messaging platform SDKs";   Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-PlatformSdks" }
+    @{ Name = "uv";               Title = "Installing uv package manager";        Category = "prereqs";      NeedsUserInput = $false; Worker = "Invoke-InstallStageUv" }
+    @{ Name = "python";           Title = "Verifying Python $PythonVersion";      Category = "prereqs";      NeedsUserInput = $false; Worker = "Invoke-InstallStagePython" }
+    @{ Name = "git";              Title = "Installing Git";                       Category = "prereqs";      NeedsUserInput = $false; Worker = "Invoke-InstallStageGit" }
+    @{ Name = "node";             Title = "Detecting Node.js";                    Category = "prereqs";      NeedsUserInput = $false; Worker = "Invoke-InstallStageNode" }
+    @{ Name = "system-packages";  Title = "Installing ripgrep and ffmpeg";        Category = "prereqs";      NeedsUserInput = $false; Worker = "Invoke-InstallStageSystemPackages" }
+    @{ Name = "repository";       Title = "Cloning Hermes repository";            Category = "install";      NeedsUserInput = $false; Worker = "Invoke-InstallStageRepository" }
+    @{ Name = "venv";             Title = "Creating Python virtual environment";  Category = "install";      NeedsUserInput = $false; Worker = "Invoke-InstallStageVenv" }
+    @{ Name = "dependencies";     Title = "Installing Python dependencies";       Category = "install";      NeedsUserInput = $false; Worker = "Invoke-InstallStageDependencies" }
+    @{ Name = "node-deps";        Title = "Installing Node.js dependencies";      Category = "install";      NeedsUserInput = $false; Worker = "Invoke-InstallStageNodeDeps" }
+    @{ Name = "path";             Title = "Adding Hermes to PATH";                Category = "finalize";     NeedsUserInput = $false; Worker = "Invoke-InstallStagePath" }
+    @{ Name = "config-templates"; Title = "Writing configuration templates";      Category = "finalize";     NeedsUserInput = $false; Worker = "Invoke-InstallStageConfigTemplates" }
+    @{ Name = "platform-sdks";    Title = "Installing messaging platform SDKs";   Category = "finalize";     NeedsUserInput = $false; Worker = "Invoke-InstallStagePlatformSdks" }
     # Interactive stages.  In non-interactive mode these become no-ops; the
     # caller (GUI / CI) handles the equivalent UX themselves.
-    @{ Name = "configure";        Title = "Configuring API keys and models";      Category = "post-install"; NeedsUserInput = $true;  Worker = "Stage-Configure" }
-    @{ Name = "gateway";          Title = "Starting messaging gateway";           Category = "post-install"; NeedsUserInput = $true;  Worker = "Stage-Gateway" }
+    @{ Name = "configure";        Title = "Configuring API keys and models";      Category = "post-install"; NeedsUserInput = $true;  Worker = "Invoke-InstallStageConfigure" }
+    @{ Name = "gateway";          Title = "Starting messaging gateway";           Category = "post-install"; NeedsUserInput = $true;  Worker = "Invoke-InstallStageGateway" }
 )
 
 # Stage workers; thin wrappers that delegate to the existing Install-* /
@@ -2040,30 +2039,30 @@ $InstallStages = @(
 # Resolve-UvCmd is a fast no-op when $script:UvCmd is already populated
 # (the default-invocation case where Main runs everything in one
 # process), and throws cleanly if uv truly is not installed yet.
-function Stage-Uv               { if (-not (Install-Uv))     { throw "uv installation failed" } }
-function Stage-Python           { Resolve-UvCmd; if (-not (Test-Python))    { throw "Python $PythonVersion not available" } }
-function Stage-Git              { if (-not (Install-Git))    { throw "Git not available and auto-install failed; install from https://git-scm.com/download/win then re-run" } }
+function Invoke-InstallStageUv               { if (-not (Install-Uv))     { throw "uv installation failed" } }
+function Invoke-InstallStagePython           { Resolve-UvCmd; if (-not (Test-Python))    { throw "Python $PythonVersion not available" } }
+function Invoke-InstallStageGit              { if (-not (Install-Git))    { throw "Git not available and auto-install failed; install from https://git-scm.com/download/win then re-run" } }
 # Node is optional (browser tools degrade gracefully without it).  Surface
 # failure to the JSON contract as skipped=true / reason rather than ok=true,
 # so a GUI driver consuming the manifest can distinguish node ready from
 # node missing.  Install flow continues either way; matches the
 # existing Write-Completion behavior that prints a Note: Node.js could
 # not be installed hint instead of aborting.
-function Stage-Node             {
+function Invoke-InstallStageNode             {
     if (-not (Test-Node)) {
         $script:_StageSkippedReason = "Node.js not available; browser tools will be unavailable until node is installed manually from https://nodejs.org/en/download/"
     }
 }
-function Stage-SystemPackages   { Install-SystemPackages }
-function Stage-Repository       { Install-Repository }
-function Stage-Venv             { Resolve-UvCmd; Install-Venv }
-function Stage-Dependencies     { Resolve-UvCmd; Install-Dependencies }
-function Stage-NodeDeps         { Install-NodeDeps }
-function Stage-Path             { Set-PathVariable }
-function Stage-ConfigTemplates  { Copy-ConfigTemplates }
-function Stage-PlatformSdks     { Resolve-UvCmd; Install-PlatformSdks }
-function Stage-Configure        { Invoke-SetupWizard }
-function Stage-Gateway          { Start-GatewayIfConfigured }
+function Invoke-InstallStageSystemPackages   { Install-SystemPackages }
+function Invoke-InstallStageRepository       { Install-Repository }
+function Invoke-InstallStageVenv             { Resolve-UvCmd; Install-Venv }
+function Invoke-InstallStageDependencies     { Resolve-UvCmd; Install-Dependencies }
+function Invoke-InstallStageNodeDeps         { Install-NodeDeps }
+function Invoke-InstallStagePath             { Set-PathVariable }
+function Invoke-InstallStageConfigTemplates  { Copy-ConfigTemplates }
+function Invoke-InstallStagePlatformSdks     { Resolve-UvCmd; Install-PlatformSdks }
+function Invoke-InstallStageConfigure        { Invoke-SetupWizard }
+function Invoke-InstallStageGateway          { Start-GatewayIfConfigured }
 
 function Get-InstallStage {
     param([string]$Name)

@@ -33,6 +33,14 @@ if (-not (Test-Path -LiteralPath $domainsYaml)) {
 
 $env:HERMES_DOMAINS_YAML = $domainsYaml
 
+# Institutioneel: profiel-mcp_servers altijd in sync met domains.yaml vóór ingest/MCP-test
+$syncCli = Join-Path $repo 'scripts\rag_pipeline\sync_profile_mcp_from_domains.py'
+if ((Test-Path -LiteralPath $syncCli) -and (-not $List)) {
+    Write-Host '[INFO] Sync profiel mcp_servers vanuit domains.yaml...' -ForegroundColor Cyan
+    & $py $syncCli --domains-yaml $domainsYaml
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+
 $argList = @($runner, '--domains-yaml', $domainsYaml)
 if ($SkipMcpVerify) { $env:HERMES_RAG_SKIP_MCP_VERIFY = '1' }
 if ($List) { $argList += '--list' }

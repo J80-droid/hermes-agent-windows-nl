@@ -7,7 +7,8 @@ Dit document is de **in-repo** kopie van het activatieplan (Cursor-plan: *LanceD
 Scripts in deze map:
 
 - `ingest.py` — orchestratie: scan, chunking, upsert, voortgang.
-- `run_domains_ingest.py` — multi-domein uit `domains.yaml`, quarantaine-preflight, MCP-verify.
+- `run_domains_ingest.py` — multi-domein uit `domains.yaml`, quarantaine-preflight, MCP-verify; `--ingest-remaining` (7 domeinen, skip leeg); `ingest_preflight.py`.
+- `sync_profile_mcp_from_domains.py` — `mcp_servers` in alle profielen vanuit `domains.yaml`.
 - `domains_config.py` — laadt domeinen + `media_policy`, `quarantine_restore`.
 - `source_layout.py` — quarantaine terug naar canonieke paden.
 - `ingest_run_summary.py` — eindrapport console + `rag_ingest_run_summary.json`.
@@ -109,7 +110,7 @@ Zonder **A+B+C** is de keten nooit 100% operationeel — ook niet met perfecte c
 | Risico | Mitigatie |
 | ------ | --------- |
 | conda vs. uv `.venv` | `install_rag_extras.ps1` → `pip install -e ".[rag]"` op **beide** (`rag_python_resolve.ps1`) |
-| MCP per domein | `domains.yaml` + profiel `mcp.servers`; verify via `register_mcp_config.py` / `--mcp-test` |
+| MCP per domein | `domains.yaml` → profiel **`mcp_servers:`** (sync: `sync_profile_mcp_from_domains.py`); verify via `--mcp-test` |
 | Whisper/ffmpeg | `[rag]` bevat `faster-whisper`; **ffmpeg** moet op PATH (winget/choco) |
 | Oud schema zonder `id` | `python scripts/rag_pipeline/schema_migrate.py` (inspect / `--backup-and-reset`) |
 | Taakplanner wacht op J/N | `set HERMES_NONINTERACTIVE=1` of `HERMES_RAG_FRESH=0` vóór `update_knowledge.bat` |

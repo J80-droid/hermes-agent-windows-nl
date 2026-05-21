@@ -84,6 +84,8 @@ tests/cli/test_cli_config_profile_root_merge.py
 hermes_launch.log
 hermes_runtime.log
 hermes_setup.log
+windows/scripts/rag_ingest_bulk.log
+windows/scripts/rag_ingest_bulk.err.log
 config.yaml
 memory/
 profiles/

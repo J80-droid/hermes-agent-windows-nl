@@ -1,4 +1,4 @@
-"""Verifieer per-domein MCP in Hermes-profiles (domains.yaml). Geen monoliet lancedb-knowledge meer."""
+"""Verifieer en synchroniseer per-domein MCP in Hermes-profielen (domains.yaml → mcp_servers)."""
 
 from __future__ import annotations
 
@@ -10,14 +10,22 @@ _REPO = Path(__file__).resolve().parent.parent.parent
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from domains_config import default_domains_yaml, load_domains, resolve_domain_paths  # noqa: E402
+from domains_config import default_domains_yaml, load_domains  # noqa: E402
+from sync_profile_mcp_from_domains import (  # noqa: E402
+    sync_profile_config,
+    validate_profile_mcp,
+)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Controleer dat elk domein een profiel met mcp.servers heeft (geen globale monoliet-MCP)."
+        description=(
+            "Controleer dat elk domein een profiel met mcp_servers heeft "
+            "(CLI-formaat; geen globale monoliet-MCP)."
+        )
     )
     parser.add_argument("--domains-yaml", type=Path, default=None)
+    parser.add_argument("--sync", action="store_true", help="Ontbrekende/legacy configs bijwerken")
     args = parser.parse_args()
 
     yaml_path = args.domains_yaml or default_domains_yaml()
@@ -27,27 +35,27 @@ def main() -> int:
 
     ok = True
     for spec in load_domains(yaml_path):
-        mcp = spec.resolved_mcp_name()
-        _, _, profile = resolve_domain_paths(spec)
-        cfg = profile / "config.yaml"
-        if not cfg.is_file():
-            print(f"[ERROR] {spec.name}: profiel-config ontbreekt ({cfg})", file=sys.stderr)
-            ok = False
-            continue
-        text = cfg.read_text(encoding="utf-8")
-        if mcp not in text:
-            print(f"[ERROR] {spec.name}: MCP '{mcp}' niet in {cfg}", file=sys.stderr)
-            ok = False
+        if args.sync:
+            _, msg = sync_profile_config(spec)
+            print(f"[INFO] {msg}")
+            good, vmsg = validate_profile_mcp(spec)
+            print(f"[{'OK' if good else 'ERROR'}] {vmsg}")
+            if not good:
+                ok = False
         else:
-            print(f"[OK] {spec.name}: {mcp} in profiel {spec.profile_name}")
+            good, msg = validate_profile_mcp(spec)
+            print(f"[{'OK' if good else 'ERROR'}] {msg}")
+            if not good:
+                ok = False
 
     if not ok:
         print(
-            "[INFO] MCP hoort per profile in config.yaml (mcp.servers), niet in globale ~/.hermes.",
+            "[INFO] Herstel: python scripts/rag_pipeline/sync_profile_mcp_from_domains.py "
+            "of windows\\scripts\\institutional_p0_p1.bat",
             file=sys.stderr,
         )
         return 1
-    print(f"[OK] Alle domeinen in {yaml_path} hebben profiel-MCP.")
+    print(f"[OK] Alle domeinen in {yaml_path} hebben CLI-compatibele profiel-MCP.")
     return 0
 
 

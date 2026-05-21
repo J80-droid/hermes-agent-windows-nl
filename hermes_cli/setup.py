@@ -358,6 +358,13 @@ def _prompt_api_key(var: dict):
 
 def _print_setup_summary(config: dict, hermes_home):
     """Print the setup completion summary."""
+    try:
+        from hermes_cli.skills_hub_init import ensure_skills_hub_default_and_profiles
+
+        ensure_skills_hub_default_and_profiles()
+    except Exception:
+        pass
+
     # Tool availability summary
     print()
     print_header("Tool Availability Summary")

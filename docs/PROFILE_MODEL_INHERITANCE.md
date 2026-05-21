@@ -23,19 +23,25 @@ Na `hermes model` of een edit van root config geldt het nieuwe model **automatis
 ```yaml
 # model/provider: inherited from root config (~/.hermes/config.yaml).
 # Change model globally: hermes model
-mcp:
-  servers:
-    lancedb-legal:
-      command: ...
-      args: [.../mcp_server.py]
-      env:
-        HERMES_LANCEDB_PATH: C:\Users\...\data\lancedb\legal
+# MCP wordt gesynchroniseerd vanuit %USERPROFILE%\data\domains.yaml:
+#   python scripts/rag_pipeline/sync_profile_mcp_from_domains.py
+mcp_servers:
+  lancedb-legal:
+    command: C:\...\miniconda3\envs\hermes-env\python.exe
+    args:
+      - D:\...\hermes-agent\scripts\rag_pipeline\mcp_server.py
+    env:
+      HERMES_LANCEDB_PATH: C:\Users\...\data\lancedb\legal
+      HERMES_REPO_ROOT: D:\...\hermes-agent
+      PYTHONIOENCODING: utf-8
 enabled_toolsets:
   - mcp
   - file
 agent:
   max_turns: 30
 ```
+
+**Let op:** het oude nested formaat `mcp.servers` wordt door Hermes CLI/chat **genegeerd** — gebruik alleen `mcp_servers:` op root-niveau in het profiel-yaml.
 
 ## Commando’s (cheatsheet)
 
@@ -52,6 +58,7 @@ agent:
 | Symptoom | Oorzaak | Oplossing |
 |----------|---------|-----------|
 | Doctor toont OpenRouter terwijl root Gemini is | Verouderd `model:`-blok in `profiles\legal\config.yaml` | `hermes doctor --fix` of handmatig `model:` verwijderen |
+| `search_knowledge` niet geladen in chat | `mcp.servers` i.p.v. `mcp_servers` in profiel | `sync_profile_mcp_from_domains.py` of `hermes doctor --fix` |
 | Chat 401 / verkeerde provider | Profiel had eigen model; keys in root `.env` | Root model + keys in `%LOCALAPPDATA%\hermes\.env` |
 | `hermes -p legal model` lijkt profiel te wijzigen | Oud gedrag vóór overerving | Update repo; model gaat naar root |
 

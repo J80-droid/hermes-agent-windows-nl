@@ -260,7 +260,7 @@ if (Test-Path -LiteralPath $taskbarPs1) {
     & $taskbarPs1 -RepoRoot $repoRoot -OutDir $winDir -Quiet
 }
 
-Write-Host "[9/9] Sync naar $env:USERPROFILE\.hermes\_local_assets ..." -ForegroundColor Gray
+Write-Host "[9/10] Sync naar $env:USERPROFILE\.hermes\_local_assets ..." -ForegroundColor Gray
 
 $syncScript = Join-Path $repoRoot "windows\sync_local_assets_to_backup.ps1"
 if (Test-Path $syncScript) {
@@ -278,6 +278,25 @@ if (Test-Path $syncScript) {
     }
 } else {
     Write-Host "[WARNING] sync_local_assets_to_backup.ps1 niet gevonden: $syncScript" -ForegroundColor Yellow
+}
+
+Write-Host "[10/10] Verifieer Windows script-keten (bat -> ps1) ..." -ForegroundColor Gray
+$verifyScript = Join-Path $repoRoot "windows\verify_windows_script_chain.ps1"
+if (Test-Path -LiteralPath $verifyScript) {
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $verifyScript -RepoRoot $repoRoot
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "[WARNING] verify_windows_script_chain.ps1: keten incompleet (git pull / restore_local_assets)." -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "[WARNING] Verify mislukt: $($_.Exception.Message)" -ForegroundColor Yellow
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+} else {
+    Write-Host "[WARNING] verify_windows_script_chain.ps1 niet gevonden." -ForegroundColor Yellow
 }
 
 Write-Host "[OK] Backup voltooid: $backupFolder" -ForegroundColor Green

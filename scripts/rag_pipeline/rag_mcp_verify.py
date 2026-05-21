@@ -1,4 +1,4 @@
-"""Post-ingest MCP-verificatie per domein (domains.yaml → profile mcp.servers)."""
+"""Post-ingest MCP-verificatie per domein (domains.yaml → profile mcp_servers)."""
 
 from __future__ import annotations
 

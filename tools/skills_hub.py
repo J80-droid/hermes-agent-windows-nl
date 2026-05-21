@@ -2885,17 +2885,36 @@ def append_audit_log(action: str, skill_name: str, source: str,
 # Hub operations (high-level)
 # ---------------------------------------------------------------------------
 
-def ensure_hub_dirs() -> None:
-    """Create the .hub directory structure if it doesn't exist."""
-    HUB_DIR.mkdir(parents=True, exist_ok=True)
-    QUARANTINE_DIR.mkdir(exist_ok=True)
-    INDEX_CACHE_DIR.mkdir(exist_ok=True)
-    if not LOCK_FILE.exists():
-        LOCK_FILE.write_text('{"version": 1, "installed": {}}\n')
-    if not AUDIT_LOG.exists():
-        AUDIT_LOG.touch()
-    if not TAPS_FILE.exists():
-        TAPS_FILE.write_text('{"taps": []}\n')
+def ensure_hub_dirs(hermes_home: Path | str | None = None) -> Path:
+    """Create the ``skills/.hub`` directory structure if it does not exist.
+
+    Args:
+        hermes_home: Target Hermes home (profile or default). When omitted,
+            uses :func:`hermes_constants.get_hermes_home` at call time.
+
+    Returns:
+        Path to the ``.hub`` directory.
+    """
+    home = Path(hermes_home) if hermes_home is not None else get_hermes_home()
+    skills_dir = home / "skills"
+    hub_dir = skills_dir / ".hub"
+    quarantine_dir = hub_dir / "quarantine"
+    index_cache_dir = hub_dir / "index-cache"
+    lock_file = hub_dir / "lock.json"
+    audit_log = hub_dir / "audit.log"
+    taps_file = hub_dir / "taps.json"
+
+    skills_dir.mkdir(parents=True, exist_ok=True)
+    hub_dir.mkdir(parents=True, exist_ok=True)
+    quarantine_dir.mkdir(exist_ok=True)
+    index_cache_dir.mkdir(exist_ok=True)
+    if not lock_file.exists():
+        lock_file.write_text('{"version": 1, "installed": {}}\n', encoding="utf-8")
+    if not audit_log.exists():
+        audit_log.touch()
+    if not taps_file.exists():
+        taps_file.write_text('{"taps": []}\n', encoding="utf-8")
+    return hub_dir
 
 
 def quarantine_bundle(bundle: SkillBundle) -> Path:

@@ -780,6 +780,57 @@ def run_doctor(args):
     except Exception:
         pass
 
+    # Legacy mcp.servers → mcp_servers (CLI/chat ignores nested mcp:)
+    try:
+        from hermes_constants import get_default_hermes_root
+        from hermes_cli.profile_mcp_format import (
+            migrate_all_profile_mcp_configs,
+            profiles_with_legacy_mcp,
+        )
+
+        profiles_root = get_default_hermes_root() / "profiles"
+        legacy_mcp = profiles_with_legacy_mcp(profiles_root)
+        if legacy_mcp:
+            joined = ", ".join(legacy_mcp)
+            if should_fix:
+                fixed_mcp = migrate_all_profile_mcp_configs()
+                try:
+                    import subprocess as _sp
+
+                    _repo = Path(__file__).resolve().parent.parent
+                    _sync_py = _repo / "scripts" / "rag_pipeline" / "sync_profile_mcp_from_domains.py"
+                    if _sync_py.is_file():
+                        _sp.run(
+                            [sys.executable, str(_sync_py)],
+                            cwd=str(_repo),
+                            timeout=120,
+                            check=False,
+                        )
+                except Exception:
+                    pass
+                if fixed_mcp:
+                    check_ok(
+                        f"Migrated mcp.servers → mcp_servers in: {', '.join(fixed_mcp)}"
+                    )
+                    fixed_count += len(fixed_mcp)
+                elif not legacy_mcp:
+                    check_ok("Profile MCP synced from domains.yaml")
+            else:
+                check_warn(
+                    "Profile config uses legacy mcp.servers (CLI expects mcp_servers:)",
+                    f"({joined})",
+                )
+                issues.append(
+                    "Run 'hermes doctor --fix' to migrate profile MCP config "
+                    "(or fix manually — see cli-config.yaml.example)"
+                )
+        elif profiles_root.is_dir() and any(
+            p.is_dir() for p in profiles_root.iterdir()
+        ):
+            check_ok("Profile MCP config uses mcp_servers (CLI-compatible)")
+    except Exception:
+        pass
+
     # Check config version and stale keys
     config_path = HERMES_HOME / 'config.yaml'
     if config_path.exists():
@@ -1859,6 +1910,22 @@ def run_doctor(args):
     
     _section("Skills Hub")
     hub_dir = HERMES_HOME / "skills" / ".hub"
+    if should_fix and not hub_dir.exists():
+        try:
+            from hermes_cli.skills_hub_init import ensure_skills_hub_default_and_profiles
+
+            inited = ensure_skills_hub_default_and_profiles()
+            hub_dir = HERMES_HOME / "skills" / ".hub"
+            if inited:
+                check_ok(
+                    "Skills Hub initialized",
+                    f"({', '.join(inited)})",
+                )
+                fixed_count += 1
+            else:
+                check_ok("Skills Hub directory exists")
+        except Exception as e:
+            check_warn("Skills Hub init failed", f"({e})")
     if hub_dir.exists():
         check_ok("Skills Hub directory exists")
         lock_file = hub_dir / "lock.json"
@@ -1874,8 +1941,11 @@ def run_doctor(args):
         q_count = sum(1 for d in quarantine.iterdir() if d.is_dir()) if quarantine.exists() else 0
         if q_count > 0:
             check_warn(f"{q_count} skill(s) in quarantine", "(pending review)")
-    else:
-        check_warn("Skills Hub directory not initialized", "(run: hermes skills list)")
+    elif not should_fix:
+        check_warn(
+            "Skills Hub directory not initialized",
+            "(run: hermes doctor --fix or hermes skills list)",
+        )
 
     from hermes_cli.config import get_env_value
 
@@ -1988,43 +2058,65 @@ def run_doctor(args):
             check_warn(f"{_active_memory_provider} check failed", str(_e))
 
     try:
-        from hermes_cli.profiles import list_profiles, _get_wrapper_dir, profile_exists
-        import re as _re
+        from hermes_cli.profiles import (
+            _get_wrapper_dir,
+            iter_orphan_profile_wrappers,
+            list_profiles,
+            remove_orphan_profile_wrappers,
+        )
 
+        wrapper_dir = _get_wrapper_dir()
         named_profiles = [p for p in list_profiles() if not p.is_default]
-        if named_profiles:
-            _section("Profiles")
-            check_ok(f"{len(named_profiles)} profile(s) found")
-            wrapper_dir = _get_wrapper_dir()
-            for p in named_profiles:
-                parts = []
-                if p.gateway_running:
-                    parts.append("gateway running")
-                if p.model:
-                    parts.append(p.model[:30])
-                if not (p.path / "config.yaml").exists():
-                    parts.append("⚠ missing config")
-                if not (p.path / ".env").exists():
-                    parts.append("no .env")
-                wrapper = wrapper_dir / p.name
-                if not wrapper.exists():
-                    parts.append("no alias")
-                status = ", ".join(parts) if parts else "configured"
-                check_ok(f"  {p.name}: {status}")
+        orphans = (
+            iter_orphan_profile_wrappers(wrapper_dir)
+            if wrapper_dir.is_dir()
+            else []
+        )
 
-            # Check for orphan wrappers
-            if wrapper_dir.is_dir():
-                for wrapper in wrapper_dir.iterdir():
-                    if not wrapper.is_file():
-                        continue
-                    try:
-                        content = wrapper.read_text()
-                        if "hermes -p" in content:
-                            _m = _re.search(r"hermes -p (\S+)", content)
-                            if _m and not profile_exists(_m.group(1)):
-                                check_warn(f"Orphan alias: {wrapper.name} → profile '{_m.group(1)}' no longer exists")
-                    except Exception:
-                        pass
+        if named_profiles or orphans:
+            _section("Profiles")
+            if named_profiles:
+                check_ok(f"{len(named_profiles)} profile(s) found")
+                for p in named_profiles:
+                    parts = []
+                    if p.gateway_running:
+                        parts.append("gateway running")
+                    if p.model:
+                        parts.append(p.model[:30])
+                    if not (p.path / "config.yaml").exists():
+                        parts.append("⚠ missing config")
+                    if not (p.path / ".env").exists():
+                        parts.append("no .env")
+                    wrapper = wrapper_dir / p.name
+                    if not wrapper.exists():
+                        parts.append("no alias")
+                    status = ", ".join(parts) if parts else "configured"
+                    check_ok(f"  {p.name}: {status}")
+
+            if orphans:
+                if should_fix:
+                    removed = remove_orphan_profile_wrappers(wrapper_dir)
+                    if removed:
+                        check_ok(
+                            f"Removed orphan alias(es): {', '.join(removed)}"
+                        )
+                        fixed_count += len(removed)
+                    else:
+                        for wrapper_name, profile_name in orphans:
+                            check_warn(
+                                f"Orphan alias: {wrapper_name} → profile '{profile_name}' no longer exists",
+                                "(could not remove — check permissions)",
+                            )
+                else:
+                    for wrapper_name, profile_name in orphans:
+                        check_warn(
+                            f"Orphan alias: {wrapper_name} → profile '{profile_name}' no longer exists"
+                        )
+                    issues.append(
+                        "Run 'hermes doctor --fix' to remove orphan profile aliases"
+                    )
+            elif named_profiles:
+                check_ok("No orphan profile aliases in PATH")
     except ImportError:
         pass
     except Exception:
