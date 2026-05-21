@@ -17,7 +17,8 @@
 - [x] Noob-doc `docs/RAG_TWEE_FASEN.md` (bibliotheek vs. balie, twee fasen)
 - [x] Taakbalk nacht-run: `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` (`HERMES_NONINTERACTIVE=1`)
 - [x] Upstream-update keten: `windows/upstream_sync.ps1`, `UPDATE_HERMES.bat`, `UPSTREAM_SYNC.md`
-- [x] Taakbalk `.lnk`: `cmd.exe /c` wrapper (Win11 pin); `REFRESH_TASKBAR_SHORTCUTS.bat`
+- [x] Taakbalk `.lnk`: `cmd.exe /c` wrapper (Win11 pin); `REFRESH_TASKBAR_SHORTCUTS.bat`; `FIX_TASKBAR_ICONS.bat`
+- [x] Setup bat-templates (`scripts/windows/bat-templates/`), canoniek PS1 + spiegel `windows/setup_hermes_windows.ps1`; PSScriptAnalyzer 0 op `windows\**\*.ps1` (2026-05-21, commit `c0ee9753b`)
 - [x] pytest Windows: `timeout-method=thread`; `tests/windows/test_critical_windows_scripts.py`
 
 ## Operationeel (gebruiker)

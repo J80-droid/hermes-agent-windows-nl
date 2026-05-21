@@ -2,7 +2,7 @@
 
 ## Focus
 
-**P0+P1 afgerond**; **Windows upstream** (2026-05-21): `upstream_sync.ps1` + `UPDATE_HERMES.bat` (preflight → update → post-merge; exitcode-fix; geen team-display bij fout). Taakbalk `.lnk` via `cmd.exe /c`. **Uncommitted** in repo: windows upstream/taakbalk fixes — commit na review. Open: bronnen in 7 `raw_source_files`-mappen.
+**P0+P1 afgerond**; **Windows upstream + setup** (2026-05-21): `upstream_sync.ps1`, `UPDATE_HERMES.bat`, bat-templates onder `scripts/windows/bat-templates/`, setup-spiegel `windows/setup_hermes_windows.ps1`, `FIX_TASKBAR_ICONS.bat`, PSScriptAnalyzer 0 op `windows\*.ps1`. **Git lokaal:** commits `f0de641c8`, `c0ee9753b` — nog **niet gepusht** naar `origin/main`. Open: bronnen in 7 `raw_source_files`-mappen.
 
 ## Dev vs. install-clone
 
@@ -35,4 +35,5 @@
 ## Taakbalk
 
 - `REFRESH_TASKBAR_SHORTCUTS.bat` → rechtsklik `.lnk` → vastmaken aan taakbalk (niet direct `.bat` slepen)
+- Verkeerd icoon (zwart H): `FIX_TASKBAR_ICONS.bat` of `fix_hermes_taskbar_pins.ps1`
 - Update-snelkoppeling: `Hermes - update - naar taakbalk slepen.lnk` → `UPDATE_HERMES.bat`

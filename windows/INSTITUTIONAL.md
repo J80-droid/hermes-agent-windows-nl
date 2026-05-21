@@ -23,8 +23,8 @@ Na `git pull`: draai `VERIFY_WINDOWS_CHAIN.bat` of `MANAGE_BACKUPS.bat` (stap 10
 
 **Setup (twee entrypoints, bewust):**
 
-- `SETUP_HERMES.bat` → `windows\setup_hermes_windows.ps1` (institutionele setup in repo-root-log)
-- `setup_hermes_windows.bat` → `scripts\windows\setup_hermes_windows.ps1` (generator voor launchers/icoons)
+- `SETUP_HERMES.bat` → `scripts\windows\setup_hermes_windows.ps1` (canoniek; spiegel naar `windows\` na run)
+- `setup_hermes_windows.bat` → zelfde PS1; gegenereerde `.bat`-inhoud uit `scripts\windows\bat-templates\`
 
 ## Git vs. lokaal
 
