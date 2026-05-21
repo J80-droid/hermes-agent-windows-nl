@@ -52,10 +52,11 @@ function New-HermesTaskbarShortcut {
     $iconLoc = Resolve-HermesShortcutIconLocation -IconSpec $IconSpec -RepoRoot $RepoRoot
     $WshShell = New-Object -ComObject WScript.Shell
     $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
-    # .bat direct als target: taakbalk-pin werkt; cmd.exe /c pindt alleen "Opdrachtprompt".
+    # Taakbalk (Win10/11): .bat als TargetPath laat zich vaak NIET vastpinnen bij slepen.
+    # cmd.exe /c + pad naar .bat werkt wel (zelfde truc als create_shortcut.ps1).
     if ($LaunchBatPath -match '\.bat$') {
-        $Shortcut.TargetPath = $LaunchBatPath
-        $Shortcut.Arguments = ''
+        $Shortcut.TargetPath = "$env:SystemRoot\System32\cmd.exe"
+        $Shortcut.Arguments = "/c `"$LaunchBatPath`""
     } else {
         $Shortcut.TargetPath = 'cmd.exe'
         $Shortcut.Arguments = "/c `"$LaunchBatPath`""

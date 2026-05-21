@@ -46,7 +46,7 @@ Daarna RAG: `windows\scripts\install_rag_extras.ps1` (pip `[rag]` + MCP), `windo
 
 **Eén checkout:** start altijd via `windows\launch_hermes.bat` in **deze** dev-repo. Diagnose: `windows\scripts\which_hermes_repo.ps1`. De map `%LOCALAPPDATA%\hermes\hermes-agent` (Nous `origin`) is een **andere** clone — niet mengen met fork/RAG zonder bewuste keuze.
 
-**Nous-updates:** `windows\hermes_update.bat` zet `HERMES_UPDATE_FROM_UPSTREAM=1` → merge **NousResearch `upstream/main`**, daarna deps. Zie **[UPSTREAM_SYNC.md](UPSTREAM_SYNC.md)**.
+**Nous-updates:** `windows\UPDATE_HERMES.bat` (of `hermes_update.bat`) → `upstream_sync.ps1 -Phase Update`: preflight, `hermes update` (upstream merge + deps), RAG-postinstall. Zie **[UPSTREAM_SYNC.md](UPSTREAM_SYNC.md)**. Niet `launch_hermes.bat update` alleen (geen preflight).
 
 ## P0+P1-pipeline
 

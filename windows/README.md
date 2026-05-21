@@ -17,7 +17,8 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | Hermes starten | `launch_hermes.bat` / `run_hermes.ps1` |
 | RAG-index bijwerken | `scripts/update_knowledge.bat` |
 | Doctor / fixes | `DOCTOR_FIX.bat` |
-| Update fork | `UPDATE_HERMES.bat` / `hermes update` |
+| **Update fork (Nous upstream)** | `UPDATE_HERMES.bat` of `hermes_update.bat` (zelfde keten) |
+| Alleen upstream-status | `powershell -File windows\upstream_sync.ps1 -Phase Preflight` |
 
 ## RAG (multi-domein)
 
@@ -50,7 +51,8 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 | ---- | ------ |
 | Backups | `MANAGE_BACKUPS.bat` |
 | Lokale assets herstellen | `RESTORE_FROM_BACKUP.bat` |
-| Taakbalk-snelkoppelingen vernieuwen | `REFRESH_TASKBAR_SHORTCUTS.bat` |
+| Taakbalk-snelkoppelingen vernieuwen | `REFRESH_TASKBAR_SHORTCUTS.bat` (`.lnk` → `cmd.exe /c` voor taakbalk-pin) |
+| Nous upstream-merge (uitleg) | `UPSTREAM_SYNC.md` |
 | Sentence-transformers cache warmen | `scripts/warm_sentence_transformers_cache.bat` |
 
 ## Tests

@@ -37,9 +37,39 @@ git fetch upstream
 
 ---
 
-## Standaard sync: `windows\hermes_update.bat`
+## Standaard sync: `windows\UPDATE_HERMES.bat` of `hermes_update.bat`
 
-Het batchbestand zet **`HERMES_UPDATE_FROM_UPSTREAM=1`** en roept `hermes update` aan. Dat doet:
+**Eén commando** — preflight zit **in** `upstream_sync.ps1` (`-Phase Update`, default):
+
+```cmd
+windows\UPDATE_HERMES.bat
+```
+
+| Stap | In script? |
+| ---- | ---------- |
+| Schone `git status` + `git fetch upstream` + ahead/behind | Ja (preflight) |
+| Waarschuwing bij achterstand >20 + J/N | Ja |
+| `hermes update` (merge upstream + deps) | Ja |
+| RAG `[rag]` + `VERIFY_WINDOWS_CHAIN` | Ja (post-merge) |
+| Merge-conflicten oplossen | **Nee** (handmatig) |
+| Waarschuwing tegen `git reset --hard` | Ja (banner bij Update) |
+| `git push` / `--mcp-test` | Optioneel (flags hieronder) |
+
+Optionele flags (doorgeven aan `.bat` of ps1):
+
+```cmd
+powershell -File windows\upstream_sync.ps1 -Phase Update -McpTest -Push
+```
+
+Alleen status (geen update):
+
+```cmd
+powershell -File windows\upstream_sync.ps1 -Phase Preflight
+```
+
+`hermes_update.bat` = dezelfde keten als `UPDATE_HERMES.bat` (niet meer alleen `launch_hermes update` zonder preflight).
+
+`hermes update` (CLI) met **`HERMES_UPDATE_FROM_UPSTREAM=1`** doet alleen git merge + deps — preflight/post-merge alleen via bovenstaande bats. Dat doet:
 
 1. **`git fetch upstream`** + **`git merge upstream/main`** (NousResearch — niet alleen fork `origin`)
 2. Python-afhankelijkheden opnieuw installeren (zoals `hermes update` altijd deed)
@@ -83,7 +113,7 @@ Daarna optioneel nog `windows\hermes_update.bat` voor deps.
 
 | Situatie | Gedrag |
 | -------- | ------ |
-| **`windows\hermes_update.bat`** | Altijd **`upstream/main`** (NousResearch) mergen, daarna deps |
+| **`windows\UPDATE_HERMES.bat`** / **`hermes_update.bat`** | Zelfde keten: preflight + upstream merge + RAG-postinstall |
 | **`hermes update` zonder env-var** | Nog steeds **`origin`** (fork) — zoals upstream Hermes |
 | Eigen RAG-commits | Blijven behouden via **merge** (niet `reset --hard` op upstream) |
 | Conflicten bij merge | Update stopt — handmatig oplossen (`UPSTREAM_SYNC.md` conflict-tabel) |
@@ -155,6 +185,73 @@ Uitvoer `A  B` (twee getallen, gescheiden door spatie):
 - **B** = commits op upstream die jij nog niet hebt (**achterstand op Nous**).
 
 Grote **B** → plan een merge.
+
+---
+
+## Voorkomen van zware conflicten (routine)
+
+Je fork **deelt** de codebase met Nous; RAG/Windows blijft **jouw** laag. Conflicten ontstaan vooral als je **maanden** niet merge’t en Nous intussen `pyproject.toml`, `run_tests.sh` of `uv.lock` wijzigt.
+
+### 1. Vaak klein mergen (belangrijkste regel)
+
+| Frequentie | Actie |
+| -------- | ----- |
+| **Wekelijks** (of na elke Nous-release) | `windows\hermes_update.bat` |
+| **Vóór grote eigen wijzigingen** | Eerst upstream binnenhalen, dan RAG/features bouwen |
+| **B > 20** (zie “Snelle status”) | Merge plannen — niet wachten tot 70+ commits |
+
+Kleine merges: vaak **geen** conflicten of alleen `uv.lock`. Grote merges: vrijwel altijd 2–4 bestanden.
+
+### 2. Vaste “fork-zone” — niet wijzigen tenzij nodig
+
+Houd RAG en Windows **in bekende paden** (zie conflict-tabel hierboven). Wijzig **niet** in upstream-kern tenzij bewust:
+
+- `hermes_cli/main.py`, `gateway/**` → liever upstream volgen
+- `scripts/run_tests.sh` / test-infra → volg Nous; fork alleen `tests/rag_pipeline/` + pytest-markers in `pyproject.toml`
+
+Nieuwe fork-logica: liever **nieuwe bestanden** (`scripts/rag_pipeline/*`, `windows/scripts/*`) dan grote edits midden in upstream-bestanden.
+
+### 3. Vóór `hermes update`: 30 seconden check
+
+```cmd
+cd D:\A.I\APPS\Hermes_agent_WS\hermes-agent
+git status
+git fetch upstream
+git rev-list --left-right --count HEAD...upstream/main
+```
+
+- **`git status` niet schoon** → eerst committen of stashen; update kan anders falen of verwarren.
+- **Grote B** → reken op conflicten; lees conflict-tabel (pyproject, run_tests, uv.lock).
+
+### 4. Na elke geslaagde merge
+
+1. `git push origin main` (fork op GitHub = origin voor `hermes update`)
+2. `pip install -e ".[rag]"` of `windows\scripts\install_rag_extras.ps1`
+3. Rooktest legal/core MCP (`update_knowledge.bat --mcp-test`)
+4. Nieuwe Hermes-sessie
+
+### 5. Wat je niet moet doen
+
+| Niet doen | Waarom |
+| --------- | ------ |
+| `git reset --hard upstream/main` | Wist RAG-fork, MCP-sync, docs NL |
+| Alleen GitHub “Sync fork” zonder lokale test | OK als daarna lokaal `git pull` + RAG-check |
+| Maanden alleen `hermes update` zonder te committen/pushen | Lokale en remote fork lopen uiteen |
+| Conflicten in `scripts/rag_pipeline/**` blind “theirs” kiezen | Verliest ingest/MCP |
+
+Bij `UPDATE_HERMES.bat` / `-Phase Update`: vaste **banner** tegen `reset --hard` (geen detectie achteraf). Overslaan: `HERMES_SKIP_RESET_WARNING=1` of `windows\SKIP_HARD_RESET_WARNING`.
+
+### 6. Optioneel: merge-driver voor lockfile (gevorderd)
+
+Bij herhaaldelijk `uv.lock`-conflict na merge:
+
+```cmd
+git checkout --theirs uv.lock
+uv lock
+git add uv.lock
+```
+
+Daarna RAG-deps opnieuw: `pip install -e ".[rag]"`.
 
 ---
 

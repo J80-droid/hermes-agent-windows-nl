@@ -13,6 +13,14 @@ if %ERR% neq 0 (
   exit /b %ERR%
 )
 echo.
-echo O.a. Start Hermes, Backup, Herstel lokale bestanden, Update, RAG kennis bijwerken — sleep de .lnk uit windows\ naar de taakbalk.
+echo Snelkoppelingen staan in: %~dp0
+echo.
+echo Taakbalk vastzetten ^(Windows 11^):
+echo   1. Sleep "Hermes - update - naar taakbalk slepen.lnk" naar Bureaublad
+echo   2. Rechtsklik op de .lnk -^> "Vastmaken aan taakbalk"
+echo   Of: sleep naar Start, dan rechtsklik -^> Vastmaken aan taakbalk
+echo.
+echo Werkt slepen direct naar taakbalk niet? Gebruik rechtsklik-pin ^(cmd.exe-wrapper^).
+pause
 pause
 exit /b 0

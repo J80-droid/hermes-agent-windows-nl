@@ -16,6 +16,9 @@
 - [x] Windows launchers (`update_knowledge.bat` / `.ps1`, `windows/scripts/rag/`)
 - [x] Noob-doc `docs/RAG_TWEE_FASEN.md` (bibliotheek vs. balie, twee fasen)
 - [x] Taakbalk nacht-run: `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` (`HERMES_NONINTERACTIVE=1`)
+- [x] Upstream-update keten: `windows/upstream_sync.ps1`, `UPDATE_HERMES.bat`, `UPSTREAM_SYNC.md`
+- [x] Taakbalk `.lnk`: `cmd.exe /c` wrapper (Win11 pin); `REFRESH_TASKBAR_SHORTCUTS.bat`
+- [x] pytest Windows: `timeout-method=thread`; `tests/windows/test_critical_windows_scripts.py`
 
 ## Operationeel (gebruiker)
 

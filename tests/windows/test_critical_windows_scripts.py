@@ -9,12 +9,23 @@ CRITICAL = [
     "windows/restore_from_backup.ps1",
     "windows/MANAGE_BACKUPS.bat",
     "windows/RESTORE_FROM_BACKUP.bat",
+    "windows/UPDATE_HERMES.bat",
+    "windows/upstream_sync.ps1",
+    "windows/UPSTREAM_SYNC.md",
     "windows/sync_local_assets_to_backup.ps1",
     "windows/WindowsLocalAssetsManifest.ps1",
     "windows/verify_windows_script_chain.ps1",
     "windows/scripts/rag_ingest_perf_defaults.ps1",
     "pyproject.toml",
 ]
+
+
+def test_update_hermes_uses_upstream_sync():
+    bat = (REPO / "windows/UPDATE_HERMES.bat").read_text(encoding="utf-8")
+    assert "upstream_sync.ps1" in bat
+    assert "-Phase Update" in bat
+    assert "gestopt met code" in bat.lower()
+    assert "goto :team_display" in bat.lower()
 
 
 def test_critical_windows_files_exist():

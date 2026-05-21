@@ -2,7 +2,7 @@
 
 ## Focus
 
-**P0+P1 institutioneel afgerond** (2026-05-21): legal + core MCP OK; Kanban `t_9f206226` **done**. Bulk `--ingest-remaining` slaat lege domeinen over (`run_domains_ingest.py --ingest-remaining`). Enige open actie: bronbestanden in 7 `raw_source_files`-mappen.
+**P0+P1 afgerond**; **Windows upstream** (2026-05-21): `upstream_sync.ps1` + `UPDATE_HERMES.bat` (preflight → update → post-merge; exitcode-fix; geen team-display bij fout). Taakbalk `.lnk` via `cmd.exe /c`. **Uncommitted** in repo: windows upstream/taakbalk fixes — commit na review. Open: bronnen in 7 `raw_source_files`-mappen.
 
 ## Dev vs. install-clone
 
@@ -21,6 +21,7 @@
 | RAG env | `docs/RAG_INSTITUTIONAL_ENV.md` |
 | Hermes start (bat) | `../../HERMES_START.md` |
 | Windows | `windows/README.md` |
+| Nous upstream | `windows/UPSTREAM_SYNC.md` |
 | Voortgang | `memory-bank/progress.md` |
 
 ## Volgende stappen (volgorde)
@@ -33,5 +34,5 @@
 
 ## Taakbalk
 
-- Regenereer `.lnk`: `windows\create_taskbar_shortcuts.ps1`
-- RAG-snelkoppeling wijst naar `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` (geen J/N-prompt)
+- `REFRESH_TASKBAR_SHORTCUTS.bat` → rechtsklik `.lnk` → vastmaken aan taakbalk (niet direct `.bat` slepen)
+- Update-snelkoppeling: `Hermes - update - naar taakbalk slepen.lnk` → `UPDATE_HERMES.bat`

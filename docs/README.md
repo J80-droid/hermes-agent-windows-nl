@@ -53,6 +53,7 @@ flowchart TB
 ## Onderhoud
 
 - **Windows backup/script-keten:** `windows\VERIFY_WINDOWS_CHAIN.bat` (na pull of vóór backup)
+- **Nous upstream-update:** `windows\UPDATE_HERMES.bat` (preflight + merge + RAG; zie `windows\UPSTREAM_SYNC.md`)
 - **P0+P1-pipeline (institutioneel):** `windows\scripts\institutional_p0_p1.bat`  
   Sync MCP → doctor --fix → MCP-test alle domeinen → legal rooktest.  
   Opties: `--ingest-remaining` (7 domeinen; **lege bronmappen worden overgeslagen**), `--kanban` (na geslaagde rooktest).

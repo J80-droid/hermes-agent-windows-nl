@@ -10,6 +10,9 @@ function Get-HermesWindowsLocalAssetsManifest {
         'MANAGE_BACKUPS.bat',
         'RESTORE_FROM_BACKUP.bat',
         'UPDATE_HERMES.bat',
+        'upstream_sync.ps1',
+        'hermes_update.bat',
+        'UPSTREAM_SYNC.md',
         'APPLY_TEAM_DISPLAY.bat',
         'SETUP_HERMES.bat',
         'HERMES_SETUP_WIZARD.bat',
@@ -106,6 +109,8 @@ function Get-HermesCriticalWindowsRepoFiles {
         'windows\sync_local_assets_to_backup.ps1',
         'windows\restore_local_assets.ps1',
         'windows\scripts\rag_ingest_perf_defaults.ps1',
+        'windows\upstream_sync.ps1',
+        'windows\UPSTREAM_SYNC.md',
         'pyproject.toml'
     )
 }

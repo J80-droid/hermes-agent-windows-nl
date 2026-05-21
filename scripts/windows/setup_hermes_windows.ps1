@@ -307,15 +307,14 @@ function Write-HermesUpdateCmdBat {
     $bat = @'
 @echo off
 setlocal EnableExtensions
-rem Altijd NousResearch upstream/main (HERMES_UPDATE_FROM_UPSTREAM=1)
-set "HERMES_UPDATE_FROM_UPSTREAM=1"
+rem Doorverwijzing naar UPDATE_HERMES.bat (preflight + upstream_sync.ps1 -Phase Update)
 cd /d "%~dp0.."
-if not exist "%~dp0launch_hermes.bat" (
-  echo [ERROR] launch_hermes.bat ontbreekt in windows\
+if not exist "%~dp0UPDATE_HERMES.bat" (
+  echo [ERROR] UPDATE_HERMES.bat ontbreekt in windows\
   pause
   exit /b 1
 )
-call "%~dp0launch_hermes.bat" update %*
+call "%~dp0UPDATE_HERMES.bat" %*
 exit /b %ERRORLEVEL%
 '@
     if ($WhatIf) {
