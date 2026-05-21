@@ -37,6 +37,16 @@ git fetch upstream
 
 ---
 
+## Taakbalk-icoon na update
+
+Na een geslaagde update draait de keten **`fix_hermes_taskbar_pins.ps1`** (`.lnk` met wit monogram + icooncache). Blijft de UPDATE-pin een zwart **H**?
+
+1. **Losmaken** van de oude pin op de taakbalk (niet `UPDATE_HERMES.bat` direct slepen — dat geeft het cmd-H).
+2. **`windows\Hermes - update - naar taakbalk slepen.lnk`** → rechtsklik → **Vastmaken aan taakbalk**.
+3. Of: **`FIX_TASKBAR_ICONS.bat`**.
+
+Andere Hermes-iconen gebruiken gekleurde `.ico`-varianten; alleen update gebruikt `hermes_taskbar_white.ico`.
+
 ## Standaard sync: `windows\UPDATE_HERMES.bat` of `hermes_update.bat`
 
 **Eén commando** — preflight zit **in** `upstream_sync.ps1` (`-Phase Update`, default):

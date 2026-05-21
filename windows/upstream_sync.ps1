@@ -262,6 +262,15 @@ try {
                 }
             }
 
+            if ($script:UpstreamExitCode -eq 0) {
+                $fixPins = Join-Path $repo 'windows\fix_hermes_taskbar_pins.ps1'
+                if (Test-Path -LiteralPath $fixPins) {
+                    Write-Step "Taakbalk-iconen (update .lnk + icooncache)..."
+                    & powershell -NoProfile -ExecutionPolicy Bypass -File $fixPins -RepoRoot $repo -Quiet
+                    Write-Ok "Taakbalk-snelkoppelingen bijgewerkt (losmaken + opnieuw vastmaken als UPDATE nog H toont)."
+                }
+            }
+
             if ($script:UpstreamExitCode -eq 0 -and $Push) {
                 $aheadOrigin = (git rev-list --count origin/main..HEAD 2>$null)
                 if ($LASTEXITCODE -eq 0 -and [int]$aheadOrigin -gt 0) {

@@ -1,4 +1,5 @@
 ﻿# Vernieuwt Hermes-taakbalk-pins: icoon + cmd.exe-wrapper (Windows negeert IconLocation bij .bat-target).
+[CmdletBinding(SupportsShouldProcess)]
 param(
     [string]$RepoRoot = '',
     [switch]$Quiet
@@ -18,7 +19,47 @@ if (-not (Test-Path -LiteralPath $createPs1)) {
     exit 1
 }
 
+. (Join-Path $scriptDir 'HermesIconGeneratorInvoke.ps1')
+. (Join-Path $scriptDir 'launcher_config.ps1')
+
 & $createPs1 -RepoRoot $RepoRoot -OutDir $scriptDir -Quiet:$Quiet
+
+$startBatRel = Get-HermesStartLauncherRelativePath -RepoRoot $RepoRoot
+$startBatFull = Join-Path $RepoRoot $startBatRel
+
+function Test-HermesTaskbarWhiteIcoStale {
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return $true }
+    try {
+        return ((Get-Item -LiteralPath $Path).Length -lt 12000)
+    } catch {
+        return $true
+    }
+}
+
+function Resolve-HermesUpdateShortcutIcon {
+    param([string]$WindowsDir)
+    $white = Join-Path $WindowsDir 'hermes_taskbar_white.ico'
+    if ((Test-Path -LiteralPath $white) -and -not (Test-HermesTaskbarWhiteIcoStale -Path $white)) {
+        return (Get-HermesWindowsShellIcoLocation -IcoPath $white)
+    }
+    $orange = Join-Path $WindowsDir 'hermes_logo_update.ico'
+    if (Test-Path -LiteralPath $orange) {
+        return (Get-HermesWindowsShellIcoLocation -IcoPath $orange)
+    }
+    $main = Join-Path $WindowsDir 'hermes_logo.ico'
+    if (Test-Path -LiteralPath $main) {
+        return (Get-HermesWindowsShellIcoLocation -IcoPath $main)
+    }
+    return $null
+}
+
+function Clear-HermesShellIconCache {
+    $ie4u = Join-Path $env:SystemRoot 'System32\ie4uinit.exe'
+    if (-not (Test-Path -LiteralPath $ie4u)) { return }
+    Start-Process -FilePath $ie4u -ArgumentList '-show' -WindowStyle Hidden -ErrorAction SilentlyContinue | Out-Null
+    Start-Process -FilePath $ie4u -ArgumentList '-ClearIconCache' -WindowStyle Hidden -ErrorAction SilentlyContinue | Out-Null
+}
 
 function Repair-HermesBatShortcut {
     [CmdletBinding(SupportsShouldProcess)]
@@ -28,19 +69,69 @@ function Repair-HermesBatShortcut {
     if (-not (Test-Path -LiteralPath $BatPath)) { return }
     $w = New-Object -ComObject WScript.Shell
     $s = $w.CreateShortcut($LnkPath)
-    if ($s.TargetPath -notmatch '\.bat$') { return }
+    # Altijd cmd-wrapper + icoon zetten (ook als Target al cmd.exe is — anders blijft IconLocation ongewijzigd).
     $s.TargetPath = Join-Path $env:SystemRoot 'System32\cmd.exe'
     $s.Arguments = '/c "' + $BatPath + '"'
     $s.WorkingDirectory = $RepoRoot
-    if ($IconPath -and (Test-Path -LiteralPath $IconPath)) {
-        $s.IconLocation = $IconPath + ',0'
+    if ($IconPath) {
+        if ($IconPath -match ',\d+$') {
+            $s.IconLocation = $IconPath
+        } elseif (Test-Path -LiteralPath $IconPath) {
+            $s.IconLocation = Get-HermesWindowsShellIcoLocation -IcoPath $IconPath
+        }
     }
     $s.Save()
 }
 
 $whiteIco = Join-Path $scriptDir 'hermes_taskbar_white.ico'
-Repair-HermesBatShortcut -LnkPath (Join-Path $scriptDir 'Hermes - setup Windows - naar taakbalk slepen.lnk') `
-    -BatPath (Join-Path $scriptDir 'setup_hermes_windows.bat') -RepoRoot $RepoRoot -IconPath $whiteIco
+$updateIconLoc = Resolve-HermesUpdateShortcutIcon -WindowsDir $scriptDir
+
+$batIconPairs = @(
+    @{
+        LnkLeaf  = 'Hermes - update - naar taakbalk slepen.lnk'
+        BatLeaf  = 'UPDATE_HERMES.bat'
+        IconPath = $updateIconLoc
+    },
+    @{
+        LnkLeaf  = 'Hermes - setup Windows - naar taakbalk slepen.lnk'
+        BatLeaf  = 'setup_hermes_windows.bat'
+        IconPath = $whiteIco
+    },
+    @{
+        LnkLeaf  = 'Start Hermes - naar taakbalk slepen.lnk'
+        BatLeaf  = $startBatFull
+        IconPath = (Join-Path $scriptDir 'hermes_logo.ico')
+    },
+    @{
+        LnkLeaf  = 'Hermes - backup - naar taakbalk slepen.lnk'
+        BatLeaf  = 'MANAGE_BACKUPS.bat'
+        IconPath = (Join-Path $scriptDir 'hermes_logo_backup.ico')
+    },
+    @{
+        LnkLeaf  = 'Hermes - lokale bestanden herstellen - naar taakbalk slepen.lnk'
+        BatLeaf  = 'restore_local_assets.bat'
+        IconPath = (Join-Path $scriptDir 'hermes_logo_restore.ico')
+    },
+    @{
+        LnkLeaf  = 'Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk'
+        BatLeaf  = 'RAG_KNOWLEDGE_UPDATE_NIGHT.bat'
+        IconPath = (Join-Path $scriptDir 'hermes_logo.ico')
+    }
+)
+
+foreach ($pair in $batIconPairs) {
+    $lnk = Join-Path $scriptDir $pair.LnkLeaf
+    if (-not (Test-Path -LiteralPath $lnk)) { continue }
+    if ($pair.BatLeaf -and (Test-Path -LiteralPath $pair.BatLeaf)) {
+        Repair-HermesBatShortcut -LnkPath $lnk -BatPath $pair.BatLeaf -RepoRoot $RepoRoot -IconPath $pair.IconPath
+    } elseif ($pair.IconPath -and (Test-Path -LiteralPath $pair.IconPath)) {
+        $w = New-Object -ComObject WScript.Shell
+        $s = $w.CreateShortcut($lnk)
+        $s.IconLocation = Get-HermesWindowsShellIcoLocation -IcoPath $pair.IconPath
+        $s.Save()
+    }
+}
+
 $openBat = Join-Path $scriptDir 'OPEN_SETUP.bat'
 if (Test-Path -LiteralPath $openBat) {
     Repair-HermesBatShortcut -LnkPath (Join-Path $scriptDir 'Hermes - Open Setup - naar taakbalk slepen.lnk') `
@@ -83,18 +174,15 @@ if (Test-Path -LiteralPath $pinnedDir) {
     Write-Host '  [INFO] Geen map User Pinned\TaskBar - pin handmatig via rechtsklik.' -ForegroundColor Gray
 }
 
-# Icooncache verversen (oude H-stub of cmd-icoon verdwijnt soms pas na dit).
-$ie4u = Join-Path $env:SystemRoot 'System32\ie4uinit.exe'
-if (Test-Path -LiteralPath $ie4u) {
-    Start-Process -FilePath $ie4u -ArgumentList '-show' -WindowStyle Hidden -ErrorAction SilentlyContinue | Out-Null
-}
+Clear-HermesShellIconCache
 
 if (-not $Quiet) {
     Write-Host ''
-    Write-Host 'Als het icoon nog het oude H toont:' -ForegroundColor Cyan
-    Write-Host '  1. Pin losmaken (rechtsklik taakbalk -> Losmaken)' -ForegroundColor Gray
+    Write-Host 'Als UPDATE nog een zwart H toont (andere Hermes-iconen wel goed):' -ForegroundColor Cyan
+    Write-Host '  1. Rechtsklik de UPDATE-pin op de taakbalk -> Losmaken van de taakbalk' -ForegroundColor Gray
     Write-Host '  2. windows\Hermes - update - naar taakbalk slepen.lnk -> rechtsklik -> Vastmaken aan taakbalk' -ForegroundColor Gray
-    Write-Host '  3. Of: dit script opnieuw draaien na REFRESH_TASKBAR_SHORTCUTS.bat' -ForegroundColor Gray
+    Write-Host '     (niet UPDATE_HERMES.bat direct slepen — dan blijft het cmd-H)' -ForegroundColor Gray
+    Write-Host '  3. Icooncache is zojuist ververst (ie4uinit); anders: FIX_TASKBAR_ICONS.bat opnieuw' -ForegroundColor Gray
 }
 
 exit 0
