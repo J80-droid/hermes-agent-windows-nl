@@ -23,7 +23,17 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 
 **Taakbalk:** pin altijd via `Hermes - * - naar taakbalk slepen.lnk` in `windows\`, niet door `.bat` te slepen (cmd-H-icoon).
 
-**Iconen per rol:** goud = start/setup/backup/RAG (`hermes_logo.ico`), oranje = update (`hermes_logo_update.ico`), cyaan = restore (`hermes_logo_restore.ico`). Geen `hermes_taskbar_white.ico` in `.lnk` (Explorer toont vaak H-stub).
+**Iconen per rol (`.lnk` → `IconLocation`):**
+
+| Rol | Bestand | Kleur |
+|-----|---------|-------|
+| Start, Setup | `hermes_logo.ico` | Goud (origineel) |
+| Update | `hermes_logo_update.ico` | Oranje |
+| Backup | `hermes_logo_backup.ico` | Roze/magenta |
+| Restore | `hermes_logo_restore.ico` | Cyaan |
+| RAG nacht | `hermes_logo.ico` | Goud |
+
+Geen `hermes_taskbar_white.ico` in snelkoppelingen (H-stub in Explorer). Na wijziging: `FIX_TASKBAR_ICONS.bat` + F5 in Explorer.
 
 ## Eenmalig na oude pin (UPDATE toont H)
 

@@ -125,8 +125,9 @@ function Get-HermesTaskbarRoleIconPath {
     $leaf = switch ($Role) {
         'Update' { 'hermes_logo_update.ico' }
         'Restore' { 'hermes_logo_restore.ico' }
-        'Backup' { 'hermes_logo.ico' }
-        default { 'hermes_logo.ico' }
+        'Backup' { 'hermes_logo_backup.ico' }
+        'Rag'    { 'hermes_logo.ico' }
+        default  { 'hermes_logo.ico' }
     }
     $path = Join-Path $WindowsDir $leaf
     if (Test-Path -LiteralPath $path) { return $path }
