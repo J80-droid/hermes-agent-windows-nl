@@ -78,34 +78,28 @@ function Write-MinimalLaunchBat {
     Set-Content -LiteralPath $path -Value $bat -Encoding ASCII
 }
 
-function Get-HermesWhiteShortcutIcon {
+function Get-HermesDesktopShortcutIcon {
     param(
         [Parameter(Mandatory)][string]$WindowsDir,
         [string]$RepoRoot = ''
     )
-    $ico = Join-Path $WindowsDir "hermes_taskbar_white.ico"
-    if ($WhatIfPreference) {
-        return ($ico + ",0")
-    }
     $icoGen = Join-Path $WindowsDir 'tools/generate_colored_hermes_icons.py'
     if ((Test-Path -LiteralPath $icoGen) -and $RepoRoot) {
-        $invoke = Join-Path $WindowsDir "HermesIconGeneratorInvoke.ps1"
+        $invoke = Join-Path $WindowsDir 'HermesIconGeneratorInvoke.ps1'
         if (Test-Path -LiteralPath $invoke) {
             . $invoke
-            $stale = -not (Test-Path -LiteralPath $ico) -or ((Get-Item -LiteralPath $ico).Length -lt 12000)
-            if ($stale -or (Test-HermesWindowsIconRegenNeeded -RepoRoot $RepoRoot -WindowsDir $WindowsDir)) {
+            if (Test-HermesWindowsIconRegenNeeded -RepoRoot $RepoRoot -WindowsDir $WindowsDir) {
                 [void](Invoke-HermesColoredIconsFromPng -IconGeneratorPy $icoGen -Quiet)
-            }
-            if ((Test-Path -LiteralPath $ico) -and (Get-Item -LiteralPath $ico).Length -ge 12000) {
-                return ($ico + ",0")
             }
         }
     }
-    $fallback = Join-Path $WindowsDir "hermes_logo_update.ico"
-    if (Test-Path -LiteralPath $fallback) { return ($fallback + ",0") }
-    $fallback = Join-Path $WindowsDir "hermes_logo.ico"
-    if (Test-Path -LiteralPath $fallback) { return ($fallback + ",0") }
-    Write-Warning 'Witte .ico ontbreekt - draai: python windows/tools/generate_colored_hermes_icons.py'
+    $main = Join-Path $WindowsDir 'hermes_logo.ico'
+    if (Test-Path -LiteralPath $main) {
+        if ($WhatIfPreference) { return ($main + ',0') }
+        . (Join-Path $WindowsDir 'HermesIconGeneratorInvoke.ps1')
+        return (Get-HermesWindowsShellIcoLocation -IcoPath $main)
+    }
+    Write-Warning 'hermes_logo.ico ontbreekt - draai: python windows/tools/generate_colored_hermes_icons.py'
     return ($env:SystemRoot + '\System32\imageres.dll,1')
 }
 
@@ -218,7 +212,7 @@ if (-not $WhatIfPreference) {
     New-Item -ItemType Directory -Path $win -Force | Out-Null
 }
 
-$iconLoc = Get-HermesWhiteShortcutIcon -WindowsDir $win -RepoRoot $root
+$iconLoc = Get-HermesDesktopShortcutIcon -WindowsDir $win -RepoRoot $root
 
 Write-WindowsSetupCmdBat -WindowsDir $win -WhatIf:$WhatIfPreference
 if (-not $WhatIfPreference) { Write-Host ('[OK] ' + (Join-Path $win 'setup_hermes_windows.bat')) -ForegroundColor Green }
@@ -323,7 +317,7 @@ if ((Test-Path -LiteralPath $ragExtras) -and -not $WhatIfPreference) {
 }
 
 Write-Host ""
-Write-Host 'Klaar: windows\setup_hermes_windows.bat + Hermes Open Setup.lnk + Hermes - * - naar taakbalk slepen.lnk (wit icoon).' -ForegroundColor Cyan
+Write-Host 'Klaar: windows\setup_hermes_windows.bat + taakbalk-.lnk (goud/oranje/cyaan via create_taskbar_shortcuts.ps1).' -ForegroundColor Cyan
 Write-Host 'Tip: bij verkeerd taakbalk-icoon: windows\FIX_TASKBAR_ICONS.bat' -ForegroundColor DarkGray
 
 # Canoniek script staat in scripts\windows\; SETUP_HERMES.bat en launch_hermes.bat lezen windows\ kopie.

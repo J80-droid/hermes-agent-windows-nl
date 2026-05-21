@@ -19,7 +19,17 @@
 | Verify | `windows\VERIFY_WINDOWS_CHAIN.bat` | Controleert alle `.bat` → `.ps1` + kritieke bestanden |
 | RAG perf | `windows\scripts\rag_ingest_perf_defaults.ps1` | **Niet** `windows\` root (sync kopieert naar `_local_assets\scripts\`) |
 
-Na `git pull`: draai `VERIFY_WINDOWS_CHAIN.bat` of `MANAGE_BACKUPS.bat` (stap 10/10 verify). Bij oude clone: `restore_local_assets.bat`.
+Na `git pull` of op een **nieuwe machine**:
+
+1. `windows\POST_GIT_PULL.bat` (verify + taakbalk-iconen + icooncache)
+2. Of handmatig: `VERIFY_WINDOWS_CHAIN.bat` en `FIX_TASKBAR_ICONS.bat`
+3. Bij oude clone zonder windows-bestanden: `restore_local_assets.bat`
+
+**Eenmalig** bij zwart **H** op UPDATE-pin: pin losmaken → `Hermes - update - naar taakbalk slepen.lnk` opnieuw vastmaken (niet `.bat` slepen). Daarna doet elke `UPDATE_HERMES.bat` dit automatisch.
+
+User-data docs (`%USERPROFILE%\data\STATUS.md`, `RECOVERY.md`) en profiel-Kanban: zie **`docs/USER_DATA_OPERATIONS.md`** (synchroon houden met repo-entrypoints).
+
+**IDE:** `.vscode/settings.json` in repo-root (PSScriptAnalyzer → `windows/PSScriptAnalyzerSettings.psd1`). Workspace-parent: `docs/IDE_VSCODE_SETTINGS.example.json`.
 
 **Setup (twee entrypoints, bewust):**
 

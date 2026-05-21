@@ -110,3 +110,39 @@ function Test-HermesWindowsIconRegenNeeded {
     }
     return $false
 }
+
+function Get-HermesTaskbarRoleIconPath {
+    <#
+    .SYNOPSIS
+        Pad naar .ico per taakbalk-rol (geen hermes_taskbar_white; Shell/Explorer toont die vaak als H-stub).
+    #>
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Start', 'Setup', 'OpenSetup', 'Update', 'Backup', 'Restore', 'Rag')]
+        [string]$Role,
+        [Parameter(Mandatory)][string]$WindowsDir
+    )
+    $leaf = switch ($Role) {
+        'Update' { 'hermes_logo_update.ico' }
+        'Restore' { 'hermes_logo_restore.ico' }
+        'Backup' { 'hermes_logo.ico' }
+        default { 'hermes_logo.ico' }
+    }
+    $path = Join-Path $WindowsDir $leaf
+    if (Test-Path -LiteralPath $path) { return $path }
+    $main = Join-Path $WindowsDir 'hermes_logo.ico'
+    if (Test-Path -LiteralPath $main) { return $main }
+    return $null
+}
+
+function Get-HermesTaskbarRoleIconLocation {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('Start', 'Setup', 'OpenSetup', 'Update', 'Backup', 'Restore', 'Rag')]
+        [string]$Role,
+        [Parameter(Mandatory)][string]$WindowsDir
+    )
+    $path = Get-HermesTaskbarRoleIconPath -Role $Role -WindowsDir $WindowsDir
+    if (-not $path) { return $null }
+    return (Get-HermesWindowsShellIcoLocation -IcoPath $path)
+}

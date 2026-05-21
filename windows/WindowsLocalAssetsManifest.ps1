@@ -22,6 +22,7 @@ function Get-HermesWindowsLocalAssetsManifest {
         'CREATE_DESKTOP_SHORTCUT.bat',
         'REFRESH_TASKBAR_SHORTCUTS.bat',
         'FIX_TASKBAR_ICONS.bat',
+        'POST_GIT_PULL.bat',
         'fix_hermes_taskbar_pins.ps1',
         'reset_hermes_memory.bat',
         'setup_hermes_windows.ps1',
@@ -127,6 +128,7 @@ function Get-HermesCriticalWindowsRepoPath {
         'windows/upstream_sync.ps1',
         'windows/UPSTREAM_SYNC.md',
         'windows/FIX_TASKBAR_ICONS.bat',
+        'windows/POST_GIT_PULL.bat',
         'windows/fix_hermes_taskbar_pins.ps1',
         'pyproject.toml'
     )

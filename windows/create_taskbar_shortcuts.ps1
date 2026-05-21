@@ -84,34 +84,15 @@ if (-not $RepoRoot.Trim()) {
 }
 
 $windowsDirResolved = Join-Path $RepoRoot 'windows'
-$whiteIco = Join-Path $windowsDirResolved 'hermes_taskbar_white.ico'
-$icoGenPy = Join-Path $windowsDirResolved 'tools\generate_colored_hermes_icons.py'
-# Legacy setup schreef een ~2KB "H"-stub; echte witte variant is ~270KB uit generate_colored_hermes_icons.py
-function Test-HermesTaskbarWhiteIcoStale {
-    param([string]$Path)
-    if (-not (Test-Path -LiteralPath $Path)) { return $true }
-    try {
-        return ((Get-Item -LiteralPath $Path).Length -lt 12000)
-    } catch {
-        return $true
-    }
-}
+$icoGenPy = Join-Path $windowsDirResolved 'tools/generate_colored_hermes_icons.py'
 $needIconGen = (Test-Path -LiteralPath $icoGenPy) -and (
-    (Test-HermesWindowsIconRegenNeeded -RepoRoot $RepoRoot -WindowsDir $windowsDirResolved) -or
-    (Test-HermesTaskbarWhiteIcoStale -Path $whiteIco)
+    Test-HermesWindowsIconRegenNeeded -RepoRoot $RepoRoot -WindowsDir $windowsDirResolved
 )
 if ($needIconGen) {
     if (-not $Quiet) {
         Write-Host '  Icoonset vernieuwen (hermes_logo.ico liep achter op PNG of gekleurde .ico) ...' -ForegroundColor Gray
     }
     [void](Invoke-HermesColoredIconsFromPng -IconGeneratorPy $icoGenPy -Quiet:$Quiet)
-}
-$updateIcon = if ((Test-Path -LiteralPath $whiteIco) -and -not (Test-HermesTaskbarWhiteIcoStale -Path $whiteIco)) {
-    $whiteIco
-} elseif (Test-Path -LiteralPath (Join-Path $windowsDirResolved 'hermes_logo_update.ico')) {
-    (Join-Path $RepoRoot 'windows\hermes_logo_update.ico')
-} else {
-    (Join-Path $RepoRoot 'windows\hermes_logo.ico')
 }
 
 . (Join-Path $scriptDir 'launcher_config.ps1')
@@ -136,32 +117,29 @@ if (-not (Test-Path -LiteralPath $OutDir)) {
 }
 
 $shortcutNames = @(
-    "Start Hermes - naar taakbalk slepen.lnk",
-    "Hermes - backup - naar taakbalk slepen.lnk",
-    "Hermes - lokale bestanden herstellen - naar taakbalk slepen.lnk",
-    "Hermes - update - naar taakbalk slepen.lnk",
-    "Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk"
+    'Start Hermes - naar taakbalk slepen.lnk',
+    'Hermes - setup Windows - naar taakbalk slepen.lnk',
+    'Hermes - backup - naar taakbalk slepen.lnk',
+    'Hermes - lokale bestanden herstellen - naar taakbalk slepen.lnk',
+    'Hermes - update - naar taakbalk slepen.lnk',
+    'Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk'
 )
 $shortcutBats = @(
     $startHermesRel,
-    "windows\MANAGE_BACKUPS.bat",
-    "windows\restore_local_assets.bat",
-    "windows\UPDATE_HERMES.bat",
-    "windows\RAG_KNOWLEDGE_UPDATE_NIGHT.bat"
+    'windows/SETUP_HERMES.bat',
+    'windows/MANAGE_BACKUPS.bat',
+    'windows/restore_local_assets.bat',
+    'windows/UPDATE_HERMES.bat',
+    'windows/RAG_KNOWLEDGE_UPDATE_NIGHT.bat'
 )
+$shortcutRoles = @('Start', 'Setup', 'Backup', 'Restore', 'Update', 'Rag')
 $shortcutDescriptions = @(
     $startHermesDesc,
-    "Hermes: fysieke backup uitvoeren (sleep naar taakbalk)",
-    "Hermes: lokale scripts uit _local_assets herstellen (sleep naar taakbalk)",
-    "Hermes: git/pip update via conda (sleep naar taakbalk)",
-    "Hermes RAG: nacht-run (NONINTERACTIVE, incrementeel, alle domeinen) - sleep naar taakbalk"
-)
-$shortcutIcons = @(
-    (Join-Path $RepoRoot "windows\hermes_logo.ico"),
-    (Join-Path $RepoRoot "windows\hermes_logo_backup.ico"),
-    (Join-Path $RepoRoot "windows\hermes_logo_restore.ico"),
-    $updateIcon,
-    (Join-Path $RepoRoot "windows\hermes_logo.ico")
+    'Hermes: Windows-setup (SETUP_HERMES.bat) - sleep naar taakbalk',
+    'Hermes: fysieke backup uitvoeren (sleep naar taakbalk)',
+    'Hermes: lokale scripts uit _local_assets herstellen (sleep naar taakbalk)',
+    'Hermes: git/pip update via conda (sleep naar taakbalk)',
+    'Hermes RAG: nacht-run (NONINTERACTIVE, incrementeel, alle domeinen) - sleep naar taakbalk'
 )
 
 # Oude bestandsnaam was onduidelijk ("Hermes Agent"); verwijderen om dubbels te vermijden.
@@ -181,8 +159,9 @@ $shortcutPairCount = $shortcutNames.Count
 for ($shortcutIndex = 0; $shortcutIndex -lt $shortcutPairCount; $shortcutIndex++) {
     $lnkPath = Join-Path $OutDir $shortcutNames[$shortcutIndex]
     $batPath = Join-Path $RepoRoot $shortcutBats[$shortcutIndex]
+    $iconSpec = Get-HermesTaskbarRoleIconPath -Role $shortcutRoles[$shortcutIndex] -WindowsDir $windowsDirResolved
     try {
-        if (New-HermesTaskbarShortcut -ShortcutPath $lnkPath -RepoRoot $RepoRoot -LaunchBatPath $batPath -Description $shortcutDescriptions[$shortcutIndex] -IconSpec $shortcutIcons[$shortcutIndex]) {
+        if (New-HermesTaskbarShortcut -ShortcutPath $lnkPath -RepoRoot $RepoRoot -LaunchBatPath $batPath -Description $shortcutDescriptions[$shortcutIndex] -IconSpec $iconSpec) {
             if (-not $Quiet) {
                 Write-Host "  [OK] $($shortcutNames[$shortcutIndex])" -ForegroundColor Green
             }

@@ -13,6 +13,8 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | RAG env-defaults (stale, torch-ruis) | [RAG_INSTITUTIONAL_ENV.md](RAG_INSTITUTIONAL_ENV.md) |
 | Technische ingest/MCP-stappen | [../scripts/rag_pipeline/ACTIVATION.md](../scripts/rag_pipeline/ACTIVATION.md) |
 | Windows-scripts en taakbalk | [../windows/README.md](../windows/README.md) |
+| User-data docs (STATUS/RECOVERY sync) | [USER_DATA_OPERATIONS.md](USER_DATA_OPERATIONS.md) |
+| IDE PSScriptAnalyzer (VS Code/Cursor) | [IDE_VSCODE_SETTINGS.example.json](IDE_VSCODE_SETTINGS.example.json) |
 | Hermes starten zonder conda in PATH | [../../HERMES_START.md](../../HERMES_START.md) |
 | Voortgang / checklist | [../memory-bank/progress.md](../memory-bank/progress.md) |
 
@@ -53,7 +55,9 @@ flowchart TB
 ## Onderhoud
 
 - **Windows backup/script-keten:** `windows\VERIFY_WINDOWS_CHAIN.bat` (na pull of vóór backup)
-- **Nous upstream-update:** `windows\UPDATE_HERMES.bat` (preflight + merge + RAG; zie `windows\UPSTREAM_SYNC.md`)
+- **Na `git pull`:** `windows\POST_GIT_PULL.bat` (verify + taakbalk-iconen)
+- **Taakbalk-iconen:** `windows\FIX_TASKBAR_ICONS.bat` (pin via `.lnk`, niet `.bat`)
+- **Nous upstream-update:** `windows\UPDATE_HERMES.bat` (preflight + merge + RAG + taakbalk; zie `windows\UPSTREAM_SYNC.md`)
 - **P0+P1-pipeline (institutioneel):** `windows\scripts\institutional_p0_p1.bat`  
   Sync MCP → doctor --fix → MCP-test alle domeinen → legal rooktest.  
   Opties: `--ingest-remaining` (7 domeinen; **lege bronmappen worden overgeslagen**), `--kanban` (na geslaagde rooktest).

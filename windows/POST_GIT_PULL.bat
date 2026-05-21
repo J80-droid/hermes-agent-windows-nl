@@ -1,0 +1,33 @@
+@echo off
+setlocal EnableExtensions
+cd /d "%~dp0\.."
+chcp 65001 >nul
+echo ====================================================
+echo  Hermes: na git pull (verify + taakbalk-iconen)
+echo ====================================================
+echo [INFO] Repo: %CD%
+echo.
+
+if exist "%~dp0VERIFY_WINDOWS_CHAIN.bat" (
+  call "%~dp0VERIFY_WINDOWS_CHAIN.bat"
+) else (
+  echo [WARN] VERIFY_WINDOWS_CHAIN.bat ontbreekt
+)
+
+echo.
+echo [INFO] Taakbalk-.lnk en icooncache vernieuwen...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0fix_hermes_taskbar_pins.ps1" -RepoRoot "%CD%" -Quiet
+if errorlevel 1 (
+  echo [WARN] fix_hermes_taskbar_pins.ps1 mislukt
+) else (
+  echo [OK] Taakbalk-snelkoppelingen bijgewerkt.
+)
+
+echo.
+echo [INFO] Eenmalig bij oud zwart H op UPDATE:
+echo   1. Rechtsklik UPDATE-pin - Losmaken van de taakbalk
+echo   2. windows\Hermes - update - naar taakbalk slepen.lnk - Vastmaken aan taakbalk
+echo      (niet UPDATE_HERMES.bat direct slepen)
+echo.
+pause
+exit /b 0

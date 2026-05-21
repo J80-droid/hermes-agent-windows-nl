@@ -78,4 +78,4 @@ Zie `docs\PROFILE_MODEL_INHERITANCE.md`.
 
 **Nacht/taakbalk:** `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` zet `HERMES_NONINTERACTIVE=1` en `HERMES_RAG_FRESH=n` (geen J/N). Regenereer `.lnk` via `create_taskbar_shortcuts.ps1`.
 
-Iconen: `hermes_logo.ico`, `hermes_taskbar_white.ico` (wit monogram uit PNG; update-snelkoppeling). Geen `.lnk` in git — gegenereerd via `create_taskbar_shortcuts.ps1` / `REFRESH_TASKBAR_SHORTCUTS.bat`. Zie je een zwart **H** op de taakbalk: draai `FIX_TASKBAR_ICONS.bat` (Windows negeert iconen bij `.bat`-target; setup overschreef eerder de update-`.lnk`).
+Iconen: `hermes_logo.ico` (start/setup/backup/RAG), `hermes_logo_update.ico` (update, oranje), `hermes_logo_restore.ico` (cyaan). Geen `.lnk` in git — gegenereerd via `create_taskbar_shortcuts.ps1` / `FIX_TASKBAR_ICONS.bat`. Zie je een zwart **H**: oude `hermes_taskbar_white.ico` of `.bat` direct vastgepind — draai `FIX_TASKBAR_ICONS.bat` en pin de `.lnk` opnieuw.
