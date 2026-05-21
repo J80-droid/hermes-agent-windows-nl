@@ -78,4 +78,4 @@ Zie `docs\PROFILE_MODEL_INHERITANCE.md`.
 
 **Nacht/taakbalk:** `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` zet `HERMES_NONINTERACTIVE=1` en `HERMES_RAG_FRESH=n` (geen J/N). Regenereer `.lnk` via `create_taskbar_shortcuts.ps1`.
 
-Iconen per taakbalk-`.lnk`: goud = start/setup/RAG (`hermes_logo.ico`), oranje = update (`hermes_logo_update.ico`), roze = backup (`hermes_logo_backup.ico`), cyaan = restore (`hermes_logo_restore.ico`). Gegenereerd via `create_taskbar_shortcuts.ps1` / `FIX_TASKBAR_ICONS.bat`. Zie je verkeerde kleur: `FIX_TASKBAR_ICONS.bat` + F5 in Explorer; pin opnieuw via `.lnk` (niet `.bat`).
+Iconen per taakbalk-`.lnk`: goud = start/RAG (`hermes_logo.ico`), groen = setup (`hermes_logo_setup.ico`), oranje = update (`hermes_logo_update.ico`), roze = backup, cyaan = restore. Genereer opnieuw: `python windows/tools/generate_colored_hermes_icons.py` daarna `FIX_TASKBAR_ICONS.bat` + F5 in Explorer.

@@ -27,11 +27,11 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 
 | Rol | Bestand | Kleur |
 |-----|---------|-------|
-| Start, Setup | `hermes_logo.ico` | Goud (origineel) |
-| Update | `hermes_logo_update.ico` | Oranje |
-| Backup | `hermes_logo_backup.ico` | Roze/magenta |
+| Start, RAG | `hermes_logo.ico` | Goud |
+| Setup | `hermes_logo_setup.ico` | Groen |
+| Update | `hermes_logo_update.ico` | Oranje (sterk vs. goud) |
+| Backup | `hermes_logo_backup.ico` | Roze |
 | Restore | `hermes_logo_restore.ico` | Cyaan |
-| RAG nacht | `hermes_logo.ico` | Goud |
 
 Geen `hermes_taskbar_white.ico` in snelkoppelingen (H-stub in Explorer). Na wijziging: `FIX_TASKBAR_ICONS.bat` + F5 in Explorer.
 

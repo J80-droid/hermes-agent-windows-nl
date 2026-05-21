@@ -100,7 +100,7 @@ function Test-HermesWindowsIconRegenNeeded {
 
     # Alleen echte desync: gekleurde .ico's zijn ná generate vaak 0-2 s nieuwer dan main; dat is normaal.
     $skewSec = 4
-    foreach ($leaf in @('hermes_logo_backup.ico', 'hermes_logo_restore.ico', 'hermes_logo_update.ico', 'hermes_taskbar_white.ico')) {
+    foreach ($leaf in @('hermes_logo_backup.ico', 'hermes_logo_restore.ico', 'hermes_logo_update.ico', 'hermes_logo_setup.ico', 'hermes_taskbar_white.ico')) {
         $p2 = Join-Path $WindowsDir $leaf
         if (-not (Test-Path -LiteralPath $p2)) { continue }
         $age = ((Get-Item -LiteralPath $p2).LastWriteTime - $iMain.LastWriteTime).TotalSeconds
@@ -124,10 +124,12 @@ function Get-HermesTaskbarRoleIconPath {
     )
     $leaf = switch ($Role) {
         'Update' { 'hermes_logo_update.ico' }
+        'Setup' { 'hermes_logo_setup.ico' }
+        'OpenSetup' { 'hermes_logo_setup.ico' }
         'Restore' { 'hermes_logo_restore.ico' }
         'Backup' { 'hermes_logo_backup.ico' }
-        'Rag'    { 'hermes_logo.ico' }
-        default  { 'hermes_logo.ico' }
+        'Rag' { 'hermes_logo.ico' }
+        default { 'hermes_logo.ico' }
     }
     $path = Join-Path $WindowsDir $leaf
     if (Test-Path -LiteralPath $path) { return $path }

@@ -54,9 +54,17 @@ except ImportError as e:
 VARIANTS: dict[str, tuple[int, int, int]] = {
     "hermes_logo_backup.ico": (255, 32, 140),
     "hermes_logo_restore.ico": (0, 210, 255),
-    "hermes_logo_update.ico": (255, 160, 0),
-    # Wit Hermes-monogram (update + setup-snelkoppelingen); zelfde pipeline als gekleurde varianten.
+    "hermes_logo_update.ico": (255, 120, 0),
+    "hermes_logo_setup.ico": (72, 220, 100),
+    # Wit monogram (niet in .lnk — Shell toont vaak H-stub).
     "hermes_taskbar_white.ico": (248, 248, 252),
+}
+# Extra verzadiging per variant (update moet duidelijk oranje zijn vs. gouden hermes_logo.ico).
+VARIANT_SAT_BOOST: dict[str, float] = {
+    "hermes_logo_update.ico": 1.28,
+    "hermes_logo_setup.ico": 1.18,
+    "hermes_logo_backup.ico": 1.15,
+    "hermes_logo_restore.ico": 1.12,
 }
 
 ICO_SIZES = (16, 24, 32, 48, 64, 128, 256)
@@ -333,8 +341,10 @@ def _write_circular_masked_source_png(png_path: Path, *, apply_black_key: bool =
     tmp.replace(png_path)
 
 
-def _recolor_hue_rgba(im: Image.Image, tr: int, tg: int, tb: int) -> Image.Image:
-    """Zelfde luminantie-structuur: hue naar doelkleur, saturatie/helderheid licht opgevoerd."""
+def _recolor_hue_rgba(
+    im: Image.Image, tr: int, tg: int, tb: int, *, sat_boost: float = 1.08
+) -> Image.Image:
+    """Zelfde luminantie-structuur: hue naar doelkleur, saturatie/helderheid opgevoerd."""
     out = im.copy()
     trn, tgn, tbn = tr / 255.0, tg / 255.0, tb / 255.0
     target_h, _, _ = colorsys.rgb_to_hsv(trn, tgn, tbn)
@@ -347,7 +357,7 @@ def _recolor_hue_rgba(im: Image.Image, tr: int, tg: int, tb: int) -> Image.Image
                 continue
             rn, gn, bn = r / 255.0, g / 255.0, b / 255.0
             _h, s, v = colorsys.rgb_to_hsv(rn, gn, bn)
-            s2 = min(1.0, s * 1.08 + 0.1)
+            s2 = min(1.0, s * sat_boost + 0.12)
             v2 = min(1.0, v * 1.04 + 0.03)
             r2, g2, b2 = colorsys.hsv_to_rgb(target_h, s2, v2)
             px[x, y] = (
@@ -522,9 +532,10 @@ def main() -> None:
 
     for filename, tint in VARIANTS.items():
         tr, tg, tb = tint
+        boost = VARIANT_SAT_BOOST.get(filename, 1.08)
         layers: list[Image.Image] = []
         for layer in base_pyramid:
-            layers.append(_recolor_hue_rgba(layer.copy(), tr, tg, tb))
+            layers.append(_recolor_hue_rgba(layer.copy(), tr, tg, tb, sat_boost=boost))
         out_path = windows_dir / filename
         _save_ico(layers, out_path)
         print(f"[OK] {out_path.name} (256×256 ICO)")

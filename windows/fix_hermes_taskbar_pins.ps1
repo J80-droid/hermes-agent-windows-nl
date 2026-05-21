@@ -119,7 +119,7 @@ Clear-HermesShellIconCache
 
 if (-not $Quiet) {
     Write-Host ''
-    Write-Host 'Iconen: start/setup/RAG=goud | update=oranje | backup=roze | restore=cyaan' -ForegroundColor Cyan
+    Write-Host 'Iconen: start/RAG=goud | setup=groen | update=oranje | backup=roze | restore=cyaan' -ForegroundColor Cyan
     Write-Host 'Blijft een oud H zichtbaar: pin losmaken, .lnk opnieuw vastmaken (niet .bat slepen).' -ForegroundColor Gray
 }
 
