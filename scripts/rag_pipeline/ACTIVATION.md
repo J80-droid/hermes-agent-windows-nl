@@ -37,7 +37,7 @@ Scripts in deze map:
 | `HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR` | **`1`** (safe) | Geen Whisper op media zonder sidecar; per domein `media_policy: whisper_when_missing` zet `0` |
 | `HERMES_RAG_PERF_PROFILE` | **`safe`** | Preset: `safe` (institutioneel), `balanced`, `fast`, `off` — `rag_ingest_perf_defaults.ps1` |
 | `HERMES_RAG_ALLOW_PARALLEL` | **`0`** | `1` = oude parallelle MarkItDown-golven (niet aanbevolen; kan hangen) |
-| `HERMES_RAG_FILE_TIMEOUT_SEC` | **`1200`** | Harde timeout per bron (convert+chunk+embed); `0` = uit |
+| `HERMES_RAG_FILE_TIMEOUT_SEC` | **`1200`** (safe) / **`0`** (legal whisper) | Per bron totaal; `0` = geen limiet — live `[LIVE]` is leidend |
 | `HERMES_RAG_CONVERT_WORKERS` | `2` (safe) | Alleen relevant bij `HERMES_RAG_ALLOW_PARALLEL=1` |
 | `HERMES_RAG_EMBED_BATCH` | `32` (safe) | Embedding-batch; cap in ingest: `512` |
 | `HERMES_RAG_CONVERT_HEARTBEAT_SEC` | `5` (safe) | Heartbeat bij parallelle modus |

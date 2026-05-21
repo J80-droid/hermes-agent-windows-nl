@@ -88,6 +88,8 @@ def apply_media_policy_env(media_policy: str, media_ingest_env: dict[str, str]) 
     policy = (media_policy or "sidecar_or_skip").strip().lower()
     if policy in ("whisper", "whisper_when_missing", "whisper_if_missing"):
         os.environ.setdefault("HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR", "0")
+        # Whisper op grote media kan >20 min duren; safe-default 1200s is te kort
+        os.environ.setdefault("HERMES_RAG_FILE_TIMEOUT_SEC", "0")
     elif policy == "sidecar_or_skip":
         os.environ.setdefault("HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR", "1")
     for key, value in media_ingest_env.items():

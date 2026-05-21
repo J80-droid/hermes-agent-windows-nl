@@ -1,5 +1,18 @@
-# Voorbeeld — kopieer naar %USERPROFILE%\data\domains.yaml en pas paden aan.
+# =============================================================================
+# domains.yaml — enige bron van waarheid voor RAG multi-domein
+# Kopieer naar: %USERPROFILE%\data\domains.yaml
+#
+# Nieuw domein toevoegen:
+#   1. Kopieer het blok onder "Sjabloon nieuw domein" naar domains:
+#   2. Maak raw_source_files\<source_dir>\ met bronbestanden
+#   3. Maak Hermes-profiel %LOCALAPPDATA%\hermes\profiles\<profile_name>\ + MCP in config.yaml
+#   4. update_knowledge.bat --list  (moet het nieuwe domein tonen)
+#   5. update_knowledge.bat <naam>  of update_knowledge.bat (alle domeinen)
+#
+# 99_Archive bewust NIET opnemen (geen actieve index).
+# =============================================================================
 version: '1.0'
+
 personal_brain:
   path: ~/data/personal_brain
   files:
@@ -8,17 +21,42 @@ personal_brain:
     - how_you_work.md
     - boundaries.md
 
+# --- Verplicht: gedeelde laag (altijd eerste in ingest bij --all) ---
 core_domain:
   name: core
-  description: Gedeelde kennis (Personal Brain + test.txt)
+  description: Gedeelde kennis die alle domeinen nodig hebben (Personal Brain + test.txt)
   source_dir: 00_Core
   lancedb_path: ~/data/lancedb/core
   mcp_name: lancedb-core
+  # profile_name default = name (core)
 
+# --- Domeinen (volgorde = ingest-volgorde bij update_knowledge.bat zonder argument) ---
 domains:
+  - name: academics
+    source_dir: 01_Academics_Beta
+    description: Onderwijs, curricula, wetenschappelijke bronnen
+    lancedb_path: ~/data/lancedb/academics
+    mcp_name: lancedb-academics
+    profile_name: academics
+    # media_policy: sidecar_or_skip   # default — geen Whisper op media zonder sidecar
+
+  - name: operations
+    source_dir: 02_Professional_Operations
+    description: Professionele processen, best practices, operaties
+    lancedb_path: ~/data/lancedb/operations
+    mcp_name: lancedb-operations
+    profile_name: operations
+
+  - name: trading
+    source_dir: 03_Algorithmic_Trading_AI
+    description: Algoritmische trading, AI modellen, marktanalyse
+    lancedb_path: ~/data/lancedb/trading
+    mcp_name: lancedb-trading
+    profile_name: trading
+
   - name: legal
     source_dir: 04_Legal_Corporate
-    description: Juridische bronnen
+    description: Juridische bronnen, corporate compliance, jurisprudentie
     lancedb_path: ~/data/lancedb/legal
     mcp_name: lancedb-legal
     profile_name: legal
@@ -31,7 +69,46 @@ domains:
     media_ingest_env:
       HERMES_RAG_SKIP_WHISPER_WITHOUT_SIDECAR: "0"
       HERMES_WHISPER_MODEL: small
-      HERMES_RAG_CONVERT_TIMEOUT_SEC: "3600"
+      HERMES_RAG_FILE_TIMEOUT_SEC: "0"
     quarantine_restore:
       1.1 Verzoekschrift Zaak 25-00294-C2515 GC Rijk - Min. Buitenlandse Zaken El Mourif.pdf: Geschillencommissie Rijk/VERZOEKSCHRIFT J. EL MOURIF
       1.1 Verzoekschrift Zaak 25-00294-C2515 GC Rijk - Min. Buitenlandse Zaken El Mourif_compressed.pdf: Geschillencommissie Rijk/VERZOEKSCHRIFT J. EL MOURIF
+
+  - name: gaming
+    source_dir: 05_Performance_Gaming
+    description: Gaming prestaties, strategieen, technische analyse
+    lancedb_path: ~/data/lancedb/gaming
+    mcp_name: lancedb-gaming
+    profile_name: gaming
+
+  - name: philosophy
+    source_dir: 06_Philosophy_Psychology
+    description: Filosofie, psychologie, menselijk gedrag
+    lancedb_path: ~/data/lancedb/philosophy
+    mcp_name: lancedb-philosophy
+    profile_name: philosophy
+
+  - name: logistics
+    source_dir: 07_Personal_Logistics
+    description: Persoonlijke planning, organisatie, dagelijkse operaties
+    lancedb_path: ~/data/lancedb/logistics
+    mcp_name: lancedb-logistics
+    profile_name: logistics
+
+  - name: ventures
+    source_dir: 08_Ventures_Incubator
+    description: Startups, incubatie, business development
+    lancedb_path: ~/data/lancedb/ventures
+    mcp_name: lancedb-ventures
+    profile_name: ventures
+
+# --- Sjabloon nieuw domein (uncomment + invullen) ---
+#  - name: mijn_domein
+#    source_dir: 09_Mijn_Domein
+#    description: Korte omschrijving
+#    lancedb_path: ~/data/lancedb/mijn_domein
+#    mcp_name: lancedb-mijn_domein
+#    profile_name: mijn_domein
+#    ingest_env: {}
+#    media_policy: sidecar_or_skip
+#    media_ingest_env: {}
