@@ -19,11 +19,14 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 | ---- | -------- |
 | Upstream / fork update | `windows\UPDATE_HERMES.bat` (verify in keten via `.ps1`, geen pause — zie `windows\UPSTREAM_SYNC.md`) |
 | Na `git pull` (andere machine of na grote wijziging) | `windows\POST_GIT_PULL.bat` |
-| SOUL Interaction naar alle profielen | `windows\SYNC_SOUL_SNIPPETS.bat` |
+| SOUL Interaction + Outputformaat naar alle profielen | `windows\SYNC_SOUL_SNIPPETS.bat` |
 | Runtime SOUL in backup | `windows\MANAGE_BACKUPS.bat` (stap `backup_soul_profiles`) |
 | Alleen persona's uit backup | `restore_from_backup.ps1 -RestoreRuntimePersonas` (SOUL + `LEGAL_ACTIVE_MATTERS.md`) |
 | Legal bron-submappen | `windows\scripts\MIGRATE_LEGAL_LAYOUT.bat -Apply` → `update_knowledge.bat legal` |
 | Legal domein audit | `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat` |
+| **Institutioneel alles-in-één** | `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` (display alle profielen + SOUL + E2E) |
+| Institutioneel audit alleen | `windows\audits\RUN_INSTITUTIONAL_E2E.bat` (optioneel `-ApplyRuntime`) |
+| Team display (alle profielen) | `windows\APPLY_TEAM_DISPLAY.bat` |
 | Taakbalk-iconen | `windows\FIX_TASKBAR_ICONS.bat` |
 | Snelkoppelingen vernieuwen | `windows\REFRESH_TASKBAR_SHORTCUTS.bat` |
 | Setup (logica) | `scripts\windows\setup_hermes_windows.ps1` — **niet** volledig kopiëren naar `windows\` |

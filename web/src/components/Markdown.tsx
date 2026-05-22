@@ -184,10 +184,10 @@ function Block({
     case "heading": {
       const Tag = `h${Math.min(block.level, 4)}` as "h1" | "h2" | "h3" | "h4";
       const sizes: Record<string, string> = {
-        h1: "text-base font-bold",
-        h2: "text-sm font-bold",
-        h3: "text-sm font-semibold",
-        h4: "text-sm font-medium",
+        h1: "text-base font-bold text-primary",
+        h2: "text-sm font-bold text-primary/90",
+        h3: "text-sm font-semibold text-primary/80",
+        h4: "text-sm font-medium text-foreground",
       };
       return (
         <Tag className={sizes[Tag]}>
@@ -210,7 +210,7 @@ function Block({
       const last = block.items.length - 1;
       return (
         <Tag
-          className={`space-y-0.5 ${block.ordered ? "list-decimal" : "list-disc"} pl-5 text-sm`}
+          className={`space-y-1 ${block.ordered ? "list-decimal" : "list-[circle]"} pl-5 text-sm marker:text-muted-foreground`}
         >
           {block.items.map((item, i) => (
             <li key={i}>

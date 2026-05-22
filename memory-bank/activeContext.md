@@ -2,7 +2,9 @@
 
 ## Focus
 
-**Legal domein herstructurering** (2026-05): één RAG-bucket `legal`, rechtsgebied-**lenzen** (arb/bbk/aanspr/klok/corp), generieke `profiles\legal\SOUL.md`, zaak GCR in `LEGAL_ACTIVE_MATTERS.md`. Docs: `LEGAL_DOMAIN_ARCHITECTURE.md`, `LEGAL_TAXONOMY.md`. Audit: `RUN_LEGAL_DOMAIN_E2E.bat`.
+**Institutionele presentatie** (2026-05-22): Rich + SOUL Outputformaat; display op **9 profielen** (`apply_team_display_profiles.py`). Eén commando: `APPLY_INSTITUTIONAL_RUNTIME.bat` (display + SOUL + E2E PASS). Na deploy: dat script of `RUN_INSTITUTIONAL_E2E.bat -ApplyRuntime` + nieuwe chat.
+
+**Legal domein herstructurering** (2026-05): één RAG-bucket `legal`, rechtsgebied-**lenzen**, generieke `profiles\legal\SOUL.md`, zaak GCR in `LEGAL_ACTIVE_MATTERS.md`. Audit: `RUN_LEGAL_DOMAIN_E2E.bat`.
 
 **P0+P1 afgerond**; Windows institutioneel: conda `hermes-env`, WT/skin, API-env sync. Open: bronnen in 7 lege `raw_source_files`-mappen (legal bronnen + submappen actief).
 
@@ -24,6 +26,8 @@
 | Legal architectuur / taxonomie | `docs/LEGAL_DOMAIN_ARCHITECTURE.md`, `docs/LEGAL_TAXONOMY.md` |
 | Landkaart (volledige lijsten) | skill `landkaart`, `/landkaart` |
 | RAG twee fasen | `docs/RAG_TWEE_FASEN.md` |
+| Presentatie (kleur + structuur) | `docs/INSTITUTIONAL_PRESENTATION.md` |
+| E2E institutioneel | `windows/audits/RUN_INSTITUTIONAL_E2E.bat` |
 | Hermes start (bat) | `../../HERMES_START.md` |
 | Windows | `windows/README.md` |
 | Terminal / display / API-home | `windows/TERMINAL_WINDOWS.md` |
@@ -44,7 +48,7 @@
 | Script | Rol |
 |--------|-----|
 | `UPDATE_HERMES.bat` | Update + verify (`.ps1`, geen pause; `HERMES_SKIP_PAUSE_AFTER_UPDATE=1`) + auto `fix_hermes_taskbar_pins` |
-| `SYNC_SOUL_SNIPPETS.bat` | Interaction-blok naar alle profiel-SOUL's (template in `docs/templates/`) |
+| `SYNC_SOUL_SNIPPETS.bat` | Interaction + Outputformaat naar alle profiel-SOUL's (`docs/templates/SOUL_SHARED_*.md`) |
 | `MANAGE_BACKUPS.bat` | Inclusief `backup_soul_profiles` → `localappdata_hermes/` in backup |
 | `POST_GIT_PULL.bat` | Na pull op andere machine |
 | `FIX_TASKBAR_ICONS.bat` | Handmatig icoon + pins |

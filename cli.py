@@ -1653,54 +1653,9 @@ def _rich_text_from_ansi(text: str) -> _RichText:
 
 def _strip_markdown_syntax(text: str) -> str:
     """Best-effort markdown marker removal for plain-text display."""
-    plain = _rich_text_from_ansi(text or "").plain
-    # Avoid stripping cron-style expressions like "* * * * *" as if they were
-    # Markdown horizontal rules. CommonMark treats three or more "*" as an HR,
-    # but in Hermes output it's common to display cron schedules verbatim.
-    #
-    # Keep the behavior for "-" / "_" HR markers, and only strip "*" HR lines
-    # when there are exactly 3 asterisks (with optional whitespace).
-    plain = re.sub(r"^\s{0,3}(?:[-_]\s*){3,}$", "", plain, flags=re.MULTILINE)
-    plain = re.sub(r"^\s{0,3}(?:\*\s*){3}\s*$", "", plain, flags=re.MULTILINE)
-    plain = re.sub(r"^\s{0,3}#{1,6}\s+", "", plain, flags=re.MULTILINE)
-    # Preserve blockquotes, lists, and checkboxes because they carry structure.
-    plain = re.sub(r"(```+|~~~+)", "", plain)
-    plain = re.sub(r"`([^`]*)`", r"\1", plain)
-    plain = re.sub(r"!\[([^\]]*)\]\([^\)]*\)", r"\1", plain)
-    plain = re.sub(r"\[([^\]]+)\]\([^\)]*\)", r"\1", plain)
-    plain = re.sub(r"\*\*\*([^*]+)\*\*\*", r"\1", plain)
-    plain = re.sub(r"(?<!\w)___([^_]+)___(?!\w)", r"\1", plain)
-    plain = re.sub(r"\*\*([^*]+)\*\*", r"\1", plain)
-    plain = re.sub(r"(?<!\w)__([^_]+)__(?!\w)", r"\1", plain)
-    # Only strip `*emphasis*` markers when the inner text is non-whitespace.
-    # This avoids corrupting cron expressions like "* * * * *".
-    plain = re.sub(r"\*([^\s*][^*]*?[^\s*])\*", r"\1", plain)
-    plain = re.sub(r"(?<!\w)_([^_]+)_(?!\w)", r"\1", plain)
-    plain = re.sub(r"~~([^~]+)~~", r"\1", plain)
-    plain = re.sub(r"\n{3,}", "\n\n", plain)
-    return plain.strip("\n")
+    from hermes_cli.display_markdown import strip_markdown_syntax
 
-
-_WINDOWS_PATH_WITH_DOT_SEGMENT_RE = re.compile(
-    r"(?i)(?:\b[a-z]:\\|\\\\)[^\s`]*\\\.[^\s`]*"
-)
-
-
-def _preserve_windows_dot_segments_for_markdown(text: str) -> str:
-    r"""Keep Windows path separators before hidden directories in Markdown.
-
-    CommonMark treats ``\.`` as an escaped literal dot, so Rich Markdown would
-    render ``D:\repo\.ai`` as ``D:\repo.ai``.  Doubling only that separator
-    inside Windows path-looking tokens preserves the path without changing
-    ordinary markdown escapes like ``1\. not a list``.
-    """
-    if "\\." not in text:
-        return text
-
-    def _protect(match: re.Match[str]) -> str:
-        return re.sub(r"(?<!\\)\\(?=\.)", r"\\\\", match.group(0))
-
-    return _WINDOWS_PATH_WITH_DOT_SEGMENT_RE.sub(_protect, text)
+    return strip_markdown_syntax(text)
 
 
 def _terminal_width_for_streaming() -> int:
@@ -1723,86 +1678,28 @@ def _terminal_width_for_streaming() -> int:
 
 def _wrap_bron_citations_for_display(text: str) -> str:
     """Backtick-wrap `[Bron: …]` voor inline-code chips in Rich-markdown."""
-    try:
-        from pathlib import Path as _Path
+    from hermes_cli.display_markdown import _wrap_bron_citations_for_display as _wrap
 
-        _rag_dir = _Path(__file__).resolve().parent / "scripts" / "rag_pipeline"
-        if str(_rag_dir) not in sys.path:
-            sys.path.insert(0, str(_rag_dir))
-        from rag_display import wrap_bron_citations_for_markdown_display
-
-        return wrap_bron_citations_for_markdown_display(text)
-    except Exception:
-        return text
+    return _wrap(text)
 
 
 def _skin_markdown_theme():
     """Rich theme for ``final_response_markdown=render`` — skin gold, not default magenta."""
-    from rich.theme import Theme
+    from hermes_cli.display_markdown import skin_markdown_theme
 
-    try:
-        from hermes_cli.skin_engine import get_active_skin
-
-        skin = get_active_skin()
-        title = skin.get_color("banner_title", "#FFD700")
-        accent = skin.get_color("banner_accent", "#FFBF00")
-        label = skin.get_color("ui_label", "#DAA520")
-        dim = skin.get_color("banner_dim", "#B8860B")
-    except Exception:
-        title, accent, label, dim = "#FFD700", "#FFBF00", "#DAA520", "#B8860B"
-    return Theme(
-        {
-            "markdown.h1": f"bold {title} underline",
-            "markdown.h2": f"bold {accent} underline",
-            "markdown.h3": f"bold {label}",
-            "markdown.h4": f"bold {label} italic",
-            "markdown.h5": f"{label} italic",
-            "markdown.h6": f"{dim} italic",
-            "markdown.strong": f"bold {label}",
-            "markdown.em": "italic",
-            "markdown.block_quote": dim,
-        }
-    )
+    return skin_markdown_theme()
 
 
 def _render_final_assistant_content(text: str, mode: str = "render"):
     """Render final assistant content as markdown, stripped text, or raw text."""
-    from rich.markdown import Markdown
+    from hermes_cli.display_markdown import render_final_assistant_markdown
 
-    text = _wrap_bron_citations_for_display(text or "")
-
-    # Estimate the cells available to the rendered table.  The Panel
-    # used by the background-task / final-response path has 4 cells of
-    # left+right padding plus 1 cell of border on each side, plus the
-    # _STREAM_PAD indent that streamed content uses.  Subtract a small
-    # safety margin so resize races don't push a borderline table into
-    # soft-wrap.
     try:
         cols = shutil.get_terminal_size((80, 24)).columns
     except Exception:
         cols = 80
     panel_width = max(20, cols - 12)
-
-    normalized_mode = str(mode or "render").strip().lower()
-    if normalized_mode == "strip":
-        # Strip first — inline markdown inside cells (`code`, **bold**, ~~strike~~)
-        # changes cell display width — then re-align so the column padding
-        # reflects the final visible text, not the marker-decorated source.
-        return _RichText(
-            realign_markdown_tables(_strip_markdown_syntax(text), panel_width)
-        )
-    if normalized_mode == "raw":
-        return _rich_text_from_ansi(text or "")
-
-    # `render` mode: Rich's Markdown renderer handles CJK width via wcwidth
-    # internally, so a pre-pass through realign_markdown_tables would just
-    # rewrite already-correct padding.  But on the way in we still want to
-    # normalise model-emitted under-padded tables so that mid-render fallbacks
-    # (narrow panels, etc.) at least see consistent input.
-    plain = _rich_text_from_ansi(text or "").plain
-    plain = _preserve_windows_dot_segments_for_markdown(plain)
-    plain = realign_markdown_tables(plain, panel_width)
-    return Markdown(plain)
+    return render_final_assistant_markdown(text, mode, panel_width=panel_width)
 
 
 _OUTPUT_HISTORY_ENABLED = True

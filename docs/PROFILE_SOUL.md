@@ -70,7 +70,8 @@ notepad %LOCALAPPDATA%\hermes\profiles\mijn-domein\SOUL.md
 
 | Actie | Hoe |
 |-------|-----|
-| Interaction-blok in alle profielen | `windows\SYNC_SOUL_SNIPPETS.bat` (template: `docs/templates/SOUL_SHARED_INTERACTION.md`) |
+| Interaction + Outputformaat in alle profielen | `windows\SYNC_SOUL_SNIPPETS.bat` (`SOUL_SHARED_INTERACTION.md`, `SOUL_SHARED_OUTPUT_FORMAT.md`) |
+| Presentatie (kleur + structuur) | `docs/INSTITUTIONAL_PRESENTATION.md` |
 | Core SOUL referentie in repo | `docs/templates/SOUL_CORE_ORCHESTRATOR.md` |
 | Runtime SOUL in backup | `MANAGE_BACKUPS.bat` → `backup_soul_profiles` (map `localappdata_hermes/` in backup) |
 | Alleen persona's terugzetten | `restore_from_backup.ps1 -RestoreRuntimePersonas` (zie `RESTORE_FROM_BACKUP.bat` help) |

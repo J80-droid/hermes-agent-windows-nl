@@ -8,5 +8,5 @@
 
 streaming=false
 final_response_markdown=render
-compact=true
+compact=false
 skin=default

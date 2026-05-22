@@ -27,8 +27,12 @@
 - [x] Setup bat-templates (`scripts/windows/bat-templates/`); geen Copy-Item-spiegel meer; PSScriptAnalyzer 0 op `windows/**/*.ps1`
 - [x] pytest Windows: `timeout-method=thread`; `shutil.which` i.p.v. `which rg`; marker `ssh` in `pyproject.toml`; `tests/windows/test_critical_windows_scripts.py`
 - [x] Python-policy institutioneel: `HermesPythonPolicy.ps1`, `REPAIR_PYTHON.bat`, `ensure_hermes_python.ps1`; kapotte `.venv` → `.venv.disabled-*` (gitignore); conda `hermes-env` canoniek; verify-keten + setup-hook
-- [x] TUI display: skin `default` (`team_display.defaults`), `apply_team_display.ps1` → root `%LOCALAPPDATA%\hermes\config.yaml`
-- [x] Markdown antwoordpanelen: `_skin_markdown_theme()` in `cli.py` (goud/amber i.p.v. Rich-magenta)
+- [x] TUI display: skin `default` (`team_display.defaults`), `apply_team_display.ps1` → `profiles\<active>\config.yaml` (conda `--env-vars`)
+- [x] E2E institutioneel: `RUN_INSTITUTIONAL_E2E.ps1` (8 stappen, PASS 2026-05-22); rapport in `windows/audits/`
+- [x] Markdown antwoordpanelen: `hermes_cli/display_markdown.py` + `agent/rich_output.py` (goud/amber, extended Rich keys)
+- [x] Globaal outputformaat: `SOUL_SHARED_OUTPUT_FORMAT.md` + `sync_soul_output_format_snippet.ps1`
+- [x] Team display: `compact=false`, `render`, `skin=default` (`team_display.defaults`)
+- [x] Docs: `docs/INSTITUTIONAL_PRESENTATION.md`; legacy `windows/scripts/institutional/`
 - [x] Split Hermes-home: `sync_hermes_api_env.ps1` + `SYNC_HERMES_API_ENV.bat`; docs `TERMINAL_WINDOWS.md`
 - [x] Profielwissel productie: `profile_switch.py`, `/profile use` + `-p` relaunch, `SWITCH_PROFILE.bat`, E2E `RUN_PROFILE_SWITCH_E2E.bat`, `docs/PROFILE_SWITCH.md`
 - [x] Profielwissel v2: `_apply_profile_override` sticky>stale env, kanban reclaim, `RUN_AUDITS.ps1`, `test_profile_switch_e2e.py` (HERMES_PROFILE_E2E=1)

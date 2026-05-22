@@ -33,7 +33,8 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | Profiel + direct chat | `SWITCH_PROFILE_AND_CHAT.bat <naam>` |
 | HERMES_HOME controleren | `scripts\verify_hermes_home.ps1` |
 | Profielwissel E2E-audit | `audits\RUN_PROFILE_SWITCH_E2E.bat` |
-| SOUL Interaction sync | `SYNC_SOUL_SNIPPETS.bat` — template `docs\templates\SOUL_SHARED_INTERACTION.md` |
+| SOUL sync (Interaction + Outputformaat) | `SYNC_SOUL_SNIPPETS.bat` — `docs\templates\SOUL_SHARED_*.md` |
+| Institutionele presentatie | `docs\INSTITUTIONAL_PRESENTATION.md` |
 | Core routing / landkaart | `docs\ORCHESTRATOR_ROUTING.md`, skill `landkaart` (`/landkaart`) |
 | Legal lenzen (één bucket) | `docs\LEGAL_DOMAIN_ARCHITECTURE.md`, `docs\LEGAL_TAXONOMY.md`, `MIGRATE_LEGAL_LAYOUT.bat` |
 | **Update fork (Nous upstream)** | `UPDATE_HERMES.bat` of `hermes_update.bat` (zelfde keten) |
@@ -92,8 +93,9 @@ Zie `docs\PROFILE_MODEL_INHERITANCE.md`.
 ## Configuratie
 
 - `launcher_config.ps1` — paden en omgeving
-- `team_display.defaults` — teamweergave (`skin=default`, `final_response_markdown=render`)
-- `apply_team_display.ps1` — schrijft naar **root** config (niet actief profiel)
+- `team_display.defaults` — teamweergave (`skin=default`, `final_response_markdown=render`, `compact=false`)
+- `apply_team_display.ps1` — team display naar **actief profiel** (`profiles\<active>\config.yaml`; `conda --env-vars HERMES_HOME`)
+- `audits\RUN_INSTITUTIONAL_E2E.bat` — institutioneel pakket (8 stappen); zie `audits\README.md`
 - `sync_hermes_api_env.ps1` — API-keys bij gesplitste Hermes-home
 - `TERMINAL_WINDOWS.md` — WT, skin, markdown-kleuren, API-home
 - `PSScriptAnalyzerSettings.psd1` — lint-regels

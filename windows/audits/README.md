@@ -9,7 +9,9 @@ Deze map bevat de **fork** kwaliteitspoorten (geen 1:1 upstream-kloon).
 | **`RUN_AUDITS.bat -IncludeInstitutionalE2E`** | Bovenstaande + landkaart/SOUL-backup/templates E2E |
 | **`RUN_AUDITS.bat -IncludeAllE2E`** | Institutioneel + legal-domein + profielwissel E2E |
 | **`RUN_AUDITS.bat -IncludeLegalDomainE2E`** | Legal taxonomie, SOUL, submappen, rooktest |
-| **`RUN_INSTITUTIONAL_E2E.bat`** | Alleen institutioneel pakket (6 stappen) |
+| **`APPLY_INSTITUTIONAL_RUNTIME.bat`** | **Automatisch:** display (alle profielen) + SOUL-sync + E2E |
+| **`RUN_INSTITUTIONAL_E2E.bat`** | Audit alleen (8 stappen); `-ApplyRuntime` = eerst runtime toepassen |
+| **`RUN_INSTITUTIONAL_E2E.bat -ApplyRuntime`** | Zelfde als `APPLY_INSTITUTIONAL_RUNTIME.bat` (zonder dubbele E2E) |
 | **`RUN_LEGAL_DOMAIN_E2E.bat`** | Legal lenzen, actieve zaken, bronlayout |
 | **`RUN_AUDITS.bat -RequirePSScriptAnalyzer`** | PSSA verplicht (exit 1 als module ontbreekt) |
 | **`RUN_PROFILE_SWITCH_E2E.bat`** | Alleen profielwissel E2E |
@@ -33,7 +35,11 @@ Bron-migratie: `windows\scripts\MIGRATE_LEGAL_LAYOUT.bat -Apply` daarna `update_
 windows\audits\RUN_INSTITUTIONAL_E2E.bat
 ```
 
-Stappen: repo-artefacten → pytest landkaart/orchestrator → landkaart CLI smoke → `backup_soul_profiles` naar `%TEMP%` → core SOUL Interaction-check → restore/update regressie.
+Stappen: repo-artefacten → pytest (landkaart + **presentatie/markdown**) → landkaart CLI smoke → `backup_soul_profiles` → runtime SOUL Interaction + Outputformaat → display config + rich_output smoke → restore/update regressie.
+
+Presentatie: zie `docs/INSTITUTIONAL_PRESENTATION.md`. **Eén commando:** `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` (of E2E met `-ApplyRuntime`). Display-check stap 6/8: **alle** profielen onder `profiles\`.
+
+Laatste rapport: `INSTITUTIONAL_E2E_REPORT_2026-05-22.md` (log `INSTITUTIONAL_E2E_LAST_RUN.log` is gitignored).
 
 ## Profielwissel E2E
 

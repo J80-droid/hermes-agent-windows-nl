@@ -1,4 +1,8 @@
-# E2E audit: institutioneel optimalisatiepakket (landkaart, SOUL backup/sync, templates)
+# E2E audit: institutioneel pakket (landkaart, SOUL, presentatie/markdown, templates)
+param(
+    [switch]$ApplyRuntime
+)
+
 $ErrorActionPreference = 'Stop'
 $scriptRoot = $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $scriptRoot '..\..')).Path
@@ -20,12 +24,24 @@ $python = & $conda run -n hermes-env python -c "import sys; print(sys.executable
 if ($LASTEXITCODE -ne 0) { throw 'hermes-env python niet beschikbaar' }
 $python = ($python | Select-Object -Last 1).Trim()
 
+if ($ApplyRuntime) {
+    Write-Host '=== 0/8 runtime toepassen (display + SOUL) ===' -ForegroundColor Cyan
+    $runtimePs1 = Join-Path $repoRoot 'windows/apply_institutional_runtime.ps1'
+    & $runtimePs1 -SkipE2E -NoPause
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    Write-Host '[OK] runtime display + SOUL toegepast' -ForegroundColor Green
+}
+
 $requiredRepo = @(
     'docs/ORCHESTRATOR_ROUTING.md',
     'docs/LEGAL_TAXONOMY.md',
     'docs/LEGAL_DOMAIN_ARCHITECTURE.md',
     'docs/templates/SOUL_LEGAL_DOMAIN.md',
     'docs/templates/SOUL_SHARED_INTERACTION.md',
+    'docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md',
+    'windows/scripts/sync_soul_output_format_snippet.ps1',
+    'hermes_cli/display_markdown.py',
+    'agent/rich_output.py',
     'docs/templates/SOUL_CORE_ORCHESTRATOR.md',
     'skills/productivity/landkaart/SKILL.md',
     'skills/productivity/landkaart/scripts/inventory_landkaart.py',
@@ -33,10 +49,18 @@ $requiredRepo = @(
     'windows/scripts/sync_soul_interaction_snippet.ps1',
     'windows/SYNC_SOUL_SNIPPETS.bat',
     'windows/scripts/migrate_legal_source_layout.ps1',
-    'docs/LEGAL_ROLLOUT_CHECKLIST.md'
+    'docs/LEGAL_ROLLOUT_CHECKLIST.md',
+    'docs/INSTITUTIONAL_PRESENTATION.md',
+    'windows/team_display.defaults',
+    'windows/scripts/institutional/README.md',
+    'windows/scripts/institutional/render_colors_legacy.py',
+    'hermes_cli/markdown_output_normalize.py',
+    'tests/cli/test_skin_markdown_theme.py',
+    'tests/agent/test_rich_output.py',
+    'tests/windows/test_team_display_defaults.py'
 )
 
-Write-Host '=== 1/6 repo-artefacten ===' -ForegroundColor Cyan
+Write-Host '=== 1/8 repo-artefacten ===' -ForegroundColor Cyan
 foreach ($rel in $requiredRepo) {
     $full = Join-Path $repoRoot ($rel -replace '/', '\')
     if (-not (Test-Path -LiteralPath $full)) {
@@ -46,7 +70,7 @@ foreach ($rel in $requiredRepo) {
 }
 Write-Host "[OK] $($requiredRepo.Count) artefacten aanwezig" -ForegroundColor Green
 
-Write-Host '=== 2/6 pytest institutioneel subset ===' -ForegroundColor Cyan
+Write-Host '=== 2/8 pytest institutioneel subset ===' -ForegroundColor Cyan
 & $python -m pytest `
     tests/skills/test_landkaart_inventory.py `
     tests/windows/test_critical_windows_scripts.py::test_orchestrator_routing_doc_exists `
@@ -54,7 +78,32 @@ Write-Host '=== 2/6 pytest institutioneel subset ===' -ForegroundColor Cyan
     -q --tb=short
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-Write-Host '=== 3/6 landkaart CLI smoke ===' -ForegroundColor Cyan
+Write-Host '=== 2b/8 pytest presentatie (markdown + rich_output) ===' -ForegroundColor Cyan
+& $python -m pytest `
+    tests/cli/test_skin_markdown_theme.py `
+    tests/cli/test_cli_markdown_rendering.py `
+    tests/hermes_cli/test_markdown_output_normalize.py `
+    tests/agent/test_rich_output.py `
+    tests/windows/test_team_display_defaults.py `
+    -q --tb=short
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+Write-Host '[OK] presentatie pytest subset' -ForegroundColor Green
+
+Write-Host '=== 2c/8 team_display.defaults inhoud ===' -ForegroundColor Cyan
+$td = Get-Content -LiteralPath (Join-Path $repoRoot 'windows/team_display.defaults') -Raw -Encoding UTF8
+foreach ($needle in @('final_response_markdown=render', 'skin=default', 'streaming=false', 'compact=false')) {
+    if ($td -notmatch [regex]::Escape($needle)) {
+        Write-Host "[FAIL] team_display.defaults mist: $needle" -ForegroundColor Red
+        exit 1
+    }
+}
+if ($td -match 'compact=true') {
+    Write-Host '[FAIL] team_display.defaults bevat nog compact=true' -ForegroundColor Red
+    exit 1
+}
+Write-Host '[OK] team_display.defaults institutioneel' -ForegroundColor Green
+
+Write-Host '=== 3/8 landkaart CLI smoke ===' -ForegroundColor Cyan
 $landkaart = Join-Path $repoRoot 'skills/productivity/landkaart/scripts/inventory_landkaart.py'
 $stdin = "alpha`nbeta`ngamma"
 $jsonOut = ($stdin | & $python $landkaart --json 2>&1 | Out-String).Trim()
@@ -75,7 +124,7 @@ if ($data.count -ne 3) {
 }
 Write-Host '[OK] landkaart inventarisatie (3 items)' -ForegroundColor Green
 
-Write-Host '=== 4/6 backup_soul_profiles (tijdelijke map) ===' -ForegroundColor Cyan
+Write-Host '=== 4/8 backup_soul_profiles (tijdelijke map) ===' -ForegroundColor Cyan
 $tempBackup = Join-Path $env:TEMP ("hermes_institutional_e2e_" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $tempBackup -Force | Out-Null
 try {
@@ -103,7 +152,7 @@ try {
     }
 }
 
-Write-Host '=== 5/6 SOUL Interaction (runtime read-only) ===' -ForegroundColor Cyan
+Write-Host '=== 5/8 SOUL Interaction (runtime read-only) ===' -ForegroundColor Cyan
 $hermesRoot = Join-Path $env:LOCALAPPDATA 'hermes'
 if (-not (Test-Path -LiteralPath (Join-Path $hermesRoot 'config.yaml'))) {
     $hermesRoot = Join-Path $env:USERPROFILE '.hermes'
@@ -125,7 +174,73 @@ if (-not (Test-Path -LiteralPath $coreSoulPath)) {
     Write-Host '[OK] core SOUL Interaction + landkaart aanwezig' -ForegroundColor Green
 }
 
-Write-Host '=== 6/6 RESTORE help + UPDATE skip-pause regressie ===' -ForegroundColor Cyan
+Write-Host '=== 5b/8 SOUL Outputformaat (runtime read-only) ===' -ForegroundColor Cyan
+$outputTemplate = Get-Content -LiteralPath (Join-Path $repoRoot 'docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md') -Raw -Encoding UTF8
+if (-not (Test-Path -LiteralPath $coreSoulPath)) {
+    Write-Host "[SKIP] Geen runtime core SOUL voor Outputformaat-check" -ForegroundColor Yellow
+} else {
+    $coreSoul = Get-Content -LiteralPath $coreSoulPath -Raw -Encoding UTF8
+    if ($coreSoul -notmatch '## Outputformaat \(institutioneel\)') {
+        Write-Host '[FAIL] core SOUL mist ## Outputformaat (institutioneel)' -ForegroundColor Red
+        exit 1
+    }
+    if ($outputTemplate -notmatch 'institutional_check' -or $coreSoul -notmatch 'institutional_check|<institutional_check>') {
+        Write-Host '[FAIL] Outputformaat/institutional_check ontbreekt in template of runtime core SOUL' -ForegroundColor Red
+        exit 1
+    }
+    Write-Host '[OK] core SOUL Outputformaat + institutional_check aanwezig' -ForegroundColor Green
+}
+
+Write-Host '=== 6/8 runtime display config (alle profielen, read-only) ===' -ForegroundColor Cyan
+$profilesDir = Join-Path $hermesRoot 'profiles'
+$displayLabels = @(
+    'final_response_markdown=render',
+    'skin=default',
+    'streaming=false',
+    'compact=false'
+)
+$profileFailures = @()
+if (-not (Test-Path -LiteralPath $profilesDir)) {
+    Write-Host '[FAIL] Geen profiles-map onder Hermes home' -ForegroundColor Red
+    exit 1
+}
+Get-ChildItem -LiteralPath $profilesDir -Directory | Sort-Object Name | ForEach-Object {
+    $profileConfigPath = Join-Path $_.FullName 'config.yaml'
+    $name = $_.Name
+    if (-not (Test-Path -LiteralPath $profileConfigPath)) {
+        $profileFailures += "${name}: geen config.yaml"
+        return
+    }
+    $cfgText = Get-Content -LiteralPath $profileConfigPath -Raw -Encoding UTF8
+    foreach ($label in $displayLabels) {
+        $pattern = ($label -replace '=', ':\s*')
+        if ($cfgText -notmatch $pattern) {
+            $profileFailures += "${name}: mist ${label}"
+        }
+    }
+    if ($cfgText -match 'compact:\s*true') {
+        $profileFailures += "${name}: compact=true"
+    }
+}
+if ($profileFailures.Count -gt 0) {
+    foreach ($msg in $profileFailures) {
+        Write-Host "[FAIL] $msg" -ForegroundColor Red
+    }
+    Write-Host '[ACTION] Draai: windows\APPLY_INSTITUTIONAL_RUNTIME.bat of apply_team_display.ps1' -ForegroundColor Yellow
+    exit 1
+}
+$profileCount = (Get-ChildItem -LiteralPath $profilesDir -Directory).Count
+Write-Host "[OK] display config institutioneel op $profileCount profiel(en)" -ForegroundColor Green
+
+Write-Host '=== 7/8 rich_output import smoke ===' -ForegroundColor Cyan
+& $python -m pytest tests/agent/test_rich_output.py::test_format_response_returns_ansi_for_markdown -q --tb=line 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host '[FAIL] rich_output / display_markdown smoke' -ForegroundColor Red
+    exit 1
+}
+Write-Host '[OK] rich_output + display_markdown smoke' -ForegroundColor Green
+
+Write-Host '=== 8/8 RESTORE help + UPDATE skip-pause regressie ===' -ForegroundColor Cyan
 $restoreBat = Join-Path $repoRoot 'windows/RESTORE_FROM_BACKUP.bat'
 $restoreText = Get-Content -LiteralPath $restoreBat -Raw -Encoding UTF8
 if ($restoreText -notmatch 'RestoreRuntimePersonas') {

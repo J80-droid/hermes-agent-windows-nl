@@ -14,8 +14,8 @@ set ERR=%ERRORLEVEL%
 echo.
 if %ERR% neq 0 (
   echo [ERROR] Exit %ERR%
-  pause
+  if not "%HERMES_SKIP_PAUSE%"=="1" pause
   exit /b %ERR%
 )
-pause
+if not "%HERMES_SKIP_PAUSE%"=="1" pause
 exit /b 0

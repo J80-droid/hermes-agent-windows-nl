@@ -7,8 +7,8 @@
 3. **Reproduceerbaar** — `.bat`-starters in `windows/`; logica in `.ps1`; tests onder `windows/tests/`. In `.bat` met `EnableDelayedExpansion`: **geen `\s` in paden** (bv. `windows\setup_...` wordt tab) — gebruik forward slashes (`windows/setup_...`) of variabele `SETUP_PS1`.
 4. **Geen secrets in git** — `config.yaml`, logs en `.hermeslocal` staan in root `.gitignore`.
 5. **Python (institutioneel)** — **conda `hermes-env`** voor RAG, CLI, setup, ingest. **Native invoke:** `HermesNativeInvoke.ps1` voor conda/uv (geen `2>&1` — voorkomt UPDATE-stop op conda-stderr). Repo-`.venv` alleen met werkende pip én `HERMES_ALLOW_UV_VENV=1`. Kapotte `.venv` (geen pip) → automatisch `.venv.disabled-<stamp>` via `REPAIR_PYTHON.bat` / `ensure_hermes_python.ps1`. Niet de workspace-`(venv)` van Cursor gebruiken.
-5b. **Terminal (TUI-kleuren)** — start via `launch_hermes.bat` / `start_hermes.bat` → **Windows Terminal** (`wt -M`), niet handmatig in legacy `cmd` (RGB/BGR-inversie). Standaard **één paneel** (`launcher_config.ps1`); `start_hermes_split.bat` alleen met `HERMES_START_SPLIT=1`. Skin **`default`** (goud) via `APPLY_TEAM_DISPLAY.bat`. Antwoord-markdown (`final_response_markdown: render`) gebruikt skin-goud in `cli.py` (`_skin_markdown_theme`), niet Rich-magenta. Zie `windows/TERMINAL_WINDOWS.md`. Override: `HERMES_SKIP_WINDOWS_TERMINAL=1`.
-5c. **Hermes-home & secrets** — config onder `%LOCALAPPDATA%\hermes\`; oude keys kunnen in `%USERPROFILE%\.hermes\.env` staan. Bij Gemini HTTP 400: `SYNC_HERMES_API_ENV.bat`. `apply_team_display.ps1` zet display altijd op **root** `config.yaml`.
+5b. **Terminal (TUI-kleuren)** — start via `launch_hermes.bat` / `start_hermes.bat` → **Windows Terminal** (`wt -M`), niet handmatig in legacy `cmd` (RGB/BGR-inversie). Standaard **één paneel** (`launcher_config.ps1`); `start_hermes_split.bat` alleen met `HERMES_START_SPLIT=1`. Skin **`default`** (goud) via `APPLY_TEAM_DISPLAY.bat`. Antwoord-markdown (`final_response_markdown: render`) gebruikt skin-goud via `hermes_cli/display_markdown.py` + `agent/rich_output.py`, niet Rich-magenta. Zie `windows/TERMINAL_WINDOWS.md`. Override: `HERMES_SKIP_WINDOWS_TERMINAL=1`.
+5c. **Hermes-home & secrets** — config onder `%LOCALAPPDATA%\hermes\`; oude keys kunnen in `%USERPROFILE%\.hermes\.env` staan. Bij Gemini HTTP 400: `SYNC_HERMES_API_ENV.bat`. `apply_team_display.ps1` zet display op **actief profiel** (`profiles\<active>\config.yaml`); model blijft in root `config.yaml`.
 6. **Eén inference-model** — `model`/`provider` alleen in `%LOCALAPPDATA%\hermes\config.yaml`; domeinprofielen (`profiles\legal`, …) alleen MCP/toolsets. Zie `docs/PROFILE_MODEL_INHERITANCE.md`.
 7. **RAG-ingest performance** — preset via `HERMES_RAG_PERF_PROFILE` (`safe` / `balanced` / `fast` / `off`); defaults in `windows/scripts/rag_ingest_perf_defaults.ps1` (aangeroepen door `update_knowledge.bat`). Expliciete `HERMES_RAG_CONVERT_WORKERS`, `HERMES_RAG_EMBED_BATCH` en `HERMES_RAG_CONVERT_HEARTBEAT_SEC` winnen altijd. Ingest draait **sequentieel per bron**; `run_rag_ingest.ps1` start Python in `hermes-env` (niet een losse PowerShell zonder conda). Live voortgang: console `[LIVE]` + `%HERMES_LANCEDB_PATH%\rag_ingest_live_status.json`.
 
@@ -18,7 +18,8 @@
 | --------- | --- | --- |
 | Backup | `windows\backup_hermes.ps1` | **Moet in git** — `MANAGE_BACKUPS.bat`, `launch_hermes.bat update` |
 | SOUL-backup | `windows\backup_soul_profiles.ps1` | `%LOCALAPPDATA%\hermes` → `localappdata_hermes/` in backup |
-| SOUL-sync | `windows\SYNC_SOUL_SNIPPETS.bat` | Template `docs/templates/SOUL_SHARED_INTERACTION.md` |
+| SOUL-sync | `windows\SYNC_SOUL_SNIPPETS.bat` | `SOUL_SHARED_INTERACTION.md` + `SOUL_SHARED_OUTPUT_FORMAT.md` |
+| Presentatie | `docs/INSTITUTIONAL_PRESENTATION.md` | Rich render + globale typografie; legacy `windows/scripts/institutional/` |
 | Core SOUL template | `docs/templates/SOUL_CORE_ORCHESTRATOR.md` | Routing/clarification/landkaart; niet overschreven door sync |
 | Restore | `windows\restore_from_backup.ps1` | **Moet in git** — `RESTORE_FROM_BACKUP.bat`; `-RestoreRuntimePersonas` |
 | Manifest | `windows\WindowsLocalAssetsManifest.ps1` | Enige lijst voor `_local_assets` sync/restore |
@@ -102,6 +103,6 @@ Profiel-persona: `%LOCALAPPDATA%\hermes\profiles\<naam>\SOUL.md` — zie `docs/P
 
 **Tests (Windows):** `pyproject.toml` gebruikt `pytest --timeout-method=thread` (geen `SIGALRM`). Enkele test: `pytest tests/hermes_cli/test_profile_orphan_wrappers.py -q` met `PYTEST_ADDOPTS=-n0`.
 
-**Periodieke rooktest (aanbevolen):** `windows\audits\RUN_AUDITS.bat -IncludeAllE2E` (wekelijks of vóór grote wijzigingen).
+**Periodieke rooktest (aanbevolen):** `windows\audits\RUN_AUDITS.bat -IncludeAllE2E` (wekelijks of vóór grote wijzigingen). Presentatie alleen: `RUN_INSTITUTIONAL_E2E.bat` — rapport `windows\audits\INSTITUTIONAL_E2E_REPORT_2026-05-22.md`.
 
 **Legal domein:** na SOUL/taxonomie-wijziging → `RUN_LEGAL_DOMAIN_E2E.bat`; bronlayout → `windows\scripts\MIGRATE_LEGAL_LAYOUT.bat -Apply` → `update_knowledge.bat legal`. Zie `docs\LEGAL_DOMAIN_ARCHITECTURE.md`.

@@ -62,6 +62,11 @@ def test_update_hermes_uses_upstream_sync():
 def test_orchestrator_routing_doc_exists():
     assert (REPO / "docs/ORCHESTRATOR_ROUTING.md").is_file()
     assert (REPO / "docs/templates/SOUL_SHARED_INTERACTION.md").is_file()
+    assert (REPO / "docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md").is_file()
+    assert (REPO / "docs/INSTITUTIONAL_PRESENTATION.md").is_file()
+    assert (REPO / "windows/scripts/sync_soul_output_format_snippet.ps1").is_file()
+    assert (REPO / "windows/apply_institutional_runtime.ps1").is_file()
+    assert (REPO / "windows/APPLY_INSTITUTIONAL_RUNTIME.bat").is_file()
     assert (REPO / "docs/templates/SOUL_CORE_ORCHESTRATOR.md").is_file()
     assert (REPO / "docs/LEGAL_TAXONOMY.md").is_file()
     assert (REPO / "docs/LEGAL_DOMAIN_ARCHITECTURE.md").is_file()

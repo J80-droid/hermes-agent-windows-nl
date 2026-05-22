@@ -44,7 +44,9 @@ of: `hermes config set display.skin default` — daarna Hermes opnieuw starten.
 ### Markdown in antwoordpanelen (### koppen, **vet:**)
 
 Met `display.final_response_markdown: render` gebruikt Rich standaard **magenta** koppen — geen skin-bug.
-De fork past sinds de skin-markdown-theme in `cli.py` (`_skin_markdown_theme`) goud/amber aan op de actieve skin (`banner_title`, `ui_label`, …).
+De fork past goud/amber toe via `hermes_cli/display_markdown.py` (`skin_markdown_theme`) op de actieve skin (`banner_title`, `ui_label`, …). TUI-gateway: `agent/rich_output.py`.
+
+Team-defaults: `compact=false` (meer witruimte tussen secties). Globale presentatieregels: `docs/INSTITUTIONAL_PRESENTATION.md` + `SYNC_SOUL_SNIPPETS.bat`.
 
 ### API-keys (twee Hermes-homes)
 
@@ -60,7 +62,7 @@ Kopieert `GOOGLE_API_KEY` naar root `.env`, werkt alle `profiles\*\.env` bij, en
 
 | Script | Doel |
 | ------ | ---- |
-| `APPLY_TEAM_DISPLAY.bat` | `skin=default`, `final_response_markdown=render`, `streaming=false`, `compact=true` op **root** config |
+| `APPLY_TEAM_DISPLAY.bat` | `skin=default`, `final_response_markdown=render`, `streaming=false`, `compact=false` op **root** config |
 | `SYNC_HERMES_API_ENV.bat` | API-keys + profiel-`.env` + Gemini pool |
 | `FIX_GEMINI_CREDENTIAL_POOL.bat` | Alleen pool in `auth.json` (root + profielen) herstellen |
 | `SWITCH_PROFILE.bat <naam>` | Sticky profiel + API-sync + `HERMES_HOME`-fix + gateway (indien actief) |

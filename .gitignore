@@ -81,14 +81,14 @@ docs/superpowers/*
 .hermes_windows_setup_fingerprint
 .hermes_windows_tinker_install_fail
 .hermeslocal/
-watch_hermes.ps1
-render_colors.py
+output/
 tests/cli/test_cli_config_profile_root_merge.py
 hermes_launch.log
 hermes_runtime.log
 hermes_setup.log
 windows/scripts/rag_ingest_bulk.log
 windows/scripts/rag_ingest_bulk.err.log
+windows/audits/INSTITUTIONAL_E2E_LAST_RUN.log
 config.yaml
 memory/
 profiles/
