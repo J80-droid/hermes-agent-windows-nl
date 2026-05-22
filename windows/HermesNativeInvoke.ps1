@@ -35,8 +35,14 @@ function Invoke-HermesNativeCommand {
         if ($Quiet) {
             & $FilePath @ArgumentList *> $null
         } else {
-            # Out-Host: geen pipeline-output (anders telt PS stdout als returnwaarde i.p.v. exitcode)
-            & $FilePath @ArgumentList | Out-Host
+            # 2>&1 + ForEach-Object + [void]: conda-stderr naar console, geen NativeCommandError (EAP Continue), geen return-output
+            [void](& $FilePath @ArgumentList 2>&1 | ForEach-Object {
+                if ($_ -is [System.Management.Automation.ErrorRecord]) {
+                    Write-Host $_.ToString()
+                } else {
+                    Write-Host $_
+                }
+            })
         }
         $code = $LASTEXITCODE
         if ($null -eq $code) { $code = if ($?) { 0 } else { 1 } }

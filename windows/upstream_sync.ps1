@@ -239,7 +239,8 @@ try {
     }
 
     if ($script:UpstreamExitCode -eq 0 -and $Phase -eq 'Update' -and -not $SkipHermesUpdate) {
-        $uerr = [int](Invoke-HermesUpdate -ExtraArgs $HermesUpdateArgs)
+        $uerrRaw = Invoke-HermesUpdate -ExtraArgs $HermesUpdateArgs
+        $uerr = if ($null -eq $uerrRaw) { 1 } elseif ($uerrRaw -is [array]) { [int]($uerrRaw[-1]) } else { [int]$uerrRaw }
         if ($uerr -ne 0) {
             Write-Err "hermes update eindigde met exitcode $uerr"
             Write-Host "        Bij merge-conflicten: windows\UPSTREAM_SYNC.md"
