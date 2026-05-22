@@ -5805,13 +5805,15 @@ class HermesCLI:
         args = parts[1:] if len(parts) > 1 else []
 
         if not args:
+            from hermes_cli.profiles import get_active_profile
+
             display = display_hermes_home()
-            profile_name = get_active_profile_name()
+            sticky = get_active_profile()
             print()
-            print(f"  Profile: {profile_name}")
-            print(f"  Home:    {display}")
+            print(f"  Sticky profiel: {sticky}")
+            print(f"  Home:           {display}")
             print()
-            print("  Wisselen: /profile use <naam> [--no-restart] (bevestiging + herstart)")
+            print("  Wisselen: /profile use <naam>  of  /profile <naam>  [--no-restart]")
             print("  Lijst:    /profile list")
             print()
             return True
