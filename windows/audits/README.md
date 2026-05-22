@@ -9,7 +9,8 @@ Deze map bevat de **fork** kwaliteitspoorten (geen 1:1 upstream-kloon).
 | **`RUN_AUDITS.bat -RequirePSScriptAnalyzer`** | PSSA verplicht (exit 1 als module ontbreekt) |
 | **`RUN_PROFILE_SWITCH_E2E.bat`** | Alleen profielwissel E2E |
 | **`windows\tests\RUN_PYTEST.bat`** | Brede pytest (excl. integration) |
-| **`windows\VERIFY_WINDOWS_CHAIN.bat`** | Script-keten backup/RAG |
+| **`windows\VERIFY_WINDOWS_CHAIN.bat`** | Script-keten backup/RAG (handmatig, pause) |
+| **`UPDATE_HERMES.bat`** | Zelfde verify via `verify_windows_script_chain.ps1` in keten (geen pause) |
 
 ## Profielwissel E2E
 

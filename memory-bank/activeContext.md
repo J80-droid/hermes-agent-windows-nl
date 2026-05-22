@@ -38,7 +38,7 @@
 
 | Script | Rol |
 |--------|-----|
-| `UPDATE_HERMES.bat` | Update + auto `fix_hermes_taskbar_pins` |
+| `UPDATE_HERMES.bat` | Update + verify (`.ps1`, geen pause) + auto `fix_hermes_taskbar_pins` |
 | `POST_GIT_PULL.bat` | Na pull op andere machine |
 | `FIX_TASKBAR_ICONS.bat` | Handmatig icoon + pins |
 | `.lnk` vastmaken | Sleep `.lnk` uit `windows\`, niet `.bat` |

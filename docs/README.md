@@ -57,12 +57,11 @@ flowchart TB
 
 ## Onderhoud
 
-- **Windows backup/script-keten:** `windows\VERIFY_WINDOWS_CHAIN.bat` (na pull of vóór backup)
+- **Windows script-keten (handmatig):** `windows\VERIFY_WINDOWS_CHAIN.bat` — dubbelklik; controleert setup wrapper, `.bat`→`.ps1`, taakbalk-`.lnk` (eindigt met pause)
 - **Na `git pull`:** `windows/POST_GIT_PULL.bat` (verify + taakbalk-iconen)
-- **Windows-keten controleren:** `windows/VERIFY_WINDOWS_CHAIN.bat` (setup wrapper + `.bat`→`.ps1` + taakbalk-`.lnk`)
+- **Nous upstream-update:** `windows\UPDATE_HERMES.bat` — preflight + merge + RAG + verify via `verify_windows_script_chain.ps1` (**geen pause** in de keten; zie [UPSTREAM_SYNC.md](../windows/UPSTREAM_SYNC.md))
 - **Setup (dubbelklik):** `windows\SETUP_HERMES.bat` (standaard wizard); `OPEN_SETUP.bat` alleen wizard; `--files-only` zonder wizard
 - **Taakbalk-iconen:** `python windows/tools/generate_colored_hermes_icons.py` → `windows\FIX_TASKBAR_ICONS.bat` → F5; pin via `.lnk`, niet `.bat`
-- **Nous upstream-update:** `windows\UPDATE_HERMES.bat` (preflight + merge + RAG + taakbalk; zie `windows\UPSTREAM_SYNC.md`)
 - **Na upstream-merge:** inspectie via `git log` + rooktest-matrix in [UPSTREAM_SYNC.md § inspectie](../windows/UPSTREAM_SYNC.md#upstream-wijzigingen-na-merge-inspectie) (geen handmatig commit-archief in docs)
 - **P0+P1-pipeline (institutioneel):** `windows\scripts\institutional_p0_p1.bat`  
   Sync MCP → doctor --fix → MCP-test alle domeinen → legal rooktest.  

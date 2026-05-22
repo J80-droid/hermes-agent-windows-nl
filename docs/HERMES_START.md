@@ -73,12 +73,12 @@ hermes -p philosophy chat
 D:\A.I\APPS\Hermes_agent_WS\hermes-agent\windows\UPDATE_HERMES.bat
 ```
 
-Preflight, merge en RAG-postinstall zitten in het script.
+Preflight, merge, RAG-postinstall en script-keten-verify zitten in het script. Verify in de keten: `verify_windows_script_chain.ps1` (geen pause); handmatig: `VERIFY_WINDOWS_CHAIN.bat` (wel pause).
 
 | Na actie | Script |
 | -------- | ------ |
 | `git pull` | `windows/POST_GIT_PULL.bat` |
-| Keten controleren | `windows/VERIFY_WINDOWS_CHAIN.bat` |
+| Keten controleren (handmatig) | `windows/VERIFY_WINDOWS_CHAIN.bat` |
 | Setup + wizard | `windows/SETUP_HERMES.bat` (standaard) of `OPEN_SETUP.bat`; alleen bestanden: `--files-only` |
 | Icoon kapot / leeg in Explorer | `python windows/tools/generate_colored_hermes_icons.py` daarna `windows/FIX_TASKBAR_ICONS.bat` + F5 |
 | Taakbalk-pin | Via `Hermes - * - naar taakbalk slepen.lnk` (niet `.bat` slepen) |

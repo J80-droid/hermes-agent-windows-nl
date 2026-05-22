@@ -16,14 +16,14 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 
 | Taak | Commando |
 | ---- | -------- |
-| Upstream / fork update | `windows\UPDATE_HERMES.bat` |
+| Upstream / fork update | `windows\UPDATE_HERMES.bat` (verify in keten via `.ps1`, geen pause — zie `windows\UPSTREAM_SYNC.md`) |
 | Na `git pull` (andere machine of na grote wijziging) | `windows\POST_GIT_PULL.bat` |
 | Taakbalk-iconen | `windows\FIX_TASKBAR_ICONS.bat` |
 | Snelkoppelingen vernieuwen | `windows\REFRESH_TASKBAR_SHORTCUTS.bat` |
 | Setup (logica) | `scripts\windows\setup_hermes_windows.ps1` — **niet** volledig kopiëren naar `windows\` |
 | Setup (dubbelklik) | `windows\SETUP_HERMES.bat` — standaard wizard; `--files-only` = alleen bestanden |
 
-**Setup PS1:** alleen `scripts/windows/setup_hermes_windows.ps1` bewerken; `windows/setup_hermes_windows.ps1` blijft wrapper. Controle: `VERIFY_WINDOWS_CHAIN.bat`.
+**Setup PS1:** alleen `scripts/windows/setup_hermes_windows.ps1` bewerken; `windows/setup_hermes_windows.ps1` blijft wrapper. Keten controleren: handmatig `VERIFY_WINDOWS_CHAIN.bat`; in `UPDATE_HERMES.bat` automatisch via `verify_windows_script_chain.ps1`.
 
 **Taakbalk:** pin altijd via `Hermes - * - naar taakbalk slepen.lnk` in `windows\`, niet door `.bat` te slepen (cmd-H-icoon).
 
