@@ -15,72 +15,6 @@ $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } elseif ($MyInvocation.MyComman
 }
 . (Join-Path $scriptDir 'HermesIconGeneratorInvoke.ps1')
 
-function Resolve-HermesShortcutIconLocation {
-    param([string]$IconSpec, [string]$RepoRoot)
-    if ([string]::IsNullOrWhiteSpace($IconSpec)) {
-        $ico = Join-Path $RepoRoot "windows\hermes_logo.ico"
-        if (-not (Test-Path -LiteralPath $ico)) {
-            $ico = Join-Path $RepoRoot "hermes_logo.ico"
-        }
-        if (Test-Path -LiteralPath $ico) {
-            return (Get-HermesWindowsShellIcoLocation -IcoPath $ico)
-        }
-        return "cmd.exe"
-    }
-    if ($IconSpec -match '^(.+),(-?\d+)$') {
-        $dll = $matches[1].Trim()
-        if (Test-Path -LiteralPath $dll) { return $IconSpec }
-    }
-    if (Test-Path -LiteralPath $IconSpec) {
-        if ($IconSpec -match '\.ico$') {
-            return (Get-HermesWindowsShellIcoLocation -IcoPath $IconSpec)
-        }
-        return $IconSpec
-    }
-    return "cmd.exe"
-}
-
-function New-HermesTaskbarShortcut {
-    [CmdletBinding(SupportsShouldProcess)]
-    param(
-        [Parameter(Mandatory)][string]$ShortcutPath,
-        [Parameter(Mandatory)][string]$RepoRoot,
-        [Parameter(Mandatory)][string]$LaunchBatPath,
-        [Parameter(Mandatory)][string]$Description,
-        [Parameter(Mandatory)][string]$IconSpec
-    )
-    if (-not (Test-Path -LiteralPath $LaunchBatPath)) { return $false }
-    if (-not $PSCmdlet.ShouldProcess($ShortcutPath, 'Create', 'Taskbar shortcut')) { return $false }
-    $iconLoc = Resolve-HermesShortcutIconLocation -IconSpec $IconSpec -RepoRoot $RepoRoot
-    if (Test-Path -LiteralPath $ShortcutPath) {
-        Remove-Item -LiteralPath $ShortcutPath -Force -ErrorAction SilentlyContinue
-    }
-    $WshShell = New-Object -ComObject WScript.Shell
-    $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
-    # Taakbalk (Win10/11): .bat als TargetPath laat zich vaak NIET vastpinnen bij slepen.
-    # cmd.exe /c + pad naar .bat werkt wel (zelfde truc als create_shortcut.ps1).
-    if ($LaunchBatPath -match '\.bat$') {
-        $Shortcut.TargetPath = "$env:SystemRoot\System32\cmd.exe"
-        $Shortcut.Arguments = "/c `"$LaunchBatPath`""
-    } else {
-        $Shortcut.TargetPath = 'cmd.exe'
-        $Shortcut.Arguments = "/c `"$LaunchBatPath`""
-    }
-    $Shortcut.WorkingDirectory = $RepoRoot
-    if ($iconLoc -and $iconLoc -notmatch '^cmd\.exe') {
-        $Shortcut.IconLocation = $iconLoc
-    }
-    $Shortcut.Description = $Description
-    $Shortcut.Save()
-    if ($iconLoc -and $iconLoc -notmatch '^cmd\.exe') {
-        $Shortcut.IconLocation = $iconLoc
-        $Shortcut.Save()
-    }
-    [System.Runtime.InteropServices.Marshal]::ReleaseComObject($Shortcut) | Out-Null
-    [System.Runtime.InteropServices.Marshal]::ReleaseComObject($WshShell) | Out-Null
-    return $true
-}
-
 if (-not $RepoRoot.Trim()) {
     if ((Split-Path -Leaf $scriptDir) -ieq 'windows') {
         $RepoRoot = (Resolve-Path (Join-Path $scriptDir '..')).Path
@@ -103,6 +37,7 @@ if ($needIconGen) {
     }
     [void](Invoke-HermesColoredIconsFromPng -IconGeneratorPy $icoGenPy -Quiet:$Quiet)
 }
+[void](Publish-HermesShortcutIconCache -WindowsDir $windowsDirResolved)
 
 . (Join-Path $scriptDir 'launcher_config.ps1')
 $startHermesRel = Get-HermesStartLauncherRelativePath -RepoRoot $RepoRoot
@@ -151,12 +86,11 @@ $shortcutDescriptions = @(
     'Hermes RAG: nacht-run (NONINTERACTIVE, incrementeel, alle domeinen) - sleep naar taakbalk'
 )
 
-# Oude bestandsnaam was onduidelijk ("Hermes Agent"); verwijderen om dubbels te vermijden.
-$legacyStartLnk = Join-Path $OutDir "Hermes Agent - naar taakbalk slepen.lnk"
+$legacyStartLnk = Join-Path $OutDir 'Hermes Agent - naar taakbalk slepen.lnk'
 if (Test-Path -LiteralPath $legacyStartLnk) {
     Remove-Item -LiteralPath $legacyStartLnk -Force -ErrorAction SilentlyContinue
     if (-not $Quiet) {
-        Write-Host "  [INFO] Oude snelkoppeling verwijderd: Hermes Agent - naar taakbalk slepen.lnk" -ForegroundColor DarkGray
+        Write-Host '  [INFO] Oude snelkoppeling verwijderd: Hermes Agent - naar taakbalk slepen.lnk' -ForegroundColor DarkGray
     }
 }
 
@@ -167,10 +101,12 @@ if (-not $Quiet) {
 $shortcutPairCount = $shortcutNames.Count
 for ($shortcutIndex = 0; $shortcutIndex -lt $shortcutPairCount; $shortcutIndex++) {
     $lnkPath = Join-Path $OutDir $shortcutNames[$shortcutIndex]
-    $batPath = Join-Path $RepoRoot $shortcutBats[$shortcutIndex]
-    $iconSpec = Get-HermesTaskbarRoleIconPath -Role $shortcutRoles[$shortcutIndex] -WindowsDir $windowsDirResolved
+    $batPath = Join-Path $RepoRoot ($shortcutBats[$shortcutIndex] -replace '/', '\')
+    $iconPath = Get-HermesTaskbarRoleIconPath -Role $shortcutRoles[$shortcutIndex] -WindowsDir $windowsDirResolved
     try {
-        if (New-HermesTaskbarShortcut -ShortcutPath $lnkPath -RepoRoot $RepoRoot -LaunchBatPath $batPath -Description $shortcutDescriptions[$shortcutIndex] -IconSpec $iconSpec) {
+        if (Set-HermesShellShortcut -ShortcutPath $lnkPath -TargetBatPath $batPath `
+                -IconIcoPath $iconPath -WorkingDirectory $RepoRoot `
+                -Description $shortcutDescriptions[$shortcutIndex]) {
             if (-not $Quiet) {
                 Write-Host "  [OK] $($shortcutNames[$shortcutIndex])" -ForegroundColor Green
             }

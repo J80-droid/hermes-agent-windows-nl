@@ -143,12 +143,33 @@ def _synthetic_base_rgba(size: int = 256) -> Image.Image:
 def _find_source_png(repo_root: Path, explicit: Path | None) -> Path | None:
     if explicit is not None:
         return explicit if explicit.is_file() else None
+    candidates: list[Path] = []
     assets = repo_root / "assets"
     for name in ("Hermes_logo.png", "hermes_logo.png"):
-        p = assets / name
+        candidates.append(assets / name)
+    home = Path.home()
+    candidates.extend(
+        (
+            home / ".hermes" / "_local_assets" / "assets" / "Hermes_logo.png",
+            home / ".hermes" / "_local_assets" / "assets" / "hermes_logo.png",
+            home / ".hermes" / "_local_assets" / "repo_assets" / "Hermes_logo.png",
+        )
+    )
+    for p in candidates:
         if p.is_file():
             return p
     return None
+
+
+def _ensure_repo_assets_png(repo_root: Path, png_path: Path) -> Path:
+    """Spiegel bron-PNG naar assets/ zodat setup/clone dezelfde bron heeft."""
+    dest_dir = repo_root / "assets"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / "Hermes_logo.png"
+    if not dest.is_file() or dest.stat().st_size != png_path.stat().st_size:
+        shutil.copy2(png_path, dest)
+        print(f"[OK] Bron-PNG gekopieerd naar {dest.relative_to(repo_root)}")
+    return dest
 
 
 def _load_master_from_png(png_path: Path, *, apply_black_key: bool = True) -> Image.Image:
@@ -463,18 +484,22 @@ def _patch_ico_bmp_append_and_mask(ico_path: Path) -> None:
 
 def _save_ico(pyramid_smallest_first: list[Image.Image], path: Path) -> None:
     """
-    Eén 256×256-laag: bewezen Windows/Explorer-compatibel na ``_patch_ico_bmp_append_and_mask``.
-    Multi-size ICO via Pillow+bmp brak Shell-preview (corrupt BMP header); niet opnieuw zonder aparte test.
-    ``IconLocation`` blijft ``,0``.
+    Multi-size ICO (16–256, PNG in ICO) — vereist voor Verkenner + .lnk IconLocation.
+    Enkelvoudige 256×256 BMP-ICO gaf synthetisch H / generiek document-icoon in shortcuts.
     """
-    largest = _finalize_transparency_for_windows_ico(pyramid_smallest_first[-1].convert("RGBA"))
+    prepared = [
+        _finalize_transparency_for_windows_ico(layer.convert("RGBA"))
+        for layer in pyramid_smallest_first
+    ]
+    # Pillow gebruikt het grootste beeld als basis; niet de 16×16-laag (anders 1-laags ~1 KB ICO).
+    largest = prepared[-1]
+    smaller = prepared[:-1]
     largest.save(
         path,
         format="ICO",
-        sizes=[(256, 256)],
-        bitmap_format="bmp",
+        sizes=[(im.width, im.height) for im in prepared],
+        append_images=smaller if smaller else [],
     )
-    _patch_ico_bmp_append_and_mask(path)
 
 
 def _load_master_from_windows_ico(windows_dir: Path) -> Image.Image | None:
@@ -527,6 +552,7 @@ def main() -> None:
     apply_key = not args.no_black_key
 
     if png_path is not None:
+        png_path = _ensure_repo_assets_png(repo_root, png_path)
         if not args.full_square:
             _write_circular_masked_source_png(png_path, apply_black_key=apply_key)
             print(
@@ -559,7 +585,7 @@ def main() -> None:
     base_pyramid = _pyramid_from_master(master)
     out_main = windows_dir / "hermes_logo.ico"
     _save_ico(base_pyramid, out_main)
-    print(f"[OK] {out_main.name} — originele kleuren (256×256 ICO)")
+    print(f"[OK] {out_main.name} — originele kleuren ({len(ICO_SIZES)} lagen ICO)")
 
     for filename, tint in VARIANTS.items():
         layers: list[Image.Image] = []
@@ -573,7 +599,7 @@ def main() -> None:
                 layers.append(_recolor_hue_rgba(layer.copy(), tr, tg, tb, sat_boost=boost))
         out_path = windows_dir / filename
         _save_ico(layers, out_path)
-        print(f"[OK] {out_path.name} (256×256 ICO)")
+        print(f"[OK] {out_path.name} ({len(ICO_SIZES)} lagen ICO)")
 
 
 if __name__ == "__main__":

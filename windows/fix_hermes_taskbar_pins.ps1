@@ -1,5 +1,5 @@
 ﻿#requires -Version 5.1
-# Vernieuwt Hermes-taakbalk-pins: cmd.exe-wrapper + gekleurde .ico (geen hermes_taskbar_white in .lnk).
+# Vernieuwt Hermes-taakbalk-.lnk (bat+ico in windows\) en taakbalk-pins (cmd-wrapper in User Pinned).
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [string]$RepoRoot = '',
@@ -39,6 +39,16 @@ public static class HermesShellNotify {
     }
 }
 
+function Remove-HermesStrayShortcutFiles {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([Parameter(Mandatory)][string]$Dir)
+    Get-ChildItem -LiteralPath $Dir -Filter '*.lnk' -File -ErrorAction SilentlyContinue | ForEach-Object {
+        if ($_.Name -match '^(test_|_test_)' -and $PSCmdlet.ShouldProcess($_.FullName, 'Remove', 'Stray test shortcut')) {
+            Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 function Remove-HermesTaskbarShortcutFiles {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][string]$Dir)
@@ -59,41 +69,6 @@ function Remove-HermesTaskbarShortcutFiles {
     }
 }
 
-function Repair-HermesBatShortcut {
-    [CmdletBinding(SupportsShouldProcess)]
-    param(
-        [string]$LnkPath,
-        [string]$BatPath,
-        [string]$RepoRoot,
-        [string]$IconLocation
-    )
-    if (-not (Test-Path -LiteralPath $LnkPath)) { return }
-    if (-not $PSCmdlet.ShouldProcess($LnkPath, 'Update', 'Hermes shortcut')) { return }
-    if (-not (Test-Path -LiteralPath $BatPath)) { return }
-    $w = New-Object -ComObject WScript.Shell
-    $s = $w.CreateShortcut($LnkPath)
-    $s.TargetPath = Join-Path $env:SystemRoot 'System32/cmd.exe'
-    $s.Arguments = '/c "' + $BatPath + '"'
-    $s.WorkingDirectory = $RepoRoot
-    if ($IconLocation) { $s.IconLocation = $IconLocation }
-    $s.Save()
-}
-
-function Update-PinnedHermesShortcut {
-    [CmdletBinding(SupportsShouldProcess)]
-    param(
-        [string]$SourceLnk,
-        [string]$PinnedDir
-    )
-    if (-not (Test-Path -LiteralPath $SourceLnk)) { return $false }
-    if (-not (Test-Path -LiteralPath $PinnedDir)) { return $false }
-    $name = [IO.Path]::GetFileName($SourceLnk)
-    $dest = Join-Path $PinnedDir $name
-    if (-not $PSCmdlet.ShouldProcess($dest, 'Update', 'Pinned taskbar shortcut')) { return $false }
-    Copy-Item -LiteralPath $SourceLnk -Destination $dest -Force
-    return $true
-}
-
 $createPs1 = Join-Path $scriptDir 'create_taskbar_shortcuts.ps1'
 if (-not (Test-Path -LiteralPath $createPs1)) {
     Write-Host "[ERROR] Ontbreekt: $createPs1" -ForegroundColor Red
@@ -103,68 +78,57 @@ if (-not (Test-Path -LiteralPath $createPs1)) {
 $icoGenPy = Join-Path $scriptDir (Join-Path 'tools' 'generate_colored_hermes_icons.py')
 if (Test-Path -LiteralPath $icoGenPy) {
     if (-not $Quiet) {
-        Write-Host '[INFO] Icoonset opnieuw genereren (alle groottes voor .lnk)...' -ForegroundColor Gray
+        Write-Host '[INFO] Icoonset opnieuw genereren...' -ForegroundColor Gray
     }
     [void](Invoke-HermesColoredIconsFromPng -IconGeneratorPy $icoGenPy -Quiet)
 }
 
+Remove-HermesStrayShortcutFiles -Dir $scriptDir
 Remove-HermesTaskbarShortcutFiles -Dir $scriptDir
 & $createPs1 -RepoRoot $RepoRoot -OutDir $scriptDir -Quiet:$Quiet
 
 $startBatFull = Join-Path $RepoRoot (Get-HermesStartLauncherRelativePath -RepoRoot $RepoRoot)
-
-$repairRows = @(
-    , @('Hermes - update - naar taakbalk slepen.lnk', 'UPDATE_HERMES.bat', 'Update')
-    , @('Hermes - setup Windows - naar taakbalk slepen.lnk', 'setup_hermes_windows.bat', 'Setup')
-    , @('Start Hermes - naar taakbalk slepen.lnk', '', 'Start')
-    , @('Hermes - backup - naar taakbalk slepen.lnk', 'MANAGE_BACKUPS.bat', 'Backup')
-    , @('Hermes - lokale bestanden herstellen - naar taakbalk slepen.lnk', 'restore_local_assets.bat', 'Restore')
-    , @('Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk', 'RAG_KNOWLEDGE_UPDATE_NIGHT.bat', 'Rag')
+$pinRows = @(
+    @{ Lnk = 'Hermes - update - naar taakbalk slepen.lnk'; Bat = 'UPDATE_HERMES.bat'; Role = 'Update' },
+    @{ Lnk = 'Hermes - setup Windows - naar taakbalk slepen.lnk'; Bat = 'setup_hermes_windows.bat'; Role = 'Setup' },
+    @{ Lnk = 'Start Hermes - naar taakbalk slepen.lnk'; Bat = ''; Role = 'Start' },
+    @{ Lnk = 'Hermes - backup - naar taakbalk slepen.lnk'; Bat = 'MANAGE_BACKUPS.bat'; Role = 'Backup' }
 )
-
-foreach ($row in $repairRows) {
-    $lnk = Join-Path $scriptDir $row[0]
-    if (-not (Test-Path -LiteralPath $lnk)) { continue }
-    $batPath = if ($row[1]) { Join-Path $scriptDir $row[1] } else { $startBatFull }
-    if (-not (Test-Path -LiteralPath $batPath)) { continue }
-    $iconLoc = Get-HermesTaskbarRoleIconLocation -Role $row[2] -WindowsDir $scriptDir
-    Repair-HermesBatShortcut -LnkPath $lnk -BatPath $batPath -RepoRoot $RepoRoot -IconLocation $iconLoc
-}
-
-$openBat = Join-Path $scriptDir 'OPEN_SETUP.bat'
-if (Test-Path -LiteralPath $openBat) {
-    $openIcon = Get-HermesTaskbarRoleIconLocation -Role 'OpenSetup' -WindowsDir $scriptDir
-    Repair-HermesBatShortcut -LnkPath (Join-Path $scriptDir 'Hermes - Open Setup - naar taakbalk slepen.lnk') `
-        -BatPath $openBat -RepoRoot $RepoRoot -IconLocation $openIcon
-}
 
 $pinnedDir = Join-Path $env:APPDATA (Join-Path 'Microsoft' (Join-Path 'Internet Explorer' (Join-Path 'Quick Launch' (Join-Path 'User Pinned' 'TaskBar'))))
-$toPin = @(
-    'Hermes - update - naar taakbalk slepen.lnk',
-    'Hermes - setup Windows - naar taakbalk slepen.lnk',
-    'Start Hermes - naar taakbalk slepen.lnk',
-    'Hermes - backup - naar taakbalk slepen.lnk'
-)
-
 if (Test-Path -LiteralPath $pinnedDir) {
-    foreach ($leaf in $toPin) {
-        $src = Join-Path $scriptDir $leaf
-        if (Update-PinnedHermesShortcut -SourceLnk $src -PinnedDir $pinnedDir) {
+    foreach ($row in $pinRows) {
+        $srcLnk = Join-Path $scriptDir $row.Lnk
+        if (-not (Test-Path -LiteralPath $srcLnk)) { continue }
+        $batPath = if ($row.Bat) { Join-Path $scriptDir $row.Bat } else { $startBatFull }
+        if (-not (Test-Path -LiteralPath $batPath)) { continue }
+        $iconPath = Get-HermesTaskbarRoleIconPath -Role $row.Role -WindowsDir $scriptDir
+        $destLnk = Join-Path $pinnedDir ([IO.Path]::GetFileName($srcLnk))
+        if (Set-HermesTaskbarPinShortcut -ShortcutPath $destLnk -TargetBatPath $batPath `
+                -IconIcoPath $iconPath -WorkingDirectory $RepoRoot) {
             if (-not $Quiet) {
-                Write-Host "  [OK] Taakbalk-pin bijgewerkt: $leaf" -ForegroundColor Green
+                Write-Host "  [OK] Taakbalk-pin bijgewerkt: $($row.Lnk)" -ForegroundColor Green
             }
         }
     }
 } elseif (-not $Quiet) {
-    Write-Host '  [INFO] Geen map User Pinned/TaskBar - pin handmatig via rechtsklik.' -ForegroundColor Gray
+    Write-Host '  [INFO] Geen map User Pinned/TaskBar - pin handmatig via rechtsklik op .lnk in windows\.' -ForegroundColor Gray
+}
+
+$openBat = Join-Path $scriptDir 'OPEN_SETUP.bat'
+if (Test-Path -LiteralPath $openBat) {
+    $openIcon = Get-HermesTaskbarRoleIconPath -Role 'OpenSetup' -WindowsDir $scriptDir
+    Set-HermesShellShortcut -ShortcutPath (Join-Path $scriptDir 'Hermes - Open Setup - naar taakbalk slepen.lnk') `
+        -TargetBatPath $openBat -IconIcoPath $openIcon -WorkingDirectory $RepoRoot `
+        -Description 'Hermes - volledige setup-wizard (OPEN_SETUP)' | Out-Null
 }
 
 Clear-HermesShellIconCache
 
 if (-not $Quiet) {
     Write-Host ''
-    Write-Host 'Iconen: start/RAG=goud | setup=groen | update=wit | backup=roze | restore=cyaan' -ForegroundColor Cyan
-    Write-Host 'Blijft een oud H zichtbaar: pin losmaken, .lnk opnieuw vastmaken (niet .bat slepen).' -ForegroundColor Gray
+    Write-Host 'windows\*.lnk = cmd /c + multi-size .ico. Taakbalk-pin = zelfde wrapper.' -ForegroundColor Cyan
+    Write-Host 'Verkenner: F5 in windows\. Nieuwe pin: sleep .lnk uit windows\ (niet .bat).' -ForegroundColor Gray
 }
 
 exit 0

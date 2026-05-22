@@ -17,8 +17,10 @@
 - [x] Noob-doc `docs/RAG_TWEE_FASEN.md` (bibliotheek vs. balie, twee fasen)
 - [x] Taakbalk nacht-run: `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` (`HERMES_NONINTERACTIVE=1`)
 - [x] Upstream-update keten: `windows/upstream_sync.ps1`, `UPDATE_HERMES.bat`, `UPSTREAM_SYNC.md`
-- [x] Taakbalk `.lnk`: `cmd.exe /c` wrapper (Win11 pin); `REFRESH_TASKBAR_SHORTCUTS.bat`; `FIX_TASKBAR_ICONS.bat`; `POST_GIT_PULL.bat`
-- [x] Taakbalk-iconen: gekleurde `.ico` per rol (update=wit via `hermes_logo_update.ico`); multi-size ICO; `verify_taskbar_shortcut_icons.ps1`; `.lnk` delete+recreate in `fix_hermes_taskbar_pins.ps1`
+- [x] Taakbalk `windows\*.lnk`: `cmd.exe /c` + gekleurd `.ico` (7 lagen 16–256 px); `FIX_TASKBAR_ICONS.bat`; `POST_GIT_PULL.bat`
+- [x] Icoon-generator: PNG uit `assets/Hermes_logo.png` of `%USERPROFILE%\.hermes\_local_assets\assets\`; geen synthetische H-stub
+- [x] `SETUP_HERMES.bat` → standaard `--full-setup` + `OPEN_SETUP.bat`; `--files-only` voor alleen bestanden
+- [x] `verify_taskbar_shortcut_icons.ps1`; `Set-HermesShellShortcut` / pins in `fix_hermes_taskbar_pins.ps1`
 - [x] Setup single source: canoniek `scripts/windows/setup_hermes_windows.ps1`, wrapper `windows/setup_hermes_windows.ps1`, `HermesSetupScriptPolicy.ps1`, pytest `test_setup_single_canonical_ps1.py`
 - [x] User-data docs: `%USERPROFILE%\data\STATUS.md`, `RECOVERY.md`; `profiles\core\KANBAN_WORKFLOWS.md`; canoniek `docs/USER_DATA_OPERATIONS.md`
 - [x] IDE: `hermes-agent/.vscode/settings.json` + `docs/IDE_VSCODE_SETTINGS.example.json`
@@ -41,7 +43,7 @@
 
 - [x] **core** — kleine ingest gedaan
 - [x] `--ingest-remaining` met `--skip-empty` (2026-05-21): 7 domeinen overgeslagen (0 bronbestanden); geen crash/pause
-- [ ] **Bronnen plaatsen** in `%USERPROFILE%\data\raw_source_files\01_Academics_Beta` … `08_Ventures_Incubator`, daarna `institutional_p0_p1.bat --ingest-remaining`
+- [ ] **Bronnen plaatsen** in lege `raw_source_files`-mappen (nu 0 bestanden: `01_Academics_Beta` … `08_Ventures_Incubator`; legal onder `04_Legal_Corporate` = klaar), daarna `institutional_p0_p1.bat --ingest-remaining`
 - [x] Preflight: `scripts/rag_pipeline/ingest_preflight.py` (in `institutional_p0_p1.bat --ingest-remaining`)
 - [x] `--mcp-test` (2026-05-21): legal + core OK; 7 domeinen WARN = lege LanceDB (**geen brondata** in `raw_source_files`, geen pipeline-fout)
 

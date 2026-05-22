@@ -79,7 +79,8 @@ Preflight, merge en RAG-postinstall zitten in het script.
 | -------- | ------ |
 | `git pull` | `windows/POST_GIT_PULL.bat` |
 | Keten controleren | `windows/VERIFY_WINDOWS_CHAIN.bat` |
-| Icoon kapot / leeg in Explorer | `conda run -n hermes-env python windows/tools/generate_colored_hermes_icons.py` daarna `windows/FIX_TASKBAR_ICONS.bat` + F5 |
+| Setup + wizard | `windows/SETUP_HERMES.bat` (standaard) of `OPEN_SETUP.bat`; alleen bestanden: `--files-only` |
+| Icoon kapot / leeg in Explorer | `python windows/tools/generate_colored_hermes_icons.py` daarna `windows/FIX_TASKBAR_ICONS.bat` + F5 |
 | Taakbalk-pin | Via `Hermes - * - naar taakbalk slepen.lnk` (niet `.bat` slepen) |
 
 Setup bewerken: alleen `scripts/windows/setup_hermes_windows.ps1` (wrapper in `windows/`).

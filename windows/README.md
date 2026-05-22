@@ -6,7 +6,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 
 | Startpunt | Script |
 | --------- | ------ |
-| Hoofd-setup | `SETUP_HERMES.bat` → `scripts/windows/setup_hermes_windows.ps1` (wrapper: `windows/setup_hermes_windows.ps1`) |
+| Hoofd-setup | `SETUP_HERMES.bat` → `setup_hermes_windows.bat` (standaard **--full-setup** → `OPEN_SETUP.bat` wizard). Alleen bestanden: `--files-only` |
 | Wizard | `HERMES_SETUP_WIZARD.bat` |
 | One-liner (remote) | `scripts/windows/install-jamel.ps1` (zie `DELEN_MET_VRIENDEN.md`) |
 
@@ -51,7 +51,7 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 | ---- | ------ |
 | Backups | `MANAGE_BACKUPS.bat` |
 | Lokale assets herstellen | `RESTORE_FROM_BACKUP.bat` |
-| Taakbalk-snelkoppelingen vernieuwen | `REFRESH_TASKBAR_SHORTCUTS.bat` (`.lnk` → `cmd.exe /c` voor taakbalk-pin) |
+| Taakbalk-snelkoppelingen vernieuwen | `REFRESH_TASKBAR_SHORTCUTS.bat` (`windows\*.lnk` = `.bat`+ico; pin-map = cmd-wrapper) |
 | Taakbalk-icoon herstellen | `FIX_TASKBAR_ICONS.bat` |
 | Nous upstream-merge (uitleg) | `UPSTREAM_SYNC.md` |
 | Sentence-transformers cache warmen | `scripts/warm_sentence_transformers_cache.bat` |

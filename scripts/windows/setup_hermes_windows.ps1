@@ -339,6 +339,7 @@ if ((Test-Path -LiteralPath $ragExtras) -and -not $WhatIfPreference) {
 }
 
 Write-Host ""
-Write-Host 'Klaar: windows/setup_hermes_windows.bat + taakbalk-.lnk (goud=start/RAG, groen=setup, wit=update, roze/cyaan=backup/restore).' -ForegroundColor Cyan
+Write-Host 'Klaar: SETUP_HERMES.bat / setup_hermes_windows.bat + taakbalk-.lnk (goud=start/RAG, groen=setup, wit=update, roze/cyaan=backup/restore).' -ForegroundColor Cyan
+Write-Host 'Wizard: dubbelklik SETUP_HERMES.bat (standaard) of OPEN_SETUP.bat.' -ForegroundColor DarkGray
 Write-Host 'Tip: bij verkeerd taakbalk-icoon: windows/FIX_TASKBAR_ICONS.bat' -ForegroundColor DarkGray
 Write-Host 'Canoniek: scripts/windows/setup_hermes_windows.ps1 (windows/setup_hermes_windows.ps1 = wrapper).' -ForegroundColor DarkGray

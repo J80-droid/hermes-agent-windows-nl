@@ -2,7 +2,7 @@
 
 ## Focus
 
-**P0+P1 afgerond**; **Windows institutioneel** (2026-05-21): upstream/update-keten, setup **single source** (`scripts/windows/setup_hermes_windows.ps1` + wrapper + `HermesSetupScriptPolicy.ps1`), taakbalk-iconen (multi-size `.ico`, wit=update), `VERIFY_WINDOWS_CHAIN`, `POST_GIT_PULL`, `FIX_TASKBAR_ICONS`. Open: bronnen in 7 `raw_source_files`-mappen.
+**P0+P1 afgerond**; **Windows institutioneel** (2026-05-21): upstream/update, setup single source, taakbalk **7-lagen ICO** uit `assets/Hermes_logo.png`, `SETUP_HERMES.bat` opent wizard, `FIX_TASKBAR_ICONS` + verify. Open: bronnen in 7 lege `raw_source_files`-mappen (legal in `04_Legal_Corporate` al vol).
 
 ## Dev vs. install-clone
 
@@ -26,10 +26,11 @@
 
 ## Volgende stappen (volgorde)
 
-1. **Bronnen:** vul `raw_source_files\01_Academics_Beta` … `08_Ventures_Incubator`
+1. **Bronnen:** vul lege mappen onder `%USERPROFILE%\data\raw_source_files\` (01, 02, 03, 05–08)
 2. **Ingest:** `windows\scripts\institutional_p0_p1.bat --ingest-remaining`
-3. **MCP:** `update_knowledge.bat --mcp-test`
-4. **Eenmalig taakbalk:** UPDATE-pin losmaken → `Hermes - update - naar taakbalk slepen.lnk` opnieuw vastmaken (als nog H)
+3. **MCP:** `update_knowledge.bat --mcp-test` (na ingest)
+4. **Taakbalk (eenmalig):** oude pin los → `.lnk` uit `windows\` opnieuw vastmaken; Verkenner **F5**
+5. **Setup:** `SETUP_HERMES.bat` (wizard) of `--files-only` / `OPEN_SETUP.bat`
 
 ## Taakbalk (institutioneel)
 
@@ -38,6 +39,7 @@
 | `UPDATE_HERMES.bat` | Update + auto `fix_hermes_taskbar_pins` |
 | `POST_GIT_PULL.bat` | Na pull op andere machine |
 | `FIX_TASKBAR_ICONS.bat` | Handmatig icoon + pins |
-| `.lnk` vastmaken | Niet `.bat` slepen (cmd-H) |
+| `.lnk` vastmaken | Sleep `.lnk` uit `windows\`, niet `.bat` |
+| `SETUP_HERMES.bat` | Standaard bestanden + wizard; `--files-only` = geen wizard |
 
 Iconen: goud = start/RAG, groen = setup, wit = update, roze = backup, cyaan = restore. Setup bewerken: alleen `scripts/windows/setup_hermes_windows.ps1` (niet volledige kopie naar `windows/`).

@@ -21,6 +21,7 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 | Taakbalk-iconen | `windows\FIX_TASKBAR_ICONS.bat` |
 | Snelkoppelingen vernieuwen | `windows\REFRESH_TASKBAR_SHORTCUTS.bat` |
 | Setup (logica) | `scripts\windows\setup_hermes_windows.ps1` — **niet** volledig kopiëren naar `windows\` |
+| Setup (dubbelklik) | `windows\SETUP_HERMES.bat` — standaard wizard; `--files-only` = alleen bestanden |
 
 **Setup PS1:** alleen `scripts/windows/setup_hermes_windows.ps1` bewerken; `windows/setup_hermes_windows.ps1` blijft wrapper. Controle: `VERIFY_WINDOWS_CHAIN.bat`.
 
@@ -38,6 +39,17 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 | Restore | `hermes_logo_restore.ico` | Cyaan |
 
 Geen `hermes_taskbar_white.ico` in snelkoppelingen (H-stub in Explorer).
+
+**Geen logo / alleen letter H / wit document-icoon:** bron-PNG ontbrak in `assets\` (staat vaak in `%USERPROFILE%\.hermes\_local_assets\assets\Hermes_logo.png`). Herstel:
+
+```bat
+conda run -n hermes-env python windows/tools/generate_colored_hermes_icons.py
+windows\FIX_TASKBAR_ICONS.bat
+```
+
+Daarna **F5** in `windows\`. De generator kopieert de PNG naar `assets\Hermes_logo.png` en bouwt **7-lagen** `.ico` (16–256 px).
+
+**Icoon = wit document in Verkenner (oude pin):** losmaken en opnieuw `.lnk` uit `windows\` vastmaken.
 
 **Icoon leeg / witte pagina in Verkenner (geen preview):** corrupte ICO — herstel:
 

@@ -1,6 +1,116 @@
 ﻿# Gedeeld door sync_local_assets_to_backup.ps1 en create_taskbar_shortcuts.ps1
 # Draait generate_colored_hermes_icons.py zodat hermes_logo.ico gelijk loopt met de PNG-gebaseerde varianten.
 
+function Publish-HermesShortcutIconCache {
+    <#
+    .SYNOPSIS
+        Kopieert hermes*.ico naar %LOCALAPPDATA%\Hermes\shortcut-icons (stabiel pad voor Shell).
+    #>
+    param([Parameter(Mandatory)][string]$WindowsDir)
+    $cacheDir = Join-Path $env:LOCALAPPDATA (Join-Path 'Hermes' 'shortcut-icons')
+    New-Item -ItemType Directory -Force -Path $cacheDir | Out-Null
+    Get-ChildItem -LiteralPath $WindowsDir -Filter 'hermes*.ico' -File -ErrorAction SilentlyContinue | ForEach-Object {
+        Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $cacheDir $_.Name) -Force
+    }
+    return $cacheDir
+}
+
+function Get-HermesShellShortcutIconLocation {
+    param([Parameter(Mandatory)][string]$IcoPath)
+    if (-not (Test-Path -LiteralPath $IcoPath)) { return $null }
+    # Zelfde map als .lnk (windows\) — betrouwbaarder dan alleen AppData-cache voor Verkenner.
+    $resolved = (Resolve-Path -LiteralPath $IcoPath).Path
+    $cacheDir = Join-Path $env:LOCALAPPDATA (Join-Path 'Hermes' 'shortcut-icons')
+    $cached = Join-Path $cacheDir (Split-Path -Leaf $IcoPath)
+    if (Test-Path -LiteralPath $cached) {
+        $resolved = (Resolve-Path -LiteralPath $cached).Path
+    }
+    return ($resolved + ',0')
+}
+
+function Set-HermesShellShortcut {
+    <#
+    .SYNOPSIS
+        Snelkoppeling voor windows\*.lnk: cmd.exe /c + multi-size .ico (Verkenner toont anders bat-document).
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)][string]$ShortcutPath,
+        [Parameter(Mandatory)][string]$TargetBatPath,
+        [Parameter(Mandatory)][string]$IconIcoPath,
+        [Parameter(Mandatory)][string]$WorkingDirectory,
+        [string]$Description = ''
+    )
+    if (-not (Test-Path -LiteralPath $TargetBatPath)) { return $false }
+    if (-not $PSCmdlet.ShouldProcess($ShortcutPath, 'Create', 'Hermes shortcut')) { return $false }
+
+    if (Test-Path -LiteralPath $ShortcutPath) {
+        Remove-Item -LiteralPath $ShortcutPath -Force -ErrorAction SilentlyContinue
+    }
+
+    $batFull = (Resolve-Path -LiteralPath $TargetBatPath).Path
+    $workFull = if (Test-Path -LiteralPath $WorkingDirectory) {
+        (Resolve-Path -LiteralPath $WorkingDirectory).Path
+    } else {
+        $WorkingDirectory
+    }
+    $iconLoc = Get-HermesShellShortcutIconLocation -IcoPath $IconIcoPath
+    if (-not $iconLoc) { return $false }
+
+    $wsh = New-Object -ComObject WScript.Shell
+    $sc = $wsh.CreateShortcut($ShortcutPath)
+    $sc.TargetPath = Join-Path $env:SystemRoot 'System32\cmd.exe'
+    $sc.Arguments = '/c "' + $batFull + '"'
+    $sc.WorkingDirectory = $workFull
+    $sc.WindowStyle = 1
+    $sc.IconLocation = $iconLoc
+    if ($Description) { $sc.Description = $Description }
+    $sc.Save()
+
+    $verify = $wsh.CreateShortcut($ShortcutPath)
+    if ($verify.IconLocation -ne $iconLoc) {
+        throw "IconLocation niet gezet op $ShortcutPath (verwacht $iconLoc, got $($verify.IconLocation))"
+    }
+    return $true
+}
+
+function Set-HermesTaskbarPinShortcut {
+    <#
+    .SYNOPSIS
+        Variant voor User Pinned\TaskBar: cmd.exe /c zodat vastpinnen op Win10/11 werkt.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)][string]$ShortcutPath,
+        [Parameter(Mandatory)][string]$TargetBatPath,
+        [Parameter(Mandatory)][string]$IconIcoPath,
+        [Parameter(Mandatory)][string]$WorkingDirectory,
+        [string]$Description = ''
+    )
+    if (-not (Test-Path -LiteralPath $TargetBatPath)) { return $false }
+    if (-not $PSCmdlet.ShouldProcess($ShortcutPath, 'Create', 'Taskbar pin shortcut')) { return $false }
+
+    $batFull = (Resolve-Path -LiteralPath $TargetBatPath).Path
+    $workFull = if (Test-Path -LiteralPath $WorkingDirectory) {
+        (Resolve-Path -LiteralPath $WorkingDirectory).Path
+    } else {
+        $WorkingDirectory
+    }
+    $iconLoc = Get-HermesShellShortcutIconLocation -IcoPath $IconIcoPath
+    if (-not $iconLoc) { return $false }
+
+    $wsh = New-Object -ComObject WScript.Shell
+    $sc = $wsh.CreateShortcut($ShortcutPath)
+    $sc.TargetPath = Join-Path $env:SystemRoot 'System32\cmd.exe'
+    $sc.Arguments = '/c "' + $batFull + '"'
+    $sc.WorkingDirectory = $workFull
+    $sc.WindowStyle = 1
+    $sc.IconLocation = $iconLoc
+    if ($Description) { $sc.Description = $Description }
+    $sc.Save()
+    return $true
+}
+
 function Get-HermesWindowsShellIcoLocation {
     <#
     .SYNOPSIS
