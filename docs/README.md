@@ -13,6 +13,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | RAG env-defaults (stale, torch-ruis) | [RAG_INSTITUTIONAL_ENV.md](RAG_INSTITUTIONAL_ENV.md) |
 | Technische ingest/MCP-stappen | [../scripts/rag_pipeline/ACTIVATION.md](../scripts/rag_pipeline/ACTIVATION.md) |
 | Windows-scripts en taakbalk | [../windows/README.md](../windows/README.md) |
+| Terminal, skin, markdown-kleuren, API-home | [../windows/TERMINAL_WINDOWS.md](../windows/TERMINAL_WINDOWS.md) |
 | User-data docs (STATUS/RECOVERY sync) | [USER_DATA_OPERATIONS.md](USER_DATA_OPERATIONS.md) |
 | IDE PSScriptAnalyzer (VS Code/Cursor) | [IDE_VSCODE_SETTINGS.example.json](IDE_VSCODE_SETTINGS.example.json) |
 | Hermes starten zonder conda in PATH | [HERMES_START.md](HERMES_START.md) (kopie ook in workspace-root `HERMES_START.md`) |
@@ -44,7 +45,8 @@ flowchart TB
 
 | Concept | Pad |
 |---------|-----|
-| Hermes root | `%LOCALAPPDATA%\hermes\` |
+| Hermes root | `%LOCALAPPDATA%\hermes\` (vaak `HERMES_HOME`; secrets: `.env` in root) |
+| Legacy home | `%USERPROFILE%\.hermes\` — sync keys: `windows\SYNC_HERMES_API_ENV.bat` |
 | Profiel `legal` | `%LOCALAPPDATA%\hermes\profiles\legal\` |
 | SOUL legal | `%LOCALAPPDATA%\hermes\profiles\legal\SOUL.md` |
 | RAG-config | `%USERPROFILE%\data\domains.yaml` |

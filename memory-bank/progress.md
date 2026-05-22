@@ -27,6 +27,9 @@
 - [x] Setup bat-templates (`scripts/windows/bat-templates/`); geen Copy-Item-spiegel meer; PSScriptAnalyzer 0 op `windows/**/*.ps1`
 - [x] pytest Windows: `timeout-method=thread`; `shutil.which` i.p.v. `which rg`; marker `ssh` in `pyproject.toml`; `tests/windows/test_critical_windows_scripts.py`
 - [x] Python-policy institutioneel: `HermesPythonPolicy.ps1`, `REPAIR_PYTHON.bat`, `ensure_hermes_python.ps1`; kapotte `.venv` → `.venv.disabled-*` (gitignore); conda `hermes-env` canoniek; verify-keten + setup-hook
+- [x] TUI display: skin `default` (`team_display.defaults`), `apply_team_display.ps1` → root `%LOCALAPPDATA%\hermes\config.yaml`
+- [x] Markdown antwoordpanelen: `_skin_markdown_theme()` in `cli.py` (goud/amber i.p.v. Rich-magenta)
+- [x] Split Hermes-home: `sync_hermes_api_env.ps1` + `SYNC_HERMES_API_ENV.bat`; docs `TERMINAL_WINDOWS.md`
 
 ## Operationeel (gebruiker)
 

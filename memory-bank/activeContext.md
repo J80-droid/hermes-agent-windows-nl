@@ -2,7 +2,7 @@
 
 ## Focus
 
-**P0+P1 afgerond**; **Windows institutioneel** (2026-05-22): Python-beleid **conda `hermes-env` canoniek**; kapotte repo-`.venv` automatisch quarantaine (`REPAIR_PYTHON.bat`); upstream/update, taakbalk ICO, SETUP wizard. Open: bronnen in 7 lege `raw_source_files`-mappen (legal in `04_Legal_Corporate` al vol).
+**P0+P1 afgerond**; **Windows institutioneel** (2026-05-22): Python-beleid **conda `hermes-env` canoniek**; WT + skin `default` + markdown skin-theme (`cli.py`); API-env sync (`SYNC_HERMES_API_ENV.bat`); `apply_team_display` → root config. Open: bronnen in 7 lege `raw_source_files`-mappen (legal in `04_Legal_Corporate` al vol).
 
 ## Dev vs. install-clone
 
@@ -21,6 +21,7 @@
 | RAG twee fasen | `docs/RAG_TWEE_FASEN.md` |
 | Hermes start (bat) | `../../HERMES_START.md` |
 | Windows | `windows/README.md` |
+| Terminal / display / API-home | `windows/TERMINAL_WINDOWS.md` |
 | Nous upstream | `windows/UPSTREAM_SYNC.md` |
 | Voortgang | `memory-bank/progress.md` |
 

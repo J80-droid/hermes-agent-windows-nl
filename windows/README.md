@@ -27,6 +27,8 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | Volledige setup | `SETUP_HERMES.bat` of `launch_hermes.bat --setup` |
 | RAG-index bijwerken | `scripts/update_knowledge.bat` |
 | Doctor / fixes | `DOCTOR_FIX.bat` |
+| TUI-kleuren / display | `TERMINAL_WINDOWS.md`, `APPLY_TEAM_DISPLAY.bat` (skin + markdown) |
+| API-keys sync (split home) | `SYNC_HERMES_API_ENV.bat` — `~/.hermes/.env` → `%LOCALAPPDATA%\hermes\.env` |
 | **Update fork (Nous upstream)** | `UPDATE_HERMES.bat` of `hermes_update.bat` (zelfde keten) |
 | Alleen upstream-status | `powershell -File windows\upstream_sync.ps1 -Phase Preflight` |
 
@@ -83,7 +85,10 @@ Zie `docs\PROFILE_MODEL_INHERITANCE.md`.
 ## Configuratie
 
 - `launcher_config.ps1` — paden en omgeving
-- `team_display.defaults` — teamweergave (voorbeeld)
+- `team_display.defaults` — teamweergave (`skin=default`, `final_response_markdown=render`)
+- `apply_team_display.ps1` — schrijft naar **root** config (niet actief profiel)
+- `sync_hermes_api_env.ps1` — API-keys bij gesplitste Hermes-home
+- `TERMINAL_WINDOWS.md` — WT, skin, markdown-kleuren, API-home
 - `PSScriptAnalyzerSettings.psd1` — lint-regels
 
 **Nacht/taakbalk:** `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` zet `HERMES_NONINTERACTIVE=1` en `HERMES_RAG_FRESH=n` (geen J/N). Regenereer `.lnk` via `create_taskbar_shortcuts.ps1`.

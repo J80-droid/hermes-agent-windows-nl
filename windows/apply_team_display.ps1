@@ -1,12 +1,23 @@
 ﻿<#
 .SYNOPSIS
-    Zet team-display in ~/.hermes/config.yaml via `hermes config set` (idempotent).
+    Zet team-display in root config.yaml via `hermes config set` (idempotent).
 .NOTES
     Bron: windows\team_display.defaults (key=value). Geen YAML-merge; alleen expliciete sets.
+    Schrijft altijd naar root (niet naar een actief profiel): HERMES_HOME wordt tijdelijk
+    gereset naar %LOCALAPPDATA%\hermes of ~/.hermes.
 #>
 $ErrorActionPreference = 'Stop'
 $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
 $defaultsPath = Join-Path $scriptDir 'team_display.defaults'
+
+function Get-HermesRootConfigDir {
+    $localRoot = Join-Path $env:LOCALAPPDATA 'hermes'
+    if (Test-Path -LiteralPath (Join-Path $localRoot 'config.yaml')) { return $localRoot }
+    $homeRoot = Join-Path $env:USERPROFILE '.hermes'
+    if (Test-Path -LiteralPath (Join-Path $homeRoot 'config.yaml')) { return $homeRoot }
+    if (Test-Path -LiteralPath $localRoot) { return $localRoot }
+    return $homeRoot
+}
 
 $condaExe = $null
 foreach ($p in @(
@@ -23,6 +34,9 @@ if (-not $condaExe) {
 }
 
 $env:PYTHONUNBUFFERED = '1'
+$hermesRoot = Get-HermesRootConfigDir
+$env:HERMES_HOME = $hermesRoot
+Write-Host "[INFO] Root config: $(Join-Path $hermesRoot 'config.yaml')" -ForegroundColor Cyan
 
 if (-not (Test-Path -LiteralPath $defaultsPath)) {
     Write-Host "[ERROR] Ontbrekend: $defaultsPath" -ForegroundColor Red

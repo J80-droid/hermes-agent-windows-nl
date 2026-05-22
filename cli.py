@@ -1736,6 +1736,35 @@ def _wrap_bron_citations_for_display(text: str) -> str:
         return text
 
 
+def _skin_markdown_theme():
+    """Rich theme for ``final_response_markdown=render`` — skin gold, not default magenta."""
+    from rich.theme import Theme
+
+    try:
+        from hermes_cli.skin_engine import get_active_skin
+
+        skin = get_active_skin()
+        title = skin.get_color("banner_title", "#FFD700")
+        accent = skin.get_color("banner_accent", "#FFBF00")
+        label = skin.get_color("ui_label", "#DAA520")
+        dim = skin.get_color("banner_dim", "#B8860B")
+    except Exception:
+        title, accent, label, dim = "#FFD700", "#FFBF00", "#DAA520", "#B8860B"
+    return Theme(
+        {
+            "markdown.h1": f"bold {title} underline",
+            "markdown.h2": f"bold {accent} underline",
+            "markdown.h3": f"bold {label}",
+            "markdown.h4": f"bold {label} italic",
+            "markdown.h5": f"{label} italic",
+            "markdown.h6": f"{dim} italic",
+            "markdown.strong": f"bold {label}",
+            "markdown.em": "italic",
+            "markdown.block_quote": dim,
+        }
+    )
+
+
 def _render_final_assistant_content(text: str, mode: str = "render"):
     """Render final assistant content as markdown, stripped text, or raw text."""
     from rich.markdown import Markdown
@@ -2421,6 +2450,7 @@ class ChatConsole:
             force_terminal=True,
             color_system="truecolor",
             highlight=False,
+            theme=_skin_markdown_theme(),
         )
 
     def print(self, *args, **kwargs):

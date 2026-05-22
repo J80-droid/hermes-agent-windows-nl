@@ -41,6 +41,26 @@ windows\APPLY_TEAM_DISPLAY.bat
 
 of: `hermes config set display.skin default` — daarna Hermes opnieuw starten.
 
+### Markdown in antwoordpanelen (### koppen, **vet:**)
+
+Met `display.final_response_markdown: render` gebruikt Rich standaard **magenta** koppen — geen skin-bug.
+De fork past sinds de skin-markdown-theme in `cli.py` (`_skin_markdown_theme`) goud/amber aan op de actieve skin (`banner_title`, `ui_label`, …).
+
+### API-keys (twee Hermes-homes)
+
+Als `HERMES_HOME=%LOCALAPPDATA%\hermes` maar keys alleen in `%USERPROFILE%\.hermes\.env` staan → Gemini **HTTP 400 invalid API key**.
+
+```bat
+windows\SYNC_HERMES_API_ENV.bat
+```
+
+Kopieert o.a. `GOOGLE_API_KEY` van `%USERPROFILE%\.hermes\.env` naar `%LOCALAPPDATA%\hermes\.env` (root, niet `profiles\<naam>`).
+
+| Script | Doel |
+| ------ | ---- |
+| `APPLY_TEAM_DISPLAY.bat` | `skin=default`, `final_response_markdown=render`, `streaming=false`, `compact=true` op **root** config |
+| `SYNC_HERMES_API_ENV.bat` | API-keys naar actieve root `.env` |
+
 ## Wat de fork al doet
 
 - `launch_hermes.bat`: detecteert `WT_SESSION`; zonder WT → `wt -M` + herstart; **geen** tweede maximize in `ComSpec` als je al in WT zit.
