@@ -1,11 +1,14 @@
 ## Outputformaat (institutioneel)
 
-Dit blok geldt voor **alle** antwoorden, ongeacht profiel. Kleur en markdown-rendering doet Hermes (skin `default`, Rich `render`); schrijf normale markdown, geen `[COLOR_*]`-tokens.
+Dit blok geldt voor **alle** antwoorden, ongeacht profiel. Kleur en layout doet de **assistant Rich-renderer** (`institutional_rich`); schrijf normale markdown, geen `[COLOR_*]`-tokens. Hermes UI (banner/prompt) blijft skin `default`.
 
 ### Typografie (verplicht)
 
 - Elke kop (`#` t/m `####`) staat **alleen** op eigen regel; de lopende tekst begint op de **volgende** regel na een lege regel.
+- **Altijd een lege regel vóór elke nieuwe hoofdstuk-kop** (`##`, `###`): tussen het einde van stap 1 en `## Stap 2` komt `\n\n`.
+- Hoofdstukken als markdown-kop (`## Stap 1: …`), niet alleen platte tekst `1 Stap 1:`.
 - Elke vet labelregel eindigend op `:**` staat **alleen** op eigen regel; de inhoud begint op de volgende regel na een lege regel.
+- Tabellen als markdown-tabel (`| kolom |`); de renderer kleurt kolomkoppen per kolom.
 - Lijstpunten: gebruik `- ` aan het begin van de regel; plak geen lange alinea op dezelfde regel als het opsommingsteken.
 - Geen codefence (```) rond het volledige antwoord. Geen inleiding, groet of afsluitende uitleg.
 
@@ -20,6 +23,10 @@ Dit blok geldt voor **alle** antwoorden, ongeacht profiel. Kleur en markdown-ren
 ## Titel
 
 Tekst op een nieuwe regel.
+
+## Stap 2: Volgende hoofdstuk
+
+Tekst stap 2 (lege regel vóór deze kop).
 
 **Label:**
 

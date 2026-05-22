@@ -45,10 +45,20 @@ of: `hermes config set display.skin default` — daarna Hermes opnieuw starten.
 
 ### Markdown in antwoordpanelen (### koppen, **vet:**)
 
-Met `display.final_response_markdown: render` gebruikt Rich standaard **magenta** koppen — geen skin-bug.
-De fork past goud/amber toe via `hermes_cli/display_markdown.py` (`skin_markdown_theme`) op de actieve skin (`banner_title`, `ui_label`, …). TUI-gateway: `agent/rich_output.py`.
+Twee lagen (niet door elkaar halen):
 
-Team-defaults: `compact=false` (meer witruimte tussen secties). Globale presentatieregels: `docs/INSTITUTIONAL_PRESENTATION.md` + `SYNC_SOUL_SNIPPETS.bat`.
+| Laag | Waar | Kleur |
+| ---- | ---- | ----- |
+| **Hermes UI** | Banner, prompt, status | Skin **`default`** (goud) — `display.skin` |
+| **Assistant-antwoord** | LLM-tekst in panel/stream | **`institutional_rich`** + `assistant_palette: demo` (cyaan/groen/magenta/geel) |
+
+Team-defaults in `windows/team_display.defaults`: `assistant_render_style=institutional_rich`, `assistant_palette=demo`, `assistant_label_columns=true`, `streaming=false`, `compact=false`.
+
+Code: `hermes_cli/institutional_render.py`, `hermes_cli/display_markdown.py` (`get_assistant_console_theme()`), gateway `agent/rich_output.py`. Klassieke CLI: eindpaneel via `ChatConsole(theme=get_assistant_console_theme())`; tijdens stream (met `streaming=false`) ruwe markdown, Rich pas op het eindpaneel.
+
+Legacy: `assistant_render_style: markdown_legacy` → goud via `skin_markdown_theme()`. Upstream Rich-default (magenta) geldt alleen zonder deze fork-instellingen.
+
+Globale typografie: `docs/INSTITUTIONAL_PRESENTATION.md` + `SYNC_SOUL_SNIPPETS.bat`.
 
 ### API-keys (twee Hermes-homes)
 

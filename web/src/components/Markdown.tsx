@@ -1,5 +1,11 @@
 import { useMemo, type ReactNode } from "react";
 import { wrapBronCitationsForDisplay } from "../lib/ragCitations";
+import {
+  ASSISTANT_LABEL_CLASS,
+  headingClass,
+  normalizeAssistantMarkdown,
+  tableHeaderClass,
+} from "../lib/institutionalMarkdown";
 
 /**
  * Lightweight markdown renderer for LLM output.
@@ -20,14 +26,14 @@ export function Markdown({
   streaming?: boolean;
 }) {
   const displayContent = useMemo(
-    () => wrapBronCitationsForDisplay(content),
+    () => wrapBronCitationsForDisplay(normalizeAssistantMarkdown(content)),
     [content],
   );
   const blocks = useMemo(() => parseBlocks(displayContent), [displayContent]);
   const caret = streaming ? <StreamingCaret /> : null;
 
   return (
-    <div className="text-sm text-foreground leading-relaxed space-y-2">
+    <div className="text-sm text-foreground leading-relaxed space-y-3">
       {blocks.map((block, i) => (
         <Block
           key={i}
@@ -59,6 +65,8 @@ type BlockNode =
   | { type: "heading"; level: number; content: string }
   | { type: "hr" }
   | { type: "list"; ordered: boolean; items: string[] }
+  | { type: "table"; headers: string[]; rows: string[][] }
+  | { type: "label"; label: string; content: string }
   | { type: "paragraph"; content: string };
 
 /* ------------------------------------------------------------------ */
@@ -116,6 +124,57 @@ function parseBlocks(text: string): BlockNode[] {
       }
       blocks.push({ type: "list", ordered: false, items });
       continue;
+    }
+
+    // Markdown table
+    if (
+      line.includes("|") &&
+      i + 1 < lines.length &&
+      /^\s*\|?[\s|:-]+\|?\s*$/.test(lines[i + 1]!)
+    ) {
+      const splitRow = (row: string) =>
+        row
+          .trim()
+          .replace(/^\|/, "")
+          .replace(/\|$/, "")
+          .split("|")
+          .map((c) => c.trim());
+      const headers = splitRow(line);
+      i += 2;
+      const rows: string[][] = [];
+      while (i < lines.length && lines[i].includes("|")) {
+        if (!/^[\s|:-]+$/.test(lines[i])) {
+          rows.push(splitRow(lines[i]));
+        }
+        i++;
+      }
+      blocks.push({ type: "table", headers, rows });
+      continue;
+    }
+
+    // Label column: **Label:** then body lines
+    const labelMatch = line.match(/^\*\*(.+?):\*\*\s*$/);
+    if (labelMatch && i + 1 < lines.length && lines[i + 1].trim()) {
+      const bodyLines: string[] = [];
+      let j = i + 1;
+      while (
+        j < lines.length &&
+        lines[j].trim() &&
+        !lines[j].match(/^#{1,6}\s/) &&
+        !lines[j].match(/^\*\*(.+?):\*\*\s*$/)
+      ) {
+        bodyLines.push(lines[j]);
+        j++;
+      }
+      if (bodyLines.length) {
+        blocks.push({
+          type: "label",
+          label: labelMatch[1],
+          content: bodyLines.join("\n"),
+        });
+        i = j;
+        continue;
+      }
     }
 
     // Ordered list
@@ -184,18 +243,61 @@ function Block({
     case "heading": {
       const Tag = `h${Math.min(block.level, 4)}` as "h1" | "h2" | "h3" | "h4";
       const sizes: Record<string, string> = {
-        h1: "text-base font-bold text-primary",
-        h2: "text-sm font-bold text-primary/90",
-        h3: "text-sm font-semibold text-primary/80",
-        h4: "text-sm font-medium text-foreground",
+        h1: "text-base font-bold",
+        h2: "text-sm font-bold",
+        h3: "text-sm font-semibold",
+        h4: "text-sm font-medium",
       };
       return (
-        <Tag className={sizes[Tag]}>
+        <Tag className={`${sizes[Tag]} ${headingClass(block.level)}`}>
           <InlineContent text={block.content} highlightTerms={highlightTerms} />
           {caret}
         </Tag>
       );
     }
+
+    case "table":
+      return (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr>
+                {block.headers.map((h, ci) => (
+                  <th
+                    key={ci}
+                    className={`text-left font-bold pr-4 pb-1 ${tableHeaderClass(ci)}`}
+                  >
+                    <InlineContent text={h} highlightTerms={highlightTerms} />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {block.rows.map((row, ri) => (
+                <tr key={ri} className="border-t border-border/40">
+                  {row.map((cell, ci) => (
+                    <td key={ci} className="pr-4 py-1 align-top">
+                      <InlineContent text={cell} highlightTerms={highlightTerms} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {caret}
+        </div>
+      );
+
+    case "label":
+      return (
+        <div className="flex gap-4">
+          <div className={`w-28 shrink-0 ${ASSISTANT_LABEL_CLASS}`}>{block.label}:</div>
+          <div className="flex-1 min-w-0">
+            <InlineContent text={block.content} highlightTerms={highlightTerms} />
+            {caret}
+          </div>
+        </div>
+      );
 
     case "hr":
       return (

@@ -1,6 +1,7 @@
 import { Box, Link, stringWidth, Text } from '@hermes/ink'
 import { Fragment, memo, type ReactNode, useMemo } from 'react'
 
+import { assistantHeadingColor, assistantTableHeaderColor, ASSISTANT_LABEL_COLOR } from '../lib/institutionalColors.js'
 import { ensureEmojiPresentation } from '../lib/emoji.js'
 import { normalizeExternalUrl, urlSlugTitleLabel, useLinkTitle } from '../lib/externalLink.js'
 import { BOX_CLOSE, BOX_OPEN, texToUnicode } from '../lib/mathUnicode.js'
@@ -441,7 +442,7 @@ const renderTable = (k: number, rows: string[][], t: Theme, cols?: number) => {
     if (normalizedRows.length <= 1) {
       return (
         <Box flexDirection="column" key={k} paddingLeft={TABLE_PADDING_LEFT}>
-          <Text bold color={t.color.accent} wrap="wrap-trim">
+          <Text bold color={assistantTableHeaderColor(0)} wrap="wrap-trim">
             {normalizedRows[0]!.map(h => stripInlineMarkup(h)).join(' · ')}
           </Text>
         </Box>
@@ -464,7 +465,7 @@ const renderTable = (k: number, rows: string[][], t: Theme, cols?: number) => {
               const label = stripInlineMarkup(header) || `Col ${ci + 1}`
               return (
                 <Text key={ci} wrap="wrap-trim">
-                  <Text bold color={t.color.accent}>{label}:</Text>
+                  <Text bold color={assistantTableHeaderColor(ci)}>{label}:</Text>
                   {' '}{stripInlineMarkup(cell)}
                 </Text>
               )
@@ -475,17 +476,27 @@ const renderTable = (k: number, rows: string[][], t: Theme, cols?: number) => {
     )
   }
 
-  // Render wrapped horizontal rows — one <Text> per visual line.
+  const headerCells = normalizedRows[0]!
+  const sepEntry = allEntries.find(e => e.kind === 'separator')
+  const bodyEntries = allEntries.filter(e => e.kind === 'body')
+
   return (
     <Box flexDirection="column" key={k} paddingLeft={TABLE_PADDING_LEFT}>
-      {allEntries.map((entry, i) => (
-        <Text
-          bold={entry.kind === 'header'}
-          color={entry.kind === 'header' ? t.color.accent : entry.kind === 'separator' ? t.color.muted : undefined}
-          dimColor={entry.kind === 'separator'}
-          key={i}
-          wrap="truncate-end"
-        >
+      <Box flexDirection="row">
+        {headerCells.map((cell, ci) => (
+          <Text key={ci} bold color={assistantTableHeaderColor(ci)} wrap="truncate-end">
+            {stripInlineMarkup(cell)}
+            {ci < numCols - 1 ? '  ' : ''}
+          </Text>
+        ))}
+      </Box>
+      {sepEntry ? (
+        <Text color={t.color.muted} dimColor>
+          {sepEntry.text}
+        </Text>
+      ) : null}
+      {bodyEntries.map((entry, i) => (
+        <Text key={i} wrap="truncate-end">
           {entry.text}
         </Text>
       ))}
@@ -870,12 +881,14 @@ function MdImpl({ cols, compact, t, text }: MdProps) {
         continue
       }
 
-      const heading = line.match(HEADING_RE)?.[2]
+      const headingMatch = line.match(HEADING_RE)
+      const heading = headingMatch?.[2]
 
       if (heading) {
+        const level = headingMatch![1]!.length
         start('heading')
         nodes.push(
-          <Text bold color={t.color.accent} key={key} wrap="wrap-trim">
+          <Text bold color={assistantHeadingColor(level)} key={key} wrap="wrap-trim">
             <MdInline t={t} text={heading} />
           </Text>
         )
@@ -887,7 +900,7 @@ function MdImpl({ cols, compact, t, text }: MdProps) {
       if (i + 1 < lines.length && SETEXT_RE.test(lines[i + 1]!)) {
         start('heading')
         nodes.push(
-          <Text bold color={t.color.accent} key={key} wrap="wrap-trim">
+          <Text bold color={assistantHeadingColor(2)} key={key} wrap="wrap-trim">
             <MdInline t={t} text={line.trim()} />
           </Text>
         )
@@ -1092,6 +1105,45 @@ function MdImpl({ cols, compact, t, text }: MdProps) {
         }
 
         continue
+      }
+
+      const labelOnly = line.match(/^\*\*(.+?):\*\*\s*$/)
+
+      if (labelOnly && i + 1 < lines.length && lines[i + 1]!.trim()) {
+        const bodyLines: string[] = []
+        let j = i + 1
+
+        while (
+          j < lines.length &&
+          lines[j]!.trim() &&
+          !HEADING_RE.test(lines[j]!) &&
+          !/^\*\*(.+?):\*\*\s*$/.test(lines[j]!)
+        ) {
+          bodyLines.push(lines[j]!)
+          j++
+        }
+
+        if (bodyLines.length) {
+          start('paragraph')
+          nodes.push(
+            <Box key={key} flexDirection="row">
+              <Box width={28}>
+                <Text bold color={ASSISTANT_LABEL_COLOR} wrap="wrap-trim">
+                  {labelOnly[1]}:
+                </Text>
+              </Box>
+              <Box flexDirection="column" flexGrow={1}>
+                {bodyLines.map((bl, bi) => (
+                  <Text key={bi} wrap="wrap-trim">
+                    <MdInline t={t} text={bl} />
+                  </Text>
+                ))}
+              </Box>
+            </Box>
+          )
+          i = j
+          continue
+        }
       }
 
       start('paragraph')

@@ -28,8 +28,10 @@
 - [x] pytest Windows: `timeout-method=thread`; `shutil.which` i.p.v. `which rg`; marker `ssh` in `pyproject.toml`; `tests/windows/test_critical_windows_scripts.py`
 - [x] Python-policy institutioneel: `HermesPythonPolicy.ps1`, `REPAIR_PYTHON.bat`, `ensure_hermes_python.ps1`; kapotte `.venv` → `.venv.disabled-*` (gitignore); conda `hermes-env` canoniek; verify-keten + setup-hook
 - [x] TUI display: skin `default` (`team_display.defaults`), `apply_team_display.ps1` → `profiles\<active>\config.yaml` (conda `--env-vars`)
-- [x] E2E institutioneel: `RUN_INSTITUTIONAL_E2E.ps1` (8 stappen, PASS 2026-05-22); rapport in `windows/audits/`
-- [x] Markdown antwoordpanelen: `hermes_cli/display_markdown.py` + `agent/rich_output.py` (goud/amber, extended Rich keys)
+- [x] E2E institutioneel: `RUN_INSTITUTIONAL_E2E.ps1` (**11 stappen**, PASS 2026-05-22); rapport in `windows/audits/`
+- [x] Assistant Rich-renderer: `institutional_render.py` (demo-palet, per-kolom tabellen, label-kolommen, Group-spacing)
+- [x] Markdown pipeline: `display_markdown.py` + `agent/rich_output.py` + `ChatConsole(get_assistant_console_theme())` in `cli.py`
+- [x] Pariteit Ink/Web: `institutionalColors.ts`, `institutionalMarkdown.ts`
 - [x] Globaal outputformaat: `SOUL_SHARED_OUTPUT_FORMAT.md` + `sync_soul_output_format_snippet.ps1`
 - [x] Team display: `compact=false`, `render`, `skin=default` (`team_display.defaults`)
 - [x] Docs: `docs/INSTITUTIONAL_PRESENTATION.md`; legacy `windows/scripts/institutional/`

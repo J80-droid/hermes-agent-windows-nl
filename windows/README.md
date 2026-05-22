@@ -93,9 +93,9 @@ Zie `docs\PROFILE_MODEL_INHERITANCE.md`.
 ## Configuratie
 
 - `launcher_config.ps1` — paden en omgeving
-- `team_display.defaults` — teamweergave (`skin=default`, `final_response_markdown=render`, `compact=false`)
+- `team_display.defaults` — teamweergave (`skin=default`, `final_response_markdown=render`, `assistant_render_style=institutional_rich`, `assistant_palette=demo`, `assistant_label_columns=true`, `compact=false`, `streaming=false`)
 - `apply_team_display.ps1` — team display naar **actief profiel** (`profiles\<active>\config.yaml`; `conda --env-vars HERMES_HOME`)
-- `audits\RUN_INSTITUTIONAL_E2E.bat` — institutioneel pakket (8 stappen); zie `audits\README.md`
+- `audits\RUN_INSTITUTIONAL_E2E.bat` — institutioneel pakket (**11 stappen**, incl. Rich-renderer 2e); zie `audits\README.md`
 - `sync_hermes_api_env.ps1` — API-keys bij gesplitste Hermes-home
 - `TERMINAL_WINDOWS.md` — WT, skin, markdown-kleuren, API-home
 - `PSScriptAnalyzerSettings.psd1` — lint-regels

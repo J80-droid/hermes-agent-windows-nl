@@ -237,8 +237,8 @@ Geen verplichting; git history blijft de volledige changelog.
 6. `VERIFY_WINDOWS_CHAIN.bat` (of vertrouw op UPDATE-keten).
 7. Nieuwe Hermes-sessie; rooktest: `search_knowledge` (zie `scripts/rag_pipeline/ACTIVATION.md`)
 8. Display/API-home: `APPLY_TEAM_DISPLAY.bat`, `SYNC_HERMES_API_ENV.bat`, `SYNC_SOUL_SNIPPETS.bat` (zie `TERMINAL_WINDOWS.md`, `docs/INSTITUTIONAL_PRESENTATION.md`)
-9. Institutioneel E2E: `windows\audits\RUN_INSTITUTIONAL_E2E.bat` (8 stappen: repo, pytest presentatie, SOUL, profiel-display)
-10. Rooktest presentatie (subset): `pytest tests/cli/test_skin_markdown_theme.py tests/agent/test_rich_output.py -q`
+9. Institutioneel E2E: `windows\audits\RUN_INSTITUTIONAL_E2E.bat` (**11 stappen**: SOUL, display alle profielen incl. `assistant_*`, Rich-renderer 2e, profielwissel 9–11)
+10. Rooktest presentatie (subset): `pytest tests/cli/test_institutional_rich_render.py tests/cli/test_skin_markdown_theme.py tests/agent/test_rich_output.py -q`
 
 ---
 

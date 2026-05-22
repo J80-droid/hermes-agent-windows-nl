@@ -111,7 +111,20 @@ const HEADING_INLINE_BODY_RE =
 
 const LABEL_INLINE_VALUE_RE = /^(\s*(?:[-*+]\s+)?)\*\*([^*\n]+?):\*\*\s+(\S.+)$/gm
 
-/** Institutional layout: headings and **Label:** on their own line before body text. */
+const SECTION_BREAK_BEFORE_HEADING_RE = /(?<!\n\n)(?<=\S\n)(#{1,6}\s)/gm
+
+const NUMBERED_STEP_HEADING_RE = /^(\d+)\s+Stap\s+(\d+)\s*:\s*(.+?)\s*$/gim
+
+const ensureSectionBreaks = (text: string) => {
+  let out = text.replace(SECTION_BREAK_BEFORE_HEADING_RE, '\n\n$1')
+  out = out.replace(/(?<!\n\n)(\n)(#{1,6}\s)/g, '\n\n$2')
+  return out.replace(/\n{3,}/g, '\n\n')
+}
+
+const normalizeNumberedHeadings = (text: string) =>
+  text.replace(NUMBERED_STEP_HEADING_RE, (_m, _n, step: string, title: string) => `## Stap ${step}: ${title.trim()}`)
+
+/** Institutional layout: headings, section breaks, and **Label:** on their own line. */
 export const normalizeAssistantMarkdown = (text: string) => {
   if (!text?.trim()) {
     return text || ''
@@ -126,6 +139,9 @@ export const normalizeAssistantMarkdown = (text: string) => {
   out = out.replace(LABEL_INLINE_VALUE_RE, (_m, lead: string, label: string, value: string) => {
     return `${lead}**${label.trim()}:**\n\n${value.trim()}`
   })
+
+  out = normalizeNumberedHeadings(out)
+  out = ensureSectionBreaks(out)
 
   return out.replace(/\n{3,}/g, '\n\n')
 }

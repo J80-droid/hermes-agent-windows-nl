@@ -76,7 +76,7 @@ flowchart TB
 - **Doctor:** `hermes doctor` of `windows\DOCTOR_FIX.bat`
 - **Profiel wisselen:** `windows\SWITCH_PROFILE.bat <naam>` of `/profile use <naam>` in chat; audit: `windows\audits\RUN_PROFILE_SWITCH_E2E.bat` — zie [PROFILE_SWITCH.md](PROFILE_SWITCH.md)
 - **Kwaliteitspoort (periodiek):** `windows\audits\RUN_AUDITS.bat -IncludeProfileE2E` of `-IncludeInstitutionalE2E` / `-IncludeAllE2E`
-- **SOUL sync + presentatie:** `windows\SYNC_SOUL_SNIPPETS.bat` + `APPLY_TEAM_DISPLAY.bat`; docs [INSTITUTIONAL_PRESENTATION.md](INSTITUTIONAL_PRESENTATION.md); audit `windows\audits\RUN_INSTITUTIONAL_E2E.bat`
+- **SOUL sync + presentatie:** `windows\SYNC_SOUL_SNIPPETS.bat` + `APPLY_INSTITUTIONAL_RUNTIME.bat` (of `APPLY_TEAM_DISPLAY.bat`); docs [INSTITUTIONAL_PRESENTATION.md](INSTITUTIONAL_PRESENTATION.md) (Laag A/B/C); audit `windows\audits\RUN_INSTITUTIONAL_E2E.bat` (11 stappen)
 - **Core SOUL referentie (repo):** `docs/templates/SOUL_CORE_ORCHESTRATOR.md` — runtime: `%LOCALAPPDATA%\hermes\profiles\core\SOUL.md`
 
 ## Memory bank (agent-context)

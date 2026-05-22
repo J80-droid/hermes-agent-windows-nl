@@ -2339,15 +2339,17 @@ class ChatConsole:
     that expects a console.print() interface.
     """
 
-    def __init__(self):
+    def __init__(self, theme=None):
         from io import StringIO
+        from hermes_cli.display_markdown import get_assistant_console_theme, skin_markdown_theme
+
         self._buffer = StringIO()
         self._inner = Console(
             file=self._buffer,
             force_terminal=True,
             color_system="truecolor",
             highlight=False,
-            theme=_skin_markdown_theme(),
+            theme=theme if theme is not None else skin_markdown_theme(),
         )
 
     def print(self, *args, **kwargs):
@@ -8521,7 +8523,9 @@ class HermesCLI:
                         _resp_color = "#CD7F32"
                         _resp_text = "#FFF8DC"
 
-                    _chat_console = ChatConsole()
+                    from hermes_cli.display_markdown import get_assistant_console_theme
+
+                    _chat_console = ChatConsole(theme=get_assistant_console_theme())
                     _chat_console.print(Panel(
                         _render_final_assistant_content(response, mode=self.final_response_markdown),
                         title=f"[{_resp_color} bold]{label} (background #{task_num})[/]",
@@ -11607,7 +11611,9 @@ class HermesCLI:
                     # _flush_stream() already closed the box. Skip Rich Panel.
                     pass
                 else:
-                    _chat_console = ChatConsole()
+                    from hermes_cli.display_markdown import get_assistant_console_theme
+
+                    _chat_console = ChatConsole(theme=get_assistant_console_theme())
                     _chat_console.print(Panel(
                         _render_final_assistant_content(response, mode=self.final_response_markdown),
                         title=f"[{_resp_color} bold]{label}[/]",

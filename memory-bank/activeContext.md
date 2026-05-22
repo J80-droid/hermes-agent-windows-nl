@@ -2,7 +2,7 @@
 
 ## Focus
 
-**Institutionele presentatie** (2026-05-22): Rich + SOUL Outputformaat; display op **9 profielen** (`apply_team_display_profiles.py`). Eén commando: `APPLY_INSTITUTIONAL_RUNTIME.bat` (display + SOUL + E2E PASS). Na deploy: dat script of `RUN_INSTITUTIONAL_E2E.bat -ApplyRuntime` + nieuwe chat.
+**Institutionele presentatie** (2026-05-22): drie lagen (SOUL / `institutional_rich` demo-palet / skin UI goud). Display op alle profielen via `apply_team_display_profiles.py`. `ChatConsole` + gateway delen `get_assistant_console_theme()`. Eén commando: `APPLY_INSTITUTIONAL_RUNTIME.bat` (display + SOUL + E2E). Na deploy: dat script of `RUN_INSTITUTIONAL_E2E.bat -ApplyRuntime` + **nieuwe chat**.
 
 **Legal domein herstructurering** (2026-05): één RAG-bucket `legal`, rechtsgebied-**lenzen**, generieke `profiles\legal\SOUL.md`, zaak GCR in `LEGAL_ACTIVE_MATTERS.md`. Audit: `RUN_LEGAL_DOMAIN_E2E.bat`.
 

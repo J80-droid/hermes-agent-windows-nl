@@ -60,6 +60,10 @@ $requiredRepo = @(
     'windows/scripts/institutional/README.md',
     'windows/scripts/institutional/render_colors_legacy.py',
     'hermes_cli/markdown_output_normalize.py',
+    'hermes_cli/institutional_render.py',
+    'tests/cli/test_institutional_rich_render.py',
+    'ui-tui/src/lib/institutionalColors.ts',
+    'web/src/lib/institutionalMarkdown.ts',
     'tests/cli/test_skin_markdown_theme.py',
     'tests/agent/test_rich_output.py',
     'tests/windows/test_team_display_defaults.py',
@@ -103,9 +107,22 @@ Write-Host '=== 2d/11 profiel-chat-UX (intent + prompt + SOUL-regel) ===' -Foreg
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Write-Host '[OK] profiel-chat-UX pytest' -ForegroundColor Green
 
+Write-Host '=== 2e/11 pytest institutional Rich renderer ===' -ForegroundColor Cyan
+& $python -m pytest tests/cli/test_institutional_rich_render.py -q --tb=short
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+Write-Host '[OK] institutional Rich renderer pytest' -ForegroundColor Green
+
 Write-Host '=== 2c/11 team_display.defaults inhoud ===' -ForegroundColor Cyan
 $td = Get-Content -LiteralPath (Join-Path $repoRoot 'windows/team_display.defaults') -Raw -Encoding UTF8
-foreach ($needle in @('final_response_markdown=render', 'skin=default', 'streaming=false', 'compact=false')) {
+foreach ($needle in @(
+        'final_response_markdown=render',
+        'assistant_render_style=institutional_rich',
+        'assistant_palette=demo',
+        'assistant_label_columns=true',
+        'skin=default',
+        'streaming=false',
+        'compact=false'
+    )) {
     if ($td -notmatch [regex]::Escape($needle)) {
         Write-Host "[FAIL] team_display.defaults mist: $needle" -ForegroundColor Red
         exit 1
@@ -241,6 +258,9 @@ Write-Host '=== 6/11 runtime display config (alle profielen, read-only) ===' -Fo
 $profilesDir = Join-Path $hermesRoot 'profiles'
 $displayLabels = @(
     'final_response_markdown=render',
+    'assistant_render_style=institutional_rich',
+    'assistant_palette=demo',
+    'assistant_label_columns=true',
     'skin=default',
     'streaming=false',
     'compact=false'

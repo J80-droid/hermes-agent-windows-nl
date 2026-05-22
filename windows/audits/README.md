@@ -35,7 +35,7 @@ Bron-migratie: `windows\scripts\MIGRATE_LEGAL_LAYOUT.bat -Apply` daarna `update_
 windows\audits\RUN_INSTITUTIONAL_E2E.bat
 ```
 
-Stappen: repo → pytest (landkaart, presentatie, **2d profiel-chat-UX**) → landkaart smoke → backup → SOUL Interaction/Outputformaat/**5c profielwissel-regel** → display alle profielen → rich_output → restore/update → **pytest profielwissel** → **SWITCH legal→core** → intent-smoke.
+Stappen: repo → pytest (landkaart, presentatie, **2d profiel-chat-UX**, **2e Rich renderer**) → landkaart smoke → backup → SOUL Interaction/Outputformaat/**5c profielwissel-regel** → display alle profielen (incl. `assistant_render_style`, `assistant_palette`, `assistant_label_columns`) → rich_output → restore/update → **pytest profielwissel** → **SWITCH legal→core** → intent-smoke.
 
 ### Wat de institutioneel E2E **wel** dekt (sinds 11 stappen)
 

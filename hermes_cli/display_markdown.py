@@ -13,6 +13,10 @@ from rich.text import Text as RichText
 from rich.theme import Theme
 
 from agent.markdown_tables import realign_markdown_tables
+from hermes_cli.institutional_render import (
+    assistant_markdown_theme,
+    render_institutional_assistant,
+)
 from hermes_cli.markdown_output_normalize import normalize_assistant_markdown
 
 _WINDOWS_PATH_WITH_DOT_SEGMENT_RE = re.compile(
@@ -108,6 +112,37 @@ def skin_markdown_theme() -> Theme:
     )
 
 
+def _display_config() -> dict:
+    try:
+        from hermes_cli.config import CLI_CONFIG
+
+        block = CLI_CONFIG.get("display")
+        if isinstance(block, dict):
+            return block
+    except Exception:
+        pass
+    return {}
+
+
+def get_assistant_render_settings() -> dict:
+    """Assistant answer render options (independent of Hermes UI skin)."""
+    d = _display_config()
+    style = str(d.get("assistant_render_style", "institutional_rich")).strip().lower()
+    if style not in {"institutional_rich", "markdown_legacy"}:
+        style = "institutional_rich"
+    palette = str(d.get("assistant_palette", "demo")).strip().lower()
+    if palette not in {"demo", "hermes", "neutral"}:
+        palette = "demo"
+    label_cols = d.get("assistant_label_columns", True)
+    if isinstance(label_cols, str):
+        label_cols = label_cols.strip().lower() in {"1", "true", "yes", "on"}
+    return {
+        "assistant_render_style": style,
+        "assistant_palette": palette,
+        "assistant_label_columns": bool(label_cols),
+    }
+
+
 def default_panel_width(cols: int | None = None) -> int:
     if cols is not None:
         return max(20, int(cols) - 12)
@@ -139,7 +174,7 @@ def render_final_assistant_markdown(
     mode: str = "render",
     *,
     panel_width: int | None = None,
-) -> Markdown | RichText:
+):
     """Render final assistant content as markdown, stripped text, or raw ANSI text."""
     width = panel_width if panel_width is not None else default_panel_width()
     normalized_mode = str(mode or "render").strip().lower()
@@ -151,7 +186,23 @@ def render_final_assistant_markdown(
         return _rich_text_from_ansi(text)
 
     plain = prepare_assistant_markdown_plain(text, panel_width=width)
+    settings = get_assistant_render_settings()
+    if settings["assistant_render_style"] == "institutional_rich":
+        return render_institutional_assistant(
+            plain,
+            palette=settings["assistant_palette"],
+            label_columns=settings["assistant_label_columns"],
+            already_normalized=True,
+        )
     return Markdown(plain)
+
+
+def get_assistant_console_theme() -> Theme:
+    """Rich Console theme for rendering assistant answer panels (not UI chrome)."""
+    settings = get_assistant_render_settings()
+    if settings["assistant_render_style"] == "institutional_rich":
+        return assistant_markdown_theme(settings["assistant_palette"])
+    return skin_markdown_theme()
 
 
 def format_response_ansi(text: str, cols: int = 80) -> str | None:
@@ -168,7 +219,7 @@ def format_response_ansi(text: str, cols: int = 80) -> str | None:
             width=max(20, cols),
             force_terminal=True,
             color_system="truecolor",
-            theme=skin_markdown_theme(),
+            theme=get_assistant_console_theme(),
         ).print(renderable)
         return buf.getvalue()
     except Exception:

@@ -43,6 +43,14 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 - **Pins:** `User Pinned\TaskBar` via `Set-HermesTaskbarPinShortcut` (zelfde cmd-wrapper).
 - **Herstel:** `FIX_TASKBAR_ICONS.bat`; verify: `verify_taskbar_shortcut_icons.ps1`.
 
+## Institutionele presentatie (drie lagen)
+
+1. **SOUL** — typografie/structuur (`docs/templates/SOUL_SHARED_*.md` → `SYNC_SOUL_SNIPPETS.bat`).
+2. **Assistant** — `display.assistant_render_style=institutional_rich`, normalizer → `institutional_render.py`; theme via `get_assistant_console_theme()` (CLI `ChatConsole`, gateway `rich_output.py`).
+3. **UI** — `display.skin=default` (goud); banners/prompt, niet LLM-antwoordtekst.
+
+Defaults: `windows/team_display.defaults`; toepassen: `apply_team_display_profiles.py` / `APPLY_INSTITUTIONAL_RUNTIME.bat`. Audit: `RUN_INSTITUTIONAL_E2E.ps1` (11 stappen).
+
 ## Veiligheid
 
 - Geen ingest + zware Kanban-werk op dezelfde LanceDB tegelijk (lock-risico).

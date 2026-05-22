@@ -8,5 +8,8 @@
 
 streaming=false
 final_response_markdown=render
+assistant_render_style=institutional_rich
+assistant_palette=demo
+assistant_label_columns=true
 compact=false
 skin=default

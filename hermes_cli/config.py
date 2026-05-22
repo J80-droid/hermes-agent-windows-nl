@@ -1021,6 +1021,10 @@ DEFAULT_CONFIG = {
         # render | strip | raw — "render" + streaming:true is incompatible with
         # the classic CLI (Rich Markdown only on the final panel); load_config forces streaming off.
         "final_response_markdown": "strip",
+        # Assistant answers only (not UI skin): institutional_rich | markdown_legacy
+        "assistant_render_style": "institutional_rich",
+        "assistant_palette": "demo",
+        "assistant_label_columns": True,
         # Preserve recent classic CLI output across Ctrl+L, /redraw, and
         # terminal resize full-screen clears. Disable if a terminal emulator
         # behaves badly with replayed scrollback.
