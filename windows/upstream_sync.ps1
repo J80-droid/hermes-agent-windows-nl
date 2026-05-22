@@ -197,8 +197,11 @@ function Invoke-HermesUpdate {
 
     Write-Step "hermes update - NousResearch upstream/main + dependencies"
     $updateArgs = @('run', '-n', 'hermes-env', '--no-capture-output', 'hermes', 'update', '-y') + $ExtraArgs
-    & $conda @updateArgs
-    return $LASTEXITCODE
+    # Out-Host: voorkomt dat conda/hermes-stdout als returnwaarde telt i.p.v. exitcode
+    & $conda @updateArgs 2>&1 | Out-Host
+    $code = $LASTEXITCODE
+    if ($null -eq $code) { $code = if ($?) { 0 } else { 1 } }
+    return [int]$code
 }
 
 $repo = if ($RepoRoot) { (Resolve-Path -LiteralPath $RepoRoot).Path } else { Get-HermesRepoRoot -Start (Join-Path $PSScriptRoot '..') }
@@ -231,9 +234,9 @@ try {
     }
 
     if ($script:UpstreamExitCode -eq 0 -and $Phase -eq 'Update' -and -not $SkipHermesUpdate) {
-        $uerr = Invoke-HermesUpdate -ExtraArgs $HermesUpdateArgs
+        $uerr = [int](Invoke-HermesUpdate -ExtraArgs $HermesUpdateArgs)
         if ($uerr -ne 0) {
-            Write-Err "hermes update eindigde met code $uerr"
+            Write-Err "hermes update eindigde met exitcode $uerr"
             Write-Host "        Bij merge-conflicten: windows\UPSTREAM_SYNC.md"
             $script:UpstreamExitCode = $uerr
         } else {
