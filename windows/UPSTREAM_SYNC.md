@@ -50,6 +50,8 @@ Kleuren: goud = start/RAG, groen = setup, wit = update, roze = backup, cyaan = r
 
 Taakbalk-.lnk: update = `hermes_logo_update.ico` (wit/zilver). Gebruik **niet** `hermes_taskbar_white.ico` in `.lnk` (oude H-stub in Explorer).
 
+**Git dirty na update:** icoon-generator kan `assets/Hermes_logo.png` en `windows/hermes_logo.ico` wijzigen. Dat is normaal — `git restore` die bestanden of doe een branding-commit; preflight laat alleen branding door.
+
 ## Standaard sync: `windows\UPDATE_HERMES.bat` of `hermes_update.bat`
 
 **Eén commando** — preflight zit **in** `upstream_sync.ps1` (`-Phase Update`, default):

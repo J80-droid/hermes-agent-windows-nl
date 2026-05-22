@@ -61,13 +61,12 @@ hermes --help          # Alle beschikbare commando's
 
 ### Update ontvangen (gebruiker)
 
-Drie manieren, gesorteerd van veilig naar geavanceerd:
-
 | Methode | Commando | Beschrijving |
 | ------- | -------- | ------------ |
-| **Aanbevolen** | `irm https://raw.githubusercontent.com/.../update-jamel.ps1 \| iex` | Keuzemenu bij lokale wijzigingen |
-| **Simpel** | `hermes update` | Ingebouwd Hermes-commando |
-| **Manueel** | `git pull origin main && uv pip install -e '.[all]'` | Voor gevorderden |
+| **Primair (Windows fork)** | `windows\UPDATE_HERMES.bat` | Preflight + Nous-merge + RAG + verify (`.ps1`, geen pause in keten) |
+| **Alternatief** | `irm .../update-jamel.ps1 \| iex` | Keuzemenu bij lokale wijzigingen |
+| **CLI** | `hermes update` | Ingebouwd (zelfde merge; minder post-merge Windows-stappen) |
+| **Gevorderd** | `git pull` + handmatig pip | Zie `windows\UPSTREAM_SYNC.md` |
 
 ### Update uitbrengen (beheerder)
 

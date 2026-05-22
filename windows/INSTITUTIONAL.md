@@ -17,7 +17,9 @@
 | Onderdeel | Pad | Rol |
 | --------- | --- | --- |
 | Backup | `windows\backup_hermes.ps1` | **Moet in git** — `MANAGE_BACKUPS.bat`, `launch_hermes.bat update` |
-| Restore | `windows\restore_from_backup.ps1` | **Moet in git** — `RESTORE_FROM_BACKUP.bat` |
+| SOUL-backup | `windows\backup_soul_profiles.ps1` | `%LOCALAPPDATA%\hermes` → `localappdata_hermes/` in backup |
+| SOUL-sync | `windows\SYNC_SOUL_SNIPPETS.bat` | Template `docs/templates/SOUL_SHARED_INTERACTION.md` |
+| Restore | `windows\restore_from_backup.ps1` | **Moet in git** — `RESTORE_FROM_BACKUP.bat`; `-RestoreRuntimePersonas` |
 | Manifest | `windows\WindowsLocalAssetsManifest.ps1` | Enige lijst voor `_local_assets` sync/restore |
 | Verify | `windows\VERIFY_WINDOWS_CHAIN.bat` | Controleert alle `.bat` → `.ps1` + kritieke bestanden |
 | RAG perf | `windows\scripts\rag_ingest_perf_defaults.ps1` | **Niet** `windows\` root (sync kopieert naar `_local_assets\scripts\`) |
@@ -98,3 +100,5 @@ Daarna RAG: `windows\scripts\install_rag_extras.ps1` (pip `[rag]` + MCP), `windo
 Profiel-persona: `%LOCALAPPDATA%\hermes\profiles\<naam>\SOUL.md` — zie `docs/PROFILE_SOUL.md`.
 
 **Tests (Windows):** `pyproject.toml` gebruikt `pytest --timeout-method=thread` (geen `SIGALRM`). Enkele test: `pytest tests/hermes_cli/test_profile_orphan_wrappers.py -q` met `PYTEST_ADDOPTS=-n0`.
+
+**Periodieke rooktest (aanbevolen):** `windows\audits\RUN_AUDITS.bat -IncludeProfileE2E` (wekelijks of vóór grote wijzigingen).

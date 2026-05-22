@@ -10,6 +10,8 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Model/provider voor **alle** profielen instellen | [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md) |
 | Profiel wisselen (chat, CLI, audit) | [PROFILE_SWITCH.md](PROFILE_SWITCH.md) |
 | SOUL.md per domeinprofiel (waar, bewerken) | [PROFILE_SOUL.md](PROFILE_SOUL.md) |
+| Orchestrator routing (core) | [ORCHESTRATOR_ROUTING.md](ORCHESTRATOR_ROUTING.md) |
+| Landkaart / volledige lijsten | skill `landkaart` (`/landkaart`) |
 | Domeinen toevoegen (`domains.yaml`) | [domains.yaml.example](domains.yaml.example) |
 | RAG env-defaults (stale, torch-ruis) | [RAG_INSTITUTIONAL_ENV.md](RAG_INSTITUTIONAL_ENV.md) |
 | Technische ingest/MCP-stappen | [../scripts/rag_pipeline/ACTIVATION.md](../scripts/rag_pipeline/ACTIVATION.md) |
@@ -72,6 +74,8 @@ flowchart TB
 - **Ingest-status:** `%USERPROFILE%\data\scripts\check_ingest_status.bat <domein>`
 - **Doctor:** `hermes doctor` of `windows\DOCTOR_FIX.bat`
 - **Profiel wisselen:** `windows\SWITCH_PROFILE.bat <naam>` of `/profile use <naam>` in chat; audit: `windows\audits\RUN_PROFILE_SWITCH_E2E.bat` — zie [PROFILE_SWITCH.md](PROFILE_SWITCH.md)
+- **Kwaliteitspoort (periodiek):** `windows\audits\RUN_AUDITS.bat -IncludeProfileE2E`
+- **SOUL Interaction sync:** `windows\SYNC_SOUL_SNIPPETS.bat` (template in `docs/templates/SOUL_SHARED_INTERACTION.md`)
 
 ## Memory bank (agent-context)
 

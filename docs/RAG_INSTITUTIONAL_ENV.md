@@ -56,6 +56,15 @@ Bij `--mcp-test` of ingest kan één regel op stderr verschijnen:
 - **Oplossing niet nodig** voor productie; standaard `HERMES_RAG_QUIET_TORCH=1` dempt veel ruis bij ingest.
 - Later: torch/sentence-transformers updaten wanneer upstream het oplost.
 
+## Dependency-pinning na `UPDATE_HERMES` (bewust)
+
+| Fase | Package | Versie |
+|------|---------|--------|
+| `hermes update` (uv) | `youtube-transcript-api` | **1.2.4** (pyproject `[all]`) |
+| Post-merge `install_rag_extras.ps1` | `markitdown[all]==0.1.5` | trekt `youtube-transcript-api` **~1.0.3** |
+
+Dit is **geen regressie**: `markitdown[all]` pin op 1.0.x. RAG-ingest via YouTube gebruikt die oudere pin; Office/PDF blijft via markitdown. Geen actie tenzij je bewust alles op 1.2.x wilt (conflict met markitdown — zie comment in `pyproject.toml`).
+
 ## Zie ook
 
 - `docs/RAG_TWEE_FASEN.md` — twee fasen index vs. chat

@@ -81,8 +81,19 @@ Zonder `-p` in argv: als `HERMES_HOME=profiles/core` maar `active_profile=legal`
 | `hermes_cli/relaunch.py` | `relaunch_chat_after_profile_switch(profile_name)` |
 | `cli.py` | `/profile use` modal + `_pending_relaunch` |
 
+## SOUL en persona-backup
+
+| Actie | Commando |
+|-------|----------|
+| Interaction-snippet sync (alle profielen) | `windows\SYNC_SOUL_SNIPPETS.bat` |
+| Runtime SOUL in backup | `MANAGE_BACKUPS.bat` → stap `backup_soul_profiles` (manifest v2: `localappdata_hermes/`) |
+| Restore alleen persona’s | `restore_from_backup.ps1 -RestoreRuntimePersonas` |
+
+Na wijziging aan `profiles\<naam>\SOUL.md`: **nieuwe chat** starten (bestaande sessie houdt oude system prompt).
+
 ## Zie ook
 
+- [ORCHESTRATOR_ROUTING.md](ORCHESTRATOR_ROUTING.md) — routing-matrix core  
 - [../windows/TERMINAL_WINDOWS.md](../windows/TERMINAL_WINDOWS.md) — terminal, skin, profielmatrix  
 - [../README-FORK.md](../README-FORK.md) — fork-overzicht  
 - [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md) — model blijft in root
