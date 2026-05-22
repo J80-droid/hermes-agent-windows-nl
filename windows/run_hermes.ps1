@@ -30,6 +30,35 @@ function Write-RunLog {
     Add-Content -Path $logFile -Value $line
 }
 
+function Split-HermesCommandLine {
+    <#
+    .SYNOPSIS
+        Parse argument string from HERMES_LAUNCH_ARGS (batch-safe; ondersteunt quotes).
+    #>
+    param([string]$CommandLine)
+    if ([string]::IsNullOrWhiteSpace($CommandLine)) { return @() }
+    $matches = [regex]::Matches($CommandLine.Trim(), '(?:[^\s"]+|"[^"]*")+')
+    $out = foreach ($m in $matches) {
+        $v = $m.Value
+        if ($v.Length -ge 2 -and $v.StartsWith('"') -and $v.EndsWith('"')) {
+            $v.Substring(1, $v.Length - 2)
+        } else { $v }
+    }
+    return @($out)
+}
+
+function Get-HermesCliArgs {
+    if ($args -and $args.Count -gt 0) { return @($args) }
+    if ($env:HERMES_LAUNCH_ARGS) {
+        try {
+            return @(Split-HermesCommandLine $env:HERMES_LAUNCH_ARGS)
+        } finally {
+            Remove-Item Env:HERMES_LAUNCH_ARGS -ErrorAction SilentlyContinue
+        }
+    }
+    return @()
+}
+
 # Find Conda
 $condaPaths = @(
     (Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'),
@@ -66,9 +95,15 @@ if ((-not $repoEnvExists) -and (-not $userHermesEnvExists)) {
         & $condaExe run -n hermes-env --no-capture-output python -m hermes_cli.main
     }
 } else {
+    $cliArgs = @(Get-HermesCliArgs)
     Write-RunLog "Launching Hermes Agent Chat..."
-    # Launch the interactive CLI with forwarded arguments
-    & $condaExe run -n hermes-env --no-capture-output python -m hermes_cli.main $args
+    if ($cliArgs.Count -gt 0) {
+        Write-RunLog ("CLI args: " + ($cliArgs -join ' '))
+    }
+    & $condaExe run -n hermes-env --no-capture-output python -m hermes_cli.main @cliArgs
 }
 
+$exitCode = $LASTEXITCODE
+if ($null -eq $exitCode) { $exitCode = 0 }
 Write-RunLog "Hermes Agent session ended."
+exit [int]$exitCode

@@ -166,7 +166,8 @@ echo %CYAAN%[INFO] Bootstrap ^(conda + optioneel RAG-stamp^)...%RESET%
 if /I "!CLEAN_ARGS!"=="--setup" goto :run_full_setup
 echo !CLEAN_ARGS!| findstr /I "\-\-setup" >nul && goto :run_full_setup
 if defined HERMES_RUN_FULL_SETUP_ON_LAUNCH goto :run_full_setup
-powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%\windows\scripts\launch_bootstrap.ps1" -RepoRoot "%REPO_ROOT%"
+if defined CLEAN_ARGS (set "HERMES_LAUNCH_ARGS=!CLEAN_ARGS!") else (set "HERMES_LAUNCH_ARGS=")
+powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/scripts/launch_bootstrap.ps1" -RepoRoot "%REPO_ROOT%"
 if !errorLevel! neq 0 (
     echo %ROOD%[ERROR] Bootstrap mislukt.%RESET%
     pause
@@ -193,7 +194,7 @@ rem --- PREMIUM: Auto-Backup before Update ---
 echo "!CLEAN_ARGS!" | findstr /I "update" >nul
 if %errorlevel% equ 0 (
     echo %GOUD%[PREMIUM] Update gedetecteerd. Automatische backup wordt gestart voor veiligheid...%RESET%
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%\windows\backup_hermes.ps1"
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/backup_hermes.ps1"
 )
 
 rem --- Check if .env exists ---
@@ -201,7 +202,9 @@ if not exist "%USERPROFILE%\.hermes\.env" (
     echo %ROOD%[WAARSCHUWING] Geen .env gevonden! Gebruik 'hermes setup' in de agent.%RESET%
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%\windows\run_hermes.ps1" !CLEAN_ARGS!
+rem Args via HERMES_LAUNCH_ARGS (niet !CLEAN_ARGS! op cmd-regel: < > & en \s in paden breken cmd)
+if defined CLEAN_ARGS (set "HERMES_LAUNCH_ARGS=!CLEAN_ARGS!") else (set "HERMES_LAUNCH_ARGS=")
+powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/run_hermes.ps1"
 if !errorLevel! neq 0 (
     echo %ROOD%[ERROR] Hermes Agent stopped with an error. Check hermes_runtime.log.%RESET%
     echo [%DATE% %TIME%] ERROR: Runtime failed with exit code !errorLevel! >> "%LAUNCH_LOG%"

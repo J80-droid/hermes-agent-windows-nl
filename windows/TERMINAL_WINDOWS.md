@@ -52,4 +52,14 @@ Spawnt subprocessen met `HERMES_PYTHON` / conda `hermes-env`. Zorg dat de **pare
 
 Voor Cursor-agents: start geen Hermes TUI in geïntegreerde **cmd**-terminals voor kleurverwachting; gebruik WT of accepteer afgeweken palet.
 
+## Resume-sessie
+
+| Methode | Wanneer |
+| ------- | ------- |
+| `windows\RESUME_HERMES.bat <session_id>` | Veilig resume zonder cmd-parse-fouten |
+| In lopende Hermes | `/resume` of `hermes --resume <id>` in de TUI |
+| `launch_hermes.bat` met args | Alleen zonder `<` `>` `&` in tekst; anders `HERMES_LAUNCH_ARGS` (sinds fix) |
+
+Fout `'licy' is not recognized` = kapotte cmd-regel (`\s` in pad → tab, of `<` als redirect). Geen Hermes-crash.
+
 Zie ook `windows/INSTITUTIONAL.md` en `.cursor/rules/terminal-windows.mdc` (indien aanwezig).
