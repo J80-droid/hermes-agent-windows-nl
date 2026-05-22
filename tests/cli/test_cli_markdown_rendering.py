@@ -1,6 +1,6 @@
 from io import StringIO
 
-from rich.console import Console
+from rich.console import Console, Group
 from rich.markdown import Markdown
 
 from cli import _render_final_assistant_content
@@ -15,7 +15,8 @@ def _render_to_text(renderable) -> str:
 def test_final_assistant_content_uses_markdown_renderable():
     renderable = _render_final_assistant_content("# Title\n\n- one\n- two")
 
-    assert isinstance(renderable, Markdown)
+    # institutional_rich returns Group or InstitutionalMarkdown (Markdown subclass)
+    assert isinstance(renderable, (Markdown, Group))
     output = _render_to_text(renderable)
     assert "Title" in output
     assert "one" in output
