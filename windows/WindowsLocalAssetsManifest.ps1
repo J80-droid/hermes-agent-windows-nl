@@ -132,7 +132,10 @@ function Get-HermesCriticalWindowsRepoPath {
     # Forward slashes in paden (IDE-vriendelijk; Join-Path normaliseert naar backslash).
     return @(
         'windows/backup_hermes.ps1',
+        'windows/backup_soul_profiles.ps1',
         'windows/restore_from_backup.ps1',
+        'windows/SYNC_SOUL_SNIPPETS.bat',
+        'windows/scripts/sync_soul_interaction_snippet.ps1',
         'windows/MANAGE_BACKUPS.bat',
         'windows/RESTORE_FROM_BACKUP.bat',
         'windows/launch_hermes.bat',

@@ -6,6 +6,7 @@ REPO = Path(__file__).resolve().parents[2]
 
 CRITICAL = [
     "windows/backup_hermes.ps1",
+    "windows/backup_soul_profiles.ps1",
     "windows/restore_from_backup.ps1",
     "windows/MANAGE_BACKUPS.bat",
     "windows/RESTORE_FROM_BACKUP.bat",
@@ -56,6 +57,16 @@ def test_update_hermes_uses_upstream_sync():
     assert "-Phase Update" in bat
     assert "gestopt met code" in bat.lower()
     assert "goto :team_display" in bat.lower()
+
+
+def test_orchestrator_routing_doc_exists():
+    assert (REPO / "docs/ORCHESTRATOR_ROUTING.md").is_file()
+    assert (REPO / "docs/templates/SOUL_SHARED_INTERACTION.md").is_file()
+
+
+def test_landkaart_skill_exists():
+    assert (REPO / "skills/productivity/landkaart/SKILL.md").is_file()
+    assert (REPO / "skills/productivity/landkaart/scripts/inventory_landkaart.py").is_file()
 
 
 def test_upstream_sync_verify_uses_ps1_not_interactive_bat():

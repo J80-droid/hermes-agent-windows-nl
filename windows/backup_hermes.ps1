@@ -131,10 +131,19 @@ if (-not (Test-Path $hermesSource)) {
 if (-not (Test-Path $backupRoot)) { New-Item -ItemType Directory -Path $backupRoot | Out-Null }
 New-Item -ItemType Directory -Path $backupFolder | Out-Null
 
-Write-Host "[1/9] Hermes-gebruikersmap ($hermesSource)..." -ForegroundColor Gray
+Write-Host "[1/11] Hermes-gebruikersmap ($hermesSource)..." -ForegroundColor Gray
 Invoke-HermesRobocopyBackup -Src $hermesSource -Dst $backupFolder
 
-Write-Host "[2/9] Repo windows\ -> repo_windows\ ..." -ForegroundColor Gray
+$soulBackupPs1 = Join-Path $repoRoot 'windows/backup_soul_profiles.ps1'
+$runtimePersonaFiles = @()
+if (Test-Path -LiteralPath $soulBackupPs1) {
+    Write-Host "[2/11] Runtime personas (LOCALAPPDATA\hermes SOUL)..." -ForegroundColor Gray
+    $runtimePersonaFiles = @(& $soulBackupPs1 -BackupFolder $backupFolder)
+} else {
+    Write-Host "[2/11] [SKIP] backup_soul_profiles.ps1 ontbreekt" -ForegroundColor Yellow
+}
+
+Write-Host "[3/11] Repo windows\ -> repo_windows\ ..." -ForegroundColor Gray
 $repoWindowsSrc = Join-Path $repoRoot "windows"
 $repoWindowsDst = Join-Path $backupFolder "repo_windows"
 if (Test-Path -LiteralPath $repoWindowsSrc) {
@@ -143,7 +152,7 @@ if (Test-Path -LiteralPath $repoWindowsSrc) {
     Write-Host "  [SKIP] Geen map: $repoWindowsSrc" -ForegroundColor Yellow
 }
 
-Write-Host "[3/9] Repo assets\ -> repo_assets\ ..." -ForegroundColor Gray
+Write-Host "[4/11] Repo assets\ -> repo_assets\ ..." -ForegroundColor Gray
 $assetsSrc = Join-Path $repoRoot "assets"
 $assetsDst = Join-Path $backupFolder "repo_assets"
 if (Test-Path -LiteralPath $assetsSrc) {
@@ -152,7 +161,7 @@ if (Test-Path -LiteralPath $assetsSrc) {
     Write-Host "  [SKIP] Geen map: $assetsSrc" -ForegroundColor Yellow
 }
 
-Write-Host "[4/9] Kritieke repo-root -> repo_root\ (allowlist, veilig voor delen)..." -ForegroundColor Gray
+Write-Host "[5/10] Kritieke repo-root -> repo_root\ (allowlist, veilig voor delen)..." -ForegroundColor Gray
 $repoRootDst = Join-Path $backupFolder "repo_root"
 New-Item -ItemType Directory -Path $repoRootDst -Force | Out-Null
 # Alleen bestanden zonder typische secrets; géén cli-config.yaml / .env (kunnen keys bevatten).
@@ -192,31 +201,41 @@ Get-ChildItem -LiteralPath $repoRoot -File -Filter 'RELEASE_v*.md' -ErrorAction 
         Write-Host "  [OK] $($_.Name)" -ForegroundColor DarkGray
     }
 
-Write-Host "[5/9] BACKUP_MANIFEST.json ..." -ForegroundColor Gray
+Write-Host "[6/11] BACKUP_MANIFEST.json ..." -ForegroundColor Gray
+$runtimeHome = Join-Path $env:LOCALAPPDATA 'hermes'
+if (-not (Test-Path -LiteralPath (Join-Path $runtimeHome 'config.yaml'))) {
+    $runtimeHome = $hermesSource
+}
 $manifest = [ordered]@{
-    schema_version = 1
+    schema_version = 2
     format           = 'hermes_windows_backup'
     created_utc      = (Get-Date).ToUniversalTime().ToString('o')
     hostname         = $env:COMPUTERNAME
     windows_user     = $env:USERNAME
     repo_root        = $repoRoot
     hermes_profile   = $hermesSource
+    hermes_runtime_home = $runtimeHome
     backup_folder    = $backupFolder
     repo_root_files  = $copiedRepoRoot
     includes         = @(
         'hermes_user_profile',
+        'hermes_runtime_personas',
         'repo_windows',
         'repo_assets',
         'repo_root',
         'taskbar_shortcuts_in_backup_root',
         'BACKUP_MANIFEST'
     )
+    runtime_personas = [ordered]@{
+        backup_subdir = 'localappdata_hermes'
+        files         = @($runtimePersonaFiles)
+    }
 }
 $manifestPath = Join-Path $backupFolder 'BACKUP_MANIFEST.json'
 $manifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
 Write-Host "  -> $manifestPath" -ForegroundColor DarkGray
 
-Write-Host "[6/9] Taakbalk-.lnk in backup-map ..." -ForegroundColor Gray
+Write-Host "[7/11] Taakbalk-.lnk in backup-map ..." -ForegroundColor Gray
 $taskbarPs1 = Join-Path $repoRoot "windows\create_taskbar_shortcuts.ps1"
 if (Test-Path -LiteralPath $taskbarPs1) {
     & $taskbarPs1 -RepoRoot $repoRoot -OutDir $backupFolder
@@ -224,7 +243,7 @@ if (Test-Path -LiteralPath $taskbarPs1) {
     Write-Host "  [SKIP] create_taskbar_shortcuts.ps1 niet gevonden: $taskbarPs1" -ForegroundColor Yellow
 }
 
-Write-Host "[7/9] SQLite-integriteit (indien state.db) ..." -ForegroundColor Gray
+Write-Host "[8/11] SQLite-integriteit (indien state.db) ..." -ForegroundColor Gray
 $dbPath = Join-Path $backupFolder "state.db"
 if (Test-Path $dbPath) {
     $verifyCmd = "import sqlite3; conn = sqlite3.connect(r'$dbPath'); res = conn.execute('PRAGMA integrity_check').fetchone(); print(res[0])"
@@ -254,13 +273,13 @@ if (Test-Path $dbPath) {
     Write-Host "[INFO] Geen state.db in deze backup." -ForegroundColor Gray
 }
 
-Write-Host "[8/9] Taakbalk-.lnk in repo windows\ vernieuwen ..." -ForegroundColor Gray
+Write-Host "[9/11] Taakbalk-.lnk in repo windows\ vernieuwen ..." -ForegroundColor Gray
 $winDir = Join-Path $repoRoot "windows"
 if (Test-Path -LiteralPath $taskbarPs1) {
     & $taskbarPs1 -RepoRoot $repoRoot -OutDir $winDir -Quiet
 }
 
-Write-Host "[9/10] Sync naar $env:USERPROFILE\.hermes\_local_assets ..." -ForegroundColor Gray
+Write-Host "[10/11] Sync naar $env:USERPROFILE\.hermes\_local_assets ..." -ForegroundColor Gray
 
 $syncScript = Join-Path $repoRoot "windows\sync_local_assets_to_backup.ps1"
 if (Test-Path $syncScript) {
@@ -280,7 +299,7 @@ if (Test-Path $syncScript) {
     Write-Host "[WARNING] sync_local_assets_to_backup.ps1 niet gevonden: $syncScript" -ForegroundColor Yellow
 }
 
-Write-Host "[10/10] Verifieer Windows script-keten (bat -> ps1) ..." -ForegroundColor Gray
+Write-Host "[11/11] Verifieer Windows script-keten (bat -> ps1) ..." -ForegroundColor Gray
 $verifyScript = Join-Path $repoRoot "windows\verify_windows_script_chain.ps1"
 if (Test-Path -LiteralPath $verifyScript) {
     $prevEap = $ErrorActionPreference

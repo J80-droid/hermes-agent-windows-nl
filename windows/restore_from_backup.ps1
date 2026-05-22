@@ -11,7 +11,8 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$BackupPath,
-    [switch]$RestoreUserProfile
+    [switch]$RestoreUserProfile,
+    [switch]$RestoreRuntimePersonas
 )
 
 $ErrorActionPreference = 'Stop'
@@ -153,6 +154,34 @@ if (Test-Path -LiteralPath $rr) {
     }
 } else {
     Write-Host '  [SKIP] Geen repo_root\' -ForegroundColor DarkYellow
+}
+
+function Get-HermesRuntimeRoot {
+    $localRoot = Join-Path $env:LOCALAPPDATA 'hermes'
+    if (Test-Path -LiteralPath (Join-Path $localRoot 'config.yaml')) { return $localRoot }
+    $homeRoot = Join-Path $env:USERPROFILE '.hermes'
+    if (Test-Path -LiteralPath (Join-Path $homeRoot 'config.yaml')) { return $homeRoot }
+    return $localRoot
+}
+
+if ($RestoreRuntimePersonas) {
+    $personaSrc = Join-Path $backupRoot 'localappdata_hermes'
+    if (-not (Test-Path -LiteralPath $personaSrc)) {
+        Write-Host '[SKIP] Geen localappdata_hermes\ in backup (schema v2).' -ForegroundColor DarkYellow
+    } else {
+        $runtimeDst = Get-HermesRuntimeRoot
+        Write-Host "[EXTRA] Runtime personas -> $runtimeDst ..." -ForegroundColor Yellow
+        Get-ChildItem -LiteralPath $personaSrc -Recurse -File | ForEach-Object {
+            $rel = $_.FullName.Substring($personaSrc.Length).TrimStart('\')
+            $target = Join-Path $runtimeDst $rel
+            $parent = Split-Path -Parent $target
+            if ($parent -and -not (Test-Path -LiteralPath $parent)) {
+                New-Item -ItemType Directory -Path $parent -Force | Out-Null
+            }
+            Copy-Item -LiteralPath $_.FullName -Destination $target -Force
+            Write-Host "  [OK] $rel" -ForegroundColor Green
+        }
+    }
 }
 
 if ($RestoreUserProfile) {

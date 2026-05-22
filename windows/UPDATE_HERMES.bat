@@ -15,7 +15,7 @@ echo        2. hermes update — merge Nous + Python/npm + skills
 echo        3. Post-merge    — RAG, script-keten verify, taakbalk-iconen
 echo.
 echo [INFO] Uitleg bij cijfers en vragen staat in het PowerShell-venster ^(grijs^).
-echo        Verify in de keten: .ps1 ^(geen pause^). Einde .bat: pause om resultaat te lezen.
+echo        Verify in de keten: .ps1 ^(geen pause^). Einde .bat: pause ^(overslaan: HERMES_SKIP_PAUSE_AFTER_UPDATE=1^).
 echo.
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0upstream_sync.ps1" -Phase Update %*
@@ -45,5 +45,7 @@ if exist "%~dp0SKIP_TEAM_DISPLAY_AFTER_UPDATE" (
   if errorlevel 1 echo [WARN] apply_team_display.ps1 - controleer handmatig.
 )
 
+if "%HERMES_SKIP_PAUSE_AFTER_UPDATE%"=="1" goto :eof_no_pause
 pause
+:eof_no_pause
 exit /b 0
