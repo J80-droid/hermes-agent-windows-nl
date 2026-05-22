@@ -42,7 +42,7 @@ De installer regelt alles: `uv`, Python 3.11, Node.js 22, PortableGit, virtual e
 Na installatie **een nieuw PowerShell-venster openen**. Daarna:
 
 ```powershell
-hermes setup --full    # Configuratiewizard: model, provider, toolsets
+hermes setup           # Configuratiewizard: model, provider, toolsets (volledige wizard)
 hermes --help          # Alle beschikbare commando's
 ```
 

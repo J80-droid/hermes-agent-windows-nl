@@ -299,7 +299,7 @@ if (Test-Path -LiteralPath $ragExtras) {
 # Handige commando's
 Show-Typewriter -Text "  Snel starten:" -Color $HERMES_AMBER -DelayMs 10
 Show-Typewriter -Text "    hermes chat              Start de chat (CLI)" -Color "Gray" -DelayMs 5
-Show-Typewriter -Text "    hermes setup --full      Volledige setup wizard" -Color "Gray" -DelayMs 5
+Show-Typewriter -Text "    hermes setup             Volledige setup wizard" -Color "Gray" -DelayMs 5
 Show-Typewriter -Text "    hermes --tui             Interactieve TUI" -Color "Gray" -DelayMs 5
 Show-Typewriter -Text "    hermes update            Update naar nieuwste versie" -Color "Gray" -DelayMs 5
 Show-Typewriter -Text "    windows/scripts/update_knowledge.bat   LanceDB RAG-index bijwerken" -Color "Gray" -DelayMs 5

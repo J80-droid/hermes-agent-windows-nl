@@ -16,7 +16,7 @@
 
   Draai altijd de **.bat** vanuit Explorer (dubbelklik op .ps1 gebruikt vaak Restricted policy).
 
-  - Optioneel: volledige **hermes setup --full** na de Windows-bestanden via **OPEN_SETUP.bat**
+  - Optioneel: volledige **hermes setup** (wizard) na de Windows-bestanden via **OPEN_SETUP.bat**
     ^(zelfde cmd + zelfde Conda/.venv-Python als launch_hermes.bat^). Dubbelklik: **windows/OPEN_SETUP.bat**.
 
   Triggers: -FullSetup, HERMES_SETUP_FULL_SETUP=1, of op setup-batch: **--full-setup**.
@@ -170,35 +170,48 @@ function Invoke-HermesFullSetupWizard {
     param(
         [Parameter(Mandatory = $true)][string]$RepoRoot
     )
-    if (-not $PSCmdlet.ShouldProcess($RepoRoot, 'Run', 'hermes setup --full')) { return 0 }
-    $hermesExe = $null
-    foreach ($name in @('hermes.exe', 'hermes.cmd')) {
-        $p = Join-Path $RepoRoot (Join-Path '.venv\Scripts' $name)
-        if (Test-Path -LiteralPath $p) {
-            $hermesExe = $p
-            break
+    if (-not $PSCmdlet.ShouldProcess($RepoRoot, 'Run', 'hermes setup')) { return 0 }
+    $policy = Join-Path $RepoRoot (Join-Path 'windows' 'HermesPythonPolicy.ps1')
+    if (Test-Path -LiteralPath $policy) { . $policy }
+    $py = if (Get-Command Get-HermesPreferredPython -ErrorAction SilentlyContinue) {
+        Get-HermesPreferredPython -RepoRoot $RepoRoot
+    } else { $null }
+    $invokeArgs = @()
+    if ($py -and (Test-Path -LiteralPath $py)) {
+        $invokeTarget = $py
+        $invokeArgs = @('-m', 'hermes_cli.main', 'setup')
+    } else {
+        $hermesExe = $null
+        foreach ($name in @('hermes.exe', 'hermes.cmd')) {
+            $p = Join-Path $RepoRoot (Join-Path '.venv\Scripts' $name)
+            if (Test-Path -LiteralPath $p) {
+                $hermesExe = $p
+                break
+            }
         }
-    }
-    if (-not $hermesExe) {
-        try {
-            $cmd = Get-Command hermes -ErrorAction Stop
-            if ($cmd.Path) { $hermesExe = $cmd.Path }
-        } catch {
-            $null = $_.Exception.Message
+        if (-not $hermesExe) {
+            try {
+                $cmd = Get-Command hermes -ErrorAction Stop
+                if ($cmd.Path) { $hermesExe = $cmd.Path }
+            } catch {
+                $null = $_.Exception.Message
+            }
         }
-    }
-    if (-not $hermesExe -or -not (Test-Path -LiteralPath $hermesExe)) {
-        Write-Host "[ERROR] hermes-CLI niet gevonden (.venv\Scripts noch PATH). Installeer deps / venv, daarna: hermes setup --full" -ForegroundColor Red
-        return 1
+        if (-not $hermesExe -or -not (Test-Path -LiteralPath $hermesExe)) {
+            Write-Host "[ERROR] Geen Python/hermes-CLI. conda hermes-env of: windows\OPEN_SETUP.bat" -ForegroundColor Red
+            return 1
+        }
+        $invokeTarget = $hermesExe
+        $invokeArgs = @('setup')
     }
     Write-Host ""
-    Write-Host "[Hermes] Start installatiewizard (hermes setup --full) ..." -ForegroundColor Cyan
+    Write-Host "[Hermes] Start installatiewizard (hermes setup) ..." -ForegroundColor Cyan
     Push-Location $RepoRoot
     try {
-        & $hermesExe setup --full
+        & $invokeTarget @invokeArgs
         $code = $LASTEXITCODE
         if ($null -eq $code) { return 0 }
-        return $code
+        return [int]$code
     } finally {
         Pop-Location
     }
