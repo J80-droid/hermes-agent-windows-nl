@@ -99,6 +99,7 @@ function Get-HermesWindowsLocalAssetsManifest {
                 'install_rag_extras.ps1',
                 'ensure_hermes_python.ps1',
                 'launch_bootstrap.ps1',
+                'launch_institutional_runtime.ps1',
                 'rag_python_resolve.ps1',
                 'institutional_p0_p1.bat',
                 'verify_hermes_home.ps1'

@@ -39,7 +39,9 @@ Het zichtbare checklist-blok heet `<institutional_check>` (niet `<verification>`
 
 **Automatisch (aanbevolen):** `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` — display op **alle** profielen, SOUL-sync, E2E-audit.
 
-Los: `APPLY_TEAM_DISPLAY.bat` (alle profielen; `-ActiveProfileOnly` via ps1), `SYNC_SOUL_SNIPPETS.bat`. Na `UPDATE_HERMES.bat` wordt display al toegepast.
+**Bij start:** `start_hermes.bat` / `launch_hermes.bat` roept `launch_institutional_runtime.ps1` aan (display + SOUL wanneer templates/defaults wijzigen; stamp in `%LOCALAPPDATA%\hermes\launch_institutional_runtime.stamp`). Geen E2E bij elke start (te traag). Overslaan: `set HERMES_SKIP_INSTITUTIONAL_RUNTIME=1`. E2E bij start: `start_hermes.bat --institutional-e2e` of `set HERMES_INSTITUTIONAL_E2E_ON_START=1`.
+
+Los: `APPLY_TEAM_DISPLAY.bat`, `SYNC_SOUL_SNIPPETS.bat`. Na `UPDATE_HERMES.bat` wordt display al toegepast.
 
 **Config-pad:** per profiel `profiles\<naam>\config.yaml`. Root `config.yaml` blijft voor model; display per profiel. E2E stap 6/8 controleert elk profiel.
 

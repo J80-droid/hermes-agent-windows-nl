@@ -67,6 +67,9 @@ def test_orchestrator_routing_doc_exists():
     assert (REPO / "windows/scripts/sync_soul_output_format_snippet.ps1").is_file()
     assert (REPO / "windows/apply_institutional_runtime.ps1").is_file()
     assert (REPO / "windows/APPLY_INSTITUTIONAL_RUNTIME.bat").is_file()
+    assert (REPO / "windows/scripts/launch_institutional_runtime.ps1").is_file()
+    bat = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
+    assert "launch_institutional_runtime.ps1" in bat
     assert (REPO / "docs/templates/SOUL_CORE_ORCHESTRATOR.md").is_file()
     assert (REPO / "docs/LEGAL_TAXONOMY.md").is_file()
     assert (REPO / "docs/LEGAL_DOMAIN_ARCHITECTURE.md").is_file()

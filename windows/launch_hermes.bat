@@ -187,6 +187,18 @@ if !errorLevel! neq 0 (
 
 :after_setup
 
+rem --- Institutioneel runtime (display alle profielen + SOUL; E2E alleen met flag) ---
+if not defined HERMES_SKIP_INSTITUTIONAL_RUNTIME (
+  set "INST_PS_ARGS=-RepoRoot \"%REPO_ROOT%\""
+  echo !CLEAN_ARGS!| findstr /I "\-\-institutional-e2e" >nul && set "INST_PS_ARGS=!INST_PS_ARGS! -RunE2E"
+  if defined HERMES_INSTITUTIONAL_E2E_ON_START set "INST_PS_ARGS=!INST_PS_ARGS! -RunE2E"
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/scripts/launch_institutional_runtime.ps1" !INST_PS_ARGS!
+  if !errorLevel! neq 0 (
+    echo %GOUD%[WARN] Institutioneel runtime mislukt ^(exit !errorLevel!^) — start gaat door.%RESET%
+    echo [%DATE% %TIME%] WARN: institutional runtime exit !errorLevel! >> "%LAUNCH_LOG%"
+  )
+)
+
 echo %GROEN%[INFO] Step 2: Launching Hermes Agent...%RESET%
 echo [%DATE% %TIME%] Launching runtime wrapper... >> "%LAUNCH_LOG%"
 

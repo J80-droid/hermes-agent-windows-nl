@@ -37,6 +37,8 @@ Standaard skin is **`default`** (goud/kawaii). Als je **blauw/cyaan** ziet, staa
 
 ```bat
 windows\APPLY_TEAM_DISPLAY.bat
+
+Bij **start** (`start_hermes.bat`): automatisch display + SOUL via `scripts\launch_institutional_runtime.ps1` (geen E2E tenzij `--institutional-e2e`). Handmatig alles: `APPLY_INSTITUTIONAL_RUNTIME.bat`.
 ```
 
 of: `hermes config set display.skin default` — daarna Hermes opnieuw starten.
@@ -62,7 +64,8 @@ Kopieert `GOOGLE_API_KEY` naar root `.env`, werkt alle `profiles\*\.env` bij, en
 
 | Script | Doel |
 | ------ | ---- |
-| `APPLY_TEAM_DISPLAY.bat` | `skin=default`, `final_response_markdown=render`, `streaming=false`, `compact=false` op **root** config |
+| `APPLY_TEAM_DISPLAY.bat` | display op **alle profielen**; bij start via `launch_institutional_runtime.ps1` |
+| `APPLY_INSTITUTIONAL_RUNTIME.bat` | display + SOUL + E2E (handmatig of `-NoE2E`) |
 | `SYNC_HERMES_API_ENV.bat` | API-keys + profiel-`.env` + Gemini pool |
 | `FIX_GEMINI_CREDENTIAL_POOL.bat` | Alleen pool in `auth.json` (root + profielen) herstellen |
 | `SWITCH_PROFILE.bat <naam>` | Sticky profiel + API-sync + `HERMES_HOME`-fix + gateway (indien actief) |

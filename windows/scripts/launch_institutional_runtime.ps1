@@ -1,0 +1,70 @@
+# Institutioneel runtime vóór Hermes-chat: display (alle profielen) + SOUL-sync.
+# E2E alleen met -RunE2E of HERMES_INSTITUTIONAL_E2E_ON_START=1 (traag; niet standaard).
+param(
+    [string]$RepoRoot = '',
+    [switch]$RunE2E,
+    [switch]$Force
+)
+
+$ErrorActionPreference = 'Stop'
+if (-not $RepoRoot) {
+    $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+} else {
+    $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
+}
+
+if ($env:HERMES_SKIP_INSTITUTIONAL_RUNTIME -eq '1') {
+    Write-Host '[INFO] Institutioneel runtime overgeslagen (HERMES_SKIP_INSTITUTIONAL_RUNTIME=1).' -ForegroundColor DarkGray
+    exit 0
+}
+
+$runE2e = $RunE2E.IsPresent -or $env:HERMES_INSTITUTIONAL_E2E_ON_START -eq '1'
+$stampDir = Join-Path $env:LOCALAPPDATA 'hermes'
+if (-not (Test-Path -LiteralPath $stampDir)) {
+    $stampDir = Join-Path $env:USERPROFILE '.hermes'
+}
+$stampFile = Join-Path $stampDir 'launch_institutional_runtime.stamp'
+
+$watchFiles = @(
+    (Join-Path $RepoRoot 'windows/team_display.defaults'),
+    (Join-Path $RepoRoot 'windows/scripts/apply_team_display_profiles.py'),
+    (Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_INTERACTION.md'),
+    (Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md'),
+    (Join-Path $RepoRoot 'windows/scripts/sync_soul_interaction_snippet.ps1'),
+    (Join-Path $RepoRoot 'windows/scripts/sync_soul_output_format_snippet.ps1'),
+    (Join-Path $RepoRoot 'windows/apply_institutional_runtime.ps1')
+) | Where-Object { Test-Path -LiteralPath $_ }
+
+$needRun = $Force.IsPresent -or $runE2e
+if (-not $needRun -and (Test-Path -LiteralPath $stampFile) -and $watchFiles.Count -gt 0) {
+    $stampTime = (Get-Item -LiteralPath $stampFile).LastWriteTimeUtc
+    foreach ($f in $watchFiles) {
+        if ((Get-Item -LiteralPath $f).LastWriteTimeUtc -gt $stampTime) {
+            $needRun = $true
+            break
+        }
+    }
+} elseif (-not (Test-Path -LiteralPath $stampFile)) {
+    $needRun = $true
+}
+
+if (-not $needRun) {
+    Write-Host '[INFO] Institutioneel runtime up-to-date (stamp OK).' -ForegroundColor DarkGray
+    exit 0
+}
+
+$runtimePs1 = Join-Path $RepoRoot 'windows/apply_institutional_runtime.ps1'
+$args = @{ SkipE2E = (-not $runE2e); NoPause = $true }
+Write-Host '[INFO] Institutioneel runtime (display + SOUL' -NoNewline -ForegroundColor Cyan
+if ($runE2e) { Write-Host ' + E2E' -NoNewline -ForegroundColor Cyan }
+Write-Host ')...' -ForegroundColor Cyan
+
+& $runtimePs1 @args
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+if (-not (Test-Path -LiteralPath $stampDir)) {
+    New-Item -ItemType Directory -Path $stampDir -Force | Out-Null
+}
+Set-Content -LiteralPath $stampFile -Value (Get-Date -Format 'o') -Encoding utf8
+Write-Host '[OK] Institutioneel runtime toegepast.' -ForegroundColor Green
+exit 0
