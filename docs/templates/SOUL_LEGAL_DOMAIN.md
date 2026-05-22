@@ -15,10 +15,10 @@ Canonieke taxonomie: repo `docs/LEGAL_TAXONOMY.md`. Samenvatting:
 
 | Signaal (indicatief) | Lens | Bron-submap |
 |----------------------|------|-------------|
-| arbeidsrecht, cao, ontslag, zorgplicht, VSO, GCR | Arbeidsrechtelijk | `Arbeidsrecht/` |
-| Awb, bezwaar, beroep, bestuursorgaan | Bestuurskundig | `Bestuursrecht/` |
-| aansprakelijkheid, letselschade, schadevergoeding | Aansprakelijkheid & letselschade | `Aansprakelijkheid_Letselschade/` |
-| klokkenluiders, Wbk, melding, integriteit | Klokkenluiders | `Klokkenluiders/` |
+| arbeidsrecht, cao, ontslag, zorgplicht, VSO, GCR, geschillencommissie, arbeidsconflict | Arbeidsrechtelijk | `Arbeidsrecht/` |
+| Awb, bezwaar, beroep, bestuursorgaan, overheidsbesluit, BZ als overheid | Bestuurskundig | `Bestuursrecht/` |
+| aansprakelijkheid, letselschade, schadevergoeding, BW6:162, onrechtmatige daad | Aansprakelijkheid & letselschade | `Aansprakelijkheid_Letselschade/` |
+| klokkenluiders, Wbk, melding, integriteit, misstand, bescherming melder | Klokkenluiders | `Klokkenluiders/` |
 | corporate, compliance, governance | Corporate / compliance | `Corporate/` |
 
 ## Multi-lens

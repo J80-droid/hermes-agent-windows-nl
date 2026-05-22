@@ -5,7 +5,7 @@ Na `git pull` / `UPDATE_HERMES.bat`:
 ## Runtime (eenmalig)
 
 1. `MANAGE_BACKUPS.bat` (SOUL-backup)
-2. Vergelijk `profiles\legal\SOUL.md` met `docs\templates\SOUL_LEGAL_DOMAIN.md`
+2. `windows\scripts\SYNC_LEGAL_SOUL_FROM_TEMPLATE.bat` (of handmatig vergelijken met `docs\templates\SOUL_LEGAL_DOMAIN.md`)
 3. Zorg dat `profiles\legal\LEGAL_ACTIVE_MATTERS.md` bestaat (GCR e.d.)
 4. `windows\SYNC_SOUL_SNIPPETS.bat` (Interaction-blok)
 5. **Nieuwe chat-sessie** `hermes -p legal chat` (SOUL wordt bij start geladen)

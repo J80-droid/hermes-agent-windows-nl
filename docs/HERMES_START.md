@@ -94,6 +94,7 @@ Zie [USER_DATA_OPERATIONS.md](USER_DATA_OPERATIONS.md) en [../windows/UPSTREAM_S
 - Index: [README.md](README.md)
 - SOUL per profiel: [PROFILE_SOUL.md](PROFILE_SOUL.md)
 - Core routing: [ORCHESTRATOR_ROUTING.md](ORCHESTRATOR_ROUTING.md)
+- Legal domein (lenzen): [LEGAL_DOMAIN_ARCHITECTURE.md](LEGAL_DOMAIN_ARCHITECTURE.md), rollout [LEGAL_ROLLOUT_CHECKLIST.md](LEGAL_ROLLOUT_CHECKLIST.md)
 - Landkaart / volledige lijsten: skill `landkaart` (`/landkaart`)
 - SOUL-sync na template-wijziging: `windows/SYNC_SOUL_SNIPPETS.bat`
 - RAG twee fasen: [RAG_TWEE_FASEN.md](RAG_TWEE_FASEN.md)

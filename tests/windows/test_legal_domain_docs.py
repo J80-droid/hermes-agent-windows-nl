@@ -26,3 +26,17 @@ def test_migrate_legal_script_exists():
 
 def test_sync_legal_lens_script_exists():
     assert (REPO / "scripts/rag_pipeline/sync_legal_lens_table_from_taxonomy.py").is_file()
+
+
+def test_sync_legal_lens_parses_five_active_rows():
+    import importlib.util
+
+    mod_path = REPO / "scripts/rag_pipeline/sync_legal_lens_table_from_taxonomy.py"
+    spec = importlib.util.spec_from_file_location("sync_legal_lens", mod_path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    rows = mod._parse_taxonomy_rows((REPO / "docs/LEGAL_TAXONOMY.md").read_text(encoding="utf-8"))
+    assert len(rows) >= 5
+    blob = " ".join(" ".join(r) for r in rows)
+    assert "Klokkenluiders" in blob
+    assert "Arbeidsrechtelijk" in blob

@@ -94,6 +94,7 @@ Na wijziging aan `profiles\<naam>\SOUL.md`: **nieuwe chat** starten (bestaande s
 ## Zie ook
 
 - [ORCHESTRATOR_ROUTING.md](ORCHESTRATOR_ROUTING.md) — routing-matrix core  
+- [LEGAL_DOMAIN_ARCHITECTURE.md](LEGAL_DOMAIN_ARCHITECTURE.md) — legal lenzen (binnen `legal`, geen subprofielen)  
 - [../windows/TERMINAL_WINDOWS.md](../windows/TERMINAL_WINDOWS.md) — terminal, skin, profielmatrix  
 - [../README-FORK.md](../README-FORK.md) — fork-overzicht  
 - [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md) — model blijft in root

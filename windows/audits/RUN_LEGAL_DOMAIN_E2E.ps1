@@ -107,8 +107,12 @@ Write-Host '=== 7/7 legal rooktest (search) ===' -ForegroundColor Cyan
 $rooktest = Join-Path $repoRoot 'scripts\rag_pipeline\_rooktest_search.py'
 if (Test-Path -LiteralPath $rooktest) {
     $env:HERMES_LANCEDB_PATH = Join-Path $env:USERPROFILE 'data\lancedb\legal'
-    $null = & $python $rooktest 2>$null
-    if ($LASTEXITCODE -ne 0) {
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    & $python $rooktest 1>$null 2>$null
+    $rookCode = $LASTEXITCODE
+    $ErrorActionPreference = $prevEap
+    if ($rookCode -ne 0) {
         Write-Host '[WARN] search_knowledge rooktest mislukt (lege index of geen ingest)' -ForegroundColor Yellow
     } else {
         Write-Host '[OK] rooktest search' -ForegroundColor Green

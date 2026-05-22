@@ -31,7 +31,9 @@ $requiredRepo = @(
     'skills/productivity/landkaart/scripts/inventory_landkaart.py',
     'windows/backup_soul_profiles.ps1',
     'windows/scripts/sync_soul_interaction_snippet.ps1',
-    'windows/SYNC_SOUL_SNIPPETS.bat'
+    'windows/SYNC_SOUL_SNIPPETS.bat',
+    'windows/scripts/migrate_legal_source_layout.ps1',
+    'docs/LEGAL_ROLLOUT_CHECKLIST.md'
 )
 
 Write-Host '=== 1/6 repo-artefacten ===' -ForegroundColor Cyan

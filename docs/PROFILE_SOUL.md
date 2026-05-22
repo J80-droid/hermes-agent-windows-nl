@@ -88,3 +88,4 @@ Core routing staat in [ORCHESTRATOR_ROUTING.md](ORCHESTRATOR_ROUTING.md). Volled
 | Bron-submappen | `%USERPROFILE%\data\raw_source_files\04_Legal_Corporate\<Lens>\` |
 | Migratie layout | `windows\scripts\MIGRATE_LEGAL_LAYOUT.bat -Apply` |
 | Sync lenzentabel uit taxonomie | `python scripts\rag_pipeline\sync_legal_lens_table_from_taxonomy.py --soul <pad>` |
+| SOUL legal vanuit template | `windows\scripts\SYNC_LEGAL_SOUL_FROM_TEMPLATE.bat` |
