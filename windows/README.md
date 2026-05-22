@@ -23,7 +23,8 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 
 | Taak | Script |
 | ---- | ------ |
-| Hermes starten | `launch_hermes.bat` / `run_hermes.ps1` |
+| Hermes starten | `launch_hermes.bat` / `run_hermes.ps1` (lichte bootstrap; geen volledige SETUP) |
+| Volledige setup | `SETUP_HERMES.bat` of `launch_hermes.bat --setup` |
 | RAG-index bijwerken | `scripts/update_knowledge.bat` |
 | Doctor / fixes | `DOCTOR_FIX.bat` |
 | **Update fork (Nous upstream)** | `UPDATE_HERMES.bat` of `hermes_update.bat` (zelfde keten) |

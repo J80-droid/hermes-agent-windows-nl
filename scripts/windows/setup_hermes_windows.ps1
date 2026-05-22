@@ -356,6 +356,15 @@ if ((Test-Path -LiteralPath $ensurePy) -and -not $WhatIfPreference) {
     & powershell -NoProfile -ExecutionPolicy Bypass -File $ensurePy -RepoRoot $root -Quiet
 }
 
+if (-not $WhatIfPreference) {
+    $stampDir = Join-Path $env:USERPROFILE '.hermes'
+    $stampFile = Join-Path $stampDir 'launch_bootstrap.stamp'
+    if (-not (Test-Path -LiteralPath $stampDir)) {
+        New-Item -ItemType Directory -Path $stampDir -Force | Out-Null
+    }
+    Set-Content -LiteralPath $stampFile -Value (Get-Date -Format 'o') -Encoding utf8
+}
+
 Write-Host ""
 Write-Host 'Klaar: SETUP_HERMES.bat / setup_hermes_windows.bat + taakbalk-.lnk (goud=start/RAG, groen=setup, wit=update, roze/cyaan=backup/restore).' -ForegroundColor Cyan
 Write-Host 'Wizard: dubbelklik SETUP_HERMES.bat (standaard) of OPEN_SETUP.bat.' -ForegroundColor DarkGray

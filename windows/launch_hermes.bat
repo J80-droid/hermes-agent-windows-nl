@@ -149,12 +149,21 @@ goto :docker_poll
 :docker_done
 echo ----------------------------------------------------
 
-echo %CYAAN%[INFO] Step 1: Running environment setup...%RESET%
-rem Setup: canoniek scripts/windows/setup_hermes_windows.ps1 (windows/setup_hermes_windows.ps1 = wrapper).
-rem Optional Hermes *config* wizard: run windows/setup_hermes_windows.bat --full-setup from cmd (not the same as this step).
-rem Optional flags on this ps1 ^(pip/submodules/doctor^): --full-setup, --pip-only, --with-doctor, etc.
-rem Optional: --pip-only, --with-doctor, --skip-submodules, --skip-tinker (minimal), --force-tinker (retry na fout)
-rem Model/API/config-wizard: windows\HERMES_SETUP_WIZARD.bat (hermes setup) — niet hetzelfde als deze stap.
+rem Step 1: lichte bootstrap (geen volledige SETUP bij elke start)
+echo %CYAAN%[INFO] Bootstrap ^(conda + optioneel RAG-stamp^)...%RESET%
+if /I "!CLEAN_ARGS!"=="--setup" goto :run_full_setup
+echo !CLEAN_ARGS!| findstr /I "\-\-setup" >nul && goto :run_full_setup
+if defined HERMES_RUN_FULL_SETUP_ON_LAUNCH goto :run_full_setup
+powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%\windows\scripts\launch_bootstrap.ps1" -RepoRoot "%REPO_ROOT%"
+if !errorLevel! neq 0 (
+    echo %ROOD%[ERROR] Bootstrap mislukt.%RESET%
+    pause
+    exit /b !errorLevel!
+)
+goto :after_setup
+
+:run_full_setup
+echo %GOUD%[INFO] Volledige setup ^(SETUP_HERMES / --setup^)...%RESET%
 powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/scripts/windows/setup_hermes_windows.ps1" !CLEAN_ARGS!
 if !errorLevel! neq 0 (
     echo %ROOD%[ERROR] Setup failed. Check hermes_setup.log for details.%RESET%
@@ -162,6 +171,8 @@ if !errorLevel! neq 0 (
     pause
     exit /b !errorLevel!
 )
+
+:after_setup
 
 echo %GROEN%[INFO] Step 2: Launching Hermes Agent...%RESET%
 echo [%DATE% %TIME%] Launching runtime wrapper... >> "%LAUNCH_LOG%"
