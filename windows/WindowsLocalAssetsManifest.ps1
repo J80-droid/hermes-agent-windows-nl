@@ -151,6 +151,7 @@ function Get-HermesCriticalWindowsRepoPath {
         'windows/scripts/sync_soul_output_format_snippet.ps1',
         'windows/scripts/sync_soul_advisory_snippet.ps1',
         'windows/scripts/sync_profile_memories.ps1',
+        'windows/scripts/log_trust_memory_user_snapshot.ps1',
         'windows/scripts/scrub_identity_to_J.ps1',
         'windows/scripts/apply_trust_memory_limits.ps1',
         'docs/TRUST_FORENSIC_PROTOCOL.md',

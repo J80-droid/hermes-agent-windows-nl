@@ -33,3 +33,11 @@ def test_output_format_pleaser_check():
     text = (REPO / "docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md").read_text(encoding="utf-8")
     assert "pleaser-taal" in text
     assert "geen compact modus" in text.lower()
+
+
+def test_trust_memory_user_snapshot_script():
+    script = REPO / "windows/scripts/log_trust_memory_user_snapshot.ps1"
+    assert script.is_file()
+    text = script.read_text(encoding="utf-8")
+    assert "pleaser-behavior" in text
+    assert "[trust-memory]" in text

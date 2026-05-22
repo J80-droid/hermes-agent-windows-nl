@@ -20,11 +20,13 @@ Operationele handleiding voor J.'s Hermes Windows NL fork: verifieerbaar gedrag 
 ## Toepassen (Windows)
 
 1. Backup: `MANAGE_BACKUPS.bat` of `backup_soul_profiles.ps1` (inclusief memories).
-2. Dagelijks / na git pull: `windows\SYNC_TRUST_RUNTIME.bat` (geen scrub)
+2. Dagelijks / na git pull: `windows\SYNC_TRUST_RUNTIME.bat` (geen scrub) — logt daarna `[trust-memory]` regel 1 per `USER.md`
 3. Volledig incl. scrub: `windows\APPLY_TRUST_PROTOCOL.bat` of `SYNC_TRUST_PROTOCOL.bat`
 4. Audit: `windows\audits\RUN_TRUST_FORENSIC_E2E.ps1` of `RUN_AUDITS.ps1 -IncludeTrustForensicE2E`
 
-**Nieuwe chat verplicht** na SOUL/memory-sync.
+**Geautomatiseerd:** `UPDATE_HERMES.bat` en `POST_GIT_PULL.bat` roepen `SYNC_TRUST_RUNTIME` aan (sync + snapshot). **Niet** automatisch: alleen `git pull` zonder `POST_GIT_PULL.bat`, of `hermes update` zonder `UPDATE_HERMES.bat`.
+
+**Nieuwe chat verplicht** na SOUL/memory-sync (agent laadt memory-snapshot pas bij sessiestart).
 
 ## Geheugenlimieten (runtime)
 

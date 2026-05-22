@@ -17,6 +17,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_profile_m
 if errorlevel 1 exit /b 1
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\apply_trust_memory_limits.ps1" %*
 if errorlevel 1 exit /b 1
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\log_trust_memory_user_snapshot.ps1" %*
+if errorlevel 1 exit /b 1
 
 echo.
 echo [OK] Trust runtime gesynchroniseerd (geen scrub). Nieuwe chat starten.
