@@ -35,7 +35,8 @@ function Invoke-HermesNativeCommand {
         if ($Quiet) {
             & $FilePath @ArgumentList *> $null
         } else {
-            & $FilePath @ArgumentList
+            # Out-Host: geen pipeline-output (anders telt PS stdout als returnwaarde i.p.v. exitcode)
+            & $FilePath @ArgumentList | Out-Host
         }
         $code = $LASTEXITCODE
         if ($null -eq $code) { $code = if ($?) { 0 } else { 1 } }
