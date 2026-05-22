@@ -53,6 +53,29 @@ function Write-Ok([string]$Msg) { Write-Host "[OK] $Msg" -ForegroundColor Green 
 function Write-Warn([string]$Msg) { Write-Host "[WARN] $Msg" -ForegroundColor Yellow }
 function Write-Err([string]$Msg) { Write-Host "[ERROR] $Msg" -ForegroundColor Red }
 
+function Test-HermesUpstreamDirtyOnlyBranding {
+    <#
+    .SYNOPSIS
+        True als alle uncommitted wijzigingen alleen branding/iconen zijn (na generator of setup).
+    #>
+    param([Parameter(Mandatory)][string[]]$PorcelainLines)
+    if ($PorcelainLines.Count -eq 0) { return $true }
+    foreach ($line in $PorcelainLines) {
+        if (-not $line.Trim()) { continue }
+        $path = $line.Trim()
+        if ($path.Length -ge 3) { $path = $path.Substring(3).Trim() }
+        if ($path -match ' -> ') {
+            $path = ($path -split ' -> ', 2)[-1].Trim()
+        }
+        $norm = ($path -replace '\\', '/')
+        if ($norm -match '^(assets/(Hermes_logo|hermes_logo)\.png|windows/hermes[^/]*\.ico)$') {
+            continue
+        }
+        return $false
+    }
+    return $true
+}
+
 function Show-GitHardResetWarning {
     if ($env:HERMES_SKIP_RESET_WARNING -eq '1') { return }
     if (Test-Path (Join-Path $PSScriptRoot 'SKIP_HARD_RESET_WARNING')) { return }
@@ -81,13 +104,17 @@ function Invoke-UpstreamPreflight {
         Write-Warn "Branch is '$branch' (verwacht: main voor upstream-merge)."
     }
 
-    $dirty = git status --porcelain 2>$null
-    if ($dirty -and -not $AllowDirty) {
-        Write-Err "Werkmap niet schoon - commit of stash eerst."
-        git status -sb 2>$null | Out-Host
-        return 2
+    $dirtyLines = @(git status --porcelain 2>$null | Where-Object { $_.Trim() })
+    if ($dirtyLines.Count -gt 0 -and -not $AllowDirty) {
+        if (Test-HermesUpstreamDirtyOnlyBranding -PorcelainLines $dirtyLines) {
+            Write-Warn "Alleen branding/iconen (.png/.ico) gewijzigd — update gaat door. Commit later indien gewenst."
+        } else {
+            Write-Err "Werkmap niet schoon - commit of stash eerst (of alleen iconen: FIX_TASKBAR_ICONS na commit)."
+            git status -sb 2>$null | Out-Host
+            return 2
+        }
     }
-    if ($dirty) { Write-Warn "Werkmap heeft uncommitted wijzigingen (-AllowDirty)." }
+    if ($dirtyLines.Count -gt 0) { Write-Warn "Werkmap heeft uncommitted wijzigingen (-AllowDirty)." }
 
     $remotes = git remote 2>$null
     if ($remotes -notcontains 'upstream') {

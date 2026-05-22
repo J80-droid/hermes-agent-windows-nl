@@ -233,7 +233,7 @@ git fetch upstream
 git rev-list --left-right --count HEAD...upstream/main
 ```
 
-- **`git status` niet schoon** → eerst committen of stashen; update kan anders falen of verwarren.
+- **`git status` niet schoon** → commit of stash. **Uitzondering:** alleen `assets/Hermes_logo.png` en `windows/hermes*.ico` (na icoon-generator) — `UPDATE_HERMES.bat` gaat door met waarschuwing.
 - **Grote B** → reken op conflicten; lees conflict-tabel (pyproject, run_tests, uv.lock).
 
 ### 4. Na elke geslaagde merge
