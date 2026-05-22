@@ -66,6 +66,7 @@ windows\UPDATE_HERMES.bat
 | Waarschuwing bij achterstand >20 + J/N | Ja |
 | `hermes update` (merge upstream + deps) | Ja |
 | Trust runtime (`SYNC_TRUST_RUNTIME.bat`, geen scrub + USER-regel snapshot) | Ja (post-merge, `HERMES_SKIP_PAUSE=1`) |
+| Domein-toolsets (`SYNC_DOMAIN_TOOLSETS.bat`) | Ja (post-merge, na trust runtime) |
 | RAG `[rag]` + script-keten verify | Ja (post-merge, via `verify_windows_script_chain.ps1` — **geen** pause) |
 | Merge-conflicten oplossen | **Nee** (handmatig) |
 | Waarschuwing tegen `git reset --hard` | Ja (banner bij Update) |

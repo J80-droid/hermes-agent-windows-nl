@@ -5,7 +5,8 @@
 #   NIET — model antwoordt in chat met "/profile use core"; prompt na natuurlijke taal zonder herstart;
 #          volledige keten RUN_PROFILE_SWITCH_E2E.bat; SOUL-gedrag in lange sessie met oude context
 param(
-    [switch]$ApplyRuntime
+    [switch]$ApplyRuntime,
+    [switch]$IncludeToolsetAudit
 )
 
 $ErrorActionPreference = 'Stop'
@@ -368,6 +369,13 @@ try {
 }
 Write-Host '[OK] natuurlijke taal herkent profiel core (geen LLM)' -ForegroundColor Green
 Write-Host '[INFO] Model-gedrag (/profile use in antwoord) niet geautomatiseerd - SOUL 5c + nieuwe chat' -ForegroundColor DarkGray
+
+if ($IncludeToolsetAudit) {
+    Write-Host '=== 12/12 toolset domain E2E ===' -ForegroundColor Cyan
+    & (Join-Path $scriptRoot 'RUN_TOOLSET_DOMAIN_E2E.ps1') -RepoRoot $repoRoot -HermesRoot $hermesRoot
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    Write-Host '[OK] toolset domain E2E' -ForegroundColor Green
+}
 
 Write-Host '=== INSTITUTIONAL E2E: PASS ===' -ForegroundColor Green
 exit 0

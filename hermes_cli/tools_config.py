@@ -1120,10 +1120,20 @@ def _get_platform_tools(
     """Resolve which individual toolset names are enabled for a platform."""
     from toolsets import resolve_toolset, TOOLSETS
 
-    platform_toolsets = config.get("platform_toolsets") or {}
-    toolset_names = platform_toolsets.get(platform)
+    platform_toolsets = config.get("platform_toolsets")
+    if not isinstance(platform_toolsets, dict):
+        platform_toolsets = {}
 
-    if toolset_names is None or not isinstance(toolset_names, list):
+    # Explicit ``platform_toolsets.cli: []`` must not fall back to hermes-cli
+    # (domain profiles set minimal toolsets via docs/domain_toolsets.yaml).
+    if platform in platform_toolsets:
+        toolset_names = platform_toolsets[platform]
+        if toolset_names is not None and not isinstance(toolset_names, list):
+            toolset_names = None
+    else:
+        toolset_names = None
+
+    if toolset_names is None:
         plat_info = PLATFORMS.get(platform)
         if plat_info:
             default_ts = plat_info["default_toolset"]

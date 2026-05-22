@@ -1,0 +1,227 @@
+# Canonieke toolset-policy per Hermes-profiel (Windows NL fork).
+# Sync: windows/scripts/sync_profile_toolsets_from_manifest.ps1
+# Audit: docs/DOMAIN_TOOLSET_AUDIT.md
+version: '1.0'
+
+# Overal uitgesloten van platform_toolsets.cli (gebruik nooit hermes-cli preset hier).
+never_default_global:
+  - hermes-cli
+  - moa
+  - tts
+  - image_gen
+  - video_gen
+  - cronjob
+  - messaging
+  - computer_use
+  - homeassistant
+  - skills_hub
+
+root:
+  platform_toolsets:
+    cli: []
+  toolsets: []
+  note: "Profiel bepaalt tools. Expliciet cli: [] voorkomt hermes-cli fallback (zie tools_config patch)."
+
+# Optioneel: verkleint skills-index (prefix-match op skill-mapnaam).
+skills_disabled_suggestions:
+  - spotify
+  - comfyui
+  - touchdesigner
+  - blogwatcher
+
+profiles:
+  core:
+    platform_toolsets:
+      cli:
+        - mcp
+        - file
+        - memory
+        - skills
+        - clarify
+        - web
+        - terminal
+        - browser
+        - kanban
+        - todo
+    optional_toolsets:
+      - delegation
+      - session_search
+    never_default:
+      - hermes-cli
+    max_tools: 24
+    ask_triggers:
+      delegation: "Multi-step subtaak die een geïsoleerde subagent vereist."
+      session_search: "Terugzoeken in eerdere core-sessies zonder RAG."
+
+  legal:
+    platform_toolsets:
+      cli:
+        - mcp
+        - file
+        - memory
+        - skills
+        - clarify
+        - web
+        - terminal
+        - browser
+    optional_toolsets:
+      - vision
+      - session_search
+      - todo
+    never_default:
+      - delegation
+      - code_execution
+      - kanban
+      - moa
+    max_tools: 24
+    ask_triggers:
+      vision: "Gescande PDF/VSO/GCR zonder bruikbare tekstlaag; foto-bewijs."
+      session_search: "Eerdere legal-strategie-chats terugvinden."
+      todo: "Meerstaps VSO/GCR-planning met expliciete checklist."
+    legal_lenses:
+      arb: "vision bij scan; session_search voor eerdere GCR-strategie."
+      bbk: "web_extract voor overheidsbesluit-URL (web staat aan)."
+      klok: "browser als meldloket alleen JS (browser staat al aan)."
+      aanspr: "vision bij schade-foto's."
+      corp: "file + RAG primair; vision bij contract-scans."
+
+  academics:
+    platform_toolsets:
+      cli:
+        - mcp
+        - file
+        - memory
+        - skills
+        - clarify
+        - web
+        - terminal
+        - browser
+    optional_toolsets:
+      - vision
+    never_default:
+      - delegation
+      - kanban
+      - code_execution
+    max_tools: 24
+    ask_triggers:
+      vision: "Figuren/tabellen in papers die niet als tekst in RAG staan."
+
+  trading:
+    platform_toolsets:
+      cli:
+        - mcp
+        - file
+        - memory
+        - skills
+        - clarify
+        - web
+        - terminal
+        - browser
+    optional_toolsets:
+      - code_execution
+      - vision
+    never_default:
+      - delegation
+      - kanban
+    max_tools: 24
+    ask_triggers:
+      code_execution: "Backtest/script met meerdere tool-calls in één run."
+      vision: "Chart-screenshots zonder numerieke export."
+
+  operations:
+    platform_toolsets:
+      cli:
+        - mcp
+        - file
+        - memory
+        - skills
+        - clarify
+        - web
+        - terminal
+        - browser
+        - todo
+    optional_toolsets:
+      - delegation
+    never_default:
+      - kanban
+    max_tools: 24
+    ask_triggers:
+      delegation: "Parallelle subprocessen voor zware operationele analyse."
+
+  logistics:
+    platform_toolsets:
+      cli:
+        - mcp
+        - file
+        - memory
+        - skills
+        - clarify
+        - web
+        - browser
+    optional_toolsets:
+      - terminal
+    never_default:
+      - delegation
+      - code_execution
+    max_tools: 22
+    ask_triggers:
+      terminal: "Lokale script/automatisering voor agenda of batch-taken."
+
+  philosophy:
+    platform_toolsets:
+      cli:
+        - mcp
+        - file
+        - memory
+        - skills
+        - clarify
+        - search
+    optional_toolsets:
+      - web
+    never_default:
+      - terminal
+      - browser
+      - delegation
+    max_tools: 14
+    ask_triggers:
+      web: "Volledige pagina-extract nodig; search volstaat niet."
+
+  gaming:
+    platform_toolsets:
+      cli:
+        - mcp
+        - file
+        - memory
+        - skills
+        - clarify
+        - web
+        - browser
+    optional_toolsets:
+      - vision
+    never_default:
+      - cronjob
+      - homeassistant
+    max_tools: 22
+    ask_triggers:
+      vision: "Screenshot/spec-analyse van game UI."
+
+  ventures:
+    platform_toolsets:
+      cli:
+        - mcp
+        - file
+        - memory
+        - skills
+        - clarify
+        - web
+        - terminal
+        - browser
+        - todo
+    optional_toolsets:
+      - code_execution
+    never_default:
+      - delegation
+      - image_gen
+    max_tools: 24
+    ask_triggers:
+      code_execution: "Financial model of spreadsheet-automatisering in sandbox."

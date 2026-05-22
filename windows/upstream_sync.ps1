@@ -346,6 +346,20 @@ try {
             }
 
             if ($script:UpstreamExitCode -eq 0) {
+                $toolBat = Join-Path $repo 'windows\SYNC_DOMAIN_TOOLSETS.bat'
+                if (Test-Path -LiteralPath $toolBat) {
+                    Write-Step 'Domein-toolsets (platform_toolsets.cli)...'
+                    $env:HERMES_SKIP_PAUSE = '1'
+                    & cmd /c "`"$toolBat`""
+                    if ($LASTEXITCODE -ne 0) {
+                        Write-Warn 'SYNC_DOMAIN_TOOLSETS.bat faalde — draai handmatig na update.'
+                    } else {
+                        Write-Ok 'Domein-toolsets gesynchroniseerd.'
+                    }
+                }
+            }
+
+            if ($script:UpstreamExitCode -eq 0) {
                 # .ps1 direct: VERIFY_WINDOWS_CHAIN.bat heeft pause — blokkeert anders de update-keten.
                 $verify = Join-Path $repo 'windows/verify_windows_script_chain.ps1'
                 if (Test-Path -LiteralPath $verify) {

@@ -19,7 +19,7 @@ Zonder fase 1 is de index leeg. Zonder fase 2 weet de agent niet welke LanceDB b
 
 ## Eén model voor alle balies
 
-Domeinprofielen verschillen in **MCP, SOUL, toolsets** — niet in inference-model. Het model staat centraal in `%LOCALAPPDATA%\hermes\config.yaml`, zodat een toekomstige wissel (bijv. ander Gemini/OpenRouter-model) **één keer** volstaat voor legal, core en alle andere profielen.
+Domeinprofielen verschillen in **MCP, SOUL, `platform_toolsets.cli`** (minimaal per domein, opt-in via agent) — niet in inference-model. Het model staat centraal in `%LOCALAPPDATA%\hermes\config.yaml`, zodat een toekomstige wissel (bijv. ander Gemini/OpenRouter-model) **één keer** volstaat voor legal, core en alle andere profielen.
 
 Zie `docs/PROFILE_MODEL_INHERITANCE.md`.
 

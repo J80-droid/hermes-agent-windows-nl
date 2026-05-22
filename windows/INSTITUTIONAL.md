@@ -21,6 +21,7 @@
 | SOUL-sync | `windows\SYNC_SOUL_SNIPPETS.bat` | `SOUL_SHARED_INTERACTION.md` + `SOUL_SHARED_OUTPUT_FORMAT.md` |
 | Trust runtime | `windows\SYNC_TRUST_RUNTIME.bat` | SOUL advisory + legal forensic + memory seed + limits (geen scrub) — na pull / dagelijks |
 | Trust volledig | `windows\APPLY_TRUST_PROTOCOL.bat` | Bovenstaande + scrub + `RUN_TRUST_FORENSIC_E2E` — zie `docs/TRUST_FORENSIC_PROTOCOL.md` |
+| Domein-toolsets | `windows\SYNC_DOMAIN_TOOLSETS.bat` | `docs/domain_toolsets.yaml` → `platform_toolsets.cli` per profiel; audit: `docs/DOMAIN_TOOLSET_AUDIT.md` |
 | Presentatie | `docs/INSTITUTIONAL_PRESENTATION.md` | Rich render + globale typografie; legacy `windows/scripts/institutional/` |
 | Core SOUL template | `docs/templates/SOUL_CORE_ORCHESTRATOR.md` | Routing/clarification/landkaart; niet overschreven door sync |
 | Restore | `windows\restore_from_backup.ps1` | **Moet in git** — `RESTORE_FROM_BACKUP.bat`; `-RestoreRuntimePersonas` |
@@ -30,7 +31,7 @@
 
 Na `git pull` of op een **nieuwe machine**:
 
-1. `windows\POST_GIT_PULL.bat` (verify + trust runtime + taakbalk-iconen + icooncache)
+1. `windows\POST_GIT_PULL.bat` (verify + trust runtime + domein-toolsets + taakbalk-iconen + icooncache)
 2. Of handmatig: `VERIFY_WINDOWS_CHAIN.bat` en `FIX_TASKBAR_ICONS.bat`
 3. Bij oude clone zonder windows-bestanden: `restore_local_assets.bat`
 

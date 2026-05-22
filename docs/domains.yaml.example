@@ -10,6 +10,7 @@
 #   2. Maak raw_source_files\<source_dir>\ met bronbestanden
 #   3. Maak Hermes-profiel %LOCALAPPDATA%\hermes\profiles\<profile_name>\
 #      MCP: run sync_profile_mcp_from_domains.py (schrijft mcp_servers: — geen handmatig mcp.servers)
+#      Toolsets: windows\SYNC_DOMAIN_TOOLSETS.bat (docs/domain_toolsets.yaml → platform_toolsets.cli)
 #      Geen model: in config — model komt uit ~/.hermes/config.yaml (docs/PROFILE_MODEL_INHERITANCE.md)
 #   4. update_knowledge.bat --list  (moet het nieuwe domein tonen)
 #   5. update_knowledge.bat <naam>  of update_knowledge.bat (alle domeinen)

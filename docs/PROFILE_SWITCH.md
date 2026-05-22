@@ -22,6 +22,10 @@ Als `HERMES_HOME` naar `profiles\core` wijst en het child-proces **geen** `-p` k
 
 Zie `hermes_cli/relaunch.py` en `tests/hermes_cli/test_apply_profile_override.py`.
 
+## Toolsets na profielwissel
+
+Elk profiel heeft een eigen `platform_toolsets.cli` (manifest: `docs/domain_toolsets.yaml`). Na `/profile use` of `SWITCH_PROFILE_AND_CHAT.bat` geldt de toolbox van het **nieuwe** profiel alleen in een **nieuwe chat** (schema’s worden bij sessiestart geladen). Optionele tools: agent vraagt J. → `hermes -p <naam> tools` → opnieuw chatten. Zie [DOMAIN_TOOLSET_AUDIT.md](DOMAIN_TOOLSET_AUDIT.md).
+
 ## CLI-vlaggen (`hermes profile use`)
 
 | Vlag | Default | Betekenis |

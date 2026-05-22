@@ -7,7 +7,8 @@
 - **Embedding:** `all-MiniLM-L6-v2` (sentence-transformers)
 - **Media:** faster-whisper + **ffmpeg** op PATH
 - **Branding:** `assets/Hermes_logo.png` (canoniek in git); gekleurde `windows/hermes_logo_*.ico` via generator (grotendeels `.gitignore`)
-- **Docs:** `docs/README.md`, `docs/HERMES_START.md`, `docs/USER_DATA_OPERATIONS.md`, `docs/PROFILE_MODEL_INHERITANCE.md`, `docs/RAG_TWEE_FASEN.md`, `scripts/rag_pipeline/ACTIVATION.md`, `docs/RAG_INSTITUTIONAL_ENV.md`, `windows/INSTITUTIONAL.md`
+- **Docs:** `docs/README.md`, `docs/DOMAIN_TOOLSET_AUDIT.md`, `docs/domain_toolsets.yaml`, `docs/HERMES_START.md`, `docs/USER_DATA_OPERATIONS.md`, `docs/PROFILE_MODEL_INHERITANCE.md`, `docs/RAG_TWEE_FASEN.md`, `scripts/rag_pipeline/ACTIVATION.md`, `docs/RAG_INSTITUTIONAL_ENV.md`, `windows/INSTITUTIONAL.md`
+- **Toolsets:** root `platform_toolsets.cli: []`; profielen via manifest; patch `hermes_cli/tools_config.py` (expliciet `[]` ≠ `hermes-cli`)
 - **pytest Windows:** `tests/tools/test_search_hidden_dirs.py` (`shutil.which`); `pyproject.toml` marker `ssh`; `timeout-method=thread`
 - **Hermes config:** root `%LOCALAPPDATA%\hermes\config.yaml` (model); profielen `%LOCALAPPDATA%\hermes\profiles\<naam>\` (MCP, `SOUL.md`, **display**-overlay via `APPLY_TEAM_DISPLAY.bat`, geen `model:`). Secrets: root `.env`; legacy `%USERPROFILE%\.hermes\.env` → `windows/SYNC_HERMES_API_ENV.bat`
 - **Presentatie:** `docs/INSTITUTIONAL_PRESENTATION.md`; SOUL-sync `SYNC_SOUL_SNIPPETS.bat`; audit `windows/audits/RUN_INSTITUTIONAL_E2E.bat`

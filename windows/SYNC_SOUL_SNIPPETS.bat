@@ -10,7 +10,10 @@ if not "%ERR%"=="0" exit /b %ERR%
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_soul_output_format_snippet.ps1" %*
 set "ERR=%ERRORLEVEL%"
 if not "%ERR%"=="0" exit /b %ERR%
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_soul_tool_governance_snippet.ps1" %*
+set "ERR=%ERRORLEVEL%"
+if not "%ERR%"=="0" exit /b %ERR%
 echo.
-echo [OK] Interaction + Outputformaat gesynchroniseerd. Start een nieuwe chat voor effect.
+echo [OK] Interaction + Outputformaat + Tool governance gesynchroniseerd. Nieuwe chat starten.
 if not "%HERMES_SKIP_PAUSE%"=="1" pause
 exit /b 0

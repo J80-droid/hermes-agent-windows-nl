@@ -9,6 +9,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_legal_sou
 if errorlevel 1 exit /b 1
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_soul_advisory_snippet.ps1" %*
 if errorlevel 1 exit /b 1
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_soul_tool_governance_snippet.ps1" %*
+if errorlevel 1 exit /b 1
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_soul_interaction_snippet.ps1" %*
 if errorlevel 1 exit /b 1
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_soul_output_format_snippet.ps1" %*

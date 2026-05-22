@@ -16,7 +16,14 @@ if exist "%~dp0VERIFY_WINDOWS_CHAIN.bat" (
 
 echo.
 echo [INFO] Trust and Forensic runtime (SOUL + memory, geen scrub)...
+set "HERMES_SKIP_PAUSE=1"
 call "%~dp0SYNC_TRUST_RUNTIME.bat"
+set "HERMES_SKIP_PAUSE="
+echo.
+echo [INFO] Domein-toolsets (platform_toolsets.cli)...
+set "HERMES_SKIP_PAUSE=1"
+call "%~dp0SYNC_DOMAIN_TOOLSETS.bat"
+set "HERMES_SKIP_PAUSE="
 echo.
 echo [INFO] Nieuwe skills (bijv. landkaart): hermes update of nieuwe chat-sessie.
 echo.

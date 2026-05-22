@@ -10,5 +10,5 @@ hermes_logo_restore.ico
 hermes_logo_update.ico
 hermes_logo_setup.ico
 hermes_taskbar_white.ico
-windows/audits/_trust_backup_*/
-windows/audits/scrub_identity_report.json
+audits/_trust_backup_*/
+audits/scrub_identity_report.json

@@ -51,11 +51,23 @@ Wijzigingen in SOUL.md werken het best in een **nieuwe sessie** (bestaande chats
 | Bestand | Rol |
 |---------|-----|
 | `%LOCALAPPDATA%\hermes\config.yaml` | Model, provider (alle profielen) |
-| `profiles\<naam>\config.yaml` | `mcp_servers`, toolsets — **geen** `model:` |
-| `profiles\<naam>\SOUL.md` | Persona, missie, tone, grenzen |
+| `profiles\<naam>\config.yaml` | `platform_toolsets.cli`, `mcp_servers` — **geen** `model:` (niet `enabled_toolsets`) |
+| `profiles\<naam>\SOUL.md` | Persona, missie, tone, grenzen, **Tool governance** |
 | `%USERPROFILE%\data\domains.yaml` | Bronpaden, LanceDB, ingest |
 
-Zie ook [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md) en [RAG_TWEE_FASEN.md](RAG_TWEE_FASEN.md).
+Zie ook [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md), [DOMAIN_TOOLSET_AUDIT.md](DOMAIN_TOOLSET_AUDIT.md) en [RAG_TWEE_FASEN.md](RAG_TWEE_FASEN.md).
+
+## Toolsets per domein
+
+| Actie | Commando / bestand |
+|-------|-------------------|
+| Canonieke lijst | [domain_toolsets.yaml](domain_toolsets.yaml) |
+| Uitleg + opt-in (agent vraagt J.) | [DOMAIN_TOOLSET_AUDIT.md](DOMAIN_TOOLSET_AUDIT.md) |
+| Sync naar runtime | `windows\SYNC_DOMAIN_TOOLSETS.bat` |
+| Optioneel inschakelen | `hermes -p <naam> tools` → nieuwe chat |
+| Audit | `windows\audits\RUN_TOOLSET_DOMAIN_E2E.bat` |
+
+**Root** (`%LOCALAPPDATA%\hermes\config.yaml`): `platform_toolsets.cli: []` — gebruik **`hermes -p <domein>`**, niet chat zonder profiel.
 
 ## Nieuwe profiel-SOUL
 
@@ -70,7 +82,7 @@ notepad %LOCALAPPDATA%\hermes\profiles\mijn-domein\SOUL.md
 
 | Actie | Hoe |
 |-------|-----|
-| Interaction + Outputformaat in alle profielen | `windows\SYNC_SOUL_SNIPPETS.bat` (`SOUL_SHARED_INTERACTION.md`, `SOUL_SHARED_OUTPUT_FORMAT.md`) |
+| Interaction + Outputformaat + Tool governance | `windows\SYNC_SOUL_SNIPPETS.bat` of `SYNC_TRUST_RUNTIME.bat` (`SOUL_SHARED_*.md`, `SOUL_SHARED_TOOL_GOVERNANCE.md`) |
 | Presentatie (kleur + structuur) | `docs/INSTITUTIONAL_PRESENTATION.md` |
 | Core SOUL referentie in repo | `docs/templates/SOUL_CORE_ORCHESTRATOR.md` |
 | Runtime SOUL in backup | `MANAGE_BACKUPS.bat` → `backup_soul_profiles` (map `localappdata_hermes/` in backup) |

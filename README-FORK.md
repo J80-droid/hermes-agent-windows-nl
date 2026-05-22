@@ -23,6 +23,7 @@ Deze fork is de **enige goedgekeurde bron** voor Hermes-installaties binnen dit 
 | Landkaart (completeness) | `skills/productivity/landkaart/` | `/landkaart`, inventarisatie vóór diepgang |
 | Runtime SOUL backup/restore | `windows/backup_soul_profiles.ps1`, `restore_from_backup.ps1` | Manifest v2: `localappdata_hermes/`; `-RestoreRuntimePersonas` |
 | Legal domein (lenzen, één bucket) | `docs/LEGAL_DOMAIN_ARCHITECTURE.md`, `LEGAL_TAXONOMY.md` | Rechtsgebied-lenzen; audit `RUN_LEGAL_DOMAIN_E2E.bat` |
+| Domein-toolsets (token-besparing) | `docs/DOMAIN_TOOLSET_AUDIT.md`, `docs/domain_toolsets.yaml` | Minimale toolbox per profiel; opt-in via agent; `SYNC_DOMAIN_TOOLSETS.bat` |
 
 ### Profielwissel (productie)
 

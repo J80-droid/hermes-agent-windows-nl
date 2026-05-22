@@ -3,8 +3,9 @@
 ## Config-scheiding (drie bestanden)
 
 1. **Root** `~/.hermes/config.yaml` — globaal gedrag + **model/provider**.
-2. **Profiel** `~/.hermes/profiles/<naam>/config.yaml` — MCP, agent, toolsets; model erft van root.
-3. **RAG** `~/data/domains.yaml` — batch-indexering; geen chat-sessie.
+2. **Profiel** `~/.hermes/profiles/<naam>/config.yaml` — `platform_toolsets.cli`, MCP, agent; model erft van root.
+3. **Toolset-manifest** `docs/domain_toolsets.yaml` — sync via `SYNC_DOMAIN_TOOLSETS.bat`; opt-in via SOUL Tool governance.
+4. **RAG** `~/data/domains.yaml` — batch-indexering; geen chat-sessie.
 
 Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `load_cli_config()`.
 

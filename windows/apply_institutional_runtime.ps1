@@ -38,7 +38,9 @@ if (-not $SkipSoul) {
     Write-Host '--- SOUL Outputformaat ---' -ForegroundColor Cyan
     & (Join-Path $scriptRoot 'scripts\sync_soul_output_format_snippet.ps1')
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    Write-Host '[OK] SOUL Interaction + Outputformaat gesynchroniseerd.' -ForegroundColor Green
+    & (Join-Path $scriptRoot 'scripts\sync_soul_tool_governance_snippet.ps1')
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    Write-Host '[OK] SOUL Interaction + Outputformaat + Tool governance gesynchroniseerd.' -ForegroundColor Green
 }
 
 if ($IncludeTrustRuntime) {
@@ -51,7 +53,17 @@ if ($IncludeTrustRuntime) {
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     & (Join-Path $scriptRoot 'scripts\apply_trust_memory_limits.ps1')
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    Write-Host '[OK] Trust runtime (geen scrub).' -ForegroundColor Green
+    if ($SkipSoul) {
+        & (Join-Path $scriptRoot 'scripts\sync_soul_tool_governance_snippet.ps1')
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    }
+    $toolSync = Join-Path $scriptRoot 'scripts\sync_profile_toolsets_from_manifest.ps1'
+    if (Test-Path -LiteralPath $toolSync) {
+        Write-Host '--- Domein-toolsets ---' -ForegroundColor Cyan
+        & $toolSync
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    }
+    Write-Host '[OK] Trust runtime + toolsets (geen scrub).' -ForegroundColor Green
 }
 
 if (-not $SkipE2E) {

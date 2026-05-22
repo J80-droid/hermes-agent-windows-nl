@@ -30,11 +30,13 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | TUI-kleuren / display | `TERMINAL_WINDOWS.md`, `APPLY_TEAM_DISPLAY.bat` (skin + markdown) |
 | API-keys sync (split home) | `SYNC_HERMES_API_ENV.bat` — `~/.hermes/.env` → `%LOCALAPPDATA%\hermes\.env` |
 | Profiel wisselen | `SWITCH_PROFILE.bat <naam>` of in chat `/profile use <naam>` — zie `docs\PROFILE_SWITCH.md` |
-| Profiel + direct chat | `SWITCH_PROFILE_AND_CHAT.bat <naam>` |
+| Profiel + direct chat | `SWITCH_PROFILE_AND_CHAT.bat <naam>` (nieuwe chat = toolbox van dat profiel) |
+| Toolsets per profiel | `hermes -p <naam> tools` of `SYNC_DOMAIN_TOOLSETS.bat` |
 | HERMES_HOME controleren | `scripts\verify_hermes_home.ps1` |
 | Profielwissel E2E-audit | `audits\RUN_PROFILE_SWITCH_E2E.bat` |
-| SOUL sync (Interaction + Outputformaat) | `SYNC_SOUL_SNIPPETS.bat` — `docs\templates\SOUL_SHARED_*.md` |
+| SOUL sync (Interaction + Output + Tool governance) | `SYNC_SOUL_SNIPPETS.bat` — `docs\templates\SOUL_SHARED_*.md` |
 | Trust & Forensic (SOUL + memory + J.) | `SYNC_TRUST_RUNTIME.bat` (dagelijks) / `APPLY_TRUST_PROTOCOL.bat` (incl. scrub) — `docs\TRUST_FORENSIC_PROTOCOL.md` |
+| Domein-toolsets (minimaal + opt-in) | `SYNC_DOMAIN_TOOLSETS.bat` — `docs\domain_toolsets.yaml`, `docs\DOMAIN_TOOLSET_AUDIT.md` |
 | Institutionele presentatie | `docs\INSTITUTIONAL_PRESENTATION.md` |
 | Core routing / landkaart | `docs\ORCHESTRATOR_ROUTING.md`, skill `landkaart` (`/landkaart`) |
 | Legal lenzen (één bucket) | `docs\LEGAL_DOMAIN_ARCHITECTURE.md`, `docs\LEGAL_TAXONOMY.md`, `MIGRATE_LEGAL_LAYOUT.bat` |

@@ -8,6 +8,8 @@
 
 **Trust & Forensic protocol** (2026-05-22): SOUL advisory + legal forensic-blok, memory-seed in **alle** profielen, identiteit **J.** (scrub excl. `lancedb/`). Dagelijks/na pull: `SYNC_TRUST_RUNTIME.bat`; volledig+scrub: `APPLY_TRUST_PROTOCOL.bat`. `POST_GIT_PULL.bat` en `UPDATE_HERMES` post-merge roepen trust runtime aan. Audits: `RUN_TRUST_FORENSIC_E2E.ps1`, `RUN_LEGAL_DOMAIN_E2E.ps1`. Na sync: **nieuwe chat** in profiel `legal`.
 
+**Domein-toolsets** (2026-05): manifest `docs/domain_toolsets.yaml` → `SYNC_DOMAIN_TOOLSETS.bat` (ook UPDATE/POST_GIT_PULL/APPLY_INSTITUTIONAL -IncludeTrustRuntime). Patch `tools_config`: expliciet `cli: []` ≠ hermes-cli. Audit: `RUN_TOOLSET_DOMAIN_E2E.ps1`. Zie `docs/DOMAIN_TOOLSET_AUDIT.md`.
+
 **P0+P1 afgerond**; Windows institutioneel: conda `hermes-env`, WT/skin, API-env sync. Open: bronnen in 7 lege `raw_source_files`-mappen (legal bronnen + submappen actief).
 
 ## Dev vs. install-clone
@@ -24,6 +26,7 @@
 | User-data sync | `docs/USER_DATA_OPERATIONS.md` |
 | Model alle profielen | `docs/PROFILE_MODEL_INHERITANCE.md` |
 | SOUL per profiel | `docs/PROFILE_SOUL.md` |
+| Domein-toolsets | `docs/DOMAIN_TOOLSET_AUDIT.md`, `docs/domain_toolsets.yaml` |
 | Core routing / orchestrator | `docs/ORCHESTRATOR_ROUTING.md` |
 | Legal architectuur / taxonomie | `docs/LEGAL_DOMAIN_ARCHITECTURE.md`, `docs/LEGAL_TAXONOMY.md` |
 | Landkaart (volledige lijsten) | skill `landkaart`, `/landkaart` |
@@ -51,7 +54,8 @@
 | Script | Rol |
 |--------|-----|
 | `UPDATE_HERMES.bat` | Update + verify (`.ps1`, geen pause; `HERMES_SKIP_PAUSE_AFTER_UPDATE=1`) + auto `fix_hermes_taskbar_pins` |
-| `SYNC_SOUL_SNIPPETS.bat` | Interaction + Outputformaat naar alle profiel-SOUL's (`docs/templates/SOUL_SHARED_*.md`) |
+| `SYNC_SOUL_SNIPPETS.bat` | Interaction + Output + Tool governance (`SOUL_SHARED_*.md`) |
+| `SYNC_DOMAIN_TOOLSETS.bat` | Manifest → `platform_toolsets.cli` (root + profielen) |
 | `MANAGE_BACKUPS.bat` | Inclusief `backup_soul_profiles` → `localappdata_hermes/` in backup |
 | `POST_GIT_PULL.bat` | Na pull op andere machine |
 | `FIX_TASKBAR_ICONS.bat` | Handmatig icoon + pins |

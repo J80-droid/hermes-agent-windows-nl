@@ -34,9 +34,13 @@ mcp_servers:
       HERMES_LANCEDB_PATH: C:\Users\...\data\lancedb\legal
       HERMES_REPO_ROOT: D:\...\hermes-agent
       PYTHONIOENCODING: utf-8
-enabled_toolsets:
-  - mcp
-  - file
+platform_toolsets:
+  cli:
+    - mcp
+    - file
+    - memory
+    - skills
+    # volledige lijst: docs/domain_toolsets.yaml + SYNC_DOMAIN_TOOLSETS.bat
 agent:
   max_turns: 30
 ```

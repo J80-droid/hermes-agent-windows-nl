@@ -8,6 +8,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 |--------|----------|
 | Begrijpen: index vs. chat (twee fasen) | [RAG_TWEE_FASEN.md](RAG_TWEE_FASEN.md) |
 | Trust & Forensic (SOUL, memory, J.) | [TRUST_FORENSIC_PROTOCOL.md](TRUST_FORENSIC_PROTOCOL.md) — dagelijks: `windows/SYNC_TRUST_RUNTIME.bat` |
+| Toolsets per domein (minimaal + opt-in) | [DOMAIN_TOOLSET_AUDIT.md](DOMAIN_TOOLSET_AUDIT.md) — sync: `windows/SYNC_DOMAIN_TOOLSETS.bat` |
 | Model/provider voor **alle** profielen instellen | [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md) |
 | Profiel wisselen (chat, CLI, audit) | [PROFILE_SWITCH.md](PROFILE_SWITCH.md) |
 | SOUL.md per domeinprofiel (waar, bewerken) | [PROFILE_SOUL.md](PROFILE_SOUL.md) |
@@ -41,7 +42,8 @@ flowchart TB
 | Laag | Bestand | Bevat o.a. |
 |------|---------|------------|
 | **Root Hermes** | `%LOCALAPPDATA%\hermes\config.yaml` | `model`, `provider`, `display`, gateway |
-| **Domeinprofiel** | `%LOCALAPPDATA%\hermes\profiles\<naam>\config.yaml` | MCP `lancedb-<domein>`, toolsets, **geen** `model:` |
+| **Domeinprofiel** | `%LOCALAPPDATA%\hermes\profiles\<naam>\config.yaml` | `platform_toolsets.cli`, MCP `lancedb-<domein>`, **geen** `model:` |
+| **Toolset-manifest** | `docs/domain_toolsets.yaml` | Sync: `windows/SYNC_DOMAIN_TOOLSETS.bat` |
 | **RAG-batch** | `%USERPROFILE%\data\domains.yaml` | `source_dir`, `lancedb_path`, ingest-opties |
 
 **Model wijzigen:** altijd `hermes model` of root `config.yaml` — nooit per profiel hardcoden (tenzij `model.inherit: false`). Zie [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md).
@@ -62,8 +64,8 @@ flowchart TB
 ## Onderhoud
 
 - **Windows script-keten (handmatig):** `windows\VERIFY_WINDOWS_CHAIN.bat` — dubbelklik; controleert setup wrapper, `.bat`→`.ps1`, taakbalk-`.lnk` (eindigt met pause)
-- **Na `git pull`:** `windows/POST_GIT_PULL.bat` (verify + taakbalk-iconen)
-- **Nous upstream-update:** `windows\UPDATE_HERMES.bat` — preflight + merge + RAG + verify via `verify_windows_script_chain.ps1` (**geen pause** in de keten; zie [UPSTREAM_SYNC.md](../windows/UPSTREAM_SYNC.md))
+- **Na `git pull`:** `windows/POST_GIT_PULL.bat` (verify + trust + **domein-toolsets** + taakbalk-iconen)
+- **Nous upstream-update:** `windows\UPDATE_HERMES.bat` — preflight + merge + trust + toolsets + RAG + verify (zie [UPSTREAM_SYNC.md](../windows/UPSTREAM_SYNC.md))
 - **Setup (dubbelklik):** `windows\SETUP_HERMES.bat` (standaard wizard); `OPEN_SETUP.bat` alleen wizard; `--files-only` zonder wizard
 - **Taakbalk-iconen:** `python windows/tools/generate_colored_hermes_icons.py` → `windows\FIX_TASKBAR_ICONS.bat` → F5; pin via `.lnk`, niet `.bat`
 - **Na upstream-merge:** inspectie via `git log` + rooktest-matrix in [UPSTREAM_SYNC.md § inspectie](../windows/UPSTREAM_SYNC.md#upstream-wijzigingen-na-merge-inspectie) (geen handmatig commit-archief in docs)
@@ -76,8 +78,9 @@ flowchart TB
 - **Ingest-status:** `%USERPROFILE%\data\scripts\check_ingest_status.bat <domein>`
 - **Doctor:** `hermes doctor` of `windows\DOCTOR_FIX.bat`
 - **Profiel wisselen:** `windows\SWITCH_PROFILE.bat <naam>` of `/profile use <naam>` in chat; audit: `windows\audits\RUN_PROFILE_SWITCH_E2E.bat` — zie [PROFILE_SWITCH.md](PROFILE_SWITCH.md)
-- **Kwaliteitspoort (periodiek):** `windows\audits\RUN_AUDITS.bat -IncludeProfileE2E` of `-IncludeInstitutionalE2E` / `-IncludeAllE2E`
-- **SOUL sync + presentatie:** `windows\SYNC_SOUL_SNIPPETS.bat` + `APPLY_INSTITUTIONAL_RUNTIME.bat` (of `APPLY_TEAM_DISPLAY.bat`); docs [INSTITUTIONAL_PRESENTATION.md](INSTITUTIONAL_PRESENTATION.md) (Laag A/B/C); audit `windows\audits\RUN_INSTITUTIONAL_E2E.bat` (11 stappen)
+- **Kwaliteitspoort (periodiek):** `windows\audits\RUN_AUDITS.bat -IncludeProfileE2E` of `-IncludeInstitutionalE2E` / `-IncludeAllE2E` (incl. toolset E2E)
+- **Domein-toolsets:** [DOMAIN_TOOLSET_AUDIT.md](DOMAIN_TOOLSET_AUDIT.md) — `SYNC_DOMAIN_TOOLSETS.bat`; audit `RUN_TOOLSET_DOMAIN_E2E.bat`
+- **SOUL sync + presentatie:** `windows\SYNC_SOUL_SNIPPETS.bat` + `APPLY_INSTITUTIONAL_RUNTIME.bat` (of `APPLY_TEAM_DISPLAY.bat`); docs [INSTITUTIONAL_PRESENTATION.md](INSTITUTIONAL_PRESENTATION.md); audit `RUN_INSTITUTIONAL_E2E.bat -IncludeToolsetAudit`
 - **Core SOUL referentie (repo):** `docs/templates/SOUL_CORE_ORCHESTRATOR.md` — runtime: `%LOCALAPPDATA%\hermes\profiles\core\SOUL.md`
 
 ## Memory bank (agent-context)
