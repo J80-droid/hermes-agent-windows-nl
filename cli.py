@@ -2466,6 +2466,45 @@ def _looks_like_slash_command(text: str) -> bool:
     return "/" not in first_word[1:]
 
 
+def _parse_profile_switch_intent(text: str) -> Optional[str]:
+    """Herken natuurlijke profielwissel (NL/EN) en map naar profiel-id.
+
+    Voorbeelden: "verander profiel naar core", "schakel naar legal", "profile core".
+    """
+    if not text or not isinstance(text, str):
+        return None
+    t = text.strip()
+    if not t or t.startswith("/"):
+        return None
+    try:
+        from hermes_cli.profiles import normalize_profile_name, profile_exists
+    except Exception:
+        return None
+
+    patterns = (
+        re.compile(
+            r"(?i)^(?:verander|wissel|schakel|switch|zet|set|ga|go)"
+            r"(?:\s+(?:mijn|het|naar|to|to\s+the))?\s+"
+            r"(?:profiel\s+|profile\s+)?([a-z][a-z0-9_-]{0,63})(?:\s+(?:profiel|profile))?\s*[.!?]*$"
+        ),
+        re.compile(r"(?i)^(?:profiel|profile)\s+([a-z][a-z0-9_-]{0,63})\s*[.!?]*$"),
+        re.compile(
+            r"(?i)^(?:naar|to)\s+([a-z][a-z0-9_-]{0,63})(?:\s+(?:profiel|profile))?\s*[.!?]*$"
+        ),
+    )
+    for pat in patterns:
+        m = pat.match(t)
+        if not m:
+            continue
+        try:
+            canon = normalize_profile_name(m.group(1))
+        except ValueError:
+            continue
+        if canon == "default" or profile_exists(canon):
+            return canon
+    return None
+
+
 # ============================================================================
 # Skill Slash Commands — dynamic commands generated from installed skills
 # ============================================================================
@@ -13914,6 +13953,22 @@ class HermesCLI:
                         if not self.process_command(user_input):
                             self._should_exit = True
                             # Schedule app exit
+                            if app.is_running:
+                                app.exit()
+                        continue
+
+                    _profile_switch = (
+                        _parse_profile_switch_intent(user_input)
+                        if isinstance(user_input, str)
+                        else None
+                    )
+                    if _profile_switch:
+                        _profile_cmd = f"/profile use {_profile_switch}"
+                        _cprint(
+                            f"\n{_DIM}Profielwissel herkend → {_profile_cmd}{_RST}"
+                        )
+                        if not self.process_command(_profile_cmd):
+                            self._should_exit = True
                             if app.is_running:
                                 app.exit()
                         continue

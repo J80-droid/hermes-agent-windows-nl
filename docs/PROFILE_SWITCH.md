@@ -7,6 +7,7 @@ Eén orchestratiepad voor sticky profielen: chat, CLI, batch-scripts en audits.
 | Context | Commando | Gedrag |
 |---------|----------|--------|
 | **In Hermes-chat** | `/profile use <naam>` | Modal → sticky profiel → API-sync → gateway (indien actief) → herstart chat met `-p <naam>` |
+| **Natuurlijke taal** | `verander profiel naar core` | Zelfde als `/profile use core` (CLI herkent intent, geen agent-tools) |
 | **CLI / scripting** | `hermes profile use <naam> --fix-hermes-home` | Zelfde kern zonder TUI; optioneel `--restart-chat` |
 | **Batch** | `windows\SWITCH_PROFILE.bat <naam>` | Dunne wrapper om `profile use` |
 | **Batch + chat** | `windows\SWITCH_PROFILE_AND_CHAT.bat <naam>` | + `--restart-chat` |
