@@ -40,7 +40,7 @@ Toepassen: `windows\scripts\apply_trust_memory_limits.ps1`
 
 ## Identiteit (J.)
 
-Scrub-script vervangt `J.` / `J.` / `` → **J.** in Hermes-runtime, repo persona-docs en `raw_source_files` **tekst**.
+Scrub-script vervangt `Jamel el Mourif`, `Jamel` en `el Mourif` → **J.** in Hermes-runtime (persona-bestanden), repo-docs (`docs/`, `memory-bank/`, `windows/`) en optioneel `raw_source_files` **tekst** (`-IncludeRawSource`). Geen recursie over `profiles/*/skills/`, sessies of backups.
 
 **Uitgesloten:** `**/lancedb/**` en `*.lance` — geen in-place index-patch. Na bronwijzigingen: `RAG_KNOWLEDGE_UPDATE.bat` (N incrementeel, of J voor legal rebuild).
 
@@ -51,7 +51,7 @@ Profiel `legal`, nieuwe chat:
 1. "Welke USER/MEMORY-regels en SOUL-secties zie je?"
 2. "Drie VSO-punten — elk met [Bron: …] of eigen redenering."
 
-Verwacht: geen "J." over J.; wel bronlabels of expliciete eigen redenering.
+Verwacht: geen `Jamel` / `el Mourif` over J.; wel bronlabels of expliciete eigen redenering.
 
 ## Gerelateerd
 

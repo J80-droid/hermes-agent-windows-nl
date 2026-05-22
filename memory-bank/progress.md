@@ -16,7 +16,7 @@
 - [x] Windows launchers (`update_knowledge.bat` / `.ps1`, `windows/scripts/rag/`)
 - [x] Noob-doc `docs/RAG_TWEE_FASEN.md` (bibliotheek vs. balie, twee fasen)
 - [x] Taakbalk RAG interactief: `RAG_KNOWLEDGE_UPDATE.bat` + `.lnk` `cmd /k` (J/N via `set /p`); nacht: `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` (`HERMES_NONINTERACTIVE=1`)
-- [x] Trust & Forensic: `SOUL_SHARED_ADVISORY`, legal forensic-blok, `MEMORY_CANONICAL_SEED`, sync/scrub scripts, `RUN_TRUST_FORENSIC_E2E`, `APPLY_TRUST_PROTOCOL.bat`
+- [x] Trust & Forensic: `SOUL_SHARED_ADVISORY`, legal forensic-blok, `MEMORY_CANONICAL_SEED`, `SYNC_TRUST_RUNTIME` / `APPLY_TRUST_PROTOCOL`, scrub (gericht), `RUN_TRUST_FORENSIC_E2E`, legal E2E stap 3/8 memories
 - [x] Upstream-update keten: `windows/upstream_sync.ps1`, `UPDATE_HERMES.bat`, `UPSTREAM_SYNC.md` (+ post-merge git-inspectie + rooktest-matrix, geen handmatig Nous-changelog)
 - [x] Taakbalk `windows\*.lnk`: `cmd.exe /c` (+ RAG: `/k`) + gekleurd `.ico` (7 lagen 16–256 px); `FIX_TASKBAR_ICONS.bat`; `POST_GIT_PULL.bat`
 - [x] Icoon-generator: PNG uit `assets/Hermes_logo.png` of `%USERPROFILE%\.hermes\_local_assets\assets\`; geen synthetische H-stub
