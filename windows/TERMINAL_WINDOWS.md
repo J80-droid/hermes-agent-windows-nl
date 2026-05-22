@@ -41,7 +41,8 @@ Of dubbelklik **Hermes_met_logo.bat** / taakbalk-.lnk (roept `launch_hermes.bat`
 | -------- | ------ |
 | Geen `wt.exe` | Waarschuwing + fallback cmd (kleuren kunnen afwijken). |
 | `HERMES_SKIP_WINDOWS_TERMINAL=1` | Geen WT-relaunch (debug/CI). |
-| UAC “Run as administrator” via oude pad | Kan nog **cmd** zijn — start WT als admin of gebruik niet-geëscaleerde sessie. |
+| Venstertitel **Administrator: cmd** | **UAC** opende legacy cmd (geen WT). Sinds fix: admin **niet** meer standaard; alleen met `HERMES_REQUIRE_ADMIN=1`. |
+| UAC nodig (zeldzaam) | `set HERMES_REQUIRE_ADMIN=1` vóór start — probeert elevated **wt -M**. |
 
 ## Kanban / subagents
 

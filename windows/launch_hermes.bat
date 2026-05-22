@@ -35,15 +35,18 @@ set "RESET=%ESC%[0m"
 
 if defined HERMES_PYTHON echo %CYAAN%[INFO] HERMES_PYTHON=!HERMES_PYTHON! ^(gateway / tool-subprocessen^)%RESET%
 
-rem --- TrueColor: cmd.exe draait 24-bit ANSI met RGB/BGR-inversie (goud -> blauw). Gebruik wt. ---
+rem --- TrueColor: legacy conhost cmd = BGR-inversie (goud->blauw). Gebruik Windows Terminal. ---
+set "WT_EXE="
+where wt.exe >nul 2>&1 && set "WT_EXE=wt.exe"
+if not defined WT_EXE if exist "%LOCALAPPDATA%\Microsoft\WindowsApps\wt.exe" set "WT_EXE=%LOCALAPPDATA%\Microsoft\WindowsApps\wt.exe"
+if not defined WT_EXE where wt >nul 2>&1 && set "WT_EXE=wt"
+if not defined HERMES_SKIP_WINDOWS_TERMINAL if not defined WT_SESSION if defined WT_EXE (
+    echo %CYAAN%[INFO] Start in Windows Terminal ^(TrueColor^)...%RESET%
+    "!WT_EXE!" -M -d "%REPO_ROOT%" cmd /k "cd /d \"%REPO_ROOT%\" && set HERMES_MAX_FLAG=1 && call \"%SCRIPT_SELF%\" --maximized %*"
+    exit /b 0
+)
 if not defined HERMES_SKIP_WINDOWS_TERMINAL if not defined WT_SESSION (
-    where wt.exe >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %CYAAN%[INFO] Start in Windows Terminal ^(TrueColor^)...%RESET%
-        wt -M -d "%REPO_ROOT%" cmd /k "cd /d \"%REPO_ROOT%\" && set HERMES_MAX_FLAG=1 && call \"%SCRIPT_SELF%\" --maximized %*"
-        exit /b 0
-    )
-    echo %GOUD%[WARN] wt.exe niet op PATH — Hermes-kleuren kunnen afwijken in cmd. Zie windows\TERMINAL_WINDOWS.md%RESET%
+    echo %GOUD%[WARN] Windows Terminal ^(wt^) niet gevonden — kleuren afwijkend in cmd. Zie windows\TERMINAL_WINDOWS.md%RESET%
 )
 if defined WT_SESSION (
     set "COLORTERM=truecolor"
@@ -87,23 +90,32 @@ start "" /max "%ComSpec%" /k pushd "%REPO_ROOT%" ^&^& set HERMES_MAX_FLAG=1 ^&^&
 exit /b
 
 :check_elevation
-rem 2. Request Administrator privileges (UAC Popup)
+rem 2. Admin alleen op verzoek (UAC opent legacy cmd -> verkeerde kleuren). Standaard: gewone user in WT.
 net session >nul 2>&1
-if %errorLevel% neq 0 (
-    echo %CYAAN%[INFO] Requesting Administrator privileges - UAC...%RESET%
-    echo [%DATE% %TIME%] Requesting elevation... >> "%LAUNCH_LOG%"
-    powershell -Command "Start-Process -FilePath '%SCRIPT_SELF%' -ArgumentList '--maximized !CLEAN_ARGS!' -Verb RunAs -WindowStyle Maximized -WorkingDirectory '%REPO_ROOT%'"
-    if !errorLevel! neq 0 (
-        echo [ERROR] Elevation request failed or was cancelled.
-        pause
-    )
-    exit /b
+if %errorLevel% equ 0 goto :run_agent
+if not defined HERMES_REQUIRE_ADMIN goto :run_agent
+echo %CYAAN%[INFO] Admin gevraagd ^(HERMES_REQUIRE_ADMIN=1^)...%RESET%
+echo [%DATE% %TIME%] Requesting elevation... >> "%LAUNCH_LOG%"
+if defined WT_EXE (
+    powershell -NoProfile -Command "Start-Process -FilePath '%WT_EXE%' -ArgumentList '-M','-d','%REPO_ROOT%','cmd','/k','call \"\"%SCRIPT_SELF%\"\" --maximized %CLEAN_ARGS%' -Verb RunAs -WorkingDirectory '%REPO_ROOT%'"
+) else (
+    powershell -NoProfile -Command "Start-Process -FilePath '%SCRIPT_SELF%' -ArgumentList '--maximized !CLEAN_ARGS!' -Verb RunAs -WindowStyle Maximized -WorkingDirectory '%REPO_ROOT%'"
 )
+if !errorLevel! neq 0 (
+    echo [ERROR] Elevation request failed or was cancelled.
+    pause
+)
+exit /b
 
 :run_agent
 shift
 cd /d "%REPO_ROOT%"
-echo %CYAAN%[INFO] Environment: Administrator%RESET%
+net session >nul 2>&1
+if %errorLevel% equ 0 (
+    echo %CYAAN%[INFO] Environment: Administrator%RESET%
+) else (
+    echo %CYAAN%[INFO] Environment: gebruiker ^(aanbevolen voor TrueColor in WT^)%RESET%
+)
 echo %CYAAN%[INFO] Window State: Maximized%RESET%
 echo %CYAAN%[INFO] Directory: %CD%%RESET%
 echo ----------------------------------------------------
