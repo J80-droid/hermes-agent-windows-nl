@@ -59,7 +59,19 @@ Stappen: verify → pytest-subset → `SWITCH_PROFILE.bat` → subprocess `-p` o
 ## Gateway en kanban
 
 - **Gateway:** wordt alleen herstart als die op het **oude** profiel draaide. Telegram/Discord gebruiken dan het nieuwe profiel-token.
-- **Kanban-workers:** lopende taken met oude `HERMES_PROFILE` blijven op het oude profiel; nieuwe taken volgen de assignee.
+- **Kanban-workers:** bij wissel worden `running` taken met `assignee=<oud profiel>` gereclaimed (SIGTERM + status `ready`). Nieuwe taken volgen de assignee van het nieuwe profiel.
+
+## Sticky vs. verouderde HERMES_HOME (fork)
+
+Zonder `-p` in argv: als `HERMES_HOME=profiles/core` maar `active_profile=legal`, leest `_apply_profile_override()` de sticky en zet `profiles/legal`. Handmatige herstart na `SWITCH_PROFILE.bat` werkt daardoor zonder extra vlaggen.
+
+## Audits
+
+| Runner | Inhoud |
+|--------|--------|
+| `windows\audits\RUN_AUDITS.bat` | verify + PSSA + footguns + ruff + pytest-subset |
+| `windows\audits\RUN_AUDITS.bat -IncludeProfileE2E` | + volledige profielwissel E2E |
+| `HERMES_PROFILE_E2E=1 pytest tests/.../test_profile_switch_e2e.py` | Subprocess `profile use` (geen TUI) |
 
 ## Technische kern
 

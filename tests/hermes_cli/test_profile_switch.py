@@ -93,3 +93,21 @@ class TestExecuteProfileSwitch:
         result = ps.execute_profile_switch("legal", restart_gateway=False)
         assert result.env_synced is True
         assert called
+
+    def test_kanban_workers_stopped_on_switch(self, monkeypatch, tmp_path):
+        from hermes_cli import profile_switch as ps
+
+        hermes_root = tmp_path / ".hermes"
+        (hermes_root / "profiles" / "legal").mkdir(parents=True)
+        (hermes_root / "profiles" / "core").mkdir(parents=True, exist_ok=True)
+        _patch_hermes_root(monkeypatch, hermes_root)
+
+        monkeypatch.setattr(ps, "sync_profile_env_windows", lambda: False)
+        monkeypatch.setattr(ps, "_gateway_running_for_profile", lambda _n: False)
+        monkeypatch.setattr(ps, "restart_gateway_for_profile", lambda *_a: False)
+        monkeypatch.setattr(ps, "stop_kanban_workers_for_assignee", lambda a: 2 if a == "core" else 0)
+
+        result = ps.execute_profile_switch(
+            "legal", old_profile="core", sync_env=False, restart_gateway=False
+        )
+        assert result.kanban_workers_stopped == 2

@@ -1,11 +1,14 @@
 # Windows audits (optioneel)
 
-Deze map is **optioneel**. Er is geen volledige upstream `RUN_AUDITS.ps1` in de fork.
+Deze map bevat de **fork** kwaliteitspoorten (geen 1:1 upstream-kloon).
 
 | Runner | Doel |
 | ------ | ---- |
-| **`RUN_PROFILE_SWITCH_E2E.bat`** | Profielwissel E2E: `verify_hermes_home`, pytest-subset, `SWITCH_PROFILE.bat`, subprocess `-p` override, cleanup |
-| **`windows\tests\RUN_PYTEST.bat`** | Brede pytest (excl. integration/e2e) |
+| **`RUN_AUDITS.bat`** | Gecombineerd: `verify_hermes_home`, PSScriptAnalyzer (SKIP indien ontbreekt), `check-windows-footguns.py`, ruff (SKIP), pytest profiel-subset |
+| **`RUN_AUDITS.bat -IncludeProfileE2E`** | Bovenstaande + `RUN_PROFILE_SWITCH_E2E` |
+| **`RUN_AUDITS.bat -RequirePSScriptAnalyzer`** | PSSA verplicht (exit 1 als module ontbreekt) |
+| **`RUN_PROFILE_SWITCH_E2E.bat`** | Alleen profielwissel E2E |
+| **`windows\tests\RUN_PYTEST.bat`** | Brede pytest (excl. integration) |
 | **`windows\VERIFY_WINDOWS_CHAIN.bat`** | Script-keten backup/RAG |
 
 ## Profielwissel E2E

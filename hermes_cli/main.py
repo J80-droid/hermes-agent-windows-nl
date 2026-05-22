@@ -155,8 +155,30 @@ def _apply_profile_override() -> None:
     # See issue #22502.
     hermes_home_env = os.environ.get("HERMES_HOME", "")
     if profile_name is None and hermes_home_env:
-        if Path(hermes_home_env).parent.name == "profiles":
-            return
+        env_path = Path(hermes_home_env)
+        if env_path.parent.name == "profiles":
+            # Fork: sticky active_profile wins over a stale inherited
+            # HERMES_HOME (e.g. profiles/core after `hermes profile use legal`).
+            # Upstream trusts env here (#22502 child inheritance); we still
+            # honour that when active_profile is absent or matches env.
+            try:
+                from hermes_constants import get_default_hermes_root
+
+                active_path = get_default_hermes_root() / "active_profile"
+                if active_path.exists():
+                    sticky = active_path.read_text(encoding="utf-8-sig").strip()
+                    env_profile = env_path.name
+                    if (
+                        sticky
+                        and sticky != "default"
+                        and sticky != env_profile
+                    ):
+                        profile_name = sticky
+                        consume = 0
+            except (UnicodeDecodeError, OSError):
+                pass
+            if profile_name is None:
+                return
 
     # 2. If no flag, check active_profile in the hermes root
     if profile_name is None:

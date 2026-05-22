@@ -13,6 +13,7 @@ from ingest_live_status import (
     LiveDisplayState,
     finalize_live_status,
     interpret_live_status,
+    is_process_alive,
     mark_ingest_started,
     read_live_status,
     reconcile_live_status_from_summary,
@@ -27,6 +28,17 @@ def ldb(tmp_path, monkeypatch):
     monkeypatch.setenv("HERMES_RAG_LIVE_STATUS", str(tmp_path / "rag_ingest_live_status.json"))
     monkeypatch.setenv("RAG_DOMAIN", "test")
     return tmp_path
+
+
+def test_is_process_alive_delegates_to_pid_exists(monkeypatch):
+    monkeypatch.setattr(
+        "gateway.status._pid_exists",
+        lambda pid: pid == 4242,
+    )
+    assert is_process_alive(0) is False
+    assert is_process_alive(-1) is False
+    assert is_process_alive(4242) is True
+    assert is_process_alive(1) is False
 
 
 def test_mark_and_finalize_completed(ldb):

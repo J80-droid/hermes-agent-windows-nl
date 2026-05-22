@@ -110,7 +110,7 @@ function Get-HermesWindowsLocalAssetsManifest {
         },
         @{
             Sub     = 'audits'
-            Files   = @('README.md', 'RUN_PROFILE_SWITCH_E2E.ps1', 'RUN_PROFILE_SWITCH_E2E.bat')
+            Files   = @('README.md', 'RUN_AUDITS.ps1', 'RUN_AUDITS.bat', 'RUN_PROFILE_SWITCH_E2E.ps1', 'RUN_PROFILE_SWITCH_E2E.bat')
             RepoSub = 'audits'
         },
         @{
@@ -147,6 +147,13 @@ function Get-HermesCriticalWindowsRepoPath {
         'windows/HermesSetupScriptPolicy.ps1',
         'windows/scripts/verify_taskbar_shortcut_icons.ps1',
         'windows/SETUP_HERMES.bat',
+        'windows/SWITCH_PROFILE.bat',
+        'windows/SWITCH_PROFILE_AND_CHAT.bat',
+        'windows/scripts/verify_hermes_home.ps1',
+        'windows/audits/RUN_AUDITS.ps1',
+        'windows/audits/RUN_AUDITS.bat',
+        'windows/audits/RUN_PROFILE_SWITCH_E2E.ps1',
+        'windows/audits/RUN_PROFILE_SWITCH_E2E.bat',
         'scripts/windows/setup_hermes_windows.ps1',
         'pyproject.toml'
     )

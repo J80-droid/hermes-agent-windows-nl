@@ -88,19 +88,40 @@ class TestApplyProfileOverrideHermesHomeGuard:
             f"Expected HERMES_HOME to end with 'coder', got: {result!r}"
         )
 
-    def test_hermes_home_already_profile_dir_is_trusted(self, tmp_path, monkeypatch):
-        """HERMES_HOME=.../profiles/coder must not be overridden even when
-        active_profile says something different.
+    def test_hermes_home_profile_dir_defers_to_sticky_active_profile(
+        self, tmp_path, monkeypatch
+    ):
+        """HERMES_HOME=profiles/core + active_profile=legal must redirect to legal.
 
-        Preserves the child-process inheritance contract: a subprocess spawned
-        with HERMES_HOME already set to a specific profile must stay in that
-        profile.
+        Fork behaviour: manual restarts without -p honour sticky profile.
         """
+        hermes_root = tmp_path / ".hermes"
+        for name in ("core", "legal", "other"):
+            (hermes_root / "profiles" / name).mkdir(parents=True, exist_ok=True)
+
+        core_dir = hermes_root / "profiles" / "core"
+        (hermes_root / "active_profile").write_text("legal\n")
+
+        result = _run_apply_profile_override(
+            tmp_path,
+            monkeypatch,
+            hermes_home=str(core_dir),
+            active_profile="legal",
+            argv=["hermes", "chat"],
+        )
+
+        assert result is not None
+        assert result.endswith("legal")
+
+    def test_hermes_home_profile_dir_trusted_when_sticky_matches(
+        self, tmp_path, monkeypatch
+    ):
+        """When active_profile matches env profile dir, keep inherited HERMES_HOME."""
         hermes_root = tmp_path / ".hermes"
         profile_dir = hermes_root / "profiles" / "coder"
         profile_dir.mkdir(parents=True, exist_ok=True)
 
-        (hermes_root / "active_profile").write_text("other")
+        (hermes_root / "active_profile").write_text("coder")
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
         monkeypatch.setenv("HERMES_HOME", str(profile_dir))
@@ -109,9 +130,7 @@ class TestApplyProfileOverrideHermesHomeGuard:
         from hermes_cli.main import _apply_profile_override
         _apply_profile_override()
 
-        assert os.environ.get("HERMES_HOME") == str(profile_dir), (
-            "HERMES_HOME must remain unchanged when already pointing to a profile dir"
-        )
+        assert os.environ.get("HERMES_HOME") == str(profile_dir)
 
     def test_hermes_home_unset_reads_active_profile(self, tmp_path, monkeypatch):
         """Classic case: HERMES_HOME unset + active_profile=coder must set

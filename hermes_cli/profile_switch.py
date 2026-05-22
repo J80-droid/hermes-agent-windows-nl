@@ -26,6 +26,7 @@ class ProfileSwitchResult:
     gateway_restarted: bool = False
     env_synced: bool = False
     hermes_home_normalized: bool = False
+    kanban_workers_stopped: int = 0
     messages: list[str] = field(default_factory=list)
 
 
@@ -146,6 +147,34 @@ def _gateway_running_for_profile(profile_name: str) -> bool:
     return _check_gateway_running(get_profile_dir(profile_name))
 
 
+def stop_kanban_workers_for_assignee(assignee: str) -> int:
+    """Reclaim running kanban tasks assigned to *assignee* (profile name).
+
+    Best-effort: never blocks profile switch on kanban errors.
+    """
+    if not assignee or assignee in ("default", "custom"):
+        return 0
+    try:
+        from hermes_cli import kanban_db as kb
+
+        conn = kb.connect()
+        rows = conn.execute(
+            "SELECT id FROM tasks WHERE status = 'running' AND assignee = ?",
+            (assignee,),
+        ).fetchall()
+        stopped = 0
+        for row in rows:
+            if kb.reclaim_task(
+                conn,
+                row["id"],
+                reason=f"profile_switch:{assignee}",
+            ):
+                stopped += 1
+        return stopped
+    except Exception:
+        return 0
+
+
 def restart_gateway_for_profile(old_profile: str, new_profile: str) -> bool:
     """Stop gateway on old profile (if any) and start detached gateway on new."""
     from hermes_cli.profiles import _stop_gateway_process, get_profile_dir
@@ -185,6 +214,7 @@ def execute_profile_switch(
     old_profile: Optional[str] = None,
     sync_env: Optional[bool] = None,
     restart_gateway: Optional[bool] = None,
+    stop_kanban_workers: Optional[bool] = True,
     fix_hermes_home: bool = False,
     verbose: bool = True,
 ) -> ProfileSwitchResult:
@@ -211,6 +241,14 @@ def execute_profile_switch(
         result.hermes_home_normalized = normalized
         if msg and verbose:
             result.messages.append(msg)
+
+    do_kanban = stop_kanban_workers if stop_kanban_workers is not None else True
+    if do_kanban and old != canon and old not in ("default", "custom"):
+        result.kanban_workers_stopped = stop_kanban_workers_for_assignee(old)
+        if result.kanban_workers_stopped and verbose:
+            result.messages.append(
+                f"Kanban: {result.kanban_workers_stopped} worker(s) op '{old}' gestopt."
+            )
 
     switch_sticky_profile(canon)
     _apply_profile_env(canon)

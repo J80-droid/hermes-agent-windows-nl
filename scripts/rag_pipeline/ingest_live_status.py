@@ -99,14 +99,12 @@ def stale_after_sec() -> float:
 
 
 def is_process_alive(pid: int) -> bool:
+    """Cross-platform PID liveness (safe on Windows — no ``os.kill(pid, 0)``)."""
     if pid <= 0:
         return False
-    try:
-        os.kill(pid, 0)
-    except OSError:
-        return False
-    else:
-        return True
+    from gateway.status import _pid_exists
+
+    return _pid_exists(pid)
 
 
 def reset_live_status_clock() -> None:
