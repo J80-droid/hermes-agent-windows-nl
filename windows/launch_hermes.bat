@@ -35,14 +35,19 @@ set "RESET=%ESC%[0m"
 
 if defined HERMES_PYTHON echo %CYAAN%[INFO] HERMES_PYTHON=!HERMES_PYTHON! ^(gateway / tool-subprocessen^)%RESET%
 
-rem --- Optioneel: Forceer Windows Terminal voor de beste ervaring ---
-if not defined WT_SESSION (
+rem --- TrueColor: cmd.exe draait 24-bit ANSI met RGB/BGR-inversie (goud -> blauw). Gebruik wt. ---
+if not defined HERMES_SKIP_WINDOWS_TERMINAL if not defined WT_SESSION (
     where wt.exe >nul 2>&1
-    if %errorlevel% equ 0 (
-        echo %CYAAN%[INFO] Relaunching in Windows Terminal...%RESET%
-        start wt -M -d "%REPO_ROOT%" cmd /c "\"%SCRIPT_SELF%\" %*"
-        exit /b
+    if !errorlevel! equ 0 (
+        echo %CYAAN%[INFO] Start in Windows Terminal ^(TrueColor^)...%RESET%
+        wt -M -d "%REPO_ROOT%" cmd /k "cd /d \"%REPO_ROOT%\" && set HERMES_MAX_FLAG=1 && call \"%SCRIPT_SELF%\" --maximized %*"
+        exit /b 0
     )
+    echo %GOUD%[WARN] wt.exe niet op PATH — Hermes-kleuren kunnen afwijken in cmd. Zie windows\TERMINAL_WINDOWS.md%RESET%
+)
+if defined WT_SESSION (
+    set "COLORTERM=truecolor"
+    set "TERM=xterm-256color"
 )
 
 rem ====================================================
@@ -68,11 +73,16 @@ if exist "%LAUNCH_LOG%" (
 )
 echo [%DATE% %TIME%] --- NEW LAUNCH SESSION --- >> "%LAUNCH_LOG%" 2>nul
 
-rem 1. Recursive Loop Protection & Window Maximization
+rem 1. Recursive Loop Protection & Window Maximization (nooit van WT terug naar ComSpec)
 if "%~1"=="--maximized" set "HERMES_MAX_FLAG=1"
 if "!HERMES_MAX_FLAG!"=="1" goto :check_elevation
+if defined WT_SESSION (
+    set "HERMES_MAX_FLAG=1"
+    goto :check_elevation
+)
 
-echo %CYAAN%[INFO] Maximizing window...%RESET%
+echo %GOUD%[WARN] Legacy cmd-maximize — kleuren afwijkend. Installeer Windows Terminal ^(wt^).%RESET%
+echo %CYAAN%[INFO] Maximaliseren venster...%RESET%
 start "" /max "%ComSpec%" /k pushd "%REPO_ROOT%" ^&^& set HERMES_MAX_FLAG=1 ^&^& call "%SCRIPT_SELF%" --maximized !CLEAN_ARGS!
 exit /b
 

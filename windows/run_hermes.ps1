@@ -13,6 +13,15 @@ $repoRoot = if ((Split-Path -Leaf $scriptRoot) -ieq 'windows') {
 }
 $logFile = Join-Path $repoRoot 'hermes_runtime.log'
 
+if ($env:WT_SESSION) {
+    $env:COLORTERM = 'truecolor'
+    if (-not $env:TERM) { $env:TERM = 'xterm-256color' }
+}
+$ansiPs1 = Join-Path $repoRoot 'windows\scripts\enable_console_ansi.ps1'
+if (Test-Path -LiteralPath $ansiPs1) {
+    . $ansiPs1
+}
+
 function Write-RunLog {
     param([string]$Message, [string]$Level = 'INFO')
     $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'

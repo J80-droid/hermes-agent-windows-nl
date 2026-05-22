@@ -1,0 +1,15 @@
+---
+description: Hermes Windows terminal — TrueColor, conda, geen legacy cmd voor TUI
+globs:
+  - windows/**/*.bat
+  - windows/**/*.ps1
+  - scripts/windows/**/*.bat
+  - start_hermes*.bat
+---
+
+# Hermes Windows — terminal & omgeving
+
+1. **Geen standaard cmd voor Hermes TUI** — `cmd.exe` geeft RGB/BGR-inversie bij 24-bit ANSI (goud → blauw). Gebruik **Windows Terminal** (`wt.exe`) + launcher (`launch_hermes.bat`, `start_hermes_split.bat`).
+2. **Conda `hermes-env` canoniek** — geen workspace `(venv)` of kapotte repo-`.venv` voor Hermes/Kanban/subagents. Zie `HermesPythonPolicy.ps1`.
+3. **Paden** — absolute Windows-paden in config; in `.ps1` forward slashes waar `\s` in delayed-expansion `.bat` tab-problemen geeft.
+4. Bij kleurbugs: lees `windows/TERMINAL_WINDOWS.md` vóór skin/config te wijzigen.
