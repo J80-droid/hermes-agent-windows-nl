@@ -74,7 +74,7 @@ function Merge-MemoryFile {
         if ($merged -notcontains $e) { [void]$merged.Add($e) }
     }
     $out = ($merged -join "`n§`n") + "`n"
-    if ($DryRun) {
+    if ($DryRun.IsPresent) {
         Write-Host "[DRY] $FilePath - $($merged.Count) entries" -ForegroundColor DarkGray
         return
     }

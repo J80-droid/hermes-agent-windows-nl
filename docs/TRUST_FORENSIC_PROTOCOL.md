@@ -20,8 +20,8 @@ Operationele handleiding voor J.'s Hermes Windows NL fork: verifieerbaar gedrag 
 ## Toepassen (Windows)
 
 1. Backup: `MANAGE_BACKUPS.bat` of `backup_soul_profiles.ps1` (inclusief memories).
-2. Volledige keten: `windows\APPLY_TRUST_PROTOCOL.bat`
-3. Alleen sync: `windows\SYNC_TRUST_PROTOCOL.bat`
+2. Dagelijks / na git pull: `windows\SYNC_TRUST_RUNTIME.bat` (geen scrub)
+3. Volledig incl. scrub: `windows\APPLY_TRUST_PROTOCOL.bat` of `SYNC_TRUST_PROTOCOL.bat`
 4. Audit: `windows\audits\RUN_TRUST_FORENSIC_E2E.ps1` of `RUN_AUDITS.ps1 -IncludeTrustForensicE2E`
 
 **Nieuwe chat verplicht** na SOUL/memory-sync.

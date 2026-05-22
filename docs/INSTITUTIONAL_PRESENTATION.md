@@ -8,7 +8,9 @@ Drie gescheiden lagen: **wat het model schrijft** (SOUL), **assistant-antwoorden
 |---------|-----|
 | [`templates/SOUL_SHARED_OUTPUT_FORMAT.md`](templates/SOUL_SHARED_OUTPUT_FORMAT.md) | Typografie, lijsten, `<institutional_check>`, standaardsecties |
 | [`templates/SOUL_SHARED_INTERACTION.md`](templates/SOUL_SHARED_INTERACTION.md) | Interaction met J., landkaart |
-| `windows\SYNC_SOUL_SNIPPETS.bat` | Schrijft beide blokken naar root + `profiles\*\SOUL.md` |
+| [`templates/SOUL_SHARED_ADVISORY.md`](templates/SOUL_SHARED_ADVISORY.md) | Trust: pushback, bronplicht, geen pleaser-taal |
+| `windows\SYNC_SOUL_SNIPPETS.bat` | Schrijft Interaction + Outputformaat naar SOUL |
+| `windows\SYNC_TRUST_RUNTIME.bat` | + Advisory, legal forensic, memory seed (geen scrub) |
 
 **Nieuwe chat verplicht** na SOUL-sync (bestaande sessies houden oude system prompt).
 

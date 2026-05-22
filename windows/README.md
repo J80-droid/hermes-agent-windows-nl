@@ -34,7 +34,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | HERMES_HOME controleren | `scripts\verify_hermes_home.ps1` |
 | Profielwissel E2E-audit | `audits\RUN_PROFILE_SWITCH_E2E.bat` |
 | SOUL sync (Interaction + Outputformaat) | `SYNC_SOUL_SNIPPETS.bat` — `docs\templates\SOUL_SHARED_*.md` |
-| Trust & Forensic (SOUL + memory + J.) | `APPLY_TRUST_PROTOCOL.bat` — `docs\TRUST_FORENSIC_PROTOCOL.md` |
+| Trust & Forensic (SOUL + memory + J.) | `SYNC_TRUST_RUNTIME.bat` (dagelijks) / `APPLY_TRUST_PROTOCOL.bat` (incl. scrub) — `docs\TRUST_FORENSIC_PROTOCOL.md` |
 | Institutionele presentatie | `docs\INSTITUTIONAL_PRESENTATION.md` |
 | Core routing / landkaart | `docs\ORCHESTRATOR_ROUTING.md`, skill `landkaart` (`/landkaart`) |
 | Legal lenzen (één bucket) | `docs\LEGAL_DOMAIN_ARCHITECTURE.md`, `docs\LEGAL_TAXONOMY.md`, `MIGRATE_LEGAL_LAYOUT.bat` |

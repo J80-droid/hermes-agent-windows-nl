@@ -1,0 +1,793 @@
+﻿{
+    "generated_at":  "2026-05-22T21:58:14.2581599+02:00",
+    "files":  {
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\config.yaml":  {
+                                                                                "hits":  0
+                                                                            },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\python-policy.json":  {
+                                                                                       "hits":  0
+                                                                                   },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\cache\\terminal\\hermes-results\\call_23e02ba4bdf8.txt":  {
+                                                                                                                           "hits":  9
+                                                                                                                       },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\hermes-agent\\venv\\Scripts\\activate.bat":  {
+                                                                                                              "hits":  0
+                                                                                                          },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\memories\\MEMORY.md":  {
+                                                                                        "hits":  2
+                                                                                    },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\pastes\\paste_1_040247.txt":  {
+                                                                                               "hits":  0
+                                                                                           },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\pastes\\paste_1_131646.txt":  {
+                                                                                               "hits":  5
+                                                                                           },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\pastes\\paste_1_152426.txt":  {
+                                                                                               "hits":  0
+                                                                                           },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\pastes\\paste_1_192010.txt":  {
+                                                                                               "hits":  0
+                                                                                           },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\pastes\\paste_1_225850.txt":  {
+                                                                                               "hits":  0
+                                                                                           },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\pastes\\paste_2_152851.txt":  {
+                                                                                               "hits":  0
+                                                                                           },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\pastes\\paste_3_153141.txt":  {
+                                                                                               "hits":  0
+                                                                                           },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\pastes\\paste_4_154401.txt":  {
+                                                                                               "hits":  2
+                                                                                           },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\pastes\\paste_6_154458.txt":  {
+                                                                                               "hits":  0
+                                                                                           },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\pastes\\paste_6_193140.txt":  {
+                                                                                               "hits":  0
+                                                                                           },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\pastes\\paste_7_161739.txt":  {
+                                                                                               "hits":  0
+                                                                                           },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\pastes\\paste_8_163946.txt":  {
+                                                                                               "hits":  0
+                                                                                           },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\profiles\\academics\\config.yaml":  {
+                                                                                                     "hits":  0
+                                                                                                 },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\profiles\\core\\config.yaml":  {
+                                                                                                "hits":  0
+                                                                                            },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\profiles\\core\\memories\\MEMORY.md":  {
+                                                                                                        "hits":  1
+                                                                                                    },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\profiles\\core\\memories\\USER.md":  {
+                                                                                                      "hits":  2
+                                                                                                  },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\profiles\\core\\pastes\\paste_3_205636.txt":  {
+                                                                                                               "hits":  0
+                                                                                                           },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\profiles\\core\\pastes\\paste_4_205702.txt":  {
+                                                                                                               "hits":  3
+                                                                                                           },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\profiles\\gaming\\config.yaml":  {
+                                                                                                  "hits":  0
+                                                                                              },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\profiles\\legal\\.env":  {
+                                                                                          "hits":  0
+                                                                                      },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\profiles\\legal\\config.yaml":  {
+                                                                                                 "hits":  0
+                                                                                             },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\profiles\\logistics\\config.yaml":  {
+                                                                                                     "hits":  0
+                                                                                                 },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\profiles\\operations\\config.yaml":  {
+                                                                                                      "hits":  0
+                                                                                                  },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\profiles\\philosophy\\config.yaml":  {
+                                                                                                      "hits":  0
+                                                                                                  },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\profiles\\trading\\config.yaml":  {
+                                                                                                   "hits":  0
+                                                                                               },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\profiles\\ventures\\config.yaml":  {
+                                                                                                    "hits":  0
+                                                                                                },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\skills\\data-science\\lancedb-rag-pipeline\\SKILL.md":  {
+                                                                                                                         "hits":  0
+                                                                                                                     },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\skills\\legal\\legal-hearings\\SKILL.md":  {
+                                                                                                            "hits":  0
+                                                                                                        },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\skills\\mcp\\native-mcp\\SKILL.md":  {
+                                                                                                      "hits":  0
+                                                                                                  },
+                  "C:\\Users\\jamel\\AppData\\Local\\hermes\\skills\\software-development\\hermes-windows-operations\\SKILL.md":  {
+                                                                                                                                      "hits":  0
+                                                                                                                                  },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\.env":  {
+                                                                             "hits":  0
+                                                                         },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\README-FORK.md":  {
+                                                                                       "hits":  0
+                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\.vscode\\tasks.json":  {
+                                                                                            "hits":  0
+                                                                                        },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\.env":  {
+                                                                                                                        "hits":  0
+                                                                                                                    },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\BACKUP_MANIFEST.json":  {
+                                                                                                                                        "hits":  1
+                                                                                                                                    },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\config.yaml":  {
+                                                                                                                               "hits":  0
+                                                                                                                           },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\SOUL.md":  {
+                                                                                                                           "hits":  3
+                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\pastes\\paste_2_153114.txt":  {
+                                                                                                                                              "hits":  0
+                                                                                                                                          },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\pastes\\paste_7_153943.txt":  {
+                                                                                                                                              "hits":  0
+                                                                                                                                          },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_124725_44c5f0.json":  {
+                                                                                                                                                                 "hits":  0
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_125347_7982bf.json":  {
+                                                                                                                                                                 "hits":  0
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_131745_16f926.json":  {
+                                                                                                                                                                 "hits":  0
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_132624_3d964a.json":  {
+                                                                                                                                                                 "hits":  0
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_145957_f8d4a5.json":  {
+                                                                                                                                                                 "hits":  0
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_151138_fb61a8.json":  {
+                                                                                                                                                                 "hits":  0
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_151518_fcf856.json":  {
+                                                                                                                                                                 "hits":  0
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_154403_930e63.json":  {
+                                                                                                                                                                 "hits":  0
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_155243_7bfb5e.json":  {
+                                                                                                                                                                 "hits":  0
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_162358_044422.json":  {
+                                                                                                                                                                 "hits":  0
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_165910_717d53.json":  {
+                                                                                                                                                                 "hits":  0
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_170539_28da5c.json":  {
+                                                                                                                                                                 "hits":  0
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_171934_ebd115.json":  {
+                                                                                                                                                                 "hits":  0
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_172220_8acf71.json":  {
+                                                                                                                                                                 "hits":  0
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_213325_3ef56f.json":  {
+                                                                                                                                                                 "hits":  4
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_213424_b20cab.json":  {
+                                                                                                                                                                 "hits":  4
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_213815_f461e8.json":  {
+                                                                                                                                                                 "hits":  3
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_214433_3daff1.json":  {
+                                                                                                                                                                 "hits":  3
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_214541_cc4f8e.json":  {
+                                                                                                                                                                 "hits":  3
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260515_234058_68246f.json":  {
+                                                                                                                                                                 "hits":  3
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260516_021142_451fb4.json":  {
+                                                                                                                                                                 "hits":  3
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260516_021146_9bb353.json":  {
+                                                                                                                                                                 "hits":  0
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260516_023326_33d7fb.json":  {
+                                                                                                                                                                 "hits":  5
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260516_024240_096c35.json":  {
+                                                                                                                                                                 "hits":  5
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\sessions\\session_20260516_024602_293df7.json":  {
+                                                                                                                                                                 "hits":  3
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_010009_lancedb\\state-snapshots\\20260515-220243-pre-update\\.env":  {
+                                                                                                                                                                     "hits":  0
+                                                                                                                                                                 },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\.env":  {
+                                                                                                                       "hits":  0
+                                                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\BACKUP_MANIFEST.json":  {
+                                                                                                                                       "hits":  1
+                                                                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\config.yaml":  {
+                                                                                                                              "hits":  0
+                                                                                                                          },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\SOUL.md":  {
+                                                                                                                          "hits":  3
+                                                                                                                      },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\pastes\\paste_2_153114.txt":  {
+                                                                                                                                             "hits":  0
+                                                                                                                                         },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\pastes\\paste_7_153943.txt":  {
+                                                                                                                                             "hits":  0
+                                                                                                                                         },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\profiles\\analyst\\.env":  {
+                                                                                                                                          "hits":  0
+                                                                                                                                      },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\profiles\\analyst\\sessions\\session_20260517_024403_81faae.json":  {
+                                                                                                                                                                                   "hits":  1
+                                                                                                                                                                               },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\profiles\\analyst\\sessions\\session_20260517_033112_6d6f4f.json":  {
+                                                                                                                                                                                   "hits":  1
+                                                                                                                                                                               },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\profiles\\analyst\\sessions\\session_20260517_033412_a3ca6f.json":  {
+                                                                                                                                                                                   "hits":  2
+                                                                                                                                                                               },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\profiles\\analyst\\sessions\\session_20260517_033713_46766e.json":  {
+                                                                                                                                                                                   "hits":  3
+                                                                                                                                                                               },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\profiles\\analyst\\sessions\\session_20260517_034215_7c8012.json":  {
+                                                                                                                                                                                   "hits":  4
+                                                                                                                                                                               },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\profiles\\reviewer\\.env":  {
+                                                                                                                                           "hits":  0
+                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\profiles\\reviewer\\sessions\\session_20260517_034322_348594.json":  {
+                                                                                                                                                                                    "hits":  5
+                                                                                                                                                                                },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\profiles\\reviewer\\sessions\\session_20260517_034716_ac9f1d.json":  {
+                                                                                                                                                                                    "hits":  2
+                                                                                                                                                                                },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\request_dump_cron_4d43a5fb8902_20260517_013504_20260517_013510_590000.json":  {
+                                                                                                                                                                                                       "hits":  3
+                                                                                                                                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\request_dump_cron_4d43a5fb8902_20260517_014011_20260517_014013_399644.json":  {
+                                                                                                                                                                                                       "hits":  3
+                                                                                                                                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\request_dump_cron_4d43a5fb8902_20260517_014514_20260517_014516_408956.json":  {
+                                                                                                                                                                                                       "hits":  3
+                                                                                                                                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\request_dump_cron_4d43a5fb8902_20260517_015017_20260517_015018_899513.json":  {
+                                                                                                                                                                                                       "hits":  3
+                                                                                                                                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\request_dump_cron_4d43a5fb8902_20260517_015519_20260517_015521_043680.json":  {
+                                                                                                                                                                                                       "hits":  3
+                                                                                                                                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\request_dump_cron_4d43a5fb8902_20260517_020023_20260517_020032_952243.json":  {
+                                                                                                                                                                                                       "hits":  3
+                                                                                                                                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_124725_44c5f0.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_125347_7982bf.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_131745_16f926.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_132624_3d964a.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_145957_f8d4a5.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_151138_fb61a8.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_151518_fcf856.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_154403_930e63.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_155243_7bfb5e.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_162358_044422.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_165910_717d53.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_170539_28da5c.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_171934_ebd115.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_172220_8acf71.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_213325_3ef56f.json":  {
+                                                                                                                                                                "hits":  4
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_213424_b20cab.json":  {
+                                                                                                                                                                "hits":  4
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_213815_f461e8.json":  {
+                                                                                                                                                                "hits":  3
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_214433_3daff1.json":  {
+                                                                                                                                                                "hits":  3
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_214541_cc4f8e.json":  {
+                                                                                                                                                                "hits":  3
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260515_234058_68246f.json":  {
+                                                                                                                                                                "hits":  3
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260516_021142_451fb4.json":  {
+                                                                                                                                                                "hits":  3
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260516_021146_9bb353.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260516_023326_33d7fb.json":  {
+                                                                                                                                                                "hits":  5
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260516_024240_096c35.json":  {
+                                                                                                                                                                "hits":  5
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260516_024602_293df7.json":  {
+                                                                                                                                                                "hits":  3
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260517_020752_2145f7.json":  {
+                                                                                                                                                                "hits":  3
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_20260517_024946_8f6bd6.json":  {
+                                                                                                                                                                "hits":  3
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_cron_4d43a5fb8902_20260517_012803.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_cron_4d43a5fb8902_20260517_013504.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_cron_4d43a5fb8902_20260517_014011.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_cron_4d43a5fb8902_20260517_014514.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_cron_4d43a5fb8902_20260517_015017.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_cron_4d43a5fb8902_20260517_015519.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_cron_4d43a5fb8902_20260517_020023.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_cron_4d43a5fb8902_20260517_020533.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_cron_4d43a5fb8902_20260517_021349.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_cron_4d43a5fb8902_20260517_021954.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_cron_4d43a5fb8902_20260517_022651.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_cron_4d43a5fb8902_20260517_023838.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_cron_4d43a5fb8902_20260517_025446.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_cron_4d43a5fb8902_20260517_030055.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_cron_4d43a5fb8902_20260517_030722.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_cron_4d43a5fb8902_20260517_031321.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\sessions\\session_cron_4d43a5fb8902_20260517_031934.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_042841_kanban\\state-snapshots\\20260515-220243-pre-update\\.env":  {
+                                                                                                                                                                    "hits":  0
+                                                                                                                                                                },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\.env":  {
+                                                                                                                       "hits":  0
+                                                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\BACKUP_MANIFEST.json":  {
+                                                                                                                                       "hits":  1
+                                                                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\config.yaml":  {
+                                                                                                                              "hits":  0
+                                                                                                                          },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\SOUL.md":  {
+                                                                                                                          "hits":  3
+                                                                                                                      },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\pastes\\paste_2_153114.txt":  {
+                                                                                                                                             "hits":  0
+                                                                                                                                         },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\pastes\\paste_7_153943.txt":  {
+                                                                                                                                             "hits":  0
+                                                                                                                                         },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\profiles\\analyst\\.env":  {
+                                                                                                                                          "hits":  0
+                                                                                                                                      },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\profiles\\analyst\\sessions\\session_20260517_024403_81faae.json":  {
+                                                                                                                                                                                   "hits":  1
+                                                                                                                                                                               },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\profiles\\analyst\\sessions\\session_20260517_033112_6d6f4f.json":  {
+                                                                                                                                                                                   "hits":  1
+                                                                                                                                                                               },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\profiles\\analyst\\sessions\\session_20260517_033412_a3ca6f.json":  {
+                                                                                                                                                                                   "hits":  2
+                                                                                                                                                                               },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\profiles\\analyst\\sessions\\session_20260517_033713_46766e.json":  {
+                                                                                                                                                                                   "hits":  3
+                                                                                                                                                                               },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\profiles\\analyst\\sessions\\session_20260517_034215_7c8012.json":  {
+                                                                                                                                                                                   "hits":  4
+                                                                                                                                                                               },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\profiles\\reviewer\\.env":  {
+                                                                                                                                           "hits":  0
+                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\profiles\\reviewer\\sessions\\session_20260517_034322_348594.json":  {
+                                                                                                                                                                                    "hits":  5
+                                                                                                                                                                                },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\profiles\\reviewer\\sessions\\session_20260517_034716_ac9f1d.json":  {
+                                                                                                                                                                                    "hits":  2
+                                                                                                                                                                                },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\request_dump_cron_4d43a5fb8902_20260517_013504_20260517_013510_590000.json":  {
+                                                                                                                                                                                                       "hits":  3
+                                                                                                                                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\request_dump_cron_4d43a5fb8902_20260517_014011_20260517_014013_399644.json":  {
+                                                                                                                                                                                                       "hits":  3
+                                                                                                                                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\request_dump_cron_4d43a5fb8902_20260517_014514_20260517_014516_408956.json":  {
+                                                                                                                                                                                                       "hits":  3
+                                                                                                                                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\request_dump_cron_4d43a5fb8902_20260517_015017_20260517_015018_899513.json":  {
+                                                                                                                                                                                                       "hits":  3
+                                                                                                                                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\request_dump_cron_4d43a5fb8902_20260517_015519_20260517_015521_043680.json":  {
+                                                                                                                                                                                                       "hits":  3
+                                                                                                                                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\request_dump_cron_4d43a5fb8902_20260517_020023_20260517_020032_952243.json":  {
+                                                                                                                                                                                                       "hits":  3
+                                                                                                                                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_124725_44c5f0.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_125347_7982bf.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_131745_16f926.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_132624_3d964a.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_145957_f8d4a5.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_151138_fb61a8.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_151518_fcf856.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_154403_930e63.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_155243_7bfb5e.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_162358_044422.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_165910_717d53.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_170539_28da5c.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_171934_ebd115.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_172220_8acf71.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_213325_3ef56f.json":  {
+                                                                                                                                                                "hits":  4
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_213424_b20cab.json":  {
+                                                                                                                                                                "hits":  4
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_213815_f461e8.json":  {
+                                                                                                                                                                "hits":  3
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_214433_3daff1.json":  {
+                                                                                                                                                                "hits":  3
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_214541_cc4f8e.json":  {
+                                                                                                                                                                "hits":  3
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260515_234058_68246f.json":  {
+                                                                                                                                                                "hits":  3
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260516_021142_451fb4.json":  {
+                                                                                                                                                                "hits":  3
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260516_021146_9bb353.json":  {
+                                                                                                                                                                "hits":  0
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260516_023326_33d7fb.json":  {
+                                                                                                                                                                "hits":  5
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260516_024240_096c35.json":  {
+                                                                                                                                                                "hits":  5
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260516_024602_293df7.json":  {
+                                                                                                                                                                "hits":  3
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260517_020752_2145f7.json":  {
+                                                                                                                                                                "hits":  3
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_20260517_024946_8f6bd6.json":  {
+                                                                                                                                                                "hits":  3
+                                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_cron_4d43a5fb8902_20260517_012803.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_cron_4d43a5fb8902_20260517_013504.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_cron_4d43a5fb8902_20260517_014011.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_cron_4d43a5fb8902_20260517_014514.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_cron_4d43a5fb8902_20260517_015017.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_cron_4d43a5fb8902_20260517_015519.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_cron_4d43a5fb8902_20260517_020023.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_cron_4d43a5fb8902_20260517_020533.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_cron_4d43a5fb8902_20260517_021349.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_cron_4d43a5fb8902_20260517_021954.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_cron_4d43a5fb8902_20260517_022651.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_cron_4d43a5fb8902_20260517_023838.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_cron_4d43a5fb8902_20260517_025446.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_cron_4d43a5fb8902_20260517_030055.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_cron_4d43a5fb8902_20260517_030722.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_cron_4d43a5fb8902_20260517_031321.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\sessions\\session_cron_4d43a5fb8902_20260517_031934.json":  {
+                                                                                                                                                                           "hits":  3
+                                                                                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_17_160853_pareto\\state-snapshots\\20260515-220243-pre-update\\.env":  {
+                                                                                                                                                                    "hits":  0
+                                                                                                                                                                },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_18_021016_markdown\\.env":  {
+                                                                                                                         "hits":  0
+                                                                                                                     },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_18_021016_markdown\\BACKUP_MANIFEST.json":  {
+                                                                                                                                         "hits":  1
+                                                                                                                                     },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_18_021016_markdown\\SOUL.md":  {
+                                                                                                                            "hits":  3
+                                                                                                                        },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_18_021016_markdown\\pastes\\paste_2_153114.txt":  {
+                                                                                                                                               "hits":  0
+                                                                                                                                           },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_18_021016_markdown\\pastes\\paste_7_153943.txt":  {
+                                                                                                                                               "hits":  0
+                                                                                                                                           },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_18_021016_markdown\\profiles\\analyst\\.env":  {
+                                                                                                                                            "hits":  0
+                                                                                                                                        },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_18_021016_markdown\\profiles\\analyst\\sessions\\session_20260517_024403_81faae.json":  {
+                                                                                                                                                                                     "hits":  1
+                                                                                                                                                                                 },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_18_021016_markdown\\profiles\\analyst\\sessions\\session_20260517_033112_6d6f4f.json":  {
+                                                                                                                                                                                     "hits":  1
+                                                                                                                                                                                 },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_18_021016_markdown\\profiles\\analyst\\sessions\\session_20260517_033412_a3ca6f.json":  {
+                                                                                                                                                                                     "hits":  2
+                                                                                                                                                                                 },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_18_021016_markdown\\profiles\\analyst\\sessions\\session_20260517_033713_46766e.json":  {
+                                                                                                                                                                                     "hits":  3
+                                                                                                                                                                                 },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_18_021016_markdown\\profiles\\analyst\\sessions\\session_20260517_034215_7c8012.json":  {
+                                                                                                                                                                                     "hits":  4
+                                                                                                                                                                                 },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_18_021016_markdown\\profiles\\reviewer\\.env":  {
+                                                                                                                                             "hits":  0
+                                                                                                                                         },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_18_021016_markdown\\profiles\\reviewer\\sessions\\session_20260517_034322_348594.json":  {
+                                                                                                                                                                                      "hits":  5
+                                                                                                                                                                                  },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_18_021016_markdown\\profiles\\reviewer\\sessions\\session_20260517_034716_ac9f1d.json":  {
+                                                                                                                                                                                      "hits":  2
+                                                                                                                                                                                  },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_18_021016_markdown\\state-snapshots\\20260515-220243-pre-update\\.env":  {
+                                                                                                                                                                      "hits":  0
+                                                                                                                                                                  },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_045853\\.env":  {
+                                                                                                                "hits":  0
+                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_045853\\BACKUP_MANIFEST.json":  {
+                                                                                                                                "hits":  1
+                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_045853\\SOUL.md":  {
+                                                                                                                   "hits":  3
+                                                                                                               },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_045853\\pastes\\paste_2_153114.txt":  {
+                                                                                                                                      "hits":  0
+                                                                                                                                  },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_045853\\pastes\\paste_7_153943.txt":  {
+                                                                                                                                      "hits":  0
+                                                                                                                                  },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_045853\\repo_windows\\DELEN_MET_VRIENDEN.md":  {
+                                                                                                                                               "hits":  0
+                                                                                                                                           },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_045853\\repo_windows\\README.md":  {
+                                                                                                                                   "hits":  0
+                                                                                                                               },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_045853\\state-snapshots\\20260515-220243-pre-update\\.env":  {
+                                                                                                                                                             "hits":  0
+                                                                                                                                                         },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_045853\\_local_assets\\DELEN_MET_VRIENDEN.md":  {
+                                                                                                                                                "hits":  0
+                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_045853\\_local_assets\\README.md":  {
+                                                                                                                                    "hits":  0
+                                                                                                                                },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_180733\\.env":  {
+                                                                                                                "hits":  0
+                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_180733\\BACKUP_MANIFEST.json":  {
+                                                                                                                                "hits":  1
+                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_180733\\SOUL.md":  {
+                                                                                                                   "hits":  3
+                                                                                                               },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_180733\\pastes\\paste_2_153114.txt":  {
+                                                                                                                                      "hits":  0
+                                                                                                                                  },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_180733\\pastes\\paste_7_153943.txt":  {
+                                                                                                                                      "hits":  0
+                                                                                                                                  },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_180733\\repo_windows\\DELEN_MET_VRIENDEN.md":  {
+                                                                                                                                               "hits":  0
+                                                                                                                                           },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_180733\\repo_windows\\README.md":  {
+                                                                                                                                   "hits":  0
+                                                                                                                               },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_180733\\state-snapshots\\20260515-220243-pre-update\\.env":  {
+                                                                                                                                                             "hits":  0
+                                                                                                                                                         },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_180733\\_local_assets\\DELEN_MET_VRIENDEN.md":  {
+                                                                                                                                                "hits":  0
+                                                                                                                                            },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\backups\\backup_2026_05_22_180733\\_local_assets\\README.md":  {
+                                                                                                                                    "hits":  0
+                                                                                                                                },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\docs\\domains.yaml.example":  {
+                                                                                                   "hits":  0
+                                                                                               },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\docs\\README.md":  {
+                                                                                        "hits":  1
+                                                                                    },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\docs\\TRUST_FORENSIC_PROTOCOL.md":  {
+                                                                                                         "hits":  5
+                                                                                                     },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\memory-bank\\projectbrief.md":  {
+                                                                                                     "hits":  1
+                                                                                                 },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\scripts\\rag_pipeline\\ACTIVATION.md":  {
+                                                                                                             "hits":  0
+                                                                                                         },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\scripts\\windows\\install-jamel.ps1":  {
+                                                                                                            "hits":  4
+                                                                                                        },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\scripts\\windows\\update-jamel.ps1":  {
+                                                                                                           "hits":  7
+                                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\windows\\DELEN_MET_VRIENDEN.md":  {
+                                                                                                       "hits":  0
+                                                                                                   },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\windows\\README.md":  {
+                                                                                           "hits":  0
+                                                                                       },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\windows\\audits\\RUN_TRUST_FORENSIC_E2E.ps1":  {
+                                                                                                                    "hits":  7
+                                                                                                                },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\windows\\audits\\_trust_backup_20260522-215505\\localappdata_hermes\\memories\\MEMORY.md":  {
+                                                                                                                                                                 "hits":  2
+                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\windows\\audits\\_trust_backup_20260522-215505\\localappdata_hermes\\profiles\\core\\memories\\MEMORY.md":  {
+                                                                                                                                                                                 "hits":  1
+                                                                                                                                                                             },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\windows\\audits\\_trust_backup_20260522-215505\\localappdata_hermes\\profiles\\core\\memories\\USER.md":  {
+                                                                                                                                                                               "hits":  2
+                                                                                                                                                                           },
+                  "D:\\A.I\\APPS\\Hermes_agent_WS\\hermes-agent\\windows\\scripts\\scrub_identity_to_J.ps1":  {
+                                                                                                                  "hits":  9
+                                                                                                              },
+                  "C:\\Users\\jamel\\data\\raw_source_files\\test.txt":  {
+                                                                             "hits":  1
+                                                                         },
+                  "C:\\Users\\jamel\\data\\raw_source_files\\00_Core\\who_you_are.md":  {
+                                                                                            "hits":  2
+                                                                                        },
+                  "C:\\Users\\jamel\\data\\raw_source_files\\04_Legal_Corporate\\Geschillencommissie Rijk\\VERZOEKSCHRIFT J. EL MOURIF\\TIJDLIJN VERZOEKSCHRIFT - J el Mourif.html":  {
+                                                                                                                                                                                          "hits":  5
+                                                                                                                                                                                      },
+                  "C:\\Users\\jamel\\data\\raw_source_files\\04_Legal_Corporate\\Geschillencommissie Rijk\\VERZOEKSCHRIFT J. EL MOURIF\\TIJDLIJN VERZOEKSCHRIFT.html":  {
+                                                                                                                                                                            "hits":  4
+                                                                                                                                                                        },
+                  "C:\\Users\\jamel\\data\\raw_source_files\\04_Legal_Corporate\\Kantonrechter\\SAMENVATTING\\10. Juridisch betoog (Barbara).html":  {
+                                                                                                                                                         "hits":  3
+                                                                                                                                                     },
+                  "C:\\Users\\jamel\\data\\raw_source_files\\04_Legal_Corporate\\Kantonrechter\\SAMENVATTING\\10. Juridisch Betoog namens J. el Mourif tegen de Staat der Nederlanden (versie 4).html":  {
+                                                                                                                                                                                                             "hits":  3
+                                                                                                                                                                                                         },
+                  "C:\\Users\\jamel\\data\\raw_source_files\\04_Legal_Corporate\\Kantonrechter\\SAMENVATTING\\10. Juridisch Betoog namens J. el Mourif tegen de Staat der Nederlanden (versie 5).html":  {
+                                                                                                                                                                                                             "hits":  3
+                                                                                                                                                                                                         },
+                  "C:\\Users\\jamel\\data\\raw_source_files\\04_Legal_Corporate\\Kantonrechter\\SAMENVATTING\\10. Juridisch Betoog namens J. el Mourif tegen de Staat der Nederlanden (versie 5a).html":  {
+                                                                                                                                                                                                              "hits":  3
+                                                                                                                                                                                                          },
+                  "C:\\Users\\jamel\\data\\raw_source_files\\04_Legal_Corporate\\Kantonrechter\\SAMENVATTING\\10. Juridisch Betoog namens J. el Mourif tegen de Staat der Nederlanden (versie 8).html":  {
+                                                                                                                                                                                                             "hits":  3
+                                                                                                                                                                                                         },
+                  "C:\\Users\\jamel\\data\\raw_source_files\\04_Legal_Corporate\\Kantonrechter\\SAMENVATTING\\10. Juridisch betoog.html":  {
+                                                                                                                                               "hits":  3
+                                                                                                                                           },
+                  "C:\\Users\\jamel\\data\\raw_source_files\\04_Legal_Corporate\\Kantonrechter\\SAMENVATTING\\Mindmap (versie 14).html":  {
+                                                                                                                                              "hits":  3
+                                                                                                                                          }
+              },
+    "total_hits":  432,
+    "dry_run":  false
+}

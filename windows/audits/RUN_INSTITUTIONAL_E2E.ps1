@@ -53,6 +53,8 @@ $requiredRepo = @(
     'windows/backup_soul_profiles.ps1',
     'windows/scripts/sync_soul_interaction_snippet.ps1',
     'windows/SYNC_SOUL_SNIPPETS.bat',
+    'windows/SYNC_TRUST_RUNTIME.bat',
+    'docs/TRUST_FORENSIC_PROTOCOL.md',
     'windows/scripts/migrate_legal_source_layout.ps1',
     'docs/LEGAL_ROLLOUT_CHECKLIST.md',
     'docs/INSTITUTIONAL_PRESENTATION.md',

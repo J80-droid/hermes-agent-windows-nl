@@ -121,9 +121,12 @@ if (Test-Path -LiteralPath $configPath) {
 }
 
 # Pytest docs
-$pytest = Join-Path $RepoRoot 'tests/windows/test_trust_forensic_docs.py'
+$conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
+foreach ($pytest in @(
+    (Join-Path $RepoRoot 'tests/windows/test_trust_forensic_docs.py'),
+    (Join-Path $RepoRoot 'tests/windows/test_scrub_identity.py')
+)) {
 if (Test-Path -LiteralPath $pytest) {
-    $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
     if (Test-Path -LiteralPath $conda) {
         & $conda run -n hermes-env --no-capture-output python -m pytest $pytest -q --tb=short 2>&1 | ForEach-Object { Write-Host $_ }
     } else {
@@ -131,6 +134,7 @@ if (Test-Path -LiteralPath $pytest) {
         & $python -m pytest $pytest -q --tb=short 2>&1 | ForEach-Object { Write-Host $_ }
     }
     if ($LASTEXITCODE -ne 0) { $failures++ }
+}
 }
 
 if ($failures -gt 0) {

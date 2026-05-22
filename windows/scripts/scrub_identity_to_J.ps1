@@ -14,6 +14,8 @@ if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 }
 
+$IdentityPattern = '(?i)\bJamel\s+el\s+Mourif\b|\bJamel\b|\bel\s+Mourif\b'
+
 function Get-HermesRoot {
     $localRoot = Join-Path $env:LOCALAPPDATA 'hermes'
     if (Test-Path -LiteralPath (Join-Path $localRoot 'config.yaml')) { return $localRoot }
@@ -29,7 +31,8 @@ function Test-ScrubExcludedPath {
         '/lancedb(/|$)', '\.lance($|/)', '/logs(/|$)', '/\.git(/|$)', '/website(/|$)',
         '/node_modules(/|$)', '/__pycache__(/|$)', '/backups(/|$)', '/sessions(/|$)',
         '/pastes(/|$)', '/cache(/|$)', '/state-snapshots(/|$)', '/venv(/|$)',
-        '/_trust_backup_', '/scrub_identity_report\.json$'
+        '/skills(/|$)', '/_trust_backup_', '/scrub_identity_report\.json$',
+        '/scrub_identity_to_J\.ps1$', '/RUN_TRUST_FORENSIC_E2E\.ps1$'
     )
     foreach ($pat in $excludePatterns) {
         if ($norm -match $pat) { return $true }
@@ -41,58 +44,89 @@ function Test-ScrubExcludedPath {
 function Invoke-IdentityScrub {
     param([string]$Text)
     $out = $Text
-    $out = $out -replace 'J.', 'J.'
-    $out = $out -replace '\bJamel\b', 'J.'
-    $out = $out -replace '\bel Mourif\b', ''
+    $out = [regex]::Replace($out, '(?i)\bJamel\s+el\s+Mourif\b', 'J.')
+    $out = [regex]::Replace($out, '(?i)\bJamel\b', 'J.')
+    $out = [regex]::Replace($out, '(?i)\bel\s+Mourif\b', '')
+    $out = $out -replace '[ \t]{2,}', ' '
     return $out
 }
 
+function Get-ScrubTargetFiles {
+    param([string[]]$RootPaths)
+    $files = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($rootPath in $RootPaths) {
+        if (-not (Test-Path -LiteralPath $rootPath)) { continue }
+        if ((Get-Item -LiteralPath $rootPath).PSIsContainer) {
+            Get-ChildItem -LiteralPath $rootPath -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object {
+                if (-not (Test-ScrubExcludedPath -FullPath $_.FullName)) {
+                    [void]$files.Add($_.FullName)
+                }
+            }
+        } else {
+            if (-not (Test-ScrubExcludedPath -FullPath $rootPath)) {
+                [void]$files.Add($rootPath)
+            }
+        }
+    }
+    return @($files)
+}
+
+function Get-HermesPersonaFiles {
+    param([string]$HermesRoot)
+    $list = [System.Collections.Generic.List[string]]::new()
+    foreach ($rel in @('SOUL.md', 'memories/USER.md', 'memories/MEMORY.md')) {
+        $p = Join-Path $HermesRoot $rel
+        if (Test-Path -LiteralPath $p) { [void]$list.Add($p) }
+    }
+    $profilesDir = Join-Path $HermesRoot 'profiles'
+    if (Test-Path -LiteralPath $profilesDir) {
+        Get-ChildItem -LiteralPath $profilesDir -Directory | ForEach-Object {
+            foreach ($name in @('SOUL.md', 'LEGAL_ACTIVE_MATTERS.md')) {
+                $p = Join-Path $_.FullName $name
+                if (Test-Path -LiteralPath $p) { [void]$list.Add($p) }
+            }
+            foreach ($mem in @('memories/USER.md', 'memories/MEMORY.md')) {
+                $p = Join-Path $_.FullName $mem
+                if (Test-Path -LiteralPath $p) { [void]$list.Add($p) }
+            }
+        }
+    }
+    return $list.ToArray()
+}
+
 $textExtensions = @(
-    '.md', '.txt', '.yaml', '.yml', '.bat', '.ps1', '.json', '.csv', '.html', '.htm', '.xml', '.ini', '.env', '.example'
+    '.md', '.txt', '.yaml', '.yml', '.bat', '.json', '.csv', '.html', '.htm', '.xml', '.ini', '.example'
 )
 
 $hermesRoot = Get-HermesRoot
-$roots = @()
-if (Test-Path -LiteralPath $hermesRoot) {
-    $roots += Join-Path $hermesRoot 'profiles'
-    $roots += Join-Path $hermesRoot 'memories'
-    $lam = Join-Path $hermesRoot 'profiles/legal/LEGAL_ACTIVE_MATTERS.md'
-    if (Test-Path -LiteralPath $lam) { $roots += $lam }
-    $rootSoul = Join-Path $hermesRoot 'SOUL.md'
-    if (Test-Path -LiteralPath $rootSoul) { $roots += $rootSoul }
-}
-$roots += Join-Path $RepoRoot 'docs'
-$roots += Join-Path $RepoRoot 'memory-bank'
-$roots += Join-Path $RepoRoot 'windows'
+$targetFiles = Get-HermesPersonaFiles -HermesRoot $hermesRoot
+$targetFiles += Get-ScrubTargetFiles -RootPaths @(
+    (Join-Path $RepoRoot 'docs'),
+    (Join-Path $RepoRoot 'memory-bank'),
+    (Join-Path $RepoRoot 'windows')
+)
 if ($IncludeRawSource) {
-    $roots += Join-Path $env:USERPROFILE 'data/raw_source_files'
+    $targetFiles += Get-ScrubTargetFiles -RootPaths @(Join-Path $env:USERPROFILE 'data/raw_source_files')
 }
 
 $report = [ordered]@{}
 $totalHits = 0
 
-foreach ($rootPath in $roots | Select-Object -Unique) {
-    if (-not (Test-Path -LiteralPath $rootPath)) { continue }
-    Get-ChildItem -LiteralPath $rootPath -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object {
-        if (Test-ScrubExcludedPath -FullPath $_.FullName) { return }
-        $ext = $_.Extension.ToLowerInvariant()
-        if ($textExtensions -notcontains $ext) { return }
-        $before = Get-Content -LiteralPath $_.FullName -Raw -Encoding UTF8 -ErrorAction SilentlyContinue
-        if ($null -eq $before) { return }
-        if ($before -notmatch 'J.|') { return }
-        $after = Invoke-IdentityScrub -Text $before
-        if ($after -eq $before) { return }
-        $rel = $_.FullName
-        $report[$rel] = @{
-            hits = ([regex]::Matches($before, 'J.|')).Count
-        }
-        $script:totalHits += $report[$rel].hits
-        if (-not $DryRun) {
-            Set-Content -LiteralPath $_.FullName -Value $after -Encoding UTF8 -NoNewline
-            Write-Host "[OK] $($_.FullName)" -ForegroundColor Green
-        } else {
-            Write-Host "[DRY] $($_.FullName)" -ForegroundColor DarkGray
-        }
+foreach ($filePath in ($targetFiles | Select-Object -Unique)) {
+    $ext = [IO.Path]::GetExtension($filePath).ToLowerInvariant()
+    if ($textExtensions -notcontains $ext) { continue }
+    $before = Get-Content -LiteralPath $filePath -Raw -Encoding UTF8 -ErrorAction SilentlyContinue
+    if ($null -eq $before -or $before -notmatch $IdentityPattern) { continue }
+    $after = Invoke-IdentityScrub -Text $before
+    if ($after -eq $before) { continue }
+    $hitCount = [regex]::Matches($before, $IdentityPattern).Count
+    $report[$filePath] = @{ hits = $hitCount }
+    $script:totalHits += $hitCount
+    if ($DryRun) {
+        Write-Host "[DRY] $filePath ($hitCount)" -ForegroundColor DarkGray
+    } else {
+        Set-Content -LiteralPath $filePath -Value $after -Encoding UTF8 -NoNewline
+        Write-Host "[OK] $filePath" -ForegroundColor Green
     }
 }
 
@@ -100,14 +134,14 @@ if ($IncludeRawSource -and $RenameFiles) {
     $rawRoot = Join-Path $env:USERPROFILE 'data/raw_source_files'
     if (Test-Path -LiteralPath $rawRoot) {
         Get-ChildItem -LiteralPath $rawRoot -Recurse -File -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -match 'J.|MOURIF|J.' } |
+            Where-Object { $_.Name -match '(?i)Jamel|MOURIF|el\s+Mourif' } |
             ForEach-Object {
                 $newName = Invoke-IdentityScrub -Text $_.Name
                 $newName = $newName -replace '\s+', ' ' -replace '^\s+|\s+$', ''
-                if ($newName -eq $_.Name) { return }
+                if ([string]::IsNullOrWhiteSpace($newName) -or $newName -eq $_.Name) { return }
                 $dest = Join-Path $_.DirectoryName $newName
                 if ($DryRun) {
-                    Write-Host "[DRY RENAME] $($_.FullName) -> $dest" -ForegroundColor DarkGray
+                    Write-Host "[DRY RENAME] $($_.Name) -> $newName" -ForegroundColor DarkGray
                 } elseif (-not (Test-Path -LiteralPath $dest)) {
                     Rename-Item -LiteralPath $_.FullName -NewName $newName
                     Write-Host "[RENAME] $newName" -ForegroundColor Yellow
@@ -117,16 +151,12 @@ if ($IncludeRawSource -and $RenameFiles) {
 }
 
 $reportPath = Join-Path $RepoRoot 'windows/audits/scrub_identity_report.json'
-$payload = @{
-    generated_at = (Get-Date).ToString('o')
-    dry_run      = [bool]$DryRun
-    total_hits   = $totalHits
-    files        = $report
-}
 if (-not $DryRun) {
-    $payload | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $reportPath -Encoding UTF8
+    @{
+        generated_at = (Get-Date).ToString('o')
+        dry_run      = $false
+        total_hits   = $totalHits
+        files        = $report
+    } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $reportPath -Encoding UTF8
 }
 Write-Host "[INFO] Scrub klaar: $totalHits hit(s), $($report.Count) bestand(en)" -ForegroundColor Cyan
-if (-not $DryRun) {
-    Write-Host "[INFO] Rapport: $reportPath" -ForegroundColor DarkGray
-}

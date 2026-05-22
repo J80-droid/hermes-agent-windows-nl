@@ -15,6 +15,9 @@ if exist "%~dp0VERIFY_WINDOWS_CHAIN.bat" (
 )
 
 echo.
+echo [INFO] Trust and Forensic runtime (SOUL + memory, geen scrub)...
+call "%~dp0SYNC_TRUST_RUNTIME.bat"
+echo.
 echo [INFO] Nieuwe skills (bijv. landkaart): hermes update of nieuwe chat-sessie.
 echo.
 echo [INFO] Taakbalk-.lnk en icooncache vernieuwen...

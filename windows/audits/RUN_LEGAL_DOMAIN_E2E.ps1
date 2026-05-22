@@ -16,7 +16,7 @@ function Find-Conda {
 
 $failures = 0
 
-Write-Host '=== 1/7 repo taxonomie + architectuur ===' -ForegroundColor Cyan
+Write-Host '=== 1/8 repo taxonomie + architectuur ===' -ForegroundColor Cyan
 foreach ($rel in @(
     'docs/LEGAL_TAXONOMY.md',
     'docs/LEGAL_DOMAIN_ARCHITECTURE.md',
@@ -30,7 +30,7 @@ foreach ($rel in @(
 }
 if ($failures -eq 0) { Write-Host '[OK] repo docs' -ForegroundColor Green }
 
-Write-Host '=== 2/7 runtime legal SOUL (geen zaak in Identity) ===' -ForegroundColor Cyan
+Write-Host '=== 2/8 runtime legal SOUL (geen zaak in Identity) ===' -ForegroundColor Cyan
 $hermesRoot = Join-Path $env:LOCALAPPDATA 'hermes'
 if (-not (Test-Path -LiteralPath (Join-Path $hermesRoot 'config.yaml'))) {
     $hermesRoot = Join-Path $env:USERPROFILE '.hermes'
@@ -56,6 +56,14 @@ if (-not (Test-Path -LiteralPath $legalSoul)) {
         Write-Host '[FAIL] Klokkenluiders-lens ontbreekt' -ForegroundColor Red
         $failures++
     }
+    if ($soul -notmatch 'Forensic & trust') {
+        Write-Host '[FAIL] Forensic & trust sectie ontbreekt in legal SOUL' -ForegroundColor Red
+        $failures++
+    }
+    if ($soul -notmatch 'Advisory & trust') {
+        Write-Host '[FAIL] Advisory & trust ontbreekt in legal SOUL' -ForegroundColor Red
+        $failures++
+    }
     if ($soul -match 'LEGAL_ACTIVE_MATTERS') {
         Write-Host '[OK] runtime legal SOUL structuur' -ForegroundColor Green
     } else {
@@ -63,7 +71,19 @@ if (-not (Test-Path -LiteralPath $legalSoul)) {
     }
 }
 
-Write-Host '=== 3/7 LEGAL_ACTIVE_MATTERS.md ===' -ForegroundColor Cyan
+Write-Host '=== 3/8 legal memories (trust seed) ===' -ForegroundColor Cyan
+$legalUser = Join-Path $hermesRoot 'profiles\legal\memories\USER.md'
+if (-not (Test-Path -LiteralPath $legalUser)) {
+    Write-Host '[FAIL] profiles/legal/memories/USER.md ontbreekt' -ForegroundColor Red
+    $failures++
+} elseif ((Get-Content -LiteralPath $legalUser -Raw) -notmatch 'no pleaser|pleaser-behavior') {
+    Write-Host '[FAIL] legal USER.md mist trust seed' -ForegroundColor Red
+    $failures++
+} else {
+    Write-Host '[OK] legal profile memory' -ForegroundColor Green
+}
+
+Write-Host '=== 4/8 LEGAL_ACTIVE_MATTERS.md ===' -ForegroundColor Cyan
 $matters = Join-Path $hermesRoot 'profiles\legal\LEGAL_ACTIVE_MATTERS.md'
 if (-not (Test-Path -LiteralPath $matters)) {
     Write-Host "[FAIL] Ontbreekt: $matters" -ForegroundColor Red
@@ -75,7 +95,7 @@ if (-not (Test-Path -LiteralPath $matters)) {
     Write-Host '[OK] actieve zaken bestand' -ForegroundColor Green
 }
 
-Write-Host '=== 4/7 bron-submappen ===' -ForegroundColor Cyan
+Write-Host '=== 5/8 bron-submappen ===' -ForegroundColor Cyan
 $rawLegal = Join-Path $env:USERPROFILE 'data\raw_source_files\04_Legal_Corporate'
 $expected = @('Arbeidsrecht', 'Bestuursrecht', 'Aansprakelijkheid_Letselschade', 'Klokkenluiders', 'Corporate', '_Taxonomy')
 if (-not (Test-Path -LiteralPath $rawLegal)) {
@@ -91,19 +111,19 @@ if (-not (Test-Path -LiteralPath $rawLegal)) {
     if ($subMissing -gt 0) { $failures += $subMissing } else { Write-Host '[OK] submappen' -ForegroundColor Green }
 }
 
-Write-Host '=== 5/7 taxonomy sync script dry-run ===' -ForegroundColor Cyan
+Write-Host '=== 6/8 taxonomy sync script dry-run ===' -ForegroundColor Cyan
 $conda = Find-Conda
 $python = (& $conda run -n hermes-env python -c "import sys; print(sys.executable)" 2>&1 | Select-Object -Last 1).Trim()
 & $python (Join-Path $repoRoot 'scripts\rag_pipeline\sync_legal_lens_table_from_taxonomy.py') --dry-run
 if ($LASTEXITCODE -ne 0) { $failures++ }
 
-Write-Host '=== 6/7 pytest legal docs ===' -ForegroundColor Cyan
+Write-Host '=== 7/8 pytest legal docs ===' -ForegroundColor Cyan
 & $python -m pytest tests/windows/test_legal_domain_docs.py -q --tb=short 2>$null
 if ($LASTEXITCODE -ne 0) {
     Write-Host '[SKIP] test_legal_domain_docs.py nog niet aanwezig of failed' -ForegroundColor Yellow
 }
 
-Write-Host '=== 7/7 legal rooktest (search) ===' -ForegroundColor Cyan
+Write-Host '=== 8/8 legal rooktest (search) ===' -ForegroundColor Cyan
 $rooktest = Join-Path $repoRoot 'scripts\rag_pipeline\_rooktest_search.py'
 if (Test-Path -LiteralPath $rooktest) {
     $env:HERMES_LANCEDB_PATH = Join-Path $env:USERPROFILE 'data\lancedb\legal'
