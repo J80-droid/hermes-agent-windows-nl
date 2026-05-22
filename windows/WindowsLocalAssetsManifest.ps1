@@ -40,6 +40,7 @@ function Get-HermesWindowsLocalAssetsManifest {
         'launcher_config.ps1',
         'HermesIconGeneratorInvoke.ps1',
         'HermesPythonPolicy.ps1',
+        'HermesNativeInvoke.ps1',
         'REPAIR_PYTHON.bat',
         'find_tools_registry.ps1',
         'Invoke-HermesPSScriptAnalyzer.ps1',

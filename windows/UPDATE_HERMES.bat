@@ -17,8 +17,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0upstream_sync.ps1" -Ph
 set "ERR=!ERRORLEVEL!"
 if not "!ERR!"=="0" (
   echo.
-  echo [ERROR] Update keten gestopt met code !ERR! — geen hermes update, geen team-display.
-  echo [INFO] Bij dirty repo: commit of stash. Zie windows\UPSTREAM_SYNC.md
+  echo [ERROR] Update keten gestopt met code !ERR! — zie rode regels hierboven.
+  echo [INFO] Dirty repo? commit/stash. NativeCommandError conda? Zie windows\UPSTREAM_SYNC.md
   pause
   exit /b !ERR!
 )

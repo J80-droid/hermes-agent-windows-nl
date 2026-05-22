@@ -17,6 +17,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'HermesNativeInvoke.ps1')
 
 function Get-HermesRepoRoot {
     param([string]$Start)
@@ -188,20 +189,24 @@ function Invoke-HermesUpdate {
     $env:PYTHONUNBUFFERED = '1'
 
     Write-Step "Andere Hermes-processen stoppen..."
-    & $conda run -n hermes-env --no-capture-output hermes gateway stop 2>$null | Out-Null
+    [void](Invoke-HermesNativeCommand -FilePath $conda -ArgumentList @(
+        'run', '-n', 'hermes-env', '--no-capture-output', 'hermes', 'gateway', 'stop'
+    ) -Quiet)
     $stopPs1 = Join-Path $PSScriptRoot 'stop_other_hermes_processes.ps1'
     if (Test-Path -LiteralPath $stopPs1) {
-        & $stopPs1
-        if ($LASTEXITCODE -ne 0) { Write-Warn "Kon niet alle Hermes-processen stoppen." }
+        $prevEap = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            & $stopPs1
+            if ($LASTEXITCODE -ne 0) { Write-Warn "Kon niet alle Hermes-processen stoppen." }
+        } finally {
+            $ErrorActionPreference = $prevEap
+        }
     }
 
     Write-Step "hermes update - NousResearch upstream/main + dependencies"
     $updateArgs = @('run', '-n', 'hermes-env', '--no-capture-output', 'hermes', 'update', '-y') + $ExtraArgs
-    # Out-Host: voorkomt dat conda/hermes-stdout als returnwaarde telt i.p.v. exitcode
-    & $conda @updateArgs 2>&1 | Out-Host
-    $code = $LASTEXITCODE
-    if ($null -eq $code) { $code = if ($?) { 0 } else { 1 } }
-    return [int]$code
+    return Invoke-HermesNativeCommand -FilePath $conda -ArgumentList $updateArgs -WorkingDirectory (Get-Location).Path
 }
 
 $repo = if ($RepoRoot) { (Resolve-Path -LiteralPath $RepoRoot).Path } else { Get-HermesRepoRoot -Start (Join-Path $PSScriptRoot '..') }

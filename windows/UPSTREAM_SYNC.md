@@ -268,6 +268,19 @@ Daarna RAG-deps opnieuw: `pip install -e ".[rag]"`.
 
 ---
 
+## Troubleshooting UPDATE
+
+| Symptoom | Oorzaak | Oplossing |
+| -------- | ------- | --------- |
+| `NativeCommandError` op `Using Python ... environment at:` | PowerShell 5.1 + `2>&1` op **conda** — stderr wordt fout | Gebruik `HermesNativeInvoke.ps1` (`Invoke-HermesNativeCommand`); geen `2>&1 \| Out-Host` op conda in fork-scripts |
+| `[ERROR] hermes update eindigde met code No Hermes processes...` | stdout van `hermes update` als “exitcode” gelezen | Zelfde: native invoke retourneert alleen `[int]$LASTEXITCODE` |
+| `Werkmap niet schoon` | Uncommitted wijzigingen | Commit/stash; **alleen** `assets/Hermes_logo.png` + `windows/hermes*.ico` mag door preflight |
+| Keten stopt code 1, geen merge-conflict | Zie regels hierboven; daarna `UPDATE_HERMES.bat` opnieuw | |
+
+Canonieke wrapper: `windows/HermesNativeInvoke.ps1` — gebruikt door `upstream_sync.ps1` voor `hermes update`.
+
+---
+
 ## Gerelateerd
 
 - `windows/INSTITUTIONAL.md` — Windows + één checkout
