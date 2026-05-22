@@ -1,5 +1,6 @@
 @echo off
-rem Taakbalk / nacht: incrementeel, alle domeinen, geen J/N-prompt.
+rem Alleen geplande nacht-runs: incrementeel, geen J/N, geen pause.
+rem Dagelijks/handmatig: gebruik RAG_KNOWLEDGE_UPDATE.bat (J/N + venster blijft open).
 setlocal EnableExtensions
 
 title Hermes RAG - nacht (non-interactive)

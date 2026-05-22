@@ -93,6 +93,7 @@ $pinRows = @(
     @{ Lnk = 'Hermes - setup Windows - naar taakbalk slepen.lnk'; Bat = 'setup_hermes_windows.bat'; Role = 'Setup' },
     @{ Lnk = 'Start Hermes - naar taakbalk slepen.lnk'; Bat = ''; Role = 'Start' },
     @{ Lnk = 'Hermes - backup - naar taakbalk slepen.lnk'; Bat = 'MANAGE_BACKUPS.bat'; Role = 'Backup' }
+    @{ Lnk = 'Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk'; Bat = 'RAG_KNOWLEDGE_UPDATE.bat'; Role = 'Rag' }
 )
 
 $pinnedDir = Join-Path $env:APPDATA (Join-Path 'Microsoft' (Join-Path 'Internet Explorer' (Join-Path 'Quick Launch' (Join-Path 'User Pinned' 'TaskBar'))))
@@ -104,8 +105,9 @@ if (Test-Path -LiteralPath $pinnedDir) {
         if (-not (Test-Path -LiteralPath $batPath)) { continue }
         $iconPath = Get-HermesTaskbarRoleIconPath -Role $row.Role -WindowsDir $scriptDir
         $destLnk = Join-Path $pinnedDir ([IO.Path]::GetFileName($srcLnk))
+        $keepOpen = ($row.Role -eq 'Rag')
         if (Set-HermesTaskbarPinShortcut -ShortcutPath $destLnk -TargetBatPath $batPath `
-                -IconIcoPath $iconPath -WorkingDirectory $RepoRoot) {
+                -IconIcoPath $iconPath -WorkingDirectory $RepoRoot -KeepCmdWindowOpen:$keepOpen) {
             if (-not $Quiet) {
                 Write-Host "  [OK] Taakbalk-pin bijgewerkt: $($row.Lnk)" -ForegroundColor Green
             }

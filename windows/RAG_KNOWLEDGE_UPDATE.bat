@@ -13,5 +13,10 @@ call "%~dp0scripts\update_knowledge.bat" %*
 
 set "RAG_EXIT=%ERRORLEVEL%"
 
+if /i not "%HERMES_NONINTERACTIVE%"=="1" (
+  if not "%RAG_EXIT%"=="0" echo [ERROR] RAG exit %RAG_EXIT%
+  pause
+)
+
 endlocal & exit /b %RAG_EXIT%
 

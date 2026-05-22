@@ -189,7 +189,7 @@ Voor **MarkItDown** is `pip install "markitdown[all]"` aanbevolen; voor legacy `
 
 ## Windows: snelkoppeling (taakbalk)
 
-Na setup of na **`windows\REFRESH_TASKBAR_SHORTCUTS.bat`** staat in **`hermes-agent\windows\`** o.a. **`Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk`** → **`windows\scripts\update_knowledge.bat`** (per-domein via **`%USERPROFILE%\data\domains.yaml`**).
+Na setup of na **`windows\REFRESH_TASKBAR_SHORTCUTS.bat`** staat in **`hermes-agent\windows\`** o.a. **`Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk`** → **`windows\RAG_KNOWLEDGE_UPDATE.bat`** (roept `scripts\update_knowledge.bat` aan; per-domein via **`%USERPROFILE%\data\domains.yaml`**). Geplande nacht-run: **`RAG_KNOWLEDGE_UPDATE_NIGHT.bat`**.
 
 **J/N:** **`HERMES_RAG_FRESH=j`** wist per domein de map uit `domains.yaml` (`lancedb/<domein>/`). **N** = incrementele upsert. Sluit Hermes/MCP vóór **J** (LanceDB-lock).
 

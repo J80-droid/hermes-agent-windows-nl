@@ -88,14 +88,17 @@ Snel controleren: `%USERPROFILE%\data\scripts\check_ingest_status.bat legal`
 5. **Chatten:** `hermes -p <profile_name>` en `search_knowledge` testen
 6. **Dieper technisch:** `scripts/rag_pipeline/ACTIVATION.md`, `windows/README.md`
 
-## Nacht-run (geen J/N)
+## Handmatig vs nacht-run
 
-Taakbalk-snelkoppeling **Hermes - RAG kennis bijwerken** gebruikt `RAG_KNOWLEDGE_UPDATE_NIGHT.bat`:
+**Taakbalk / dubbelklik:** `windows\RAG_KNOWLEDGE_UPDATE.bat` (`.lnk` met `cmd /k`):
+
+- J/N-prompt: typ `J` of `N` + Enter (default N)
+- Venster blijft open tot **Press any key**
+
+**Alleen geplande nacht-run:** `windows\RAG_KNOWLEDGE_UPDATE_NIGHT.bat`:
 
 - `HERMES_NONINTERACTIVE=1` — geen J/N-prompt
-- `HERMES_RAG_FRESH=n` — incrementeel (tenzij je zelf `HERMES_RAG_FRESH=y` zet)
-
-Handmatig met prompt: `windows\RAG_KNOWLEDGE_UPDATE.bat`
+- `HERMES_RAG_FRESH=n` — incrementeel
 
 **Institutionele env:** zie `docs/RAG_INSTITUTIONAL_ENV.md` (`HERMES_RAG_LIVE_STALE_SEC=120`, `HERMES_RAG_QUIET_TORCH=1` — automatisch in launchers).
 

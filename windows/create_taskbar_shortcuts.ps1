@@ -74,7 +74,7 @@ $shortcutBats = @(
     'windows/MANAGE_BACKUPS.bat',
     'windows/restore_local_assets.bat',
     'windows/UPDATE_HERMES.bat',
-    'windows/RAG_KNOWLEDGE_UPDATE_NIGHT.bat'
+    'windows/RAG_KNOWLEDGE_UPDATE.bat'
 )
 $shortcutRoles = @('Start', 'Setup', 'Backup', 'Restore', 'Update', 'Rag')
 $shortcutDescriptions = @(
@@ -83,8 +83,9 @@ $shortcutDescriptions = @(
     'Hermes: fysieke backup uitvoeren (sleep naar taakbalk)',
     'Hermes: lokale scripts uit _local_assets herstellen (sleep naar taakbalk)',
     'Hermes: git/pip update via conda (sleep naar taakbalk)',
-    'Hermes RAG: nacht-run (NONINTERACTIVE, incrementeel, alle domeinen) - sleep naar taakbalk'
+    'Hermes RAG: interactief (J/N + pause) - sleep naar taakbalk. Nacht: RAG_KNOWLEDGE_UPDATE_NIGHT.bat'
 )
+$shortcutKeepOpen = @($false, $false, $false, $false, $false, $true)
 
 $legacyStartLnk = Join-Path $OutDir 'Hermes Agent - naar taakbalk slepen.lnk'
 if (Test-Path -LiteralPath $legacyStartLnk) {
@@ -106,7 +107,8 @@ for ($shortcutIndex = 0; $shortcutIndex -lt $shortcutPairCount; $shortcutIndex++
     try {
         if (Set-HermesShellShortcut -ShortcutPath $lnkPath -TargetBatPath $batPath `
                 -IconIcoPath $iconPath -WorkingDirectory $RepoRoot `
-                -Description $shortcutDescriptions[$shortcutIndex]) {
+                -Description $shortcutDescriptions[$shortcutIndex] `
+                -KeepCmdWindowOpen:$shortcutKeepOpen[$shortcutIndex]) {
             if (-not $Quiet) {
                 Write-Host "  [OK] $($shortcutNames[$shortcutIndex])" -ForegroundColor Green
             }

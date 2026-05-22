@@ -1,7 +1,7 @@
 @echo off
 rem LanceDB RAG — per-domein via %%USERPROFILE%%\data\domains.yaml
 rem Gebruik: update_knowledge.bat [domein| --list | --mcp-test | --media-only]
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 chcp 65001 >nul
 title Hermes RAG - kennis bijwerken
 
@@ -37,8 +37,12 @@ if not defined HERMES_RAG_FRESH (
   echo  J = Frisse start ^(database wissen, alles opnieuw^)
   echo  N = Alleen gewijzigde/nieuwe bestanden ^(snel^)
   echo.
-  choice /c JN /n /m "Kies J of N: "
-  if errorlevel 2 (set "HERMES_RAG_FRESH=n") else (set "HERMES_RAG_FRESH=j")
+  if /i "%HERMES_NONINTERACTIVE%"=="1" (
+    set "HERMES_RAG_FRESH=n"
+    echo [INFO] Nacht/non-interactive: incrementeel ^(N^).
+  ) else (
+    call :rag_prompt_jn
+  )
 )
 
 if /i "%~1"=="--media-only" (
@@ -65,6 +69,13 @@ goto :finish
 
 :finish_err
 set "RAG_EXIT=1"
+
+:rag_prompt_jn
+set "RAG_CHOICE="
+set /p "RAG_CHOICE=Kies J of N - typ J of N, Enter=standaard N: "
+if /i "%RAG_CHOICE%"=="J" (set "HERMES_RAG_FRESH=j") else (set "HERMES_RAG_FRESH=n")
+echo Gekozen: %HERMES_RAG_FRESH%
+exit /b 0
 
 :finish
 if /i not "%HERMES_NONINTERACTIVE%"=="1" (

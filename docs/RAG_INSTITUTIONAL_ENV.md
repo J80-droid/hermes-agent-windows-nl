@@ -14,7 +14,7 @@ Toepassing: `windows/scripts/rag/_rag_apply_institutional_env.bat`, `rag_institu
 | `HERMES_RAG_LIVE_STALE_SEC` | `120` | Alleen **verhogen** (bijv. `300`) als live status ten onrechte als “verouderd” wordt gemeld terwijl ingest nog loopt op extreem trage PDF’s. **Niet verlagen** — te kort geeft valse “stale” meldingen. |
 | `HERMES_RAG_QUIET_TORCH` | `1` | Zet `0` alleen bij **debug** van PyTorch/embed. Geen invloed op indexkwaliteit. |
 | `HERMES_RAG_PERF_PROFILE` | `safe` | `balanced` / `fast` alleen op een machine met veel RAM/CPU en na test op één domein. |
-| `HERMES_NONINTERACTIVE` | `1` (nacht/taakbalk) | Alleen in `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` — geen J/N-prompt. Handmatige run zonder deze var → wel J/N-keuze. |
+| `HERMES_NONINTERACTIVE` | `1` (alleen nacht) | Alleen in `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` — geen J/N-prompt. Taakbalk/handmatig: `RAG_KNOWLEDGE_UPDATE.bat` wist deze var → J/N-keuze. |
 | `HERMES_RAG_FRESH` | `n` (nacht) | `j` alleen als je database **bewust** wilt wissen. |
 
 Gerelateerd (geen env, wel gedrag):
@@ -34,6 +34,7 @@ flowchart TD
   C --> D[_rag_apply_institutional_env.bat]
   D --> E[_rag_run_ingest_institutional.bat]
   E --> F[run_rag_ingest.ps1 + ingest.py]
+  H[RAG_KNOWLEDGE_UPDATE.bat] --> A
   N[RAG_KNOWLEDGE_UPDATE_NIGHT.bat] --> A
 ```
 

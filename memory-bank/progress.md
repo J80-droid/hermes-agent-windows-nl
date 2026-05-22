@@ -15,9 +15,9 @@
 - [x] Profiel-model overerving (`profile_model_inheritance.py`, docs, doctor `--fix`, tests)
 - [x] Windows launchers (`update_knowledge.bat` / `.ps1`, `windows/scripts/rag/`)
 - [x] Noob-doc `docs/RAG_TWEE_FASEN.md` (bibliotheek vs. balie, twee fasen)
-- [x] Taakbalk nacht-run: `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` (`HERMES_NONINTERACTIVE=1`)
+- [x] Taakbalk RAG interactief: `RAG_KNOWLEDGE_UPDATE.bat` + `.lnk` `cmd /k` (J/N via `set /p`); nacht: `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` (`HERMES_NONINTERACTIVE=1`)
 - [x] Upstream-update keten: `windows/upstream_sync.ps1`, `UPDATE_HERMES.bat`, `UPSTREAM_SYNC.md` (+ post-merge git-inspectie + rooktest-matrix, geen handmatig Nous-changelog)
-- [x] Taakbalk `windows\*.lnk`: `cmd.exe /c` + gekleurd `.ico` (7 lagen 16–256 px); `FIX_TASKBAR_ICONS.bat`; `POST_GIT_PULL.bat`
+- [x] Taakbalk `windows\*.lnk`: `cmd.exe /c` (+ RAG: `/k`) + gekleurd `.ico` (7 lagen 16–256 px); `FIX_TASKBAR_ICONS.bat`; `POST_GIT_PULL.bat`
 - [x] Icoon-generator: PNG uit `assets/Hermes_logo.png` of `%USERPROFILE%\.hermes\_local_assets\assets\`; geen synthetische H-stub
 - [x] `SETUP_HERMES.bat` → standaard `--full-setup` + `OPEN_SETUP.bat`; `--files-only` voor alleen bestanden
 - [x] `verify_taskbar_shortcut_icons.ps1`; `Set-HermesShellShortcut` / pins in `fix_hermes_taskbar_pins.ps1`

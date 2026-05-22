@@ -39,7 +39,8 @@ function Set-HermesShellShortcut {
         [Parameter(Mandatory)][string]$TargetBatPath,
         [Parameter(Mandatory)][string]$IconIcoPath,
         [Parameter(Mandatory)][string]$WorkingDirectory,
-        [string]$Description = ''
+        [string]$Description = '',
+        [switch]$KeepCmdWindowOpen
     )
     if (-not (Test-Path -LiteralPath $TargetBatPath)) { return $false }
     if (-not $PSCmdlet.ShouldProcess($ShortcutPath, 'Create', 'Hermes shortcut')) { return $false }
@@ -60,7 +61,11 @@ function Set-HermesShellShortcut {
     $wsh = New-Object -ComObject WScript.Shell
     $sc = $wsh.CreateShortcut($ShortcutPath)
     $sc.TargetPath = Join-Path $env:SystemRoot 'System32\cmd.exe'
-    $sc.Arguments = '/c "' + $batFull + '"'
+    if ($KeepCmdWindowOpen) {
+        $sc.Arguments = '/k "cd /d "' + $workFull + '" && call "' + $batFull + '"'
+    } else {
+        $sc.Arguments = '/c "' + $batFull + '"'
+    }
     $sc.WorkingDirectory = $workFull
     $sc.WindowStyle = 1
     $sc.IconLocation = $iconLoc
@@ -85,7 +90,8 @@ function Set-HermesTaskbarPinShortcut {
         [Parameter(Mandatory)][string]$TargetBatPath,
         [Parameter(Mandatory)][string]$IconIcoPath,
         [Parameter(Mandatory)][string]$WorkingDirectory,
-        [string]$Description = ''
+        [string]$Description = '',
+        [switch]$KeepCmdWindowOpen
     )
     if (-not (Test-Path -LiteralPath $TargetBatPath)) { return $false }
     if (-not $PSCmdlet.ShouldProcess($ShortcutPath, 'Create', 'Taskbar pin shortcut')) { return $false }
@@ -102,7 +108,11 @@ function Set-HermesTaskbarPinShortcut {
     $wsh = New-Object -ComObject WScript.Shell
     $sc = $wsh.CreateShortcut($ShortcutPath)
     $sc.TargetPath = Join-Path $env:SystemRoot 'System32\cmd.exe'
-    $sc.Arguments = '/c "' + $batFull + '"'
+    if ($KeepCmdWindowOpen) {
+        $sc.Arguments = '/k "cd /d "' + $workFull + '" && call "' + $batFull + '"'
+    } else {
+        $sc.Arguments = '/c "' + $batFull + '"'
+    }
     $sc.WorkingDirectory = $workFull
     $sc.WindowStyle = 1
     $sc.IconLocation = $iconLoc
