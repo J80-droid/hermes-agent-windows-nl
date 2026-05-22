@@ -35,6 +35,19 @@ function Test-HermesSetupWindowsIsWrapper {
     return $true
 }
 
+function Test-HermesSetupBatDoesNotPassBatchFlagsToPs1 {
+    <#
+    .SYNOPSIS
+        True als setup-.bat geen --full-setup/--quiet naar PS1 doorgeeft (CMD :replace bug).
+    #>
+    param([Parameter(Mandatory)][string]$BatPath)
+    if (-not (Test-Path -LiteralPath $BatPath)) { return $false }
+    $text = (Get-Content -LiteralPath $BatPath -Raw -ErrorAction SilentlyContinue)
+    if ($text -match 'PSARGS:--full-setup' -or $text -match 'PSARGS:--FULL-SETUP') { return $false }
+    if ($text -match 'setup_hermes_windows\.ps1"\s+!PSARGS!' -or $text -match "setup_hermes_windows\.ps1'\s+!PSARGS!") { return $false }
+    return $true
+}
+
 function Test-HermesCanonicalSetupHasNoSelfMirror {
     param([Parameter(Mandatory)][string]$CanonPath)
     if (-not (Test-Path -LiteralPath $CanonPath)) { return $false }

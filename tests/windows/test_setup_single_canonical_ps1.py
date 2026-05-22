@@ -35,3 +35,17 @@ def test_canonical_has_no_self_mirror():
 
 def test_setup_policy_script_in_repo():
     assert POLICY.is_file()
+
+
+def test_setup_bats_do_not_pass_batch_flags_to_ps1():
+    for rel in (
+        "windows/setup_hermes_windows.bat",
+        "windows/SETUP_HERMES.bat",
+        "scripts/windows/setup_hermes_windows.bat",
+        "scripts/windows/bat-templates/setup_hermes_windows.bat.template",
+    ):
+        path = REPO / rel
+        assert path.is_file(), rel
+        text = path.read_text(encoding="utf-8")
+        assert "PSARGS:--full-setup" not in text, f"{rel} gebruikt nog CMD :replace"
+        assert "setup_hermes_windows.ps1\" !PSARGS!" not in text.replace("'", '"'), rel

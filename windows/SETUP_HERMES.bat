@@ -44,17 +44,9 @@ if not exist "%SETUP_PS1%" (
   exit /b 1
 )
 echo [Hermes] Start setup ^(repo: %CD%^)...
-set "PSARGS=!RUN_ARGS!"
 echo(!RUN_ARGS!| findstr /I "full-setup" >nul && set "HERMES_SETUP_FULL_SETUP=1"
-if defined PSARGS (
-  set "PSARGS=!PSARGS:--quiet=!"
-  set "PSARGS=!PSARGS:--QUIET=!"
-  set "PSARGS=!PSARGS:--full-setup=!"
-  set "PSARGS=!PSARGS:--FULL-SETUP=!"
-  set "PSARGS=!PSARGS:--files-only=!"
-  set "PSARGS=!PSARGS:--FILES-ONLY=!"
-)
-"%PSX%" -NoProfile -ExecutionPolicy Bypass -File "%SETUP_PS1%" !PSARGS!
+rem Batch-flags nooit naar PS1 doorgeven (zie setup_hermes_windows.bat).
+"%PSX%" -NoProfile -ExecutionPolicy Bypass -File "%SETUP_PS1%"
 set ERR=!ERRORLEVEL!
 if !ERR! neq 0 (
   echo [ERROR] Setup stopte met code !ERR!

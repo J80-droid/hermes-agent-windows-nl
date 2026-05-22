@@ -23,15 +23,11 @@ if not exist "%~dp0setup_hermes_windows.ps1" (
   exit /b 1
 )
 echo [Hermes] Start setup ^(repo: %CD%^)...
-set "PSARGS=%*"
+rem Batch-flags (--full-setup e.d.) NOOIT naar PS1: CMD-substitutie maakt daar -FULL-SETUP= van.
 echo(%*| findstr /I "full-setup" >nul && set "HERMES_SETUP_FULL_SETUP=1"
-if defined PSARGS (
-  set "PSARGS=!PSARGS:--quiet=!"
-  set "PSARGS=!PSARGS:--QUIET=!"
-  set "PSARGS=!PSARGS:--full-setup=!"
-  set "PSARGS=!PSARGS:--FULL-SETUP=!"
-)
-"%PSX%" -NoProfile -ExecutionPolicy Bypass -File "%~dp0setup_hermes_windows.ps1" !PSARGS!
+echo(%*| findstr /I "files-only" >nul && set "HERMES_SETUP_FILES_ONLY=1"
+echo(%*| findstr /I "quiet" >nul && set "HERMES_SETUP_QUIET=1"
+"%PSX%" -NoProfile -ExecutionPolicy Bypass -File "%~dp0setup_hermes_windows.ps1"
 set ERR=!ERRORLEVEL!
 if !ERR! equ 0 set "HERMES_REPO=!CD!"
 popd

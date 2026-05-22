@@ -19,7 +19,7 @@
   - Optioneel: volledige **hermes setup** (wizard) na de Windows-bestanden via **OPEN_SETUP.bat**
     ^(zelfde cmd + zelfde Conda/.venv-Python als launch_hermes.bat^). Dubbelklik: **windows/OPEN_SETUP.bat**.
 
-  Triggers: -FullSetup, HERMES_SETUP_FULL_SETUP=1, of op setup-batch: **--full-setup**.
+  Triggers: -FullSetup, HERMES_SETUP_FULL_SETUP=1, of setup-batch **--full-setup** (alleen env, niet als PS1-arg).
 
   Na interactieve setup start **Hermes automatisch** in een nieuw cmd-venster (Hermes_met_logo.bat),
   tenzij de omgeving **HERMES_SETUP_NO_LAUNCH** is gezet.
