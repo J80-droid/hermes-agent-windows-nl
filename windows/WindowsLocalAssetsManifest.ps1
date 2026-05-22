@@ -110,7 +110,13 @@ function Get-HermesWindowsLocalAssetsManifest {
         },
         @{
             Sub     = 'audits'
-            Files   = @('README.md', 'RUN_AUDITS.ps1', 'RUN_AUDITS.bat', 'RUN_PROFILE_SWITCH_E2E.ps1', 'RUN_PROFILE_SWITCH_E2E.bat')
+            Files   = @(
+                'README.md',
+                'RUN_AUDITS.ps1', 'RUN_AUDITS.bat',
+                'RUN_PROFILE_SWITCH_E2E.ps1', 'RUN_PROFILE_SWITCH_E2E.bat',
+                'RUN_INSTITUTIONAL_E2E.ps1', 'RUN_INSTITUTIONAL_E2E.bat',
+                'RUN_LEGAL_DOMAIN_E2E.ps1', 'RUN_LEGAL_DOMAIN_E2E.bat'
+            )
             RepoSub = 'audits'
         },
         @{
@@ -157,6 +163,14 @@ function Get-HermesCriticalWindowsRepoPath {
         'windows/audits/RUN_AUDITS.bat',
         'windows/audits/RUN_PROFILE_SWITCH_E2E.ps1',
         'windows/audits/RUN_PROFILE_SWITCH_E2E.bat',
+        'windows/audits/RUN_INSTITUTIONAL_E2E.ps1',
+        'windows/audits/RUN_INSTITUTIONAL_E2E.bat',
+        'windows/audits/RUN_LEGAL_DOMAIN_E2E.ps1',
+        'windows/audits/RUN_LEGAL_DOMAIN_E2E.bat',
+        'windows/scripts/migrate_legal_source_layout.ps1',
+        'docs/LEGAL_TAXONOMY.md',
+        'docs/LEGAL_DOMAIN_ARCHITECTURE.md',
+        'docs/templates/SOUL_LEGAL_DOMAIN.md',
         'scripts/windows/setup_hermes_windows.ps1',
         'pyproject.toml'
     )

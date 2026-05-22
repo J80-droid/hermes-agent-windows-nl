@@ -33,10 +33,19 @@
 - [x] Profielwissel productie: `profile_switch.py`, `/profile use` + `-p` relaunch, `SWITCH_PROFILE.bat`, E2E `RUN_PROFILE_SWITCH_E2E.bat`, `docs/PROFILE_SWITCH.md`
 - [x] Profielwissel v2: `_apply_profile_override` sticky>stale env, kanban reclaim, `RUN_AUDITS.ps1`, `test_profile_switch_e2e.py` (HERMES_PROFILE_E2E=1)
 - [x] Optimalisatiepakket: `ORCHESTRATOR_ROUTING.md`, skill `landkaart`, `backup_soul_profiles.ps1`, `SYNC_SOUL_SNIPPETS.bat`, UPDATE-uitleg + verify zonder pause, RAG pin-docs
+- [x] Legal domein future-proof: `LEGAL_DOMAIN_ARCHITECTURE.md`, `LEGAL_TAXONOMY.md`, `SOUL_LEGAL_DOMAIN.md`, runtime generieke legal-SOUL + `LEGAL_ACTIVE_MATTERS.md`
+- [x] Bron-submappen `04_Legal_Corporate` (Arbeidsrecht, Klokkenluiders, …); `migrate_legal_source_layout.ps1`
+- [x] `sync_legal_lens_table_from_taxonomy.py`; `RUN_LEGAL_DOMAIN_E2E.bat`; `RUN_AUDITS -IncludeLegalDomainE2E`
 
 ## Operationeel (gebruiker)
 
-### Legal — klaar (2026-05-21)
+### Legal — architectuur (2026-05)
+
+- [x] Generieke legal-SOUL + lenzen; GCR in `LEGAL_ACTIVE_MATTERS.md`
+- [x] Submappen rechtsgebied onder `04_Legal_Corporate`
+- [ ] Optioneel: `update_knowledge.bat legal` na grote bron-migratie (re-index)
+
+### Legal — ingest (2026-05-21)
 
 - [x] **1665/1665** bronnen geïndexeerd (`all_sources_indexed: true`, `skipped_total: 0`)
 - [x] 40 media met Whisper (laatste run: 40 geïndexeerd, 1625 unchanged)

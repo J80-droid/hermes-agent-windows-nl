@@ -5,6 +5,7 @@ param(
     [switch]$IncludeProfileE2E,
     [switch]$IncludeInstitutionalE2E,
     [switch]$IncludeAllE2E,
+    [switch]$IncludeLegalDomainE2E,
     [switch]$SkipPytest,
     [switch]$SkipFootguns,
     [switch]$SkipRuff,
@@ -141,6 +142,14 @@ if ($IncludeInstitutionalE2E -or $IncludeAllE2E) {
     $instE2e = Join-Path $scriptRoot 'RUN_INSTITUTIONAL_E2E.ps1'
     Invoke-Step 'institutional-e2e' {
         & $instE2e
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeLegalDomainE2E -or $IncludeAllE2E) {
+    $legalE2e = Join-Path $scriptRoot 'RUN_LEGAL_DOMAIN_E2E.ps1'
+    Invoke-Step 'legal-domain-e2e' {
+        & $legalE2e
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

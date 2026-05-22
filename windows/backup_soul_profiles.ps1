@@ -52,6 +52,9 @@ if (Test-Path -LiteralPath $profilesDir) {
     Get-ChildItem -LiteralPath $profilesDir -Directory -ErrorAction SilentlyContinue | ForEach-Object {
         $rel = "profiles/$($_.Name)/SOUL.md"
         Copy-HermesPersonaFile -Root $root -RelPath $rel -DstRoot $dstRoot
+        if ($_.Name -eq 'legal') {
+            Copy-HermesPersonaFile -Root $root -RelPath 'profiles/legal/LEGAL_ACTIVE_MATTERS.md' -DstRoot $dstRoot
+        }
     }
 }
 

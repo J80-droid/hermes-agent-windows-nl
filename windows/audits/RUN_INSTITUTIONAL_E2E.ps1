@@ -22,6 +22,9 @@ $python = ($python | Select-Object -Last 1).Trim()
 
 $requiredRepo = @(
     'docs/ORCHESTRATOR_ROUTING.md',
+    'docs/LEGAL_TAXONOMY.md',
+    'docs/LEGAL_DOMAIN_ARCHITECTURE.md',
+    'docs/templates/SOUL_LEGAL_DOMAIN.md',
     'docs/templates/SOUL_SHARED_INTERACTION.md',
     'docs/templates/SOUL_CORE_ORCHESTRATOR.md',
     'skills/productivity/landkaart/SKILL.md',

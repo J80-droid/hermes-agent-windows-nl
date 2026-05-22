@@ -6,7 +6,7 @@ Canonieke matrix voor `profiles/core/SOUL.md`. Domeinnamen komen uit [`domains.y
 
 | Signaal / onderwerp | Profiel | MCP (RAG) |
 |---------------------|---------|-----------|
-| GCR, arbeidsrecht, VSO, BZ, geschillencommissie | `legal` | `lancedb-legal` |
+| Juridisch (GCR, arbeidsrecht, VSO, BZ, klokkenluiders, bestuursrecht, letselschade, …) | `legal` | `lancedb-legal` |
 | Crypto, portfolio, marktdata, trading | `trading` | `lancedb-trading` |
 | Curriculum, papers, onderwijs, wetenschap | `academics` | `lancedb-academics` |
 | Processen, workflows, KPI, operations | `operations` | `lancedb-operations` |
@@ -29,5 +29,7 @@ Canonieke matrix voor `profiles/core/SOUL.md`. Domeinnamen komen uit [`domains.y
 | Profiel wisselen | `/profile use <naam>` of `windows\SWITCH_PROFILE.bat <naam>` |
 | Taak naar specialist | Kanban + `hermes -p <profiel> chat` |
 | Volledige inventarisatie | `/landkaart` of skill `landkaart` |
+
+**Legal:** core routeert naar profiel `legal` alleen — geen subprofielen (`legal-arb`, …). Binnen-routering via rechtsgebied-lenzen: [LEGAL_DOMAIN_ARCHITECTURE.md](LEGAL_DOMAIN_ARCHITECTURE.md), [LEGAL_TAXONOMY.md](LEGAL_TAXONOMY.md).
 
 Zie ook [PROFILE_SWITCH.md](PROFILE_SWITCH.md) en [PROFILE_SOUL.md](PROFILE_SOUL.md).

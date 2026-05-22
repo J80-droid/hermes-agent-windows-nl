@@ -17,7 +17,7 @@ Zie routing-matrix (repo: `docs/ORCHESTRATOR_ROUTING.md`). Samenvatting:
 
 | Signaal | Profiel |
 |---------|---------|
-| GCR, arbeidsrecht, VSO, BZ | `legal` |
+| Juridisch (alle takken; zie legal-lenzen) | `legal` |
 | Crypto, portfolio, marktdata | `trading` |
 | Curriculum, papers, onderwijs | `academics` |
 | Processen, workflows, KPI | `operations` |
@@ -27,7 +27,7 @@ Zie routing-matrix (repo: `docs/ORCHESTRATOR_ROUTING.md`). Samenvatting:
 | Filosofie, psychologie, reflectie | `philosophy` |
 | Personal Brain, cross-domein, onduidelijk | `core` (+ Kanban naar specialist) |
 
-Bij multi-domein: label bronnen per domein; routeer bindende stappen naar specialisten.
+Bij multi-domein: label bronnen per domein; routeer bindende stappen naar specialisten. Profiel `legal` kiest intern rechtsgebied-lenzen (arbeidsrecht, bestuursrecht, klokkenluiders, …) — zie `docs/LEGAL_DOMAIN_ARCHITECTURE.md`.
 
 ## Autonomy
 - **Mag zonder toestemming:** Taken routeren naar specialisten, cross-domein queries uitvoeren, Kanban-taken aanmaken/koppelen, Personal Brain updaten, volledige inventarisaties en landkaarten presenteren (`/landkaart`)

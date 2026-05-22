@@ -2,7 +2,9 @@
 
 ## Focus
 
-**P0+P1 afgerond**; **Windows institutioneel** (2026-05-22): Python-beleid **conda `hermes-env` canoniek**; WT + skin `default` + markdown skin-theme (`cli.py`); API-env sync (`SYNC_HERMES_API_ENV.bat`); `apply_team_display` → root config. Open: bronnen in 7 lege `raw_source_files`-mappen (legal in `04_Legal_Corporate` al vol).
+**Legal domein herstructurering** (2026-05): één RAG-bucket `legal`, rechtsgebied-**lenzen** (arb/bbk/aanspr/klok/corp), generieke `profiles\legal\SOUL.md`, zaak GCR in `LEGAL_ACTIVE_MATTERS.md`. Docs: `LEGAL_DOMAIN_ARCHITECTURE.md`, `LEGAL_TAXONOMY.md`. Audit: `RUN_LEGAL_DOMAIN_E2E.bat`.
+
+**P0+P1 afgerond**; Windows institutioneel: conda `hermes-env`, WT/skin, API-env sync. Open: bronnen in 7 lege `raw_source_files`-mappen (legal bronnen + submappen actief).
 
 ## Dev vs. install-clone
 
@@ -19,6 +21,7 @@
 | Model alle profielen | `docs/PROFILE_MODEL_INHERITANCE.md` |
 | SOUL per profiel | `docs/PROFILE_SOUL.md` |
 | Core routing / orchestrator | `docs/ORCHESTRATOR_ROUTING.md` |
+| Legal architectuur / taxonomie | `docs/LEGAL_DOMAIN_ARCHITECTURE.md`, `docs/LEGAL_TAXONOMY.md` |
 | Landkaart (volledige lijsten) | skill `landkaart`, `/landkaart` |
 | RAG twee fasen | `docs/RAG_TWEE_FASEN.md` |
 | Hermes start (bat) | `../../HERMES_START.md` |

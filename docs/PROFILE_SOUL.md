@@ -76,3 +76,15 @@ notepad %LOCALAPPDATA%\hermes\profiles\mijn-domein\SOUL.md
 | Alleen persona's terugzetten | `restore_from_backup.ps1 -RestoreRuntimePersonas` (zie `RESTORE_FROM_BACKUP.bat` help) |
 
 Core routing staat in [ORCHESTRATOR_ROUTING.md](ORCHESTRATOR_ROUTING.md). Volledige lijsten: skill `landkaart` / `/landkaart`.
+
+## Legal: lenzen en actieve zaken
+
+| Concept | Pad / doc |
+|---------|-----------|
+| Architectuur (één RAG-bucket) | [LEGAL_DOMAIN_ARCHITECTURE.md](LEGAL_DOMAIN_ARCHITECTURE.md) |
+| Rechtsgebied-taxonomie | [LEGAL_TAXONOMY.md](LEGAL_TAXONOMY.md) |
+| Template SOUL legal | [templates/SOUL_LEGAL_DOMAIN.md](templates/SOUL_LEGAL_DOMAIN.md) |
+| Lopende dossiers (runtime) | `%LOCALAPPDATA%\hermes\profiles\legal\LEGAL_ACTIVE_MATTERS.md` |
+| Bron-submappen | `%USERPROFILE%\data\raw_source_files\04_Legal_Corporate\<Lens>\` |
+| Migratie layout | `windows\scripts\MIGRATE_LEGAL_LAYOUT.bat -Apply` |
+| Sync lenzentabel uit taxonomie | `python scripts\rag_pipeline\sync_legal_lens_table_from_taxonomy.py --soul <pad>` |

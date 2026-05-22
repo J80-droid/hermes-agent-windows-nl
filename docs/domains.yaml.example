@@ -59,9 +59,11 @@ domains:
     mcp_name: lancedb-trading
     profile_name: trading
 
+  # Legal: één RAG-bucket; rechtsgebieden via submappen (Arbeidsrecht/, Klokkenluiders/, …).
+  # Geen aparte domains:-entry per rechtsgebied — zie docs/LEGAL_DOMAIN_ARCHITECTURE.md
   - name: legal
     source_dir: 04_Legal_Corporate
-    description: Juridische bronnen, corporate compliance, jurisprudentie
+    description: Juridisch domein (lenzen arb/bbk/aanspr/klok/corp); submappen onder 04_Legal_Corporate
     lancedb_path: ~/data/lancedb/legal
     mcp_name: lancedb-legal
     profile_name: legal

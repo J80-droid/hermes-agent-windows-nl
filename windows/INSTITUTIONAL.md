@@ -102,4 +102,6 @@ Profiel-persona: `%LOCALAPPDATA%\hermes\profiles\<naam>\SOUL.md` — zie `docs/P
 
 **Tests (Windows):** `pyproject.toml` gebruikt `pytest --timeout-method=thread` (geen `SIGALRM`). Enkele test: `pytest tests/hermes_cli/test_profile_orphan_wrappers.py -q` met `PYTEST_ADDOPTS=-n0`.
 
-**Periodieke rooktest (aanbevolen):** `windows\audits\RUN_AUDITS.bat -IncludeProfileE2E` (wekelijks of vóór grote wijzigingen).
+**Periodieke rooktest (aanbevolen):** `windows\audits\RUN_AUDITS.bat -IncludeAllE2E` (wekelijks of vóór grote wijzigingen).
+
+**Legal domein:** na SOUL/taxonomie-wijziging → `RUN_LEGAL_DOMAIN_E2E.bat`; bronlayout → `windows\scripts\MIGRATE_LEGAL_LAYOUT.bat -Apply` → `update_knowledge.bat legal`. Zie `docs\LEGAL_DOMAIN_ARCHITECTURE.md`.

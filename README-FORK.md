@@ -22,6 +22,7 @@ Deze fork is de **enige goedgekeurde bron** voor Hermes-installaties binnen dit 
 | Core orchestrator routing | `docs/ORCHESTRATOR_ROUTING.md`, `docs/templates/SOUL_CORE_ORCHESTRATOR.md` | Routing-matrix + repo-template core SOUL |
 | Landkaart (completeness) | `skills/productivity/landkaart/` | `/landkaart`, inventarisatie vóór diepgang |
 | Runtime SOUL backup/restore | `windows/backup_soul_profiles.ps1`, `restore_from_backup.ps1` | Manifest v2: `localappdata_hermes/`; `-RestoreRuntimePersonas` |
+| Legal domein (lenzen, één bucket) | `docs/LEGAL_DOMAIN_ARCHITECTURE.md`, `LEGAL_TAXONOMY.md` | Rechtsgebied-lenzen; audit `RUN_LEGAL_DOMAIN_E2E.bat` |
 
 ### Profielwissel (productie)
 
