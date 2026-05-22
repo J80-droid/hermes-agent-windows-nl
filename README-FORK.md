@@ -17,11 +17,20 @@ Deze fork is de **enige goedgekeurde bron** voor Hermes-installaties binnen dit 
 | Update-script | `scripts/windows/update-jamel.ps1` | Conflictvrije updates met keuzemenu |
 | Aangepaste uninstaller | `hermes_cli/uninstall.py` | Herinstallatie-URL verwijst naar deze fork |
 | Profiel-model overerving | `hermes_cli/profile_model_inheritance.py` | Eén model in root config voor alle `-p <profiel>`-sessies |
+| Profielwissel (productie) | `hermes_cli/profile_switch.py`, `cli.py`, `relaunch.py`, `windows/SWITCH_PROFILE*.bat` | Eén kern voor chat, CLI en scripts: `-p` override, root-`HERMES_HOME`, API-sync, gateway-handoff, E2E-audit |
 | RAG + profiel-docs (NL) | `docs/README.md`, `docs/PROFILE_MODEL_INHERITANCE.md` | Index, twee fasen, centraal model |
+
+### Profielwissel (productie)
+
+- **In chat:** `/profile use legal` → bevestiging → 3 stappen feedback → `legal ❯`
+- **CLI:** `hermes profile use legal --fix-hermes-home` (flags: `--sync-env`, `--restart-gateway`, `--restart-chat`)
+- **Windows:** `windows\SWITCH_PROFILE.bat legal` of `SWITCH_PROFILE_AND_CHAT.bat`
+- **Audit:** `windows\audits\RUN_PROFILE_SWITCH_E2E.bat`
+- **Check:** `windows\scripts\verify_hermes_home.ps1` (User-`HERMES_HOME` = root, geen `profiles\core`)
 
 ### Wat NIET is aangepast
 
-- `hermes_cli/main.py` — fork-detectie en update-logica werkt correct tegen `origin/main`
+- `hermes_cli/main.py` — alleen `profile use`-handler uitgebreid; overige logica tegen `origin/main`
 - `hermes_cli/banner.py` — update-check vergelijkt tegen `origin/main`
 - Alle overige Python-bestanden — identiek aan upstream
 

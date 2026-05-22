@@ -146,6 +146,7 @@ class TestRelaunch:
             calls.append((path, argv))
             raise SystemExit(0)
 
+        monkeypatch.setattr(relaunch_mod.sys, "platform", "linux")
         monkeypatch.setattr(relaunch_mod.os, "execvp", fake_execvp)
         monkeypatch.setattr(relaunch_mod, "resolve_hermes_bin", lambda: "/usr/bin/hermes")
 
@@ -284,3 +285,102 @@ class TestResolveHermesBinWindowsPyGuard:
         monkeypatch.setattr(relaunch_mod.shutil, "which", lambda name: None)
 
         assert relaunch_mod.resolve_hermes_bin() is None
+
+
+class TestStripProfileFlags:
+    def test_strip_profile_flags_short_p(self):
+        argv = ["chat", "-p", "core", "--tui"]
+        assert relaunch_mod.strip_profile_flags(argv) == ["chat", "--tui"]
+
+    def test_strip_profile_flags_long(self):
+        argv = ["chat", "--profile", "legal", "--dev"]
+        assert relaunch_mod.strip_profile_flags(argv) == ["chat", "--dev"]
+
+    def test_strip_profile_flags_equals(self):
+        argv = ["--profile=trading", "chat"]
+        assert relaunch_mod.strip_profile_flags(argv) == ["chat"]
+
+    def test_strip_profile_flags_none(self):
+        argv = ["chat", "--tui"]
+        assert relaunch_mod.strip_profile_flags(argv) == ["chat", "--tui"]
+
+    def test_strip_profile_flags_empty_p(self):
+        argv = ["chat", "-p"]
+        assert relaunch_mod.strip_profile_flags(argv) == ["chat"]
+
+
+class TestRelaunchChatAfterProfileSwitch:
+    def test_build_argv_includes_explicit_profile(self, monkeypatch):
+        monkeypatch.setattr(relaunch_mod, "resolve_hermes_bin", lambda: "/usr/bin/hermes")
+        original = ["chat", "-p", "core", "--tui"]
+        argv = relaunch_mod.build_relaunch_argv(
+            ["chat", "-p", "legal"],
+            preserve_inherited=True,
+            original_argv=relaunch_mod.strip_profile_flags(original),
+        )
+        assert "-p" in argv
+        assert "legal" in argv
+        assert "chat" in argv
+        # Old profile must not survive via inherited flags
+        assert argv.count("core") == 0
+
+    def test_relaunch_passes_reset_hermes_home_on_win32(self, monkeypatch):
+        monkeypatch.setattr(relaunch_mod.sys, "platform", "win32")
+        monkeypatch.setattr(relaunch_mod, "resolve_hermes_bin", lambda: r"C:\hermes.exe")
+        monkeypatch.setattr(
+            relaunch_mod,
+            "_hermes_root_for_profile_relaunch",
+            lambda: r"C:\Users\test\AppData\Local\hermes",
+        )
+
+        import subprocess as _subprocess
+
+        captured: dict = {}
+
+        def fake_run(argv, env=None, **kwargs):
+            captured["argv"] = list(argv)
+            captured["env"] = dict(env) if env else None
+
+            class _Result:
+                returncode = 0
+
+            return _Result()
+
+        monkeypatch.setattr(_subprocess, "run", fake_run)
+        monkeypatch.setattr(relaunch_mod, "_run_subprocess_with_startup_spinner", fake_run)
+        monkeypatch.setattr(relaunch_mod.os, "execvp", lambda *a, **kw: None)
+
+        with pytest.raises(SystemExit):
+            relaunch_mod.relaunch(
+                ["chat", "-p", "legal"],
+                preserve_inherited=False,
+                reset_hermes_home_to_root=True,
+            )
+
+        assert captured["argv"] == [r"C:\hermes.exe", "chat", "-p", "legal"]
+        assert captured["env"]["HERMES_HOME"] == r"C:\Users\test\AppData\Local\hermes"
+
+    def test_profile_switch_calls_relaunch_with_profile(self, monkeypatch):
+        calls: list = []
+
+        def fake_relaunch(*args, **kwargs):
+            calls.append((args, kwargs))
+
+        monkeypatch.setattr(relaunch_mod, "relaunch", fake_relaunch)
+        monkeypatch.setattr(
+            relaunch_mod, "_print_profile_relaunch_progress", lambda *a, **kw: None
+        )
+
+        relaunch_mod.relaunch_chat_after_profile_switch(
+            "legal", original_argv=["chat", "-p", "core", "--tui"]
+        )
+
+        assert len(calls) == 1
+        extra_args, kwargs = calls[0][0][0], calls[0][1]
+        assert list(extra_args) == ["chat", "-p", "legal"]
+        assert kwargs["reset_hermes_home_to_root"] is True
+        assert kwargs["preserve_inherited"] is True
+        assert relaunch_mod.strip_profile_flags(kwargs["original_argv"]) == [
+            "chat",
+            "--tui",
+        ]

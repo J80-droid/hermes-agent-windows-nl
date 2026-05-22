@@ -7,6 +7,8 @@ active_profile and update HERMES_HOME to the profile directory.
 When HERMES_HOME is already a profile directory (.../profiles/<name>),
 _apply_profile_override must trust it and return without re-reading
 active_profile (child-process inheritance contract).
+
+Explicit -p in argv must override a stale profile HERMES_HOME (fork).
 """
 
 from __future__ import annotations
@@ -139,3 +141,25 @@ class TestApplyProfileOverrideHermesHomeGuard:
         _apply_profile_override()
 
         assert os.environ.get("HERMES_HOME") is None
+
+    def test_explicit_p_overrides_stale_profile_hermes_home(
+        self, tmp_path, monkeypatch
+    ):
+        """Stale HERMES_HOME=profiles/core must not win when argv has -p legal."""
+        hermes_root = tmp_path / ".hermes"
+        for name in ("core", "legal"):
+            (hermes_root / "profiles" / name).mkdir(parents=True, exist_ok=True)
+
+        core_dir = hermes_root / "profiles" / "core"
+        result = _run_apply_profile_override(
+            tmp_path,
+            monkeypatch,
+            hermes_home=str(core_dir),
+            active_profile="legal",
+            argv=["hermes", "chat", "-p", "legal"],
+        )
+
+        assert result is not None
+        assert result.endswith("legal"), (
+            f"Expected HERMES_HOME to end with 'legal', got: {result!r}"
+        )

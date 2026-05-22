@@ -17,6 +17,10 @@ function Get-HermesWindowsLocalAssetsManifest {
         'APPLY_TEAM_DISPLAY.bat',
         'SYNC_HERMES_API_ENV.bat',
         'sync_hermes_api_env.ps1',
+        'FIX_GEMINI_CREDENTIAL_POOL.bat',
+        'fix_gemini_credential_pool.ps1',
+        'SWITCH_PROFILE.bat',
+        'SWITCH_PROFILE_AND_CHAT.bat',
         'SETUP_HERMES.bat',
         'HERMES_SETUP_WIZARD.bat',
         'DOCTOR_FIX.bat',
@@ -94,7 +98,8 @@ function Get-HermesWindowsLocalAssetsManifest {
                 'ensure_hermes_python.ps1',
                 'launch_bootstrap.ps1',
                 'rag_python_resolve.ps1',
-                'institutional_p0_p1.bat'
+                'institutional_p0_p1.bat',
+                'verify_hermes_home.ps1'
             )
             RepoSub = 'scripts'
         },
@@ -105,7 +110,7 @@ function Get-HermesWindowsLocalAssetsManifest {
         },
         @{
             Sub     = 'audits'
-            Files   = @('README.md')
+            Files   = @('README.md', 'RUN_PROFILE_SWITCH_E2E.ps1', 'RUN_PROFILE_SWITCH_E2E.bat')
             RepoSub = 'audits'
         },
         @{

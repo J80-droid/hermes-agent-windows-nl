@@ -72,4 +72,37 @@ foreach ($k in $toCopy.Keys) {
 }
 $lines | Set-Content -LiteralPath $targetEnv -Encoding UTF8
 Write-Host "[OK] API-keys gesynchroniseerd naar $targetEnv ($($toCopy.Keys -join ', '))" -ForegroundColor Green
+
+# Profiel-.env (core/legal/…): vaak geen .env → provider leest lege profile home
+$profilesDir = Join-Path $targetRoot 'profiles'
+if (Test-Path -LiteralPath $profilesDir) {
+    $google = $toCopy['GOOGLE_API_KEY']
+    if (-not $google) { $google = $toCopy['GEMINI_API_KEY'] }
+    foreach ($dir in Get-ChildItem -LiteralPath $profilesDir -Directory) {
+        $profEnv = Join-Path $dir.FullName '.env'
+        if (-not (Test-Path -LiteralPath $profEnv)) {
+            Copy-Item -LiteralPath $targetEnv -Destination $profEnv -Force
+            Write-Host "[OK] .env gekopieerd naar $profEnv" -ForegroundColor Green
+        } else {
+            $plines = [System.Collections.Generic.List[string]]::new()
+            $plines.AddRange([string[]](Get-Content -LiteralPath $profEnv -Encoding UTF8))
+            foreach ($k in $toCopy.Keys) {
+                $newLine = "$k=$($toCopy[$k])"
+                $idx = -1
+                for ($i = 0; $i -lt $plines.Count; $i++) {
+                    if ($plines[$i] -match "^\s*#?\s*$k\s*=") { $idx = $i; break }
+                }
+                if ($idx -ge 0) { $plines[$idx] = $newLine } else { $plines.Add($newLine) }
+            }
+            $plines | Set-Content -LiteralPath $profEnv -Encoding UTF8
+            Write-Host "[OK] API-keys bijgewerkt in $profEnv" -ForegroundColor Gray
+        }
+    }
+}
+
+$fixPool = Join-Path $PSScriptRoot 'fix_gemini_credential_pool.ps1'
+if ((Test-Path -LiteralPath $fixPool) -and $toCopy.ContainsKey('GOOGLE_API_KEY')) {
+    & $fixPool -HermesRoot $targetRoot -GoogleApiKey $toCopy['GOOGLE_API_KEY']
+}
+
 exit 0

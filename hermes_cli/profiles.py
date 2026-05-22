@@ -1104,7 +1104,8 @@ def get_active_profile() -> str:
     """
     path = _get_active_profile_path()
     try:
-        name = path.read_text().strip()
+        # utf-8-sig: strip BOM if active_profile was written by PowerShell Set-Content
+        name = path.read_text(encoding="utf-8-sig").strip()
         if not name:
             return "default"
         return name
@@ -1133,7 +1134,7 @@ def set_active_profile(name: str) -> None:
     else:
         # Atomic write
         tmp = path.with_suffix(".tmp")
-        tmp.write_text(canon + "\n")
+        tmp.write_text(canon + "\n", encoding="utf-8")
         tmp.replace(path)
 
 

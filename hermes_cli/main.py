@@ -165,7 +165,7 @@ def _apply_profile_override() -> None:
 
             active_path = get_default_hermes_root() / "active_profile"
             if active_path.exists():
-                name = active_path.read_text().strip()
+                name = active_path.read_text(encoding="utf-8-sig").strip()
                 if name and name != "default":
                     profile_name = name
                     consume = 0  # don't strip anything from argv
@@ -10060,12 +10060,38 @@ def cmd_profile(args):
 
     elif action == "use":
         name = args.profile_name
+        from hermes_cli.profile_switch import execute_profile_switch, print_switch_messages
+        from hermes_cli.profiles import get_active_profile
+
+        sync_env = None
+        if getattr(args, "no_sync_env", False):
+            sync_env = False
+        elif getattr(args, "sync_env", None):
+            sync_env = True
+
+        restart_gateway = None
+        if getattr(args, "no_restart_gateway", False):
+            restart_gateway = False
+        elif getattr(args, "restart_gateway", None):
+            restart_gateway = True
+
         try:
-            set_active_profile(name)
+            result = execute_profile_switch(
+                name,
+                old_profile=get_active_profile(),
+                sync_env=sync_env,
+                restart_gateway=restart_gateway,
+                fix_hermes_home=getattr(args, "fix_hermes_home", False),
+            )
+            print_switch_messages(result)
             if name == "default":
                 print(f"Switched to: default (~/.hermes)")
             else:
                 print(f"Switched to: {name}")
+            if getattr(args, "restart_chat", False):
+                from hermes_cli.relaunch import relaunch_chat_after_profile_switch
+
+                relaunch_chat_after_profile_switch(name)
         except (ValueError, FileNotFoundError) as e:
             print(f"Error: {e}")
             sys.exit(1)
@@ -13475,6 +13501,38 @@ Examples:
         "use", help="Set sticky default profile"
     )
     profile_use.add_argument("profile_name", help="Profile name (or 'default')")
+    profile_use.add_argument(
+        "--sync-env",
+        action="store_true",
+        default=None,
+        help="Sync API keys to profile .env (Windows; default on win32)",
+    )
+    profile_use.add_argument(
+        "--no-sync-env",
+        action="store_true",
+        help="Skip API env sync on Windows",
+    )
+    profile_use.add_argument(
+        "--restart-gateway",
+        action="store_true",
+        default=None,
+        help="Restart gateway for new profile if old gateway was running",
+    )
+    profile_use.add_argument(
+        "--no-restart-gateway",
+        action="store_true",
+        help="Do not restart gateway after switch",
+    )
+    profile_use.add_argument(
+        "--restart-chat",
+        action="store_true",
+        help="Relaunch hermes chat in the new profile (non-interactive)",
+    )
+    profile_use.add_argument(
+        "--fix-hermes-home",
+        action="store_true",
+        help="Normalize user HERMES_HOME if it points at profiles/<name>",
+    )
 
     profile_create = profile_subparsers.add_parser(
         "create", help="Create a new profile"

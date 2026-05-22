@@ -29,6 +29,10 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | Doctor / fixes | `DOCTOR_FIX.bat` |
 | TUI-kleuren / display | `TERMINAL_WINDOWS.md`, `APPLY_TEAM_DISPLAY.bat` (skin + markdown) |
 | API-keys sync (split home) | `SYNC_HERMES_API_ENV.bat` — `~/.hermes/.env` → `%LOCALAPPDATA%\hermes\.env` |
+| Profiel wisselen | `SWITCH_PROFILE.bat <naam>` of in chat `/profile use <naam>` — zie `docs\PROFILE_SWITCH.md` |
+| Profiel + direct chat | `SWITCH_PROFILE_AND_CHAT.bat <naam>` |
+| HERMES_HOME controleren | `scripts\verify_hermes_home.ps1` |
+| Profielwissel E2E-audit | `audits\RUN_PROFILE_SWITCH_E2E.bat` |
 | **Update fork (Nous upstream)** | `UPDATE_HERMES.bat` of `hermes_update.bat` (zelfde keten) |
 | Alleen upstream-status | `powershell -File windows\upstream_sync.ps1 -Phase Preflight` |
 

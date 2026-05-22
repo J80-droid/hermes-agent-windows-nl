@@ -30,6 +30,7 @@
 - [x] TUI display: skin `default` (`team_display.defaults`), `apply_team_display.ps1` → root `%LOCALAPPDATA%\hermes\config.yaml`
 - [x] Markdown antwoordpanelen: `_skin_markdown_theme()` in `cli.py` (goud/amber i.p.v. Rich-magenta)
 - [x] Split Hermes-home: `sync_hermes_api_env.ps1` + `SYNC_HERMES_API_ENV.bat`; docs `TERMINAL_WINDOWS.md`
+- [x] Profielwissel productie: `profile_switch.py`, `/profile use` + `-p` relaunch, `SWITCH_PROFILE.bat`, E2E `RUN_PROFILE_SWITCH_E2E.bat`, `docs/PROFILE_SWITCH.md`
 
 ## Operationeel (gebruiker)
 

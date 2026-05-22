@@ -1337,8 +1337,12 @@ function Set-PathVariable {
     
     # Set HERMES_HOME so the Python code finds config/data in the right place.
     # Only needed on Windows where we install to %LOCALAPPDATA%\hermes instead
-    # of the Unix default ~/.hermes
+    # of the Unix default ~/.hermes.  Must be the root — never profiles\<name>.
     $currentHermesHome = [Environment]::GetEnvironmentVariable("HERMES_HOME", "User")
+    if ($currentHermesHome -match '\\profiles\\[a-z0-9][a-z0-9_-]{0,63}$') {
+        Write-Warn "User HERMES_HOME pointed at a profile dir ($currentHermesHome); resetting to root $HermesHome"
+        $currentHermesHome = $null
+    }
     if (-not $currentHermesHome -or $currentHermesHome -ne $HermesHome) {
         [Environment]::SetEnvironmentVariable("HERMES_HOME", $HermesHome, "User")
         Write-Success "Set HERMES_HOME=$HermesHome"

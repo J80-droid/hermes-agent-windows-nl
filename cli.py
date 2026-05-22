@@ -5890,18 +5890,121 @@ class HermesCLI:
         print("  Example: python cli.py --toolsets web,terminal")
         print()
     
-    def _handle_profile_command(self):
-        """Display active profile name and home directory."""
+    def _handle_profile_command(self, cmd: str = "/profile") -> Optional[bool]:
+        """Handle /profile, /profile list, /profile use <name>, /profile <name>."""
+        import shlex
+
         from hermes_constants import display_hermes_home
-        from hermes_cli.profiles import get_active_profile_name
+        from hermes_cli.profiles import (
+            get_active_profile_name,
+            list_profiles,
+            profile_exists,
+        )
 
-        display = display_hermes_home()
-        profile_name = get_active_profile_name()
+        try:
+            parts = shlex.split(cmd)
+        except ValueError:
+            parts = cmd.split()
+        args = parts[1:] if len(parts) > 1 else []
 
-        print()
-        print(f"  Profile: {profile_name}")
-        print(f"  Home:    {display}")
-        print()
+        if not args:
+            display = display_hermes_home()
+            profile_name = get_active_profile_name()
+            print()
+            print(f"  Profile: {profile_name}")
+            print(f"  Home:    {display}")
+            print()
+            print("  Wisselen: /profile use <naam> [--no-restart] (bevestiging + herstart)")
+            print("  Lijst:    /profile list")
+            print()
+            return True
+
+        if args[0] == "list":
+            active = get_active_profile_name()
+            print()
+            for p in list_profiles():
+                marker = " ◆" if p.name == active or (
+                    active == "default" and p.is_default
+                ) else "  "
+                print(f"{marker} {p.name}")
+            print()
+            return True
+
+        no_restart = False
+        if args[0] == "use":
+            cleaned_args = [a for a in args[1:] if a != "--no-restart"]
+            name = cleaned_args[0] if cleaned_args else ""
+            no_restart = "--no-restart" in args[1:]
+            if not name:
+                _cprint(f"  {_DIM}✗ Gebruik: /profile use <naam> [--no-restart]{_RST}")
+                return True
+        else:
+            name = args[0]
+            no_restart = "--no-restart" in args[1:]
+
+        if name != "default" and not profile_exists(name):
+            _cprint(f"  {_DIM}✗ Profiel '{name}' bestaat niet.{_RST}")
+            return True
+
+        should_relaunch = not no_restart and (
+            getattr(self, "_app", None) is not None or "chat" in sys.argv[1:]
+        )
+
+        if should_relaunch:
+            choices = [
+                ("once", "Wissel en herstart", f"Wisselen naar profiel '{name}' en Hermes herstarten"),
+                ("cancel", "Annuleren", "Huidige sessie behouden"),
+            ]
+            raw = self._prompt_text_input_modal(
+                title="⚙  Wissel profiel",
+                detail=f"Dit zal de huidige sessie afsluiten en Hermes herstarten met profiel '{name}'.",
+                choices=choices,
+            )
+            if raw is None:
+                _cprint(f"  {_DIM}🟡 Profielwissel geannuleerd.{_RST}")
+                return True
+            choice = self._normalize_slash_confirm_choice(raw, choices)
+            if choice != "once":
+                _cprint(f"  {_DIM}🟡 Profielwissel geannuleerd.{_RST}")
+                return True
+
+        from hermes_cli.profiles import get_active_profile
+        from hermes_cli.profile_switch import execute_profile_switch
+
+        old_profile = get_active_profile()
+        try:
+            switch_result = execute_profile_switch(
+                name,
+                old_profile=old_profile,
+                sync_env=True,
+                restart_gateway=True,
+                fix_hermes_home=True,
+                verbose=False,
+            )
+        except (ValueError, FileNotFoundError) as exc:
+            _cprint(f"  {_DIM}✗ {exc}{_RST}")
+            return True
+
+        target = "default (~/.hermes)" if name == "default" else name
+
+        if should_relaunch:
+            _cprint(
+                f"{_ACCENT}✓ Sticky profiel gezet op: {target}{_RST}\n"
+                f"{_DIM}  Stap 1/3: profiel opgeslagen — Hermes wordt herstart...{_RST}"
+            )
+            for msg in switch_result.messages:
+                _cprint(f"  {_DIM}  {msg}{_RST}")
+            self._pending_relaunch = ["_profile_switch", name]
+            return False
+        else:
+            _cprint(
+                f"{_ACCENT}✓ Sticky profiel gezet op: {target}{_RST}\n"
+                f"{_DIM}  Sluit Hermes volledig af en start opnieuw "
+                f"(of start met: hermes -p {name} chat).{_RST}"
+            )
+            for msg in switch_result.messages:
+                _cprint(f"  {_DIM}  {msg}{_RST}")
+            return True
 
     def show_config(self):
         """Display current configuration with kawaii ASCII art."""
@@ -7913,7 +8016,8 @@ class HermesCLI:
         elif canonical == "help":
             self.show_help()
         elif canonical == "profile":
-            self._handle_profile_command()
+            if self._handle_profile_command(cmd_original) is False:
+                return False
         elif canonical == "tools":
             self._handle_tools_command(cmd_original)
         elif canonical == "toolsets":
@@ -14266,8 +14370,23 @@ class HermesCLI:
         # thread (which would skip terminal cleanup on POSIX and only exit
         # the worker thread on Windows).
         if getattr(self, '_pending_relaunch', None):
-            from hermes_cli.relaunch import relaunch
-            relaunch(self._pending_relaunch, preserve_inherited=False)
+            if self._pending_relaunch[0] == "_profile_switch":
+                from hermes_cli.relaunch import (
+                    _print_profile_relaunch_progress,
+                    relaunch_chat_after_profile_switch,
+                )
+                profile_name = (
+                    self._pending_relaunch[1]
+                    if len(self._pending_relaunch) > 1
+                    else "default"
+                )
+                _print_profile_relaunch_progress(
+                    2, "terminal wordt opgeschoond…"
+                )
+                relaunch_chat_after_profile_switch(profile_name)
+            else:
+                from hermes_cli.relaunch import relaunch
+                relaunch(self._pending_relaunch, preserve_inherited=False)
 
 
 # ============================================================================

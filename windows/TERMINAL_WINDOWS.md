@@ -50,16 +50,43 @@ De fork past sinds de skin-markdown-theme in `cli.py` (`_skin_markdown_theme`) g
 
 Als `HERMES_HOME=%LOCALAPPDATA%\hermes` maar keys alleen in `%USERPROFILE%\.hermes\.env` staan → Gemini **HTTP 400 invalid API key**.
 
+Hermes kiest vaak **`credential_pool` vóór `.env`** (`credential_pool_strategies: gemini: fill_first`). Een kapotte pool-entry in `profiles\core\auth.json` (bv. `access_token: "N"`) geeft dezelfde 400, ook als `.env` goed is.
+
 ```bat
 windows\SYNC_HERMES_API_ENV.bat
 ```
 
-Kopieert o.a. `GOOGLE_API_KEY` van `%USERPROFILE%\.hermes\.env` naar `%LOCALAPPDATA%\hermes\.env` (root, niet `profiles\<naam>`).
+Kopieert `GOOGLE_API_KEY` naar root `.env`, werkt alle `profiles\*\.env` bij, en roept daarna `fix_gemini_credential_pool.ps1` aan.
 
 | Script | Doel |
 | ------ | ---- |
 | `APPLY_TEAM_DISPLAY.bat` | `skin=default`, `final_response_markdown=render`, `streaming=false`, `compact=true` op **root** config |
-| `SYNC_HERMES_API_ENV.bat` | API-keys naar actieve root `.env` |
+| `SYNC_HERMES_API_ENV.bat` | API-keys + profiel-`.env` + Gemini pool |
+| `FIX_GEMINI_CREDENTIAL_POOL.bat` | Alleen pool in `auth.json` (root + profielen) herstellen |
+| `SWITCH_PROFILE.bat <naam>` | Sticky profiel + API-sync + `HERMES_HOME`-fix + gateway (indien actief) |
+| `SWITCH_PROFILE_AND_CHAT.bat <naam>` | Zelfde + direct `hermes chat -p <naam>` |
+| `audits\RUN_PROFILE_SWITCH_E2E.bat` | E2E-audit profielwissel (pytest + scripts) |
+
+### Profiel wisselen (Drie lagen)
+
+De fork biedt drie verschillende manieren om flexibel en robuust van profiel te wisselen, afhankelijk van uw context:
+
+| Situatie / Context | Aanbevolen Methode | Werking & Details |
+| :--- | :--- | :--- |
+| **Al in Hermes-chat (WT)** | `/profile use <naam>` | **Primair (automatisch):** Toont een bevestigingsmodal $\rightarrow$ wijzigt sticky default $\rightarrow$ sluit TUI netjes af $\rightarrow$ start automatisch een schone Hermes-sessie in het geselecteerde profiel (zonder handmatige herstart). |
+| **Nieuwe sessie vanuit Git Bash / WT** | `core` of `legal` of `trading` | **Directe shell wrappers:** Start direct een specifiek profiel op via de native wrappers in `~/.local/bin/` (bijv. `legal chat`, `trading`, `core`). |
+| **Sticky default zonder chat** | `windows\SWITCH_PROFILE.bat <naam>` | **Scripting / CLI fallback:** `hermes profile use` met `--fix-hermes-home`, API-sync (Windows), gateway-restart indien de oude gateway draaide. |
+| **Taak delegeren zonder wisselen** | `/kanban create --assign <naam>` | **Kanban-delegatie:** Maak een taak aan en delegeer deze aan een ander profiel. De dispatcher start dat profiel autonoom op de achtergrond. U hoeft zelf niet te wisselen! |
+
+**Voortgang in chat (3 stappen):** Na bevestigen: (1) profiel opgeslagen, (2) terminal opgeschoond, (3) Hermes start op (spinner op Windows, 5–15 s).
+
+**Vlaggen behouden / strippen:** Bij de in-chat `/profile use` herstart worden storende flags (zoals `-p` of `--profile`) automatisch gestript; het child-proces krijgt expliciet `-p <naam>` en root-`HERMES_HOME`. Om alleen sticky te zetten zonder herstart: `/profile use <naam> --no-restart`.
+
+**HERMES_HOME (User):** Moet `%LOCALAPPDATA%\hermes` (root) zijn, **niet** `...\profiles\core`. Controle: `windows\scripts\verify_hermes_home.ps1`. Installatie corrigeert profiel-subdirs automatisch.
+
+**Gateway / API na wissel:** In-chat en `SWITCH_PROFILE` herstarten de gateway alleen als die op het oude profiel draaide. API-keys: automatische sync via `sync_hermes_api_env.ps1` (Windows). Kanban-workers op het oude profiel lopen door tot ze klaar zijn.
+
+**Fout `\ufeffcore`:** `active_profile` per ongeluk met PowerShell `Set-Content -Encoding UTF8` geschreven (BOM). De in-chat `/profile use` en `SWITCH_PROFILE.bat` schrijven BOM-safe. Gebruik bij voorkeur deze tools in plaats van handmatige edities met BOM. Bij een crash: herstel het bestand door `/profile use <naam>` opnieuw te gebruiken of `SWITCH_PROFILE.bat <naam>` te draaien.
 
 ## Wat de fork al doet
 

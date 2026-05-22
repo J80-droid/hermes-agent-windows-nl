@@ -10,6 +10,20 @@ Deze map is **niet** de upstream pytest-collectie. De echte tests staan in de re
 - **Alleen PowerShell onder `windows\`**: **`RUN_PSScriptAnalyzer.ps1`** (zelfde helper als audits)
 - **Alleen Python-tests**: **`RUN_PYTEST.ps1`**
 
+## Profielwissel (subset)
+
+Snelle regressie zonder volledige suite:
+
+```powershell
+.\windows\audits\RUN_PROFILE_SWITCH_E2E.bat
+```
+
+Of alleen pytest:
+
+```powershell
+python -m pytest tests/hermes_cli/test_apply_profile_override.py tests/hermes_cli/test_profile_switch.py tests/hermes_cli/test_relaunch.py::TestRelaunchChatAfterProfileSwitch -q
+```
+
 ## `RUN_PYTEST`
 
 - Zet de werkmap op de **repo-root** (`hermes-agent`).

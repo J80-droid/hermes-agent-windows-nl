@@ -8,6 +8,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 |--------|----------|
 | Begrijpen: index vs. chat (twee fasen) | [RAG_TWEE_FASEN.md](RAG_TWEE_FASEN.md) |
 | Model/provider voor **alle** profielen instellen | [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md) |
+| Profiel wisselen (chat, CLI, audit) | [PROFILE_SWITCH.md](PROFILE_SWITCH.md) |
 | SOUL.md per domeinprofiel (waar, bewerken) | [PROFILE_SOUL.md](PROFILE_SOUL.md) |
 | Domeinen toevoegen (`domains.yaml`) | [domains.yaml.example](domains.yaml.example) |
 | RAG env-defaults (stale, torch-ruis) | [RAG_INSTITUTIONAL_ENV.md](RAG_INSTITUTIONAL_ENV.md) |
@@ -71,6 +72,7 @@ flowchart TB
 - **Verouderd `mcp.servers`:** `hermes doctor --fix` of sync-script hierboven
 - **Ingest-status:** `%USERPROFILE%\data\scripts\check_ingest_status.bat <domein>`
 - **Doctor:** `hermes doctor` of `windows\DOCTOR_FIX.bat`
+- **Profiel wisselen:** `windows\SWITCH_PROFILE.bat <naam>` of `/profile use <naam>` in chat; audit: `windows\audits\RUN_PROFILE_SWITCH_E2E.bat` — zie [PROFILE_SWITCH.md](PROFILE_SWITCH.md)
 
 ## Memory bank (agent-context)
 
