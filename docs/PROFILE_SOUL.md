@@ -65,3 +65,14 @@ notepad %LOCALAPPDATA%\hermes\profiles\mijn-domein\SOUL.md
 ```
 
 `doctor --fix` en `sync_profile_mcp_from_domains.py` raken SOUL niet aan.
+
+## Backup, restore en templates
+
+| Actie | Hoe |
+|-------|-----|
+| Interaction-blok in alle profielen | `windows\SYNC_SOUL_SNIPPETS.bat` (template: `docs/templates/SOUL_SHARED_INTERACTION.md`) |
+| Core SOUL referentie in repo | `docs/templates/SOUL_CORE_ORCHESTRATOR.md` |
+| Runtime SOUL in backup | `MANAGE_BACKUPS.bat` → `backup_soul_profiles` (map `localappdata_hermes/` in backup) |
+| Alleen persona's terugzetten | `restore_from_backup.ps1 -RestoreRuntimePersonas` (zie `RESTORE_FROM_BACKUP.bat` help) |
+
+Core routing staat in [ORCHESTRATOR_ROUTING.md](ORCHESTRATOR_ROUTING.md). Volledige lijsten: skill `landkaart` / `/landkaart`.

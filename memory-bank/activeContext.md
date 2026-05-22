@@ -18,6 +18,8 @@
 | User-data sync | `docs/USER_DATA_OPERATIONS.md` |
 | Model alle profielen | `docs/PROFILE_MODEL_INHERITANCE.md` |
 | SOUL per profiel | `docs/PROFILE_SOUL.md` |
+| Core routing / orchestrator | `docs/ORCHESTRATOR_ROUTING.md` |
+| Landkaart (volledige lijsten) | skill `landkaart`, `/landkaart` |
 | RAG twee fasen | `docs/RAG_TWEE_FASEN.md` |
 | Hermes start (bat) | `../../HERMES_START.md` |
 | Windows | `windows/README.md` |
@@ -38,7 +40,9 @@
 
 | Script | Rol |
 |--------|-----|
-| `UPDATE_HERMES.bat` | Update + verify (`.ps1`, geen pause) + auto `fix_hermes_taskbar_pins` |
+| `UPDATE_HERMES.bat` | Update + verify (`.ps1`, geen pause; `HERMES_SKIP_PAUSE_AFTER_UPDATE=1`) + auto `fix_hermes_taskbar_pins` |
+| `SYNC_SOUL_SNIPPETS.bat` | Interaction-blok naar alle profiel-SOUL's (template in `docs/templates/`) |
+| `MANAGE_BACKUPS.bat` | Inclusief `backup_soul_profiles` → `localappdata_hermes/` in backup |
 | `POST_GIT_PULL.bat` | Na pull op andere machine |
 | `FIX_TASKBAR_ICONS.bat` | Handmatig icoon + pins |
 | `.lnk` vastmaken | Sleep `.lnk` uit `windows\`, niet `.bat` |

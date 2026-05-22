@@ -62,6 +62,7 @@ def test_update_hermes_uses_upstream_sync():
 def test_orchestrator_routing_doc_exists():
     assert (REPO / "docs/ORCHESTRATOR_ROUTING.md").is_file()
     assert (REPO / "docs/templates/SOUL_SHARED_INTERACTION.md").is_file()
+    assert (REPO / "docs/templates/SOUL_CORE_ORCHESTRATOR.md").is_file()
 
 
 def test_landkaart_skill_exists():

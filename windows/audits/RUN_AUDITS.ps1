@@ -3,6 +3,8 @@
 param(
     [switch]$RequirePSScriptAnalyzer,
     [switch]$IncludeProfileE2E,
+    [switch]$IncludeInstitutionalE2E,
+    [switch]$IncludeAllE2E,
     [switch]$SkipPytest,
     [switch]$SkipFootguns,
     [switch]$SkipRuff,
@@ -135,7 +137,15 @@ if (-not $SkipPytest) {
     }
 }
 
-if ($IncludeProfileE2E) {
+if ($IncludeInstitutionalE2E -or $IncludeAllE2E) {
+    $instE2e = Join-Path $scriptRoot 'RUN_INSTITUTIONAL_E2E.ps1'
+    Invoke-Step 'institutional-e2e' {
+        & $instE2e
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeProfileE2E -or $IncludeAllE2E) {
     $e2e = Join-Path $scriptRoot 'RUN_PROFILE_SWITCH_E2E.ps1'
     Invoke-Step 'profile-switch-e2e' {
         & $e2e

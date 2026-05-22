@@ -9,6 +9,7 @@ Canonieke operationele docs staan onder **`%USERPROFILE%\data\`** en in profiele
 | `%USERPROFILE%\data\STATUS.md` | Dagelijks overzicht, launchers, volgende stappen |
 | `%USERPROFILE%\data\RECOVERY.md` | Herstel, upstream update, taakbalk |
 | `%LOCALAPPDATA%\hermes\profiles\core\KANBAN_WORKFLOWS.md` | Kanban-orchestratie (profiel core) |
+| `%LOCALAPPDATA%\hermes\profiles\<naam>\SOUL.md` | Persona per profiel (9 profielen) |
 
 Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTREAM_SYNC.md`: controleer of bovenstaande bestanden dezelfde paden tonen.
 
@@ -18,6 +19,9 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 | ---- | -------- |
 | Upstream / fork update | `windows\UPDATE_HERMES.bat` (verify in keten via `.ps1`, geen pause — zie `windows\UPSTREAM_SYNC.md`) |
 | Na `git pull` (andere machine of na grote wijziging) | `windows\POST_GIT_PULL.bat` |
+| SOUL Interaction naar alle profielen | `windows\SYNC_SOUL_SNIPPETS.bat` |
+| Runtime SOUL in backup | `windows\MANAGE_BACKUPS.bat` (stap `backup_soul_profiles`) |
+| Alleen persona's uit backup | `restore_from_backup.ps1 -RestoreRuntimePersonas` |
 | Taakbalk-iconen | `windows\FIX_TASKBAR_ICONS.bat` |
 | Snelkoppelingen vernieuwen | `windows\REFRESH_TASKBAR_SHORTCUTS.bat` |
 | Setup (logica) | `scripts\windows\setup_hermes_windows.ps1` — **niet** volledig kopiëren naar `windows\` |

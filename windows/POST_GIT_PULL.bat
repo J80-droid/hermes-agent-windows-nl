@@ -15,6 +15,8 @@ if exist "%~dp0VERIFY_WINDOWS_CHAIN.bat" (
 )
 
 echo.
+echo [INFO] Nieuwe skills (bijv. landkaart): hermes update of nieuwe chat-sessie.
+echo.
 echo [INFO] Taakbalk-.lnk en icooncache vernieuwen...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0fix_hermes_taskbar_pins.ps1" -RepoRoot "%CD%" -Quiet
 if errorlevel 1 (

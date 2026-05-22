@@ -26,6 +26,12 @@ if "%~1"=="" (
 
   echo.
 
+  echo  Alleen runtime-persona's ^(%%LOCALAPPDATA%%\hermes\profiles\*\SOUL.md etc.^):
+
+  echo    "%~nx0" "D:\...\backup_..." -RestoreRuntimePersonas
+
+  echo.
+
   exit /b 1
 
 )

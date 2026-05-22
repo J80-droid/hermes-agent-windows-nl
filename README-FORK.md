@@ -19,6 +19,9 @@ Deze fork is de **enige goedgekeurde bron** voor Hermes-installaties binnen dit 
 | Profiel-model overerving | `hermes_cli/profile_model_inheritance.py` | Eén model in root config voor alle `-p <profiel>`-sessies |
 | Profielwissel (productie) | `hermes_cli/profile_switch.py`, `cli.py`, `relaunch.py`, `windows/SWITCH_PROFILE*.bat` | Eén kern voor chat, CLI en scripts: `-p` override, root-`HERMES_HOME`, API-sync, gateway-handoff, E2E-audit |
 | RAG + profiel-docs (NL) | `docs/README.md`, `docs/PROFILE_MODEL_INHERITANCE.md` | Index, twee fasen, centraal model |
+| Core orchestrator routing | `docs/ORCHESTRATOR_ROUTING.md`, `docs/templates/SOUL_CORE_ORCHESTRATOR.md` | Routing-matrix + repo-template core SOUL |
+| Landkaart (completeness) | `skills/productivity/landkaart/` | `/landkaart`, inventarisatie vóór diepgang |
+| Runtime SOUL backup/restore | `windows/backup_soul_profiles.ps1`, `restore_from_backup.ps1` | Manifest v2: `localappdata_hermes/`; `-RestoreRuntimePersonas` |
 
 ### Profielwissel (productie)
 
@@ -30,9 +33,9 @@ Deze fork is de **enige goedgekeurde bron** voor Hermes-installaties binnen dit 
 
 ### Wat NIET is aangepast
 
-- `hermes_cli/main.py` — alleen `profile use`-handler uitgebreid; overige logica tegen `origin/main`
+- `hermes_cli/main.py` — **fork:** sticky `active_profile` (wint over stale `HERMES_HOME`) + `profile use`-handler; verder beperkte diff vs upstream
 - `hermes_cli/banner.py` — update-check vergelijkt tegen `origin/main`
-- Alle overige Python-bestanden — identiek aan upstream
+- Overige Python — grotendeels upstream; fork-modules: `profile_switch.py`, `relaunch.py`, `profile_model_inheritance.py`, …
 
 ---
 
