@@ -24,7 +24,7 @@ if (-not (Test-Path -LiteralPath $domainsYaml)) {
 }
 
 $regPy = Join-Path $RepoRoot "scripts\rag_pipeline\register_mcp_config.py"
-& $Python $regPy --domains-yaml $domainsYaml
+& $Python $regPy --domains-yaml $domainsYaml --sync
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 if (-not $Quiet) {

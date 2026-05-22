@@ -31,11 +31,11 @@ if ($pythons.Count -eq 0) {
 }
 
 if (-not $SkipPip) {
+    $installed = 0
     foreach ($py in $pythons) {
-        & $py -m pip --version 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-            if ($py -match '\\.venv\\') {
-                Write-RagMsg "[WARN] .venv zonder pip - overgeslagen (RAG via conda hermes-env is voldoende)." "Yellow"
+        if (-not (Test-HermesPythonHasPip -PythonExe $py)) {
+            if ($py -match '[\\/]\.venv[\\/]') {
+                Write-RagMsg "[INFO] .venv zonder pip overgeslagen — RAG draait via conda hermes-env." "DarkGray"
             } else {
                 Write-RagMsg "[WARN] Geen pip op $py - overgeslagen." "Yellow"
             }
@@ -54,10 +54,12 @@ if (-not $SkipPip) {
         if ($LASTEXITCODE -ne 0) {
             Write-RagMsg "[WARN] colorama/tqdm mislukt - RAG-terminal kan zonder kleuren/balk." "Yellow"
         }
+        $installed++
     }
-    if ($pythons.Count -gt 0) {
-        $n = $pythons.Count
-        Write-RagMsg "[OK] RAG-dependencies op $n interpreter(s)." "Green"
+    if ($installed -gt 0) {
+        Write-RagMsg "[OK] RAG-dependencies op $installed interpreter(s)." "Green"
+    } elseif ($pythons.Count -eq 0) {
+        Write-RagMsg "[WARN] Geen Python met pip — conda: conda activate hermes-env; pip install -e .[rag]" "Yellow"
     }
     if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
         Write-RagMsg "[WARN] ffmpeg niet op PATH - Whisper/media kan falen." "Yellow"
@@ -65,21 +67,31 @@ if (-not $SkipPip) {
 }
 
 if (-not $SkipModelWarm) {
-    $py = $pythons | Select-Object -First 1
+    $py = ($pythons | Where-Object { Test-HermesPythonHasPip -PythonExe $_ } | Select-Object -First 1)
     if ($py) {
         Write-RagMsg "[INFO] Embedding-modelcache warmen..." "Cyan"
-        & $py -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" 2>&1 | Out-Null
-        if ($LASTEXITCODE -eq 0) {
-            Write-RagMsg "[OK] Modelcache klaar." "Green"
-        } else {
-            Write-RagMsg "[WARN] Modelcache warmen mislukt." "Yellow"
+        $prevEap = $ErrorActionPreference
+        $ErrorActionPreference = 'SilentlyContinue'
+        try {
+            $null = & $py -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-RagMsg "[OK] Modelcache klaar." "Green"
+            } else {
+                Write-RagMsg "[WARN] Modelcache warmen mislukt (exit $LASTEXITCODE)." "Yellow"
+            }
+        } finally {
+            $ErrorActionPreference = $prevEap
         }
     }
 }
 
 if (-not $SkipMcp) {
     $reg = Join-Path $PSScriptRoot "register_lancedb_mcp.ps1"
-    & powershell -NoProfile -ExecutionPolicy Bypass -File $reg -RepoRoot $RepoRoot -Quiet:$Quiet
+    if ($Quiet) {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $reg -RepoRoot $RepoRoot -Quiet
+    } else {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $reg -RepoRoot $RepoRoot
+    }
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 

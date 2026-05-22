@@ -30,15 +30,35 @@ function Get-HermesUvVenvPython {
     return $null
 }
 
+function Test-HermesPythonHasPip {
+    param([Parameter(Mandatory)][string]$PythonExe)
+    if (-not (Test-Path -LiteralPath $PythonExe)) { return $false }
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'SilentlyContinue'
+    try {
+        $null = & $PythonExe -m pip --version 2>&1
+        return ($LASTEXITCODE -eq 0)
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+}
+
 function Get-HermesRagPython {
-    param([string]$RepoRoot = "")
+    param(
+        [string]$RepoRoot = "",
+        [switch]$IncludeVenvWithoutPip
+    )
     $seen = @{}
     $out = @()
     foreach ($p in @((Get-HermesCondaPython), (Get-HermesUvVenvPython -RepoRoot $RepoRoot))) {
-        if ($p -and -not $seen.ContainsKey($p.ToLowerInvariant())) {
-            $seen[$p.ToLowerInvariant()] = $true
-            $out += $p
+        if (-not $p) { continue }
+        $key = $p.ToLowerInvariant()
+        if ($seen.ContainsKey($key)) { continue }
+        if ($p -match '[\\/]\.venv[\\/]' -and -not $IncludeVenvWithoutPip) {
+            if (-not (Test-HermesPythonHasPip -PythonExe $p)) { continue }
         }
+        $seen[$key] = $true
+        $out += $p
     }
     return $out
 }
