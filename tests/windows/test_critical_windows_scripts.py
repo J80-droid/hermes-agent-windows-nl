@@ -43,6 +43,13 @@ def test_taskbar_white_icon_from_png_pipeline():
         assert white.stat().st_size >= 12_000
 
 
+def test_upstream_sync_branding_dirty_parses_porcelain_path():
+    """Regressie: Trim() vóór Substring(3) maakte 'ssets/...' — update blokkeerde ten onrechte."""
+    text = (REPO / "windows/upstream_sync.ps1").read_text(encoding="utf-8")
+    assert "TrimEnd()" in text
+    assert "niet $line.Trim() vóór Substring(3)" in text
+
+
 def test_update_hermes_uses_upstream_sync():
     bat = (REPO / "windows/UPDATE_HERMES.bat").read_text(encoding="utf-8")
     assert "upstream_sync.ps1" in bat

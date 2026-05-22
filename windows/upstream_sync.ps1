@@ -63,10 +63,14 @@ function Test-HermesUpstreamDirtyOnlyBranding {
     if ($PorcelainLines.Count -eq 0) { return $true }
     foreach ($line in $PorcelainLines) {
         if (-not $line.Trim()) { continue }
-        $path = $line.Trim()
-        if ($path.Length -ge 3) { $path = $path.Substring(3).Trim() }
-        if ($path -match ' -> ') {
-            $path = ($path -split ' -> ', 2)[-1].Trim()
+        # Porcelain: XY<space>path — niet $line.Trim() vóór Substring(3); dat verslindt kolom 1 en breekt het pad.
+        $raw = $line.TrimEnd()
+        if ($raw -match ' -> ') {
+            $path = ($raw -split ' -> ', 2)[-1].Trim()
+        } elseif ($raw.Length -ge 4) {
+            $path = $raw.Substring(3).Trim()
+        } else {
+            $path = $raw.Trim()
         }
         $norm = ($path -replace '\\', '/')
         if ($norm -match '^(assets/(Hermes_logo|hermes_logo)\.png|windows/hermes[^/]*\.ico)$') {
