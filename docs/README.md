@@ -62,6 +62,7 @@ flowchart TB
 - **Setup (dubbelklik):** `windows\SETUP_HERMES.bat` (standaard wizard); `OPEN_SETUP.bat` alleen wizard; `--files-only` zonder wizard
 - **Taakbalk-iconen:** `python windows/tools/generate_colored_hermes_icons.py` → `windows\FIX_TASKBAR_ICONS.bat` → F5; pin via `.lnk`, niet `.bat`
 - **Nous upstream-update:** `windows\UPDATE_HERMES.bat` (preflight + merge + RAG + taakbalk; zie `windows\UPSTREAM_SYNC.md`)
+- **Na upstream-merge:** inspectie via `git log` + rooktest-matrix in [UPSTREAM_SYNC.md § inspectie](../windows/UPSTREAM_SYNC.md#upstream-wijzigingen-na-merge-inspectie) (geen handmatig commit-archief in docs)
 - **P0+P1-pipeline (institutioneel):** `windows\scripts\institutional_p0_p1.bat`  
   Sync MCP → doctor --fix → MCP-test alle domeinen → legal rooktest.  
   Opties: `--ingest-remaining` (7 domeinen; **lege bronmappen worden overgeslagen**), `--kanban` (na geslaagde rooktest).

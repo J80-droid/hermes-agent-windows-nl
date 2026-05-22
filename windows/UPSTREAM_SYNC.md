@@ -174,14 +174,63 @@ Bij merge van Nous in jouw fork botsen vaak **jouw fork-only** paden met upstrea
 
 ---
 
+## Upstream-wijzigingen na merge (inspectie)
+
+**Niet** elke Nous-commit handmatig in dit bestand kopiëren — dat veroudert. Gebruik **git** (of GitHub compare) als bron.
+
+### Wat is er binnengekomen?
+
+Direct na `windows\UPDATE_HERMES.bat` (of na `git merge upstream/main`):
+
+```cmd
+cd D:\A.I\APPS\Hermes_agent_WS\hermes-agent
+git fetch upstream
+git log --oneline -15 upstream/main
+```
+
+Alleen de commits van de **laatste merge** (na merge-commit op `main`):
+
+```cmd
+git log --oneline -20 --first-parent
+```
+
+Of: op GitHub → fork → **Compare** `upstream/main` met je branch vóór de merge.
+
+### Rooktest — wat raakt deze fork?
+
+| Gebied | Altijd testen na merge | Alleen als je het gebruikt |
+| ------ | ---------------------- | --------------------------- |
+| RAG ingest / MCP / `search_knowledge` | Ja | — |
+| Klassieke CLI (`start_hermes.bat`), display/skin, markdown-paneel | Ja | — |
+| `VERIFY_WINDOWS_CHAIN.bat` / taakbalk-iconen | Ja (zit in UPDATE-keten) | — |
+| Computer-use / browser-automation | — | Ja |
+| SSH / remote sync | — | Ja |
+| Ink-TUI / Termux | — | Ja |
+
+**Tip:** commit-titels met `fix(tui)`, `fix(computer-use)`, `fix(ssh)` → kolom “alleen als je het gebruikt”. `scripts/rag_pipeline`, `windows/` → meestal **jouw fork**; bij conflicten fork behouden (zie conflict-tabel hieronder).
+
+### Optioneel: korte merge-notitie (max. 5 regels)
+
+Alleen na **grote** merges (B > 20 of conflict-oplossing). Vrij formaat in je eigen log (`%USERPROFILE%\data\RECOVERY.md` of team-kanaal):
+
+```text
+2026-05-22 — merge upstream/main (B=10): TUI scrollback + computer-use AX-cap. Getest: legal MCP, start_hermes, display default.
+```
+
+Geen verplichting; git history blijft de volledige changelog.
+
+---
+
 ## Na elke upstream-merge (checklist)
 
 1. `git status` — geen onopgeloste conflicten.
-2. `pytest tests/rag_pipeline/ -q -m "not rag_integration"`
-3. `windows\scripts\install_rag_extras.ps1` (MCP + deps)
-4. `windows\scripts\which_hermes_repo.ps1` — `lancedb-knowledge: JA`
-5. Optioneel: `windows\hermes_update.bat`
-6. Nieuwe Hermes-sessie; rooktest: `search_knowledge` (zie `scripts/rag_pipeline/ACTIVATION.md`)
+2. **Inspectie:** `git log --oneline -15 upstream/main` (zie sectie hierboven).
+3. `pytest tests/rag_pipeline/ -q -m "not rag_integration"`
+4. `windows\scripts\install_rag_extras.ps1` (MCP + deps)
+5. `windows\scripts\which_hermes_repo.ps1` — `lancedb-knowledge: JA`
+6. `VERIFY_WINDOWS_CHAIN.bat` (of vertrouw op UPDATE-keten).
+7. Nieuwe Hermes-sessie; rooktest: `search_knowledge` (zie `scripts/rag_pipeline/ACTIVATION.md`)
+8. Display/API-home indien nodig: `APPLY_TEAM_DISPLAY.bat`, `SYNC_HERMES_API_ENV.bat` (zie `TERMINAL_WINDOWS.md`)
 
 ---
 

@@ -22,7 +22,7 @@
 | Hermes start (bat) | `../../HERMES_START.md` |
 | Windows | `windows/README.md` |
 | Terminal / display / API-home | `windows/TERMINAL_WINDOWS.md` |
-| Nous upstream | `windows/UPSTREAM_SYNC.md` |
+| Nous upstream | `windows/UPSTREAM_SYNC.md` (merge + git inspectie + rooktest-matrix) |
 | Voortgang | `memory-bank/progress.md` |
 
 ## Volgende stappen (volgorde)
