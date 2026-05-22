@@ -69,10 +69,14 @@ set "RAG_EXIT=1"
 :finish
 if /i not "%HERMES_NONINTERACTIVE%"=="1" (
   echo.
-  if not "%RAG_EXIT%"=="0" (
+  if "%RAG_EXIT%"=="0" (
+    echo [OK] RAG-update voltooid.
+    echo Samenvatting: %%USERPROFILE%%\data\lancedb\^<domein^>\rag_ingest_run_summary.json
+    echo Status:     check_ingest_status.bat ^<domein^>
+  ) else (
     echo [ERROR] RAG-update eindigde met fout ^(exit %RAG_EXIT%^).
   )
-  echo Druk op een toets om te sluiten...
-  pause >nul
+  echo.
+  pause
 )
 exit /b %RAG_EXIT%
