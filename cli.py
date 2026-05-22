@@ -2481,16 +2481,18 @@ def _parse_profile_switch_intent(text: str) -> Optional[str]:
     except Exception:
         return None
 
+    _name = r"([a-z][a-z0-9_-]{0,63})"
     patterns = (
+        re.compile(rf"(?i)^(?:profiel|profile)\s+{_name}\s*[.!?]*$"),
         re.compile(
-            r"(?i)^(?:verander|wissel|schakel|switch|zet|set|ga|go)"
-            r"(?:\s+(?:mijn|het|naar|to|to\s+the))?\s+"
-            r"(?:profiel\s+|profile\s+)?([a-z][a-z0-9_-]{0,63})(?:\s+(?:profiel|profile))?\s*[.!?]*$"
+            rf"(?i)^(?:verander|wissel|schakel|switch|zet|set|ga|go)\b.+?"
+            rf"(?:naar|to)\s+{_name}(?:\s+(?:profiel|profile))?\s*[.!?]*$"
         ),
-        re.compile(r"(?i)^(?:profiel|profile)\s+([a-z][a-z0-9_-]{0,63})\s*[.!?]*$"),
         re.compile(
-            r"(?i)^(?:naar|to)\s+([a-z][a-z0-9_-]{0,63})(?:\s+(?:profiel|profile))?\s*[.!?]*$"
+            rf"(?i)^(?:verander|wissel|schakel|switch)\b.+?"
+            rf"(?:profiel|profile)\s+(?:naar\s+)?{_name}\s*[.!?]*$"
         ),
+        re.compile(rf"(?i)^(?:naar|to)\s+{_name}(?:\s+(?:profiel|profile))?\s*[.!?]*$"),
     )
     for pat in patterns:
         m = pat.match(t)

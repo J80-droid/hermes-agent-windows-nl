@@ -63,12 +63,12 @@ if (-not $needRun) {
 }
 
 $runtimePs1 = Join-Path $RepoRoot 'windows/apply_institutional_runtime.ps1'
-$args = @{ SkipE2E = (-not $runE2e); NoPause = $true }
+$runtimeArgs = @{ SkipE2E = (-not $runE2e); NoPause = $true }
 Write-Host '[INFO] Institutioneel runtime (display + SOUL' -NoNewline -ForegroundColor Cyan
 if ($runE2e) { Write-Host ' + E2E' -NoNewline -ForegroundColor Cyan }
 Write-Host ')...' -ForegroundColor Cyan
 
-& $runtimePs1 @args
+& $runtimePs1 @runtimeArgs
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 if (-not (Test-Path -LiteralPath $stampDir)) {

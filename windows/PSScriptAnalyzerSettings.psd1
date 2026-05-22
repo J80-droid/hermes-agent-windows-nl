@@ -5,6 +5,7 @@
         'PSUseSingularNouns',
         'PSUseAliasToAvoidAbbreviations',
         'PSAvoidUsingAliases',
-        'PSUseBOMForUnicodeEncodedFile'
+        'PSUseBOMForUnicodeEncodedFile',
+        'PSAvoidAssignmentToAutomaticVariable'
     )
 }

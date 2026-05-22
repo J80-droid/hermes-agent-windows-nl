@@ -37,8 +37,8 @@ function Split-HermesCommandLine {
     #>
     param([string]$CommandLine)
     if ([string]::IsNullOrWhiteSpace($CommandLine)) { return @() }
-    $matches = [regex]::Matches($CommandLine.Trim(), '(?:[^\s"]+|"[^"]*")+')
-    $out = foreach ($m in $matches) {
+    $tokenMatches = [regex]::Matches($CommandLine.Trim(), '(?:[^\s"]+|"[^"]*")+')
+    $out = foreach ($m in $tokenMatches) {
         $v = $m.Value
         if ($v.Length -ge 2 -and $v.StartsWith('"') -and $v.EndsWith('"')) {
             $v.Substring(1, $v.Length - 2)

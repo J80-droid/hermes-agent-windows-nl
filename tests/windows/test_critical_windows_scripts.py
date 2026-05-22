@@ -70,6 +70,7 @@ def test_orchestrator_routing_doc_exists():
     assert (REPO / "windows/scripts/launch_institutional_runtime.ps1").is_file()
     bat = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
     assert "launch_institutional_runtime.ps1" in bat
+    assert (REPO / "tests/cli/test_institutional_profile_chat_ux.py").is_file()
     assert (REPO / "docs/templates/SOUL_CORE_ORCHESTRATOR.md").is_file()
     assert (REPO / "docs/LEGAL_TAXONOMY.md").is_file()
     assert (REPO / "docs/LEGAL_DOMAIN_ARCHITECTURE.md").is_file()

@@ -10,8 +10,9 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Get-HermesRootDir {
-    if ($HermesRoot -and (Test-Path -LiteralPath $HermesRoot)) {
-        return (Resolve-Path -LiteralPath $HermesRoot).Path
+    param([string]$Root = '')
+    if ($Root -and (Test-Path -LiteralPath $Root)) {
+        return (Resolve-Path -LiteralPath $Root).Path
     }
     $localRoot = Join-Path $env:LOCALAPPDATA 'hermes'
     if (Test-Path -LiteralPath (Join-Path $localRoot 'config.yaml')) { return $localRoot }
@@ -96,7 +97,7 @@ function Repair-AuthJsonGeminiPool {
     return $true
 }
 
-$root = Get-HermesRootDir
+$root = Get-HermesRootDir -Root $HermesRoot
 $key = $GoogleApiKey
 if (-not $key) { $key = Read-GoogleKeyFromEnv (Join-Path $root '.env') }
 if (-not $key) { $key = Read-GoogleKeyFromEnv (Join-Path $env:USERPROFILE '.hermes\.env') }

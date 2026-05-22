@@ -7,5 +7,10 @@
   "powershell.scriptAnalysis.enable": true,
   "powershell.scriptAnalysis.settingsPath": "${workspaceFolder}/windows/PSScriptAnalyzerSettings.psd1",
   "powershell.analyzeOnlyOpenDocuments": true,
-  "powershell.scriptAnalysis.useScriptPath": true
+  "powershell.scriptAnalysis.useScriptPath": true,
+  "markdownlint.configFile": "${workspaceFolder}/.markdownlint.json",
+  "markdownlint.ignore": [
+    "**/AppData/Local/hermes/**",
+    "**/.hermes/**"
+  ]
 }

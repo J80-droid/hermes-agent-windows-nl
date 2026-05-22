@@ -2,47 +2,41 @@
 
 **Script:** `windows/audits/RUN_INSTITUTIONAL_E2E.ps1`  
 **Log:** `windows/audits/INSTITUTIONAL_E2E_LAST_RUN.log`  
-**Resultaat:** **PASS** (8/8 stappen)
+**Stappen:** **11** (was 8)
 
-## Uitgevoerd in deze sessie
+## Resultaat
 
-| Stap | Onderdeel | Status |
-|------|-----------|--------|
-| 1/8 | Repo-artefacten (25 bestanden incl. presentatie) | OK |
-| 2/8 | pytest landkaart/orchestrator | 4 passed |
-| 2b/8 | pytest presentatie (markdown, rich_output, normalize) | 22 passed |
-| 2c/8 | `team_display.defaults` (render, skin, streaming=false, compact=false) | OK |
-| 3/8 | landkaart CLI smoke | OK |
-| 4/8 | `backup_soul_profiles` | OK (13 bestanden) |
-| 5/8 | Runtime SOUL Interaction + landkaart | OK |
-| 5b/8 | Runtime SOUL Outputformaat + `institutional_check` | OK (na `SYNC_SOUL_SNIPPETS.bat`) |
-| 6/8 | Display config actief profiel (`core`) | OK (na `apply_team_display.ps1`) |
-| 7/8 | rich_output smoke (pytest) | OK |
-| 8/8 | RESTORE / UPDATE regressie | OK |
+**Resultaat:** **PASS** (11/11) — laatste run na regex-fix `verander profiel naar <naam>` en stap-11 one-liner smoke.
 
-## Runtime-acties (lokaal uitgevoerd)
+## Stappenoverzicht
 
-1. `windows\SYNC_SOUL_SNIPPETS.bat` — Outputformaat naar 10 SOUL-bestanden  
-2. `windows\apply_team_display.ps1` — display-keys op profiel `core`
+| Stap | Onderdeel |
+|------|-----------|
+| 1/11 | Repo-artefacten |
+| 2/11 | pytest landkaart/orchestrator |
+| 2b/11 | pytest presentatie (markdown, rich_output) |
+| 2c/11 | `team_display.defaults` |
+| **2d/11** | **Profiel-chat-UX** (`test_institutional_profile_chat_ux.py`) |
+| 3/11 | landkaart CLI smoke |
+| 4/11 | `backup_soul_profiles` |
+| 5/11 | Runtime SOUL Interaction |
+| 5b/11 | Runtime SOUL Outputformaat |
+| **5c/11** | **SOUL profielwissel-regel (alle profielen)** |
+| 6/11 | Display config alle profielen |
+| 7/11 | rich_output smoke |
+| 8/11 | RESTORE / UPDATE regressie |
+| **9/11** | **pytest profielwissel-subset** |
+| **10/11** | **SWITCH legal → core** |
+| **11/11** | **CLI intent smoke** (geen LLM) |
 
-## Scriptfixes (repo)
+## Wat de E2E níet deed (en nu deels wel)
 
-- PowerShell-parserfouten in stap 6 (`$label - APPLY` → string-concatenatie)  
-- Stap 6 controleert nu **profiel-config** (`profiles\<active>\config.yaml`), niet alleen root  
-- `apply_team_display.ps1`: `HERMES_HOME` via `conda run --env-vars` naar actief profiel  
-- Dubbele `else` en kapotte here-string in stap 7 verwijderd  
-
-## Productie-gereedheid (institutioneel)
-
-| Laag | Beoordeling |
-|------|-------------|
-| **Code & tests** | Ja — E2E + 26 pytest presentatie/landkaart groen |
-| **Repo-documentatie** | Ja — `docs/INSTITUTIONAL_PRESENTATION.md`, templates, audits |
-| **Runtime (deze machine)** | Ja — SOUL + profiel-display gesynchroniseerd |
-| **Nieuwe chat vereist** | Ja — na SOUL-sync voor model-gedrag Outputformaat |
-| **Overige profielen** | Let op — `legal` e.d. hebben eigen `compact: true` in profiel-config; alleen `core` is geaudit als actief profiel |
-
-**Conclusie:** De app is **klaar voor institutioneel productieniveau** voor het **core-orchestrator**-pad, mits je na elke deploy opnieuw `SYNC_SOUL_SNIPPETS.bat` + `APPLY_TEAM_DISPLAY.bat` draait en een **nieuwe chat** start. Voor andere profielen: display per profiel toepassen of root `display.compact` harmoniseren.
+| Oorspronkelijke gap | Status in audit |
+|--------------------|-----------------|
+| Chat: “schakel naar core” → model zegt `/profile use core` | **Niet** geautomatiseerd (geen LLM). CLI-intent wisselt sticky profiel vóór agent (2d, 11). |
+| Prompt direct `core ❯` na natuurlijke taal | **Deels:** 2d test `get_active_profile` in prompt; geen live TUI na zin in lopende sessie. |
+| Volledige profielwissel-E2E in deze keten | **Deels:** 9–10; volledig blijft `RUN_PROFILE_SWITCH_E2E.bat`. |
+| SOUL-regels gevolgd in lange sessie | **Niet:** 5c = tekst op schijf; nieuwe chat vereist voor model-gedrag. |
 
 ## Herhaal audit
 
@@ -50,4 +44,4 @@
 windows\audits\RUN_INSTITUTIONAL_E2E.bat
 ```
 
-Of volledige keten: `windows\audits\RUN_AUDITS.bat -IncludeInstitutionalE2E`
+Of: `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` (display + SOUL + E2E).
