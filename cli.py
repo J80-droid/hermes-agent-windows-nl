@@ -11712,10 +11712,10 @@ class HermesCLI:
 
         symbol = (symbol or "❯ ").rstrip() + " "
 
-        # Prepend profile name when not default
+        # Sticky active_profile (niet HERMES_HOME-pad: agent-tools kunnen env in subprocess wijzigen)
         try:
-            from hermes_cli.profiles import get_active_profile_name
-            profile = get_active_profile_name()
+            from hermes_cli.profiles import get_active_profile
+            profile = get_active_profile()
             if profile not in {"default", "custom"}:
                 symbol = f"{profile} {symbol}"
         except Exception:
