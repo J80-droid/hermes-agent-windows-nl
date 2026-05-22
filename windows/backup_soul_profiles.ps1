@@ -43,6 +43,8 @@ New-Item -ItemType Directory -Path $dstRoot -Force | Out-Null
 
 Copy-HermesPersonaFile -Root $root -RelPath 'SOUL.md' -DstRoot $dstRoot
 Copy-HermesPersonaFile -Root $root -RelPath 'active_profile' -DstRoot $dstRoot
+Copy-HermesPersonaFile -Root $root -RelPath 'memories/USER.md' -DstRoot $dstRoot
+Copy-HermesPersonaFile -Root $root -RelPath 'memories/MEMORY.md' -DstRoot $dstRoot
 
 $kanban = 'profiles/core/KANBAN_WORKFLOWS.md'
 Copy-HermesPersonaFile -Root $root -RelPath $kanban -DstRoot $dstRoot
@@ -52,6 +54,8 @@ if (Test-Path -LiteralPath $profilesDir) {
     Get-ChildItem -LiteralPath $profilesDir -Directory -ErrorAction SilentlyContinue | ForEach-Object {
         $rel = "profiles/$($_.Name)/SOUL.md"
         Copy-HermesPersonaFile -Root $root -RelPath $rel -DstRoot $dstRoot
+        Copy-HermesPersonaFile -Root $root -RelPath "profiles/$($_.Name)/memories/USER.md" -DstRoot $dstRoot
+        Copy-HermesPersonaFile -Root $root -RelPath "profiles/$($_.Name)/memories/MEMORY.md" -DstRoot $dstRoot
         if ($_.Name -eq 'legal') {
             Copy-HermesPersonaFile -Root $root -RelPath 'profiles/legal/LEGAL_ACTIVE_MATTERS.md' -DstRoot $dstRoot
         }

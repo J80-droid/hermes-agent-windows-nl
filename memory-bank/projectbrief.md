@@ -1,4 +1,4 @@
-# Projectbrief — Hermes-agent (Jamel fork, Windows NL)
+﻿# Projectbrief — Hermes-agent (J. fork, Windows NL)
 
 Hermes is een zelfverbeterende AI-agent; deze fork richt zich op **Windows**, **Nederlands**, en een **lokale LanceDB RAG-pijplijn** voor juridische/corporate bronnen onder `%USERPROFILE%\data\raw_source_files`.
 

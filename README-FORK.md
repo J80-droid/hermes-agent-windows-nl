@@ -1,4 +1,4 @@
-# Hermes Agent — Windows (NL) Fork
+﻿# Hermes Agent — Windows (NL) Fork
 
 **Institutionele fork van [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) met Nederlandstalige Windows-optimalisaties.**
 
@@ -13,8 +13,8 @@ Deze fork is de **enige goedgekeurde bron** voor Hermes-installaties binnen dit 
 | Windows setup toolkit | `scripts/windows/` | Canoniek `setup_hermes_windows.ps1`; `windows/` = wrapper + launchers; taakbalk-iconen |
 | RAG citatieregels | `.cursorrules` | Nederlandstalige bronvermelding en presentatie-eisen |
 | Aangepaste installer | `scripts/install.ps1` | Clone deze fork i.p.v. upstream |
-| One-command installateur | `scripts/windows/install-jamel.ps1` | Volledige installatie in een commando |
-| Update-script | `scripts/windows/update-jamel.ps1` | Conflictvrije updates met keuzemenu |
+| One-command installateur | `scripts/windows/install-J..ps1` | Volledige installatie in een commando |
+| Update-script | `scripts/windows/update-J..ps1` | Conflictvrije updates met keuzemenu |
 | Aangepaste uninstaller | `hermes_cli/uninstall.py` | Herinstallatie-URL verwijst naar deze fork |
 | Profiel-model overerving | `hermes_cli/profile_model_inheritance.py` | Eén model in root config voor alle `-p <profiel>`-sessies |
 | Profielwissel (productie) | `hermes_cli/profile_switch.py`, `cli.py`, `relaunch.py`, `windows/SWITCH_PROFILE*.bat` | Eén kern voor chat, CLI en scripts: `-p` override, root-`HERMES_HOME`, API-sync, gateway-handoff, E2E-audit |
@@ -47,7 +47,7 @@ Deze fork is de **enige goedgekeurde bron** voor Hermes-installaties binnen dit 
 Open **PowerShell** en draai:
 
 ```powershell
-irm https://raw.githubusercontent.com/J80-droid/hermes-agent-windows-nl/main/scripts/windows/install-jamel.ps1 | iex
+irm https://raw.githubusercontent.com/J80-droid/hermes-agent-windows-nl/main/scripts/windows/install-J..ps1 | iex
 ```
 
 De installer regelt alles: `uv`, Python 3.11, Node.js 22, PortableGit, virtual environment, dependencies, web/TUI-assets, `hermes.cmd` shim, en User PATH.
@@ -68,7 +68,7 @@ hermes --help          # Alle beschikbare commando's
 | Methode | Commando | Beschrijving |
 | ------- | -------- | ------------ |
 | **Primair (Windows fork)** | `windows\UPDATE_HERMES.bat` | Preflight + Nous-merge + RAG + verify (`.ps1`, geen pause in keten) |
-| **Alternatief** | `irm .../update-jamel.ps1 \| iex` | Keuzemenu bij lokale wijzigingen |
+| **Alternatief** | `irm .../update-J..ps1 \| iex` | Keuzemenu bij lokale wijzigingen |
 | **CLI** | `hermes update` | Ingebouwd (zelfde merge; minder post-merge Windows-stappen) |
 | **Gevorderd** | `git pull` + handmatig pip | Zie `windows\UPSTREAM_SYNC.md` |
 

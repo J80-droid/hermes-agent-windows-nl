@@ -6,6 +6,7 @@ param(
     [switch]$IncludeInstitutionalE2E,
     [switch]$IncludeAllE2E,
     [switch]$IncludeLegalDomainE2E,
+    [switch]$IncludeTrustForensicE2E,
     [switch]$SkipPytest,
     [switch]$SkipFootguns,
     [switch]$SkipRuff,
@@ -158,6 +159,14 @@ if ($IncludeProfileE2E -or $IncludeAllE2E) {
     $e2e = Join-Path $scriptRoot 'RUN_PROFILE_SWITCH_E2E.ps1'
     Invoke-Step 'profile-switch-e2e' {
         & $e2e
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeTrustForensicE2E -or $IncludeAllE2E) {
+    $trustE2e = Join-Path $scriptRoot 'RUN_TRUST_FORENSIC_E2E.ps1'
+    Invoke-Step 'trust-forensic-e2e' {
+        & $trustE2e
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

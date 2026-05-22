@@ -6,6 +6,8 @@
 
 **Legal domein herstructurering** (2026-05): één RAG-bucket `legal`, rechtsgebied-**lenzen**, generieke `profiles\legal\SOUL.md`, zaak GCR in `LEGAL_ACTIVE_MATTERS.md`. Audit: `RUN_LEGAL_DOMAIN_E2E.bat`.
 
+**Trust & Forensic protocol** (2026-05-22): SOUL advisory + legal forensic-blok, memory-seed in **alle** profielen, identiteit **J.** (scrub excl. `lancedb/`). Keten: `APPLY_TRUST_PROTOCOL.bat`; audit: `RUN_TRUST_FORENSIC_E2E.ps1`. Na sync: **nieuwe chat** in profiel `legal`.
+
 **P0+P1 afgerond**; Windows institutioneel: conda `hermes-env`, WT/skin, API-env sync. Open: bronnen in 7 lege `raw_source_files`-mappen (legal bronnen + submappen actief).
 
 ## Dev vs. install-clone
@@ -27,6 +29,7 @@
 | Landkaart (volledige lijsten) | skill `landkaart`, `/landkaart` |
 | RAG twee fasen | `docs/RAG_TWEE_FASEN.md` |
 | Presentatie (kleur + structuur) | `docs/INSTITUTIONAL_PRESENTATION.md` |
+| Trust & Forensic | `docs/TRUST_FORENSIC_PROTOCOL.md` |
 | E2E institutioneel | `windows/audits/RUN_INSTITUTIONAL_E2E.bat` |
 | Hermes start (bat) | `../../HERMES_START.md` |
 | Windows | `windows/README.md` |

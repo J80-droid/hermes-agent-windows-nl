@@ -19,6 +19,7 @@
 | Backup | `windows\backup_hermes.ps1` | **Moet in git** — `MANAGE_BACKUPS.bat`, `launch_hermes.bat update` |
 | SOUL-backup | `windows\backup_soul_profiles.ps1` | `%LOCALAPPDATA%\hermes` → `localappdata_hermes/` in backup |
 | SOUL-sync | `windows\SYNC_SOUL_SNIPPETS.bat` | `SOUL_SHARED_INTERACTION.md` + `SOUL_SHARED_OUTPUT_FORMAT.md` |
+| Trust & Forensic | `windows\APPLY_TRUST_PROTOCOL.bat` | Advisory SOUL, memory seed alle profielen, identiteit J., audit — zie `docs/TRUST_FORENSIC_PROTOCOL.md` |
 | Presentatie | `docs/INSTITUTIONAL_PRESENTATION.md` | Rich render + globale typografie; legacy `windows/scripts/institutional/` |
 | Core SOUL template | `docs/templates/SOUL_CORE_ORCHESTRATOR.md` | Routing/clarification/landkaart; niet overschreven door sync |
 | Restore | `windows\restore_from_backup.ps1` | **Moet in git** — `RESTORE_FROM_BACKUP.bat`; `-RestoreRuntimePersonas` |

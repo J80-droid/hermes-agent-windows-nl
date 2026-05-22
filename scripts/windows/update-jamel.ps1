@@ -1,10 +1,10 @@
 ﻿# ============================================================================
-# Hermes Agent Update Script — Jamel's Fork (Windows)
+# Hermes Agent Update Script — J.'s Fork (Windows)
 # ============================================================================
 # Met wow-effecten: typewriter intro, confetti, dashboard
 #
 # Gebruik:
-#   irm https://raw.githubusercontent.com/J80-droid/hermes-agent-windows-nl/main/scripts/windows/update-jamel.ps1 | iex
+#   irm https://raw.githubusercontent.com/J80-droid/hermes-agent-windows-nl/main/scripts/windows/update-J..ps1 | iex
 # ============================================================================
 
 $ErrorActionPreference = "Stop"
@@ -126,7 +126,7 @@ function Show-Toast {
 Clear-Host
 Show-Typewriter -Text "" -Color $HERMES_WHITE -DelayMs 0
 Show-Typewriter -Text "  ═════════════════════════════════════════════════════════" -Color $HERMES_GOLD -DelayMs 2
-Show-Typewriter -Text "     HERMES AGENT  —  UPDATE CHECKER  —  JAMEL'S FORK       " -Color $HERMES_AMBER -DelayMs 4
+Show-Typewriter -Text "     HERMES AGENT  —  UPDATE CHECKER  —  J.'S FORK       " -Color $HERMES_AMBER -DelayMs 4
 Show-Typewriter -Text "  ═════════════════════════════════════════════════════════" -Color $HERMES_GOLD -DelayMs 2
 Show-Typewriter -Text "" -Color $HERMES_WHITE -DelayMs 0
 
@@ -138,7 +138,7 @@ if (-not (Test-Path $repoPath)) {
     Show-Typewriter -Text "    $repoPath" -Color "Gray" -DelayMs 0
     Show-Typewriter -Text "" -Color $HERMES_WHITE -DelayMs 0
     Show-Typewriter -Text "  Installeer eerst Hermes met:" -Color $HERMES_ORANGE -DelayMs 8
-    Show-Typewriter -Text "    irm https://raw.githubusercontent.com/J80-droid/hermes-agent-windows-nl/main/scripts/windows/install-jamel.ps1 | iex" -Color "Gray" -DelayMs 4
+    Show-Typewriter -Text "    irm https://raw.githubusercontent.com/J80-droid/hermes-agent-windows-nl/main/scripts/windows/install-J..ps1 | iex" -Color "Gray" -DelayMs 4
     exit 1
 }
 
@@ -151,10 +151,10 @@ try {
 
     Show-FaseHeader -Fase "STAP 1/2  —  Controleren op updates" -Color $HERMES_AMBER
 
-    # Zorg dat origin naar Jamel's fork wijst
+    # Zorg dat origin naar J.'s fork wijst
     $currentOrigin = git remote get-url origin 2>$null
     if ($currentOrigin -and $currentOrigin -notlike "*J80-droid/hermes-agent-windows-nl*") {
-        Show-Typewriter -Text "  Herstellen van origin naar Jamel's fork..." -Color $HERMES_ORANGE -DelayMs 8
+        Show-Typewriter -Text "  Herstellen van origin naar J.'s fork..." -Color $HERMES_ORANGE -DelayMs 8
         git remote set-url origin https://github.com/J80-droid/hermes-agent-windows-nl.git
     }
 
@@ -195,7 +195,7 @@ try {
         Show-Typewriter -Text "  Let op: persoonlijke data in %USERPROFILE%\.hermes\ blijft intact." -Color "DarkGray" -DelayMs 6
         Show-Typewriter -Text "" -Color $HERMES_WHITE -DelayMs 0
         Show-Typewriter -Text "  [1] Mijn wijzigingen BEWAREN en proberen te mergen" -Color Cyan -DelayMs 4
-        Show-Typewriter -Text "  [2] Mijn wijzigingen WEGGOOIEN — Jamel's versie overnemen (veilig)" -Color Yellow -DelayMs 4
+        Show-Typewriter -Text "  [2] Mijn wijzigingen WEGGOOIEN — J.'s versie overnemen (veilig)" -Color Yellow -DelayMs 4
         Show-Typewriter -Text "  [3] Update OVERSLAAN — huidige versie behouden" -Color DarkGray -DelayMs 4
         Show-Typewriter -Text "" -Color $HERMES_WHITE -DelayMs 0
         $choice = Read-Host "  Keuze (1/2/3)"
@@ -203,7 +203,7 @@ try {
         switch ($choice) {
             "1" {
                 Show-Typewriter -Text "  Lokale wijzigingen opslaan..." -Color $HERMES_ORANGE -DelayMs 8
-                git stash push -m "update-jamel: auto-stash $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
+                git stash push -m "update-J.: auto-stash $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
 
                 Show-Typewriter -Text "  Update toepassen..." -Color $HERMES_ORANGE -DelayMs 8
                 git reset --hard origin/main
@@ -214,15 +214,15 @@ try {
                     Show-Typewriter -Text "  [OK] Update gelukt! Jouw wijzigingen zijn behouden." -Color Green -DelayMs 0
                 } catch {
                     Show-Typewriter -Text "  [FAIL] Merge conflict!" -Color $HERMES_COPPER -DelayMs 0
-                    Show-Typewriter -Text "    Jouw wijzigingen en Jamel's update raken dezelfde bestanden." -Color "Gray" -DelayMs 0
+                    Show-Typewriter -Text "    Jouw wijzigingen en J.'s update raken dezelfde bestanden." -Color "Gray" -DelayMs 0
                     Show-Typewriter -Text "    Kies een oplossing:" -Color "Gray" -DelayMs 0
-                    Show-Typewriter -Text "      git reset --hard HEAD && git stash drop  (kies Jamel)" -Color "Gray" -DelayMs 0
+                    Show-Typewriter -Text "      git reset --hard HEAD && git stash drop  (kies J.)" -Color "Gray" -DelayMs 0
                     Show-Typewriter -Text "      git stash pop --index                        (probeer opnieuw)" -Color "Gray" -DelayMs 0
                     exit 1
                 }
             }
             "2" {
-                Show-Typewriter -Text "  Jamel's versie overnemen..." -Color $HERMES_ORANGE -DelayMs 8
+                Show-Typewriter -Text "  J.'s versie overnemen..." -Color $HERMES_ORANGE -DelayMs 8
                 git reset --hard origin/main
                 Show-Typewriter -Text "  [OK] Update gelukt. Lokale code-wijzigingen verwijderd." -Color Green -DelayMs 0
             }

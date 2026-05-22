@@ -1,4 +1,4 @@
-# LanceDB RAG-pijplijn activeren (handmatige terminalworkflow)
+﻿# LanceDB RAG-pijplijn activeren (handmatige terminalworkflow)
 
 Dit document is de **in-repo** kopie van het activatieplan (Cursor-plan: *LanceDB RAG activeren*). Houd het hier bij voor versiebeheer; werk het bij wanneer de workflow wijzigt.
 
@@ -69,7 +69,7 @@ Scripts in deze map:
 
 **0-byte verwijs-.txt:** stub-tekst uit bestandsnaam wordt wél geïndexeerd (Productie N → zie DEEL …).
 
-**UI:** `ingest.py` toont een gouden voortgangsbalk `n/totaal` (zoals `install-jamel.ps1`). In een interactieve terminal; bij redirect naar log blijven tekstregels zichtbaar.
+**UI:** `ingest.py` toont een gouden voortgangsbalk `n/totaal` (zoals `install-J..ps1`). In een interactieve terminal; bij redirect naar log blijven tekstregels zichtbaar.
 
 **Performance:** `update_knowledge.bat` roept `rag_ingest_perf_defaults.ps1` aan na conda-activate. Expliciet gezette env-variabelen worden **niet** overschreven. Taakplanner: `set HERMES_RAG_PERF_PROFILE=safe` of `set HERMES_NONINTERACTIVE=1` + `HERMES_RAG_FRESH=1`.
 
@@ -96,7 +96,7 @@ flowchart LR
 | - | --------- | -------------- | ----------------------------- |
 | 1 | CLI/Web bron-chips (`cli.py`, `web/…/Markdown.tsx`) | Ja — `[Bron: …]` → backticks | — |
 | 2 | `pyproject.toml` extra `[rag]` | Ja — `pip install -e ".[rag]"` | Eenmalig in `hermes-env` |
-| 3 | Automatische MCP + RAG-deps | Ja — `install-jamel.ps1` / `setup_hermes_windows.ps1` → `install_rag_extras.ps1` | Nieuwe sessie na install |
+| 3 | Automatische MCP + RAG-deps | Ja — `install-J..ps1` / `setup_hermes_windows.ps1` → `install_rag_extras.ps1` | Nieuwe sessie na install |
 | 4 | `tests/rag_pipeline/` (pytest) | Ja | `pytest tests/rag_pipeline/ -q` |
 | 5 | Rooktest (5 commando’s) | Ja — hieronder | Alle 5 stappen doorlopen |
 | A | `update_knowledge.bat` tot einde | — | Log: `[OK] Ingestie-scan afgerond` |
@@ -164,7 +164,7 @@ Alle commando’s in **één** geactiveerde shell; `cd` eerst naar de Hermes-rep
 ## Workflowtip: smoke-test
 
 1. Map: `~/data/raw_source_files` (bijv. op Windows `%USERPROFILE%\data\raw_source_files`).
-2. Bestand `test.txt` met bijvoorbeeld: *VWO Elite is een geavanceerd platform gebouwd door Jamel. Het lanceert in 2026.*
+2. Bestand `test.txt` met bijvoorbeeld: *VWO Elite is een geavanceerd platform gebouwd door J. Het lanceert in 2026.*
 3. Voer daarna de rooktest hierboven of de stappen hieronder uit.
 
 ## Bronbestanden: drie gouden regels

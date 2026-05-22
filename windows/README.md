@@ -1,4 +1,4 @@
-# Hermes Windows-toolkit (institutioneel)
+﻿# Hermes Windows-toolkit (institutioneel)
 
 Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan uit van **conda `hermes-env`** en repo-root `hermes-agent`.
 
@@ -17,7 +17,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | --------- | ------ |
 | Hoofd-setup | `SETUP_HERMES.bat` → `setup_hermes_windows.bat` (standaard **--full-setup** → `OPEN_SETUP.bat` wizard). Alleen bestanden: `--files-only` |
 | Wizard | `HERMES_SETUP_WIZARD.bat` |
-| One-liner (remote) | `scripts/windows/install-jamel.ps1` (zie `DELEN_MET_VRIENDEN.md`) |
+| One-liner (remote) | `scripts/windows/install-J..ps1` (zie `DELEN_MET_VRIENDEN.md`) |
 
 ## Dagelijks gebruik
 
@@ -34,6 +34,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | HERMES_HOME controleren | `scripts\verify_hermes_home.ps1` |
 | Profielwissel E2E-audit | `audits\RUN_PROFILE_SWITCH_E2E.bat` |
 | SOUL sync (Interaction + Outputformaat) | `SYNC_SOUL_SNIPPETS.bat` — `docs\templates\SOUL_SHARED_*.md` |
+| Trust & Forensic (SOUL + memory + J.) | `APPLY_TRUST_PROTOCOL.bat` — `docs\TRUST_FORENSIC_PROTOCOL.md` |
 | Institutionele presentatie | `docs\INSTITUTIONAL_PRESENTATION.md` |
 | Core routing / landkaart | `docs\ORCHESTRATOR_ROUTING.md`, skill `landkaart` (`/landkaart`) |
 | Legal lenzen (één bucket) | `docs\LEGAL_DOMAIN_ARCHITECTURE.md`, `docs\LEGAL_TAXONOMY.md`, `MIGRATE_LEGAL_LAYOUT.bat` |

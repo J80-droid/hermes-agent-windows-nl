@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # domains.yaml — enige bron van waarheid voor RAG multi-domein
 # Documentatie-index: docs/README.md
 # Twee fasen (index vs. chat): docs/RAG_TWEE_FASEN.md
@@ -78,8 +78,8 @@ domains:
       HERMES_WHISPER_MODEL: small
       HERMES_RAG_FILE_TIMEOUT_SEC: "0"
     quarantine_restore:
-      1.1 Verzoekschrift Zaak 25-00294-C2515 GC Rijk - Min. Buitenlandse Zaken El Mourif.pdf: Geschillencommissie Rijk/VERZOEKSCHRIFT J. EL MOURIF
-      1.1 Verzoekschrift Zaak 25-00294-C2515 GC Rijk - Min. Buitenlandse Zaken El Mourif_compressed.pdf: Geschillencommissie Rijk/VERZOEKSCHRIFT J. EL MOURIF
+      1.1 Verzoekschrift Zaak 25-00294-C2515 GC Rijk - Min. Buitenlandse Zaken .pdf: Geschillencommissie Rijk/VERZOEKSCHRIFT J. 
+      1.1 Verzoekschrift Zaak 25-00294-C2515 GC Rijk - Min. Buitenlandse Zaken El Mourif_compressed.pdf: Geschillencommissie Rijk/VERZOEKSCHRIFT J. 
 
   - name: gaming
     source_dir: 05_Performance_Gaming

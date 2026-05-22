@@ -1,4 +1,4 @@
-# Documentatie — Hermes-agent (Jamel fork, Windows NL)
+﻿# Documentatie — Hermes-agent (J. fork, Windows NL)
 
 Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 
@@ -7,6 +7,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Ik wil… | Document |
 |--------|----------|
 | Begrijpen: index vs. chat (twee fasen) | [RAG_TWEE_FASEN.md](RAG_TWEE_FASEN.md) |
+| Trust & Forensic (SOUL, memory, J.) | [TRUST_FORENSIC_PROTOCOL.md](TRUST_FORENSIC_PROTOCOL.md) |
 | Model/provider voor **alle** profielen instellen | [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md) |
 | Profiel wisselen (chat, CLI, audit) | [PROFILE_SWITCH.md](PROFILE_SWITCH.md) |
 | SOUL.md per domeinprofiel (waar, bewerken) | [PROFILE_SOUL.md](PROFILE_SOUL.md) |

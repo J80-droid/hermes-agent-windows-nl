@@ -1,11 +1,11 @@
-# Hermes (deze fork) delen — korte route
+﻿# Hermes (deze fork) delen — korte route
 
 ## Snelle installatie (aanbevolen)
 
 Open **PowerShell** en draai:
 
 ```powershell
-irm https://raw.githubusercontent.com/J80-droid/hermes-agent-windows-nl/main/scripts/windows/install-jamel.ps1 | iex
+irm https://raw.githubusercontent.com/J80-droid/hermes-agent-windows-nl/main/scripts/windows/install-J..ps1 | iex
 ```
 
 Dit installeert de **volledige fork** op de machine. Zie `README-FORK.md` voor details.
@@ -15,7 +15,7 @@ Dit installeert de **volledige fork** op de machine. Zie `README-FORK.md` voor d
 ## Updates ontvangen
 
 ```powershell
-irm https://raw.githubusercontent.com/J80-droid/hermes-agent-windows-nl/main/scripts/windows/update-jamel.ps1 | iex
+irm https://raw.githubusercontent.com/J80-droid/hermes-agent-windows-nl/main/scripts/windows/update-J..ps1 | iex
 ```
 
 Of via het ingebouwde commando:
@@ -33,8 +33,8 @@ hermes update
 | `scripts/windows/` | Setup-toolkit: logo, shortcuts, taakbalk-iconen |
 | `.cursorrules` | Nederlandstalige RAG-citatieregels |
 | `scripts/install.ps1` | Aangepast: cloned deze fork i.p.v. NousResearch |
-| `scripts/windows/install-jamel.ps1` | One-command installateur |
-| `scripts/windows/update-jamel.ps1` | Update-script met keuzemenu |
+| `scripts/windows/install-J..ps1` | One-command installateur |
+| `scripts/windows/update-J..ps1` | Update-script met keuzemenu |
 | `README-FORK.md` | Volledige documentatie |
 
 ---

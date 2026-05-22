@@ -1,10 +1,10 @@
 ﻿# ============================================================================
-# Hermes Agent Installer — Jamel's Fork (Windows)
+# Hermes Agent Installer — J.'s Fork (Windows)
 # ============================================================================
 # Met wow-effecten: typewriter, kleurcodering, confetti, ASCII-logo, dashboard
 #
 # Gebruik (one-liner):
-#   iex (Invoke-RestMethod https://raw.githubusercontent.com/J80-droid/hermes-agent-windows-nl/main/scripts/windows/install-jamel.ps1)
+#   iex (Invoke-RestMethod https://raw.githubusercontent.com/J80-droid/hermes-agent-windows-nl/main/scripts/windows/install-J..ps1)
 # ============================================================================
 
 $ErrorActionPreference = "Stop"
@@ -12,7 +12,7 @@ $ErrorActionPreference = "Stop"
 # ── Configuratie ──
 $JamelRepo       = "https://github.com/J80-droid/hermes-agent-windows-nl.git"
 $InstallScriptUrl= "https://raw.githubusercontent.com/J80-droid/hermes-agent-windows-nl/main/scripts/install.ps1"
-$InstallScript   = "$env:TEMP\install-jamel.ps1"
+$InstallScript   = "$env:TEMP\install-J..ps1"
 
 # Hermes-kleuren uit screenshot (goud/geel/oranje/bruin)
 $HERMES_GOLD  = "DarkYellow"
@@ -82,7 +82,7 @@ function Show-HermesLogo {
 
                        ╔═══════════════════════════════╗
                        ║  Hermes Agent  Windows (NL)   ║
-                       ║      Jamel's Fork             ║
+                       ║      J.'s Fork             ║
                        ╚═══════════════════════════════╝
 
 "@
@@ -214,7 +214,7 @@ function Show-Toast {
 Clear-Host
 Show-Typewriter -Text "" -Color $HERMES_WHITE -DelayMs 0
 Show-Typewriter -Text "  ═════════════════════════════════════════════════════════" -Color $HERMES_GOLD -DelayMs 2
-Show-Typewriter -Text "     HERMES AGENT  —  WINDOWS INSTALLER  —  JAMEL'S FORK   " -Color $HERMES_AMBER -DelayMs 4
+Show-Typewriter -Text "     HERMES AGENT  —  WINDOWS INSTALLER  —  J.'S FORK   " -Color $HERMES_AMBER -DelayMs 4
 Show-Typewriter -Text "  ═════════════════════════════════════════════════════════" -Color $HERMES_GOLD -DelayMs 2
 Show-Typewriter -Text "" -Color $HERMES_WHITE -DelayMs 0
 Show-Typewriter -Text "  Fork: $JamelRepo" -Color "DarkGray" -DelayMs 6
@@ -306,7 +306,7 @@ Show-Typewriter -Text "    windows/scripts/update_knowledge.bat   LanceDB RAG-in
 Show-Typewriter -Text "    windows/scripts/update_knowledge.bat + nieuwe Hermes-sessie (rooktest: ACTIVATION.md)" -Color "DarkGray" -DelayMs 4
 Show-Typewriter -Text "" -Color $HERMES_WHITE -DelayMs 0
 Show-Typewriter -Text "  Voor updates: draai" -Color $HERMES_ORANGE -DelayMs 8
-Show-Typewriter -Text "    irm .../update-jamel.ps1 | iex" -Color "Gray" -DelayMs 5
+Show-Typewriter -Text "    irm .../update-J..ps1 | iex" -Color "Gray" -DelayMs 5
 Show-Typewriter -Text "" -Color $HERMES_WHITE -DelayMs 0
 
 # Windows toast notificatie (non-blocking)
