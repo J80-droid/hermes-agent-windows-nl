@@ -14,7 +14,7 @@ Deze map bevat de **fork** kwaliteitspoorten (geen 1:1 upstream-kloon).
 | **`RUN_INSTITUTIONAL_E2E.bat`** | Audit (11 stappen incl. profiel-chat-UX); `-ApplyRuntime` = eerst runtime |
 | **`RUN_INSTITUTIONAL_E2E.bat -ApplyRuntime`** | Zelfde als `APPLY_INSTITUTIONAL_RUNTIME.bat` (zonder dubbele E2E) |
 | **`RUN_LEGAL_DOMAIN_E2E.bat`** | Legal lenzen, actieve zaken, bronlayout |
-| **`RUN_TOOLSET_DOMAIN_E2E.ps1`** | `platform_toolsets.cli` vs `docs/domain_toolsets.yaml` + tool-count |
+| **`RUN_TOOLSET_DOMAIN_E2E.bat`** | 6-stappen E2E: home verify, manifest, pytest, drift, tool-counts, SOUL governance |
 | **`RUN_AUDITS.bat -RequirePSScriptAnalyzer`** | PSSA verplicht (exit 1 als module ontbreekt) |
 | **`RUN_PROFILE_SWITCH_E2E.bat`** | Alleen profielwissel E2E |
 | **`windows\tests\RUN_PYTEST.bat`** | Brede pytest (excl. integration) |
@@ -62,6 +62,35 @@ Stappen: repo → pytest (landkaart, presentatie, **2d profiel-chat-UX**, **2e R
 Presentatie: zie `docs/INSTITUTIONAL_PRESENTATION.md`. **Eén commando:** `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` (of E2E met `-ApplyRuntime`). Display-check stap 6/11: **alle** profielen onder `profiles\`.
 
 Laatste rapport: `INSTITUTIONAL_E2E_REPORT_2026-05-22.md` (log `INSTITUTIONAL_E2E_LAST_RUN.log` is gitignored).
+
+## Domein-toolsets E2E
+
+```text
+windows\audits\RUN_TOOLSET_DOMAIN_E2E.bat
+```
+
+Of via gecombineerde poort:
+
+```text
+windows\audits\RUN_AUDITS.bat -IncludeToolsetDomainE2E
+```
+
+| Stap | Controle |
+| ---- | -------- |
+| 1/6 | `verify_hermes_home` (+ auth.json repair indien corrupt) |
+| 2/6 | Repo: `domain_toolsets.yaml`, audit-doc, sync-scripts |
+| 3/6 | pytest: manifest + lege `cli: []` (geen hermes-cli/MCP/kanban-lek) |
+| 4/6 | Runtime drift: `sync_profile_toolsets_from_manifest.py --check` |
+| 5/6 | Per profiel: `platform_toolsets.cli`, tool-count ≤ `max_tools`, root = **0 tools** |
+| 6/6 | SOUL: Tool governance in `core` + `legal` |
+
+**Vóór audit (bij drift):** `windows\SYNC_DOMAIN_TOOLSETS.bat`
+
+**Rapport:** `TOOLSET_DOMAIN_E2E_LAST_RUN.log` (gitignored)
+
+**Handmatig na PASS:** nieuwe chat met `hermes -p <domein>` — root zonder `-p` heeft bewust geen tools.
+
+Zie `docs/DOMAIN_TOOLSET_AUDIT.md`.
 
 ## Profielwissel E2E
 

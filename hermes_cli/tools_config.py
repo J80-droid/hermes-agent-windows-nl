@@ -1146,6 +1146,14 @@ def _get_platform_tools(
     # Normalise to str so downstream sorted() never mixes types.
     toolset_names = [str(ts) for ts in toolset_names]
 
+    # Fork: ``platform_toolsets.cli: []`` is intentional minimal mode (root / no -p).
+    # Do not auto-attach all MCP servers or default-on plugin toolsets.
+    _explicit_empty_cli = (
+        platform in platform_toolsets
+        and isinstance(platform_toolsets.get(platform), list)
+        and len(platform_toolsets[platform]) == 0
+    )
+
     configurable_keys = {ts_key for ts_key, _, _ in CONFIGURABLE_TOOLSETS}
     plugin_ts_keys = _get_plugin_toolset_keys()
     platform_default_keys = {p["default_toolset"] for p in PLATFORMS.values()}
@@ -1157,7 +1165,9 @@ def _get_platform_tools(
     # toolsets to re-appear as enabled.
     has_explicit_config = any(ts in configurable_keys for ts in toolset_names)
 
-    if has_explicit_config:
+    if _explicit_empty_cli:
+        enabled_toolsets = set()
+    elif has_explicit_config:
         enabled_toolsets = {
             ts for ts in toolset_names
             if ts in configurable_keys and _toolset_allowed_for_platform(ts, platform)
@@ -1256,31 +1266,32 @@ def _get_platform_tools(
     # checklist or in a user-saved config.  Must run in BOTH branches —
     # otherwise saving via `hermes tools` (which flips has_explicit_config
     # to True) silently drops them.
-    _plat_info = PLATFORMS.get(platform)
-    _default_ts = _plat_info["default_toolset"] if _plat_info else f"hermes-{platform}"
-    platform_tool_universe = set(resolve_toolset(_default_ts))
-    configurable_tool_universe = set()
-    for ck in configurable_keys:
-        configurable_tool_universe.update(resolve_toolset(ck))
-    claimed = set()
-    for ts_key in enabled_toolsets:
-        claimed.update(resolve_toolset(ts_key))
-    skip = configurable_keys | plugin_ts_keys | platform_default_keys
-    skip |= {k for k in TOOLSETS if k.startswith("hermes-")}
-    skip |= set(_DEFAULT_OFF_TOOLSETS) - {platform}
-    for ts_key, ts_def in TOOLSETS.items():
-        if ts_key in skip:
-            continue
-        if ts_def.get("includes"):
-            continue
-        ts_tools = set(resolve_toolset(ts_key))
-        if not ts_tools or not ts_tools.issubset(platform_tool_universe):
-            continue
-        if ts_tools.issubset(configurable_tool_universe):
-            continue
-        if not ts_tools.issubset(claimed):
-            enabled_toolsets.add(ts_key)
-            claimed.update(ts_tools)
+    if not _explicit_empty_cli:
+        _plat_info = PLATFORMS.get(platform)
+        _default_ts = _plat_info["default_toolset"] if _plat_info else f"hermes-{platform}"
+        platform_tool_universe = set(resolve_toolset(_default_ts))
+        configurable_tool_universe = set()
+        for ck in configurable_keys:
+            configurable_tool_universe.update(resolve_toolset(ck))
+        claimed = set()
+        for ts_key in enabled_toolsets:
+            claimed.update(resolve_toolset(ts_key))
+        skip = configurable_keys | plugin_ts_keys | platform_default_keys
+        skip |= {k for k in TOOLSETS if k.startswith("hermes-")}
+        skip |= set(_DEFAULT_OFF_TOOLSETS) - {platform}
+        for ts_key, ts_def in TOOLSETS.items():
+            if ts_key in skip:
+                continue
+            if ts_def.get("includes"):
+                continue
+            ts_tools = set(resolve_toolset(ts_key))
+            if not ts_tools or not ts_tools.issubset(platform_tool_universe):
+                continue
+            if ts_tools.issubset(configurable_tool_universe):
+                continue
+            if not ts_tools.issubset(claimed):
+                enabled_toolsets.add(ts_key)
+                claimed.update(ts_tools)
 
     # Plugin toolsets: enabled by default unless explicitly disabled, or
     # unless the toolset is in _DEFAULT_OFF_TOOLSETS (e.g. spotify —
@@ -1289,7 +1300,7 @@ def _get_platform_tools(
     # A plugin toolset is "known" for a platform once `hermes tools`
     # has been saved for that platform (tracked via known_plugin_toolsets).
     # Unknown plugins default to enabled; known-but-absent = disabled.
-    if plugin_ts_keys:
+    if plugin_ts_keys and not _explicit_empty_cli:
         known_map = config.get("known_plugin_toolsets", {})
         known_for_platform = set(known_map.get(platform, []))
         for pts in plugin_ts_keys:
@@ -1333,7 +1344,9 @@ def _get_platform_tools(
         explicit_mcp_servers = explicit_passthrough & enabled_mcp_servers
         enabled_toolsets.update(explicit_passthrough - enabled_mcp_servers)
     if include_default_mcp_servers:
-        if explicit_mcp_servers or "no_mcp" in toolset_names:
+        if _explicit_empty_cli or "no_mcp" in toolset_names:
+            enabled_toolsets.update(explicit_mcp_servers)
+        elif explicit_mcp_servers:
             enabled_toolsets.update(explicit_mcp_servers)
         else:
             enabled_toolsets.update(enabled_mcp_servers)

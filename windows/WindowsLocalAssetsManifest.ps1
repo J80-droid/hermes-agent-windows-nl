@@ -188,6 +188,8 @@ function Get-HermesCriticalWindowsRepoPath {
         'windows/audits/RUN_INSTITUTIONAL_E2E.bat',
         'windows/audits/RUN_LEGAL_DOMAIN_E2E.ps1',
         'windows/audits/RUN_LEGAL_DOMAIN_E2E.bat',
+        'windows/audits/RUN_TOOLSET_DOMAIN_E2E.ps1',
+        'windows/audits/RUN_TOOLSET_DOMAIN_E2E.bat',
         'windows/scripts/migrate_legal_source_layout.ps1',
         'windows/scripts/MIGRATE_LEGAL_LAYOUT.bat',
         'docs/LEGAL_ROLLOUT_CHECKLIST.md',

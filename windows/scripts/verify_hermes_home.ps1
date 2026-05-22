@@ -53,5 +53,38 @@ if (Test-Path -LiteralPath $activePath) {
     Write-Host "[OK] active_profile: (default)" -ForegroundColor Green
 }
 
+$authPath = Join-Path $root 'auth.json'
+if (Test-Path -LiteralPath $authPath) {
+    $authRaw = Get-Content -LiteralPath $authPath -Raw -Encoding UTF8
+    $authOk = $false
+    if ($authRaw.Trim()) {
+        try {
+            $parsed = $authRaw | ConvertFrom-Json
+            $authOk = ($null -ne $parsed) -and (
+                ($parsed.PSObject.Properties.Name -contains 'providers') -or
+                ($parsed.PSObject.Properties.Name -contains 'credential_pool')
+            )
+        } catch {
+            $authOk = $false
+        }
+    }
+    if (-not $authOk) {
+        $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+        $corrupt = "$authPath.corrupt-$stamp"
+        try {
+            Copy-Item -LiteralPath $authPath -Destination $corrupt -Force
+        } catch { }
+        @'
+{
+  "version": 1,
+  "providers": {}
+}
+'@ | Set-Content -LiteralPath $authPath -Encoding UTF8 -NoNewline
+        Write-Host "[WARN] auth.json was ongeldig - hersteld naar lege store (backup: $corrupt)" -ForegroundColor Yellow
+    } else {
+        Write-Host '[OK] auth.json parsebaar' -ForegroundColor Green
+    }
+}
+
 if ($failed) { exit 1 }
 exit 0
