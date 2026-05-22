@@ -292,7 +292,7 @@ try {
 
     if ($script:UpstreamExitCode -eq 0 -and $Phase -eq 'PostMerge') {
         Write-Uitleg @(
-            'Fase 3/3 — Post-merge: RAG/MCP, Windows script-keten (.ps1, geen pause), taakbalk-iconen.'
+            'Fase 3/3 — Post-merge: trust runtime (SOUL+memory), RAG/MCP, script-keten, taakbalk-iconen.'
             'Daarna sluit UPDATE_HERMES.bat af (eventueel team display + pause aan het einde).'
         )
         if (Test-Path (Join-Path $repo '.git\MERGE_HEAD')) {
@@ -328,6 +328,20 @@ try {
                     $env:HERMES_NONINTERACTIVE = '1'
                     & cmd /c "`"$bat`" --mcp-test"
                     if ($LASTEXITCODE -ne 0) { Write-Warn "MCP-test had waarschuwingen." }
+                }
+            }
+
+            if ($script:UpstreamExitCode -eq 0) {
+                $trustBat = Join-Path $repo 'windows\SYNC_TRUST_RUNTIME.bat'
+                if (Test-Path -LiteralPath $trustBat) {
+                    Write-Step 'Trust runtime sync (SOUL + memory + limits, geen scrub)...'
+                    $env:HERMES_SKIP_PAUSE = '1'
+                    & cmd /c "`"$trustBat`""
+                    if ($LASTEXITCODE -ne 0) {
+                        Write-Warn 'SYNC_TRUST_RUNTIME.bat faalde — draai handmatig na update.'
+                    } else {
+                        Write-Ok 'Trust runtime gesynchroniseerd.'
+                    }
                 }
             }
 

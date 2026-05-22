@@ -65,6 +65,7 @@ windows\UPDATE_HERMES.bat
 | Schone `git status` + `git fetch upstream` + ahead/behind | Ja (preflight) |
 | Waarschuwing bij achterstand >20 + J/N | Ja |
 | `hermes update` (merge upstream + deps) | Ja |
+| Trust runtime (`SYNC_TRUST_RUNTIME.bat`, geen scrub) | Ja (post-merge, `HERMES_SKIP_PAUSE=1`) |
 | RAG `[rag]` + script-keten verify | Ja (post-merge, via `verify_windows_script_chain.ps1` — **geen** pause) |
 | Merge-conflicten oplossen | **Nee** (handmatig) |
 | Waarschuwing tegen `git reset --hard` | Ja (banner bij Update) |
