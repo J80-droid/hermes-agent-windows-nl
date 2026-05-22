@@ -32,8 +32,7 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 | Rol | Bestand | Kleur |
 |-----|---------|-------|
 | Start, RAG | `hermes_logo.ico` | Goud |
-| Setup | `hermes_logo_setup.ico` | Groen |
-| Setup | `hermes_logo_setup.ico` | Groen |
+| Setup, Open Setup | `hermes_logo_setup.ico` | Groen |
 | Update | `hermes_logo_update.ico` | Wit/zilver monogram |
 | Backup | `hermes_logo_backup.ico` | Roze |
 | Restore | `hermes_logo_restore.ico` | Cyaan |
@@ -51,15 +50,7 @@ Daarna **F5** in `windows\`. De generator kopieert de PNG naar `assets\Hermes_lo
 
 **Icoon = wit document in Verkenner (oude pin):** losmaken en opnieuw `.lnk` uit `windows\` vastmaken.
 
-**Icoon leeg / witte pagina in Verkenner (geen preview):** corrupte ICO — herstel:
-
-```bat
-cd <repo>\hermes-agent
-conda run -n hermes-env python windows/tools/generate_colored_hermes_icons.py
-windows\FIX_TASKBAR_ICONS.bat
-```
-
-Daarna F5 in `windows\`. Gekleurde `.ico` na clone altijd opnieuw genereren (staan in `.gitignore`).
+**Technisch:** `windows\*.lnk` gebruiken `cmd.exe /c` + icoon uit `%LOCALAPPDATA%\Hermes\shortcut-icons\` (kopie van `windows\hermes*.ico`). Verify waarschuwt bij kapotte 1-laags ICO (onder 8 KB).
 
 ## Eenmalig na oude pin (UPDATE toont H)
 

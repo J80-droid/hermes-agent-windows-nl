@@ -51,7 +51,7 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 | ---- | ------ |
 | Backups | `MANAGE_BACKUPS.bat` |
 | Lokale assets herstellen | `RESTORE_FROM_BACKUP.bat` |
-| Taakbalk-snelkoppelingen vernieuwen | `REFRESH_TASKBAR_SHORTCUTS.bat` (`windows\*.lnk` = `.bat`+ico; pin-map = cmd-wrapper) |
+| Taakbalk-snelkoppelingen vernieuwen | `REFRESH_TASKBAR_SHORTCUTS.bat` (`windows\*.lnk` = `cmd /c` + gekleurd `.ico`) |
 | Taakbalk-icoon herstellen | `FIX_TASKBAR_ICONS.bat` |
 | Nous upstream-merge (uitleg) | `UPSTREAM_SYNC.md` |
 | Sentence-transformers cache warmen | `scripts/warm_sentence_transformers_cache.bat` |
@@ -78,4 +78,4 @@ Zie `docs\PROFILE_MODEL_INHERITANCE.md`.
 
 **Nacht/taakbalk:** `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` zet `HERMES_NONINTERACTIVE=1` en `HERMES_RAG_FRESH=n` (geen J/N). Regenereer `.lnk` via `create_taskbar_shortcuts.ps1`.
 
-Iconen per taakbalk-`.lnk`: goud = start/RAG (`hermes_logo.ico`), groen = setup (`hermes_logo_setup.ico`), **wit/zilver** = update (`hermes_logo_update.ico`), roze = backup, cyaan = restore. `hermes_taskbar_white.ico` is alleen zilver/wit monogram (niet in `.lnk`). Gekleurde varianten staan in `windows/.gitignore` — na clone altijd generator draaien. **Alleen 256×256 ICO** (multi-size brak Explorer-preview). Controle: `scripts/verify_taskbar_shortcut_icons.ps1`. Kapotte/lege iconen: `conda run -n hermes-env python windows/tools/generate_colored_hermes_icons.py` → `FIX_TASKBAR_ICONS.bat` → F5 in Explorer.
+**Iconen (taakbalk + Verkenner):** goud = start/RAG (`hermes_logo.ico`), groen = setup (`hermes_logo_setup.ico`), wit/zilver = update (`hermes_logo_update.ico`), roze = backup, cyaan = restore. Bron: `assets/Hermes_logo.png` (of `%USERPROFILE%\.hermes\_local_assets\assets\Hermes_logo.png`). Generator bouwt **7-lagen ICO** (16–256 px). Gekleurde varianten in `windows/.gitignore` — na clone: generator + `FIX_TASKBAR_ICONS.bat`. `.lnk` in `windows\`: `cmd.exe /c` naar `.bat` + `IconLocation` op `.ico` (niet `.bat` slepen). Controle: `scripts/verify_taskbar_shortcut_icons.ps1`. Herstel: `python windows/tools/generate_colored_hermes_icons.py` → `FIX_TASKBAR_ICONS.bat` → **F5** in Explorer; oude taakbalk-pin opnieuw vastmaken via `.lnk`.

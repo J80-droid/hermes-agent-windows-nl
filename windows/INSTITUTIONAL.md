@@ -25,7 +25,20 @@ Na `git pull` of op een **nieuwe machine**:
 2. Of handmatig: `VERIFY_WINDOWS_CHAIN.bat` en `FIX_TASKBAR_ICONS.bat`
 3. Bij oude clone zonder windows-bestanden: `restore_local_assets.bat`
 
-**Eenmalig** bij zwart **H** op UPDATE-pin: pin losmaken → `Hermes - update - naar taakbalk slepen.lnk` opnieuw vastmaken (niet `.bat` slepen). Daarna doet elke `UPDATE_HERMES.bat` dit automatisch.
+**Eenmalig** bij verkeerd taakbalk-icoon: pin losmaken → `Hermes - * - naar taakbalk slepen.lnk` opnieuw vastmaken (niet `.bat` slepen). Daarna doet elke `UPDATE_HERMES.bat` dit automatisch.
+
+**Taakbalk-iconen (2026-05):**
+
+| Onderdeel | Pad / gedrag |
+| --------- | ------------- |
+| Bron-PNG | `assets/Hermes_logo.png` (git) of `%USERPROFILE%\.hermes\_local_assets\assets\` |
+| Generator | `windows/tools/generate_colored_hermes_icons.py` → 7-lagen `.ico` (16–256 px) |
+| Snelkoppelingen | `create_taskbar_shortcuts.ps1` → `Set-HermesShellShortcut` (`cmd /c` + icoon) |
+| Herstel | `FIX_TASKBAR_ICONS.bat` + F5 in `windows\` |
+| Verify | `windows/scripts/verify_taskbar_shortcut_icons.ps1` |
+| Setup wizard | `SETUP_HERMES.bat` (standaard `--full-setup` → `OPEN_SETUP.bat`); `--files-only` zonder wizard |
+
+Kleuren: goud = start/RAG, groen = setup, wit = update, roze = backup, cyaan = restore. Geen `hermes_taskbar_white.ico` in `.lnk`.
 
 User-data docs (`%USERPROFILE%\data\STATUS.md`, `RECOVERY.md`) en profiel-Kanban: zie **`docs/USER_DATA_OPERATIONS.md`** (synchroon houden met repo-entrypoints).
 

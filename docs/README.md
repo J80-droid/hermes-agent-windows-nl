@@ -57,7 +57,8 @@ flowchart TB
 - **Windows backup/script-keten:** `windows\VERIFY_WINDOWS_CHAIN.bat` (na pull of vóór backup)
 - **Na `git pull`:** `windows/POST_GIT_PULL.bat` (verify + taakbalk-iconen)
 - **Windows-keten controleren:** `windows/VERIFY_WINDOWS_CHAIN.bat` (setup wrapper + `.bat`→`.ps1` + taakbalk-`.lnk`)
-- **Taakbalk-iconen:** `windows\FIX_TASKBAR_ICONS.bat` (pin via `.lnk`, niet `.bat`)
+- **Setup (dubbelklik):** `windows\SETUP_HERMES.bat` (standaard wizard); `OPEN_SETUP.bat` alleen wizard; `--files-only` zonder wizard
+- **Taakbalk-iconen:** `python windows/tools/generate_colored_hermes_icons.py` → `windows\FIX_TASKBAR_ICONS.bat` → F5; pin via `.lnk`, niet `.bat`
 - **Nous upstream-update:** `windows\UPDATE_HERMES.bat` (preflight + merge + RAG + taakbalk; zie `windows\UPSTREAM_SYNC.md`)
 - **P0+P1-pipeline (institutioneel):** `windows\scripts\institutional_p0_p1.bat`  
   Sync MCP → doctor --fix → MCP-test alle domeinen → legal rooktest.  

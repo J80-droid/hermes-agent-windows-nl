@@ -39,11 +39,14 @@ git fetch upstream
 
 ## Taakbalk-icoon na update
 
-Na een geslaagde update draait de keten **`fix_hermes_taskbar_pins.ps1`** (`.lnk` met wit monogram + icooncache). Blijft de UPDATE-pin een zwart **H**?
+Na een geslaagde update draait de keten **`fix_hermes_taskbar_pins.ps1`** (regenereert 7-lagen `.ico` uit `assets/Hermes_logo.png`, bouwt `windows\*.lnk` opnieuw, werkt pins bij). Blijft een pin of Verkenner-icoon fout (wit document, generiek H)?
 
-1. **Losmaken** van de oude pin op de taakbalk (niet `UPDATE_HERMES.bat` direct slepen — dat geeft het cmd-H).
-2. **`windows\Hermes - update - naar taakbalk slepen.lnk`** → rechtsklik → **Vastmaken aan taakbalk**.
-3. Of: **`FIX_TASKBAR_ICONS.bat`**.
+1. **`python windows/tools/generate_colored_hermes_icons.py`** (als PNG/bron ontbrak: ook `%USERPROFILE%\.hermes\_local_assets\assets\Hermes_logo.png`)
+2. **`FIX_TASKBAR_ICONS.bat`** → **F5** in `windows\`
+3. **Losmaken** van de oude pin (niet `.bat` slepen)
+4. **`windows\Hermes - update - naar taakbalk slepen.lnk`** (of andere rol) → **Vastmaken aan taakbalk**
+
+Kleuren: goud = start/RAG, groen = setup, wit = update, roze = backup, cyaan = restore.
 
 Taakbalk-.lnk: update = `hermes_logo_update.ico` (wit/zilver). Gebruik **niet** `hermes_taskbar_white.ico` in `.lnk` (oude H-stub in Explorer).
 

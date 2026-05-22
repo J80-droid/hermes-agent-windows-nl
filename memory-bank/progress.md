@@ -25,7 +25,7 @@
 - [x] User-data docs: `%USERPROFILE%\data\STATUS.md`, `RECOVERY.md`; `profiles\core\KANBAN_WORKFLOWS.md`; canoniek `docs/USER_DATA_OPERATIONS.md`
 - [x] IDE: `hermes-agent/.vscode/settings.json` + `docs/IDE_VSCODE_SETTINGS.example.json`
 - [x] Setup bat-templates (`scripts/windows/bat-templates/`); geen Copy-Item-spiegel meer; PSScriptAnalyzer 0 op `windows/**/*.ps1`
-- [x] pytest Windows: `timeout-method=thread`; `tests/windows/test_critical_windows_scripts.py`
+- [x] pytest Windows: `timeout-method=thread`; `shutil.which` i.p.v. `which rg`; marker `ssh` in `pyproject.toml`; `tests/windows/test_critical_windows_scripts.py`
 
 ## Operationeel (gebruiker)
 
