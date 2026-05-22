@@ -63,7 +63,7 @@ windows\UPDATE_HERMES.bat
 | Schone `git status` + `git fetch upstream` + ahead/behind | Ja (preflight) |
 | Waarschuwing bij achterstand >20 + J/N | Ja |
 | `hermes update` (merge upstream + deps) | Ja |
-| RAG `[rag]` + `VERIFY_WINDOWS_CHAIN` | Ja (post-merge) |
+| RAG `[rag]` + script-keten verify | Ja (post-merge, via `verify_windows_script_chain.ps1` — **geen** pause) |
 | Merge-conflicten oplossen | **Nee** (handmatig) |
 | Waarschuwing tegen `git reset --hard` | Ja (banner bij Update) |
 | `git push` / `--mcp-test` | Optioneel (flags hieronder) |
@@ -73,6 +73,10 @@ Optionele flags (doorgeven aan `.bat` of ps1):
 ```cmd
 powershell -File windows\upstream_sync.ps1 -Phase Update -McpTest -Push
 ```
+
+**Verify in de UPDATE-keten:** `upstream_sync.ps1` roept `verify_windows_script_chain.ps1` aan (niet `VERIFY_WINDOWS_CHAIN.bat`). De `.bat` eindigt met `pause` voor handmatig gebruik; in de keten zou dat de flow blokkeren tot je een toets indrukt.
+
+**Grijze uitleg in het venster:** bij preflight (ahead/behind), vóór `[j/N]`, en per fase (1/3–3/3).
 
 Alleen status (geen update):
 

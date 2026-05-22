@@ -9,8 +9,13 @@ echo %ESC%[92m====================================================
 echo  Hermes Agent: UPDATE - conda hermes-env
 echo ====================================================%ESC%[0m
 echo.
-echo [INFO] Volledige keten: preflight + hermes update + post-merge
-echo        ^(windows\upstream_sync.ps1 -Phase Update^)
+echo [INFO] Keten in 3 fasen ^(windows\upstream_sync.ps1 -Phase Update^):
+echo        1. Preflight     — git vs Nous upstream ^(ahead/behind, optioneel j/N^)
+echo        2. hermes update — merge Nous + Python/npm + skills
+echo        3. Post-merge    — RAG, script-keten verify, taakbalk-iconen
+echo.
+echo [INFO] Uitleg bij cijfers en vragen staat in het PowerShell-venster ^(grijs^).
+echo        Verify in de keten: .ps1 ^(geen pause^). Einde .bat: pause om resultaat te lezen.
 echo.
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0upstream_sync.ps1" -Phase Update %*

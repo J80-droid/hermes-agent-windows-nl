@@ -15,5 +15,6 @@ if not "%ERR%"=="0" (
 )
 echo.
 echo [OK] Windows script-keten OK.
+if "%HERMES_NONINTERACTIVE%"=="1" exit /b 0
 pause
 exit /b 0

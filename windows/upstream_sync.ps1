@@ -54,6 +54,14 @@ function Write-Ok([string]$Msg) { Write-Host "[OK] $Msg" -ForegroundColor Green 
 function Write-Warn([string]$Msg) { Write-Host "[WARN] $Msg" -ForegroundColor Yellow }
 function Write-Err([string]$Msg) { Write-Host "[ERROR] $Msg" -ForegroundColor Red }
 
+function Write-Uitleg {
+    param([Parameter(Mandatory)][string[]]$Lines)
+    foreach ($line in $Lines) {
+        Write-Host "  $line" -ForegroundColor DarkGray
+    }
+    Write-Host ''
+}
+
 function Test-HermesUpstreamDirtyOnlyBranding {
     <#
     .SYNOPSIS
@@ -103,6 +111,13 @@ function Invoke-UpstreamPreflight {
 
     if ($ShowResetWarning) { Show-GitHardResetWarning }
 
+    if ($ShowResetWarning) {
+        Write-Uitleg @(
+            'Fase 1/3 — Preflight: controleert git en vergelijkt jouw fork met Nous (upstream).'
+            'Geen code gewijzigd; alleen fetch + tellen hoeveel commits je voor/achter loopt.'
+        )
+    }
+
     Write-Step "Repo: $Repo"
     $branch = (git rev-parse --abbrev-ref HEAD 2>$null).Trim()
     if ($branch -ne 'main') {
@@ -142,6 +157,10 @@ function Invoke-UpstreamPreflight {
     $behind = [int]$lr[1]
     Write-Host "  Fork-only commits (ahead):  $ahead"
     Write-Host "  Nous commits (behind):      $behind"
+    Write-Uitleg @(
+        'ahead = commits alleen op jouw fork (NL/RAG/windows) — blijven behouden.'
+        'behind = nieuwe commits op NousResearch/hermes-agent — worden gemerged bij update.'
+    )
 
     if ($behind -eq 0) {
         Write-Ok "Al gelijk met upstream/main."
@@ -153,9 +172,17 @@ function Invoke-UpstreamPreflight {
         Write-Host "        Conflictzones: pyproject.toml, scripts/run_tests.sh, uv.lock"
         Write-Host "        Zie: windows\UPSTREAM_SYNC.md"
         if ($PromptOnLargeBehind) {
+            Write-Uitleg @(
+                'Bij j: fase 2 merge Nous in main + Python/npm deps; fase 3 RAG + verify + taakbalk.'
+                'Bij N of Enter: update stopt — repo blijft ongewijzigd.'
+                'Bij conflicten: script stopt; los handmatig op (geen reset --hard).'
+            )
             $ans = Read-Host "Doorgaan met update? [j/N]"
-            if ($ans -notin @('j', 'J', 'y', 'Y')) { return 4 }
-            Write-Warn "Doorgaan op eigen risico (-Force equivalent)."
+            if ($ans -notin @('j', 'J', 'y', 'Y')) {
+                Write-Step 'Update geannuleerd door gebruiker (preflight).'
+                return 4
+            }
+            Write-Warn "Doorgaan — merge van $behind Nous-commit(s) start nu."
         } else {
             return 4
         }
@@ -208,6 +235,10 @@ function Invoke-HermesUpdate {
         }
     }
 
+    Write-Uitleg @(
+        'Fase 2/3 — hermes update: merge upstream/main, pip/uv, Node UI, skills sync.'
+        'Dit kan enkele minuten duren; output van Nous-cli volgt hieronder.'
+    )
     Write-Step "hermes update - NousResearch upstream/main + dependencies"
     $updateArgs = @('run', '-n', 'hermes-env', '--no-capture-output', 'hermes', 'update', '-y') + $ExtraArgs
     return Invoke-HermesNativeCommand -FilePath $conda -ArgumentList $updateArgs -WorkingDirectory (Get-Location).Path
@@ -243,6 +274,9 @@ try {
     }
 
     if ($script:UpstreamExitCode -eq 0 -and $Phase -eq 'Update' -and -not $SkipHermesUpdate) {
+        Write-Uitleg @(
+            'Keten: preflight (klaar) -> hermes update (nu) -> post-merge (RAG, verify, pins).'
+        )
         $uerrRaw = Invoke-HermesUpdate -ExtraArgs $HermesUpdateArgs
         $uerr = if ($null -eq $uerrRaw) { 1 } elseif ($uerrRaw -is [array]) { [int]($uerrRaw[-1]) } else { [int]$uerrRaw }
         if ($uerr -ne 0) {
@@ -257,6 +291,10 @@ try {
     }
 
     if ($script:UpstreamExitCode -eq 0 -and $Phase -eq 'PostMerge') {
+        Write-Uitleg @(
+            'Fase 3/3 — Post-merge: RAG/MCP, Windows script-keten (.ps1, geen pause), taakbalk-iconen.'
+            'Daarna sluit UPDATE_HERMES.bat af (eventueel team display + pause aan het einde).'
+        )
         if (Test-Path (Join-Path $repo '.git\MERGE_HEAD')) {
             Write-Err "Merge nog bezig of conflicten - los op voor post-merge."
             git diff --name-only --diff-filter=U 2>$null | ForEach-Object { Write-Host "  conflict: $_" }
@@ -294,11 +332,12 @@ try {
             }
 
             if ($script:UpstreamExitCode -eq 0) {
-                $verify = Join-Path $repo 'windows\VERIFY_WINDOWS_CHAIN.bat'
+                # .ps1 direct: VERIFY_WINDOWS_CHAIN.bat heeft pause — blokkeert anders de update-keten.
+                $verify = Join-Path $repo 'windows/verify_windows_script_chain.ps1'
                 if (Test-Path -LiteralPath $verify) {
-                    Write-Step "Windows script-keten verify..."
-                    & cmd /c "`"$verify`""
-                    if ($LASTEXITCODE -ne 0) { Write-Warn "VERIFY_WINDOWS_CHAIN faalde." }
+                    Write-Step 'Windows script-keten verify (geautomatiseerd, geen pause)...'
+                    & $verify
+                    if ($LASTEXITCODE -ne 0) { Write-Warn 'verify_windows_script_chain.ps1 faalde.' }
                 }
             }
 

@@ -58,6 +58,13 @@ def test_update_hermes_uses_upstream_sync():
     assert "goto :team_display" in bat.lower()
 
 
+def test_upstream_sync_verify_uses_ps1_not_interactive_bat():
+    """Regressie: VERIFY_WINDOWS_CHAIN.bat pause blokkeerde post-merge keten."""
+    text = (REPO / "windows/upstream_sync.ps1").read_text(encoding="utf-8")
+    assert "verify_windows_script_chain.ps1" in text
+    assert "VERIFY_WINDOWS_CHAIN.bat heeft pause" in text
+
+
 def test_critical_windows_files_exist():
     missing = [rel for rel in CRITICAL if not (REPO / rel).is_file()]
     assert not missing, f"Ontbrekend in repo: {', '.join(missing)}"
