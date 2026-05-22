@@ -9,4 +9,4 @@
 streaming=false
 final_response_markdown=render
 compact=true
-skin=slate
+skin=default

@@ -18,16 +18,28 @@ Dit is geen skin-config en geen Hermes-bug in je fork; het is een **terminal-cap
 | 2 | Installeer **Windows Terminal** (`wt.exe` op PATH). De launcher herstart automatisch in WT (`wt -M`). |
 | 3 | Gebruik **conda `hermes-env`** (canoniek via `HermesPythonPolicy.ps1` / `REPAIR_PYTHON.bat`). |
 
-**Windows Terminal + Anaconda Prompt** is de combinatie die je beschreef — correct. Je hoeft niet handmatig elke sessie te openen als je de officiële launchers gebruikt.
+**Windows Terminal + Anaconda Prompt** is de combinatie die je beschreef — correct.
 
-### Snelste pad
+### Snelste pad (authentieke chat, één paneel)
 
 ```bat
 cd D:\A.I\APPS\Hermes_agent_WS\hermes-agent
-start_hermes_split.bat
+start_hermes.bat
 ```
 
-Of dubbelklik **Hermes_met_logo.bat** / taakbalk-.lnk (roept `launch_hermes.bat` aan).
+Of dubbelklik **windows\Hermes_met_logo.bat** / taakbalk-start (na `FIX_TASKBAR_ICONS.bat`).
+
+**Niet** `start_hermes_split.bat` voor normaal gebruik — dat opent chat + log-paneel (debug).
+
+### Kleuren (goud, niet blauw)
+
+Standaard skin is **`default`** (goud/kawaii). Als je **blauw/cyaan** ziet, staat vaak `display.skin: slate` in config (team-default was slate).
+
+```bat
+windows\APPLY_TEAM_DISPLAY.bat
+```
+
+of: `hermes config set display.skin default` — daarna Hermes opnieuw starten.
 
 ## Wat de fork al doet
 

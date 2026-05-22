@@ -11,8 +11,8 @@
     Volgorde:
     1) Omgevingsvariabele **HERMES_START_BAT** (Process → User → Machine): alleen bestandsnaam,
        bijv. `org_start.bat`, moet op de repo-root bestaan. Geen paden met \ of / (geen submappen).
-    2) **start_hermes_split.bat** als aanwezig (Windows Terminal + log-paneel).
-    3) **start_hermes.bat** (dunne shim naar windows\launch_hermes.bat).
+    2) **start_hermes.bat** (standaard: één paneel, authentieke chat).
+    3) **start_hermes_split.bat** alleen als `HERMES_START_SPLIT=1` (debug: chat + agent.log).
 
     Zo kunnen IT-teams zonder scriptwijziging een eigen entrypoint afdwingen (GPO/User-env).
 #>
@@ -35,8 +35,10 @@ function Get-HermesStartLauncherRelativePath {
         }
     }
 
+    $wantSplit = $false
+    if ($env:HERMES_START_SPLIT -eq '1') { $wantSplit = $true }
     $split = Join-Path $trimmedRoot 'start_hermes_split.bat'
-    if (Test-Path -LiteralPath $split) {
+    if ($wantSplit -and (Test-Path -LiteralPath $split)) {
         return 'start_hermes_split.bat'
     }
     return 'start_hermes.bat'

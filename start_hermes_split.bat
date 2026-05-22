@@ -27,6 +27,7 @@ if errorlevel 1 (
 )
 if not exist "%USERPROFILE%\.hermes\logs\" mkdir "%USERPROFILE%\.hermes\logs" 2>nul
 set "HERMES_LOG=%USERPROFILE%\.hermes\logs\agent.log"
-wt -M -d "%CD%" cmd /c "start_hermes.bat" ^; split-pane -V -d "%CD%" powershell.exe -NoProfile -Command "Get-Content -LiteralPath '%HERMES_LOG%' -Wait -Tail 30"
+echo [INFO] Split-pane: links=Hermes chat, rechts=agent.log ^(debug^). Voor alleen chat: start_hermes.bat
+wt -M -d "%CD%" cmd /k "set COLORTERM=truecolor&& set TERM=xterm-256color&& call start_hermes.bat" ^; split-pane -V -d "%CD%" powershell.exe -NoProfile -Command "Get-Content -LiteralPath '%HERMES_LOG%' -Wait -Tail 30"
 popd
 endlocal
