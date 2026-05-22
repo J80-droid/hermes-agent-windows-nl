@@ -2,6 +2,15 @@
 
 Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan uit van **conda `hermes-env`** en repo-root `hermes-agent`.
 
+## Python (institutioneel)
+
+| Regel | Detail |
+| ----- | ------ |
+| Canoniek | **conda `hermes-env`** — RAG, `launch_hermes.bat`, ingest, setup |
+| Niet gebruiken | Workspace-map `(venv)` of kapotte `repo\.venv` zonder pip |
+| Reparatie | `REPAIR_PYTHON.bat` — quarantaine kapotte `.venv`, bevestig conda |
+| Geavanceerd | `HERMES_ALLOW_UV_VENV=1` alleen als `.venv` bewust gezond is (uv/pip OK) |
+
 ## Eerste installatie
 
 | Startpunt | Script |

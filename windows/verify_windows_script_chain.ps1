@@ -170,6 +170,26 @@ if (-not (Test-Path -LiteralPath $perf)) {
     Write-Host '  [OK] windows/scripts/rag_ingest_perf_defaults.ps1' -ForegroundColor Green
 }
 
+Write-Host '[INFO] Python-policy (conda hermes-env)...' -ForegroundColor Cyan
+. (Join-Path $winDir 'HermesPythonPolicy.ps1')
+$condaPy = Get-HermesCondaPython
+if (-not $condaPy) {
+    [void]$failures.Add('Geen conda hermes-env (windows/REPAIR_PYTHON.bat)')
+    Write-Host '  [FAIL] conda hermes-env' -ForegroundColor Red
+} elseif (-not (Test-HermesPythonHasPip -PythonExe $condaPy)) {
+    [void]$failures.Add('conda hermes-env zonder pip')
+    Write-Host '  [FAIL] pip in hermes-env' -ForegroundColor Red
+} else {
+    Write-Host "  [OK] Canoniek: $condaPy" -ForegroundColor Green
+}
+$brokenVenv = Join-Path $repo '.venv'
+if ((Test-Path -LiteralPath $brokenVenv) -and -not (Test-HermesVenvUsable -RepoRoot $repo)) {
+    [void]$failures.Add('Repo\.venv zonder pip — draai windows/REPAIR_PYTHON.bat')
+    Write-Host '  [FAIL] Kapotte .venv in repo (quarantaine nodig)' -ForegroundColor Red
+} elseif (Get-ChildItem -LiteralPath $repo -Directory -Filter '.venv.disabled-*' -ErrorAction SilentlyContinue) {
+    Write-Host '  [OK] Kapotte .venv staat in quarantaine (.venv.disabled-*)' -ForegroundColor Green
+}
+
 Write-Host '[INFO] Taakbalk-.lnk iconen...' -ForegroundColor Cyan
 $verifyTb = Join-Path $scriptsDir 'verify_taskbar_shortcut_icons.ps1'
 if (Test-Path -LiteralPath $verifyTb) {

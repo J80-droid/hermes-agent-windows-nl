@@ -109,7 +109,7 @@ Zonder **A+B+C** is de keten nooit 100% operationeel — ook niet met perfecte c
 
 | Risico | Mitigatie |
 | ------ | --------- |
-| conda vs. uv `.venv` | `install_rag_extras.ps1` → `pip install -e ".[rag]"` op **beide** (`rag_python_resolve.ps1`) |
+| conda vs. uv `.venv` | **Institutioneel:** alleen `conda hermes-env` (`HermesPythonPolicy.ps1`). Kapotte `.venv` → quarantaine; optioneel tweede interpreter met `HERMES_ALLOW_UV_VENV=1` |
 | MCP per domein | `domains.yaml` → profiel **`mcp_servers:`** (sync: `sync_profile_mcp_from_domains.py`); verify via `--mcp-test` |
 | Whisper/ffmpeg | `[rag]` bevat `faster-whisper`; **ffmpeg** moet op PATH (winget/choco) |
 | Oud schema zonder `id` | `python scripts/rag_pipeline/schema_migrate.py` (inspect / `--backup-and-reset`) |

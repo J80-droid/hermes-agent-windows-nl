@@ -14,18 +14,14 @@ if not defined HERMES_PYTHON if exist "%USERPROFILE%\anaconda3\envs\!HERMES_COND
 if not defined HERMES_PYTHON if exist "%LOCALAPPDATA%\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe" set "HERMES_PYTHON=%LOCALAPPDATA%\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe"
 if not defined HERMES_PYTHON if exist "%LOCALAPPDATA%\anaconda3\envs\!HERMES_CONDA_ENV!\python.exe" set "HERMES_PYTHON=%LOCALAPPDATA%\anaconda3\envs\!HERMES_CONDA_ENV!\python.exe"
 if defined HERMES_PYTHON set "HERMES_PYTHON_ENV=!HERMES_PYTHON!"
-
-if exist "%REPO_ROOT%\.venv\Scripts\python.exe" (
-  set "HERMES_PYTHON=%REPO_ROOT%\.venv\Scripts\python.exe"
-  set "HERMES_PYTHON_ENV=!HERMES_PYTHON!"
-)
+rem Institutioneel: geen .venv-override (kapotte uv-.venv komt voor conda). Zie HermesPythonPolicy.ps1
 
 chcp 65001 >nul
 set "PYTHONIOENCODING=utf-8"
 if defined HERMES_PYTHON echo [INFO] HERMES_PYTHON=!HERMES_PYTHON!
 
 if not defined HERMES_PYTHON (
-  echo [ERROR] Geen HERMES_PYTHON en geen .venv. Installeer deps: zie CONTRIBUTING.md
+  echo [ERROR] Geen conda hermes-env. Zie windows\REPAIR_PYTHON.bat
   pause
   exit /b 1
 )

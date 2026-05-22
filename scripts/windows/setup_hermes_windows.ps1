@@ -338,6 +338,11 @@ if ((Test-Path -LiteralPath $ragExtras) -and -not $WhatIfPreference) {
     }
 }
 
+$ensurePy = Join-Path $root 'windows/scripts/ensure_hermes_python.ps1'
+if ((Test-Path -LiteralPath $ensurePy) -and -not $WhatIfPreference) {
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $ensurePy -RepoRoot $root -Quiet
+}
+
 Write-Host ""
 Write-Host 'Klaar: SETUP_HERMES.bat / setup_hermes_windows.bat + taakbalk-.lnk (goud=start/RAG, groen=setup, wit=update, roze/cyaan=backup/restore).' -ForegroundColor Cyan
 Write-Host 'Wizard: dubbelklik SETUP_HERMES.bat (standaard) of OPEN_SETUP.bat.' -ForegroundColor DarkGray

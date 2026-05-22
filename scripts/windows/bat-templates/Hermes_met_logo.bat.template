@@ -31,11 +31,13 @@ if exist "%WIN_DIR%\launch_hermes.bat" (
   exit /b !ERRORLEVEL!
 )
 
-if exist "%REPO_ROOT%\.venv\Scripts\python.exe" (
-  echo %C%[INFO]%R% No launch_hermes.bat - starting via .venv\python cli.py
-  "%REPO_ROOT%\.venv\Scripts\python.exe" "%REPO_ROOT%\cli.py" %*
+if not defined HERMES_CONDA_ENV set "HERMES_CONDA_ENV=hermes-env"
+if not defined HERMES_PYTHON if exist "%USERPROFILE%\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe" set "HERMES_PYTHON=%USERPROFILE%\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe"
+if defined HERMES_PYTHON (
+  echo %C%[INFO]%R% No launch_hermes.bat - conda cli.py
+  "!HERMES_PYTHON!" "%REPO_ROOT%\cli.py" %*
   exit /b !ERRORLEVEL!
 )
 
-echo [ERROR] Missing launch_hermes.bat and .venv\Scripts\python.exe. Run install.ps1 or uv sync.
+echo [ERROR] Missing launch_hermes.bat and conda hermes-env. Run windows\REPAIR_PYTHON.bat
 exit /b 1

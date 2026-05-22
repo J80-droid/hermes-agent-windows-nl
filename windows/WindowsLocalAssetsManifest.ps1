@@ -39,6 +39,8 @@ function Get-HermesWindowsLocalAssetsManifest {
         'create_taskbar_shortcuts.ps1',
         'launcher_config.ps1',
         'HermesIconGeneratorInvoke.ps1',
+        'HermesPythonPolicy.ps1',
+        'REPAIR_PYTHON.bat',
         'find_tools_registry.ps1',
         'Invoke-HermesPSScriptAnalyzer.ps1',
         'PSScriptAnalyzerSettings.psd1',
@@ -86,6 +88,8 @@ function Get-HermesWindowsLocalAssetsManifest {
                 'check_rag_ingest_running.ps1',
                 'enable_console_ansi.ps1',
                 'install_rag_extras.ps1',
+                'ensure_hermes_python.ps1',
+                'rag_python_resolve.ps1',
                 'institutional_p0_p1.bat'
             )
             RepoSub = 'scripts'

@@ -4,6 +4,7 @@
 *.pyc*
 __pycache__/
 .venv/
+.venv.disabled-*/
 .vscode/*
 !.vscode/settings.json
 .env

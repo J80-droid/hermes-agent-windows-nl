@@ -2,7 +2,7 @@
 
 ## Focus
 
-**P0+P1 afgerond**; **Windows institutioneel** (2026-05-21): upstream/update, setup single source, taakbalk **7-lagen ICO** uit `assets/Hermes_logo.png`, `SETUP_HERMES.bat` opent wizard, `FIX_TASKBAR_ICONS` + verify. Open: bronnen in 7 lege `raw_source_files`-mappen (legal in `04_Legal_Corporate` al vol).
+**P0+P1 afgerond**; **Windows institutioneel** (2026-05-22): Python-beleid **conda `hermes-env` canoniek**; kapotte repo-`.venv` automatisch quarantaine (`REPAIR_PYTHON.bat`); upstream/update, taakbalk ICO, SETUP wizard. Open: bronnen in 7 lege `raw_source_files`-mappen (legal in `04_Legal_Corporate` al vol).
 
 ## Dev vs. install-clone
 
@@ -31,6 +31,7 @@
 3. **MCP:** `update_knowledge.bat --mcp-test` (na ingest)
 4. **Taakbalk (eenmalig):** oude pin los → `.lnk` uit `windows\` opnieuw vastmaken; Verkenner **F5**
 5. **Setup:** `SETUP_HERMES.bat` (wizard) of `--files-only` / `OPEN_SETUP.bat`
+6. **Python:** bij rode RAG/pip-fouten → `windows\REPAIR_PYTHON.bat` (geen handmatig `rmdir .venv`)
 
 ## Taakbalk (institutioneel)
 

@@ -26,6 +26,7 @@
 - [x] IDE: `hermes-agent/.vscode/settings.json` + `docs/IDE_VSCODE_SETTINGS.example.json`
 - [x] Setup bat-templates (`scripts/windows/bat-templates/`); geen Copy-Item-spiegel meer; PSScriptAnalyzer 0 op `windows/**/*.ps1`
 - [x] pytest Windows: `timeout-method=thread`; `shutil.which` i.p.v. `which rg`; marker `ssh` in `pyproject.toml`; `tests/windows/test_critical_windows_scripts.py`
+- [x] Python-policy institutioneel: `HermesPythonPolicy.ps1`, `REPAIR_PYTHON.bat`, `ensure_hermes_python.ps1`; kapotte `.venv` → `.venv.disabled-*` (gitignore); conda `hermes-env` canoniek; verify-keten + setup-hook
 
 ## Operationeel (gebruiker)
 

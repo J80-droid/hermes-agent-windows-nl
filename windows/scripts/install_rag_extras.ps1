@@ -1,4 +1,4 @@
-﻿# Installeert pyproject [rag] op conda + uv .venv, MCP-config, modelcache (idempotent).
+﻿# Installeert pyproject [rag] op conda hermes-env (institutioneel), MCP-config, modelcache (idempotent).
 param(
     [string]$RepoRoot = "",
     [switch]$SkipPip,
@@ -8,7 +8,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-. (Join-Path $PSScriptRoot "rag_python_resolve.ps1")
+. (Join-Path $PSScriptRoot "..\HermesPythonPolicy.ps1")
 
 function Write-RagMsg([string]$Text, [string]$Color = "Gray") {
     if ($Quiet) { return }
@@ -25,20 +25,18 @@ if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot "pyproject.toml"))) {
     Write-Error "Geen pyproject.toml in RepoRoot: $RepoRoot"
 }
 
+[void](Invoke-HermesQuarantineBrokenVenv -RepoRoot $RepoRoot -Quiet:$Quiet)
+
 $pythons = @(Get-HermesRagPython -RepoRoot $RepoRoot)
 if ($pythons.Count -eq 0) {
-    Write-RagMsg "[WARN] Geen conda hermes-env of .venv gevonden - zet HERMES_PYTHON." "Yellow"
+    Write-RagMsg "[WARN] Geen conda hermes-env — REPAIR_PYTHON.bat of: conda activate hermes-env" "Yellow"
 }
 
 if (-not $SkipPip) {
     $installed = 0
     foreach ($py in $pythons) {
         if (-not (Test-HermesPythonHasPip -PythonExe $py)) {
-            if ($py -match '[\\/]\.venv[\\/]') {
-                Write-RagMsg "[INFO] .venv zonder pip overgeslagen — RAG draait via conda hermes-env." "DarkGray"
-            } else {
-                Write-RagMsg "[WARN] Geen pip op $py - overgeslagen." "Yellow"
-            }
+            Write-RagMsg "[WARN] Geen pip op $py - overgeslagen." "Yellow"
             continue
         }
         Write-RagMsg "[INFO] RAG-deps via: $py" "Cyan"
