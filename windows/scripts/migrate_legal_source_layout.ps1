@@ -50,15 +50,9 @@ if ($Apply -and (Test-Path -LiteralPath $repoReadme)) {
     Write-Host '[OK] _Taxonomy\README.md gekopieerd' -ForegroundColor Green
 }
 
-# Bestaande GCR-zaakmap niet verplaatsen als die al bestaat
-$preserveDirs = @(
-    'Geschillencommissie Rijk',
-    '_PROBLEMATISCHE_BESTANDEN',
-    'Arbeidsrecht', 'Bestuursrecht', 'Aansprakelijkheid_Letselschade',
-    'Klokkenluiders', 'Corporate', '_Taxonomy'
-)
+# Zaak-mappen (Geschillencommissie Rijk) en lens-submappen worden niet verplaatst — alleen losse bestanden in root.
 
-# Optioneel: losse bestanden in root -> Corporate (niet onder preserve/geschillen)
+# Optioneel: losse bestanden in root -> Corporate
 $rootFiles = Get-ChildItem -LiteralPath $legalRoot -File -ErrorAction SilentlyContinue
 foreach ($f in $rootFiles) {
     $destDir = Join-Path $legalRoot 'Corporate'
@@ -84,5 +78,5 @@ if (-not $Apply) {
 
 Write-Host ''
 Write-Host '[OK] Legal bronlayout migratie toegepast.' -ForegroundColor Green
-Write-Host 'Volgende stap: windows\scripts\update_knowledge.bat legal' -ForegroundColor Cyan
+Write-Host 'Volgende stap: windows/scripts/update_knowledge.bat legal' -ForegroundColor Cyan
 exit 0
