@@ -4,6 +4,7 @@ import re
 
 from hermes_cli.display_markdown import format_response_ansi, get_assistant_render_settings
 from hermes_cli.institutional_render import assistant_markdown_theme, render_institutional_assistant
+from hermes_cli.markdown_output_normalize import normalize_assistant_markdown
 
 
 def test_assistant_markdown_theme_demo_not_gold():
@@ -38,6 +39,28 @@ def test_table_render_produces_multiple_header_styles():
     out = format_response_ansi(md, cols=100) or ""
     codes = set(re.findall(r"\x1b\[[0-9;]*m", out))
     assert len(codes) >= 2
+
+
+def test_dossierstatus_label_on_separate_line_from_value():
+    """Checklist #5: label roze/oranje, waarde op regel eronder (niet inline)."""
+    md = (
+        "## Projectoverzicht\n"
+        "Intro.\n\n"
+        "**Dossierstatus:**\n"
+        "Gereed voor controle.\n"
+    )
+    out = format_response_ansi(normalize_assistant_markdown(md), cols=100) or ""
+    for line in out.splitlines():
+        if "Dossierstatus" in line:
+            assert "Gereed" not in line, f"label en waarde opzelfde regel: {line!r}"
+
+
+def test_dossierstatus_inline_split_by_normalizer_and_renderer():
+    md = "## Projectoverzicht\nIntro.\n**Dossierstatus:** Gereed voor controle.\n"
+    out = format_response_ansi(md, cols=100) or ""
+    for line in out.splitlines():
+        if "Dossierstatus" in line:
+            assert "Gereed" not in line
 
 
 def test_render_institutional_assistant_label_block():

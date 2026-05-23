@@ -337,9 +337,9 @@ function Block({
 
     case "label":
       return (
-        <div className="flex gap-4">
-          <div className={`w-28 shrink-0 ${ASSISTANT_LABEL_CLASS}`}>{block.label}:</div>
-          <div className="flex-1 min-w-0">
+        <div className="flex flex-col gap-0.5">
+          <div className={ASSISTANT_LABEL_CLASS}>{block.label}:</div>
+          <div className="min-w-0">
             <InlineContent text={block.content} highlightTerms={highlightTerms} />
             {caret}
           </div>

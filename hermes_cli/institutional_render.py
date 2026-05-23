@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import ClassVar, Iterator
 
 from rich import box
-from rich.columns import Columns
 from rich.console import Console, Group, RenderableType
 from rich.segment import Segment
 from rich.text import Text as RichText
@@ -342,6 +341,8 @@ def _render_heading_body_pair(
     body_md: str,
     colors: dict[str, str],
     code_theme: str,
+    *,
+    label_columns: bool = True,
 ) -> RenderableType:
     hm = re.match(r"^(#{1,6})\s+(.+)$", heading_line.strip())
     if not hm:
@@ -351,10 +352,69 @@ def _render_heading_body_pair(
     title = hm.group(2).strip()
     if not body_md.strip():
         return RichText(title, style=style)
-    return TightHeadingBody(
-        RichText(title, style=style),
-        InstitutionalMarkdown(body_md.strip(), code_theme=code_theme),
+    body_render = _render_body_with_embedded_labels(
+        body_md.strip(),
+        colors,
+        code_theme,
+        label_columns=label_columns,
     )
+    return TightHeadingBody(RichText(title, style=style), body_render)
+
+
+def _render_body_with_embedded_labels(
+    body_md: str,
+    colors: dict[str, str],
+    code_theme: str,
+    *,
+    label_columns: bool,
+) -> RenderableType:
+    """Peel **Label:** lines from heading body; value always below label (checklist #5)."""
+    lines = body_md.splitlines()
+    parts: list[RenderableType] = []
+    prose: list[str] = []
+    idx = 0
+    while idx < len(lines):
+        stripped = lines[idx].strip()
+        label_m = _LABEL_ONLY_LINE_RE.match(stripped)
+        if label_m:
+            if prose:
+                blob = "\n".join(prose).strip()
+                if blob:
+                    parts.append(InstitutionalMarkdown(blob, code_theme=code_theme))
+                prose = []
+            label = label_m.group("label").strip()
+            idx += 1
+            value_lines: list[str] = []
+            while idx < len(lines):
+                nxt = lines[idx].strip()
+                if not nxt:
+                    idx += 1
+                    break
+                if _LABEL_ONLY_LINE_RE.match(nxt) or _is_heading_line(lines[idx]):
+                    break
+                value_lines.append(lines[idx])
+                idx += 1
+            parts.append(
+                _render_label_block(
+                    label,
+                    "\n".join(value_lines).strip(),
+                    colors,
+                    code_theme,
+                    label_columns=label_columns,
+                )
+            )
+            continue
+        prose.append(lines[idx])
+        idx += 1
+    if prose:
+        blob = "\n".join(prose).strip()
+        if blob:
+            parts.append(InstitutionalMarkdown(blob, code_theme=code_theme))
+    if not parts:
+        return RichText("")
+    if len(parts) == 1:
+        return parts[0]
+    return Group(*parts)
 
 
 def _render_label_block(
@@ -365,22 +425,22 @@ def _render_label_block(
     *,
     label_columns: bool,
 ) -> RenderableType:
+    del label_columns  # layout is always label above value (10/10 checklist)
     label_text = RichText(f"{label}:", style=colors["label"])
     body = body_md.strip()
     if not body:
         return label_text
-    if "\n" not in body and not body.startswith("|") and label_columns:
+    if body.startswith("|"):
         return TightHeadingBody(
             label_text,
-            RichText(body, style=colors.get("text", "")),
+            InstitutionalMarkdown(body, code_theme=code_theme),
         )
-    if label_columns:
-        return Columns(
-            [label_text, InstitutionalMarkdown(body, code_theme=code_theme)],
-            expand=True,
-            equal=False,
-        )
-    return Group(label_text, InstitutionalMarkdown(body, code_theme=code_theme))
+    body_render = (
+        InstitutionalMarkdown(body, code_theme=code_theme)
+        if "\n" in body
+        else RichText(body, style=colors.get("text", ""))
+    )
+    return TightHeadingBody(label_text, body_render)
 
 
 def _iter_content_blocks(text: str) -> Iterator[tuple[str, str, str]]:
@@ -448,7 +508,11 @@ def render_institutional_assistant(
                 _, heading_line, body_md = section
                 blocks.append(
                     _render_heading_body_pair(
-                        heading_line, body_md, colors, code_theme
+                        heading_line,
+                        body_md,
+                        colors,
+                        code_theme,
+                        label_columns=label_columns,
                     )
                 )
                 continue
@@ -467,7 +531,11 @@ def render_institutional_assistant(
                             _, h_line, body = sub
                             blocks.append(
                                 _render_heading_body_pair(
-                                    h_line, body, colors, code_theme
+                                    h_line,
+                                    body,
+                                    colors,
+                                    code_theme,
+                                    label_columns=label_columns,
                                 )
                             )
                         else:
