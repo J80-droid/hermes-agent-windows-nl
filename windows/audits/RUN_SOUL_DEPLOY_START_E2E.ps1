@@ -7,7 +7,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $scriptRoot = $PSScriptRoot
 if (-not $RepoRoot) {
-    $RepoRoot = (Resolve-Path (Join-Path $scriptRoot '..\..')).Path
+    $RepoRoot = (Resolve-Path (Join-Path $scriptRoot '../..')).Path
 } else {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 }
@@ -16,10 +16,10 @@ Set-Location $RepoRoot
 $failures = 0
 $logPath = Join-Path $scriptRoot 'SOUL_DEPLOY_START_E2E_LAST_RUN.log'
 
-function Step-Ok { param([string]$Name) Write-Host "[OK] $Name" -ForegroundColor Green }
+function Step-Ok { param([string]$Name) Write-Host ('[OK] ' + $Name) -ForegroundColor Green }
 function Step-Fail {
     param([string]$Name, [string]$Detail)
-    Write-Host "[FAIL] $Name - $Detail" -ForegroundColor Red
+    Write-Host ('[FAIL] ' + $Name + ' - ' + $Detail) -ForegroundColor Red
     $script:failures++
 }
 
@@ -70,7 +70,7 @@ foreach ($rel in $required) {
 }
 if ($failures -eq 0) { Step-Ok ('repo-keten: ' + $required.Count + ' bestanden') }
 
-$analystTpl = Join-Path $RepoRoot 'docs\templates\SOUL_ANALYST_DOMAIN.md'
+$analystTpl = Join-Path $RepoRoot 'docs/templates/SOUL_ANALYST_DOMAIN.md'
 if (Test-Path -LiteralPath $analystTpl) {
     Step-Fail 'SOUL_ANALYST_DOMAIN.md' 'analyst is geen domein - template moet weg'
 } else {
@@ -82,7 +82,7 @@ Assert-FileContains 'windows/launch_hermes.bat' @(
     'launch_institutional_runtime.ps1',
     'HERMES_SKIP_SOUL_DEPLOY_ON_START'
 )
-$launchBat = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows\launch_hermes.bat') -Raw -Encoding UTF8
+$launchBat = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/launch_hermes.bat') -Raw -Encoding UTF8
 $soulIdx = $launchBat.IndexOf('launch_soul_anatomy_deploy.ps1')
 $instIdx = $launchBat.IndexOf('launch_institutional_runtime.ps1')
 if ($soulIdx -lt 0 -or $instIdx -lt 0 -or $soulIdx -ge $instIdx) {
@@ -95,7 +95,7 @@ Assert-FileContains 'windows/POST_GIT_PULL.bat' @('launch_soul_anatomy_deploy.ps
 Assert-FileContains 'windows/APPLY_SOUL_ANATOMY_RUNTIME.bat' @('-UpdateDeployStamp')
 Assert-FileContains 'windows/scripts/sync_all_domain_souls_from_templates.ps1' @('UpdateDeployStamp', 'Set-SoulAnatomyDeployStamp')
 
-$upstream = Join-Path $RepoRoot 'windows\upstream_sync.ps1'
+$upstream = Join-Path $RepoRoot 'windows/upstream_sync.ps1'
 if (Test-Path -LiteralPath $upstream) {
     $ut = Get-Content -LiteralPath $upstream -Raw -Encoding UTF8
     if ($ut -notmatch 'launch_soul_anatomy_deploy\.ps1' -or $ut -notmatch '\$soulDeployOk') {
@@ -120,7 +120,7 @@ if ($watch.Count -lt 15) {
 } else {
     Step-Ok "watchlist ($($watch.Count) bronnen)"
 }
-$legalTpl = Join-Path $RepoRoot 'docs\templates\SOUL_LEGAL_DOMAIN.md'
+$legalTpl = Join-Path $RepoRoot 'docs/templates/SOUL_LEGAL_DOMAIN.md'
 if ($legalTpl -notin $watch) {
     Step-Fail 'watchlist' 'SOUL_LEGAL_DOMAIN.md niet in watch'
 } else {
@@ -157,12 +157,12 @@ try {
 }
 
 Write-Host '--- 4/8 launch_soul skip-flag ---' -ForegroundColor Cyan
-$launchSoul = Join-Path $RepoRoot 'windows\scripts\launch_soul_anatomy_deploy.ps1'
+$launchSoul = Join-Path $RepoRoot 'windows/scripts/launch_soul_anatomy_deploy.ps1'
 $prevSkip = $env:HERMES_SKIP_SOUL_DEPLOY_ON_START
 $env:HERMES_SKIP_SOUL_DEPLOY_ON_START = '1'
 try {
     $skipOut = & $launchSoul -RepoRoot $RepoRoot *>&1 | Out-String
-    if ($LASTEXITCODE -ne 0) {
+    if (Test-NativeCommandFailed) {
         Step-Fail 'HERMES_SKIP_SOUL_DEPLOY_ON_START' "exit $LASTEXITCODE"
     } elseif ($skipOut -notmatch 'overgeslagen') {
         Step-Fail 'HERMES_SKIP_SOUL_DEPLOY_ON_START' 'geen skip-melding'
@@ -181,7 +181,7 @@ if (Test-Path -LiteralPath $prodStamp) {
         Step-Ok 'productie-stamp stale (deploy bij start verwacht; geen zware sync in audit)'
     } else {
         $upOut = & $launchSoul -RepoRoot $RepoRoot -Quiet 2>&1 | Out-String
-        if ($LASTEXITCODE -ne 0) {
+        if (Test-NativeCommandFailed) {
             Step-Fail 'launch_soul up-to-date' "exit $LASTEXITCODE"
         } elseif ($upOut -match 'Push domain') {
             Step-Fail 'launch_soul up-to-date' 'onverwachte volledige deploy'
@@ -192,11 +192,11 @@ if (Test-Path -LiteralPath $prodStamp) {
         }
     }
 } else {
-    Write-Host '[SKIP] Geen productie-stamp - draai eerst APPLY_SOUL_ANATOMY_RUNTIME.bat' -ForegroundColor Yellow
+    Write-Host 'SKIP: Geen productie-stamp - draai eerst APPLY_SOUL_ANATOMY_RUNTIME.bat' -ForegroundColor Yellow
 }
 
 Write-Host '--- 6/8 institutional scheiding ---' -ForegroundColor Cyan
-$instPs1 = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows\scripts\launch_institutional_runtime.ps1') -Raw -Encoding UTF8
+$instPs1 = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/scripts/launch_institutional_runtime.ps1') -Raw -Encoding UTF8
 if ($instPs1 -match 'SOUL_SHARED') {
     Step-Fail 'launch_institutional_runtime.ps1' 'SOUL_SHARED hoort niet in institutional watch'
 } elseif ($instPs1 -notmatch 'Test-SoulAnatomyDeployJustRan') {
@@ -206,20 +206,23 @@ if ($instPs1 -match 'SOUL_SHARED') {
 }
 
 Write-Host '--- 7/8 sync_all -UpdateDeployStamp ---' -ForegroundColor Cyan
-$syncText = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows\scripts\sync_all_domain_souls_from_templates.ps1') -Raw -Encoding UTF8
-if ($syncText -notmatch 'failedProfiles' -or $syncText -notmatch '\$LASTEXITCODE') {
-    Step-Fail 'sync_all' 'mist strikte exit-code / failedProfiles'
+$syncText = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/scripts/sync_all_domain_souls_from_templates.ps1') -Raw -Encoding UTF8
+$syncHasFailedProfiles = $syncText -match 'failedProfiles'
+$syncHasNativeExitTest = $syncText -match 'Test-NativeCommandFailed'
+if (-not $syncHasFailedProfiles) {
+    Step-Fail 'sync_all' 'mist failedProfiles'
+} elseif (-not $syncHasNativeExitTest) {
+    Step-Fail 'sync_all' 'mist Test-NativeCommandFailed'
 } else {
     Step-Ok 'sync_all faalt bij profielfouten'
 }
 
 Write-Host '--- 8/8 runtime anatomy (subset) ---' -ForegroundColor Cyan
 if ($SkipRuntimeAnatomy) {
-    Write-Host '[SKIP] Runtime anatomy (--SkipRuntimeAnatomy)' -ForegroundColor Yellow
+    Write-Host 'SKIP: Runtime anatomy (--SkipRuntimeAnatomy)' -ForegroundColor Yellow
 } else {
-    $anatomyE2e = Join-Path $scriptRoot 'RUN_SOUL_ANATOMY_E2E.ps1'
-    & $anatomyE2e
-    if ($LASTEXITCODE -ne 0) {
+    & (Join-Path $scriptRoot 'RUN_SOUL_ANATOMY_E2E.ps1')
+    if (Test-NativeCommandFailed) {
         Step-Fail 'RUN_SOUL_ANATOMY_E2E' 'zie output hierboven'
     } else {
         Step-Ok 'RUN_SOUL_ANATOMY_E2E (subset)'

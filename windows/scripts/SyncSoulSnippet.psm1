@@ -1,6 +1,11 @@
 # Shared PowerShell helper for SOUL snippet syncing.
 # Used by sync_soul_interaction_snippet.ps1, sync_soul_output_format_snippet.ps1, etc.
 
+function Test-NativeCommandFailed {
+    # Na een puur PowerShell-script is $LASTEXITCODE vaak $null; $null -ne 0 is ten onrechte $true.
+    return ($null -ne $LASTEXITCODE -and [int]$LASTEXITCODE -ne 0)
+}
+
 function Get-SoulFileContent {
     param([Parameter(Mandatory)][string]$Path)
     $utf8 = [System.Text.UTF8Encoding]::new($false)
@@ -9,7 +14,7 @@ function Get-SoulFileContent {
 }
 
 function Set-SoulFileContent {
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'None')]
     param(
         [Parameter(Mandatory)][string]$Path,
         [Parameter(Mandatory)][string]$Content
@@ -31,7 +36,7 @@ function Get-DomainSoulProfileNames {
     <#
     .SYNOPSIS
         Profielen met SOUL-domein-template (sync met docs/domain_toolsets.yaml).
-        Geen 'analyst' — dat is geen RAG-domein (upstream Kanban-rol / orphan wrapper).
+        Geen analyst-domein (upstream Kanban-rol / orphan wrapper).
     #>
     return @(
         'core', 'legal', 'academics', 'operations', 'trading', 'gaming',
@@ -68,16 +73,16 @@ function Get-SoulSectionEndPattern {
     if ($SectionEndRegex) { return $SectionEndRegex }
     # ### subsections: default next ### sibling; NOT ## inside code fences in output template
     if ($SectionRegex -match 'Output conventions') {
-        return '(?=^\#\# (Expertise & Knowledge|Hard Limits|Workflow|Tool Usage|Memory Policy|Example Interaction)\s|\z)'
+        return "(?=^\#\# (Expertise & Knowledge|Hard Limits|Workflow|Tool Usage|Memory Policy|Example Interaction)\s|\z)"
     }
     if ($SectionRegex -match '^### Interaction') {
-        return '(?=^### Output conventions \(institutional\)\s|\z)'
+        return "(?=^### Output conventions \(institutional\)\s|\z)"
     }
     if ($SectionRegex -match '^### Trust') {
         return '(?=^### (?!Trust)|^\#\# |\z)'
     }
     if ($SectionRegex -match '^###') {
-        return '(?=^### |^\#\# (Workflow|Tool Usage|Memory Policy|Example Interaction|Expertise|Hard Limits)\s|\z)'
+        return "(?=^### |^\#\# (Workflow|Tool Usage|Memory Policy|Example Interaction|Expertise|Hard Limits)\s|\z)"
     }
     return '(?=^\#\# |\z)'
 }
@@ -121,7 +126,7 @@ function Sync-SoulSnippet {
         }
         $hasSection = [bool]$matchedPattern
         if ($hasSection) {
-            $newContent = $content -replace ('(?ms)^' + $matchedPattern + '\s*\r?\n.*?' + $sectionEnd), ($snippet + "`r`n`r`n")
+            $newContent = $content -replace ("(?ms)^" + $matchedPattern + "\s*\r?\n.*?" + $sectionEnd), ($snippet + "`r`n`r`n")
         } elseif ($InsertBeforeRegex -and ($content -match ('(?ms)^(' + $InsertBeforeRegex + ')'))) {
             # Escape $ in replacement to prevent PowerShell variable interpolation
             $escapedSnippet = $snippet -replace '\$', '$$$$'
@@ -136,25 +141,25 @@ function Sync-SoulSnippet {
         if ($Verify) {
             if ($changed) {
                 $action = 'VERIFY_DIFF'
-                Write-Host "  [VERIFY_DIFF] $profileName : verschil gedetecteerd" -ForegroundColor Yellow
+                Write-Host ('  VERIFY_DIFF: ' + $profileName + ' : verschil gedetecteerd') -ForegroundColor Yellow
             } else {
                 $action = 'VERIFY_OK'
-                Write-Host "  [VERIFY_OK]   $profileName : up-to-date" -ForegroundColor Green
+                Write-Host ('  VERIFY_OK:   ' + $profileName + ' : up-to-date') -ForegroundColor Green
             }
         } elseif ($Force -or $changed) {
             Set-SoulFileContent -Path $path -Content $newContent
             if ($changed) {
                 $action = 'UPDATED'
-                Write-Host "  [UPDATED]     $profileName : $path" -ForegroundColor Green
+                Write-Host ('  UPDATED:     ' + $profileName + ' : ' + $path) -ForegroundColor Green
                 $updated++
             } else {
                 $action = 'FORCED'
-                Write-Host "  [FORCED]      $profileName : $path" -ForegroundColor Cyan
+                Write-Host ('  FORCED:      ' + $profileName + ' : ' + $path) -ForegroundColor Cyan
                 $updated++
             }
         } else {
             $action = 'SKIPPED'
-            Write-Host "  [SKIPPED]     $profileName : up-to-date" -ForegroundColor DarkGray
+            Write-Host ('  SKIPPED:     ' + $profileName + ' : up-to-date') -ForegroundColor DarkGray
             $skipped++
         }
 
@@ -193,7 +198,7 @@ function Sync-SoulSnippet {
             }
         }
         $manifest | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath $ManifestPath -Encoding UTF8
-        Write-Host "[OK] Manifest geschreven: $ManifestPath" -ForegroundColor Green
+        Write-Host ('OK: Manifest geschreven: ' + $ManifestPath) -ForegroundColor Green
     }
 
     if (-not $Verify -and ($updated -gt 0 -or $Force) -and $env:HERMES_SUPPRESS_SOUL_REMINDER -ne '1') {
@@ -205,15 +210,15 @@ function Sync-SoulSnippet {
 
 function Repair-SoulDuplicateOutputBlocks {
     param([string]$Content)
-    $marker = '(?ms)^### Output conventions \(institutional\)\s*\r?\n'
+    $marker = "(?ms)^### Output conventions \(institutional\)\s*\r?\n"
     $changed = $false
     while ([regex]::Matches($Content, $marker).Count -gt 1) {
         $changed = $true
-        $matches = [regex]::Matches($Content, $marker)
-        $second = $matches[1].Index
+        $regexHits = [regex]::Matches($Content, $marker)
+        $second = $regexHits[1].Index
         $before = $Content.Substring(0, $second)
         $after = $Content.Substring($second)
-        $after = $after -replace '(?ms)^### Output conventions \(institutional\)\s*\r?\n.*?(?=^\#\# |\z)', ''
+        $after = $after -replace "(?ms)^### Output conventions \(institutional\)\s*\r?\n.*?(?=^\#\# |\z)", ''
         $Content = ($before.TrimEnd() + "`r`n`r`n" + $after.TrimStart()).TrimEnd()
     }
     if ($changed) { return $Content + "`r`n" }
@@ -228,17 +233,17 @@ function Test-SoulAnatomyContent {
     $failures = [System.Collections.Generic.List[string]]::new()
     $required = @(
         '^# SOUL\.md - ',
-        '^## Identity\s',
-        '^## Values & Principles\s',
-        '^## Communication Style\s',
-        '^### Interaction met J\.\s',
-        '^### Output conventions \(institutional\)\s',
-        '^## Expertise & Knowledge\s',
-        '^## Hard Limits\s',
-        '^## Workflow\s',
-        '^## Tool Usage\s',
-        '^## Memory Policy\s',
-        '^## Example Interaction\s'
+        "^## Identity\s",
+        "^## Values & Principles\s",
+        "^## Communication Style\s",
+        "^### Interaction met J\.\s",
+        "^### Output conventions \(institutional\)\s",
+        "^## Expertise & Knowledge\s",
+        "^## Hard Limits\s",
+        "^## Workflow\s",
+        "^## Tool Usage\s",
+        "^## Memory Policy\s",
+        "^## Example Interaction\s"
     )
     foreach ($pat in $required) {
         if ($Content -notmatch "(?m)$pat") {
@@ -246,10 +251,10 @@ function Test-SoulAnatomyContent {
         }
     }
     $legacy = @(
-        '^## Advisory & trust\s',
-        '^## Outputformaat \(institutioneel\)\s',
-        '^## Tool governance \(domein-minimum\)\s',
-        '^## Interaction met J\.\s'
+        "^## Advisory & trust\s",
+        "^## Outputformaat \(institutioneel\)\s",
+        "^## Tool governance \(domein-minimum\)\s",
+        "^## Interaction met J\.\s"
     )
     foreach ($pat in $legacy) {
         if ($Content -match "(?m)$pat") {
@@ -297,13 +302,13 @@ function Get-SoulAnatomyWatchPaths {
             }
         }
     }
-    $spec = Join-Path $root 'docs\SOUL_ANATOMY_SPEC.md'
+    $spec = Join-Path $root 'docs/SOUL_ANATOMY_SPEC.md'
     if (Test-Path -LiteralPath $spec) { [void]$paths.Add($spec) }
     foreach ($rel in @(
-            'windows\scripts\sync_soul_anatomy_snippets.ps1',
-            'windows\scripts\sync_all_domain_souls_from_templates.ps1',
-            'windows\scripts\SyncSoulSnippet.psm1',
-            'windows\scripts\sync_domain_soul_from_template.ps1'
+            'windows/scripts/sync_soul_anatomy_snippets.ps1',
+            'windows/scripts/sync_all_domain_souls_from_templates.ps1',
+            'windows/scripts/SyncSoulSnippet.psm1',
+            'windows/scripts/sync_domain_soul_from_template.ps1'
         )) {
         $p = Join-Path $root $rel
         if (Test-Path -LiteralPath $p) { [void]$paths.Add($p) }
@@ -340,7 +345,7 @@ function Test-SoulAnatomyDeployJustRan {
 }
 
 function Set-SoulAnatomyDeployStamp {
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'None')]
     param([string]$StampPath = '')
     $stamp = if ($StampPath) { $StampPath } else { Get-SoulAnatomyDeployStampPath }
     if (-not $PSCmdlet.ShouldProcess($stamp, 'Write SOUL anatomy deploy stamp')) { return }
@@ -353,7 +358,7 @@ function Set-SoulAnatomyDeployStamp {
 }
 
 function Set-InstitutionalNewChatReminder {
-    [CmdletBinding(SupportsShouldProcess)]
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'None')]
     param(
         [string]$Reason = 'SOUL/presentatie gewijzigd',
         [string]$RepoRoot = '',
@@ -374,9 +379,9 @@ function Set-InstitutionalNewChatReminder {
     }
     $payload | ConvertTo-Json | Set-Content -LiteralPath $noticePath -Encoding UTF8
     if (-not $Quiet -and $env:HERMES_SUPPRESS_SOUL_REMINDER -ne '1') {
-        Write-Host '[HERINNERING] Start een nieuwe chat (/new) - SOUL/system prompt is vernieuwd.' -ForegroundColor Yellow
+        Write-Host 'HERINNERING: Start een nieuwe chat (/new) - SOUL/system prompt is vernieuwd.' -ForegroundColor Yellow
         Write-Host "  Rooktest: $SmokeTestPrompt" -ForegroundColor DarkYellow
     }
 }
 
-Export-ModuleMember -Function Sync-SoulSnippet, Get-HermesRoot, Get-SoulTargets, Get-DomainSoulProfileNames, Get-SoulFileContent, Set-SoulFileContent, Set-InstitutionalNewChatReminder, Get-SoulSectionEndPattern, Repair-SoulDuplicateOutputBlocks, Test-SoulAnatomyContent, Get-SoulAnatomyDeployStampPath, Get-SoulAnatomyWatchPaths, Test-SoulAnatomyDeployNeeded, Test-SoulAnatomyDeployJustRan, Set-SoulAnatomyDeployStamp
+Export-ModuleMember -Function Sync-SoulSnippet, Get-HermesRoot, Get-SoulTargets, Get-DomainSoulProfileNames, Get-SoulFileContent, Set-SoulFileContent, Set-InstitutionalNewChatReminder, Get-SoulSectionEndPattern, Repair-SoulDuplicateOutputBlocks, Test-SoulAnatomyContent, Get-SoulAnatomyDeployStampPath, Get-SoulAnatomyWatchPaths, Test-SoulAnatomyDeployNeeded, Test-SoulAnatomyDeployJustRan, Set-SoulAnatomyDeployStamp, Test-NativeCommandFailed

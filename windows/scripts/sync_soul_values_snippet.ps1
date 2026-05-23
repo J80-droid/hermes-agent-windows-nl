@@ -19,7 +19,7 @@ if (-not $RepoRoot) {
 $templatePath = Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_VALUES.md'
 
 Write-Host '--- SOUL Values & Principles sync ---' -ForegroundColor Cyan
-Sync-SoulSnippet `
+$null = Sync-SoulSnippet `
     -TemplatePath $templatePath `
     -SectionRegex '^## Values & Principles\s' `
     -LegacySectionRegex @('^## Advisory & trust\s') `
@@ -28,3 +28,4 @@ Sync-SoulSnippet `
     -Force:$Force `
     -Verify:$Verify `
     -ManifestPath $ManifestPath
+exit 0

@@ -19,7 +19,7 @@ if (-not $RepoRoot) {
 $templatePath = Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_MEMORY_POLICY.md'
 
 Write-Host '--- SOUL Memory Policy sync ---' -ForegroundColor Cyan
-Sync-SoulSnippet `
+$null = Sync-SoulSnippet `
     -TemplatePath $templatePath `
     -SectionRegex '^## Memory Policy\s' `
     -InsertBeforeRegex '## Example Interaction\s' `
@@ -27,3 +27,4 @@ Sync-SoulSnippet `
     -Force:$Force `
     -Verify:$Verify `
     -ManifestPath $ManifestPath
+exit 0

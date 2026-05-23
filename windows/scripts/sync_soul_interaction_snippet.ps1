@@ -24,7 +24,7 @@ if (-not $RepoRoot) {
 $templatePath = Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_INTERACTION.md'
 
 Write-Host '--- SOUL Interaction sync ---' -ForegroundColor Cyan
-Sync-SoulSnippet `
+$null = Sync-SoulSnippet `
     -TemplatePath $templatePath `
     -SectionRegex '^### Interaction met J\.\s' `
     -LegacySectionRegex @('^## Interaction met J\.\s') `
@@ -33,3 +33,4 @@ Sync-SoulSnippet `
     -Force:$Force `
     -Verify:$Verify `
     -ManifestPath $ManifestPath
+exit 0

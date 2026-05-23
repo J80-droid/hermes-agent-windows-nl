@@ -131,7 +131,7 @@ Export: kopie na elke wijziging of via `backup_soul_profiles` uit backup-restore
 
 ## Sync-volgorde
 
-`windows\SYNC_SOUL_SNIPPETS.bat` (of `scripts\sync_soul_anatomy_snippets.ps1`):
+`windows/SYNC_SOUL_SNIPPETS.bat` (of `windows/scripts/sync_soul_anatomy_snippets.ps1`):
 
 Values → Interaction → Output conventions → Trust & verification → Workflow → Tool Usage → Memory Policy → repair dubbele Output-blokken
 
@@ -150,15 +150,25 @@ Trust-runtime (`SYNC_TRUST_RUNTIME.bat`): legal template → volledige anatomy s
 
 | Actie | Script |
 |-------|--------|
-| Bij Hermes-start (stamp) | `launch_hermes.bat` → `windows\scripts\launch_soul_anatomy_deploy.ps1` |
-| Na `git pull` | `windows\POST_GIT_PULL.bat` (roept `launch_soul_anatomy_deploy -Force` aan) |
-| Templates + snippets + E2E | `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat` |
-| Alleen shared snippets | `windows\SYNC_SOUL_SNIPPETS.bat` of `windows\scripts\sync_soul_anatomy_snippets.ps1 -Force` |
-| Eén profiel-template | `windows\scripts\sync_domain_soul_from_template.ps1 -ProfileName <naam>` |
-| Legacy → anatomy headers | `windows\MIGRATE_SOUL_ANATOMY.bat` (`migrate_soul_anatomy.ps1 -DryRun` / `-Apply`) |
-| Validatie | `python scripts/validate_soul_anatomy.py --all-profiles`, `windows\audits\RUN_SOUL_ANATOMY_E2E.ps1`, `windows\audits\RUN_SOUL_DEPLOY_START_E2E.ps1` (stamp/startketen) |
+| Bij Hermes-start (stamp) | `launch_hermes.bat` → `windows/scripts/launch_soul_anatomy_deploy.ps1` |
+| Na `git pull` | `windows/POST_GIT_PULL.bat` (roept `launch_soul_anatomy_deploy -Force` aan) |
+| Templates + snippets + E2E | `windows/APPLY_SOUL_ANATOMY_RUNTIME.bat` |
+| Alleen shared snippets | `windows/SYNC_SOUL_SNIPPETS.bat` of `windows/scripts/sync_soul_anatomy_snippets.ps1 -Force` |
+| Eén profiel-template | `windows/scripts/sync_domain_soul_from_template.ps1 -ProfileName <naam>` |
+| Legacy → anatomy headers | `windows/MIGRATE_SOUL_ANATOMY.bat` (`migrate_soul_anatomy.ps1 -DryRun` / `-Apply`) |
+| Validatie | `python scripts/validate_soul_anatomy.py --all-profiles`, `windows/audits/RUN_SOUL_ANATOMY_E2E.ps1`, `windows/audits/RUN_SOUL_DEPLOY_START_E2E.ps1` (stamp/startketen) |
 
 Na elke sync: **nieuwe chat** (`/new`). Runtime-bestanden worden zonder UTF-8 BOM geschreven (`SyncSoulSnippet.psm1`).
+
+### PowerShell-implementatie (`SyncSoulSnippet.psm1`)
+
+| Onderwerp | Regel |
+|-----------|--------|
+| Child `.ps1` exit | Na `& script.ps1` altijd `Test-NativeCommandFailed` — niet `$LASTEXITCODE -ne 0` (na puur PS-script is exitcode vaak `$null`) |
+| Pad-literals in `.ps1` | Forward slashes (`windows/scripts/…`); verify: `verify_windows_script_chain.ps1` (geen `windows\scripts` in strings) |
+| IDE / PSES parser | Geen `[TAG]` in **double-quoted** strings (`"[OK]"` breekt parse); gebruik `'[OK] …'` of concatenatie (`'OK: ' + $var`); geen `@{ Name = 'Output'; …}` in scripts (type `[Output]`) |
+| Snippet-orchestrator | `sync_soul_anatomy_snippets.ps1` roept zeven snippets aan, `exit 0` bij succes; `-Quiet` zet `HERMES_SUPPRESS_SOUL_REMINDER` |
+| Trust-runtime | `SYNC_TRUST_RUNTIME.bat` → anatomy snippets vóór memories/limits |
 
 **Profielen in repo:** 13 domeinen (zie `docs/domain_toolsets.yaml` + `Get-DomainSoulProfileNames` in `SyncSoulSnippet.psm1`). Geen apart `analyst`-domein — dat is upstream/Kanban-rolnaam of een orphan CLI-wrapper, geen RAG-profiel.
 

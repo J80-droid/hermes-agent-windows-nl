@@ -70,7 +70,7 @@ if ($runE2e) { Write-Host ' + E2E' -NoNewline -ForegroundColor Cyan }
 Write-Host ')...' -ForegroundColor Cyan
 
 & $runtimePs1 @runtimeArgs
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 
 if (-not (Test-Path -LiteralPath $stampDir)) {
     New-Item -ItemType Directory -Path $stampDir -Force | Out-Null

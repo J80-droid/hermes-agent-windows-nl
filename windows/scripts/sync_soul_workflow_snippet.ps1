@@ -19,7 +19,7 @@ if (-not $RepoRoot) {
 $templatePath = Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_WORKFLOW.md'
 
 Write-Host '--- SOUL Workflow sync ---' -ForegroundColor Cyan
-Sync-SoulSnippet `
+$null = Sync-SoulSnippet `
     -TemplatePath $templatePath `
     -SectionRegex '^## Workflow\s' `
     -InsertBeforeRegex '## Tool Usage\s|## Tool governance \(domein-minimum\)\s' `
@@ -27,3 +27,4 @@ Sync-SoulSnippet `
     -Force:$Force `
     -Verify:$Verify `
     -ManifestPath $ManifestPath
+exit 0

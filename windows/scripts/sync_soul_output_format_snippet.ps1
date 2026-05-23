@@ -24,7 +24,7 @@ if (-not $RepoRoot) {
 $templatePath = Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md'
 
 Write-Host '--- SOUL Output conventions sync ---' -ForegroundColor Cyan
-Sync-SoulSnippet `
+$null = Sync-SoulSnippet `
     -TemplatePath $templatePath `
     -SectionRegex '^### Output conventions \(institutional\)\s' `
     -LegacySectionRegex @('^## Outputformaat \(institutioneel\)\s') `
@@ -47,3 +47,4 @@ if (-not $Verify) {
         Set-InstitutionalNewChatReminder -Reason 'SOUL Output conventions sync'
     }
 }
+exit 0

@@ -18,7 +18,7 @@ if (-not $RepoRoot) {
 $templatePath = Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_TOOL_GOVERNANCE.md'
 
 Write-Host '--- SOUL Tool Usage sync ---' -ForegroundColor Cyan
-Sync-SoulSnippet `
+$null = Sync-SoulSnippet `
     -TemplatePath $templatePath `
     -SectionRegex '^## Tool Usage\s' `
     -LegacySectionRegex @('^## Tool governance \(domein-minimum\)\s') `
@@ -26,3 +26,4 @@ Sync-SoulSnippet `
     -HermesRoot $HermesRoot `
     -Force:$Force `
     -Verify:$Verify
+exit 0

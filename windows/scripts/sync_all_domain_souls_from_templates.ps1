@@ -19,9 +19,9 @@ Write-Host '=== Push domain SOUL templates ===' -ForegroundColor Cyan
 $failedProfiles = [System.Collections.Generic.List[string]]::new()
 foreach ($p in $profiles) {
     & (Join-Path $PSScriptRoot 'sync_domain_soul_from_template.ps1') -ProfileName $p -RepoRoot $RepoRoot -HermesRoot $HermesRoot -SuppressTip
-    if ($LASTEXITCODE -ne 0) {
+    if (Test-NativeCommandFailed) {
         [void]$failedProfiles.Add($p)
-        Write-Warning "Overgeslagen of mislukt: $p"
+        Write-Warning "Overgeslagen of mislukt: $p (exit $LASTEXITCODE)"
     }
 }
 if ($failedProfiles.Count -gt 0) {
@@ -36,8 +36,8 @@ if ($SkipSnippetSync) {
 
 Write-Host '=== SOUL anatomy snippet sync (Force) ===' -ForegroundColor Cyan
 & (Join-Path $PSScriptRoot 'sync_soul_anatomy_snippets.ps1') -RepoRoot $RepoRoot -HermesRoot $HermesRoot -Force -Quiet
-if ($LASTEXITCODE -ne 0) {
-    Write-Error 'SOUL anatomy snippet sync mislukt'
+if (Test-NativeCommandFailed) {
+    Write-Error "SOUL anatomy snippet sync mislukt (exit $LASTEXITCODE)"
     exit 1
 }
 if ($UpdateDeployStamp) {
