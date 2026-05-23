@@ -49,7 +49,7 @@ def ensure_heading_line_breaks(text: str) -> str:
         lead = match.group(1)
         label = match.group(2).strip()
         value = match.group(3).strip()
-        return f"{lead}**{label}:**\n{value}"
+        return f"{lead}**{label}:**\n\n{value}"
 
     out = _LABEL_INLINE_VALUE_RE.sub(_split_label, out)
 
