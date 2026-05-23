@@ -219,7 +219,31 @@ $prevEap = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 try {
     $runtimeOut = & $py -c $e2ePy 2>&1
-    $runtimeOut | Out-Host
+    # Filter bekende non-fatale stderr patterns (auth.json, deprecation warnings, etc.)
+    $filtered = $runtimeOut | Where-Object {
+        $line = if ($_ -is [System.Management.Automation.ErrorRecord]) { $_.ToString() } else { $_ }
+        $line = $line.ToString()
+        $isNonFatal = (
+            $line -match 'auth: failed to parse' -or
+            $line -match 'starting with empty store' -or
+            $line -match 'Corrupt file preserved' -or
+            $line -match 'DeprecationWarning' -or
+            $line -match 'audioop' -or
+            $line -match 'import audioop' -or
+            $line -match 'site-packages.discord' -or
+            $line -match 'NativeCommandError' -or
+            $line -match '^At .*char\d+' -or
+            $line -match '^\+\s+~' -or
+            $line -match '^\s+\+' -or
+            $line -match '^\s+~'
+        )
+        if ($isNonFatal) {
+            Write-Host "[WARN] (non-fatal) $line" -ForegroundColor DarkGray
+            return $false
+        }
+        return $true
+    }
+    $filtered | Out-Host
 } finally {
     $ErrorActionPreference = $prevEap
 }
