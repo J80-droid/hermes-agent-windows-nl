@@ -136,6 +136,8 @@ Optioneel: `-SkipPytest` (alleen repo/verify/docs).
 
 **Niet in deze E2E:** live OpenRouter API-call (router kiest daadwerkelijk model); handmatig met `model: openrouter/pareto-code` + `openrouter.min_coding_score`.
 
+Rapport: `PARETO_E2E_REPORT_<timestamp>.md` in deze map — **gitignored** (zelfde patroon als `*_E2E_REPORT_*_*.md`).
+
 ## IDE-onderhoud E2E (volledige landkaart)
 
 ```text
