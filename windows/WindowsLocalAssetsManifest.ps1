@@ -16,6 +16,7 @@ function Get-HermesWindowsLocalAssetsManifest {
         'UPSTREAM_SYNC.md',
         'APPLY_TEAM_DISPLAY.bat',
         'APPLY_INSTITUTIONAL_RUNTIME.bat',
+        'DIAGNOSE_RENDERER.bat',
         'apply_institutional_runtime.ps1',
         'SYNC_HERMES_API_ENV.bat',
         'sync_hermes_api_env.ps1',

@@ -9,6 +9,10 @@ const SECTION_BREAK_BEFORE_HEADING_RE = /(?<!\n\n)(?<=\S\n)(#{1,6}\s)/gm
 
 const NUMBERED_STEP_HEADING_RE = /^(\d+)\s+Stap\s+(\d+)\s*:\s*(.+?)\s*$/gim
 
+/** Built-in "demo" palette Tailwind classes.
+ *  In the future the Web layer could read the active palette from an API
+ *  payload; until then we keep parity with the Python default.
+ */
 export const ASSISTANT_TABLE_HEADER_CLASSES = [
   'text-cyan-400',
   'text-green-400',
@@ -26,6 +30,8 @@ export const ASSISTANT_HEADING_CLASSES = [
 ] as const
 
 export const ASSISTANT_LABEL_CLASS = 'text-fuchsia-400 font-bold'
+
+export const assistantWebPaletteName = (palette: string | undefined): string => palette || 'demo'
 
 export function normalizeAssistantMarkdown(text: string): string {
   if (!text?.trim()) {

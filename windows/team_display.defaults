@@ -13,3 +13,10 @@ assistant_palette=demo
 assistant_label_columns=true
 compact=false
 skin=default
+
+# Beschikbare assistant_palette waarden (built-in + config/palettes.yaml):
+#   demo    - Monokai-inspired (cyaan/groen/magenta/geel)  [default]
+#   hermes  - Goud/amber (alleen voor legacy-compat)
+#   neutral - Wit/grijs (toegankelijkheid)
+#   monokai, dracula, tokyo, nordic, pacific
+# Zie: python scripts/diagnose_renderer.py --show-palettes

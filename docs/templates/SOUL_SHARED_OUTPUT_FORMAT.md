@@ -11,6 +11,7 @@ Dit blok geldt voor **alle** antwoorden, ongeacht profiel. Kleur en layout doet 
 - Tabellen als markdown-tabel (`| kolom |`); de renderer kleurt kolomkoppen per kolom.
 - Lijstpunten: gebruik `- ` aan het begin van de regel; plak geen lange alinea op dezelfde regel als het opsommingsteken.
 - Geen codefence (```) rond het volledige antwoord. Geen inleiding, groet of afsluitende uitleg.
+- **Geen `[COLOR_BLUE]`, `[COLOR_TEAL]`, `[COLOR_GREEN]`, `[RESET]` tokens.** Deze zijn vervangen door normale markdown-koppen en de renderer doet de kleuren. Als je oude SOUL-bestanden migreert: `python scripts/migrate_soul_tokens.py --all-profiles --in-place`.
 
 **Fout:**
 ```markdown
