@@ -9,6 +9,7 @@ param(
     [switch]$IncludeTrustForensicE2E,
     [switch]$IncludeToolsetDomainE2E,
     [switch]$IncludeProvisionDomainE2E,
+    [switch]$IncludeSoulDeployStartE2E,
     [switch]$SkipPytest,
     [switch]$SkipFootguns,
     [switch]$SkipRuff,
@@ -185,6 +186,14 @@ if ($IncludeToolsetDomainE2E -or $IncludeAllE2E) {
     $toolE2e = Join-Path $scriptRoot 'RUN_TOOLSET_DOMAIN_E2E.ps1'
     Invoke-Step 'toolset-domain-e2e' {
         & $toolE2e -RepoRoot $repoRoot
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeSoulDeployStartE2E -or $IncludeAllE2E) {
+    $soulStartE2e = Join-Path $scriptRoot 'RUN_SOUL_DEPLOY_START_E2E.ps1'
+    Invoke-Step 'soul-deploy-start-e2e' {
+        & $soulStartE2e -RepoRoot $repoRoot
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

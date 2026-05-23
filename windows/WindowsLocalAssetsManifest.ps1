@@ -122,7 +122,8 @@ function Get-HermesWindowsLocalAssetsManifest {
                 'RUN_AUDITS.ps1', 'RUN_AUDITS.bat',
                 'RUN_PROFILE_SWITCH_E2E.ps1', 'RUN_PROFILE_SWITCH_E2E.bat',
                 'RUN_INSTITUTIONAL_E2E.ps1', 'RUN_INSTITUTIONAL_E2E.bat',
-                'RUN_LEGAL_DOMAIN_E2E.ps1', 'RUN_LEGAL_DOMAIN_E2E.bat'
+                'RUN_LEGAL_DOMAIN_E2E.ps1', 'RUN_LEGAL_DOMAIN_E2E.bat',
+                'RUN_SOUL_DEPLOY_START_E2E.ps1', 'RUN_SOUL_DEPLOY_START_E2E.bat'
             )
             RepoSub = 'audits'
         },
@@ -194,6 +195,8 @@ function Get-HermesCriticalWindowsRepoPath {
         'windows/audits/RUN_LEGAL_DOMAIN_E2E.bat',
         'windows/audits/RUN_TOOLSET_DOMAIN_E2E.ps1',
         'windows/audits/RUN_TOOLSET_DOMAIN_E2E.bat',
+        'windows/audits/RUN_SOUL_DEPLOY_START_E2E.ps1',
+        'windows/audits/RUN_SOUL_DEPLOY_START_E2E.bat',
         'windows/scripts/migrate_legal_source_layout.ps1',
         'windows/scripts/MIGRATE_LEGAL_LAYOUT.bat',
         'docs/LEGAL_ROLLOUT_CHECKLIST.md',

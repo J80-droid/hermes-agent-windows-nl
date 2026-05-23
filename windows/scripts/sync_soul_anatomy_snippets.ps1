@@ -11,6 +11,12 @@ param(
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1') -Force
 
+$suppressReminder = $false
+if ($Quiet -and $env:HERMES_SUPPRESS_SOUL_REMINDER -ne '1') {
+    $env:HERMES_SUPPRESS_SOUL_REMINDER = '1'
+    $suppressReminder = $true
+}
+
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 } else {
@@ -38,7 +44,7 @@ foreach ($item in $scripts) {
     }
     if ($Force) { $splat['Force'] = $true }
     & (Join-Path $PSScriptRoot $item.File) @splat
-    if (-not $?) {
+    if ($LASTEXITCODE -ne 0) {
         throw "Snippet sync mislukt: $($item.File)"
     }
 }
@@ -60,7 +66,11 @@ if (-not $Verify -and -not $SkipRepair) {
 }
 
 if ($Force -and -not $Verify) {
-    Set-InstitutionalNewChatReminder -Reason 'SOUL anatomy snippet sync' -RepoRoot $RepoRoot
+    Set-InstitutionalNewChatReminder -Reason 'SOUL anatomy snippet sync' -RepoRoot $RepoRoot -Quiet:$Quiet
+}
+
+if ($suppressReminder) {
+    Remove-Item Env:HERMES_SUPPRESS_SOUL_REMINDER -ErrorAction SilentlyContinue
 }
 
 if (-not $Quiet) {

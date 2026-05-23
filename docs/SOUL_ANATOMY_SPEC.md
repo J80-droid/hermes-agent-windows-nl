@@ -154,7 +154,7 @@ Trust-runtime (`SYNC_TRUST_RUNTIME.bat`): legal template → volledige anatomy s
 | Alleen shared snippets | `windows\SYNC_SOUL_SNIPPETS.bat` of `windows\scripts\sync_soul_anatomy_snippets.ps1 -Force` |
 | Eén profiel-template | `windows\scripts\sync_domain_soul_from_template.ps1 -ProfileName <naam>` |
 | Legacy → anatomy headers | `windows\MIGRATE_SOUL_ANATOMY.bat` (`migrate_soul_anatomy.ps1 -DryRun` / `-Apply`) |
-| Validatie | `python scripts/validate_soul_anatomy.py --all-profiles` of `windows\audits\RUN_SOUL_ANATOMY_E2E.ps1` |
+| Validatie | `python scripts/validate_soul_anatomy.py --all-profiles`, `windows\audits\RUN_SOUL_ANATOMY_E2E.ps1`, `windows\audits\RUN_SOUL_DEPLOY_START_E2E.ps1` (stamp/startketen) |
 
 Na elke sync: **nieuwe chat** (`/new`). Runtime-bestanden worden zonder UTF-8 BOM geschreven (`SyncSoulSnippet.psm1`).
 

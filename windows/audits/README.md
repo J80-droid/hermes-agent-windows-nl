@@ -7,7 +7,9 @@ Deze map bevat de **fork** kwaliteitspoorten (geen 1:1 upstream-kloon).
 | **`RUN_AUDITS.bat`** | Gecombineerd: `verify_hermes_home`, PSScriptAnalyzer (SKIP indien ontbreekt), `check-windows-footguns.py`, ruff (SKIP), pytest profiel-subset |
 | **`RUN_AUDITS.bat -IncludeProfileE2E`** | Bovenstaande + profielwissel E2E |
 | **`RUN_AUDITS.bat -IncludeInstitutionalE2E`** | Bovenstaande + landkaart/SOUL-backup/templates E2E |
-| **`RUN_AUDITS.bat -IncludeAllE2E`** | Institutioneel + legal-domein + profielwissel + toolset E2E |
+| **`RUN_AUDITS.bat -IncludeAllE2E`** | Institutioneel + legal-domein + profielwissel + toolset + SOUL deploy-start E2E |
+| **`RUN_SOUL_DEPLOY_START_E2E.bat`** | Stamp/startketen: launch_hermes, POST_GIT_PULL, upstream SkipSoul, anatomy subset |
+| **`RUN_AUDITS.bat -IncludeSoulDeployStartE2E`** | Alleen SOUL deploy-start E2E |
 | **`RUN_AUDITS.bat -IncludeToolsetDomainE2E`** | `platform_toolsets.cli` per profiel vs manifest |
 | **`RUN_AUDITS.bat -IncludeLegalDomainE2E`** | Legal taxonomie, SOUL, submappen, rooktest |
 | **`APPLY_INSTITUTIONAL_RUNTIME.bat`** | Handmatig: display + SOUL + E2E; **automatisch** na `UPDATE_HERMES.bat` (post-merge, `-SkipE2E`) |
@@ -96,6 +98,27 @@ windows\audits\RUN_AUDITS.bat -IncludeToolsetDomainE2E
 **Handmatig na PASS:** nieuwe chat met `hermes -p <domein>` — root zonder `-p` heeft bewust geen tools.
 
 Zie `docs/DOMAIN_TOOLSET_AUDIT.md`.
+
+## SOUL deploy bij start E2E
+
+```text
+windows\audits\RUN_SOUL_DEPLOY_START_E2E.bat
+```
+
+| Stap | Controle |
+| ---- | -------- |
+| 1/8 | Repo-keten: `launch_soul_anatomy_deploy`, `launch_hermes` volgorde, `POST_GIT_PULL -Force`, geen `SOUL_ANALYST_DOMAIN` |
+| 2/8 | `Get-SoulAnatomyWatchPaths`, 13 profielen |
+| 3/8 | Stamp-logica (isolated temp; geen repo-touch) |
+| 4/8 | `HERMES_SKIP_SOUL_DEPLOY_ON_START=1` |
+| 5/8 | Productie-stamp → `up-to-date` (skip indien geen stamp) |
+| 6/8 | `launch_institutional_runtime` zonder SOUL-watch, met `SkipSoul` na deploy |
+| 7/8 | `sync_all` exit-codes + `-UpdateDeployStamp` |
+| 8/8 | `RUN_SOUL_ANATOMY_E2E` (runtime anatomy) |
+
+**Rapport:** `SOUL_DEPLOY_START_E2E_LAST_RUN.log` (gitignored indien in .gitignore)
+
+**Handmatig na FAIL stap 5:** `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat`
 
 ## Profielwissel E2E
 

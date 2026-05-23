@@ -114,6 +114,22 @@ class TestLaunchIntegration:
         text = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
         assert "launch_institutional_runtime.ps1" in text
 
+    def test_launch_hermes_wires_soul_deploy_before_institutional(self):
+        text = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
+        assert "launch_soul_anatomy_deploy.ps1" in text
+        assert "HERMES_SKIP_SOUL_DEPLOY_ON_START" in text
+        assert text.index("launch_soul_anatomy_deploy.ps1") < text.index(
+            "launch_institutional_runtime.ps1"
+        )
+
+    def test_post_git_pull_uses_soul_deploy_force(self):
+        text = (REPO / "windows/POST_GIT_PULL.bat").read_text(encoding="utf-8")
+        assert "launch_soul_anatomy_deploy.ps1" in text
+        assert "-Force" in text
+
+    def test_soul_deploy_start_e2e_runner_exists(self):
+        assert (REPO / "windows/audits/RUN_SOUL_DEPLOY_START_E2E.ps1").is_file()
+
     def test_cli_defines_profile_intent_parser(self):
         import cli as cli_mod
 

@@ -9,9 +9,7 @@ $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1') -Force
 
 if ($env:HERMES_SKIP_SOUL_DEPLOY_ON_START -eq '1') {
-    if (-not $Quiet) {
-        Write-Host '[INFO] SOUL anatomy deploy overgeslagen (HERMES_SKIP_SOUL_DEPLOY_ON_START=1).' -ForegroundColor DarkGray
-    }
+    Write-Host '[INFO] SOUL anatomy deploy overgeslagen (HERMES_SKIP_SOUL_DEPLOY_ON_START=1).' -ForegroundColor DarkGray
     exit 0
 }
 

@@ -195,7 +195,7 @@ function Sync-SoulSnippet {
         Write-Host "[OK] Manifest geschreven: $ManifestPath" -ForegroundColor Green
     }
 
-    if (-not $Verify -and ($updated -gt 0 -or $Force)) {
+    if (-not $Verify -and ($updated -gt 0 -or $Force) -and $env:HERMES_SUPPRESS_SOUL_REMINDER -ne '1') {
         Set-InstitutionalNewChatReminder -Reason "SOUL sync: $((Split-Path -Leaf $TemplatePath))"
     }
 
@@ -353,7 +353,8 @@ function Set-InstitutionalNewChatReminder {
     param(
         [string]$Reason = 'SOUL/presentatie gewijzigd',
         [string]$RepoRoot = '',
-        [string]$SmokeTestPrompt = 'docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md'
+        [string]$SmokeTestPrompt = 'docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md',
+        [switch]$Quiet
     )
     $hermesDir = Join-Path $env:LOCALAPPDATA 'hermes'
     if (-not (Test-Path -LiteralPath $hermesDir)) {
@@ -367,8 +368,10 @@ function Set-InstitutionalNewChatReminder {
         repo_root = $RepoRoot
     }
     $payload | ConvertTo-Json | Set-Content -LiteralPath $noticePath -Encoding UTF8
-    Write-Host '[HERINNERING] Start een nieuwe chat (/new) — SOUL/system prompt is vernieuwd.' -ForegroundColor Yellow
-    Write-Host "  Rooktest: $SmokeTestPrompt" -ForegroundColor DarkYellow
+    if (-not $Quiet -and $env:HERMES_SUPPRESS_SOUL_REMINDER -ne '1') {
+        Write-Host '[HERINNERING] Start een nieuwe chat (/new) — SOUL/system prompt is vernieuwd.' -ForegroundColor Yellow
+        Write-Host "  Rooktest: $SmokeTestPrompt" -ForegroundColor DarkYellow
+    }
 }
 
 Export-ModuleMember -Function Sync-SoulSnippet, Get-HermesRoot, Get-SoulTargets, Get-DomainSoulProfileNames, Get-SoulFileContent, Set-SoulFileContent, Set-InstitutionalNewChatReminder, Get-SoulSectionEndPattern, Repair-SoulDuplicateOutputBlocks, Test-SoulAnatomyContent, Get-SoulAnatomyDeployStampPath, Get-SoulAnatomyWatchPaths, Test-SoulAnatomyDeployNeeded, Test-SoulAnatomyDeployJustRan, Set-SoulAnatomyDeployStamp
