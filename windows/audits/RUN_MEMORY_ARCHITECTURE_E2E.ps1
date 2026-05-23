@@ -115,19 +115,19 @@ Add-StepResult -Name '5/10 root .env' -Ok $rootOk -Detail $rootEnv
 
 # --- 5 Alle profielen ---
 $profilesDir = Join-Path $hermesRoot 'profiles'
-$profOk = $true
+$script:profVaultOk = $true
 $profCount = 0
 if (Test-Path -LiteralPath $profilesDir) {
     Get-ChildItem -LiteralPath $profilesDir -Directory | ForEach-Object {
         $profCount++
         $profEnv = Join-Path $_.FullName '.env'
-        $v = Read-EnvVar -Path $profEnv -Key 'OBSIDIAN_VAULT_PATH'
-        if (-not (Test-VaultPathValue -Value $v)) { $profOk = $false }
+        $vaultVal = Read-EnvVar -Path $profEnv -Key 'OBSIDIAN_VAULT_PATH'
+        if (-not (Test-VaultPathValue -Value $vaultVal)) { $script:profVaultOk = $false }
     }
 } else {
-    $profOk = $false
+    $script:profVaultOk = $false
 }
-Add-StepResult -Name '6/10 profiel-.env OBSIDIAN' -Ok $profOk -Detail ("$profCount profielen")
+Add-StepResult -Name '6/10 profiel-.env OBSIDIAN' -Ok $script:profVaultOk -Detail ("$profCount profielen")
 
 # --- 6 Vault filesystem ---
 $vaultPath = $CanonicalVault

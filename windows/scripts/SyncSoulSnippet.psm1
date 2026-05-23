@@ -43,9 +43,19 @@ function Get-DomainSoulProfileNames {
 
 $script:SoulSyncIncludeRoot = $false
 
+# Regex-eindpatronen als single-quoted literals (PSES parse-safe; geen dubbele quotes met haakjes)
+$script:SoulRegexOutputConventionsEnd = '(?=^## (Expertise & Knowledge|Hard Limits|Workflow|Tool Usage|Memory Policy|Example Interaction)\s|\z)'
+$script:SoulRegexInteractionEnd = '(?=^### Output conventions \(institutional\)\s|\z)'
+$script:SoulRegexTrustSectionEnd = '(?m)(?=^### (?!Trust)|^\#\# |\z)'
+$script:SoulRegexGenericSubsectionEnd = '(?=^### |^\#\# (Workflow|Tool Usage|Memory Policy|Example Interaction|Expertise|Hard Limits)\s|\z)'
+$script:SoulRegexGenericSectionEnd = '(?=^## |\z)'
+
 function Set-SoulSyncIncludeRoot {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'None')]
     param([bool]$Value)
-    $script:SoulSyncIncludeRoot = $Value
+    if ($PSCmdlet.ShouldProcess('SoulSyncIncludeRoot', "Set include-root flag to $Value")) {
+        $script:SoulSyncIncludeRoot = $Value
+    }
 }
 
 function Get-SoulTargets {
@@ -59,8 +69,8 @@ function Get-SoulTargets {
     $root = if ($HermesRoot) { (Resolve-Path -LiteralPath $HermesRoot).Path } else { Get-HermesRoot }
     $targets = @()
     if ($IncludeRootSoul) {
-        $rootSoul = Join-Path $root 'SOUL.md'
-        if (Test-Path -LiteralPath $rootSoul) { $targets += $rootSoul }
+        $rootSoulPath = Join-Path $root 'SOUL.md'
+        if (Test-Path -LiteralPath $rootSoulPath) { $targets += $rootSoulPath }
     }
     $profilesDir = Join-Path $root 'profiles'
     if (Test-Path -LiteralPath $profilesDir) {
@@ -78,20 +88,19 @@ function Get-SoulSectionEndPattern {
         [string]$SectionEndRegex = ''
     )
     if ($SectionEndRegex) { return $SectionEndRegex }
-    # ### subsections: default next ### sibling; NOT ## inside code fences in output template
     if ($SectionRegex -match 'Output conventions') {
-        return "(?=^\#\# (Expertise & Knowledge|Hard Limits|Workflow|Tool Usage|Memory Policy|Example Interaction)\s|\z)"
+        return $script:SoulRegexOutputConventionsEnd
     }
     if ($SectionRegex -match '^### Interaction') {
-        return "(?=^### Output conventions \(institutional\)\s|\z)"
+        return $script:SoulRegexInteractionEnd
     }
     if ($SectionRegex -match '^### Trust') {
-        return '(?=^### (?!Trust)|^\#\# |\z)'
+        return $script:SoulRegexTrustSectionEnd
     }
     if ($SectionRegex -match '^###') {
-        return "(?=^### |^\#\# (Workflow|Tool Usage|Memory Policy|Example Interaction|Expertise|Hard Limits)\s|\z)"
+        return $script:SoulRegexGenericSubsectionEnd
     }
-    return '(?=^\#\# |\z)'
+    return $script:SoulRegexGenericSectionEnd
 }
 
 function Sync-SoulSnippet {
@@ -326,11 +335,8 @@ function Get-SoulAnatomyWatchPaths {
     $templatesDir = Join-Path $root 'docs\templates'
     if (Test-Path -LiteralPath $templatesDir) {
         Get-ChildItem -LiteralPath $templatesDir -File -ErrorAction SilentlyContinue | ForEach-Object {
-            if ($_.Name -like 'SOUL_*_DOMAIN.md' -or
-                $_.Name -eq 'SOUL_CORE_ORCHESTRATOR.md' -or
-                $_.Name -eq 'SOUL_ROOT_FALLBACK.md' -or
-                $_.Name -eq 'SOUL_ANATOMY_BASE.md' -or
-                $_.Name -like 'SOUL_SHARED_*.md') {
+            $n = $_.Name
+            if ($n -match '^SOUL_.*_DOMAIN\.md$' -or $n -eq 'SOUL_CORE_ORCHESTRATOR.md' -or $n -eq 'SOUL_ROOT_FALLBACK.md' -or $n -eq 'SOUL_ANATOMY_BASE.md' -or $n -match '^SOUL_SHARED_.*\.md$') {
                 [void]$paths.Add($_.FullName)
             }
         }
@@ -341,7 +347,8 @@ function Get-SoulAnatomyWatchPaths {
             'windows/scripts/sync_soul_anatomy_snippets.ps1',
             'windows/scripts/sync_all_domain_souls_from_templates.ps1',
             'windows/scripts/SyncSoulSnippet.psm1',
-            'windows/scripts/sync_domain_soul_from_template.ps1'
+            'windows/scripts/sync_domain_soul_from_template.ps1',
+            'windows/scripts/toolset_domain_e2e_runtime.py'
         )) {
         $p = Join-Path $root $rel
         if (Test-Path -LiteralPath $p) { [void]$paths.Add($p) }

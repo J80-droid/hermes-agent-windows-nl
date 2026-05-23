@@ -52,13 +52,14 @@ function Get-AuditPython {
     return 'python'
 }
 
+$hermes = Get-HermesRoot -OverrideRoot $HermesRoot
 $failures = 0
 $reportLines = @(
     "# Toolset domain E2E",
     "",
     "Gestart: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')",
     "Repo: $RepoRoot",
-    "Hermes: $(Get-HermesRoot)",
+    "Hermes: $hermes",
     ""
 )
 
@@ -75,8 +76,8 @@ function Step-Ok {
 
 function Step-Fail {
     param([string]$Name, [string]$Detail)
-    Write-Host ('[FAIL] ' + $Name + ' — ' + $Detail) -ForegroundColor Red
-    Add-Report "- **$Name**: FAIL — $Detail"
+    Write-Host ('[FAIL] ' + $Name + ' - ' + $Detail) -ForegroundColor Red
+    Add-Report ("- **$Name**: FAIL - $Detail")
     $script:failures++
 }
 
@@ -86,7 +87,6 @@ if (-not (Test-Path -LiteralPath $py)) {
     exit 1
 }
 
-$hermes = Get-HermesRoot -OverrideRoot $HermesRoot
 $env:HERMES_HOME = $hermes
 $logPath = Join-Path $scriptRoot 'TOOLSET_DOMAIN_E2E_LAST_RUN.log'
 
@@ -141,87 +141,14 @@ if (Test-NativeCommandFailed) {
 }
 
 Write-Host '=== Toolset domain E2E (5/6 runtime tool-counts) ===' -ForegroundColor Cyan
-$e2ePy = @"
-import os, sys, yaml
-from pathlib import Path
-repo = Path(r'$RepoRoot')
-hermes = Path(r'$hermes')
-sys.path.insert(0, str(repo))
-manifest = yaml.safe_load((repo / 'docs/domain_toolsets.yaml').read_text(encoding='utf-8'))
-profiles = manifest.get('profiles') or {}
-required_base = {'mcp', 'file', 'memory', 'skills', 'clarify'}
-failures = []
-profile_lines = []
-for name, spec in sorted(profiles.items()):
-    cfg_path = hermes / 'profiles' / name / 'config.yaml'
-    if not cfg_path.is_file():
-        failures.append(f'{name}: config.yaml ontbreekt')
-        continue
-    cfg = yaml.safe_load(cfg_path.read_text(encoding='utf-8')) or {}
-    cli = set((cfg.get('platform_toolsets') or {}).get('cli') or [])
-    expected = set((spec.get('platform_toolsets') or {}).get('cli') or [])
-    if cli != expected:
-        failures.append(f'{name}: cli mismatch {sorted(cli)} vs {sorted(expected)}')
-    missing = required_base - cli
-    if missing:
-        failures.append(f'{name}: mist basis toolsets {sorted(missing)}')
-    never = set(spec.get('never_default') or []) | set(manifest.get('never_default_global') or [])
-    overlap = cli & never
-    if overlap:
-        failures.append(f'{name}: never_default in cli: {sorted(overlap)}')
-    optional = set(spec.get('optional_toolsets') or [])
-    bad_opt = optional & cli
-    if bad_opt:
-        failures.append(f'{name}: optional_toolsets in cli: {sorted(bad_opt)}')
-    if 'hermes-cli' in cli or 'enabled_toolsets' in cfg:
-        failures.append(f'{name}: hermes-cli of enabled_toolsets nog actief')
-    max_tools = int(spec.get('max_tools') or 99)
-    os.environ['HERMES_HOME'] = str(hermes / 'profiles' / name)
-    from hermes_cli.tools_config import _get_platform_tools
-    from model_tools import get_tool_definitions
-    enabled = _get_platform_tools(cfg, 'cli')
-    tools = get_tool_definitions(enabled_toolsets=enabled, quiet_mode=True)
-    count = len(tools)
-    profile_lines.append(f'{name}: {count} tools (max {max_tools})')
-    if count > max_tools:
-        failures.append(f'{name}: {count} tools > max {max_tools}')
-root_cfg = hermes / 'config.yaml'
-if root_cfg.is_file():
-    root = yaml.safe_load(root_cfg.read_text(encoding='utf-8')) or {}
-    pt = root.get('platform_toolsets') or {}
-    if 'cli' not in pt:
-        failures.append('root: platform_toolsets.cli ontbreekt')
-    root_cli = list(pt.get('cli') or [])
-    if root.get('toolsets') and root.get('toolsets') != []:
-        failures.append(f'root: toolsets moet [] zijn')
-    if root_cli != []:
-        failures.append(f'root: cli moet [] zijn, is {root_cli!r}')
-    os.environ['HERMES_HOME'] = str(hermes)
-    from hermes_cli.tools_config import _get_platform_tools
-    from model_tools import get_tool_definitions
-    root_enabled = _get_platform_tools(root, 'cli')
-    if 'hermes-cli' in root_enabled:
-        failures.append('root: hermes-cli actief zonder profiel')
-    root_tools = get_tool_definitions(enabled_toolsets=root_enabled, quiet_mode=True)
-    if len(root_enabled) > 0 or len(root_tools) > 0:
-        failures.append(f'root: {len(root_enabled)} toolsets / {len(root_tools)} tools — gebruik hermes -p <domein>')
-    else:
-        profile_lines.append('root: 0 toolsets, 0 tools')
-if failures:
-    for f in failures:
-        print('[FAIL]', f)
-    for line in profile_lines:
-        print('[INFO]', line)
-    sys.exit(1)
-for line in profile_lines:
-    print('[OK]', line)
-print('[OK] runtime tool-counts')
-"@
+$env:HERMES_TOOLSET_E2E_REPO = $RepoRoot
+$env:HERMES_TOOLSET_E2E_HOME = $hermes
+$runtimePy = Join-Path $RepoRoot 'windows/scripts/toolset_domain_e2e_runtime.py'
 
 $prevEap = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 try {
-    $runtimeOut = & $py -c $e2ePy 2>&1
+    $runtimeOut = & $py $runtimePy 2>&1
     # Filter bekende non-fatale stderr patterns (auth.json, deprecation warnings, etc.)
     $filtered = $runtimeOut | Where-Object {
         $line = if ($_ -is [System.Management.Automation.ErrorRecord]) { $_.ToString() } else { $_ }
@@ -275,7 +202,7 @@ foreach ($name in @('core', 'legal', 'ict', 'security', 'dev', 'data')) {
     }
 }
 if ($missingSoul.Count -gt 0) {
-    $msg = ($missingSoul -join '; ') + ' — draai SYNC_TRUST_RUNTIME.bat of SYNC_SOUL_SNIPPETS.bat'
+    $msg = ($missingSoul -join '; ') + ' - draai SYNC_TRUST_RUNTIME.bat of SYNC_SOUL_SNIPPETS.bat'
     Step-Fail 'soul-governance' $msg
 } else {
     Step-Ok 'soul-governance' 'alle profielen (core, legal, ict, security, dev, data) bevatten tool-governance'
@@ -283,7 +210,7 @@ if ($missingSoul.Count -gt 0) {
 
 $reportLines += ''
 if ($failures -gt 0) {
-    $reportLines += "**Resultaat:** FAIL ($failures stap(pen))"
+    $reportLines += ('**Resultaat:** FAIL (' + $failures + ' stappen)')
     $reportLines -join "`n" | Set-Content -LiteralPath $logPath -Encoding UTF8
     Write-Host "=== TOOLSET DOMAIN E2E: FAIL ($failures) ===" -ForegroundColor Red
     Write-Host "Rapport: $logPath" -ForegroundColor DarkGray

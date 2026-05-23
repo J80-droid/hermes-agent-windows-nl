@@ -28,11 +28,13 @@ function Get-EnvVarsFromFile {
 }
 
 function Set-EnvVarsInFile {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'None')]
     param(
         [string]$Path,
         [hashtable]$Vars
     )
     if ($Vars.Count -eq 0) { return }
+    if (-not $PSCmdlet.ShouldProcess($Path, 'Merge environment variables into file')) { return }
     $lines = [System.Collections.Generic.List[string]]::new()
     if (Test-Path -LiteralPath $Path) {
         $lines.AddRange([string[]](Get-Content -LiteralPath $Path -Encoding UTF8))

@@ -197,11 +197,9 @@ function Get-HermesInstitutionalDisplaySnapshot {
         $snap = [ordered]@{}
         $lines = Get-Content -LiteralPath $cfgPath -ErrorAction SilentlyContinue
         $inDisplay = $false
-        $displayIndent = 0
         foreach ($line in $lines) {
             if ($line -match '^display\s*:\s*$') {
                 $inDisplay = $true
-                $displayIndent = 0
                 continue
             }
             if ($inDisplay) {

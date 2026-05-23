@@ -66,8 +66,7 @@ foreach ($t in $targets) {
         $failures++
         continue
     }
-    $preview = Format-Preview -Text $line -Max $MaxPreview
-    Write-Host ('[trust-memory] ' + $($t.Name) + ': $preview') -ForegroundColor DarkGray
+    Write-Host ('[trust-memory] ' + $t.Name + ': ' + (Format-Preview -Text $line -Max $MaxPreview)) -ForegroundColor DarkGray
 }
 
 if ($failures -gt 0) {
