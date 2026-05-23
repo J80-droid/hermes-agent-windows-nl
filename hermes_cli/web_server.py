@@ -866,6 +866,22 @@ async def get_config():
     return {k: v for k, v in config.items() if not k.startswith("_")}
 
 
+@app.get("/api/display/assistant")
+async def get_assistant_display_settings():
+    """Live assistant render settings (same source as CLI/gateway Rich pipeline)."""
+    try:
+        from hermes_cli.display_markdown import get_assistant_render_settings
+
+        return get_assistant_render_settings()
+    except Exception:
+        _log.exception("GET /api/display/assistant failed")
+        return {
+            "assistant_render_style": "institutional_rich",
+            "assistant_palette": "demo",
+            "assistant_label_columns": True,
+        }
+
+
 @app.get("/api/config/defaults")
 async def get_defaults():
     return DEFAULT_CONFIG

@@ -38,6 +38,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { notifyAssistantDisplayChanged } from "@/lib/assistantDisplayEvents";
 import { getNestedValue, setNestedValue } from "@/lib/nested";
 import { useToast } from "@/hooks/useToast";
 import { Toast } from "@/components/Toast";
@@ -263,6 +264,7 @@ export default function ConfigPage() {
     setSaving(true);
     try {
       await api.saveConfig(config);
+      notifyAssistantDisplayChanged();
       showToast(t.config.configSaved, "success");
     } catch (e) {
       showToast(`${t.config.failedToSave}: ${e}`, "error");
@@ -275,6 +277,7 @@ export default function ConfigPage() {
     setYamlSaving(true);
     try {
       await api.saveConfigRaw(yamlText);
+      notifyAssistantDisplayChanged();
       showToast(t.config.yamlConfigSaved, "success");
       api
         .getConfig()

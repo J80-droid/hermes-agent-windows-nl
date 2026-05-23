@@ -1,4 +1,5 @@
 import { useMemo, type ReactNode } from "react";
+import { useAssistantDisplay } from "../contexts/useAssistantDisplay";
 import { wrapBronCitationsForDisplay } from "../lib/ragCitations";
 import {
   normalizeAssistantMarkdown,
@@ -23,14 +24,16 @@ export function Markdown({
   content,
   highlightTerms,
   streaming,
-  assistantPalette = "demo",
+  assistantPalette,
 }: {
   content: string;
   highlightTerms?: string[];
   streaming?: boolean;
-  /** Mirrors display.assistant_palette (CLI); defaults to demo. */
+  /** Overrides live gateway config; omit to use display.assistant_palette from API. */
   assistantPalette?: string;
 }) {
+  const { assistant_palette: configPalette } = useAssistantDisplay();
+  const palette = assistantPalette ?? configPalette;
   const displayContent = useMemo(
     () => wrapBronCitationsForDisplay(normalizeAssistantMarkdown(content)),
     [content],
@@ -51,7 +54,7 @@ export function Markdown({
                   key={j}
                   block={block}
                   highlightTerms={highlightTerms}
-                  assistantPalette={assistantPalette}
+                  assistantPalette={palette}
                   caret={caret && isLast && j === unit.blocks.length - 1 ? caret : null}
                 />
               ))}
@@ -63,7 +66,7 @@ export function Markdown({
             key={i}
             block={unit.block}
             highlightTerms={highlightTerms}
-            assistantPalette={assistantPalette}
+            assistantPalette={palette}
             caret={caret && isLast ? caret : null}
           />
         );
