@@ -20,6 +20,7 @@ import {
   DEFAULT_INDICATOR_STYLE,
   INDICATOR_STYLES,
   type IndicatorStyle,
+  type CostBarMode,
   type StatusBarMode
 } from './interfaces.js'
 import { turnController } from './turnController.js'
@@ -31,6 +32,9 @@ const STATUSBAR_ALIAS: Record<string, StatusBarMode> = {
   on: 'top',
   top: 'top'
 }
+
+export const normalizeCostBarMode = (raw: unknown): CostBarMode =>
+  typeof raw === 'string' && raw.trim().toLowerCase() === 'minimal' ? 'minimal' : 'rich'
 
 export const normalizeStatusBar = (raw: unknown): StatusBarMode =>
   raw === false ? 'off' : typeof raw === 'string' ? (STATUSBAR_ALIAS[raw.trim().toLowerCase()] ?? 'top') : 'top'
@@ -189,6 +193,7 @@ export const applyDisplay = (
     inlineDiffs: d.inline_diffs !== false,
     mouseTracking: normalizeMouseTracking(d),
     sections: resolveSections(d.sections),
+    costBarMode: normalizeCostBarMode(d.cost_bar_mode),
     showCost: !!d.show_cost,
     showReasoning: !!d.show_reasoning,
     statusBar: normalizeStatusBar(d.tui_statusbar),

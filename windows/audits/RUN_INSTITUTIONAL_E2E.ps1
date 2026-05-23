@@ -323,7 +323,8 @@ $displayLabels = @(
     'skin=default',
     'streaming=false',
     'compact=false',
-    'show_cost=true'
+    'show_cost=true',
+    'cost_bar_mode=rich'
 )
 $profileFailures = @()
 if (-not (Test-Path -LiteralPath $profilesDir)) {

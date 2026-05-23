@@ -10,7 +10,8 @@ import { $uiState } from '../app/uiStore.js'
 import { FACES } from '../content/faces.js'
 import { VERBS } from '../content/verbs.js'
 import { fmtDuration } from '../domain/messages.js'
-import { formatStatusBarCost, shouldShowStatusBarCost } from '../domain/usage.js'
+import { formatStatusBarCostRich, shouldShowStatusBarCostRich } from '../domain/usageCostBar.js'
+import type { CostBarMode } from '../domain/usageCostBar.js'
 import { stickyPromptFromViewport } from '../domain/viewport.js'
 import { buildSubagentTree, treeTotals, widthByDepth } from '../lib/subagentTree.js'
 import { fmtK } from '../lib/text.js'
@@ -283,6 +284,7 @@ export function StatusRule({
   usage,
   bgCount,
   sessionStartedAt,
+  costBarMode,
   showCost,
   turnStartedAt,
   voiceLabel,
@@ -344,8 +346,11 @@ export function StatusRule({
             </Text>
           ) : null}
           {bgCount > 0 ? <Text color={t.color.muted}> │ {bgCount} bg</Text> : null}
-          {shouldShowStatusBarCost(showCost, usage) ? (
-            <Text color={t.color.muted}> │ {formatStatusBarCost(usage)}</Text>
+          {shouldShowStatusBarCostRich(showCost, usage) ? (
+            <Text color={t.color.muted}>
+              {' │ '}
+              {formatStatusBarCostRich(usage, { mode: costBarMode, width: cols })}
+            </Text>
           ) : null}
         </Text>
       </Box>
@@ -463,6 +468,7 @@ interface StatusRuleProps {
   modelFast?: boolean
   modelReasoningEffort?: string
   sessionStartedAt?: null | number
+  costBarMode: CostBarMode
   showCost: boolean
   status: string
   statusColor: string

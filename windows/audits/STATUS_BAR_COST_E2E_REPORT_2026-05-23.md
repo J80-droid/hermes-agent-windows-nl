@@ -1,26 +1,31 @@
-# Status Bar Cost E2E - PASS
+# Status Bar Cost E2E (rich) - PASS
 
 **Script:** `windows/audits/RUN_STATUS_BAR_COST_E2E.ps1`  
-**Datum:** 2026-05-23  
+**Laatste run:** 2026-05-24 (10/10 PASS)  
 **Hermes root:** `%LOCALAPPDATA%\hermes` (13 profielen)
 
-| Stap | Status | Detail |
-|------|--------|--------|
-| 1/8 repo defaults + artefacten | PASS | `team_display.defaults` `show_cost=true` |
-| 2/8 institutional + diagnose drift guards | PASS | |
-| 3/8 vitest statusBarCost | PASS | 5 tests |
-| 4/8 pytest status-bar cost keten | PASS | 14 tests |
-| 5/8 runtime root show_cost | PASS | |
-| 6/8 runtime profielen show_cost | PASS | 13 profielen |
-| 7/8 gateway _get_usage cost_usd smoke | PASS | `scripts/status_bar_cost_gateway_smoke.py` |
-| 8/8 ui-tui README /cost | PASS | |
+| Stap | Status | Controle |
+|------|--------|----------|
+| 1/10 | PASS | Repo: `show_cost=true`, `cost_bar_mode=rich`, fork-modules |
+| 2/10 | PASS | Institutional/diagnose drift + `merge_upstream_fork.ps1` keepOurs |
+| 3/10 | PASS | Vitest: `statusBarCost`, `usageCostBar`, `createGatewayEventHandler` |
+| 4/10 | PASS | Pytest: snapshot, E2E module, gateway `cost` + `cost_bar_mode` |
+| 5/10 | PASS | Runtime root display |
+| 6/10 | PASS | Alle profielen display |
+| 7/10 | PASS | Gateway smoke: `cost_usd` + `cost_breakdown_pct` (som 100%) |
+| 8/10 | PASS | `scripts/verify_usage_cost_bar.py --verify` |
+| 9/10 | PASS | `windows/UPSTREAM_SYNC.md` conflict-tabel |
+| 10/10 | PASS | `ui-tui/README.md` `/cost` + `cost_bar_mode` |
 
 ## Wat gedekt is
 
-- Team-default `display.show_cost: true` op alle profielen (via `APPLY_TEAM_DISPLAY.bat`)
-- TUI statusbalk: `formatStatusBarCost` / `mergeUsage` (geen wipe na `/usage`)
-- Gateway `config.set` / `config.get` key `cost`; slash `/cost [on|off|toggle|status]`
-- Drift-check in `diagnose_renderer.py` en institutioneel E2E stap 6/11
+- Team-defaults: `display.show_cost: true`, `display.cost_bar_mode: rich`
+- Rijke statusbalk: `$turn / $session │ cw/out/in/cr │ calls │ tools` (responsive tiers)
+- Fork-owned: `hermes_cli/usage_snapshot.py`, `ui-tui/src/domain/usageCostBar.ts`
+- Client-side: turn-delta (`turn_cost_usd`), tool-teller (`session_tools_executed`)
+- Gateway: delegatie `_get_usage` → `build_session_usage_snapshot`; config `cost_bar_mode`
+- `/usage` paneel: cost-kolommen + cost-mix
+- Upstream-safe: keepOurs + dunne hooks; zie `windows/UPSTREAM_SYNC.md`
 
 ## Handmatig na deploy
 
@@ -28,11 +33,14 @@
 windows\APPLY_TEAM_DISPLAY.bat
 ```
 
-Hermes herstarten of `/new` — statusbalk toont `│ ~$0.0042` na API-calls (indien prijs bekend).
+Hermes herstarten of `/new`. Toggle: `/cost [on|off|toggle|status]`; legacy formaat: `config.set cost_bar_mode minimal`.
 
-## Niet in deze E2E
+## Flags audit
 
-- Live Ink-TUI render (terminal)
-- Onbekende modellen zonder prijs (`cost_usd` ontbreekt — verwacht)
+```text
+windows\audits\RUN_STATUS_BAR_COST_E2E.bat -ApplyDisplayFix
+windows\audits\RUN_STATUS_BAR_COST_E2E.bat -SkipRuntime
+windows\audits\RUN_AUDITS.bat -IncludeStatusBarCostE2E
+```
 
 **Opnieuw draaien:** `windows\audits\RUN_STATUS_BAR_COST_E2E.bat`

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Smoke: tui_gateway._get_usage includes cost_usd when pricing returns amount."""
+"""Smoke: tui_gateway._get_usage via usage_snapshot (cost + breakdown)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 
-def main() -> None:
+def _smoke_basic_cost() -> None:
     from agent.usage_pricing import CostResult
     from tui_gateway import server
 
@@ -37,6 +37,56 @@ def main() -> None:
 
     assert usage.get("cost_usd") == 0.0042, usage
     assert usage.get("cost_status") == "estimated", usage
+    assert usage.get("calls") == 2, usage
+
+
+def _smoke_cost_breakdown() -> None:
+    from agent.usage_pricing import CostResult, PricingEntry
+    from tui_gateway import server
+
+    agent = SimpleNamespace(
+        model="anthropic/claude-opus-4-7",
+        provider="anthropic",
+        base_url="https://api.anthropic.com",
+        session_input_tokens=1000,
+        session_output_tokens=500,
+        session_cache_read_tokens=100,
+        session_cache_write_tokens=200,
+        session_prompt_tokens=1300,
+        session_completion_tokens=500,
+        session_total_tokens=1800,
+        session_api_calls=7,
+        context_compressor=None,
+    )
+    entry = PricingEntry(
+        input_cost_per_million=Decimal("5"),
+        output_cost_per_million=Decimal("25"),
+        cache_read_cost_per_million=Decimal("0.5"),
+        cache_write_cost_per_million=Decimal("6.25"),
+        source="official_docs_snapshot",
+    )
+    cost = CostResult(
+        amount_usd=Decimal("0.023"),
+        status="estimated",
+        source="official_docs_snapshot",
+        label="e2e-smoke-breakdown",
+    )
+    with patch("agent.usage_pricing.estimate_usage_cost", return_value=cost), patch(
+        "agent.usage_pricing.get_pricing_entry", return_value=entry
+    ):
+        usage = server._get_usage(agent)
+
+    assert usage.get("cost_usd") == 0.023, usage
+    breakdown = usage.get("cost_breakdown_usd")
+    pct = usage.get("cost_breakdown_pct")
+    assert isinstance(breakdown, dict), usage
+    assert isinstance(pct, dict), usage
+    assert sum(pct.values()) == 100, pct
+
+
+def main() -> None:
+    _smoke_basic_cost()
+    _smoke_cost_breakdown()
     print("gateway usage smoke ok")
 
 

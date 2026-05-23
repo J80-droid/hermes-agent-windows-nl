@@ -279,6 +279,8 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
       })
   }
 
+  let usageCostAtTurnStart = 0
+
   return (ev: GatewayEvent) => {
     const sid = getUiState().sid
 
@@ -300,6 +302,10 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
         return
       case 'session.info': {
         const info = ev.payload
+
+        if (info?.usage?.cost_usd != null) {
+          usageCostAtTurnStart = info.usage.cost_usd
+        }
 
         patchUiState(state => ({
           ...state,
@@ -333,6 +339,11 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
       }
 
       case 'message.start':
+        usageCostAtTurnStart = getUiState().usage.cost_usd ?? 0
+        patchUiState(state => ({
+          ...state,
+          usage: mergeUsage(state.usage, { turn_cost_usd: 0 })
+        }))
         turnController.startMessage()
 
         return
@@ -561,6 +572,13 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
           )
         }
 
+        patchUiState(state => ({
+          ...state,
+          usage: mergeUsage(state.usage, {
+            session_tools_executed: (state.usage.session_tools_executed ?? 0) + 1
+          })
+        }))
+
         return
       }
 
@@ -723,7 +741,19 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
         setStatus('ready')
 
         if (ev.payload?.usage) {
-          patchUiState(state => ({ ...state, usage: mergeUsage(state.usage, ev.payload!.usage!) }))
+          patchUiState(state => {
+            const merged = mergeUsage(state.usage, ev.payload!.usage!)
+            const sessionCost = merged.cost_usd
+            const turnCost =
+              typeof sessionCost === 'number'
+                ? Math.max(0, sessionCost - usageCostAtTurnStart)
+                : undefined
+
+            return {
+              ...state,
+              usage: mergeUsage(merged, { turn_cost_usd: turnCost })
+            }
+          })
         }
 
         return

@@ -16,6 +16,32 @@ REPO = Path(__file__).resolve().parents[2]
 def test_repo_team_display_defaults_enable_show_cost():
     text = (REPO / "windows" / "team_display.defaults").read_text(encoding="utf-8")
     assert "show_cost=true" in text
+    assert "cost_bar_mode=rich" in text
+
+
+def test_repo_usage_snapshot_module_exists():
+    path = REPO / "hermes_cli" / "usage_snapshot.py"
+    assert path.is_file()
+    text = path.read_text(encoding="utf-8")
+    assert "def build_session_usage_snapshot" in text
+    assert "cost_breakdown_pct" in text
+
+
+def test_repo_usage_cost_bar_formatter_exists():
+    path = REPO / "ui-tui" / "src" / "domain" / "usageCostBar.ts"
+    assert path.is_file()
+    text = path.read_text(encoding="utf-8")
+    assert "export function formatStatusBarCostRich" in text
+    assert "formatUsdCompact" in text
+
+
+def test_repo_gateway_delegates_to_usage_snapshot():
+    gateway = (REPO / "tui_gateway" / "server.py").read_text(encoding="utf-8")
+    assert "build_session_usage_snapshot" in gateway
+
+
+def test_repo_verify_usage_cost_bar_script_exists():
+    assert (REPO / "scripts" / "verify_usage_cost_bar.py").is_file()
 
 
 def test_repo_ui_usage_helpers_export_cost_formatters():
@@ -30,8 +56,8 @@ def test_repo_status_rule_uses_cost_helpers():
     chrome = (REPO / "ui-tui" / "src" / "components" / "appChrome.tsx").read_text(
         encoding="utf-8"
     )
-    assert "formatStatusBarCost" in chrome
-    assert "shouldShowStatusBarCost" in chrome
+    assert "formatStatusBarCostRich" in chrome
+    assert "shouldShowStatusBarCostRich" in chrome
 
 
 def test_repo_gateway_and_slash_cost_toggle():
@@ -45,7 +71,11 @@ def test_repo_gateway_and_slash_cost_toggle():
 
 
 def test_repo_gateway_smoke_script_exists():
-    assert (REPO / "scripts" / "status_bar_cost_gateway_smoke.py").is_file()
+    path = REPO / "scripts" / "status_bar_cost_gateway_smoke.py"
+    assert path.is_file()
+    text = path.read_text(encoding="utf-8")
+    assert "_smoke_cost_breakdown" in text
+    assert "cost_breakdown_pct" in text
 
 
 def test_diagnose_renderer_drift_checks_show_cost():
@@ -59,6 +89,47 @@ def test_institutional_e2e_script_checks_show_cost():
         encoding="utf-8"
     )
     assert "show_cost=true" in e2e
+
+
+def test_get_usage_includes_cost_breakdown_when_pricing_available():
+    from agent.usage_pricing import CostResult, PricingEntry
+    from tui_gateway import server
+
+    agent = SimpleNamespace(
+        model="anthropic/claude-opus-4-7",
+        provider="anthropic",
+        base_url="https://api.anthropic.com",
+        session_input_tokens=1000,
+        session_output_tokens=500,
+        session_cache_read_tokens=100,
+        session_cache_write_tokens=200,
+        session_prompt_tokens=1300,
+        session_completion_tokens=500,
+        session_total_tokens=1800,
+        session_api_calls=2,
+        context_compressor=None,
+    )
+    entry = PricingEntry(
+        input_cost_per_million=Decimal("5"),
+        output_cost_per_million=Decimal("25"),
+        cache_read_cost_per_million=Decimal("0.5"),
+        cache_write_cost_per_million=Decimal("6.25"),
+        source="official_docs_snapshot",
+    )
+    cost = CostResult(
+        amount_usd=Decimal("0.023"),
+        status="estimated",
+        source="official_docs_snapshot",
+        label="test",
+    )
+    with patch("agent.usage_pricing.estimate_usage_cost", return_value=cost), patch(
+        "agent.usage_pricing.get_pricing_entry", return_value=entry
+    ):
+        usage = server._get_usage(agent)
+
+    assert usage["cost_usd"] == pytest.approx(0.023)
+    assert "cost_breakdown_usd" in usage
+    assert "cost_breakdown_pct" in usage
 
 
 def test_get_usage_includes_cost_usd_when_pricing_returns_amount():
@@ -145,10 +216,14 @@ def test_runtime_profiles_show_cost_true_when_hermes_home_available():
         display = cfg.get("display") if isinstance(cfg.get("display"), dict) else {}
         if display.get("show_cost") is not True:
             missing.append(f"{prof_dir.name}: show_cost != true")
+        if display.get("cost_bar_mode") != "rich":
+            missing.append(f"{prof_dir.name}: cost_bar_mode != rich")
 
     root_cfg = yaml.safe_load((root / "config.yaml").read_text(encoding="utf-8")) or {}
     root_display = root_cfg.get("display") if isinstance(root_cfg.get("display"), dict) else {}
     if root_display.get("show_cost") is not True:
         missing.append("root: show_cost != true")
+    if root_display.get("cost_bar_mode") != "rich":
+        missing.append("root: cost_bar_mode != rich")
 
     assert not missing, "display drift: " + "; ".join(missing)

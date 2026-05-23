@@ -205,6 +205,18 @@ Bij merge van Nous in jouw fork botsen vaak **jouw fork-only** paden met upstrea
 | `pyproject.toml` extra `[rag]` | **Behoud fork**; neem upstream pins over voor **core** deps waar geen RAG-conflict is |
 | `memory-bank/**`, `windows/UPSTREAM_SYNC.md`, `windows/INSTITUTIONAL.md` | **Behoud fork** |
 
+### TUI statusbalk kosten (rich cost bar)
+
+| Pad | Actie na merge |
+| --- | -------------- |
+| `hermes_cli/usage_snapshot.py` | **Behoud fork** — breakdown + usage payload |
+| `tui_gateway/server.py` | `_get_usage` → delegatie naar `build_session_usage_snapshot` |
+| `ui-tui/src/domain/usageCostBar.ts` | **Behoud fork** — responsive formatter |
+| `ui-tui/src/components/appChrome.tsx` | StatusRule import van `usageCostBar` |
+| `ui-tui/src/app/createGatewayEventHandler.ts` | turn/tool client-side hooks behouden |
+| `agent/usage_pricing.py` | **Geen fork-wijzigingen** — snapshot volgt upstream API |
+| `windows/team_display.defaults` | `show_cost=true`, `cost_bar_mode=rich` |
+
 ### Meestal upstream overnemen (tenzij bewust aangepast)
 
 | Pad | Richtlijn |

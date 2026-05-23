@@ -4,7 +4,7 @@ import { MOUSE_TRACKING } from '../config/env.js'
 import { ZERO } from '../domain/usage.js'
 import { DEFAULT_THEME } from '../theme.js'
 
-import { DEFAULT_INDICATOR_STYLE, type UiState } from './interfaces.js'
+import { DEFAULT_INDICATOR_STYLE, type CostBarMode, type UiState } from './interfaces.js'
 
 const buildUiState = (): UiState => ({
   bgTasks: new Set(),
@@ -18,7 +18,7 @@ const buildUiState = (): UiState => ({
   inlineDiffs: true,
   mouseTracking: MOUSE_TRACKING,
   sections: {},
-  showCost: false,
+  costBarMode: 'rich' as CostBarMode,
   showReasoning: false,
   sid: null,
   status: 'summoning hermes…',

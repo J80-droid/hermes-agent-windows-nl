@@ -38,13 +38,15 @@ describe('statusBarCost', () => {
     const base = {
       ...ZERO,
       cost_usd: 0.01,
-      total: 500
+      total: 500,
+      turn_cost_usd: 0.02
     }
 
     expect(mergeUsage(base, { cost_usd: undefined, total: 600 })).toEqual({
       ...ZERO,
       cost_usd: 0.01,
-      total: 600
+      total: 600,
+      turn_cost_usd: 0.02
     })
   })
 

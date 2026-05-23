@@ -2,6 +2,14 @@
 
 Deze map bevat de **fork** kwaliteitspoorten (geen 1:1 upstream-kloon).
 
+**IDE-markeringen op audit-`.ps1`?** Rode strepen kunnen verouderde PowerShell-extensie-cache zijn. Verifieer met:
+
+```bat
+windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat
+```
+
+Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Developer: Reload Window`.
+
 | Runner | Doel |
 | ------ | ---- |
 | **`RUN_AUDITS.bat`** | Gecombineerd: `verify_hermes_home`, PSScriptAnalyzer (SKIP indien ontbreekt), `check-windows-footguns.py`, ruff (SKIP), pytest profiel-subset |
@@ -24,8 +32,10 @@ Deze map bevat de **fork** kwaliteitspoorten (geen 1:1 upstream-kloon).
 | **`RUN_AUDITS.bat -RequirePSScriptAnalyzer`** | PSSA verplicht (exit 1 als module ontbreekt) |
 | **`windows\tests\RUN_PSScriptAnalyzer.bat`** | Volledige `windows\` lint (instellingen: `PSScriptAnalyzerSettings.psd1`) — verwacht **0 Warning/Error** |
 | **`RUN_PROFILE_SWITCH_E2E.bat`** | Alleen profielwissel E2E |
-| **`RUN_MEMORY_ARCHITECTURE_E2E.bat`** | L4 vault-paden, sync naar alle profielen, geen L3, vault-structuur |
-| **`RUN_STATUS_BAR_COST_E2E.bat`** | TUI statusbalk: `show_cost` team-default, gateway `cost_usd`, `/cost`, mergeUsage |
+| **`RUN_MEMORY_ARCHITECTURE_E2E.bat`** | L4 vault-paden, sync, geen L3, profiel-limits 4000/1800, core MEMORY-grootte, UTF-8 § (13 stappen) |
+| **`RUN_MEMORY_PRODUCTION_GATE.bat`** | Gecombineerd: trust limits + memory E2E + trust forensic E2E + pytest memory/trust |
+| **`RUN_AUDITS.bat -IncludeMemoryProductionGate`** | Alleen memory productie-poort (ook in `-IncludeAllE2E`) |
+| **`RUN_STATUS_BAR_COST_E2E.bat`** | TUI statusbalk (rich): `show_cost`, `cost_bar_mode`, breakdown, turn-delta, gateway smoke |
 | **`RUN_AUDITS.bat -IncludeMemoryArchitectureE2E`** | Bovenstaande memory E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeStatusBarCostE2E`** | Bovenstaande statusbalk-kosten E2E in gecombineerde poort |
 | **`windows\tests\RUN_PYTEST.bat`** | Brede pytest (excl. integration) |
@@ -76,26 +86,28 @@ Presentatie: zie `docs/INSTITUTIONAL_PRESENTATION.md`. **Eén commando:** `windo
 Laatste rapport: `INSTITUTIONAL_E2E_REPORT_2026-05-22.md` (log `INSTITUTIONAL_E2E_LAST_RUN.log` is gitignored).  
 Upstream + UPDATE audit: `UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md`.  
 Memory L1–L4 audit: `MEMORY_ARCHITECTURE_E2E_REPORT_2026-05-23.md` (10 stappen; tijdelijke logs `MEMORY_ARCHITECTURE_E2E_REPORT_*_*.md` gitignored).  
-Statusbalk-kosten audit: `STATUS_BAR_COST_E2E_REPORT_*.md` (8 stappen; `RUN_STATUS_BAR_COST_E2E.bat`).
+Statusbalk-kosten audit: `STATUS_BAR_COST_E2E_REPORT_*.md` (10 stappen; `RUN_STATUS_BAR_COST_E2E.bat`).
 
-## Statusbalk-kosten E2E
+## Statusbalk-kosten E2E (rich)
 
 ```text
 windows\audits\RUN_STATUS_BAR_COST_E2E.bat
 ```
 
-Optioneel vóór audit bij display-drift: `-ApplyDisplayFix` (roept `apply_team_display.ps1` aan).
+Optioneel: `-ApplyDisplayFix` (display drift), `-SkipRuntime` (geen Hermes home), `-SkipVitest`.
 
 | Stap | Controle |
 | ---- | -------- |
-| 1/8 | Repo: `team_display.defaults` `show_cost=true`, usage helpers, gateway `/cost` |
-| 2/8 | `RUN_INSTITUTIONAL_E2E.ps1` + `diagnose_renderer.py` drift op `show_cost` |
-| 3/8 | Vitest `statusBarCost` |
-| 4/8 | Pytest: `test_status_bar_cost_e2e.py`, team display, gateway cost config |
-| 5/8 | Runtime root `config.yaml`: `show_cost: true` |
-| 6/8 | Alle profielen: `show_cost: true` |
-| 7/8 | Gateway `_get_usage()` levert `cost_usd` (smoke) |
-| 8/8 | `ui-tui/README.md` documenteert `/cost` |
+| 1/10 | Repo: `show_cost=true`, `cost_bar_mode=rich`, fork-owned modules |
+| 2/10 | Institutional/diagnose drift + `merge_upstream_fork.ps1` keepOurs |
+| 3/10 | Vitest: `statusBarCost`, `usageCostBar`, `createGatewayEventHandler` turn/tools |
+| 4/10 | Pytest: snapshot, E2E module, gateway `cost` + `cost_bar_mode` config |
+| 5/10 | Runtime root: `show_cost` + `cost_bar_mode: rich` |
+| 6/10 | Alle profielen: idem |
+| 7/10 | Gateway smoke: `cost_usd` + `cost_breakdown_pct` (som 100%) |
+| 8/10 | `verify_usage_cost_bar.py --verify` |
+| 9/10 | `UPSTREAM_SYNC.md` conflict-tabel |
+| 10/10 | `ui-tui/README.md` documenteert `/cost` + `cost_bar_mode` |
 
 **Niet in deze E2E:** live Ink-TUI render (handmatig: statusbalk na API-call); prijs onbekend voor custom model (`cost_usd` ontbreekt — verwacht).
 

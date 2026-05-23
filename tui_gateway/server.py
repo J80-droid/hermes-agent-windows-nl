@@ -1321,6 +1321,13 @@ def _sync_session_key_after_compress(
 
 
 def _get_usage(agent) -> dict:
+    try:
+        from hermes_cli.usage_snapshot import build_session_usage_snapshot
+
+        return build_session_usage_snapshot(agent)
+    except ImportError:
+        pass
+
     g = lambda k, fb=None: getattr(agent, k, 0) or (getattr(agent, fb, 0) if fb else 0)
     usage = {
         "model": getattr(agent, "model", "") or "",
@@ -4216,6 +4223,26 @@ def _(rid, params: dict) -> dict:
         _write_config_key("display.show_cost", nv_b)
         return _ok(rid, {"key": key, "value": "on" if nv_b else "off"})
 
+    if key == "cost_bar_mode":
+        raw = str(value or "").strip().lower()
+        display = _load_cfg().get("display")
+        d0 = display if isinstance(display, dict) else {}
+        current = str(d0.get("cost_bar_mode", "rich") or "rich").strip().lower()
+        if current not in {"rich", "minimal"}:
+            current = "rich"
+
+        if raw in {"", "status"}:
+            return _ok(rid, {"key": key, "value": current})
+        if raw in {"rich", "minimal"}:
+            nv = raw
+        elif raw in {"toggle"}:
+            nv = "minimal" if current == "rich" else "rich"
+        else:
+            return _err(rid, 4002, f"unknown cost_bar_mode value: {value}")
+
+        _write_config_key("display.cost_bar_mode", nv)
+        return _ok(rid, {"key": key, "value": nv})
+
     if key == "mouse":
         # Explicit None check rather than `value or ""` so falsy non-string
         # inputs (0, False) reach the alias map as themselves — both map to
@@ -4410,6 +4437,14 @@ def _(rid, params: dict) -> dict:
         display = _load_cfg().get("display")
         on = bool((display or {}).get("show_cost", False)) if isinstance(display, dict) else False
         return _ok(rid, {"value": "on" if on else "off"})
+    if key == "cost_bar_mode":
+        display = _load_cfg().get("display")
+        raw = (
+            str((display or {}).get("cost_bar_mode", "rich") or "rich").strip().lower()
+            if isinstance(display, dict)
+            else "rich"
+        )
+        return _ok(rid, {"value": raw if raw in {"rich", "minimal"} else "rich"})
     if key == "mouse":
         display = _load_cfg().get("display")
         return _ok(rid, {"value": _display_mouse_tracking(display)})

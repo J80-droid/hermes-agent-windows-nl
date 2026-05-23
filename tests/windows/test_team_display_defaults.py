@@ -15,4 +15,5 @@ def test_team_display_defaults_institutional():
     assert "streaming=false" in text
     assert "compact=false" in text
     assert "show_cost=true" in text
+    assert "cost_bar_mode=rich" in text
     assert "compact=true" not in text

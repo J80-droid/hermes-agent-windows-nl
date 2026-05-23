@@ -223,6 +223,7 @@ Notes:
 - `/details [hidden|collapsed|expanded|cycle]` controls thinking/tool-detail visibility.
 - `/statusbar` toggles the status rule on/off.
 - `/cost [on|off|toggle|status]` toggles estimated session cost in the status bar.
+- Rich mode (`display.cost_bar_mode: rich`, team default) shows `$turn / $session`, cost-mix (`cw/out/in/cr %`), API calls and tool count. Use `config.set cost_bar_mode minimal` for legacy `~$0.0042` formatting.
 
 Anything else falls through to:
 

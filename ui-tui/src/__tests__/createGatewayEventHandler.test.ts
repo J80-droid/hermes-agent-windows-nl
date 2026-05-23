@@ -977,4 +977,38 @@ describe('createGatewayEventHandler', () => {
       vi.useRealTimers()
     }
   })
+
+  it('tracks turn cost delta and tool executions for the rich status bar', () => {
+    const appended: Msg[] = []
+    const onEvent = createGatewayEventHandler(buildCtx(appended))
+
+    patchUiState({
+      usage: {
+        calls: 2,
+        cost_usd: 1,
+        input: 100,
+        output: 50,
+        session_tools_executed: 3,
+        total: 150,
+        turn_cost_usd: 0.4
+      }
+    })
+
+    onEvent({ payload: {}, type: 'message.start' } as any)
+    expect(getUiState().usage.turn_cost_usd).toBe(0)
+
+    onEvent({
+      payload: { name: 'search', tool_id: 'tool-1' },
+      type: 'tool.complete'
+    } as any)
+    expect(getUiState().usage.session_tools_executed).toBe(4)
+
+    onEvent({
+      payload: { usage: { calls: 3, cost_usd: 1.23, input: 120, output: 60, total: 180 } },
+      type: 'message.complete'
+    } as any)
+
+    expect(getUiState().usage.turn_cost_usd).toBeCloseTo(0.23, 5)
+    expect(getUiState().usage.cost_usd).toBe(1.23)
+  })
 })

@@ -20,7 +20,7 @@ windows\audits\RUN_IDE_MAINTENANCE_E2E.bat -ApplyDisplayFix -SkipMergePreview
 | `--inspect` | Schema-audit (`id`-kolom); rapport `windows\audits\LANCEDB_SCHEMA_AUDIT_*.md` |
 | `--init-missing` | Lege `knowledge_base` voor domeinen zonder LanceDB-pad (na nieuw domein in `domains.yaml`) |
 | `RUN_IDE_MAINTENANCE_E2E.bat …` | Volledige landkaart-poort (15 stappen); rapport `IDE_MAINTENANCE_E2E_REPORT_*.md` |
-| `RUN_STATUS_BAR_COST_E2E.bat` | TUI statusbalk-kosten (`show_cost`, gateway `cost_usd`, `/cost`); rapport `STATUS_BAR_COST_E2E_REPORT_2026-05-23.md` |
+| `RUN_STATUS_BAR_COST_E2E.bat` | TUI statusbalk (rich): `show_cost`, `cost_bar_mode`, breakdown, turn-delta; 10 stappen; rapport `STATUS_BAR_COST_E2E_REPORT_2026-05-23.md` |
 
 **E2E-vlaggen:** `-ApplyDisplayFix` = root + profiel display; `-SkipMergePreview` = geen `git fetch` / merge-tree (sneller).
 

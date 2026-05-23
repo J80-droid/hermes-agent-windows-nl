@@ -1467,6 +1467,52 @@ def test_config_set_cost_toggle_empty_value(tmp_path, monkeypatch):
     assert saved["display"]["show_cost"] is True
 
 
+def test_config_set_cost_bar_mode_rich_and_minimal(tmp_path, monkeypatch):
+    import yaml
+
+    cfg_path = tmp_path / "config.yaml"
+    cfg_path.write_text(yaml.safe_dump({"display": {}}))
+    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+
+    resp = server.handle_request(
+        {
+            "id": "1",
+            "method": "config.set",
+            "params": {"key": "cost_bar_mode", "value": "minimal"},
+        }
+    )
+    assert resp["result"]["value"] == "minimal"
+    saved = yaml.safe_load(cfg_path.read_text())
+    assert saved["display"]["cost_bar_mode"] == "minimal"
+
+    resp = server.handle_request(
+        {
+            "id": "2",
+            "method": "config.set",
+            "params": {"key": "cost_bar_mode", "value": "toggle"},
+        }
+    )
+    assert resp["result"]["value"] == "rich"
+
+
+def test_config_get_cost_bar_mode_defaults_rich(tmp_path, monkeypatch):
+    import yaml
+
+    cfg_path = tmp_path / "config.yaml"
+    cfg_path.write_text(yaml.safe_dump({"display": {}}))
+    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+
+    resp = server.handle_request(
+        {
+            "id": "1",
+            "method": "config.get",
+            "params": {"key": "cost_bar_mode"},
+        }
+    )
+
+    assert resp["result"]["value"] == "rich"
+
+
 def test_config_set_details_mode_pins_all_sections(tmp_path, monkeypatch):
     import yaml
 

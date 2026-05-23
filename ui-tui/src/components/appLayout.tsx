@@ -358,6 +358,7 @@ const StatusRulePane = memo(function StatusRulePane({
         modelFast={ui.info?.fast || ui.info?.service_tier === 'priority'}
         modelReasoningEffort={ui.info?.reasoning_effort}
         sessionStartedAt={status.sessionStartedAt}
+        costBarMode={ui.costBarMode}
         showCost={ui.showCost}
         status={ui.status}
         statusColor={status.statusColor}

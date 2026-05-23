@@ -1,7 +1,8 @@
-# Status-bar session cost E2E (show_cost team default + gateway usage + TUI helpers).
+# Rich status-bar cost E2E (show_cost + cost_bar_mode + breakdown + TUI wiring).
 param(
     [string]$RepoRoot = '',
     [switch]$SkipVitest,
+    [switch]$SkipRuntime,
     [switch]$ApplyDisplayFix
 )
 
@@ -48,6 +49,15 @@ function Get-HermesAuditPython {
     return 'python'
 }
 
+function Get-PytestNodePath {
+    param(
+        [string]$RelativeFile,
+        [string]$NodeId
+    )
+    $filePath = Join-Path $RepoRoot ($RelativeFile -replace '/', '\')
+    return $filePath + $NodeId
+}
+
 function Add-StepResult {
     param([string]$Name, [bool]$Ok, [string]$Detail = '')
     $steps.Add([pscustomobject]@{ Step = $Name; Ok = $Ok; Detail = $Detail })
@@ -59,7 +69,25 @@ function Add-StepResult {
     }
 }
 
-Write-Host '=== Status Bar Cost E2E ===' -ForegroundColor Cyan
+function Invoke-AuditCommand {
+    param(
+        [Parameter(Mandatory)][string]$Exe,
+        [string[]]$ArgumentList = @()
+    )
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    $out = & $Exe @ArgumentList 2>&1
+    $ok = ($LASTEXITCODE -eq 0)
+    $ErrorActionPreference = $prevEap
+    foreach ($line in @($out)) {
+        if ($null -ne $line -and "$line".Trim()) {
+            Write-Host $line
+        }
+    }
+    return $ok
+}
+
+Write-Host '=== Status Bar Cost E2E (rich) ===' -ForegroundColor Cyan
 $hermesRoot = Get-HermesRoot
 $reportStamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'
 $python = Get-HermesAuditPython
@@ -68,25 +96,25 @@ $env:PYTHONPATH = $RepoRoot
 if ($ApplyDisplayFix) {
     Write-Host '--- apply_team_display (optioneel) ---' -ForegroundColor Cyan
     & (Join-Path $RepoRoot 'windows/apply_team_display.ps1')
-    if (Test-NativeCommandFailed) {
-        Add-StepResult -Name '0/8 apply_team_display' -Ok $false
-    } else {
-        Add-StepResult -Name '0/8 apply_team_display' -Ok $true
-    }
+    Add-StepResult -Name '0/10 apply_team_display' -Ok (-not (Test-NativeCommandFailed))
 }
 
-# --- 1 Repo defaults + UI wiring ---
+# --- 1 Repo defaults + fork-owned artefacten ---
 $defaultsPath = Join-Path $RepoRoot 'windows/team_display.defaults'
 $defaultsText = if (Test-Path -LiteralPath $defaultsPath) {
     Get-Content -LiteralPath $defaultsPath -Raw -Encoding UTF8
 } else { '' }
-$repoOk = ($defaultsText -match 'show_cost=true')
+$repoOk = ($defaultsText -match 'show_cost=true') -and ($defaultsText -match 'cost_bar_mode=rich')
 $repoFiles = @(
+    'hermes_cli/usage_snapshot.py',
     'ui-tui/src/domain/usage.ts',
+    'ui-tui/src/domain/usageCostBar.ts',
     'ui-tui/src/components/appChrome.tsx',
+    'ui-tui/src/app/createGatewayEventHandler.ts',
     'ui-tui/src/app/slash/commands/core.ts',
     'tui_gateway/server.py',
     'scripts/status_bar_cost_gateway_smoke.py',
+    'scripts/verify_usage_cost_bar.py',
     'windows/audits/RUN_STATUS_BAR_COST_E2E.ps1'
 )
 foreach ($rel in $repoFiles) {
@@ -95,106 +123,123 @@ foreach ($rel in $repoFiles) {
         break
     }
 }
-Add-StepResult -Name '1/8 repo defaults + artefacten' -Ok $repoOk -Detail 'team_display.defaults show_cost=true'
+Add-StepResult -Name '1/10 repo defaults + artefacten' -Ok $repoOk -Detail 'show_cost + cost_bar_mode=rich'
 
-# --- 2 Guardrails in institutional / diagnose scripts ---
+# --- 2 Guardrails (institutional + diagnose + verify) ---
 $instE2e = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/audits/RUN_INSTITUTIONAL_E2E.ps1') -Raw -Encoding UTF8
 $diagPy = Get-Content -LiteralPath (Join-Path $RepoRoot 'scripts/diagnose_renderer.py') -Raw -Encoding UTF8
-$guardOk = ($instE2e -match 'show_cost=true') -and ($diagPy -match 'show_cost')
-Add-StepResult -Name '2/8 institutional + diagnose drift guards' -Ok $guardOk
+$mergePs1 = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/merge_upstream_fork.ps1') -Raw -Encoding UTF8
+$guardOk = ($instE2e -match 'cost_bar_mode=rich') -and ($diagPy -match 'cost_bar_mode') -and ($mergePs1 -match 'usage_snapshot.py') -and ($mergePs1 -match 'usageCostBar.ts')
+Add-StepResult -Name '2/10 drift guards + keepOurs' -Ok $guardOk
 
-# --- 3 Vitest statusBarCost ---
+# --- 3 Vitest (formatter + event handler turn/tools) ---
 if (-not $SkipVitest) {
     Push-Location (Join-Path $RepoRoot 'ui-tui')
     try {
         $prevEap = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
-        npm test -- statusBarCost --run *>&1 | Out-Host
+        npm test -- statusBarCost usageCostBar createGatewayEventHandler --run 2>&1 | Out-Host
         $vitestOk = ($LASTEXITCODE -eq 0)
         $ErrorActionPreference = $prevEap
     } finally {
         Pop-Location
     }
-    Add-StepResult -Name '3/8 vitest statusBarCost' -Ok $vitestOk
+    Add-StepResult -Name '3/10 vitest cost bar + turn delta' -Ok $vitestOk
 } else {
-    Add-StepResult -Name '3/8 vitest statusBarCost' -Ok $true -Detail 'overgeslagen (-SkipVitest)'
+    Add-StepResult -Name '3/10 vitest cost bar + turn delta' -Ok $true -Detail 'overgeslagen (-SkipVitest)'
 }
 
-# --- 4 Pytest E2E module + gerelateerde unit tests ---
+# --- 4 Pytest keten ---
 $pytestArgs = @(
     '-m', 'pytest',
+    (Join-Path $RepoRoot 'tests/hermes_cli/test_usage_snapshot.py'),
     (Join-Path $RepoRoot 'tests/windows/test_status_bar_cost_e2e.py'),
     (Join-Path $RepoRoot 'tests/windows/test_team_display_defaults.py'),
     (Join-Path $RepoRoot 'tests/windows/test_apply_team_display_root.py'),
-    (Join-Path $RepoRoot 'tests/test_tui_gateway_server.py::test_config_get_cost_survives_non_dict_display'),
-    (Join-Path $RepoRoot 'tests/test_tui_gateway_server.py::test_config_set_cost_survives_non_dict_display'),
-    (Join-Path $RepoRoot 'tests/test_tui_gateway_server.py::test_config_set_cost_toggle_empty_value'),
+    (Get-PytestNodePath 'tests/test_tui_gateway_server.py' '::test_config_get_cost_survives_non_dict_display'),
+    (Get-PytestNodePath 'tests/test_tui_gateway_server.py' '::test_config_set_cost_survives_non_dict_display'),
+    (Get-PytestNodePath 'tests/test_tui_gateway_server.py' '::test_config_set_cost_toggle_empty_value'),
+    (Get-PytestNodePath 'tests/test_tui_gateway_server.py' '::test_config_set_cost_bar_mode_rich_and_minimal'),
+    (Get-PytestNodePath 'tests/test_tui_gateway_server.py' '::test_config_get_cost_bar_mode_defaults_rich'),
     '-q',
     '-o', 'addopts='
 )
-$prevEap = $ErrorActionPreference
-$ErrorActionPreference = 'Continue'
-& $python @pytestArgs *>&1 | Out-Host
-$pytestOk = ($LASTEXITCODE -eq 0)
-$ErrorActionPreference = $prevEap
-Add-StepResult -Name '4/8 pytest status-bar cost keten' -Ok $pytestOk -Detail $python
+$pytestOk = Invoke-AuditCommand -Exe $python -ArgumentList $pytestArgs
+Add-StepResult -Name '4/10 pytest snapshot + gateway config' -Ok $pytestOk -Detail $python
 
-# --- 5 Runtime root show_cost ---
-$rootCfg = Join-Path $hermesRoot 'config.yaml'
-$rootOk = $false
-if (Test-Path -LiteralPath $rootCfg) {
-    $rootText = Get-Content -LiteralPath $rootCfg -Raw -Encoding UTF8
-    $rootOk = ($rootText -match 'show_cost:\s*true')
-}
-Add-StepResult -Name '5/8 runtime root show_cost' -Ok $rootOk -Detail $rootCfg
-
-# --- 6 Runtime alle profielen show_cost ---
-$profilesDir = Join-Path $hermesRoot 'profiles'
-$profFailures = [System.Collections.Generic.List[string]]::new()
-$profCount = 0
-if (Test-Path -LiteralPath $profilesDir) {
-    Get-ChildItem -LiteralPath $profilesDir -Directory | Sort-Object Name | ForEach-Object {
-        $profCount++
-        $cfgPath = Join-Path $_.FullName 'config.yaml'
-        if (-not (Test-Path -LiteralPath $cfgPath)) {
-            $profFailures.Add("$($_.Name): geen config.yaml")
-            return
-        }
-        $cfgText = Get-Content -LiteralPath $cfgPath -Raw -Encoding UTF8
-        if ($cfgText -notmatch 'show_cost:\s*true') {
-            $profFailures.Add("$($_.Name): show_cost ontbreekt of false")
-        }
-    }
+# --- 5 Runtime root ---
+if ($SkipRuntime) {
+    Add-StepResult -Name '5/10 runtime root display' -Ok $true -Detail 'overgeslagen (-SkipRuntime)'
 } else {
-    $profFailures.Add('geen profiles-map')
+    $rootCfg = Join-Path $hermesRoot 'config.yaml'
+    $rootOk = $false
+    if (Test-Path -LiteralPath $rootCfg) {
+        $rootText = Get-Content -LiteralPath $rootCfg -Raw -Encoding UTF8
+        $rootOk = ($rootText -match 'show_cost:\s*true') -and ($rootText -match 'cost_bar_mode:\s*rich')
+    }
+    Add-StepResult -Name '5/10 runtime root display' -Ok $rootOk -Detail $rootCfg
 }
-$profOk = ($profFailures.Count -eq 0) -and ($profCount -gt 0)
-$profDetail = if ($profOk) { "$profCount profielen" } else { ($profFailures -join '; ') }
-Add-StepResult -Name '6/8 runtime profielen show_cost' -Ok $profOk -Detail $profDetail
 
-# --- 7 Gateway usage smoke (repo script) ---
+# --- 6 Runtime profielen ---
+if ($SkipRuntime) {
+    Add-StepResult -Name '6/10 runtime profielen display' -Ok $true -Detail 'overgeslagen (-SkipRuntime)'
+} else {
+    $profilesDir = Join-Path $hermesRoot 'profiles'
+    $profFailures = [System.Collections.Generic.List[string]]::new()
+    $profCount = 0
+    if (Test-Path -LiteralPath $profilesDir) {
+        Get-ChildItem -LiteralPath $profilesDir -Directory | Sort-Object Name | ForEach-Object {
+            $profCount++
+            $cfgPath = Join-Path $_.FullName 'config.yaml'
+            if (-not (Test-Path -LiteralPath $cfgPath)) {
+                $profFailures.Add("$($_.Name): geen config.yaml")
+                return
+            }
+            $cfgText = Get-Content -LiteralPath $cfgPath -Raw -Encoding UTF8
+            if ($cfgText -notmatch 'show_cost:\s*true') {
+                $profFailures.Add("$($_.Name): show_cost ontbreekt of false")
+            }
+            if ($cfgText -notmatch 'cost_bar_mode:\s*rich') {
+                $profFailures.Add("$($_.Name): cost_bar_mode ontbreekt of niet rich")
+            }
+        }
+    } else {
+        $profFailures.Add('geen profiles-map')
+    }
+    $profOk = ($profFailures.Count -eq 0) -and ($profCount -gt 0)
+    $profDetail = if ($profOk) { "$profCount profielen" } else { ($profFailures -join '; ') }
+    Add-StepResult -Name '6/10 runtime profielen display' -Ok $profOk -Detail $profDetail
+}
+
+# --- 7 Gateway smoke (cost + breakdown) ---
 $smokePy = Join-Path $RepoRoot 'scripts/status_bar_cost_gateway_smoke.py'
-$prevEap = $ErrorActionPreference
-$ErrorActionPreference = 'Continue'
-& $python $smokePy *>&1 | Out-Host
-$gatewayOk = ($LASTEXITCODE -eq 0)
-$ErrorActionPreference = $prevEap
-Add-StepResult -Name '7/8 gateway _get_usage cost_usd smoke' -Ok $gatewayOk -Detail 'scripts/status_bar_cost_gateway_smoke.py'
+$gatewayOk = Invoke-AuditCommand -Exe $python -ArgumentList @($smokePy)
+Add-StepResult -Name '7/10 gateway smoke cost + breakdown' -Ok $gatewayOk -Detail 'status_bar_cost_gateway_smoke.py'
 
-# --- 8 README /cost documented ---
+# --- 8 Verify wiring script ---
+$verifyPy = Join-Path $RepoRoot 'scripts/verify_usage_cost_bar.py'
+$verifyOk = Invoke-AuditCommand -Exe $python -ArgumentList @($verifyPy, '--verify')
+Add-StepResult -Name '8/10 verify_usage_cost_bar' -Ok $verifyOk
+
+# --- 9 UPSTREAM_SYNC conflict-tabel ---
+$upstreamMd = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/UPSTREAM_SYNC.md') -Raw -Encoding UTF8
+$upstreamOk = ($upstreamMd -match 'usage_snapshot.py') -and ($upstreamMd -match 'usageCostBar.ts') -and ($upstreamMd -match 'cost_bar_mode=rich')
+Add-StepResult -Name '9/10 UPSTREAM_SYNC cost-bar tabel' -Ok $upstreamOk
+
+# --- 10 Documentatie ---
 $readme = Join-Path $RepoRoot 'ui-tui/README.md'
 $readmeOk = $false
 if (Test-Path -LiteralPath $readme) {
     $readmeText = Get-Content -LiteralPath $readme -Raw -Encoding UTF8
-    $readmeOk = ($readmeText -match '/cost')
+    $readmeOk = ($readmeText -match '/cost') -and ($readmeText -match 'cost_bar_mode')
 }
-Add-StepResult -Name '8/8 ui-tui README /cost' -Ok $readmeOk
+Add-StepResult -Name '10/10 ui-tui README cost docs' -Ok $readmeOk
 
 # --- Rapport ---
 $reportPath = Join-Path $scriptRoot ("STATUS_BAR_COST_E2E_REPORT_$reportStamp.md")
 $status = if ($failures -eq 0) { 'PASS' } else { 'FAIL' }
 $sb = [System.Text.StringBuilder]::new()
-[void]$sb.AppendLine("# Status Bar Cost E2E - $status")
+[void]$sb.AppendLine("# Status Bar Cost E2E (rich) - $status")
 [void]$sb.AppendLine('')
 [void]$sb.AppendLine("Datum: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
 [void]$sb.AppendLine("Hermes root: ``$hermesRoot``")
@@ -209,9 +254,9 @@ foreach ($s in $steps) {
 }
 [void]$sb.AppendLine('')
 if ($failures -gt 0) {
-    [void]$sb.AppendLine("**$failures** stap(pen) gefaald. Herstel: ``windows\APPLY_TEAM_DISPLAY.bat``, daarna audit opnieuw.")
+    [void]$sb.AppendLine("**$failures** stap(pen) gefaald. Herstel: ``windows\APPLY_TEAM_DISPLAY.bat`` of audit met ``-ApplyDisplayFix``.")
 } else {
-    [void]$sb.AppendLine('Alle stappen geslaagd. Start Hermes opnieuw of `/new` om statusbalk-kosten te zien.')
+    [void]$sb.AppendLine('Alle stappen geslaagd. Start Hermes opnieuw of `/new` voor rijke statusbalk-kosten.')
 }
 $sb.ToString() | Set-Content -LiteralPath $reportPath -Encoding UTF8
 Write-Host ''
