@@ -41,7 +41,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+python scripts\rag_pipeline\warm_embedding_cache.py
 if errorlevel 1 (
   echo [ERROR] Warme start mislukt ^(exit %ERRORLEVEL%^).
   pause

@@ -68,20 +68,17 @@ if (-not $SkipPip) {
 
 if (-not $SkipModelWarm) {
     $py = ($pythons | Where-Object { Test-HermesPythonHasPip -PythonExe $_ } | Select-Object -First 1)
-    if ($py) {
+    $warmScript = Join-Path $RepoRoot 'scripts/rag_pipeline/warm_embedding_cache.py'
+    if ($py -and (Test-Path -LiteralPath $warmScript)) {
         Write-RagMsg '[INFO] Embedding-modelcache warmen...' 'Cyan'
-        $prevEap = $ErrorActionPreference
-        $ErrorActionPreference = 'SilentlyContinue'
-        try {
-            $null = & $py -c 'from sentence_transformers import SentenceTransformer; SentenceTransformer("all-MiniLM-L6-v2")' 2>&1
-            if ($LASTEXITCODE -eq 0) {
-                Write-RagMsg '[OK] Modelcache klaar.' 'Green'
-            } else {
-                Write-RagMsg ('[WARN] Modelcache warmen mislukt (exit {0}).' -f $LASTEXITCODE) 'Yellow'
-            }
-        } finally {
-            $ErrorActionPreference = $prevEap
+        & $py $warmScript
+        if (Test-NativeCommandFailed) {
+            Write-RagMsg ('[WARN] Modelcache warmen mislukt (exit {0}).' -f $LASTEXITCODE) 'Yellow'
+        } else {
+            Write-RagMsg '[OK] Modelcache klaar.' 'Green'
         }
+    } elseif ($py) {
+        Write-RagMsg ('[WARN] Warm-script ontbreekt: {0}' -f $warmScript) 'Yellow'
     }
 }
 
