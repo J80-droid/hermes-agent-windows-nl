@@ -113,7 +113,7 @@ Optioneel: `-ApplyDisplayFix` (display drift), `-SkipRuntime` (geen Hermes home)
 | 9/10 | `UPSTREAM_SYNC.md` conflict-tabel |
 | 10/10 | `ui-tui/README.md` documenteert `/cost`, `config.set cost_bar_mode`, live `~$turn` |
 
-**Niet in deze E2E:** live Ink-TUI pixel-render (handmatig: statusbalk tijdens stream); prijs onbekend voor custom model (`cost_usd` ontbreekt — verwacht). Live turn-schatting wel gedekt via vitest (`liveTurnCost`, `createGatewayEventHandler`).
+**Niet in deze E2E:** live Ink-TUI pixel-render (handmatig: statusbalk tijdens stream). Onbekende modelprijs (`cost_usd` ontbreekt) toont in de TUI `n/a`/`included` plus live `~NK tok` tijdens stream — gedekt via vitest (`liveTurnCost`, `usageCostBar`, `createGatewayEventHandler`).
 
 ## Pareto Code router E2E
 

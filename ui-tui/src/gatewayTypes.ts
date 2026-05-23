@@ -190,6 +190,7 @@ export interface SessionUsageResponse {
   total?: number
   turn_cost_estimated?: boolean
   turn_cost_usd?: number
+  turn_live_tokens?: number
 }
 
 export interface SessionStatusResponse {

@@ -2,7 +2,7 @@ import { STARTUP_IMAGE, STARTUP_QUERY } from '../config/env.js'
 import { STREAM_BATCH_MS } from '../config/timing.js'
 import { buildSetupRequiredSections, SETUP_REQUIRED_TITLE } from '../content/setup.js'
 import { mergeUsage } from '../domain/usage.js'
-import { estimateLiveTurnCostUsd } from '../domain/liveTurnCost.js'
+import { estimateLiveTurnCostUsd, sumLiveTurnTokens } from '../domain/liveTurnCost.js'
 import type {
   CommandsCatalogResponse,
   ConfigFullResponse,
@@ -304,14 +304,28 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
       const usage = getUiState().usage
       const turn = getTurnState()
       const toolsDelta = Math.max(0, (usage.session_tools_executed ?? 0) - usageToolsAtTurnStart)
-      const estimate = estimateLiveTurnCostUsd(usage, {
+      const signals = {
         reasoningTokens: turn.reasoningTokens,
         streamOutputTokens: turn.streamOutputTokens,
         toolTokens: turn.toolTokens,
         toolsExecutedDelta: toolsDelta
-      })
+      }
+      const estimate = estimateLiveTurnCostUsd(usage, signals)
+      const liveTokens = sumLiveTurnTokens(signals)
 
-      if (estimate == null) {
+      if (estimate != null && estimate > 0) {
+        patchUiState(state => ({
+          ...state,
+          usage: mergeUsage(state.usage, {
+            turn_cost_estimated: true,
+            turn_cost_usd: estimate,
+            turn_live_tokens: 0
+          })
+        }))
+        return
+      }
+
+      if (liveTokens <= 0) {
         return
       }
 
@@ -319,7 +333,8 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
         ...state,
         usage: mergeUsage(state.usage, {
           turn_cost_estimated: true,
-          turn_cost_usd: estimate
+          turn_cost_usd: 0,
+          turn_live_tokens: liveTokens
         })
       }))
     }, STREAM_BATCH_MS)
@@ -388,7 +403,11 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
         usageToolsAtTurnStart = getUiState().usage.session_tools_executed ?? 0
         patchUiState(state => ({
           ...state,
-          usage: mergeUsage(state.usage, { turn_cost_estimated: false, turn_cost_usd: 0 })
+          usage: mergeUsage(state.usage, {
+            turn_cost_estimated: false,
+            turn_cost_usd: 0,
+            turn_live_tokens: 0
+          })
         }))
         turnController.startMessage()
 
@@ -803,7 +822,8 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
               ...state,
               usage: mergeUsage(merged, {
                 turn_cost_estimated: false,
-                turn_cost_usd: turnCost
+                turn_cost_usd: turnCost,
+                turn_live_tokens: 0
               })
             }
           })

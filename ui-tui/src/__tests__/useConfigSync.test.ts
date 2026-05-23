@@ -69,7 +69,7 @@ describe('applyDisplay', () => {
     const s = $uiState.get()
     expect(setBell).toHaveBeenCalledWith(false)
     expect(s.inlineDiffs).toBe(true)
-    expect(s.showCost).toBe(false)
+    expect(s.showCost).toBe(true)
     expect(s.costBarMode).toBe('rich')
     expect(s.showReasoning).toBe(false)
     expect(s.statusBar).toBe('top')

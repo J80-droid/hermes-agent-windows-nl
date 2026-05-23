@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest'
 import {
   deriveTokenCostRates,
   estimateLiveTurnCostUsd,
-  formatTurnCostUsd
+  formatTurnCostUsd,
+  formatTurnLiveTokens,
+  sumLiveTurnTokens
 } from '../domain/liveTurnCost.js'
 
 describe('liveTurnCost', () => {
@@ -54,5 +56,33 @@ describe('liveTurnCost', () => {
   it('formatTurnCostUsd marks live estimates with tilde', () => {
     expect(formatTurnCostUsd(0.23, true)).toBe('~$0.23')
     expect(formatTurnCostUsd(0.23, false)).toBe('$0.23')
+  })
+
+  it('deriveTokenCostRates uses breakdown totals when cost_usd is missing', () => {
+    const rates = deriveTokenCostRates({
+      cost_breakdown_usd: { input: 0.8, output: 1.2 },
+      input: 8000,
+      output: 4000,
+      total: 12000
+    })
+
+    expect(rates?.input).toBeCloseTo(0.8 / 8000, 10)
+    expect(rates?.output).toBeCloseTo(1.2 / 4000, 10)
+  })
+
+  it('formatTurnLiveTokens compacts large token counts', () => {
+    expect(formatTurnLiveTokens(450)).toBe('~450 tok')
+    expect(formatTurnLiveTokens(1200)).toBe('~1.2K tok')
+  })
+
+  it('sumLiveTurnTokens aggregates streamed token signals', () => {
+    expect(
+      sumLiveTurnTokens({
+        reasoningTokens: 100,
+        streamOutputTokens: 300,
+        toolTokens: 50,
+        toolsExecutedDelta: 1
+      })
+    ).toBe(450)
   })
 })

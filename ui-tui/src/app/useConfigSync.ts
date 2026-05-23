@@ -33,6 +33,8 @@ const STATUSBAR_ALIAS: Record<string, StatusBarMode> = {
   top: 'top'
 }
 
+export const normalizeShowCost = (raw: unknown): boolean => raw !== false
+
 export const normalizeCostBarMode = (raw: unknown): CostBarMode =>
   typeof raw === 'string' && raw.trim().toLowerCase() === 'minimal' ? 'minimal' : 'rich'
 
@@ -194,7 +196,7 @@ export const applyDisplay = (
     mouseTracking: normalizeMouseTracking(d),
     sections: resolveSections(d.sections),
     costBarMode: normalizeCostBarMode(d.cost_bar_mode),
-    showCost: !!d.show_cost,
+    showCost: normalizeShowCost(d.show_cost),
     showReasoning: !!d.show_reasoning,
     statusBar: normalizeStatusBar(d.tui_statusbar),
     streaming: d.streaming !== false

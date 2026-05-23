@@ -1,6 +1,6 @@
 import type { Usage } from '../types.js'
 
-import { formatTurnCostUsd } from './liveTurnCost.js'
+import { formatTurnCostUsd, formatTurnLiveTokens } from './liveTurnCost.js'
 import { formatStatusBarCost } from './usage.js'
 
 export type CostBarMode = 'minimal' | 'rich'
@@ -16,13 +16,48 @@ export type StatusBarCostUsage = Pick<
   | 'session_tools_executed'
   | 'turn_cost_estimated'
   | 'turn_cost_usd'
+  | 'turn_live_tokens'
 >
 
-const FULL_MIN_WIDTH = 96
+const FULL_MIN_WIDTH = 72
 const COSTS_MIN_WIDTH = 58
 
 export function formatUsdCompact(amount: number): string {
   return `$${amount.toFixed(2)}`
+}
+
+export function formatSessionCostLabel(
+  usage: Pick<Usage, 'calls' | 'cost_status' | 'cost_usd'>
+): string {
+  if (typeof usage.cost_usd === 'number') {
+    return formatUsdCompact(usage.cost_usd)
+  }
+
+  if (usage.cost_status === 'included') {
+    return 'included'
+  }
+
+  if (usage.cost_status === 'unknown') {
+    return 'n/a'
+  }
+
+  if (!usage.calls) {
+    return '$0.00'
+  }
+
+  return 'n/a'
+}
+
+export function formatTurnCostLabel(usage: StatusBarCostUsage): string | null {
+  if (typeof usage.turn_cost_usd === 'number' && usage.turn_cost_usd > 0) {
+    return formatTurnCostUsd(usage.turn_cost_usd, Boolean(usage.turn_cost_estimated))
+  }
+
+  if (typeof usage.turn_live_tokens === 'number' && usage.turn_live_tokens > 0) {
+    return formatTurnLiveTokens(usage.turn_live_tokens)
+  }
+
+  return null
 }
 
 export function formatCostBreakdownPct(pct: CostBreakdownPct | undefined): string | null {
@@ -67,23 +102,16 @@ export function resolveCostBarTier(width: number, mode: CostBarMode): 'costs' | 
 export function formatStatusBarCostRich(
   usage: StatusBarCostUsage,
   opts: { mode?: CostBarMode; width?: number } = {}
-): string | null {
+): string {
   const mode = opts.mode ?? 'rich'
   const width = opts.width ?? FULL_MIN_WIDTH
 
-  if (typeof usage.cost_usd !== 'number') {
-    return null
-  }
-
   if (mode === 'minimal') {
-    return formatStatusBarCost(usage)
+    return formatStatusBarCost(usage) ?? formatSessionCostLabel(usage)
   }
 
-  const session = formatUsdCompact(usage.cost_usd)
-  const turn =
-    typeof usage.turn_cost_usd === 'number'
-      ? formatTurnCostUsd(usage.turn_cost_usd, Boolean(usage.turn_cost_estimated))
-      : null
+  const session = formatSessionCostLabel(usage)
+  const turn = formatTurnCostLabel(usage)
   const tier = resolveCostBarTier(width, mode)
 
   if (tier === 'session') {
@@ -109,9 +137,27 @@ export function formatStatusBarCostRich(
   return segments.join(' │ ')
 }
 
-export function shouldShowStatusBarCostRich(
-  showCost: boolean,
-  usage: Pick<Usage, 'cost_usd'>
-): boolean {
-  return showCost && typeof usage.cost_usd === 'number'
+export function shouldShowStatusBarCostRich(showCost: boolean): boolean {
+  return showCost
+}
+
+const STATUS_RULE_MIN_LEFT_WIDTH = 12
+
+/** Reserve a non-truncated cost segment before the cwd label on the status rule. */
+export function resolveStatusRuleLayout(opts: {
+  cols: number
+  costBarMode: CostBarMode
+  cwdLabel: string
+  showCost: boolean
+  usage: StatusBarCostUsage
+}): { costLabel: string | null; leftWidth: number } {
+  const cwdReserve = opts.cwdLabel.length + 3
+  const costAvailableWidth = Math.max(0, opts.cols - cwdReserve - STATUS_RULE_MIN_LEFT_WIDTH)
+  const costLabel = shouldShowStatusBarCostRich(opts.showCost)
+    ? formatStatusBarCostRich(opts.usage, { mode: opts.costBarMode, width: costAvailableWidth })
+    : null
+  const costReserve = costLabel ? costLabel.length + 3 : 0
+  const leftWidth = Math.max(STATUS_RULE_MIN_LEFT_WIDTH, opts.cols - cwdReserve - costReserve)
+
+  return { costLabel, leftWidth }
 }

@@ -17,6 +17,32 @@ export type LiveTurnTokenSignals = {
 
 const rate = (usd: number | undefined, tokens: number) => (usd && tokens > 0 ? usd / tokens : 0)
 
+function sumBreakdownUsd(breakdown: NonNullable<Usage['cost_breakdown_usd']>): number {
+  return (
+    (breakdown.input ?? 0) +
+    (breakdown.output ?? 0) +
+    (breakdown.cache_read ?? 0) +
+    (breakdown.cache_write ?? 0)
+  )
+}
+
+function resolveSessionCostUsd(
+  usage: Pick<Usage, 'cost_breakdown_usd' | 'cost_usd'>
+): number | null {
+  if (typeof usage.cost_usd === 'number' && usage.cost_usd > 0) {
+    return usage.cost_usd
+  }
+
+  const breakdown = usage.cost_breakdown_usd
+  if (!breakdown) {
+    return null
+  }
+
+  const total = sumBreakdownUsd(breakdown)
+
+  return total > 0 ? total : null
+}
+
 /** Derive USD-per-token rates from the session usage snapshot (no gateway pricing table). */
 export function deriveTokenCostRates(
   usage: Pick<Usage, 'cost_breakdown_usd' | 'cost_usd' | 'input' | 'output' | 'total'> & {
@@ -24,14 +50,16 @@ export function deriveTokenCostRates(
     cache_write?: number
   }
 ): TokenCostRates | null {
-  if (typeof usage.cost_usd !== 'number' || usage.cost_usd <= 0) {
+  const sessionCost = resolveSessionCostUsd(usage)
+
+  if (sessionCost == null || sessionCost <= 0) {
     return null
   }
 
   const input = usage.input ?? 0
   const output = usage.output ?? 0
   const total = usage.total ?? input + output
-  const blended = total > 0 ? usage.cost_usd / total : 0
+  const blended = total > 0 ? sessionCost / total : 0
   const breakdown = usage.cost_breakdown_usd
 
   if (!breakdown) {
@@ -81,4 +109,23 @@ export function estimateLiveTurnCostUsd(
 
 export function formatTurnCostUsd(amount: number, estimated = false): string {
   return `${estimated ? '~' : ''}$${amount.toFixed(2)}`
+}
+
+export function formatTurnLiveTokens(tokens: number): string {
+  if (tokens >= 1_000_000) {
+    return `~${(tokens / 1_000_000).toFixed(1).replace(/\.0$/, '')}M tok`
+  }
+
+  if (tokens >= 1000) {
+    return `~${(tokens / 1000).toFixed(1).replace(/\.0$/, '')}K tok`
+  }
+
+  return `~${tokens} tok`
+}
+
+export function sumLiveTurnTokens(signals: LiveTurnTokenSignals): number {
+  return Math.max(
+    0,
+    signals.streamOutputTokens + signals.reasoningTokens + signals.toolTokens
+  )
 }

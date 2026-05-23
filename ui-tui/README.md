@@ -222,12 +222,12 @@ Notes:
 - Text paste remains inline-only; `Cmd+V` / `Ctrl+V` handle layered text/OSC52/image fallback before `/paste` is needed.
 - `/details [hidden|collapsed|expanded|cycle]` controls thinking/tool-detail visibility.
 - `/statusbar` toggles the status rule on/off.
-- `/cost [on|off|toggle|status]` toggles **visibility** of estimated session cost in the status bar (`display.show_cost`).
-- **Bar format** (`display.cost_bar_mode`, team default `rich`):
-  - **rich** — `$turn / $session │ cw/out/in/cr % │ calls │ tools` (responsive tiers by terminal width)
-  - **minimal** — legacy single-line `~$0.0042` (session only, four decimals)
+- `/cost [on|off|toggle|status]` toggles **visibility** of estimated session cost in the status bar (`display.show_cost`; default **on**).
+- **Bar format** (`display.cost_bar_mode`, default **rich**):
+  - **rich** — `$turn / $session │ cw/out/in/cr % │ calls │ tools` (responsive tiers by terminal width). When `/cost` is on, the bar is **always** shown: session falls back to `included`, `n/a`, or `$0.00` when USD pricing is missing.
+  - **minimal** — legacy single-line `~$0.0042` (session only, four decimals); same fallbacks when USD is unavailable.
 - Change format without a dedicated slash command: `config.set cost_bar_mode rich|minimal|toggle|status` (persisted to `config.yaml`; picked up by config sync). There is no `/costbar` slash alias — only `/cost` for on/off.
-- **Live turn cost during stream:** while a turn is in progress, the TUI estimates `$turn` client-side from token deltas (output/reasoning/tool text) and session `cost_breakdown_usd` rates. Shown as `~$0.05 / $5.74` until `message.complete` replaces it with the exact session-cost delta. Module: `src/domain/liveTurnCost.ts`; wiring: `createGatewayEventHandler.ts` + `turnStore.streamOutputTokens`.
+- **Live turn cost during stream:** while a turn is in progress, the TUI estimates `$turn` client-side from token deltas (output/reasoning/tool text) and session `cost_breakdown_usd` rates (or breakdown totals when `cost_usd` is missing). Shown as `~$0.05 / $5.74` until `message.complete` replaces it with the exact session-cost delta. When USD rates are unavailable, the turn slot shows live tokens instead (`~1.2K tok / n/a`). Module: `src/domain/liveTurnCost.ts`; wiring: `createGatewayEventHandler.ts` + `turnStore.streamOutputTokens`.
 
 Anything else falls through to:
 

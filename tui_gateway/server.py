@@ -4207,7 +4207,7 @@ def _(rid, params: dict) -> dict:
         raw = str(value or "").strip().lower()
         display = _load_cfg().get("display")
         d0 = display if isinstance(display, dict) else {}
-        current = bool(d0.get("show_cost", False))
+        current = bool(d0.get("show_cost", True))
 
         if raw == "status":
             return _ok(rid, {"key": key, "value": "on" if current else "off"})
@@ -4435,7 +4435,7 @@ def _(rid, params: dict) -> dict:
         return _ok(rid, {"value": _coerce_statusbar(raw)})
     if key == "cost":
         display = _load_cfg().get("display")
-        on = bool((display or {}).get("show_cost", False)) if isinstance(display, dict) else False
+        on = bool((display or {}).get("show_cost", True)) if isinstance(display, dict) else True
         return _ok(rid, {"value": "on" if on else "off"})
     if key == "cost_bar_mode":
         display = _load_cfg().get("display")

@@ -1513,6 +1513,24 @@ def test_config_get_cost_bar_mode_defaults_rich(tmp_path, monkeypatch):
     assert resp["result"]["value"] == "rich"
 
 
+def test_config_get_cost_defaults_on(tmp_path, monkeypatch):
+    import yaml
+
+    cfg_path = tmp_path / "config.yaml"
+    cfg_path.write_text(yaml.safe_dump({"display": {}}))
+    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+
+    resp = server.handle_request(
+        {
+            "id": "1",
+            "method": "config.get",
+            "params": {"key": "cost"},
+        }
+    )
+
+    assert resp["result"]["value"] == "on"
+
+
 def test_config_set_details_mode_pins_all_sections(tmp_path, monkeypatch):
     import yaml
 

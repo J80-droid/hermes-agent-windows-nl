@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest'
 
 import {
   formatCostBreakdownPct,
+  formatSessionCostLabel,
   formatStatusBarCostRich,
   formatUsdCompact,
-  resolveCostBarTier
+  resolveCostBarTier,
+  resolveStatusRuleLayout,
+  shouldShowStatusBarCostRich
 } from '../domain/usageCostBar.js'
 
 describe('usageCostBar', () => {
@@ -61,7 +64,47 @@ describe('usageCostBar', () => {
 
   it('resolveCostBarTier respects mode', () => {
     expect(resolveCostBarTier(120, 'rich')).toBe('full')
+    expect(resolveCostBarTier(72, 'rich')).toBe('full')
     expect(resolveCostBarTier(70, 'rich')).toBe('costs')
     expect(resolveCostBarTier(40, 'minimal')).toBe('session')
+  })
+
+  it('formatSessionCostLabel falls back for unknown or included pricing', () => {
+    expect(formatSessionCostLabel({ cost_status: 'unknown', calls: 3 })).toBe('n/a')
+    expect(formatSessionCostLabel({ cost_status: 'included', calls: 3 })).toBe('included')
+    expect(formatSessionCostLabel({ calls: 0 })).toBe('$0.00')
+  })
+
+  it('formatStatusBarCostRich shows live token turn when USD is unavailable', () => {
+    const text = formatStatusBarCostRich(
+      {
+        calls: 2,
+        cost_status: 'unknown',
+        turn_cost_estimated: true,
+        turn_live_tokens: 1200
+      },
+      { mode: 'rich', width: 120 }
+    )
+
+    expect(text).toContain('~1.2K tok / n/a')
+  })
+
+  it('shouldShowStatusBarCostRich only depends on showCost', () => {
+    expect(shouldShowStatusBarCostRich(true)).toBe(true)
+    expect(shouldShowStatusBarCostRich(false)).toBe(false)
+  })
+
+  it('resolveStatusRuleLayout reserves width for the full cost segment', () => {
+    const costLabel = formatStatusBarCostRich(usage, { mode: 'rich', width: 120 })
+    const layout = resolveStatusRuleLayout({
+      cols: 140,
+      costBarMode: 'rich',
+      cwdLabel: 'D:\\project',
+      showCost: true,
+      usage
+    })
+
+    expect(layout.costLabel).toBe(costLabel)
+    expect(layout.leftWidth).toBe(140 - 'D:\\project'.length - 3 - costLabel.length - 3)
   })
 })

@@ -10,7 +10,7 @@ import { $uiState } from '../app/uiStore.js'
 import { FACES } from '../content/faces.js'
 import { VERBS } from '../content/verbs.js'
 import { fmtDuration } from '../domain/messages.js'
-import { formatStatusBarCostRich, shouldShowStatusBarCostRich } from '../domain/usageCostBar.js'
+import { resolveStatusRuleLayout } from '../domain/usageCostBar.js'
 import type { CostBarMode } from '../domain/usageCostBar.js'
 import { stickyPromptFromViewport } from '../domain/viewport.js'
 import { buildSubagentTree, treeTotals, widthByDepth } from '../lib/subagentTree.js'
@@ -300,7 +300,13 @@ export function StatusRule({
       : ''
 
   const bar = usage.context_max ? ctxBar(pct) : ''
-  const leftWidth = Math.max(12, cols - cwdLabel.length - 3)
+  const { costLabel, leftWidth } = resolveStatusRuleLayout({
+    cols,
+    costBarMode,
+    cwdLabel,
+    showCost,
+    usage
+  })
 
   return (
     <Box height={1}>
@@ -346,14 +352,15 @@ export function StatusRule({
             </Text>
           ) : null}
           {bgCount > 0 ? <Text color={t.color.muted}> │ {bgCount} bg</Text> : null}
-          {shouldShowStatusBarCostRich(showCost, usage) ? (
-            <Text color={t.color.muted}>
-              {' │ '}
-              {formatStatusBarCostRich(usage, { mode: costBarMode, width: cols })}
-            </Text>
-          ) : null}
         </Text>
       </Box>
+
+      {costLabel ? (
+        <Text color={t.color.muted} flexShrink={0}>
+          {' │ '}
+          {costLabel}
+        </Text>
+      ) : null}
 
       <Text color={t.color.border}> ─ </Text>
       <Text color={t.color.label}>{cwdLabel}</Text>

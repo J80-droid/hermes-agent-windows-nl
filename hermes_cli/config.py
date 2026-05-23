@@ -1039,7 +1039,8 @@ DEFAULT_CONFIG = {
         # class of over-claim that otherwise forces users to run
         # `git status` to verify edits landed.  Set false to suppress.
         "file_mutation_verifier": True,
-        "show_cost": False,       # Show $ cost in the status bar (off by default)
+        "show_cost": True,        # Show estimated session cost in the TUI status bar
+        "cost_bar_mode": "rich",  # rich = turn/session + breakdown; minimal = legacy ~$0.0042
         "skin": "default",
         # UI language for static user-facing messages (approval prompts, a
         # handful of gateway slash-command replies).  Does NOT affect agent

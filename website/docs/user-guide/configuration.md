@@ -1184,7 +1184,8 @@ display:
   bell_on_complete: false # Play terminal bell when agent finishes (great for long tasks)
   show_reasoning: false   # Show model reasoning/thinking above each response (toggle with /reasoning show|hide)
   streaming: false        # Stream tokens to terminal as they arrive (real-time output)
-  show_cost: false        # Show estimated $ cost in the CLI status bar
+  show_cost: true         # Show estimated session cost in the TUI status bar (toggle with /cost)
+  cost_bar_mode: rich     # rich = turn/session + breakdown; minimal = legacy ~$0.0042
   timestamps: false       # When true, prefixes user and assistant labels with [HH:MM] timestamps in the CLI / TUI transcript
   tool_preview_length: 0  # Max chars for tool call previews (0 = no limit, show full paths/commands)
   runtime_footer:         # Gateway: append a runtime-context footer to final replies

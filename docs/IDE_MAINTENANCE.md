@@ -25,7 +25,7 @@ windows\audits\RUN_MEMORY_PRODUCTION_GATE.bat
 | `--inspect` | Schema-audit (`id`-kolom); rapport `windows\audits\LANCEDB_SCHEMA_AUDIT_*.md` |
 | `--init-missing` | Lege `knowledge_base` voor domeinen zonder LanceDB-pad (na nieuw domein in `domains.yaml`) |
 | `RUN_IDE_MAINTENANCE_E2E.bat …` | Volledige landkaart-poort (15 stappen); rapport `IDE_MAINTENANCE_E2E_REPORT_*.md` |
-| `RUN_STATUS_BAR_COST_E2E.bat` | TUI statusbalk (rich): `show_cost`, `cost_bar_mode`, breakdown, turn-delta, live `~$turn` (vitest); 10 stappen |
+| `RUN_STATUS_BAR_COST_E2E.bat` | TUI statusbalk (rich): defaults `show_cost`/`cost_bar_mode`, altijd zichtbaar, gereserveerd segment, breakdown, live `~$turn`/`~NK tok` (vitest); 10 stappen |
 | `RUN_PARETO_E2E.bat` | OpenRouter Pareto Code router: model-gate, pytest, verify; 8 stappen |
 | `RUN_STATUS_BAR_COST_E2E.bat -ApplyDisplayFix` | Zelfde audit + `apply_team_display.ps1` vóóraf (bij display-drift) |
 | `RUN_AUDITS.bat -IncludeStatusBarCostE2E` | Statusbalk E2E in gecombineerde kwaliteitspoort |

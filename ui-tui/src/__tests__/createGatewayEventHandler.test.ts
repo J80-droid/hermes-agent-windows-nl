@@ -1049,4 +1049,31 @@ describe('createGatewayEventHandler', () => {
 
     vi.useRealTimers()
   })
+
+  it('tracks live turn tokens when session USD pricing is unavailable', () => {
+    vi.useFakeTimers()
+    const appended: Msg[] = []
+    const onEvent = createGatewayEventHandler(buildCtx(appended))
+
+    patchUiState({
+      usage: {
+        calls: 1,
+        cost_status: 'unknown',
+        input: 1000,
+        output: 0,
+        total: 1000
+      }
+    })
+
+    onEvent({ payload: {}, type: 'message.start' } as any)
+    onEvent({ payload: { text: 'abcd' }, type: 'message.delta' } as any)
+
+    vi.advanceTimersByTime(STREAM_BATCH_MS + 1)
+
+    expect(getUiState().usage.turn_cost_estimated).toBe(true)
+    expect(getUiState().usage.turn_live_tokens).toBeGreaterThan(0)
+    expect(getUiState().usage.turn_cost_usd).toBe(0)
+
+    vi.useRealTimers()
+  })
 })

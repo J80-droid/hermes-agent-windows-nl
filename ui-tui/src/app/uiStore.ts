@@ -19,6 +19,7 @@ const buildUiState = (): UiState => ({
   mouseTracking: MOUSE_TRACKING,
   sections: {},
   costBarMode: 'rich' as CostBarMode,
+  showCost: true,
   showReasoning: false,
   sid: null,
   status: 'summoning hermes…',

@@ -189,6 +189,8 @@ export interface Usage {
   total: number
   turn_cost_estimated?: boolean
   turn_cost_usd?: number
+  /** Live turn token delta when USD pricing is unavailable (client-side during stream). */
+  turn_live_tokens?: number
 }
 
 export interface SudoReq {
