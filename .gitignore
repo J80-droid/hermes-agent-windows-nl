@@ -90,6 +90,7 @@ hermes_setup.log
 windows/scripts/rag_ingest_bulk.log
 windows/scripts/rag_ingest_bulk.err.log
 windows/audits/INSTITUTIONAL_E2E_LAST_RUN.log
+windows/audits/MEMORY_ARCHITECTURE_E2E_REPORT_2026-05-23_*.md
 windows/audits/TOOLSET_DOMAIN_E2E_LAST_RUN.log
 windows/audits/SOUL_DEPLOY_START_E2E_LAST_RUN.log
 windows/tests/last_pytest_run.log

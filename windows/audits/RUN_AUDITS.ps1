@@ -11,6 +11,7 @@ param(
     [switch]$IncludeProvisionDomainE2E,
     [switch]$IncludeSoulDeployStartE2E,
     [switch]$IncludeIdeMaintenanceE2E,
+    [switch]$IncludeMemoryArchitectureE2E,
     [switch]$SkipPytest,
     [switch]$SkipFootguns,
     [switch]$SkipRuff,
@@ -203,6 +204,14 @@ if ($IncludeSoulDeployStartE2E -or $IncludeAllE2E) {
     $soulStartE2e = Join-Path $scriptRoot 'RUN_SOUL_DEPLOY_START_E2E.ps1'
     Invoke-Step 'soul-deploy-start-e2e' {
         & $soulStartE2e -RepoRoot $repoRoot
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeMemoryArchitectureE2E -or $IncludeAllE2E) {
+    $memE2e = Join-Path $scriptRoot 'RUN_MEMORY_ARCHITECTURE_E2E.ps1'
+    Invoke-Step 'memory-architecture-e2e' {
+        & $memE2e -RepoRoot $repoRoot
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

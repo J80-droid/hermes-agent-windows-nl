@@ -55,7 +55,13 @@ if ($IncludeTrustRuntime) {
         & $toolSync
         if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
     }
-    Write-Host '[OK] Trust runtime + toolsets (geen scrub).' -ForegroundColor Green
+    $apiEnvPs1 = Join-Path $scriptRoot 'sync_hermes_api_env.ps1'
+    if (Test-Path -LiteralPath $apiEnvPs1) {
+        Write-Host '--- API/vault .env (alle profielen) ---' -ForegroundColor Cyan
+        & $apiEnvPs1
+        if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
+    }
+    Write-Host '[OK] Trust runtime + toolsets + vault-env (geen scrub).' -ForegroundColor Green
 }
 
 if (-not $SkipE2E) {

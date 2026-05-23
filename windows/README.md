@@ -28,7 +28,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | RAG-index bijwerken | `scripts/update_knowledge.bat` |
 | Doctor / fixes | `DOCTOR_FIX.bat` |
 | TUI-kleuren / display | `TERMINAL_WINDOWS.md`, `APPLY_TEAM_DISPLAY.bat` (skin + markdown) |
-| API-keys sync (split home) | `SYNC_HERMES_API_ENV.bat` — `~/.hermes/.env` → `%LOCALAPPDATA%\hermes\.env` |
+| API-keys + vault sync (split home) | `SYNC_HERMES_API_ENV.bat` — `~/.hermes/.env` → root + alle `profiles\*\`.env` |
 | Profiel wisselen | `SWITCH_PROFILE.bat <naam>` of in chat `/profile use <naam>` — zie `docs\PROFILE_SWITCH.md` |
 | Profiel + direct chat | `SWITCH_PROFILE_AND_CHAT.bat <naam>` (nieuwe chat = toolbox van dat profiel) |
 | Toolsets per profiel | `hermes -p <naam> tools` of `SYNC_DOMAIN_TOOLSETS.bat` |
@@ -114,7 +114,7 @@ Zie `docs\PROFILE_MODEL_INHERITANCE.md`.
 - `team_display.defaults` — teamweergave (`skin=default`, `final_response_markdown=render`, `assistant_render_style=institutional_rich`, `assistant_palette=demo`, `assistant_label_columns=true`, `compact=false`, `streaming=false`)
 - `apply_team_display.ps1` — team display naar **actief profiel** (`profiles\<active>\config.yaml`; `conda --env-vars HERMES_HOME`)
 - `audits\RUN_INSTITUTIONAL_E2E.bat` — institutioneel pakket (**11 stappen**, incl. Rich-renderer 2e); zie `audits\README.md`
-- `sync_hermes_api_env.ps1` — API-keys bij gesplitste Hermes-home
+- `sync_hermes_api_env.ps1` — API-keys + vault-paden (`OBSIDIAN_VAULT_PATH`, `WIKI_PATH`) naar alle profiel-`.env`
 - `TERMINAL_WINDOWS.md` — WT, skin, markdown-kleuren, API-home
 - `PSScriptAnalyzerSettings.psd1` — lint-regels
 

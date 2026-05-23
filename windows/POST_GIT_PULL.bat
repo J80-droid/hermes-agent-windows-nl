@@ -20,6 +20,11 @@ set "HERMES_SKIP_PAUSE=1"
 call "%~dp0SYNC_TRUST_RUNTIME.bat"
 set "HERMES_SKIP_PAUSE="
 echo.
+echo [INFO] API-keys + Obsidian vault-paden (~/.hermes -^> alle profiel-.env)...
+set "HERMES_SKIP_PAUSE=1"
+call "%~dp0SYNC_HERMES_API_ENV.bat"
+set "HERMES_SKIP_PAUSE="
+echo.
 echo [INFO] SOUL anatomy deploy (13 profielen + snippets, stamp bijwerken)...
 set "HERMES_SKIP_PAUSE=1"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\launch_soul_anatomy_deploy.ps1" -RepoRoot "%CD%" -Force -Quiet

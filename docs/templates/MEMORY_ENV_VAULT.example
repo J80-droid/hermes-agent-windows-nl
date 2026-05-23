@@ -1,0 +1,6 @@
+# Kopieer deze regels naar %USERPROFILE%\.hermes\.env (sectie Knowledge & tools)
+# Daarna: windows\SYNC_HERMES_API_ENV.bat
+
+OBSIDIAN_VAULT_PATH="C:/Users/jamel/Documents/Hermes Knowledge"
+WIKI_PATH="C:/Users/jamel/Documents/Hermes Knowledge"
+KNOWLEDGE_BASE_PATH="C:/Users/jamel/Documents/Hermes Knowledge"

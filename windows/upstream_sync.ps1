@@ -294,7 +294,7 @@ try {
 
     if ($script:UpstreamExitCode -eq 0 -and $Phase -eq 'PostMerge') {
         Write-Uitleg @(
-            'Fase 3/3 — Post-merge: trust runtime (SOUL+memory), RAG/MCP, script-keten, taakbalk-iconen.'
+            'Fase 3/3 — Post-merge: trust runtime, API/vault-env sync, toolsets, SOUL, RAG/MCP, verify, taakbalk.'
             'Daarna sluit UPDATE_HERMES.bat af (eventueel team display + pause aan het einde).'
         )
         if (Test-Path (Join-Path $repo '.git\MERGE_HEAD')) {
@@ -343,6 +343,20 @@ try {
                         Write-Warn 'SYNC_TRUST_RUNTIME.bat faalde — draai handmatig na update.'
                     } else {
                         Write-Ok 'Trust runtime gesynchroniseerd.'
+                    }
+                }
+            }
+
+            if ($script:UpstreamExitCode -eq 0) {
+                $apiEnvPs1 = Join-Path $repo 'windows/sync_hermes_api_env.ps1'
+                if (Test-Path -LiteralPath $apiEnvPs1) {
+                    Write-Step 'API-keys + vault-paden (OBSIDIAN_VAULT_PATH naar alle profielen)...'
+                    $env:HERMES_SKIP_PAUSE = '1'
+                    & $apiEnvPs1
+                    if (Test-NativeCommandFailed) {
+                        Write-Warn 'sync_hermes_api_env.ps1 faalde — draai SYNC_HERMES_API_ENV.bat handmatig.'
+                    } else {
+                        Write-Ok 'API/vault .env gesynchroniseerd (~/.hermes -> LocalAppData + profiles).'
                     }
                 }
             }

@@ -109,6 +109,7 @@ windows\MERGE_UPSTREAM.bat -AutoResolve
 | Waarschuwing bij achterstand >20 + J/N | Ja |
 | `hermes update` (merge upstream + deps) | Ja |
 | Trust runtime (`SYNC_TRUST_RUNTIME.bat`, geen scrub + USER-regel snapshot) | Ja (post-merge, `HERMES_SKIP_PAUSE=1`) |
+| API + vault-env (`sync_hermes_api_env.ps1` via trust/UPDATE/POST_GIT_PULL) | Ja (`OBSIDIAN_VAULT_PATH` naar alle profiel-`.env`) |
 | Domein-toolsets (`SYNC_DOMAIN_TOOLSETS.bat`) | Ja (post-merge, na trust runtime) |
 | SOUL anatomy deploy (`launch_soul_anatomy_deploy.ps1 -Force -Quiet`) | Ja (post-merge: 13 templates + stamp) |
 | Institutioneel runtime (`apply_institutional_runtime.ps1 -SkipE2E -NoPause -SkipSoul`) | Ja (post-merge: display; snippets overgeslagen na soul deploy) |

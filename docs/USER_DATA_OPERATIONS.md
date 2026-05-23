@@ -8,7 +8,8 @@ Canonieke operationele docs staan onder **`%USERPROFILE%\data\`** en in profiele
 | ------- | ---- |
 | `%USERPROFILE%\data\STATUS.md` | Dagelijks overzicht, launchers, volgende stappen |
 | `%USERPROFILE%\data\RECOVERY.md` | Herstel, upstream update, taakbalk |
-| `%LOCALAPPDATA%\hermes\profiles\core\KANBAN_WORKFLOWS.md` | Kanban-orchestratie (profiel core) |
+| `%LOCALAPPDATA%\hermes\profiles\core\KANBAN_WORKFLOWS.md` | Kanban-orchestratie (profiel core); sectie *Geheugen (L1–L4)* |
+| `Documents\Hermes Knowledge\README.md` | Layer 4 vault (Obsidian); zie [MEMORY_ARCHITECTURE.md](MEMORY_ARCHITECTURE.md) |
 | `%LOCALAPPDATA%\hermes\profiles\<naam>\SOUL.md` | Persona per profiel (13 domeinen; deploy uit repo, niet in git) |
 
 Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTREAM_SYNC.md`: controleer of bovenstaande bestanden dezelfde paden tonen.

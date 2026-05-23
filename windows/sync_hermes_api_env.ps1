@@ -1,10 +1,57 @@
 <#
 .SYNOPSIS
-    Kopieert actieve API-keys van ~/.hermes/.env naar de root .env van HERMES_HOME (Windows: %LOCALAPPDATA%\hermes).
+    Kopieert API-keys en vault-paden van ~/.hermes/.env naar %LOCALAPPDATA%\hermes\.env en alle profiel-.env bestanden.
 .NOTES
-    Lost split-home op: User-env HERMES_HOME wijst naar Local\hermes, keys staan soms nog in ~/.hermes/.env.
+    Lost split-home op: User-env HERMES_HOME wijst naar Local\hermes, keys/paden staan soms nog in ~/.hermes/.env.
+    Vault-keys: OBSIDIAN_VAULT_PATH, WIKI_PATH, KNOWLEDGE_BASE_PATH (zelfde map: Hermes Knowledge).
 #>
 $ErrorActionPreference = 'Stop'
+
+function Get-EnvVarsFromFile {
+    param(
+        [string]$Path,
+        [string[]]$KeyNames
+    )
+    $result = @{}
+    if (-not (Test-Path -LiteralPath $Path)) { return $result }
+    Get-Content -LiteralPath $Path -Encoding UTF8 | ForEach-Object {
+        $line = $_.TrimEnd()
+        if (-not $line -or $line.StartsWith('#')) { return }
+        foreach ($k in $KeyNames) {
+            if ($line -match "^\s*$k\s*=\s*(.+)\s*$") {
+                $val = $Matches[1].Trim().Trim('"').Trim("'")
+                if ($val -and $val -notmatch 'your_.*_here') { $result[$k] = $val }
+            }
+        }
+    }
+    return $result
+}
+
+function Set-EnvVarsInFile {
+    param(
+        [string]$Path,
+        [hashtable]$Vars
+    )
+    if ($Vars.Count -eq 0) { return }
+    $lines = [System.Collections.Generic.List[string]]::new()
+    if (Test-Path -LiteralPath $Path) {
+        $lines.AddRange([string[]](Get-Content -LiteralPath $Path -Encoding UTF8))
+    }
+    foreach ($k in $Vars.Keys) {
+        $val = $Vars[$k]
+        if ($val -match '\s') { $newLine = "$k=`"$val`"" } else { $newLine = "$k=$val" }
+        $idx = -1
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match "^\s*#?\s*$k\s*=") { $idx = $i; break }
+        }
+        if ($idx -ge 0) { $lines[$idx] = $newLine } else { $lines.Add($newLine) }
+    }
+    $parent = Split-Path -Parent $Path
+    if ($parent -and -not (Test-Path -LiteralPath $parent)) {
+        New-Item -ItemType Directory -Path $parent -Force | Out-Null
+    }
+    $lines | Set-Content -LiteralPath $Path -Encoding UTF8
+}
 
 function Get-HermesRootDir {
     # Altijd root (niet profiles\<naam>) — keys horen in root .env voor provider=gemini in root config.
@@ -34,75 +81,52 @@ if (-not (Test-Path -LiteralPath $targetRoot)) {
     New-Item -ItemType Directory -Path $targetRoot -Force | Out-Null
 }
 
-$keys = @('GOOGLE_API_KEY', 'GEMINI_API_KEY', 'OPENROUTER_API_KEY', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY')
-$toCopy = @{}
-Get-Content -LiteralPath $legacyEnv -Encoding UTF8 | ForEach-Object {
-    $line = $_.TrimEnd()
-    if (-not $line -or $line.StartsWith('#')) { return }
-    foreach ($k in $keys) {
-        if ($line -match "^\s*$k\s*=\s*(.+)\s*$") {
-            $val = $Matches[1].Trim()
-            if ($val -and $val -notmatch 'your_.*_here') { $toCopy[$k] = $val }
-        }
-    }
-}
+$apiKeys = @('GOOGLE_API_KEY', 'GEMINI_API_KEY', 'OPENROUTER_API_KEY', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY')
+$vaultKeys = @('OBSIDIAN_VAULT_PATH', 'WIKI_PATH', 'KNOWLEDGE_BASE_PATH')
+$apiToCopy = Get-EnvVarsFromFile -Path $legacyEnv -KeyNames $apiKeys
+$vaultToCopy = Get-EnvVarsFromFile -Path $legacyEnv -KeyNames $vaultKeys
+$mergeAll = @{}
+foreach ($k in $apiToCopy.Keys) { $mergeAll[$k] = $apiToCopy[$k] }
+foreach ($k in $vaultToCopy.Keys) { $mergeAll[$k] = $vaultToCopy[$k] }
 
-if ($toCopy.Count -eq 0) {
-    Write-Host '[INFO] Geen actieve keys in ~/.hermes/.env om te kopiëren.' -ForegroundColor Cyan
+if ($mergeAll.Count -eq 0) {
+    Write-Host '[INFO] Geen API-keys of vault-paden in ~/.hermes/.env om te kopiëren.' -ForegroundColor Cyan
     exit 0
 }
 
 if (-not (Test-Path -LiteralPath $targetEnv)) {
     Copy-Item -LiteralPath $legacyEnv -Destination $targetEnv -Force
     Write-Host ('[OK] ' + '.env aangemaakt vanuit ~/.hermes -> ' + $targetEnv) -ForegroundColor Green
-    exit 0
-}
-
-$lines = [System.Collections.Generic.List[string]]::new()
-if (Test-Path -LiteralPath $targetEnv) {
-    $lines.AddRange([string[]](Get-Content -LiteralPath $targetEnv -Encoding UTF8))
-}
-foreach ($k in $toCopy.Keys) {
-    $newLine = "$k=$($toCopy[$k])"
-    $idx = -1
-    for ($i = 0; $i -lt $lines.Count; $i++) {
-        if ($lines[$i] -match "^\s*#?\s*$k\s*=") { $idx = $i; break }
+} else {
+    Set-EnvVarsInFile -Path $targetEnv -Vars $mergeAll
+    if ($apiToCopy.Count -gt 0) {
+        Write-Host ('[OK] ' + 'API-keys -> ' + $targetEnv + ' (' + $($apiToCopy.Keys -join ', ') + ')') -ForegroundColor Green
     }
-    if ($idx -ge 0) { $lines[$idx] = $newLine } else { $lines.Add($newLine) }
+    if ($vaultToCopy.Count -gt 0) {
+        Write-Host ('[OK] ' + 'Vault-paden -> ' + $targetEnv + ' (' + $($vaultToCopy.Keys -join ', ') + ')') -ForegroundColor Green
+    }
 }
-$lines | Set-Content -LiteralPath $targetEnv -Encoding UTF8
-Write-Host ('[OK] ' + 'API-keys gesynchroniseerd naar ' + $targetEnv + ' (' + $($toCopy.Keys -join ', ') + ')') -ForegroundColor Green
 
-# Profiel-.env (core/legal/…): vaak geen .env → provider leest lege profile home
+# Profiel-.env: elke profiel-home laadt alleen profiles\<naam>\.env
 $profilesDir = Join-Path $targetRoot 'profiles'
 if (Test-Path -LiteralPath $profilesDir) {
-    $google = $toCopy['GOOGLE_API_KEY']
-    if (-not $google) { $google = $toCopy['GEMINI_API_KEY'] }
     foreach ($dir in Get-ChildItem -LiteralPath $profilesDir -Directory) {
         $profEnv = Join-Path $dir.FullName '.env'
         if (-not (Test-Path -LiteralPath $profEnv)) {
-            Copy-Item -LiteralPath $targetEnv -Destination $profEnv -Force
-            Write-Host ('[OK] ' + '.env gekopieerd naar ' + $profEnv) -ForegroundColor Green
-        } else {
-            $plines = [System.Collections.Generic.List[string]]::new()
-            $plines.AddRange([string[]](Get-Content -LiteralPath $profEnv -Encoding UTF8))
-            foreach ($k in $toCopy.Keys) {
-                $newLine = "$k=$($toCopy[$k])"
-                $idx = -1
-                for ($i = 0; $i -lt $plines.Count; $i++) {
-                    if ($plines[$i] -match "^\s*#?\s*$k\s*=") { $idx = $i; break }
-                }
-                if ($idx -ge 0) { $plines[$idx] = $newLine } else { $plines.Add($newLine) }
+            if (Test-Path -LiteralPath $targetEnv) {
+                Copy-Item -LiteralPath $targetEnv -Destination $profEnv -Force
+                Write-Host ('[OK] ' + '.env gekopieerd naar ' + $profEnv) -ForegroundColor Green
             }
-            $plines | Set-Content -LiteralPath $profEnv -Encoding UTF8
-            Write-Host ('[OK] ' + 'API-keys bijgewerkt in ' + $profEnv) -ForegroundColor Gray
+        } else {
+            Set-EnvVarsInFile -Path $profEnv -Vars $mergeAll
+            Write-Host ('[OK] ' + 'Bijgewerkt: ' + $dir.Name) -ForegroundColor Gray
         }
     }
 }
 
 $fixPool = Join-Path $PSScriptRoot 'fix_gemini_credential_pool.ps1'
-if ((Test-Path -LiteralPath $fixPool) -and $toCopy.ContainsKey('GOOGLE_API_KEY')) {
-    & $fixPool -HermesRoot $targetRoot -GoogleApiKey $toCopy['GOOGLE_API_KEY']
+if ((Test-Path -LiteralPath $fixPool) -and $apiToCopy.ContainsKey('GOOGLE_API_KEY')) {
+    & $fixPool -HermesRoot $targetRoot -GoogleApiKey $apiToCopy['GOOGLE_API_KEY']
 }
 
 exit 0
