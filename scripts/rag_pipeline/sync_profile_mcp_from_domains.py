@@ -87,6 +87,34 @@ def expected_mcp_block(
     return {name: build_mcp_server_entry(spec, python_exe=py, repo_root=repo)}
 
 
+def _norm_path(value: Any) -> str:
+    if not value:
+        return ""
+    try:
+        return str(Path(str(value)).resolve()).lower()
+    except OSError:
+        return str(value).replace("\\", "/").lower()
+
+
+def _mcp_entry_matches(expected: dict[str, Any], current: dict[str, Any]) -> bool:
+    if not isinstance(current, dict):
+        return False
+    exp_cmd = _norm_path(expected.get("command"))
+    cur_cmd = _norm_path(current.get("command"))
+    if exp_cmd != cur_cmd:
+        return False
+    exp_args = [str(a) for a in (expected.get("args") or [])]
+    cur_args = [str(a) for a in (current.get("args") or [])]
+    if exp_args != cur_args:
+        return False
+    exp_env = expected.get("env") if isinstance(expected.get("env"), dict) else {}
+    cur_env = current.get("env") if isinstance(current.get("env"), dict) else {}
+    for key in ("HERMES_LANCEDB_PATH", "HERMES_REPO_ROOT", "PYTHONIOENCODING"):
+        if _norm_path(exp_env.get(key)) != _norm_path(cur_env.get(key)):
+            return False
+    return True
+
+
 def sync_profile_config(
     spec: DomainSpec,
     *,
@@ -115,8 +143,13 @@ def sync_profile_config(
         merged[key] = entry
     out["mcp_servers"] = merged
 
+    name = spec.resolved_mcp_name()
+    current_entry = current.get(name) if isinstance(current, dict) else None
+    expected_entry = expected.get(name) or {}
+    needs_path_refresh = not _mcp_entry_matches(expected_entry, current_entry or {})
+
     good, _ = validate_profile_mcp(spec)
-    if good and not has_legacy_mcp_block(raw):
+    if good and not has_legacy_mcp_block(raw) and not needs_path_refresh:
         return False, f"{spec.name}: OK (geen wijziging)"
 
     migrated, _ = migrate_profile_mcp_config(out, repo_root=repo_root or _resolve_repo_root())
