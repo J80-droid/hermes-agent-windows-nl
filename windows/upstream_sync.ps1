@@ -1,4 +1,4 @@
-# Upstream-sync: preflight, hermes update, post-merge (fork Windows NL).
+﻿# Upstream-sync: preflight, hermes update, post-merge (fork Windows NL).
 # Normaal aanroepen via UPDATE_HERMES.bat of hermes_update.bat - niet handmatig Preflight.
 # Zie windows/UPSTREAM_SYNC.md
 param(
@@ -179,7 +179,7 @@ function Invoke-UpstreamPreflight {
                 'Bij N of Enter: update stopt — repo blijft ongewijzigd.'
                 'Bij conflicten: script stopt; los handmatig op (geen reset --hard).'
             )
-            $ans = Read-Host "Doorgaan met update? [j/N]"
+            $ans = Read-Host 'Doorgaan met update? [j/N]'
             if ($ans -notin @('j', 'J', 'y', 'Y')) {
                 Write-Step 'Update geannuleerd door gebruiker (preflight).'
                 return 4
@@ -309,7 +309,7 @@ try {
                 } else {
                     $extras = Join-Path $repo (Join-Path 'windows' (Join-Path 'scripts' 'install_rag_extras.ps1'))
                     if (Test-Path -LiteralPath $extras) {
-                        Write-Step "RAG extras (MCP + [rag])..."
+                        Write-Step 'RAG extras (MCP + [rag])...'
                         & $extras
                         if (Test-NativeCommandFailed) { $script:UpstreamExitCode = $LASTEXITCODE }
                     } else {
@@ -404,7 +404,7 @@ try {
             }
 
             if ($script:UpstreamExitCode -eq 0) {
-                $fixPins = Join-Path $repo 'windows\fix_hermes_taskbar_pins.ps1'
+                $fixPins = Join-Path $repo 'windows/fix_hermes_taskbar_pins.ps1'
                 if (Test-Path -LiteralPath $fixPins) {
                     Write-Step "Taakbalk-iconen (update .lnk + icooncache)..."
                     & powershell -NoProfile -ExecutionPolicy Bypass -File $fixPins -RepoRoot $repo -Quiet

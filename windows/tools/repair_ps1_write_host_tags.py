@@ -78,6 +78,22 @@ def process_file(path: Path, dry_run: bool) -> bool:
         return new + col
 
     out = PAT.sub(repl, text)
+
+    # Write-Step / Read-Host met [type]-achtige tekst in dubbele quotes (bijv. [rag], [j/N])
+    pat_bracket = re.compile(
+        r'(Write-(?:Step|Ok|Warn|Err|Host)|Read-Host)\s+"([^"]*\[[^"]*)"(\s+-ForegroundColor\s+\S+)?'
+    )
+
+    def repl_bracket(m: re.Match[str]) -> str:
+        nonlocal changed
+        cmd, body, col = m.group(1), m.group(2), m.group(3) or ""
+        if "$" in body:
+            return m.group(0)
+        changed = True
+        esc = body.replace("'", "''")
+        return f"{cmd} '{esc}'{col}"
+
+    out = pat_bracket.sub(repl_bracket, out)
     if changed and not dry_run:
         path.write_text(out, encoding="utf-8", newline="\r\n")
     return changed
