@@ -44,7 +44,7 @@ if (-not $Quiet) {
 }
 
 & (Join-Path $PSScriptRoot 'sync_all_domain_souls_from_templates.ps1') -RepoRoot $RepoRoot
-if (-not $?) {
+if ($LASTEXITCODE -ne 0) {
     Write-Host '[ERROR] SOUL anatomy deploy mislukt.' -ForegroundColor Red
     exit 1
 }

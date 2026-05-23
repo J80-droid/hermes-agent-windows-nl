@@ -20,11 +20,15 @@ set "HERMES_SKIP_PAUSE=1"
 call "%~dp0SYNC_TRUST_RUNTIME.bat"
 set "HERMES_SKIP_PAUSE="
 echo.
-echo [INFO] SOUL domein-templates (13 profielen: repo -^> runtime)...
+echo [INFO] SOUL anatomy deploy (13 profielen + snippets, stamp bijwerken)...
 set "HERMES_SKIP_PAUSE=1"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_all_domain_souls_from_templates.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\launch_soul_anatomy_deploy.ps1" -RepoRoot "%CD%" -Force -Quiet
+if errorlevel 1 (
+  echo [WARN] SOUL anatomy deploy mislukt — probeer APPLY_SOUL_ANATOMY_RUNTIME.bat
+) else (
+  echo [OK] SOUL anatomy deploy + stamp bijgewerkt.
+)
 set "HERMES_SKIP_PAUSE="
-echo [TIP] Nieuwe chat in Hermes: /new
 echo.
 echo [INFO] Domein-toolsets (platform_toolsets.cli)...
 set "HERMES_SKIP_PAUSE=1"

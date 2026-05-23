@@ -5,7 +5,7 @@ chcp 65001 >nul
 title Hermes - SOUL anatomy runtime
 
 set HERMES_SKIP_PAUSE=1
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_all_domain_souls_from_templates.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_all_domain_souls_from_templates.ps1" -UpdateDeployStamp
 set ERR=%ERRORLEVEL%
 if not "%ERR%"=="0" exit /b %ERR%
 

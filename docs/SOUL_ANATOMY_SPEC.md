@@ -24,7 +24,7 @@ git pull  →  POST_GIT_PULL.bat of eerste start_hermes.bat  →  /new in Hermes
 
 | Moment | Actie |
 |--------|--------|
-| Na `git pull` | `POST_GIT_PULL.bat` (trust + 13 templates + toolsets) |
+| Na `git pull` | `POST_GIT_PULL.bat` (trust + `launch_soul_anatomy_deploy -Force` + toolsets; stamp bijgewerkt) |
 | **Hermes-start** | `launch_soul_anatomy_deploy.ps1` (stamp; alleen bij gewijzigde repo-bron) |
 | Grote wijziging / andere PC | `APPLY_SOUL_ANATOMY_RUNTIME.bat` (+ E2E) |
 | Alleen shared snippets | `SYNC_SOUL_SNIPPETS.bat -Force` |
