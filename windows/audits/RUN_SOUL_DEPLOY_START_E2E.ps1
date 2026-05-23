@@ -206,7 +206,6 @@ if ($instPs1 -match 'SOUL_SHARED') {
 }
 
 Write-Host '--- 7/8 sync_all -UpdateDeployStamp ---' -ForegroundColor Cyan
-$syncAll = Get-Command -Syntax (Join-Path $RepoRoot 'windows\scripts\sync_all_domain_souls_from_templates.ps1') -ErrorAction SilentlyContinue
 $syncText = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows\scripts\sync_all_domain_souls_from_templates.ps1') -Raw -Encoding UTF8
 if ($syncText -notmatch 'failedProfiles' -or $syncText -notmatch '\$LASTEXITCODE') {
     Step-Fail 'sync_all' 'mist strikte exit-code / failedProfiles'

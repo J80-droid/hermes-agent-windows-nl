@@ -9,10 +9,12 @@ function Get-SoulFileContent {
 }
 
 function Set-SoulFileContent {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory)][string]$Path,
         [Parameter(Mandatory)][string]$Content
     )
+    if (-not $PSCmdlet.ShouldProcess($Path, 'Write SOUL file')) { return }
     $utf8 = [System.Text.UTF8Encoding]::new($false)
     [System.IO.File]::WriteAllText($Path, $Content, $utf8)
 }
@@ -99,7 +101,6 @@ function Sync-SoulSnippet {
 
     $snippet = (Get-Content -LiteralPath $TemplatePath -Raw -Encoding UTF8).Trim()
     $targets = Get-SoulTargets -HermesRoot $HermesRoot
-    $sectionPattern = [regex]$SectionRegex
     $allPatterns = @($SectionRegex) + @($LegacySectionRegex)
     $sectionEnd = Get-SoulSectionEndPattern -SectionRegex $SectionRegex -SectionEndRegex $SectionEndRegex
     $results = @()
@@ -339,8 +340,10 @@ function Test-SoulAnatomyDeployJustRan {
 }
 
 function Set-SoulAnatomyDeployStamp {
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$StampPath = '')
     $stamp = if ($StampPath) { $StampPath } else { Get-SoulAnatomyDeployStampPath }
+    if (-not $PSCmdlet.ShouldProcess($stamp, 'Write SOUL anatomy deploy stamp')) { return }
     $dir = Split-Path -Parent $stamp
     if ($dir -and -not (Test-Path -LiteralPath $dir)) {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
@@ -350,12 +353,14 @@ function Set-SoulAnatomyDeployStamp {
 }
 
 function Set-InstitutionalNewChatReminder {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [string]$Reason = 'SOUL/presentatie gewijzigd',
         [string]$RepoRoot = '',
         [string]$SmokeTestPrompt = 'docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md',
         [switch]$Quiet
     )
+    if (-not $PSCmdlet.ShouldProcess('institutional_new_chat_required.json', 'Write /new reminder')) { return }
     $hermesDir = Join-Path $env:LOCALAPPDATA 'hermes'
     if (-not (Test-Path -LiteralPath $hermesDir)) {
         New-Item -ItemType Directory -Path $hermesDir -Force | Out-Null
@@ -369,7 +374,7 @@ function Set-InstitutionalNewChatReminder {
     }
     $payload | ConvertTo-Json | Set-Content -LiteralPath $noticePath -Encoding UTF8
     if (-not $Quiet -and $env:HERMES_SUPPRESS_SOUL_REMINDER -ne '1') {
-        Write-Host '[HERINNERING] Start een nieuwe chat (/new) — SOUL/system prompt is vernieuwd.' -ForegroundColor Yellow
+        Write-Host '[HERINNERING] Start een nieuwe chat (/new) - SOUL/system prompt is vernieuwd.' -ForegroundColor Yellow
         Write-Host "  Rooktest: $SmokeTestPrompt" -ForegroundColor DarkYellow
     }
 }

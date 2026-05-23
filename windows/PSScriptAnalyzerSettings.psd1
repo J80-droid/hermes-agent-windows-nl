@@ -6,6 +6,7 @@
         'PSUseAliasToAvoidAbbreviations',
         'PSAvoidUsingAliases',
         'PSUseBOMForUnicodeEncodedFile',
-        'PSAvoidAssignmentToAutomaticVariable'
+        'PSAvoidAssignmentToAutomaticVariable',
+        'PSProvideCommentHelp'
     )
 }
