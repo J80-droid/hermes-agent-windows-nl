@@ -51,6 +51,23 @@ def test_table_header_palette_custom():
     assert len(tokyo) >= 2
     demo = table_header_palette("demo")
     assert len(demo) >= 2
+    assert demo[0].lower().startswith("bold #66d9ef")
+
+
+def test_score_institutional_render_verify():
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parents[2]
+    script = repo / "scripts" / "score_institutional_render.py"
+    r = subprocess.run(
+        [sys.executable, str(script), "--verify"],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+    )
+    assert r.returncode == 0, r.stdout + r.stderr
 
 
 def test_display_markdown_warns_on_unknown_palette(monkeypatch):

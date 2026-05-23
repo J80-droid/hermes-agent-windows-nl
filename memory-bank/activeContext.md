@@ -2,7 +2,7 @@
 
 ## Focus
 
-**Institutionele presentatie** (2026-05-22): drie lagen (SOUL / `institutional_rich` demo-palet / skin UI goud). Display op alle profielen via `apply_team_display_profiles.py`. `ChatConsole` + gateway delen `get_assistant_console_theme()`. Eén commando: `APPLY_INSTITUTIONAL_RUNTIME.bat` (display + SOUL + E2E). Na deploy: dat script of `RUN_INSTITUTIONAL_E2E.bat -ApplyRuntime` + **nieuwe chat**.
+**Institutioneel 10/10 (2026-05-23):** palet ontkoppeld (h2 groen ≠ kolom 0 cyaan), NFR prose→tabel, Web/Ink normalizer-pariteit, `score_institutional_render.py` (E2E 2g). **Na pull:** `APPLY_INSTITUTIONAL_RUNTIME.bat` + `/new`. Verify: `diagnose_renderer.py`, `score_institutional_render.py --verify`.
 
 **Legal domein herstructurering** (2026-05): één RAG-bucket `legal`, rechtsgebied-**lenzen**, generieke `profiles\legal\SOUL.md`, zaak GCR in `LEGAL_ACTIVE_MATTERS.md`. Audit: `RUN_LEGAL_DOMAIN_E2E.bat`.
 
@@ -34,6 +34,7 @@
 | Landkaart (volledige lijsten) | skill `landkaart`, `/landkaart` |
 | RAG twee fasen | `docs/RAG_TWEE_FASEN.md` |
 | Presentatie (kleur + structuur) | `docs/INSTITUTIONAL_PRESENTATION.md` |
+| Rooktest renderer (10/10) | `docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md` |
 | Trust & Forensic | `docs/TRUST_FORENSIC_PROTOCOL.md` |
 | E2E institutioneel | `windows/audits/RUN_INSTITUTIONAL_E2E.bat` |
 | Hermes start (bat) | `../../HERMES_START.md` |

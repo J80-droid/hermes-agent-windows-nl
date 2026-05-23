@@ -3,7 +3,7 @@
 # The renderer loads it at runtime; missing keys fall back to the built-in demo palette.
 
 # Each palette MUST define at least: h1, h2, h3, h4, strong, label, text, table_header, code, link.
-# Values are Rich style strings (hex colours or Rich colour names).
+# Optional: header_palette — comma-separated Rich styles for table columns 0..n (cyan-first avoids h2 collision).
 
 demo:
   h1: "bold #66d9ef underline"
@@ -16,6 +16,7 @@ demo:
   code: "#66d9ef"
   link: "underline #66d9ef"
   table_header: "bold #66d9ef"
+  header_palette: "bold #66d9ef, bold #a6e22e, bold #f8f8f2, bold #f92672"
   label: "bold #f92672"
   text: "#cbd5e1"
 
@@ -58,6 +59,7 @@ monokai:
   code: "#66d9ef"
   link: "underline #66d9ef"
   table_header: "bold #66d9ef"
+  header_palette: "bold #66d9ef, bold #a6e22e, bold #f8f8f2, bold #f92672"
   label: "bold #f92672"
   text: "#f8f8f2"
 

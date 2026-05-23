@@ -4,6 +4,7 @@ from rich.console import Console, Group
 from rich.markdown import Markdown
 
 from cli import _render_final_assistant_content
+from hermes_cli.institutional_render import InstitutionalMarkdown, TightHeadingBody
 
 
 def _render_to_text(renderable) -> str:
@@ -15,8 +16,10 @@ def _render_to_text(renderable) -> str:
 def test_final_assistant_content_uses_markdown_renderable():
     renderable = _render_final_assistant_content("# Title\n\n- one\n- two")
 
-    # institutional_rich returns Group or InstitutionalMarkdown (Markdown subclass)
-    assert isinstance(renderable, (Markdown, Group))
+    # institutional_rich: Group, InstitutionalMarkdown, of TightHeadingBody (één kop+body)
+    assert isinstance(
+        renderable, (Markdown, Group, InstitutionalMarkdown, TightHeadingBody)
+    )
     output = _render_to_text(renderable)
     assert "Title" in output
     assert "one" in output

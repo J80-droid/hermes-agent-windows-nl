@@ -466,7 +466,8 @@ const renderTable = (k: number, rows: string[][], t: Theme, cols?: number) => {
               return (
                 <Text key={ci} wrap="wrap-trim">
                   <Text bold color={assistantTableHeaderColor(ci)}>{label}:</Text>
-                  {' '}{stripInlineMarkup(cell)}
+                  {' '}
+                  <Text color={assistantTableHeaderColor(ci)}>{stripInlineMarkup(cell)}</Text>
                 </Text>
               )
             })}
@@ -495,10 +496,15 @@ const renderTable = (k: number, rows: string[][], t: Theme, cols?: number) => {
           {sepEntry.text}
         </Text>
       ) : null}
-      {bodyEntries.map((entry, i) => (
-        <Text key={i} wrap="truncate-end">
-          {entry.text}
-        </Text>
+      {normalizedRows.slice(1).map((row, ri) => (
+        <Box key={ri} flexDirection="row">
+          {row.map((cell, ci) => (
+            <Text key={ci} color={assistantTableHeaderColor(ci)} wrap="truncate-end">
+              {stripInlineMarkup(cell)}
+              {ci < numCols - 1 ? '  ' : ''}
+            </Text>
+          ))}
+        </Box>
       ))}
     </Box>
   )
@@ -881,19 +887,86 @@ function MdImpl({ cols, compact, t, text }: MdProps) {
         continue
       }
 
+      if (line.trim().startsWith('Controle')) {
+        start('paragraph')
+        const body = line.trim().replace(/^Controle\s*[·.]?\s*/, '')
+        nodes.push(
+          <Text key={key} wrap="wrap-trim">
+            <Text bold color={ASSISTANT_LABEL_COLOR}>Controle  </Text>
+            <Text dimColor>{body.split(/\s·\s/).join('  ·  ')}</Text>
+          </Text>
+        )
+        i++
+        continue
+      }
+
       const headingMatch = line.match(HEADING_RE)
       const heading = headingMatch?.[2]
 
       if (heading) {
         const level = headingMatch![1]!.length
         start('heading')
-        nodes.push(
-          <Text bold color={assistantHeadingColor(level)} key={key} wrap="wrap-trim">
+        const headingNode = (
+          <Text bold color={assistantHeadingColor(level)} key={`${key}-h`} wrap="wrap-trim">
             <MdInline t={t} text={heading} />
           </Text>
         )
         i++
 
+        let j = i
+        while (j < lines.length && !lines[j]!.trim()) {
+          j++
+        }
+
+        if (
+          j < lines.length &&
+          lines[j]!.includes('|') &&
+          j + 1 < lines.length &&
+          isTableDivider(lines[j + 1]!)
+        ) {
+          const rows: string[][] = [splitRow(lines[j]!)]
+          let k = j + 2
+          for (; k < lines.length && lines[k]!.includes('|') && lines[k]!.trim(); k++) {
+            rows.push(splitRow(lines[k]!))
+          }
+          nodes.push(
+            <Box flexDirection="column" key={key}>
+              {headingNode}
+              {renderTable(`${key}-tbl`, rows, t, cols)}
+            </Box>
+          )
+          i = k
+          continue
+        }
+
+        if (j < lines.length && BULLET_RE.test(lines[j]!)) {
+          const listNodes: ReactNode[] = []
+          let k = j
+          while (k < lines.length && BULLET_RE.test(lines[k]!)) {
+            const bullet = lines[k]!.match(BULLET_RE)!
+            const task = bullet[2]!.match(TASK_RE)
+            const marker = task ? (task[1]!.toLowerCase() === 'x' ? '☑' : '☐') : '•'
+            listNodes.push(
+              <Box key={`${key}-b-${k}`} paddingLeft={indentDepth(bullet[1]!) * 2}>
+                <Text wrap="wrap-trim">
+                  <Text color={t.color.muted}>{marker} </Text>
+                  <MdInline t={t} text={task ? task[2]! : bullet[2]!} />
+                </Text>
+              </Box>
+            )
+            k++
+          }
+          nodes.push(
+            <Box flexDirection="column" key={key}>
+              {headingNode}
+              {listNodes}
+            </Box>
+          )
+          i = k
+          continue
+        }
+
+        nodes.push(headingNode)
         continue
       }
 

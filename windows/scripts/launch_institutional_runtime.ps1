@@ -76,4 +76,10 @@ if (-not (Test-Path -LiteralPath $stampDir)) {
 }
 Set-Content -LiteralPath $stampFile -Value (Get-Date -Format 'o') -Encoding utf8
 Write-Host '[OK] Institutioneel runtime toegepast.' -ForegroundColor Green
+
+$noticeFile = Join-Path $stampDir 'institutional_new_chat_required.json'
+if (Test-Path -LiteralPath $noticeFile) {
+    Write-Host '[HERINNERING] SOUL/presentatie is bijgewerkt — gebruik /new of een nieuwe sessie.' -ForegroundColor Yellow
+    Write-Host '  Rooktest: docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md' -ForegroundColor DarkYellow
+}
 exit 0

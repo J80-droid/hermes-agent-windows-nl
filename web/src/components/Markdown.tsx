@@ -30,19 +30,37 @@ export function Markdown({
     [content],
   );
   const blocks = useMemo(() => parseBlocks(displayContent), [displayContent]);
+  const units = useMemo(() => toRenderUnits(blocks), [blocks]);
   const caret = streaming ? <StreamingCaret /> : null;
 
   return (
-    <div className="text-sm text-foreground leading-relaxed space-y-3">
-      {blocks.map((block, i) => (
-        <Block
-          key={i}
-          block={block}
-          highlightTerms={highlightTerms}
-          caret={caret && i === blocks.length - 1 ? caret : null}
-        />
-      ))}
-      {blocks.length === 0 && caret}
+    <div className="text-sm text-foreground leading-relaxed space-y-1 [&_h1]:mb-0 [&_h2]:mb-0 [&_h3]:mb-0 [&_h4]:mb-0 [&_table]:mt-0 [&_ul]:mt-0 [&_ol]:mt-0">
+      {units.map((unit, i) => {
+        const isLast = i === units.length - 1;
+        if (unit.kind === "tight") {
+          return (
+            <div key={i} className="space-y-0">
+              {unit.blocks.map((block, j) => (
+                <Block
+                  key={j}
+                  block={block}
+                  highlightTerms={highlightTerms}
+                  caret={caret && isLast && j === unit.blocks.length - 1 ? caret : null}
+                />
+              ))}
+            </div>
+          );
+        }
+        return (
+          <Block
+            key={i}
+            block={unit.block}
+            highlightTerms={highlightTerms}
+            caret={caret && isLast ? caret : null}
+          />
+        );
+      })}
+      {units.length === 0 && caret}
     </div>
   );
 }
@@ -68,6 +86,34 @@ type BlockNode =
   | { type: "table"; headers: string[]; rows: string[][] }
   | { type: "label"; label: string; content: string }
   | { type: "paragraph"; content: string };
+
+type RenderUnit =
+  | { kind: "tight"; blocks: BlockNode[] }
+  | { kind: "loose"; block: BlockNode };
+
+function toRenderUnits(blocks: BlockNode[]): RenderUnit[] {
+  const units: RenderUnit[] = [];
+  let i = 0;
+  while (i < blocks.length) {
+    const block = blocks[i]!;
+    const next = blocks[i + 1];
+    if (
+      block.type === "heading" &&
+      next &&
+      (next.type === "table" ||
+        next.type === "list" ||
+        next.type === "paragraph" ||
+        next.type === "label")
+    ) {
+      units.push({ kind: "tight", blocks: [block, next] });
+      i += 2;
+      continue;
+    }
+    units.push({ kind: "loose", block });
+    i += 1;
+  }
+  return units;
+}
 
 /* ------------------------------------------------------------------ */
 /*  Block parser                                                       */

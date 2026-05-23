@@ -4,8 +4,16 @@ param(
     [string]$HermesRoot = '',
     [string]$Profile = '',
     [switch]$DryRun,
-    [switch]$Check
+    [switch]$Check,
+    [switch]$CreateMissing,
+    [switch]$NoSoulInject,
+    [switch]$SyncSoulSnippets
 )
+
+# BAT doorgeeft --flags als losse argumenten
+if ($args -contains '--create-missing') { $CreateMissing = $true }
+if ($args -contains '--no-soul-inject') { $NoSoulInject = $true }
+if ($args -contains '--sync-soul-snippets') { $SyncSoulSnippets = $true }
 
 $ErrorActionPreference = 'Stop'
 
@@ -29,6 +37,9 @@ if ($HermesRoot) { $argsList += @('--hermes-root', $HermesRoot) }
 if ($Profile) { $argsList += @('--profile', $Profile) }
 if ($DryRun) { $argsList += '--dry-run' }
 if ($Check) { $argsList += '--check' }
+if ($CreateMissing) { $argsList += '--create-missing' }
+if ($NoSoulInject) { $argsList += '--no-soul-inject' }
+if ($SyncSoulSnippets) { $argsList += '--sync-soul-snippets' }
 
 & $py $script @argsList
 exit $LASTEXITCODE

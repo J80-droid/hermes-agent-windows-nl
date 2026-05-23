@@ -6402,6 +6402,13 @@ class HermesCLI:
         self._pending_title = None
         self._resumed = False
 
+        try:
+            from hermes_cli.institutional_new_chat_notice import acknowledge_new_chat_notice
+
+            acknowledge_new_chat_notice()
+        except Exception:
+            pass
+
         if self.agent:
             self.agent.session_id = self.session_id
             self.agent.session_start = self.session_start
@@ -12250,6 +12257,15 @@ class HermesCLI:
             _welcome_text = "Welcome to Hermes Agent! Type your message or /help for commands."
             _welcome_color = "#FFF8DC"
         self._console_print(f"[{_welcome_color}]{_welcome_text}[/]")
+
+        try:
+            from hermes_cli.institutional_new_chat_notice import format_new_chat_notice_rich
+
+            _new_chat_notice = format_new_chat_notice_rich()
+            if _new_chat_notice:
+                self._console_print(_new_chat_notice)
+        except Exception:
+            pass
 
         # Redaction opt-out warning (#17691): ON by default, loud when off.
         # The redactor snapshots its state at import time so any toggle now

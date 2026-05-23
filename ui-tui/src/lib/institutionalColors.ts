@@ -5,7 +5,7 @@
  * parity with the Python default (demo = Monokai-inspired).
  */
 
-export const ASSISTANT_TABLE_HEADERS = ['cyan', 'green', 'magenta', 'yellow'] as const
+export const ASSISTANT_TABLE_HEADERS = ['cyan', 'green', 'white', 'magenta'] as const
 
 export const ASSISTANT_HEADING_COLORS = ['cyan', 'green', 'magenta', 'yellow', 'white', 'grey'] as const
 

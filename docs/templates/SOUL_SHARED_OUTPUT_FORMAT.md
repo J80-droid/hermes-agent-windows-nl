@@ -4,45 +4,81 @@ Dit blok geldt voor **alle** antwoorden, ongeacht profiel. Kleur en layout doet 
 
 ### Typografie (verplicht)
 
-- Elke kop (`#` t/m `####`) staat **alleen** op eigen regel; de lopende tekst begint op de **volgende** regel na een lege regel.
-- **Altijd een lege regel vóór elke nieuwe hoofdstuk-kop** (`##`, `###`): tussen het einde van stap 1 en `## Stap 2` komt `\n\n`.
-- Hoofdstukken als markdown-kop (`## Stap 1: …`), niet alleen platte tekst `1 Stap 1:`.
-- Elke vet labelregel eindigend op `:**` staat **alleen** op eigen regel; de inhoud begint op de volgende regel na een lege regel.
-- Tabellen als markdown-tabel (`| kolom |`); de renderer kleurt kolomkoppen per kolom.
-- Lijstpunten: gebruik `- ` aan het begin van de regel; plak geen lange alinea op dezelfde regel als het opsommingsteken.
-- Geen codefence (```) rond het volledige antwoord. Geen inleiding, groet of afsluitende uitleg.
-- **Geen `[COLOR_BLUE]`, `[COLOR_TEAL]`, `[COLOR_GREEN]`, `[RESET]` tokens.** Deze zijn vervangen door normale markdown-koppen en de renderer doet de kleuren. Als je oude SOUL-bestanden migreert: `python scripts/migrate_soul_tokens.py --all-profiles --in-place`.
+- Hoofdstukken **altijd** als markdown-kop (`##`, `###`, `####`). **Nooit** platte outline (`1. Titel`, `1.1 Sub`, `1 Stap 1:`).
+- **Kop direct op inhoud:** na `### Titel` volgt op de **volgende regel** meteen de tabel, lijst of alinea (geen lege regel ertussen in je markdown). De renderer zet kop en inhoud visueel tegen elkaar.
+- **Tussen secties:** na het einde van een sectie (tabel/lijst/alinea) mag je doorgaan met de volgende `###`-kop; de renderer voegt **één subtiele witregel** tussen secties toe.
+- Elke `**Label:**` op eigen regel; waarde op de **volgende** regel (geen lege regel tussen label en waarde).
+- Tabellen **altijd** als markdown-tabel (`| kolom |` + scheidingsrij `|---|`). **Nooit** platte regels als `Categorie: X Eis: Y Meetmethode: Z`. Onder `### Niet-functionele requirements` **alleen** een tabel — geen prose, geen streepjes, geen `**Performantie**`-blokken met alinea's.
+- Lijsten: `- item` voor bullets; genummerd `1. item` alleen voor stappen/instructies, niet als hoofdstuktitel.
+- Geen codefence rond het volledige antwoord. Geen inleiding of afsluitende meta-uitleg.
+- Geen `[COLOR_*]` tokens.
 
 **Fout:**
 ```markdown
-## Titel Meteen tekst
-**Label:** waarde op één regel
+1. Projectoverzicht
+Tekst.
+
+### Team
+Naam, Rol als komma-tekst
+
+Categorie: Performance Eis: Snel Meetmethode: Test
+
+### Niet-functionele requirements
+
+**Performantie**
+Render binnen 50ms.
+————————
+Robuustheid — Geen crash — Fuzz-test
 ```
 
 **Goed:**
 ```markdown
-## Titel
+<institutional_check>
+- Controle hyperbolen: [Uitgevoerd]
+- Controle stelligheden: [Uitgevoerd]
+</institutional_check>
 
-Tekst op een nieuwe regel.
+## Projectoverzicht
 
-## Stap 2: Volgende hoofdstuk
+Korte tekst.
 
-Tekst stap 2 (lege regel vóór deze kop).
+**Dossierstatus:**
 
-**Label:**
+Gereed voor controle.
 
-Waarde op een nieuwe regel.
+### Team Samenstelling
+
+| Naam | Rol | Status |
+| --- | --- | --- |
+| A | Lead | Actief |
+
+### Technische stack
+
+- Python 3.11
+- Rich
+
+### Niet-functionele requirements
+
+| Categorie | Eis | Meetmethode |
+| --- | --- | --- |
+| Performance | Render < 50ms | Benchmark |
 ```
+
+**Kopniveaus:**
+
+| Niveau | Markdown | Voorbeeld |
+|--------|----------|-----------|
+| Hoofdstuk | `##` | `## Functionele requirements` |
+| Subhoofdstuk | `###` | `### Acceptatiecriteria` |
+| Sub-sub | `####` | `#### Dependencies` |
 
 ### Lijsten
 
-- Ongeordend: `- item` (de interface toont `•`).
-- Genummerd: `1. item`
+- Ongeordend: `- item` (UI toont `•`).
+- Genummerd: `1. item` (acceptatiecriteria, stappen).
 - Checklist: `- [ ]` / `- [x]`
 
 ### Standaardstructuur (analyse en dossiers)
-
-Gebruik bij juridische/objectieve analyses en wanneer de gebruiker structuur verwacht:
 
 ```markdown
 <institutional_check>
@@ -60,23 +96,17 @@ Gebruik bij juridische/objectieve analyses en wanneer de gebruiker structuur ver
 
 [tekst]
 
-**Datum van incident:**
-
-[tekst]
-
-### Juridische beoordelingsruimte
-
-**Feitelijke weergave en normering:**
-
-[tekst]
+| Datum | Gebeurtenis |
+| --- | --- |
+| … | … |
 ```
 
 ### Compact modus (korte Q&A)
 
-Voor korte feitelijke vragen (core, status, tooling): `<institutional_check>` mag weggelaten worden; **typografieregels blijven verplicht**. Houd antwoorden kort; gebruik alleen koppen die nodig zijn.
+Voor korte feitelijke vragen: `<institutional_check>` mag weggelaten; typografieregels blijven. Geen volledige analyse-structuur tenzij nodig.
 
 ### Profiel-specifiek
 
-- Legal en analyst: altijd `[Bron: bestandsnaam]` bij feiten (zie domein-SOUL). Zonder bron: label **eigen redenering, niet uit dossier**.
-- Legal: bij analyse, dossier, VSO, GCR — **geen compact modus**; gebruik volledige standaardstructuur.
-- Geen emoji. Objectieve toon; geen hyperbool of bindende eindconclusie waar dat past.
+- Legal/analyst: `[Bron: bestandsnaam]` bij feiten uit dossier.
+- Legal: bij analyse/dossier — volledige structuur, geen compact modus.
+- Geen emoji. Objectieve toon.

@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -130,7 +132,6 @@ def _sync_profile(
         print(f"[FAIL] {name}: config.yaml ontbreekt ({cfg_path})")
         return False
     raw = _read_yaml(cfg_path)
-    merged, changed = _apply_toolsets_to_config(raw, cli)
     if check:
         current = list((raw.get("platform_toolsets") or {}).get("cli") or [])
         if current != cli:
@@ -138,6 +139,7 @@ def _sync_profile(
             return False
         print(f"[OK] {name}: platform_toolsets.cli matcht manifest")
         return True
+    merged, changed = _apply_toolsets_to_config(raw, cli)
     if not changed:
         print(f"[OK] {name}: geen wijziging")
         return True
@@ -157,6 +159,139 @@ def _sync_profile(
     return True
 
 
+def _resolve_soul_template(repo: Path, profile_name: str) -> Path | None:
+    """Return repo path to SOUL_*_DOMAIN.md or None."""
+    upper = profile_name.upper()
+    for candidate in (
+        repo / "docs" / "templates" / f"SOUL_{upper}_DOMAIN.md",
+        repo / "docs" / "templates" / f"SOUL_{profile_name}_DOMAIN.md",
+    ):
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def _inject_soul_shared_sections(content: str, repo: Path) -> str:
+    """Replace stub Interaction/Output sections with shared template bodies (legal-sync pattern)."""
+    interaction = (repo / "docs" / "templates" / "SOUL_SHARED_INTERACTION.md").read_text(
+        encoding="utf-8"
+    )
+    output_fmt = (repo / "docs" / "templates" / "SOUL_SHARED_OUTPUT_FORMAT.md").read_text(
+        encoding="utf-8"
+    )
+    tool_gov = (repo / "docs" / "templates" / "SOUL_SHARED_TOOL_GOVERNANCE.md").read_text(
+        encoding="utf-8"
+    )
+    content = re.sub(
+        r"(?ms)^## Outputformaat \(institutioneel\)\s*\r?\n.*?(?=^## )",
+        output_fmt.rstrip() + "\n\n",
+        content,
+        count=1,
+    )
+    content = re.sub(
+        r"(?ms)^## Interaction met J\.\s*\r?\n.*?(?=^## )",
+        interaction.rstrip() + "\n\n",
+        content,
+        count=1,
+    )
+    if "## Tool governance" not in content:
+        content = content.rstrip() + "\n\n## Tool governance (domein-minimum)\n\n" + tool_gov.strip() + "\n"
+    return content
+
+
+def _provision_profile(
+    hermes: Path,
+    repo: Path,
+    name: str,
+    *,
+    dry_run: bool = False,
+    inject_soul: bool = True,
+) -> bool:
+    """Create profile directory structure + minimal config + SOUL from template."""
+    try:
+        from hermes_cli.profiles import (
+            _PROFILE_DIRS,
+            normalize_profile_name,
+            validate_profile_name,
+        )
+    except ImportError as e:
+        print(f"[FAIL] {name}: kan profiles-module niet laden ({e})")
+        return False
+
+    try:
+        canon = normalize_profile_name(name)
+        validate_profile_name(canon)
+    except ValueError as e:
+        print(f"[FAIL] {name}: ongeldige profielnaam ({e})")
+        return False
+
+    profile_dir = hermes / "profiles" / canon
+    if profile_dir.is_dir() and (profile_dir / "config.yaml").is_file():
+        print(f"[OK] {name}: profiel bestaat al — overgeslagen")
+        return True
+    if dry_run:
+        print(f"[DRY] zou aanmaken: {profile_dir}")
+        return True
+
+    profile_dir.mkdir(parents=True, exist_ok=True)
+    for subdir in _PROFILE_DIRS:
+        (profile_dir / subdir).mkdir(parents=True, exist_ok=True)
+
+    cfg_path = profile_dir / "config.yaml"
+    if not cfg_path.is_file():
+        _write_yaml(
+            cfg_path,
+            {"platform_toolsets": {"cli": []}},
+            header=(
+                f"# Profiel {canon} — aangemaakt via sync_profile_toolsets_from_manifest.py\n"
+                f"# Toolsets worden gesynchroniseerd uit docs/domain_toolsets.yaml\n"
+            ),
+        )
+
+    soul_path = profile_dir / "SOUL.md"
+    if inject_soul:
+        template = _resolve_soul_template(repo, canon)
+        if template is not None:
+            body = template.read_text(encoding="utf-8").strip()
+            body = _inject_soul_shared_sections(body, repo)
+            soul_path.write_text(body + "\n", encoding="utf-8")
+            print(f"[OK] {name}: SOUL.md van template {template.name}")
+        else:
+            print(f"[WARN] {name}: geen SOUL-template — draai SYNC_SOUL_SNIPPETS.bat na sync")
+
+    try:
+        from hermes_cli.profile_model_inheritance import strip_model_block_from_profile_config
+
+        strip_model_block_from_profile_config(profile_dir)
+    except Exception:
+        pass
+
+    print(f"[OK] {name}: profiel aangemaakt ({profile_dir})")
+    return True
+
+
+def _run_soul_snippets_sync(repo: Path, *, dry_run: bool) -> bool:
+    bat = repo / "windows" / "SYNC_SOUL_SNIPPETS.bat"
+    if not bat.is_file():
+        print(f"[WARN] SOUL snippet sync ontbreekt: {bat}")
+        return True
+    if dry_run:
+        print("[DRY] zou SYNC_SOUL_SNIPPETS.bat draaien")
+        return True
+    env = {**os.environ, "HERMES_SKIP_PAUSE": "1"}
+    r = subprocess.run(
+        ["cmd", "/c", str(bat)],
+        cwd=str(repo),
+        env=env,
+        check=False,
+    )
+    if r.returncode != 0:
+        print(f"[FAIL] SYNC_SOUL_SNIPPETS.bat exit {r.returncode}")
+        return False
+    print("[OK] SOUL snippets gesynchroniseerd (alle profielen)")
+    return True
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", default=str(_REPO))
@@ -164,6 +299,21 @@ def main() -> int:
     parser.add_argument("--profile", default="", help="Alleen dit profiel")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--check", action="store_true")
+    parser.add_argument(
+        "--create-missing",
+        action="store_true",
+        help="Maak ontbrekende profielen aan (map, config, SOUL) vóór sync",
+    )
+    parser.add_argument(
+        "--no-soul-inject",
+        action="store_true",
+        help="Geen SOUL-template injectie bij provision (alleen structuur)",
+    )
+    parser.add_argument(
+        "--sync-soul-snippets",
+        action="store_true",
+        help="Na sync: windows/SYNC_SOUL_SNIPPETS.bat (alle runtime SOUL's)",
+    )
     args = parser.parse_args()
 
     repo = Path(args.repo_root).resolve()
@@ -175,13 +325,28 @@ def main() -> int:
     if not args.profile:
         ok = _sync_root(repo, hermes, manifest, dry_run=args.dry_run) and ok
     names = [args.profile] if args.profile else sorted(profiles.keys())
+    inject_soul = not args.no_soul_inject
     for name in names:
         if name not in profiles:
             print(f"[FAIL] Onbekend profiel in manifest: {name}")
             ok = False
             continue
+        if args.create_missing:
+            cfg_path = hermes / "profiles" / name / "config.yaml"
+            if not cfg_path.is_file():
+                if not _provision_profile(
+                    hermes,
+                    repo,
+                    name,
+                    dry_run=args.dry_run,
+                    inject_soul=inject_soul,
+                ):
+                    ok = False
+                    continue
         if not _sync_profile(hermes, name, profiles[name], dry_run=args.dry_run, check=args.check):
             ok = False
+    if ok and args.sync_soul_snippets and not args.check:
+        ok = _run_soul_snippets_sync(repo, dry_run=args.dry_run) and ok
     return 0 if ok else 1
 
 

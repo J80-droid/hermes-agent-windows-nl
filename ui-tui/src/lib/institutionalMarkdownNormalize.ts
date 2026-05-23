@@ -1,4 +1,4 @@
-/** Institutional assistant markdown normalize (parity with hermes_cli/markdown_output_normalize.py). */
+/** Parity with hermes_cli/markdown_output_normalize.py and web/src/lib/institutionalMarkdown.ts */
 
 const HEADING_INLINE_BODY_RE =
   /^(?<prefix>\s{0,3}#{1,6}\s+)(?<title>.+?)\s+(?<body>(?:Dit|Het|De|Een|The|This|These|When|If)\s.+)$/gim
@@ -18,6 +18,9 @@ const BOLD_DOTTED_OUTLINE_HEADING_RE = /^\s*\*\*(\d+(?:\.\d+)+)\s+([^*\n]+?)\*\*
 const INSTITUTIONAL_CHECK_INLINE_RE =
   /^(<institutional_check>)\s*([\s\S]*?)(<\/institutional_check>)\s*$/gim
 
+const INSTITUTIONAL_CHECK_BLOCK_RE =
+  /<institutional_check>\s*([\s\S]*?)\s*<\/institutional_check>/gi
+
 const HEADING_TIGHT_TO_BODY_RE =
   /^(?<h>(?:\s{0,3})#{1,6}\s+[^\n]+)\n\n+(?!(?:\s{0,3})#))(?=\S)/gm
 const HEADING_TIGHT_BEFORE_TABLE_RE = /^(?<h>(?:\s{0,3})#{1,6}\s+[^\n]+)\n\n+(?=\|)/gm
@@ -26,28 +29,14 @@ const LABEL_TIGHT_TO_VALUE_RE = /^(\s*(?:[-*+]\s+)?\*\*[^*\n]+:\*\*)\n\n+(?=\S)/
 const NFR_INLINE_ROW_RE =
   /^Categorie:\s*(.+?)\s+Eis:\s*(.+?)\s+Meetmethode:\s*(.+?)\s*$/i
 
+const NFR_SECTION_HEADING_RE = /^\s{0,3}(#{1,6}\s+Niet-functionele\s+requirements)\s*$/i
+const NFR_LONG_DASH_LINE_RE = /^[\s\-—_]{6,}\s*$/
+const NFR_BOLD_CATEGORY_RE = /^\*\*(.+?)\*\*\s*$/
+const NFR_CATEGORY_DASH_RE =
+  /^(\*\*[^*]+\*\*|[^|—\-\n]+?)\s*[—\-:]\s*(.+?)(?:\s*[—\-]\s*(.+))?\s*$/
+
 const LIST_ITEM_VERB_PREFIX_RE =
   /^(?:doe|do|ga|open|voer|importeer|controleer|kies|zet|voeg|stel|maak|lees|schrijf|bewaar|start|stop|gebruik|download|upload|installeer|bekijk|test|verifieer)\b/i
-
-export const ASSISTANT_TABLE_HEADER_CLASSES = [
-  'text-cyan-400',
-  'text-green-400',
-  'text-foreground',
-  'text-fuchsia-400',
-] as const
-
-export const ASSISTANT_HEADING_CLASSES = [
-  'text-cyan-400',
-  'text-green-400',
-  'text-yellow-400',
-  'text-fuchsia-400',
-  'text-foreground',
-  'text-muted-foreground',
-] as const
-
-export const ASSISTANT_LABEL_CLASS = 'text-fuchsia-400 font-bold'
-
-export const assistantWebPaletteName = (palette: string | undefined): string => palette || 'demo'
 
 function looksLikeOutlineHeadingTitle(title: string): boolean {
   const t = title.trim()
@@ -97,7 +86,7 @@ function ensureInstitutionalCheckBlock(text: string): string {
   return text.replace(INSTITUTIONAL_CHECK_INLINE_RE, (_m, _open: string, body: string) => {
     const lines = body
       .split('\n')
-      .map((ln) => ln.trim())
+      .map(ln => ln.trim())
       .filter(Boolean)
     return ['<institutional_check>', ...lines, '</institutional_check>'].join('\n')
   })
@@ -109,6 +98,17 @@ function ensureInstitutionalCheckSpacing(text: string): string {
   return out
 }
 
+function compactInstitutionalCheck(text: string): string {
+  return text.replace(INSTITUTIONAL_CHECK_BLOCK_RE, (_m, body: string) => {
+    const items = body
+      .split('\n')
+      .map(ln => ln.trim().replace(/^[-*+]\s+/, ''))
+      .filter(Boolean)
+    if (!items.length) return 'Controle'
+    return `Controle  · ${items.join('  · ')}`
+  })
+}
+
 function normalizePlainNfrRowsToTable(text: string): string {
   if (!text.includes('Categorie:')) return text
 
@@ -117,19 +117,19 @@ function normalizePlainNfrRowsToTable(text: string): string {
   let i = 0
 
   while (i < lines.length) {
-    const stripped = lines[i].trim()
+    const stripped = lines[i]!.trim()
     const match = stripped.match(NFR_INLINE_ROW_RE)
     if (match) {
       const rows: Array<[string, string, string]> = []
       while (i < lines.length) {
-        const s = lines[i].trim()
+        const s = lines[i]!.trim()
         if (!s || /^[-*_]{3,}\s*$/.test(s)) {
           i++
           continue
         }
         const m = s.match(NFR_INLINE_ROW_RE)
         if (!m) break
-        rows.push([m[1].trim(), m[2].trim(), m[3].trim()])
+        rows.push([m[1]!.trim(), m[2]!.trim(), m[3]!.trim()])
         i++
       }
       if (rows.length) {
@@ -140,17 +140,11 @@ function normalizePlainNfrRowsToTable(text: string): string {
         continue
       }
     }
-    out.push(lines[i])
+    out.push(lines[i]!)
     i++
   }
   return out.join('\n')
 }
-
-const NFR_SECTION_HEADING_RE = /^\s{0,3}(#{1,6}\s+Niet-functionele\s+requirements)\s*$/i
-const NFR_LONG_DASH_LINE_RE = /^[\s\-—_]{6,}\s*$/
-const NFR_BOLD_CATEGORY_RE = /^\*\*(.+?)\*\*\s*$/
-const NFR_CATEGORY_DASH_RE =
-  /^(\*\*[^*]+\*\*|[^|—\-\n]+?)\s*[—\-:]\s*(.+?)(?:\s*[—\-]\s*(.+))?\s*$/
 
 function stripMdBold(text: string): string {
   return text.replace(/^\*\*|\*\*$/g, '').trim()
@@ -190,7 +184,7 @@ function parseNfrProseLines(bodyLines: string[]): Array<[string, string, string]
       rows.push([
         stripMdBold(dash[1]!),
         dash[2]!.trim(),
-        (dash[3] || '-').trim() || '-',
+        (dash[3] || '-').trim() || '-'
       ])
       continue
     }
@@ -254,21 +248,7 @@ function normalizeNfrProseSectionToTable(text: string): string {
   return out.join('\n')
 }
 
-function compactInstitutionalCheck(text: string): string {
-  return text.replace(
-    /<institutional_check>\s*([\s\S]*?)\s*<\/institutional_check>/gi,
-    (_m, body: string) => {
-      const items = body
-        .split('\n')
-        .map((ln) => ln.trim().replace(/^[-*+]\s+/, ''))
-        .filter(Boolean)
-      if (!items.length) return 'Controle'
-      return `Controle  · ${items.join('  · ')}`
-    },
-  )
-}
-
-export function normalizeAssistantMarkdown(text: string): string {
+export const normalizeAssistantMarkdown = (text: string): string => {
   if (!text?.trim()) return text || ''
 
   let out = text
@@ -301,9 +281,3 @@ export function normalizeAssistantMarkdown(text: string): string {
 
   return out.replace(/\n{3,}/g, '\n\n')
 }
-
-export const tableHeaderClass = (index: number): string =>
-  ASSISTANT_TABLE_HEADER_CLASSES[index % ASSISTANT_TABLE_HEADER_CLASSES.length]!
-
-export const headingClass = (level: number): string =>
-  ASSISTANT_HEADING_CLASSES[Math.min(Math.max(level - 1, 0), ASSISTANT_HEADING_CLASSES.length - 1)]!

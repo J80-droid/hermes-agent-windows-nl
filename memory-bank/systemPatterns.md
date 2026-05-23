@@ -46,19 +46,34 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 
 ## Institutionele presentatie (drie lagen)
 
-1. **SOUL** — typografie/structuur (`docs/templates/SOUL_SHARED_*.md` → `SYNC_SOUL_SNIPPETS.bat`).
-2. **Assistant** — `display.assistant_render_style=institutional_rich`, normalizer → `institutional_render.py`; theme via `get_assistant_console_theme()` (CLI `ChatConsole`, gateway `rich_output.py`). Config wordt **live** geladen (`load_config_readonly`), dus profielwissel zonder herstart werkt direct.
+1. **SOUL** — typografie/structuur (`docs/templates/SOUL_SHARED_*.md` → `SyncSoulSnippet.psm1` → alle profielen). Gebruikt centrale PowerShell-module met `--force` (altijd overschrijven) en `--verify` (check-only).
+2. **Assistant** — `display.assistant_render_style=institutional_rich`; pipeline: `markdown_output_normalize.py` → `institutional_render.py` (`TightHeadingBody`, `SectionSpacer`, `InstitutionalTableElement`). Theme via `get_assistant_console_theme()` (CLI `ChatConsole`, gateway `rich_output.py`). Config **live** via `load_config_readonly`.
 3. **UI** — `display.skin=default` (goud); banners/prompt, niet LLM-antwoordtekst.
+
+### SOUL Sync (centraal, niet per profiel)
+
+- **Module:** `windows/scripts/SyncSoulSnippet.psm1`
+- **Scripts:** `sync_soul_interaction_snippet.ps1`, `sync_soul_output_format_snippet.ps1`
+- **Opties:** `-Force` (altijd overschrijven), `-Verify` (check zonder schrijven), `-ManifestPath` (JSON rapport)
+- **Manifest:** `%LOCALAPPDATA%\hermes\soul_manifests\<datum>_<tijd>.json`
+- **Logging per profiel:** `[UPDATED]`, `[FORCED]`, `[SKIPPED]`, `[VERIFY_DIFF]`, `[VERIFY_OK]`
 
 ### Paletten (YAML-driven)
 
 - Built-in: `demo`, `hermes`, `neutral` in `_BUILTIN_PALETTES` (`institutional_render.py`)
 - User-defined: `config/palettes.yaml` — loaded at runtime, overrides built-ins for same name
-- Validation: required keys (`h1`, `h2`, `h3`, `h4`, `strong`, `label`, `text`, `table_header`)
+- **Kop vs. tabel:** sectiekoppen h1–h4 ≠ tabelkolommen; `header_palette` **cyaan-first** (`#66d9ef`, `#a6e22e`, …) zodat `##` groen ≠ kolom `ID`
+- Validation: required keys (`h1`, `h2`, `h3`, `h4`, `strong`, `label`, `text`, `table_header`); optional `header_palette`
 - Fallback: unknown palette → `demo` + warning
-- Diagnostics: `scripts/diagnose_renderer.py --verify` (E2E stap 2f)
+- Diagnostics: `scripts/diagnose_renderer.py --verify` (E2E 2f); score `scripts/score_institutional_render.py --verify` (E2E 2g)
 
-Defaults: `windows/team_display.defaults`; toepassen: `apply_team_display_profiles.py` / `APPLY_INSTITUTIONAL_RUNTIME.bat`. Audit: `RUN_INSTITUTIONAL_E2E.ps1` (11 stappen + diagnose).
+### Normalizer + pariteit
+
+- **Python (canonical):** `hermes_cli/markdown_output_normalize.py` — outline, institutional_check, tighten kop–tabel, NFR prose→tabel
+- **Web:** `web/src/lib/institutionalMarkdown.ts` + `Markdown.tsx` (`toRenderUnits` = TightHeadingBody-equivalent)
+- **Ink:** `ui-tui/src/lib/institutionalMarkdownNormalize.ts` + compacte Controle-regel in `markdown.tsx`
+
+Defaults: `windows/team_display.defaults`; toepassen: `APPLY_INSTITUTIONAL_RUNTIME.bat`. Audit: `RUN_INSTITUTIONAL_E2E.ps1` (11 stappen + 2f + 2g).
 
 ## Profiel-uitbreiding (ICT-team)
 

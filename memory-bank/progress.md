@@ -31,11 +31,17 @@
 - [x] pytest Windows: `timeout-method=thread`; `shutil.which` i.p.v. `which rg`; marker `ssh` in `pyproject.toml`; `tests/windows/test_critical_windows_scripts.py`
 - [x] Python-policy institutioneel: `HermesPythonPolicy.ps1`, `REPAIR_PYTHON.bat`, `ensure_hermes_python.ps1`; kapotte `.venv` → `.venv.disabled-*` (gitignore); conda `hermes-env` canoniek; verify-keten + setup-hook
 - [x] TUI display: skin `default` (`team_display.defaults`), `apply_team_display.ps1` → `profiles\<active>\config.yaml` (conda `--env-vars`)
-- [x] E2E institutioneel: `RUN_INSTITUTIONAL_E2E.ps1` (**11 stappen**, PASS 2026-05-22); rapport in `windows/audits/`
-- [x] Assistant Rich-renderer: `institutional_render.py` (demo-palet, per-kolom tabellen, label-kolommen, Group-spacing)
+- [x] E2E institutioneel: `RUN_INSTITUTIONAL_E2E.ps1` (**11 stappen + 2f diagnose + 2g score**, PASS 2026-05-23)
+- [x] Assistant Rich-renderer: `institutional_render.py` (`TightHeadingBody`, `SectionSpacer`, per-kolom tabellen, label-kolommen)
 - [x] Markdown pipeline: `display_markdown.py` + `agent/rich_output.py` + `ChatConsole(get_assistant_console_theme())` in `cli.py`
-- [x] Pariteit Ink/Web: `institutionalColors.ts`, `institutionalMarkdown.ts`
-- [x] Globaal outputformaat: `SOUL_SHARED_OUTPUT_FORMAT.md` + `sync_soul_output_format_snippet.ps1`
+- [x] Pariteit Ink/Web: `institutionalMarkdown.ts`, `institutionalMarkdownNormalize.ts`, `institutionalColors.ts` (cyaan-first tabelpalet)
+- [x] Globaal outputformaat: `SOUL_SHARED_OUTPUT_FORMAT.md` + `SyncSoulSnippet.psm1` (NFR-tabel verplicht, prose negatief voorbeeld)
+- [x] Normalizer: outline, institutional_check, NFR prose→tabel (`markdown_output_normalize.py` + TS parity)
+- [x] Palet: h2 groen ≠ tabelkolom 0 cyaan (`header_palette` in `config/palettes.yaml`)
+- [x] Rooktest: `docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md` (10/10 checklist)
+- [x] Score/diagnose: `scripts/score_institutional_render.py` (10.0/10 sample), `diagnose_renderer.py` (kleurlegenda)
+- [x] Nieuwe-chat vlag na SOUL-sync: `institutional_new_chat_notice.py` + banner in `cli.py`
+- [x] Tests: `test_institutional_rich_render.py`, `test_markdown_output_normalize.py`, `test_institutional_production.py`
 - [x] Team display: `compact=false`, `render`, `skin=default` (`team_display.defaults`)
 - [x] Docs: `docs/INSTITUTIONAL_PRESENTATION.md`; legacy `windows/scripts/institutional/`
 - [x] Split Hermes-home: `sync_hermes_api_env.ps1` + `SYNC_HERMES_API_ENV.bat`; docs `TERMINAL_WINDOWS.md`
@@ -86,10 +92,12 @@
 ## Sluit-checklist (aanbevolen volgorde)
 
 1. ~~Legal rooktest~~ / ~~Kanban legal~~ — afgerond (2026-05-21)
-2. Bronnen in 7 lege `raw_source_files`-mappen
-3. `institutional_p0_p1.bat --ingest-remaining`
-4. `update_knowledge.bat --mcp-test`
-5. Geen ingest + Kanban tegelijk op dezelfde LanceDB (lock)
+2. **Institutioneel 10/10:** `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` → `/new` → rooktest `docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md`
+3. **Verify:** `python scripts/diagnose_renderer.py` + `python scripts/score_institutional_render.py --verify`
+4. Bronnen in 7 lege `raw_source_files`-mappen
+5. `institutional_p0_p1.bat --ingest-remaining`
+6. `update_knowledge.bat --mcp-test`
+7. Geen ingest + Kanban tegelijk op dezelfde LanceDB (lock)
 
 ## Bekende valkuilen
 

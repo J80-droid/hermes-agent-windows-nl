@@ -1,10 +1,17 @@
 """Tests for institutional markdown layout normalization."""
 
 from hermes_cli.markdown_output_normalize import (
+    coalesce_heading_content_chunks,
     ensure_heading_line_breaks,
+    ensure_institutional_check_block,
+    ensure_institutional_check_spacing,
     ensure_section_breaks,
     normalize_assistant_markdown,
     normalize_numbered_headings,
+    normalize_plain_nfr_rows_to_table,
+    normalize_nfr_prose_section_to_table,
+    normalize_plain_outline_headings,
+    tighten_heading_and_label_spacing,
 )
 
 
@@ -42,5 +49,167 @@ def test_normalize_assistant_markdown_adds_section_breaks():
 
 
 def test_normalize_assistant_markdown_idempotent_on_clean_input():
-    raw = "## Titel\n\nTekst hier."
+    raw = "## Titel\nTekst hier."
     assert normalize_assistant_markdown(raw) == raw
+
+
+def test_plain_outline_h1_becomes_markdown_heading():
+    raw = "1. Projectoverzicht\n\nTekst."
+    out = normalize_plain_outline_headings(raw)
+    assert "## Projectoverzicht" in out
+    assert "1. Projectoverzicht" not in out
+
+
+def test_dotted_outline_becomes_subheadings():
+    raw = "1.1 Team Samenstelling\n\n| Naam | Rol |\n"
+    out = normalize_plain_outline_headings(raw)
+    assert "### Team Samenstelling" in out
+
+
+def test_deep_dotted_outline_becomes_h4():
+    raw = "1.2.1 Dependencies\n\nTekst."
+    out = normalize_plain_outline_headings(raw)
+    assert "#### Dependencies" in out
+
+
+def test_numbered_list_item_not_converted_to_heading():
+    raw = "1. Open het configuratiebestand\n2. Sla op"
+    out = normalize_plain_outline_headings(raw)
+    assert "## Open" not in out
+    assert "1. Open het configuratiebestand" in out
+
+
+def test_bold_plain_outline_h1():
+    raw = "**1. Projectoverzicht**\n\nTekst."
+    out = normalize_plain_outline_headings(raw)
+    assert "## Projectoverzicht" in out
+    assert "**1." not in out
+
+
+def test_bold_dotted_outline():
+    raw = "**1.1 Team Samenstelling**\n\n| A | B |"
+    out = normalize_plain_outline_headings(raw)
+    assert "### Team Samenstelling" in out
+
+
+def test_chapter_num_without_dot():
+    raw = "2 Functionele Requirements\n\n| ID | Req |"
+    out = normalize_plain_outline_headings(raw)
+    assert "## Functionele Requirements" in out
+
+
+def test_bold_chapter_with_dot():
+    raw = "**2. Functionele Requirements**"
+    out = normalize_plain_outline_headings(raw)
+    assert "## Functionele Requirements" in out
+
+
+def test_institutional_check_inline_expands_to_block():
+    raw = "<institutional_check> - Controle: [OK] </institutional_check>"
+    out = ensure_institutional_check_block(raw)
+    assert out.startswith("<institutional_check>\n")
+    assert "\n</institutional_check>" in out
+
+
+def test_institutional_check_spacing_before_body():
+    raw = "Intro.\n<institutional_check>\n- x\n</institutional_check>\n## Titel"
+    out = ensure_institutional_check_spacing(raw)
+    assert "Intro.\n\n<institutional_check>" in out
+    assert "</institutional_check>\n\n## Titel" in out
+
+
+def test_coalesce_heading_only_chunk_with_table():
+    chunks = ["### Team Samenstelling", "| Naam | Rol |\n|---|---|"]
+    out = coalesce_heading_content_chunks(chunks)
+    assert len(out) == 1
+    assert out[0].startswith("### Team Samenstelling\n| Naam |")
+
+
+def test_coalesce_heading_with_bullet_list():
+    chunks = ["### Technische stack", "- Python\n- Rich"]
+    out = coalesce_heading_content_chunks(chunks)
+    assert len(out) == 1
+    assert "- Python" in out[0]
+
+
+def test_coalesce_heading_with_prose():
+    chunks = ["## Projectoverzicht", "Dit is de tekst."]
+    out = coalesce_heading_content_chunks(chunks)
+    assert len(out) == 1
+    assert "Dit is de tekst" in out[0]
+
+
+def test_tighten_heading_to_table_or_list():
+    raw = "### Dependencies\n\n| A | B |\n|---|---|\n"
+    out = tighten_heading_and_label_spacing(raw)
+    assert "### Dependencies\n| A | B |" in out
+    assert "### Dependencies\n\n|" not in out
+
+
+def test_tighten_preserves_break_before_next_chapter():
+    raw = "## Eerste\n\nTekst.\n\n## Tweede\n\n| A |"
+    out = tighten_heading_and_label_spacing(raw)
+    assert "Tekst.\n\n## Tweede" in out
+    assert "## Tweede\n| A |" in out
+
+
+def test_tighten_label_to_value():
+    raw = "**Status:**\n\nActief"
+    out = tighten_heading_and_label_spacing(raw)
+    assert "**Status:**\nActief" in out
+
+
+def test_normalize_plain_nfr_rows_to_table():
+    raw = (
+        "Categorie: Performance Eis: Snel Meetmethode: Benchmark\n"
+        "---\n"
+        "Categorie: Robuustheid Eis: Geen crash Meetmethode: Fuzz\n"
+    )
+    out = normalize_plain_nfr_rows_to_table(raw)
+    assert "| Categorie | Eis | Meetmethode |" in out
+    assert "| Performance | Snel | Benchmark |" in out
+
+
+def test_normalize_nfr_prose_section_to_table():
+    raw = (
+        "### Niet-functionele requirements\n\n"
+        "**Performantie**\n"
+        "Render binnen 50ms bij normale payloads.\n"
+        "————————\n"
+        "Robuustheid — Geen crash bij lege input — Fuzz-test\n"
+        "Portabiliteit: Windows + Linux compatibel\n"
+        "\n"
+        "## Conclusie\n"
+        "Klaar."
+    )
+    out = normalize_nfr_prose_section_to_table(raw)
+    assert "| Categorie | Eis | Meetmethode |" in out
+    assert "| Performantie |" in out
+    assert "| Robuustheid | Geen crash bij lege input | Fuzz-test |" in out
+    assert "| Portabiliteit | Windows + Linux compatibel | - |" in out
+    assert "## Conclusie" in out
+
+
+def test_normalize_assistant_markdown_converts_nfr_prose():
+    raw = (
+        "### Niet-functionele requirements\n\n"
+        "Performantie — Snel — Benchmark\n"
+        "Robuustheid — Stabiel — Test\n"
+    )
+    out = normalize_assistant_markdown(raw)
+    assert "| Performantie | Snel | Benchmark |" in out
+
+
+def test_normalize_assistant_markdown_converts_outline_and_check():
+    raw = (
+        "1. Projectoverzicht\n"
+        "Tekst.\n"
+        "1.1 Team\n"
+        "Meer.\n"
+        "<institutional_check> - A: [OK] </institutional_check>\n"
+        "## Tweede"
+    )
+    out = normalize_assistant_markdown(raw)
+    assert "## Projectoverzicht" in out
+    assert "### Team" in out
+    assert "<institutional_check>\n" in out

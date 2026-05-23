@@ -69,6 +69,7 @@ $requiredRepo = @(
     'windows/DIAGNOSE_RENDERER.bat',
     'config/palettes.yaml',
     'scripts/diagnose_renderer.py',
+    'scripts/score_institutional_render.py',
     'scripts/migrate_soul_tokens.py',
     'hermes_cli/markdown_output_normalize.py',
     'hermes_cli/institutional_render.py',
@@ -131,6 +132,15 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 Write-Host '[OK] diagnose_renderer institutional_rich + demo geverifieerd' -ForegroundColor Green
+
+Write-Host '=== 2g/11 institutional render score (10/10 checklist) ===' -ForegroundColor Cyan
+$score = Join-Path $repoRoot 'scripts/score_institutional_render.py'
+& $python $score --verify
+if ($LASTEXITCODE -ne 0) {
+    Write-Host '[FAIL] score_institutional_render --verify faalde (score < 9.0)' -ForegroundColor Red
+    exit 1
+}
+Write-Host '[OK] institutional render score >= 9.0' -ForegroundColor Green
 
 Write-Host '=== 2c/11 team_display.defaults inhoud ===' -ForegroundColor Cyan
 $td = Get-Content -LiteralPath (Join-Path $repoRoot 'windows/team_display.defaults') -Raw -Encoding UTF8

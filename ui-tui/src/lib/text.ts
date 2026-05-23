@@ -106,45 +106,10 @@ export const pasteTokenLabel = (text: string, lineCount: number) => {
 const THINKING_STATUS_RE = new RegExp(`^(?:${VERBS.join('|')})\\.{0,3}$`, 'i')
 const THINKING_STATUS_CHUNK_RE = new RegExp(`[^A-Za-z\n]+\\s*(?:${VERBS.join('|')})\\.{0,3}\\s*`, 'giu')
 
-const HEADING_INLINE_BODY_RE =
-  /^(?<prefix>\s{0,3}#{1,6}\s+)(?<title>.+?)\s+(?<body>(?:Dit|Het|De|Een|Bij|In|Op|Na|Voor|The|This|These|When|If)\s.+)$/gim
-
-const LABEL_INLINE_VALUE_RE = /^(\s*(?:[-*+]\s+)?)\*\*([^*\n]+?):\*\*\s+(\S.+)$/gm
-
-const SECTION_BREAK_BEFORE_HEADING_RE = /(?<!\n\n)(?<=\S\n)(#{1,6}\s)/gm
-
-const NUMBERED_STEP_HEADING_RE = /^(\d+)\s+Stap\s+(\d+)\s*:\s*(.+?)\s*$/gim
-
-const ensureSectionBreaks = (text: string) => {
-  let out = text.replace(SECTION_BREAK_BEFORE_HEADING_RE, '\n\n$1')
-  out = out.replace(/(?<!\n\n)(\n)(#{1,6}\s)/g, '\n\n$2')
-  return out.replace(/\n{3,}/g, '\n\n')
-}
-
-const normalizeNumberedHeadings = (text: string) =>
-  text.replace(NUMBERED_STEP_HEADING_RE, (_m, _n, step: string, title: string) => `## Stap ${step}: ${title.trim()}`)
+import { normalizeAssistantMarkdown as normalizeInstitutionalMarkdown } from './institutionalMarkdownNormalize.js'
 
 /** Institutional layout: headings, section breaks, and **Label:** on their own line. */
-export const normalizeAssistantMarkdown = (text: string) => {
-  if (!text?.trim()) {
-    return text || ''
-  }
-
-  let out = text
-
-  out = out.replace(HEADING_INLINE_BODY_RE, (_m, prefix: string, title: string, body: string) => {
-    return `${prefix}${title.trim()}\n\n${body.trim()}`
-  })
-
-  out = out.replace(LABEL_INLINE_VALUE_RE, (_m, lead: string, label: string, value: string) => {
-    return `${lead}**${label.trim()}:**\n\n${value.trim()}`
-  })
-
-  out = normalizeNumberedHeadings(out)
-  out = ensureSectionBreaks(out)
-
-  return out.replace(/\n{3,}/g, '\n\n')
-}
+export const normalizeAssistantMarkdown = (text: string) => normalizeInstitutionalMarkdown(text)
 
 export const cleanThinkingText = (reasoning: string) =>
   reasoning

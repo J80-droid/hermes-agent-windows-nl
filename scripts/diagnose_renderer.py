@@ -52,21 +52,36 @@ def _get_palette_preview(palette: str, cols: int = 80) -> str | None:
         from hermes_cli.display_markdown import format_response_ansi
 
         test_md = (
-            "## Stap 1: Analyse\n\n"
-            "| Rol | Datum | Status | Budget |\n"
-            "|---|---|---|---|\n"
-            "| A | 2024-01 | Actief | 1M |\n"
-            "| B | 2024-02 | Afgerond | 2M |\n\n"
-            "**Betrokken partijen:**\n\n"
-            "Ministerie van Justitie.\n\n"
-            "### Juridische beoordelingsruimte\n\n"
-            "Feitelijke weergave en normering."
+            "<institutional_check>\n- Controle hyperbolen: [Uitgevoerd]\n</institutional_check>\n\n"
+            "## Projectoverzicht\n"
+            "Korte intro.\n\n"
+            "### Team Samenstelling\n"
+            "| Naam | Rol | Status |\n|---|---|---|\n| A | Lead | Actief |\n\n"
+            "### Technische stack\n"
+            "- Python 3.11\n\n"
+            "## Functionele requirements\n"
+            "| ID | Requirement | Prioriteit |\n|---|---|---|\n| FR-001 | Test | Hoog |\n"
         )
-        # Temporarily override palette via env (the renderer reads from settings,
-        # but we can exercise the pipeline by passing the raw markdown)
         return format_response_ansi(test_md, cols=cols)
     except Exception as exc:
         return f"[Render error: {exc}]"
+
+
+def _print_color_legend(palette: str) -> None:
+    try:
+        from hermes_cli.institutional_render import assistant_markdown_theme, table_header_palette
+
+        theme = assistant_markdown_theme(palette)
+        headers = table_header_palette(palette)
+        h2 = theme.styles.get("markdown.h2", "")
+        h3 = theme.styles.get("markdown.h3", "")
+        print("\n  Kleurlegenda (sectiekop ≠ tabelkolom 0):")
+        print(f"    h2 (##)              : {h2}")
+        print(f"    h3 (###)             : {h3}")
+        for idx, style in enumerate(headers[:4]):
+            print(f"    tabel kolom {idx}      : {style}")
+    except Exception as exc:
+        print(f"\n  Kleurlegenda: (kon niet laden: {exc})")
 
 
 def _print_report() -> None:
@@ -94,6 +109,8 @@ def _print_report() -> None:
     print(f"  Renderer style      : {render_style}")
     print(f"  Active palette      : {palette}")
     print(f"  Label columns       : {label_cols}")
+
+    _print_color_legend(palette)
 
     print(f"\n  Config display block:")
     for key in sorted(display.keys()):

@@ -13,8 +13,8 @@ flowchart TD
     E --> F["6. Tests<br>test_domain_toolsets_manifest.py"]
     F --> G["7. Audit scripts<br>RUN_TOOLSET_DOMAIN_E2E.ps1"]
     G --> H["8. Docs<br>README.md, DOMAIN_TOOLSET_AUDIT.md"]
-    H --> I["9. Runtime<br>profiel-map + config.yaml"]
-    I --> J["10. Sync<br>SYNC_DOMAIN_TOOLSETS.bat + MCP + SOUL"]
+    H --> I["9–10. Runtime provision<br>SYNC_DOMAIN_TOOLSETS.bat --create-missing"]
+    I --> J["11. Optioneel<br>MCP + SOUL snippets"]
     J --> K["11. Audit<br>RUN_TOOLSET_DOMAIN_E2E.bat"]
     K --> L["12. Commit + push"]
 ```
@@ -182,34 +182,32 @@ def test_soul_templates_exist():
 
 ---
 
-## Stap 9: Runtime profiel-map aanmaken
+## Stap 9–10: Runtime provision + toolset-sync
 
-```powershell
-$profiel = "<naam>"
-$hermes = "$env:LOCALAPPDATA\hermes"
-New-Item -ItemType Directory -Path "$hermes\profiles\$profiel" -Force
-@"
-# Profiel $profiel — toolsets via docs/domain_toolsets.yaml
-platform_toolsets:
-  cli: []
-"@ | Set-Content "$hermes\profiles\$profiel\config.yaml" -Encoding UTF8
-Copy-Item "docs/templates/SOUL_${profiel}_DOMAIN.md" "$hermes\profiles\$profiel\SOUL.md"
-```
-
----
-
-## Stap 10: Sync naar runtime
+Zet altijd `HERMES_HOME` op de **root** (niet `profiles\legal`):
 
 ```cmd
-:: Toolsets
-windows\SYNC_DOMAIN_TOOLSETS.bat
-
-:: MCP servers
-python scripts\rag_pipeline\sync_profile_mcp_from_domains.py --domains-yaml docs\domains.yaml.example
-
-:: SOUL snippets
-windows\SYNC_SOUL_SNIPPETS.bat
+set HERMES_HOME=%LOCALAPPDATA%\hermes
+windows\SYNC_DOMAIN_TOOLSETS.bat --create-missing
 ```
+
+Dit script:
+
+1. Maakt ontbrekende profielen aan (`profiles\<naam>\`, submappen, minimale `config.yaml`, `SOUL.md` uit `docs/templates/SOUL_<NAAM>_DOMAIN.md` met inline shared snippets).
+2. Schrijft `platform_toolsets.cli` uit `docs/domain_toolsets.yaml`.
+
+**Optioneel daarna:**
+
+```cmd
+python scripts\rag_pipeline\sync_profile_mcp_from_domains.py --domains-yaml docs\domains.yaml.example
+windows\SYNC_DOMAIN_TOOLSETS.bat --create-missing --sync-soul-snippets
+```
+
+Of alleen snippets: `windows\SYNC_SOUL_SNIPPETS.bat`.
+
+**Nieuwe chat** per profiel na sync.
+
+Smoke-test provision: `windows\audits\RUN_PROVISION_DOMAIN_E2E.bat`
 
 ---
 
@@ -278,7 +276,7 @@ Onderzoek, structureren, citeren per juridische lens.
 - [ ] `DOMAIN_TOOLSET_AUDIT.md` — profiel-tabel
 - [ ] Memory-bank — bijgewerkt
 - [ ] Runtime profiel-map + config.yaml + SOUL.md aangemaakt
-- [ ] SYNC_DOMAIN_TOOLSETS.bat gedraaid
+- [ ] `SYNC_DOMAIN_TOOLSETS.bat --create-missing` gedraaid (of profiel bestond al)
 - [ ] MCP sync gedraaid
 - [ ] SOUL snippets gesynced
 - [ ] `RUN_TOOLSET_DOMAIN_E2E.bat` — PASS

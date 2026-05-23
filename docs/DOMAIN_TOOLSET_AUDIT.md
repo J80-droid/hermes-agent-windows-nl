@@ -236,10 +236,15 @@ Profiel-`config.yaml` is leidend voor CLI-chat (`hermes -p legal`). Zonder `-p` 
 ## Sync en verify
 
 ```cmd
+set HERMES_HOME=%LOCALAPPDATA%\hermes
 windows\SYNC_DOMAIN_TOOLSETS.bat
+windows\SYNC_DOMAIN_TOOLSETS.bat --create-missing
 windows\audits\RUN_TOOLSET_DOMAIN_E2E.ps1
+windows\audits\RUN_PROVISION_DOMAIN_E2E.bat
 hermes -p legal chat --list-tools
 ```
+
+**`--create-missing`:** voor elk profiel in `domain_toolsets.yaml` zonder `profiles/<naam>/config.yaml` — mapstructuur, minimale config, SOUL uit template (inline shared snippets). Bestaande profielen: alleen toolset-sync. Optioneel: `--sync-soul-snippets` roept `SYNC_SOUL_SNIPPETS.bat` aan.
 
 **Rooktest (nieuwe chat):**
 

@@ -9,8 +9,17 @@ Drie gescheiden lagen: **wat het model schrijft** (SOUL), **assistant-antwoorden
 | [`templates/SOUL_SHARED_OUTPUT_FORMAT.md`](templates/SOUL_SHARED_OUTPUT_FORMAT.md) | Typografie, lijsten, `<institutional_check>`, standaardsecties |
 | [`templates/SOUL_SHARED_INTERACTION.md`](templates/SOUL_SHARED_INTERACTION.md) | Interaction met J., landkaart |
 | [`templates/SOUL_SHARED_ADVISORY.md`](templates/SOUL_SHARED_ADVISORY.md) | Trust: pushback, bronplicht, geen pleaser-taal |
-| `windows\SYNC_SOUL_SNIPPETS.bat` | Schrijft Interaction + Outputformaat naar SOUL |
+| `windows\SYNC_SOUL_SNIPPETS.bat` | Schrijft Interaction + Outputformaat naar SOUL (met `--force` optie) |
 | `windows\SYNC_TRUST_RUNTIME.bat` | + Advisory, legal forensic, memory seed (geen scrub) |
+
+**Sync-methode:** Centrale PowerShell-module `SyncSoulSnippet.psm1` (in `windows/scripts/`). Deze module:
+- Leest templates uit `docs/templates/`
+- Schrijft naar **alle** profiel-SOUL's + root SOUL.md
+- Ondersteunt `--force` (altijd overschrijven) en `--verify` (alleen check, niet schrijven)
+- Genereert JSON-manifest per sync-run (`%LOCALAPPDATA%\hermes\soul_manifests\`)
+- Toont per profiel: `[UPDATED]`, `[FORCED]`, `[SKIPPED]` of `[VERIFY_DIFF]`
+
+Voor dagelijks gebruik: `APPLY_INSTITUTIONAL_RUNTIME.bat` gebruikt automatisch `--force`, zodat alle profielen gegarandeerd identiek zijn aan de centrale templates.
 
 **Nieuwe chat verplicht** na SOUL-sync (bestaande sessies houden oude system prompt).
 
@@ -24,12 +33,13 @@ Drie gescheiden lagen: **wat het model schrijft** (SOUL), **assistant-antwoorden
 
 ### Typografieregels (hard)
 
-- Kop (`##`, `###`) op **eigen regel**; tekst op volgende regel na lege regel.
-- **Lege regel vóór elke nieuwe hoofdstuk-kop** (`## Stap 2` na inhoud stap 1).
-- Hoofdstukken als `##`, niet alleen `1 Stap 1:` zonder hash.
-- `**Label:**` op eigen regel; waarde op volgende regel.
+- Kop (`##`, `###`) op **eigen regel**; inhoud op de **volgende regel** (geen lege regel tussen kop en tabel/lijst in markdown — renderer zet ze visueel flush).
+- **Tussen secties:** renderer voegt één subtiele witregel toe (`SectionSpacer`).
+- Hoofdstukken als `##`, niet alleen `1 Stap 1:` zonder hash (normalizer vangt outline af).
+- `**Label:**` op eigen regel; waarde op de volgende regel.
+- Tabellen als markdown (`| kolom |`); NFR **alleen** als tabel onder `### Niet-functionele requirements`.
 - Lijsten: `- item` in bron (UI toont `•`).
-- Tabellen als markdown (`| kolom |`); geen `[COLOR_*]` in antwoordtekst.
+- Geen `[COLOR_*]` in antwoordtekst.
 
 Het zichtbare checklist-blok heet `<institutional_check>` (niet `<verification>` — dat gebruikt upstream interne model-guidance in `agent/prompt_builder.py`).
 
@@ -49,6 +59,22 @@ Code: [`hermes_cli/institutional_render.py`](../hermes_cli/institutional_render.
 
 **Pipeline:** `prepare_assistant_markdown_plain()` normaliseert één keer → `render_institutional_assistant(..., already_normalized=True)` splitst op `##`-koppen en `**Label:**`-blokken, voegt lege regels tussen Rich-`Group`-delen toe.
 
+**`<institutional_check>`:** tags worden in de renderer niet getoond; checklist op één compacte regel (`Controle  · item · item`).
+
+**Kop + inhoud:** elke `#`–`######` via `TightHeadingBody` **flush** op tabel/lijst/proza. **Tussen** secties één subtiele lege regel (`SectionSpacer`). Tabellen: `leading=0`, minimale cel-padding.
+
+**Pariteit:** CLI/TUI-gateway = volledige Python-renderer. Web/Ink = zelfde normalizer (`institutionalMarkdown.ts`, `ui-tui/.../institutionalMarkdownNormalize.ts`) + compacte layout.
+
+**Kleuren:** sectiekoppen (h1–h4) = niveau-gebaseerd; tabelkolommen = apart palet (`header_palette`, **cyaan-first** zodat `##` groen ≠ kolom `ID` cyaan). Celinhoud erft kolomkleur.
+
+**Score:** `python scripts/score_institutional_render.py --verify` (E2E stap 2g).
+
+**Normalizer (fallback):** zet platte outline om naar `##`/`###`; `N Stap N:` → `## Stap N:`; platte `Categorie: … Eis: …` en **NFR-prose** (streepjes, `**Performantie**`-blokken) → markdown-tabel; `<institutional_check>` op eigen regels.
+
+**Rooktest-prompt:** [`templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md`](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md) — plak in nieuwe chat na SOUL-sync; gebruik **dezelfde** prompt om runs te vergelijken.
+
+**Nieuwe chat (geautomatiseerd):** na SOUL-sync schrijft `SyncSoulSnippet.psm1` / `APPLY_INSTITUTIONAL_RUNTIME.bat` een vlag `%LOCALAPPDATA%\hermes\institutional_new_chat_required.json`. Hermes toont bij start een gele banner; `/new` wist de vlag. Hermes hoeft niet herstart te worden voor de banner — wel **nieuwe sessie** voor de system prompt.
+
 **Console-theme:** `get_assistant_console_theme()` (demo/legacy) — gebruikt door gateway/`format_response_ansi` én klassieke CLI `ChatConsole` bij het eindpaneel (`cli.py`). Zonder dit kreeg het antwoord-Panel nog skin-goud terwijl de gateway al demo toonde.
 
 **Live config:** `get_assistant_render_settings()` leest de actieve profiel-config bij elke aanroep (niet gecachet). Dit garandeert dat na een profielwissel (`/profile use <naam>`) direct het juiste palet wordt gebruikt zonder Hermes te herstarten.
@@ -60,12 +86,15 @@ Fallback: `assistant_render_style: markdown_legacy` + goud via `skin_markdown_th
 Defaults in repo: [`windows/team_display.defaults`](../windows/team_display.defaults).
 
 E2E pytest: stap **2e** (`test_institutional_rich_render.py`).
-E2E diagnose: stap **2f** (`scripts/diagnose_renderer.py --verify`) controleert runtime renderer + palet.
+E2E diagnose: stap **2f** (`scripts/diagnose_renderer.py --verify`).
+E2E score: stap **2g** (`scripts/score_institutional_render.py --verify`, drempel ≥ 9.0).
 
 ### Runtime verifiëren
 
 ```bat
 python scripts/diagnose_renderer.py
+python scripts/score_institutional_render.py
+python scripts/score_institutional_render.py --verify
 ```
 
 Toont:
@@ -84,7 +113,7 @@ Toont alle geregistreerde paletten (built-in + YAML) met een test-tabel + koppen
 1. Open [`config/palettes.yaml`](../config/palettes.yaml)
 2. Kopieer een bestaand palet en pas kleuren aan (Rich style strings: hex `#RRGGBB` of Rich kleurnamen zoals `bright_cyan`)
 3. Vereiste keys: `h1`, `h2`, `h3`, `h4`, `strong`, `label`, `text`, `table_header`
-4. Optioneel: `header_palette` (komma-gescheiden string voor per-kolom tabelkoppen)
+4. Optioneel: `header_palette` (komma-gescheiden Rich-stijlen; kolom 0 bij voorkeur **niet** dezelfde hex als `h2`)
 5. `display.assistant_palette: <jouw_naam>` in profiel-config
 
 Bij onbekend palet: automatische fallback naar `demo` + warning in log.

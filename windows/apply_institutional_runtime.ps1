@@ -31,16 +31,22 @@ if (-not $SkipDisplay) {
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
+$manifestDir = Join-Path $env:LOCALAPPDATA 'hermes\soul_manifests'
+if (-not (Test-Path -LiteralPath $manifestDir)) {
+    New-Item -ItemType Directory -Path $manifestDir -Force | Out-Null
+}
+$manifestStamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+
 if (-not $SkipSoul) {
     Write-Host '--- SOUL Interaction ---' -ForegroundColor Cyan
-    & (Join-Path $scriptRoot 'scripts\sync_soul_interaction_snippet.ps1')
+    & (Join-Path $scriptRoot 'scripts\sync_soul_interaction_snippet.ps1') -Force -ManifestPath (Join-Path $manifestDir "interaction_${manifestStamp}.json")
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     Write-Host '--- SOUL Outputformaat ---' -ForegroundColor Cyan
-    & (Join-Path $scriptRoot 'scripts\sync_soul_output_format_snippet.ps1')
+    & (Join-Path $scriptRoot 'scripts\sync_soul_output_format_snippet.ps1') -Force -ManifestPath (Join-Path $manifestDir "outputformat_${manifestStamp}.json")
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     & (Join-Path $scriptRoot 'scripts\sync_soul_tool_governance_snippet.ps1')
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    Write-Host '[OK] SOUL Interaction + Outputformaat + Tool governance gesynchroniseerd.' -ForegroundColor Green
+    Write-Host '[OK] SOUL Interaction + Outputformaat + Tool governance gesynchroniseerd (alle profielen FORCED).' -ForegroundColor Green
 }
 
 if ($IncludeTrustRuntime) {
@@ -73,6 +79,16 @@ if (-not $SkipE2E) {
 }
 
 Write-Host '=== INSTITUTIONEEL RUNTIME: KLAAR ===' -ForegroundColor Green
-Write-Host 'Start een nieuwe chat voor SOUL/presentatie-effect.' -ForegroundColor Yellow
+if (-not $SkipSoul) {
+    $reminderMod = Join-Path $scriptRoot 'scripts\SyncSoulSnippet.psm1'
+    if (Test-Path -LiteralPath $reminderMod) {
+        Import-Module $reminderMod -Force
+        Set-InstitutionalNewChatReminder -Reason 'APPLY_INSTITUTIONAL_RUNTIME (SOUL + display)' -RepoRoot $repoRoot
+    } else {
+        Write-Host 'Start een nieuwe chat voor SOUL/presentatie-effect.' -ForegroundColor Yellow
+    }
+} else {
+    Write-Host 'Start een nieuwe chat na een SOUL-wijziging.' -ForegroundColor DarkYellow
+}
 if ($NoPause -or $env:HERMES_SKIP_PAUSE -eq '1') { exit 0 }
 exit 0

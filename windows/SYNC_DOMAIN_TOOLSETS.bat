@@ -10,5 +10,6 @@ if errorlevel 1 exit /b 1
 
 echo.
 echo [OK] Domein-toolsets gesynchroniseerd. Nieuwe chat per profiel voor actieve toolbox.
+echo   Ontbrekend profiel? windows\SYNC_DOMAIN_TOOLSETS.bat --create-missing
 if not "%HERMES_SKIP_PAUSE%"=="1" pause
 exit /b 0
