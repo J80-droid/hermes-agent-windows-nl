@@ -63,7 +63,7 @@ Code: [`hermes_cli/institutional_render.py`](../hermes_cli/institutional_render.
 
 **Kop + inhoud:** elke `#`–`######` via `TightHeadingBody` **flush** op tabel/lijst/proza. **Labels:** roze/oranje kopregel, waarde op regel eronder (`TightHeadingBody`, geen kolom-layout). **Tussen** secties één subtiele lege regel (`SectionSpacer`). Tabellen: `leading=0`, minimale cel-padding; celinhoud erft kolomkleur (CLI + Web `tableCellClass`).
 
-**Pariteit:** CLI/TUI-gateway = volledige Python-renderer. Web/Ink = zelfde normalizer (`institutionalMarkdown.ts`, `ui-tui/.../institutionalMarkdownNormalize.ts`) + compacte layout. **Drift-test:** `pytest tests/hermes_cli/test_normalizer_ts_parity.py` (Python ↔ Web/Ink via `npx tsx` + `scripts/normalize_assistant_markdown_*_runner.ts`).
+**Pariteit:** CLI/TUI-gateway = volledige Python-renderer. Web/Ink = zelfde normalizer + compacte layout. Web assistant-kleuren: [`web/src/lib/institutionalWebPalette.ts`](../web/src/lib/institutionalWebPalette.ts) (alle YAML-paletten; prop `assistantPalette` op `Markdown`). **Drift-test:** `pytest tests/hermes_cli/test_normalizer_ts_parity.py` (Python ↔ Web/Ink via `npx tsx`).
 
 **Kleuren:** sectiekoppen (h1–h4) = niveau-gebaseerd; tabelkolommen = apart palet (`header_palette` op alle YAML-paletten, **cyaan-first** zodat `##` groen ≠ kolom `ID` cyaan).
 

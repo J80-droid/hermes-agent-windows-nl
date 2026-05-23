@@ -1,12 +1,14 @@
 import { useMemo, type ReactNode } from "react";
 import { wrapBronCitationsForDisplay } from "../lib/ragCitations";
 import {
-  ASSISTANT_LABEL_CLASS,
-  headingClass,
   normalizeAssistantMarkdown,
-  tableHeaderClass,
-  tableCellClass,
 } from "../lib/institutionalMarkdown";
+import {
+  webHeadingClass,
+  webLabelClass,
+  webTableCellClass,
+  webTableHeaderClass,
+} from "../lib/institutionalWebPalette";
 
 /**
  * Lightweight markdown renderer for LLM output.
@@ -21,10 +23,13 @@ export function Markdown({
   content,
   highlightTerms,
   streaming,
+  assistantPalette = "demo",
 }: {
   content: string;
   highlightTerms?: string[];
   streaming?: boolean;
+  /** Mirrors display.assistant_palette (CLI); defaults to demo. */
+  assistantPalette?: string;
 }) {
   const displayContent = useMemo(
     () => wrapBronCitationsForDisplay(normalizeAssistantMarkdown(content)),
@@ -46,6 +51,7 @@ export function Markdown({
                   key={j}
                   block={block}
                   highlightTerms={highlightTerms}
+                  assistantPalette={assistantPalette}
                   caret={caret && isLast && j === unit.blocks.length - 1 ? caret : null}
                 />
               ))}
@@ -57,6 +63,7 @@ export function Markdown({
             key={i}
             block={unit.block}
             highlightTerms={highlightTerms}
+            assistantPalette={assistantPalette}
             caret={caret && isLast ? caret : null}
           />
         );
@@ -270,10 +277,12 @@ function parseBlocks(text: string): BlockNode[] {
 function Block({
   block,
   highlightTerms,
+  assistantPalette,
   caret,
 }: {
   block: BlockNode;
   highlightTerms?: string[];
+  assistantPalette?: string;
   caret?: ReactNode;
 }) {
   switch (block.type) {
@@ -296,7 +305,7 @@ function Block({
         h4: "text-sm font-medium",
       };
       return (
-        <Tag className={`${sizes[Tag]} ${headingClass(block.level)}`}>
+        <Tag className={`${sizes[Tag]} ${webHeadingClass(assistantPalette, block.level)}`}>
           <InlineContent text={block.content} highlightTerms={highlightTerms} />
           {caret}
         </Tag>
@@ -312,7 +321,7 @@ function Block({
                 {block.headers.map((h, ci) => (
                   <th
                     key={ci}
-                    className={`text-left font-bold pr-4 pb-1 ${tableHeaderClass(ci)}`}
+                    className={`text-left font-bold pr-4 pb-1 ${webTableHeaderClass(assistantPalette, ci)}`}
                   >
                     <InlineContent text={h} highlightTerms={highlightTerms} />
                   </th>
@@ -323,7 +332,7 @@ function Block({
               {block.rows.map((row, ri) => (
                 <tr key={ri} className="border-t border-border/40">
                   {row.map((cell, ci) => (
-                    <td key={ci} className={`pr-4 py-1 align-top ${tableCellClass(ci)}`}>
+                    <td key={ci} className={`pr-4 py-1 align-top ${webTableCellClass(assistantPalette, ci)}`}>
                       <InlineContent text={cell} highlightTerms={highlightTerms} />
                     </td>
                   ))}
@@ -338,7 +347,7 @@ function Block({
     case "label":
       return (
         <div className="flex flex-col gap-0.5">
-          <div className={ASSISTANT_LABEL_CLASS}>{block.label}:</div>
+          <div className={webLabelClass(assistantPalette)}>{block.label}:</div>
           <div className="min-w-0">
             <InlineContent text={block.content} highlightTerms={highlightTerms} />
             {caret}
