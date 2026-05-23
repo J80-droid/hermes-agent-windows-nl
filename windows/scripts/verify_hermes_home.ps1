@@ -26,16 +26,16 @@ $root = Get-HermesRoot
 
 $userHome = [Environment]::GetEnvironmentVariable('HERMES_HOME', 'User')
 if ($userHome -and (Test-ProfileSubdirPath $userHome)) {
-    Write-Host "[FAIL] User HERMES_HOME wijst naar profielmap: $userHome (verwacht root: $root)" -ForegroundColor Red
+    Write-Host ('[FAIL] ' + 'User HERMES_HOME wijst naar profielmap: ' + $userHome + ' (verwacht root: ' + $root + ')') -ForegroundColor Red
     $failed = $true
 } elseif ($userHome) {
-    Write-Host "[OK] User HERMES_HOME: $userHome" -ForegroundColor Green
+    Write-Host ('[OK] ' + 'User HERMES_HOME: ' + $userHome) -ForegroundColor Green
 } else {
-    Write-Host "[OK] User HERMES_HOME niet gezet (OK)" -ForegroundColor Green
+    Write-Host '[OK]User HERMES_HOME niet gezet (OK)' -ForegroundColor Green
 }
 
 if ($env:HERMES_HOME -and (Test-ProfileSubdirPath $env:HERMES_HOME)) {
-    Write-Host "[FAIL] Proces HERMES_HOME wijst naar profielmap: $($env:HERMES_HOME)" -ForegroundColor Red
+    Write-Host ('[FAIL] ' + 'Proces HERMES_HOME wijst naar profielmap: ' + $($env:HERMES_HOME)) -ForegroundColor Red
     $failed = $true
 }
 
@@ -43,14 +43,14 @@ $activePath = Join-Path $root 'active_profile'
 if (Test-Path -LiteralPath $activePath) {
     $bytes = [System.IO.File]::ReadAllBytes($activePath)
     if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
-        Write-Host "[FAIL] active_profile heeft UTF-8 BOM" -ForegroundColor Red
+        Write-Host '[FAIL]active_profile heeft UTF-8 BOM' -ForegroundColor Red
         $failed = $true
     } else {
         $name = (Get-Content -LiteralPath $activePath -Raw -Encoding UTF8).Trim()
-        Write-Host "[OK] active_profile: $name" -ForegroundColor Green
+        Write-Host ('[OK] ' + 'active_profile: ' + $name) -ForegroundColor Green
     }
 } else {
-    Write-Host "[OK] active_profile: (default)" -ForegroundColor Green
+    Write-Host '[OK]active_profile: (default)' -ForegroundColor Green
 }
 
 $authPath = Join-Path $root 'auth.json'
@@ -82,7 +82,7 @@ if (Test-Path -LiteralPath $authPath) {
   "providers": {}
 }
 '@ | Set-Content -LiteralPath $authPath -Encoding UTF8 -NoNewline
-        Write-Host "[WARN] auth.json was ongeldig - hersteld naar lege store (backup: $corrupt)" -ForegroundColor Yellow
+        Write-Host ('[WARN] ' + 'auth.json was ongeldig - hersteld naar lege store (backup: ' + $corrupt + ')') -ForegroundColor Yellow
     } else {
         Write-Host '[OK] auth.json parsebaar' -ForegroundColor Green
     }

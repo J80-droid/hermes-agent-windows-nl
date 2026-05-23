@@ -50,6 +50,15 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 
 Geen `hermes_taskbar_white.ico` in snelkoppelingen (H-stub in Explorer).
 
+**Na `git clone` (vriend / andere PC):** in de repo staan **`assets/Hermes_logo.png`** en **`windows/hermes_logo.ico`** (start/RAG). Gekleurde varianten (`hermes_logo_setup.ico`, backup, restore, update) staan in `windows/.gitignore` en worden lokaal gegenereerd. Eenmalig na clone:
+
+```bat
+conda run -n hermes-env python windows/tools/generate_colored_hermes_icons.py
+windows\FIX_TASKBAR_ICONS.bat
+```
+
+Daarna taakbalk-pins via `.lnk` in `windows\` (niet `.bat` slepen). **Niet committen:** na generator/update kunnen PNG/ICO bytes wijzigen — dat is lokale icooncache/normalisatie, geen functionele codewijziging (`git restore assets/Hermes_logo.png windows/hermes_logo.ico` of branding-commit).
+
 **Geen logo / alleen letter H / wit document-icoon:** bron-PNG ontbrak in `assets\` (staat vaak in `%USERPROFILE%\.hermes\_local_assets\assets\Hermes_logo.png`). Herstel:
 
 ```bat

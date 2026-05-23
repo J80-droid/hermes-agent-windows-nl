@@ -34,7 +34,7 @@ function Copy-HermesPersonaFile {
 
 $root = Get-HermesRoot
 if (-not (Test-Path -LiteralPath (Join-Path $root 'config.yaml'))) {
-    Write-Host "[SKIP] Geen Hermes runtime home: $root" -ForegroundColor Yellow
+    Write-Host ('[SKIP] ' + 'Geen Hermes runtime home: ' + $root) -ForegroundColor Yellow
     return @()
 }
 

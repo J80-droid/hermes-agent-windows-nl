@@ -57,21 +57,21 @@ if (-not $Quiet) {
 foreach ($t in $targets) {
     $line = Get-FirstUserLine -UserPath $t.UserPath
     if ($null -eq $line) {
-        Write-Host "[FAIL] $($t.Name): USER.md ontbreekt" -ForegroundColor Red
+        Write-Host ('[FAIL] ' + $($t.Name) + ': USER.md ontbreekt') -ForegroundColor Red
         $failures++
         continue
     }
     if ($line -notmatch 'pleaser-behavior|zero babysitting|no pleaser') {
-        Write-Host "[FAIL] $($t.Name): eerste USER-regel mist trust seed" -ForegroundColor Red
+        Write-Host ('[FAIL] ' + $($t.Name) + ': eerste USER-regel mist trust seed') -ForegroundColor Red
         $failures++
         continue
     }
     $preview = Format-Preview -Text $line -Max $MaxPreview
-    Write-Host "[trust-memory] $($t.Name): $preview" -ForegroundColor DarkGray
+    Write-Host ('[trust-memory] ' + $($t.Name) + ': $preview') -ForegroundColor DarkGray
 }
 
 if ($failures -gt 0) {
-    Write-Host "[FAIL] Trust memory snapshot: $failures profiel(s) zonder geldige USER-regel 1" -ForegroundColor Red
+    Write-Host ('[FAIL] ' + 'Trust memory snapshot: ' + $failures + ' profiel(s) zonder geldige USER-regel 1') -ForegroundColor Red
     exit 1
 }
 

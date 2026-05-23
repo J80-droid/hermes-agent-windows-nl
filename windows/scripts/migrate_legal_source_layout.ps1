@@ -12,7 +12,7 @@ if (-not $RawRoot) {
 }
 $legalRoot = (Resolve-Path -LiteralPath $RawRoot -ErrorAction SilentlyContinue)
 if (-not $legalRoot) {
-    Write-Host "[SKIP] Bronmap ontbreekt: $RawRoot" -ForegroundColor Yellow
+    Write-Host ('[SKIP] ' + 'Bronmap ontbreekt: ' + $RawRoot) -ForegroundColor Yellow
     exit 0
 }
 $legalRoot = $legalRoot.Path
@@ -31,9 +31,9 @@ foreach ($d in $lensDirs) {
     if (-not (Test-Path -LiteralPath $p)) {
         if ($Apply) {
             New-Item -ItemType Directory -Path $p -Force | Out-Null
-            Write-Host "[OK] Aangemaakt: $d\" -ForegroundColor Green
+            Write-Host ('[OK] ' + 'Aangemaakt: ' + $d + '\') -ForegroundColor Green
         } else {
-            Write-Host "[PLAN] Aanmaken: $d\" -ForegroundColor Cyan
+            Write-Host ('[PLAN] ' + 'Aanmaken: ' + $d + '\') -ForegroundColor Cyan
         }
     }
 }
@@ -63,10 +63,10 @@ foreach ($f in $rootFiles) {
         }
         if (-not (Test-Path -LiteralPath $dest)) {
             Move-Item -LiteralPath $f.FullName -Destination $dest
-            Write-Host "[OK] Verplaatst naar Corporate: $($f.Name)" -ForegroundColor Green
+            Write-Host ('[OK] ' + 'Verplaatst naar Corporate: ' + $($f.Name)) -ForegroundColor Green
         }
     } else {
-        Write-Host "[PLAN] Root-bestand -> Corporate: $($f.Name)" -ForegroundColor Cyan
+        Write-Host ('[PLAN] ' + 'Root-bestand -> Corporate: ' + $($f.Name)) -ForegroundColor Cyan
     }
 }
 

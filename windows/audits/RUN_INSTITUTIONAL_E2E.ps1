@@ -1,4 +1,4 @@
-﻿# E2E audit: institutioneel pakket (landkaart, SOUL, presentatie/markdown, templates)
+# E2E audit: institutioneel pakket (landkaart, SOUL, presentatie/markdown, templates)
 #
 # Dekking profielwissel (geen live LLM):
 #   WEL  — CLI-intent (2d, 11), sticky prompt (2d), SOUL-tekst op schijf (5c), SWITCH legal->core (10), pytest subset (9)
@@ -8,6 +8,8 @@ param(
     [switch]$ApplyRuntime,
     [switch]$IncludeToolsetAudit
 )
+
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 
 $ErrorActionPreference = 'Stop'
 $scriptRoot = $PSScriptRoot
@@ -27,14 +29,14 @@ function Find-Conda {
 
 $conda = Find-Conda
 $python = & $conda run -n hermes-env python -c "import sys; print(sys.executable)" 2>&1
-if ($LASTEXITCODE -ne 0) { throw 'hermes-env python niet beschikbaar' }
+if (Test-NativeCommandFailed) { throw 'hermes-env python niet beschikbaar' }
 $python = ($python | Select-Object -Last 1).Trim()
 
 if ($ApplyRuntime) {
     Write-Host '=== 0/11 runtime toepassen (display + SOUL) ===' -ForegroundColor Cyan
     $runtimePs1 = Join-Path $repoRoot 'windows/apply_institutional_runtime.ps1'
     & $runtimePs1 -SkipE2E -NoPause
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
     Write-Host '[OK] runtime display + SOUL toegepast' -ForegroundColor Green
 }
 
@@ -105,11 +107,11 @@ Write-Host '=== 1/11 repo-artefacten ===' -ForegroundColor Cyan
 foreach ($rel in $requiredRepo) {
     $full = Join-Path $repoRoot ($rel -replace '/', '\')
     if (-not (Test-Path -LiteralPath $full)) {
-        Write-Host "[FAIL] Ontbreekt: $rel" -ForegroundColor Red
+        Write-Host ('[FAIL] ' + 'Ontbreekt: ' + $rel) -ForegroundColor Red
         exit 1
     }
 }
-Write-Host "[OK] $($requiredRepo.Count) artefacten aanwezig" -ForegroundColor Green
+Write-Host ('[OK] ' + $($requiredRepo.Count) + ' artefacten aanwezig') -ForegroundColor Green
 
 Write-Host '=== 2/11 pytest institutioneel subset ===' -ForegroundColor Cyan
 & $python -m pytest `
@@ -117,7 +119,7 @@ Write-Host '=== 2/11 pytest institutioneel subset ===' -ForegroundColor Cyan
     tests/windows/test_critical_windows_scripts.py::test_orchestrator_routing_doc_exists `
     tests/windows/test_critical_windows_scripts.py::test_landkaart_skill_exists `
     -q --tb=short
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 
 Write-Host '=== 2b/11 pytest presentatie (markdown + rich_output) ===' -ForegroundColor Cyan
 & $python -m pytest `
@@ -127,23 +129,23 @@ Write-Host '=== 2b/11 pytest presentatie (markdown + rich_output) ===' -Foregrou
     tests/agent/test_rich_output.py `
     tests/windows/test_team_display_defaults.py `
     -q --tb=short
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 Write-Host '[OK] presentatie pytest subset' -ForegroundColor Green
 
 Write-Host '=== 2d/11 profiel-chat-UX (intent + prompt + SOUL-regel) ===' -ForegroundColor Cyan
 & $python -m pytest tests/cli/test_institutional_profile_chat_ux.py -q --tb=short
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 Write-Host '[OK] profiel-chat-UX pytest' -ForegroundColor Green
 
 Write-Host '=== 2e/11 pytest institutional Rich renderer ===' -ForegroundColor Cyan
 & $python -m pytest tests/cli/test_institutional_rich_render.py -q --tb=short
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 Write-Host '[OK] institutional Rich renderer pytest' -ForegroundColor Green
 
 Write-Host '=== 2f/11 runtime diagnose renderer (palette + config live) ===' -ForegroundColor Cyan
 $diag = Join-Path $repoRoot 'scripts/diagnose_renderer.py'
 & $python $diag --verify
-if ($LASTEXITCODE -ne 0) {
+if (Test-NativeCommandFailed) {
     Write-Host '[FAIL] diagnose_renderer --verify faalde (renderer of palette niet correct)' -ForegroundColor Red
     exit 1
 }
@@ -152,7 +154,7 @@ Write-Host '[OK] diagnose_renderer institutional_rich + demo geverifieerd' -Fore
 Write-Host '=== 2g/11 institutional render score (10/10 checklist) ===' -ForegroundColor Cyan
 $score = Join-Path $repoRoot 'scripts/score_institutional_render.py'
 & $python $score --verify
-if ($LASTEXITCODE -ne 0) {
+if (Test-NativeCommandFailed) {
     Write-Host '[FAIL] score_institutional_render --verify faalde (score < 9.0)' -ForegroundColor Red
     exit 1
 }
@@ -170,7 +172,7 @@ foreach ($needle in @(
         'compact=false'
     )) {
     if ($td -notmatch [regex]::Escape($needle)) {
-        Write-Host "[FAIL] team_display.defaults mist: $needle" -ForegroundColor Red
+        Write-Host ('[FAIL] ' + 'team_display.defaults mist: ' + $needle) -ForegroundColor Red
         exit 1
     }
 }
@@ -184,19 +186,19 @@ Write-Host '=== 3/11 landkaart CLI smoke ===' -ForegroundColor Cyan
 $landkaart = Join-Path $repoRoot 'skills/productivity/landkaart/scripts/inventory_landkaart.py'
 $stdin = "alpha`nbeta`ngamma"
 $jsonOut = ($stdin | & $python $landkaart --json 2>&1 | Out-String).Trim()
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "[FAIL] landkaart --json exit $LASTEXITCODE" -ForegroundColor Red
+if (Test-NativeCommandFailed) {
+    Write-Host ('[FAIL] ' + 'landkaart --json exit ' + $LASTEXITCODE) -ForegroundColor Red
     Write-Host $jsonOut
     exit 1
 }
 try {
     $data = $jsonOut | ConvertFrom-Json
 } catch {
-    Write-Host "[FAIL] landkaart JSON ongeldig: $jsonOut" -ForegroundColor Red
+    Write-Host ('[FAIL] ' + 'landkaart JSON ongeldig: ' + $jsonOut) -ForegroundColor Red
     exit 1
 }
 if ($data.count -ne 3) {
-    Write-Host "[FAIL] landkaart count=$($data.count) (verwacht 3)" -ForegroundColor Red
+    Write-Host ('[FAIL] ' + 'landkaart count=' + $($data.count) + ' (verwacht 3)') -ForegroundColor Red
     exit 1
 }
 Write-Host '[OK] landkaart inventarisatie (3 items)' -ForegroundColor Green
@@ -214,7 +216,7 @@ try {
         Write-Host '[FAIL] Runtime home gevonden maar 0 persona-bestanden gekopieerd' -ForegroundColor Red
         exit 1
     } else {
-        Write-Host "[OK] backup_soul: $($copied.Count) bestand(en)" -ForegroundColor Green
+        Write-Host ('[OK] ' + 'backup_soul: ' + $($copied.Count) + ' bestand(en)') -ForegroundColor Green
         $coreSoul = Join-Path $personaRoot 'profiles\core\SOUL.md'
         if (Test-Path -LiteralPath $coreSoul) {
             $coreText = Get-Content -LiteralPath $coreSoul -Raw -Encoding UTF8
@@ -237,7 +239,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $hermesRoot 'config.yaml'))) {
 $coreSoulPath = Join-Path $hermesRoot 'profiles\core\SOUL.md'
 $template = Get-Content -LiteralPath (Join-Path $repoRoot 'docs/templates/SOUL_SHARED_INTERACTION.md') -Raw -Encoding UTF8
 if (-not (Test-Path -LiteralPath $coreSoulPath)) {
-    Write-Host "[SKIP] Geen runtime core SOUL: $coreSoulPath" -ForegroundColor Yellow
+    Write-Host ('[SKIP] ' + 'Geen runtime core SOUL: ' + $coreSoulPath) -ForegroundColor Yellow
 } else {
     $coreSoul = Get-Content -LiteralPath $coreSoulPath -Raw -Encoding UTF8
     if ($coreSoul -notmatch '(?m)^#{2,3} Interaction met J\.') {
@@ -254,7 +256,7 @@ if (-not (Test-Path -LiteralPath $coreSoulPath)) {
 Write-Host '=== 5b/11 SOUL Outputformaat (runtime read-only) ===' -ForegroundColor Cyan
 $outputTemplate = Get-Content -LiteralPath (Join-Path $repoRoot 'docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md') -Raw -Encoding UTF8
 if (-not (Test-Path -LiteralPath $coreSoulPath)) {
-    Write-Host "[SKIP] Geen runtime core SOUL voor Outputformaat-check" -ForegroundColor Yellow
+    Write-Host '[SKIP]Geen runtime core SOUL voor Outputformaat-check' -ForegroundColor Yellow
 } else {
     $coreSoul = Get-Content -LiteralPath $coreSoulPath -Raw -Encoding UTF8
     if ($coreSoul -notmatch '(?m)Output conventions \(institutional\)|Outputformaat \(institutioneel\)') {
@@ -289,7 +291,7 @@ if (-not (Test-Path -LiteralPath $profilesDir)) {
     }
     if ($profileSoulFailures.Count -gt 0) {
         foreach ($msg in $profileSoulFailures) {
-            Write-Host "[FAIL] $msg" -ForegroundColor Red
+            Write-Host ('[FAIL] ' + $msg) -ForegroundColor Red
         }
         Write-Host '[ACTION] windows\SYNC_SOUL_SNIPPETS.bat + nieuwe chat' -ForegroundColor Yellow
         exit 1
@@ -297,7 +299,7 @@ if (-not (Test-Path -LiteralPath $profilesDir)) {
     $soulCount = (Get-ChildItem -LiteralPath $profilesDir -Directory | Where-Object {
         Test-Path -LiteralPath (Join-Path $_.FullName 'SOUL.md')
     }).Count
-    Write-Host "[OK] profielwissel SOUL-regel op $soulCount profiel(en)" -ForegroundColor Green
+    Write-Host ('[OK] ' + 'profielwissel SOUL-regel op ' + $soulCount + ' profiel(en)') -ForegroundColor Green
 }
 
 Write-Host '=== 6/11 runtime display config (alle profielen, read-only) ===' -ForegroundColor Cyan
@@ -336,17 +338,17 @@ Get-ChildItem -LiteralPath $profilesDir -Directory | Sort-Object Name | ForEach-
 }
 if ($profileFailures.Count -gt 0) {
     foreach ($msg in $profileFailures) {
-        Write-Host "[FAIL] $msg" -ForegroundColor Red
+        Write-Host ('[FAIL] ' + $msg) -ForegroundColor Red
     }
     Write-Host '[ACTION] Draai: windows\APPLY_INSTITUTIONAL_RUNTIME.bat of apply_team_display.ps1' -ForegroundColor Yellow
     exit 1
 }
 $profileCount = (Get-ChildItem -LiteralPath $profilesDir -Directory).Count
-Write-Host "[OK] display config institutioneel op $profileCount profiel(en)" -ForegroundColor Green
+Write-Host ('[OK] ' + 'display config institutioneel op ' + $profileCount + ' profiel(en)') -ForegroundColor Green
 
 Write-Host '=== 7/11 rich_output import smoke ===' -ForegroundColor Cyan
 & $python -m pytest tests/agent/test_rich_output.py::test_format_response_returns_ansi_for_markdown -q --tb=line 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
+if (Test-NativeCommandFailed) {
     Write-Host '[FAIL] rich_output / display_markdown smoke' -ForegroundColor Red
     exit 1
 }
@@ -372,31 +374,31 @@ Write-Host '=== 9/11 pytest profielwissel (sticky + subprocess) ===' -Foreground
     tests/hermes_cli/test_profile_switch.py `
     tests/hermes_cli/test_relaunch.py::TestRelaunchChatAfterProfileSwitch `
     -q --tb=short
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 Write-Host '[OK] profielwissel pytest subset' -ForegroundColor Green
 
 Write-Host '=== 10/11 profielwissel runtime (SWITCH legal, terug core) ===' -ForegroundColor Cyan
 $switchBat = Join-Path $repoRoot 'windows/SWITCH_PROFILE.bat'
 $activePath = Join-Path $hermesRoot 'active_profile'
 & cmd /c "`"$switchBat`" legal"
-if ($LASTEXITCODE -ne 0) {
+if (Test-NativeCommandFailed) {
     Write-Host '[FAIL] SWITCH_PROFILE.bat legal' -ForegroundColor Red
     exit 1
 }
 $active = (Get-Content -LiteralPath $activePath -Raw -Encoding UTF8).Trim()
 if ($active -ne 'legal') {
-    Write-Host "[FAIL] active_profile=$active (verwacht legal)" -ForegroundColor Red
+    Write-Host ('[FAIL] ' + 'active_profile=' + $active + ' (verwacht legal)') -ForegroundColor Red
     exit 1
 }
 Write-Host '[OK] SWITCH_PROFILE legal' -ForegroundColor Green
 & cmd /c "`"$switchBat`" core"
-if ($LASTEXITCODE -ne 0) {
+if (Test-NativeCommandFailed) {
     Write-Host '[FAIL] SWITCH_PROFILE.bat core (restore)' -ForegroundColor Red
     exit 1
 }
 $activeAfter = (Get-Content -LiteralPath $activePath -Raw -Encoding UTF8).Trim()
 if ($activeAfter -ne 'core') {
-    Write-Host "[FAIL] active_profile=$activeAfter (verwacht core na restore)" -ForegroundColor Red
+    Write-Host ('[FAIL] ' + 'active_profile=' + $activeAfter + ' (verwacht core na restore)') -ForegroundColor Red
     exit 1
 }
 Write-Host '[OK] sticky terug naar core' -ForegroundColor Green
@@ -406,7 +408,7 @@ Push-Location $repoRoot
 try {
     $pyOne = "from cli import _parse_profile_switch_intent as p; assert p('schakel naar core')=='core'; assert p('verander profiel naar core')=='core'"
     & $python -c $pyOne 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 } finally {
     Pop-Location
 }
@@ -416,7 +418,7 @@ Write-Host '[INFO] Model-gedrag (/profile use in antwoord) niet geautomatiseerd 
 if ($IncludeToolsetAudit) {
     Write-Host '=== 12/12 toolset domain E2E ===' -ForegroundColor Cyan
     & (Join-Path $scriptRoot 'RUN_TOOLSET_DOMAIN_E2E.ps1') -RepoRoot $repoRoot -HermesRoot $hermesRoot
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
     Write-Host '[OK] toolset domain E2E' -ForegroundColor Green
 }
 

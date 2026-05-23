@@ -1,4 +1,4 @@
-﻿# Optioneel (P4): na wijzigingen in bronmap, incrementele ingest (debounce).
+# Optioneel (P4): na wijzigingen in bronmap, incrementele ingest (debounce).
 #Requires -Version 5.1
 param(
     [int]$DebounceSeconds = 120
@@ -12,10 +12,10 @@ $root = (Resolve-Path -LiteralPath $root).Path
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $updateBat = Join-Path $PSScriptRoot "update_knowledge.bat"
 
-Write-Host "[INFO] Hermes repo: $repoRoot"
-Write-Host "[INFO] Watch: $root"
-Write-Host "[INFO] Debounce: ${DebounceSeconds}s -> $updateBat"
-Write-Host "[INFO] Ctrl+C om te stoppen"
+Write-Host ('[INFO] ' + 'Hermes repo: ' + $repoRoot)
+Write-Host ('[INFO] ' + 'Watch: ' + $root)
+Write-Host ('[INFO] ' + 'Debounce: ' + ${DebounceSeconds} + 's -> ' + $updateBat)
+Write-Host '[INFO]Ctrl+C om te stoppen'
 
 $timer = $null
 $action = {
@@ -23,7 +23,7 @@ $action = {
     $script:timer = [System.Timers.Timer]::new($DebounceSeconds * 1000)
     $script:timer.AutoReset = $false
     Register-ObjectEvent -InputObject $script:timer -EventName Elapsed -Action {
-        Write-Host "[INFO] Wijziging gedetecteerd - start update_knowledge.bat..." -ForegroundColor Cyan
+        Write-Host '[INFO]Wijziging gedetecteerd - start update_knowledge.bat...' -ForegroundColor Cyan
         $env:HERMES_NONINTERACTIVE = "1"
         $env:HERMES_RAG_FRESH = "0"
         & $using:updateBat

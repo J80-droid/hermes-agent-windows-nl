@@ -160,13 +160,15 @@ Trust-runtime (`SYNC_TRUST_RUNTIME.bat`): legal template → volledige anatomy s
 
 Na elke sync: **nieuwe chat** (`/new`). Runtime-bestanden worden zonder UTF-8 BOM geschreven (`SyncSoulSnippet.psm1`).
 
-### PowerShell-implementatie (`SyncSoulSnippet.psm1`)
+### PowerShell-implementatie (`HermesShellCommon.ps1` + `SyncSoulSnippet.psm1`)
 
 | Onderwerp | Regel |
 |-----------|--------|
+| Gedeelde module | `windows/HermesShellCommon.ps1` — `Test-NativeCommandFailed`, `Write-HermesOk` / `Write-HermesFail` (IDE-safe) |
 | Child `.ps1` exit | Na `& script.ps1` altijd `Test-NativeCommandFailed` — niet `$LASTEXITCODE -ne 0` (na puur PS-script is exitcode vaak `$null`) |
 | Pad-literals in `.ps1` | Forward slashes (`windows/scripts/…`); verify: `verify_windows_script_chain.ps1` (geen `windows\scripts` in strings) |
-| IDE / PSES parser | Geen `[TAG]` in **double-quoted** strings (`"[OK]"` breekt parse); gebruik `'[OK] …'` of concatenatie (`'OK: ' + $var`); geen `@{ Name = 'Output'; …}` in scripts (type `[Output]`) |
+| IDE / PSES parser | Geen `[TAG]` in **double-quoted** strings (`"[OK]"` breekt parse); gebruik `'[OK] …'`, concatenatie (`'[OK] ' + $var`), of `Write-HermesOk`; geen `@{ Name = 'Output'; …}` (type `[Output]`) |
+| Onderhoud scripts | `windows/tools/repair_ps1_write_host_tags.py`, `repair_ps1_native_exit.ps1` (na grote wijzigingen) |
 | Snippet-orchestrator | `sync_soul_anatomy_snippets.ps1` roept zeven snippets aan, `exit 0` bij succes; `-Quiet` zet `HERMES_SUPPRESS_SOUL_REMINDER` |
 | Trust-runtime | `SYNC_TRUST_RUNTIME.bat` → anatomy snippets vóór memories/limits |
 

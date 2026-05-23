@@ -1,4 +1,4 @@
-﻿# Korte E2E: temp bron + LanceDB, run_rag_ingest.ps1, live status, MCP search.
+# Korte E2E: temp bron + LanceDB, run_rag_ingest.ps1, live status, MCP search.
 $ErrorActionPreference = "Continue"
 $repo = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
@@ -49,16 +49,16 @@ if ($exitIngest -ne 0) { $failures += "ingest exit $exitIngest" }
 if (-not (Test-Path $log)) { $failures += "log ontbreekt" }
 else {
     $tail = Get-Content $log -Tail 30 -Encoding utf8 -ErrorAction SilentlyContinue
-    if ($tail -match "\[LIVE\]") { Write-Host "[OK] [LIVE] regels in log" -ForegroundColor Green }
+    if ($tail -match "\[LIVE\]") { Write-Host '[OK][LIVE] regels in log' -ForegroundColor Green }
     else { $failures += "geen [LIVE] in log" }
-    if ($tail -match "afgerond|Ingestie-scan") { Write-Host "[OK] afsluitregel in log" -ForegroundColor Green }
+    if ($tail -match "afgerond|Ingestie-scan") { Write-Host '[OK]afsluitregel in log' -ForegroundColor Green }
     else { $failures += "geen afsluitregel in log" }
 }
 
 $livePath = Join-Path $ldb "rag_ingest_live_status.json"
 if (Test-Path $livePath) {
     $live = Get-Content $livePath -Raw -Encoding utf8 | ConvertFrom-Json
-    Write-Host "[OK] live_status: step=$($live.step) index=$($live.current_index)/$($live.total)" -ForegroundColor Green
+    Write-Host ('[OK] ' + 'live_status: step=' + $($live.step) + ' index=' + $($live.current_index) + '/' + $($live.total)) -ForegroundColor Green
     if ($live.started_at -eq $live.updated_at -and $live.current_index -gt 1) {
         $failures += "started_at==updated_at bij meerdere bronnen (clock bug?)"
     }
@@ -116,9 +116,9 @@ $log2 = Join-Path $e2eRoot "e2e_ingest_inc.log"
 $exitInc = $LASTEXITCODE
 if ($exitInc -ne 0) { $failures += "incremental exit $exitInc" }
 elseif ((Get-Content $log2 -Raw -Encoding utf8) -notmatch "ongewijzigde") {
-    Write-Host "[WARN] incrementele run: geen 'ongewijzigde' melding (kan ok zijn bij 0 skip)" -ForegroundColor Yellow
+    Write-Host '[WARN]incrementele run: geen ''ongewijzigde'' melding (kan ok zijn bij 0 skip)' -ForegroundColor Yellow
 } else {
-    Write-Host "[OK] incrementele skip gedetecteerd" -ForegroundColor Green
+    Write-Host '[OK]incrementele skip gedetecteerd' -ForegroundColor Green
 }
 
 Write-Host "`nE2E root (bewaard voor inspectie): $e2eRoot"

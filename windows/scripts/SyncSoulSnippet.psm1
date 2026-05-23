@@ -1,10 +1,7 @@
 # Shared PowerShell helper for SOUL snippet syncing.
 # Used by sync_soul_interaction_snippet.ps1, sync_soul_output_format_snippet.ps1, etc.
 
-function Test-NativeCommandFailed {
-    # Na een puur PowerShell-script is $LASTEXITCODE vaak $null; $null -ne 0 is ten onrechte $true.
-    return ($null -ne $LASTEXITCODE -and [int]$LASTEXITCODE -ne 0)
-}
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 
 function Get-SoulFileContent {
     param([Parameter(Mandatory)][string]$Path)

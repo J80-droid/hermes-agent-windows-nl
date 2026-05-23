@@ -1,4 +1,4 @@
-﻿# Replace user identity variants with J. — excludes lancedb index files.
+# Replace user identity variants with J. — excludes lancedb index files.
 param(
     [string]$RepoRoot = '',
     [switch]$IncludeRawSource,
@@ -123,10 +123,10 @@ foreach ($filePath in ($targetFiles | Select-Object -Unique)) {
     $report[$filePath] = @{ hits = $hitCount }
     $script:totalHits += $hitCount
     if ($DryRun) {
-        Write-Host "[DRY] $filePath ($hitCount)" -ForegroundColor DarkGray
+        Write-Host ('[DRY] ' + $filePath + ' (' + $hitCount + ')') -ForegroundColor DarkGray
     } else {
         Set-Content -LiteralPath $filePath -Value $after -Encoding UTF8 -NoNewline
-        Write-Host "[OK] $filePath" -ForegroundColor Green
+        Write-Host ('[OK] ' + $filePath) -ForegroundColor Green
     }
 }
 
@@ -141,10 +141,10 @@ if ($IncludeRawSource -and $RenameFiles) {
                 if ([string]::IsNullOrWhiteSpace($newName) -or $newName -eq $_.Name) { return }
                 $dest = Join-Path $_.DirectoryName $newName
                 if ($DryRun) {
-                    Write-Host "[DRY RENAME] $($_.Name) -> $newName" -ForegroundColor DarkGray
+                    Write-Host ('[DRY RENAME] ' + $($_.Name) + ' -> ' + $newName) -ForegroundColor DarkGray
                 } elseif (-not (Test-Path -LiteralPath $dest)) {
                     Rename-Item -LiteralPath $_.FullName -NewName $newName
-                    Write-Host "[RENAME] $newName" -ForegroundColor Yellow
+                    Write-Host ('[RENAME] ' + $newName) -ForegroundColor Yellow
                 }
             }
     }
@@ -159,4 +159,4 @@ if (-not $DryRun) {
         files        = $report
     } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $reportPath -Encoding UTF8
 }
-Write-Host "[INFO] Scrub klaar: $totalHits hit(s), $($report.Count) bestand(en)" -ForegroundColor Cyan
+Write-Host ('[INFO] ' + 'Scrub klaar: ' + $totalHits + ' hit(s), ' + $($report.Count) + ' bestand(en)') -ForegroundColor Cyan

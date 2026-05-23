@@ -1,4 +1,4 @@
-﻿# Upstream-sync: preflight, hermes update, post-merge (fork Windows NL).
+# Upstream-sync: preflight, hermes update, post-merge (fork Windows NL).
 # Normaal aanroepen via UPDATE_HERMES.bat of hermes_update.bat - niet handmatig Preflight.
 # Zie windows/UPSTREAM_SYNC.md
 param(
@@ -15,6 +15,8 @@ param(
     [Parameter(ValueFromRemainingArguments = $true)]
     [string[]]$HermesUpdateArgs
 )
+
+. (Join-Path $PSScriptRoot 'HermesShellCommon.ps1')
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'HermesNativeInvoke.ps1')
@@ -47,12 +49,12 @@ function Get-CondaExe {
 }
 
 function Write-Step([string]$Msg, [string]$Color = 'Cyan') {
-    Write-Host "[INFO] $Msg" -ForegroundColor $Color
+    Write-Host ('[INFO] ' + $Msg) -ForegroundColor $Color
 }
 
-function Write-Ok([string]$Msg) { Write-Host "[OK] $Msg" -ForegroundColor Green }
-function Write-Warn([string]$Msg) { Write-Host "[WARN] $Msg" -ForegroundColor Yellow }
-function Write-Err([string]$Msg) { Write-Host "[ERROR] $Msg" -ForegroundColor Red }
+function Write-Ok([string]$Msg) { Write-Host ('[OK] ' + $Msg) -ForegroundColor Green }
+function Write-Warn([string]$Msg) { Write-Host ('[WARN] ' + $Msg) -ForegroundColor Yellow }
+function Write-Err([string]$Msg) { Write-Host ('[ERROR] ' + $Msg) -ForegroundColor Red }
 
 function Write-Uitleg {
     param([Parameter(Mandatory)][string[]]$Lines)
@@ -147,7 +149,7 @@ function Invoke-UpstreamPreflight {
 
     Write-Step "git fetch upstream..."
     git fetch upstream --quiet
-    if ($LASTEXITCODE -ne 0) {
+    if (Test-NativeCommandFailed) {
         Write-Err "git fetch upstream mislukt."
         return 3
     }
@@ -229,7 +231,7 @@ function Invoke-HermesUpdate {
         $ErrorActionPreference = 'Continue'
         try {
             & $stopPs1
-            if ($LASTEXITCODE -ne 0) { Write-Warn "Kon niet alle Hermes-processen stoppen." }
+            if (Test-NativeCommandFailed) { Write-Warn "Kon niet alle Hermes-processen stoppen." }
         } finally {
             $ErrorActionPreference = $prevEap
         }
@@ -309,11 +311,11 @@ try {
                     if (Test-Path -LiteralPath $extras) {
                         Write-Step "RAG extras (MCP + [rag])..."
                         & $extras
-                        if ($LASTEXITCODE -ne 0) { $script:UpstreamExitCode = $LASTEXITCODE }
+                        if (Test-NativeCommandFailed) { $script:UpstreamExitCode = $LASTEXITCODE }
                     } else {
                         Write-Step 'pip install -e ".[rag]"...'
                         & $py -m pip install -e "${repo}[rag]" -q
-                        if ($LASTEXITCODE -ne 0) { $script:UpstreamExitCode = $LASTEXITCODE }
+                        if (Test-NativeCommandFailed) { $script:UpstreamExitCode = $LASTEXITCODE }
                     }
                     if ($script:UpstreamExitCode -eq 0) {
                         Write-Ok "RAG-dependencies bijgewerkt."
@@ -327,7 +329,7 @@ try {
                     Write-Step "MCP-probe alle domeinen..."
                     $env:HERMES_NONINTERACTIVE = '1'
                     & cmd /c "`"$bat`" --mcp-test"
-                    if ($LASTEXITCODE -ne 0) { Write-Warn "MCP-test had waarschuwingen." }
+                    if (Test-NativeCommandFailed) { Write-Warn "MCP-test had waarschuwingen." }
                 }
             }
 
@@ -337,7 +339,7 @@ try {
                     Write-Step 'Trust runtime sync (SOUL + memory + limits, geen scrub)...'
                     $env:HERMES_SKIP_PAUSE = '1'
                     & cmd /c "`"$trustBat`""
-                    if ($LASTEXITCODE -ne 0) {
+                    if (Test-NativeCommandFailed) {
                         Write-Warn 'SYNC_TRUST_RUNTIME.bat faalde — draai handmatig na update.'
                     } else {
                         Write-Ok 'Trust runtime gesynchroniseerd.'
@@ -351,7 +353,7 @@ try {
                     Write-Step 'Domein-toolsets (platform_toolsets.cli)...'
                     $env:HERMES_SKIP_PAUSE = '1'
                     & cmd /c "`"$toolBat`""
-                    if ($LASTEXITCODE -ne 0) {
+                    if (Test-NativeCommandFailed) {
                         Write-Warn 'SYNC_DOMAIN_TOOLSETS.bat faalde — draai handmatig na update.'
                     } else {
                         Write-Ok 'Domein-toolsets gesynchroniseerd.'
@@ -366,7 +368,7 @@ try {
                     Write-Step 'SOUL anatomy deploy (13 templates + snippets)...'
                     $env:HERMES_SKIP_PAUSE = '1'
                     & $launchSoul -RepoRoot $repo -Force -Quiet
-                    if ($LASTEXITCODE -ne 0) {
+                    if (Test-NativeCommandFailed) {
                         Write-Warn 'launch_soul_anatomy_deploy.ps1 faalde — draai APPLY_SOUL_ANATOMY_RUNTIME.bat handmatig.'
                     } else {
                         $soulDeployOk = $true
@@ -383,7 +385,7 @@ try {
                     $instArgs = @{ SkipE2E = $true; NoPause = $true }
                     if ($soulDeployOk) { $instArgs['SkipSoul'] = $true }
                     & $instPs1 @instArgs
-                    if ($LASTEXITCODE -ne 0) {
+                    if (Test-NativeCommandFailed) {
                         Write-Warn 'apply_institutional_runtime.ps1 faalde — draai APPLY_INSTITUTIONAL_RUNTIME.bat handmatig.'
                     } else {
                         Write-Ok 'Institutioneel runtime toegepast (display + SOUL).'
@@ -397,7 +399,7 @@ try {
                 if (Test-Path -LiteralPath $verify) {
                     Write-Step 'Windows script-keten verify (geautomatiseerd, geen pause)...'
                     & $verify
-                    if ($LASTEXITCODE -ne 0) { Write-Warn 'verify_windows_script_chain.ps1 faalde.' }
+                    if (Test-NativeCommandFailed) { Write-Warn 'verify_windows_script_chain.ps1 faalde.' }
                 }
             }
 
@@ -415,7 +417,7 @@ try {
                 if ($LASTEXITCODE -eq 0 -and [int]$aheadOrigin -gt 0) {
                     Write-Step "git push origin main ($aheadOrigin commit(s))..."
                     git push origin main
-                    if ($LASTEXITCODE -ne 0) { $script:UpstreamExitCode = $LASTEXITCODE }
+                    if (Test-NativeCommandFailed) { $script:UpstreamExitCode = $LASTEXITCODE }
                     else { Write-Ok "Fork op GitHub bijgewerkt." }
                 } else {
                     Write-Ok "Geen commits om te pushen naar origin/main."

@@ -39,7 +39,7 @@ if ($content -match '(?m)^(\s*)user_char_limit:\s*\d+') {
 
 if ($changed) {
     Set-Content -LiteralPath $configPath -Value $content -Encoding UTF8 -NoNewline
-    Write-Host "[OK] memory limits: memory_char_limit=4000 user_char_limit=1800" -ForegroundColor Green
+    Write-Host '[OK]memory limits: memory_char_limit=4000 user_char_limit=1800' -ForegroundColor Green
 } else {
     Write-Host '[OK] memory limits al op doelwaarde' -ForegroundColor Green
 }

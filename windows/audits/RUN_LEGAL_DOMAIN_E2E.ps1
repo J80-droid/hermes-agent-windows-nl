@@ -1,3 +1,5 @@
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
+
 # E2E audit: legal domein (taxonomie, SOUL, bronmappen, rooktest)
 $ErrorActionPreference = 'Stop'
 $scriptRoot = $PSScriptRoot
@@ -24,7 +26,7 @@ foreach ($rel in @(
     'docs/legal/_Taxonomy_README.md'
 )) {
     if (-not (Test-Path -LiteralPath (Join-Path $repoRoot $rel))) {
-        Write-Host "[FAIL] Ontbreekt: $rel" -ForegroundColor Red
+        Write-Host ('[FAIL] ' + 'Ontbreekt: ' + $rel) -ForegroundColor Red
         $failures++
     }
 }
@@ -37,7 +39,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $hermesRoot 'config.yaml'))) {
 }
 $legalSoul = Join-Path $hermesRoot 'profiles\legal\SOUL.md'
 if (-not (Test-Path -LiteralPath $legalSoul)) {
-    Write-Host "[FAIL] Ontbreekt: $legalSoul" -ForegroundColor Red
+    Write-Host ('[FAIL] ' + 'Ontbreekt: ' + $legalSoul) -ForegroundColor Red
     $failures++
 } else {
     $soul = Get-Content -LiteralPath $legalSoul -Raw -Encoding UTF8
@@ -94,7 +96,7 @@ if (-not (Test-Path -LiteralPath $legalUser)) {
 Write-Host '=== 4/8 LEGAL_ACTIVE_MATTERS.md ===' -ForegroundColor Cyan
 $matters = Join-Path $hermesRoot 'profiles\legal\LEGAL_ACTIVE_MATTERS.md'
 if (-not (Test-Path -LiteralPath $matters)) {
-    Write-Host "[FAIL] Ontbreekt: $matters" -ForegroundColor Red
+    Write-Host ('[FAIL] ' + 'Ontbreekt: ' + $matters) -ForegroundColor Red
     $failures++
 } elseif ((Get-Content -LiteralPath $matters -Raw) -notmatch 'GCR 2024-00145') {
     Write-Host '[FAIL] GCR niet in LEGAL_ACTIVE_MATTERS' -ForegroundColor Red
@@ -107,12 +109,12 @@ Write-Host '=== 5/8 bron-submappen ===' -ForegroundColor Cyan
 $rawLegal = Join-Path $env:USERPROFILE 'data\raw_source_files\04_Legal_Corporate'
 $expected = @('Arbeidsrecht', 'Bestuursrecht', 'Aansprakelijkheid_Letselschade', 'Klokkenluiders', 'Corporate', '_Taxonomy')
 if (-not (Test-Path -LiteralPath $rawLegal)) {
-    Write-Host "[SKIP] Bronmap ontbreekt: $rawLegal" -ForegroundColor Yellow
+    Write-Host ('[SKIP] ' + 'Bronmap ontbreekt: ' + $rawLegal) -ForegroundColor Yellow
 } else {
     $subMissing = 0
     foreach ($d in $expected) {
         if (-not (Test-Path -LiteralPath (Join-Path $rawLegal $d))) {
-            Write-Host "[FAIL] Submap ontbreekt: $d" -ForegroundColor Red
+            Write-Host ('[FAIL] ' + 'Submap ontbreekt: ' + $d) -ForegroundColor Red
             $subMissing++
         }
     }
@@ -123,11 +125,11 @@ Write-Host '=== 6/8 taxonomy sync script dry-run ===' -ForegroundColor Cyan
 $conda = Find-Conda
 $python = (& $conda run -n hermes-env python -c "import sys; print(sys.executable)" 2>&1 | Select-Object -Last 1).Trim()
 & $python (Join-Path $repoRoot 'scripts\rag_pipeline\sync_legal_lens_table_from_taxonomy.py') --dry-run
-if ($LASTEXITCODE -ne 0) { $failures++ }
+if (Test-NativeCommandFailed) { $failures++ }
 
 Write-Host '=== 7/8 pytest legal docs ===' -ForegroundColor Cyan
 & $python -m pytest tests/windows/test_legal_domain_docs.py -q --tb=short 2>$null
-if ($LASTEXITCODE -ne 0) {
+if (Test-NativeCommandFailed) {
     Write-Host '[SKIP] test_legal_domain_docs.py nog niet aanwezig of failed' -ForegroundColor Yellow
 }
 

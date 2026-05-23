@@ -84,7 +84,7 @@ function Invoke-HermesQuarantineBrokenVenv {
     Set-Content -LiteralPath (Join-Path $dest 'README-QUARANTINE.txt') -Value $readme -Encoding UTF8
 
     if (-not $Quiet) {
-        Write-Host "[INFO] Kapotte .venv -> $(Split-Path -Leaf $dest) (conda hermes-env blijft actief)." -ForegroundColor DarkGray
+        Write-Host ('[INFO] ' + 'Kapotte .venv -> ' + $(Split-Path -Leaf $dest) + ' (conda hermes-env blijft actief).') -ForegroundColor DarkGray
     }
     return $true
 }

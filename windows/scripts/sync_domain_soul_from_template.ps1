@@ -46,7 +46,7 @@ if (-not (Test-Path -LiteralPath $parent)) {
 
 $content = (Get-SoulFileContent -Path $template).TrimEnd()
 Set-SoulFileContent -Path $dst -Content ($content + "`r`n")
-Write-Host "[OK] $dst <= $templateName" -ForegroundColor Green
+Write-Host ('[OK] ' + $dst + ' <= ' + $templateName) -ForegroundColor Green
 if (-not $SuppressTip) {
     Write-Host '[TIP] Draai windows\SYNC_SOUL_SNIPPETS.bat -Force voor shared anatomy-blokken.' -ForegroundColor DarkYellow
 }

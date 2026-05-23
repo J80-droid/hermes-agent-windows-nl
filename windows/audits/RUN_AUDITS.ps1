@@ -51,17 +51,17 @@ function Invoke-Step {
         & $Action
         $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
         if ($code -eq 0) {
-            Write-Host "[OK] $Name" -ForegroundColor Green
+            Write-Host ('[OK] ' + $Name) -ForegroundColor Green
         } elseif ($AllowSkip -and $code -eq 2) {
-            Write-Host "[SKIP] $Name" -ForegroundColor Yellow
+            Write-Host ('[SKIP] ' + $Name) -ForegroundColor Yellow
             $script:skipped++
         } else {
-            Write-Host "[FAIL] $Name (exit $code)" -ForegroundColor Red
+            Write-Host ('[FAIL] ' + $Name + ' (exit ' + $code + ')') -ForegroundColor Red
             $script:failures++
             $stepFailed = $true
         }
     } catch {
-        Write-Host "[FAIL] $Name ($($_.Exception.Message))" -ForegroundColor Red
+        Write-Host ('[FAIL] ' + $Name + ' (' + $($_.Exception.Message) + ')') -ForegroundColor Red
         $script:failures++
         $stepFailed = $true
     }

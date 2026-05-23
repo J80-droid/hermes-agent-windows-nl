@@ -27,7 +27,7 @@ foreach ($c in $checks) {
     $lnkPath = Join-Path $win $c.Lnk
     $wantIco = Split-Path (Get-HermesTaskbarRoleIconPath -Role $c.Role -WindowsDir $win) -Leaf
     if (-not (Test-Path -LiteralPath $lnkPath)) {
-        if (-not $Quiet) { Write-Host "[FAIL] Ontbreekt: $($c.Lnk)" -ForegroundColor Red }
+        if (-not $Quiet) { Write-Host ('[FAIL] ' + 'Ontbreekt: ' + $($c.Lnk)) -ForegroundColor Red }
         $fail++
         continue
     }
@@ -36,14 +36,14 @@ foreach ($c in $checks) {
     if ($targetLeaf -ieq 'cmd.exe') {
         if ($s.Arguments -notmatch '\.bat"?\s*$') {
             if (-not $Quiet) {
-                Write-Host "[FAIL] $($c.Lnk): cmd.exe zonder .bat in Arguments" -ForegroundColor Red
+                Write-Host ('[FAIL] ' + $($c.Lnk) + ': cmd.exe zonder .bat in Arguments') -ForegroundColor Red
             }
             $fail++
             continue
         }
     } elseif ($targetLeaf -notmatch '\.bat$') {
         if (-not $Quiet) {
-            Write-Host "[FAIL] $($c.Lnk): Target=$targetLeaf (verwacht cmd.exe /c *.bat)" -ForegroundColor Red
+            Write-Host ('[FAIL] ' + $($c.Lnk) + ': Target=$targetLeaf (verwacht cmd.exe /c *.bat)') -ForegroundColor Red
         }
         $fail++
         continue
@@ -51,11 +51,11 @@ foreach ($c in $checks) {
     $got = Split-Path ($s.IconLocation -replace ',0$','') -Leaf
     if ($got -ne $wantIco) {
         if (-not $Quiet) {
-            Write-Host "[FAIL] $($c.Lnk): $got (verwacht $wantIco)" -ForegroundColor Red
+            Write-Host ('[FAIL] ' + $($c.Lnk) + ': $got (verwacht $wantIco)') -ForegroundColor Red
         }
         $fail++
     } elseif (-not $Quiet) {
-        Write-Host "[OK] $($c.Lnk) -> $got" -ForegroundColor Green
+        Write-Host ('[OK] ' + $($c.Lnk) + ' -> ' + $got) -ForegroundColor Green
     }
     if ($got -eq 'hermes_taskbar_white.ico') {
         if (-not $Quiet) {
@@ -69,12 +69,12 @@ $white = Join-Path $win 'hermes_taskbar_white.ico'
 if (Test-Path -LiteralPath $white) {
     $len = (Get-Item -LiteralPath $white).Length
     if ($len -lt 8000 -and -not $Quiet) {
-        Write-Host "[WARN] $white is klein ($len bytes) - kapotte 1-laags ICO? Draai generate_colored_hermes_icons.py" -ForegroundColor Yellow
+        Write-Host ('[WARN] ' + $white + ' is klein (' + $len + ' bytes) - kapotte 1-laags ICO? Draai generate_colored_hermes_icons.py') -ForegroundColor Yellow
     }
 }
 
 if ($fail -gt 0) {
-    if (-not $Quiet) { Write-Host "[INFO] Reparatie: windows\FIX_TASKBAR_ICONS.bat" -ForegroundColor Cyan }
+    if (-not $Quiet) { Write-Host '[INFO]Reparatie: windows\FIX_TASKBAR_ICONS.bat' -ForegroundColor Cyan }
     exit 1
 }
 if (-not $Quiet) { Write-Host '[OK] Alle taakbalk-.lnk iconen kloppen.' -ForegroundColor Green }

@@ -27,7 +27,7 @@ $targetRoot = Get-HermesRootDir
 $targetEnv = Join-Path $targetRoot '.env'
 
 if (-not (Test-Path -LiteralPath $legacyEnv)) {
-    Write-Host "[WARN] Geen bron: $legacyEnv" -ForegroundColor Yellow
+    Write-Host ('[WARN] ' + 'Geen bron: ' + $legacyEnv) -ForegroundColor Yellow
     exit 0
 }
 if (-not (Test-Path -LiteralPath $targetRoot)) {
@@ -54,7 +54,7 @@ if ($toCopy.Count -eq 0) {
 
 if (-not (Test-Path -LiteralPath $targetEnv)) {
     Copy-Item -LiteralPath $legacyEnv -Destination $targetEnv -Force
-    Write-Host "[OK] .env aangemaakt vanuit ~/.hermes -> $targetEnv" -ForegroundColor Green
+    Write-Host ('[OK] ' + '.env aangemaakt vanuit ~/.hermes -> ' + $targetEnv) -ForegroundColor Green
     exit 0
 }
 
@@ -71,7 +71,7 @@ foreach ($k in $toCopy.Keys) {
     if ($idx -ge 0) { $lines[$idx] = $newLine } else { $lines.Add($newLine) }
 }
 $lines | Set-Content -LiteralPath $targetEnv -Encoding UTF8
-Write-Host "[OK] API-keys gesynchroniseerd naar $targetEnv ($($toCopy.Keys -join ', '))" -ForegroundColor Green
+Write-Host ('[OK] ' + 'API-keys gesynchroniseerd naar ' + $targetEnv + ' (' + $($toCopy.Keys -join ', ') + ')') -ForegroundColor Green
 
 # Profiel-.env (core/legal/…): vaak geen .env → provider leest lege profile home
 $profilesDir = Join-Path $targetRoot 'profiles'
@@ -82,7 +82,7 @@ if (Test-Path -LiteralPath $profilesDir) {
         $profEnv = Join-Path $dir.FullName '.env'
         if (-not (Test-Path -LiteralPath $profEnv)) {
             Copy-Item -LiteralPath $targetEnv -Destination $profEnv -Force
-            Write-Host "[OK] .env gekopieerd naar $profEnv" -ForegroundColor Green
+            Write-Host ('[OK] ' + '.env gekopieerd naar ' + $profEnv) -ForegroundColor Green
         } else {
             $plines = [System.Collections.Generic.List[string]]::new()
             $plines.AddRange([string[]](Get-Content -LiteralPath $profEnv -Encoding UTF8))
@@ -95,7 +95,7 @@ if (Test-Path -LiteralPath $profilesDir) {
                 if ($idx -ge 0) { $plines[$idx] = $newLine } else { $plines.Add($newLine) }
             }
             $plines | Set-Content -LiteralPath $profEnv -Encoding UTF8
-            Write-Host "[OK] API-keys bijgewerkt in $profEnv" -ForegroundColor Gray
+            Write-Host ('[OK] ' + 'API-keys bijgewerkt in ' + $profEnv) -ForegroundColor Gray
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿# Hermes: herstel repo-onderdelen (en optioneel ~/.hermes) vanuit backups\backup_YYYY_MM_DD_HHMMSS\
+# Hermes: herstel repo-onderdelen (en optioneel ~/.hermes) vanuit backups\backup_YYYY_MM_DD_HHMMSS\
 #
 # Standaard alleen repo: repo_windows → windows\, repo_assets → assets\, repo_root → repo-root.
 # Disaster recovery: -RestoreUserProfile kopieert alle overige inhoud van de backup naar %USERPROFILE%\.hermes
@@ -44,7 +44,7 @@ if (-not $repoRoot) {
 }
 
 if (-not (Test-Path -LiteralPath $BackupPath)) {
-    Write-Host "[ERROR] Backuppad bestaat niet: $BackupPath" -ForegroundColor Red
+    Write-Host ('[ERROR] ' + 'Backuppad bestaat niet: ' + $BackupPath) -ForegroundColor Red
     exit 1
 }
 $backupRoot = (Resolve-Path -LiteralPath $BackupPath).Path
@@ -170,7 +170,7 @@ if ($RestoreRuntimePersonas) {
         Write-Host '[SKIP] Geen localappdata_hermes\ in backup (schema v2).' -ForegroundColor DarkYellow
     } else {
         $runtimeDst = Get-HermesRuntimeRoot
-        Write-Host "[EXTRA] Runtime personas -> $runtimeDst ..." -ForegroundColor Yellow
+        Write-Host ('[EXTRA] ' + 'Runtime personas -> ' + $runtimeDst + ' ...') -ForegroundColor Yellow
         Get-ChildItem -LiteralPath $personaSrc -Recurse -File | ForEach-Object {
             $rel = $_.FullName.Substring($personaSrc.Length).TrimStart('\')
             $target = Join-Path $runtimeDst $rel

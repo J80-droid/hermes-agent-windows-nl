@@ -1,4 +1,4 @@
-﻿# LanceDB ingest vanuit hermes-env (conda) + UTF-8 log + correcte exitcode.
+# LanceDB ingest vanuit hermes-env (conda) + UTF-8 log + correcte exitcode.
 # Aangeroepen door update_knowledge.bat — niet handmatig in een lege PowerShell zonder env.
 param(
     [string]$LogPath = "",
@@ -81,9 +81,9 @@ exit /b %ERRORLEVEL%
 $tmpBat = Join-Path $env:TEMP ("hermes_rag_ingest_{0}.cmd" -f [guid]::NewGuid().ToString("N"))
 Set-Content -Path $tmpBat -Value $cmd -Encoding ASCII
 
-Write-Host "[INFO] Ingest via conda env: $CondaEnv"
-Write-Host "[INFO] Log (UTF-8): $LogPath"
-Write-Host "[INFO] Live: $env:HERMES_LANCEDB_PATH\rag_ingest_live_status.json"
+Write-Host ('[INFO] ' + 'Ingest via conda env: ' + $CondaEnv)
+Write-Host ('[INFO] ' + 'Log (UTF-8): ' + $LogPath)
+Write-Host ('[INFO] ' + 'Live: ' + $env:HERMES_LANCEDB_PATH + '\rag_ingest_live_status.json')
 
 $writer = New-RagIngestLogWriter -LogPath $LogPath
 $exit = 0

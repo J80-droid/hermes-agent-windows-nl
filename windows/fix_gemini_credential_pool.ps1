@@ -118,7 +118,7 @@ if (Test-Path -LiteralPath $profilesDir) {
 }
 foreach ($af in $authFiles) {
     if (Repair-AuthJsonGeminiPool -AuthPath $af -GoodKey $key -BaseUrl $baseUrl) {
-        Write-Host "[OK] Gemini pool hersteld: $af" -ForegroundColor Green
+        Write-Host ('[OK] ' + 'Gemini pool hersteld: ' + $af) -ForegroundColor Green
         $fixed++
     }
 }

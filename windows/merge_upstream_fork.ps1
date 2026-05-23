@@ -20,12 +20,14 @@ param(
     [string]$PromptOut = ''
 )
 
+. (Join-Path $PSScriptRoot 'HermesShellCommon.ps1')
+
 $ErrorActionPreference = 'Stop'
 
-function Write-Step([string]$Msg) { Write-Host "[INFO] $Msg" -ForegroundColor Cyan }
-function Write-Ok([string]$Msg) { Write-Host "[OK] $Msg" -ForegroundColor Green }
-function Write-Warn([string]$Msg) { Write-Host "[WARN] $Msg" -ForegroundColor Yellow }
-function Write-Err([string]$Msg) { Write-Host "[ERROR] $Msg" -ForegroundColor Red }
+function Write-Step([string]$Msg) { Write-Host ('[INFO] ' + $Msg) -ForegroundColor Cyan }
+function Write-Ok([string]$Msg) { Write-Host ('[OK] ' + $Msg) -ForegroundColor Green }
+function Write-Warn([string]$Msg) { Write-Host ('[WARN] ' + $Msg) -ForegroundColor Yellow }
+function Write-Err([string]$Msg) { Write-Host ('[ERROR] ' + $Msg) -ForegroundColor Red }
 
 function Write-Uitleg {
     param([Parameter(Mandatory)][string[]]$Lines)
@@ -73,7 +75,7 @@ function Test-PathMatchesGlob {
 
 function Get-UnmergedPaths {
     $raw = git diff --name-only --diff-filter=U 2>$null
-    if ($LASTEXITCODE -ne 0) { return @() }
+    if (Test-NativeCommandFailed) { return @() }
     return @($raw | Where-Object { $_.Trim() })
 }
 
@@ -343,12 +345,12 @@ function Invoke-AutoResolveMergeConflicts {
             Write-Host "  [dry-run] $path -> $label ($($decision.Reason))" -ForegroundColor DarkYellow
         } else {
             git checkout $side -- $path 2>$null
-            if ($LASTEXITCODE -ne 0) {
+            if (Test-NativeCommandFailed) {
                 $manual.Add("$path - checkout $side mislukt")
                 continue
             }
             git add -- $path 2>$null
-            if ($LASTEXITCODE -ne 0) {
+            if (Test-NativeCommandFailed) {
                 $manual.Add("$path - git add mislukt")
                 continue
             }
@@ -377,9 +379,9 @@ function Invoke-MergeCommitIfReady {
     }
     $msg = 'Merge upstream/main - fork conflict resolution (merge_upstream_fork.ps1)'
     git commit --no-edit -m $msg 2>$null
-    if ($LASTEXITCODE -ne 0) {
+    if (Test-NativeCommandFailed) {
         git commit -m $msg
-        if ($LASTEXITCODE -ne 0) {
+        if (Test-NativeCommandFailed) {
             Write-Err 'git commit mislukt.'
             return 3
         }
@@ -446,7 +448,7 @@ try {
 
     Write-Step 'git fetch upstream...'
     git fetch upstream --quiet
-    if ($LASTEXITCODE -ne 0) { Write-Err 'git fetch upstream mislukt.'; exit 5 }
+    if (Test-NativeCommandFailed) { Write-Err 'git fetch upstream mislukt.'; exit 5 }
 
     if ($PromptOnly) {
         Write-Step 'Preview conflicten (merge-tree, geen git-wijziging)...'

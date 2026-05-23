@@ -1,4 +1,4 @@
-﻿# Institutional RAG ingest performance defaults (override-friendly).
+# Institutional RAG ingest performance defaults (override-friendly).
 # Called from update_knowledge.bat: use -EmitCmd so SET lines apply in the parent CMD session.
 # See scripts/rag_pipeline/ACTIVATION.md and windows/INSTITUTIONAL.md.
 param(
@@ -43,7 +43,7 @@ function Get-RagPerfDefault {
             $heartbeat = 3
         }
         default {
-            Write-Host "[WARN] Unknown HERMES_RAG_PERF_PROFILE='$perfProfile'; using balanced"
+            Write-Host ('[WARN] ' + 'Unknown HERMES_RAG_PERF_PROFILE=''' + $perfProfile + '''; using balanced')
             $perfProfile = 'balanced'
             $half = [Math]::Floor($cpu / 2)
             $workers = [Math]::Min([Math]::Max($half, 2), 8)

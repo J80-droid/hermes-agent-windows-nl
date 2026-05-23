@@ -1,4 +1,4 @@
-﻿# Eén regel status voor lopende productie-ingest (live JSON + proces + run_state).
+# Eén regel status voor lopende productie-ingest (live JSON + proces + run_state).
 param([string]$LivePath = "", [string]$DbPath = "")
 
 if (-not $DbPath -and $env:HERMES_LANCEDB_PATH) { $DbPath = $env:HERMES_LANCEDB_PATH }
@@ -19,7 +19,7 @@ if ((Test-Path $py) -and (Test-Path $cli)) {
     $jsonLine = & $py $cli --db-path $DbPath --json | Where-Object { $_.TrimStart().StartsWith('{') } | Select-Object -First 1
     if ($jsonLine) {
         $ragStatus = $jsonLine | ConvertFrom-Json
-        Write-Host "[MONITOR] $($ragStatus.display_state): $($ragStatus.human)"
+        Write-Host ('[MONITOR] ' + $($ragStatus.display_state) + ': $($ragStatus.human)')
         if ($ragStatus.display_state -eq 'running' -and $ragStatus.pid_alive) { exit 0 }
         if ($ragStatus.display_state -eq 'completed') { exit 0 }
         exit 1
@@ -27,18 +27,18 @@ if ((Test-Path $py) -and (Test-Path $cli)) {
 }
 
 if (-not (Test-Path $LivePath)) {
-    Write-Host "[MONITOR] Geen live status: $LivePath"
+    Write-Host ('[MONITOR] ' + 'Geen live status: ' + $LivePath)
     exit 2
 }
 $live = Get-Content $LivePath -Raw -Encoding utf8 | ConvertFrom-Json
 $state = if ($live.run_state) { $live.run_state } else { 'running' }
 if ($state -eq 'completed') {
-    Write-Host "[MONITOR] Afgerond: $($live.message)"
+    Write-Host ('[MONITOR] ' + 'Afgerond: ' + $($live.message))
     exit 0
 }
 $pyProc = Get-Process -Id $live.pid -ErrorAction SilentlyContinue
 $short = ($live.relative_source -replace '\\', '/') -split '/' | Select-Object -Last 1
-Write-Host "[MONITOR] $($live.current_index)/$($live.total) | $($live.step) | $short"
+Write-Host ('[MONITOR] ' + $($live.current_index) + '/' + $($live.total) + ' | ' + $($live.step) + ' | ' + $short)
 if ($pyProc) {
     Write-Host "          pid $($live.pid) actief"
     exit 0

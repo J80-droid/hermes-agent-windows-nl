@@ -80,7 +80,7 @@ function Merge-MemoryFile {
     }
     $out = ($merged -join "`n§`n") + "`n"
     if ($DryRun.IsPresent) {
-        Write-Host "[DRY] $FilePath - $($merged.Count) entries" -ForegroundColor DarkGray
+        Write-Host ('[DRY] ' + $FilePath + ' - ' + $($merged.Count) + ' entries') -ForegroundColor DarkGray
         return
     }
     $dir = Split-Path -Parent $FilePath
@@ -88,7 +88,7 @@ function Merge-MemoryFile {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
     Set-Content -LiteralPath $FilePath -Value $out -Encoding UTF8 -NoNewline
-    Write-Host "[OK] $FilePath" -ForegroundColor Green
+    Write-Host ('[OK] ' + $FilePath) -ForegroundColor Green
 }
 
 $root = Get-HermesRoot -OverrideRoot $HermesRoot

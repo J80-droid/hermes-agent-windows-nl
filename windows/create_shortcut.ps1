@@ -1,4 +1,4 @@
-﻿# Hermes Agent: Desktop Shortcut Creator
+# Hermes Agent: Desktop Shortcut Creator
 param(
     # Optioneel: repo-root (map met pyproject.toml). CREATE_DESKTOP_SHORTCUT.bat zet dit door
     # zodat dit script ook werkt als het vanuit een tijdelijke kopie wordt aangeroepen.
@@ -38,7 +38,7 @@ if ($RepoRoot -and $RepoRoot.Trim()) {
     if (Test-Path -LiteralPath $rp) {
         $resolvedRepo = (Get-Item -LiteralPath $rp).FullName.TrimEnd('\')
     } else {
-        Write-Host "[WARNING] -RepoRoot bestaat niet: $rp" -ForegroundColor Yellow
+        Write-Host ('[WARNING] ' + '-RepoRoot bestaat niet: ' + $rp) -ForegroundColor Yellow
     }
 }
 
@@ -77,11 +77,11 @@ Write-Host '================================================' -ForegroundColor C
 Write-Host ''
 
 if (-not (Test-Path -LiteralPath $batchPath)) {
-    Write-Host "[WARNING] Start-launcher niet op repo-root: $batchPath (HERMES_START_BAT / split / start_hermes)" -ForegroundColor Yellow
+    Write-Host ('[WARNING] ' + 'Start-launcher niet op repo-root: ' + $batchPath + ' (HERMES_START_BAT / split / start_hermes)') -ForegroundColor Yellow
 }
 
 if (-not (Test-Path -LiteralPath $iconPath)) {
-    Write-Host "[WARNING] hermes_logo.ico niet gevonden: $iconPath" -ForegroundColor Yellow
+    Write-Host ('[WARNING] ' + 'hermes_logo.ico niet gevonden: ' + $iconPath) -ForegroundColor Yellow
     Write-Host 'Er wordt een standaard icoon gebruikt.' -ForegroundColor Gray
     $iconPath = 'cmd.exe'
 }
@@ -107,7 +107,7 @@ try {
         & $taskbarPs1 -RepoRoot $resolvedRepo -OutDir $windowsDir
     }
 } catch {
-    Write-Host "[ERROR] Kon snelkoppeling niet aanmaken: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host ('[ERROR] ' + 'Kon snelkoppeling niet aanmaken: ' + $($_.Exception.Message)) -ForegroundColor Red
     exit 1
 }
 

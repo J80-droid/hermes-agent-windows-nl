@@ -1,4 +1,4 @@
-﻿# Leeg het overgeslagen-rapport (vóór nieuwe N-run met gefixte OCR).
+# Leeg het overgeslagen-rapport (vóór nieuwe N-run met gefixte OCR).
 param(
     [string]$LanceDbPath = ""
 )
@@ -14,4 +14,4 @@ $empty = @{
 } | ConvertTo-Json -Depth 4
 Set-Content -Path $json -Value $empty -Encoding utf8
 Set-Content -Path $md -Value "# RAG ingest - overgeslagen bronnen`n`n_(leeg - rapport gereset)_`n" -Encoding utf8
-Write-Host "[OK] Skip-rapport geleegd: $json"
+Write-Host ('[OK] ' + 'Skip-rapport geleegd: ' + $json)

@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$Domain = "legal"
 )
 
@@ -18,28 +18,28 @@ $py = Join-Path $env:USERPROFILE "miniconda3\envs\hermes-env\python.exe"
 if (-not (Test-Path $py)) { $py = "python" }
 
 Write-Host ""
-Write-Host "[INFO] Hermes RAG ingest status - domein: $Domain"
+Write-Host ('[INFO] ' + 'Hermes RAG ingest status - domein: ' + $Domain)
 Write-Host "================================================"
 Write-Host "Tijd: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 Write-Host "Map:  $ldb"
 Write-Host ""
 
 if (Test-Path (Join-Path $ldb "knowledge_base.lance")) {
-    Write-Host "[OK] LanceDB-tabel knowledge_base.lance aanwezig"
+    Write-Host '[OK]LanceDB-tabel knowledge_base.lance aanwezig'
 } else {
-    Write-Host "[WARN] knowledge_base.lance nog niet gevonden"
+    Write-Host '[WARN]knowledge_base.lance nog niet gevonden'
 }
 
 if (Test-Path $state) {
     $t = (Get-Item $state).LastWriteTime
-    Write-Host "[OK] ingest state - laatst gewijzigd: $t"
+    Write-Host ('[OK] ' + 'ingest state - laatst gewijzigd: ' + $t)
 } else {
-    Write-Host "[WARN] Geen .hermes_rag_ingest_state.json"
+    Write-Host '[WARN]Geen .hermes_rag_ingest_state.json'
 }
 
 Write-Host ""
 if (Test-Path $summary) {
-    Write-Host "[OK] Eindrapport: rag_ingest_run_summary.json"
+    Write-Host '[OK]Eindrapport: rag_ingest_run_summary.json'
     $s = Get-Content -LiteralPath $summary -Raw | ConvertFrom-Json
     Write-Host "  gegenereerd:       $($s.generated_at)"
     Write-Host "  scan totaal:       $($s.scan_total_files)"
@@ -48,7 +48,7 @@ if (Test-Path $summary) {
     Write-Host "  skips totaal:      $($s.skipped_total)"
     Write-Host "  alles geindexeerd: $($s.all_sources_indexed)"
 } else {
-    Write-Host "[WARN] Geen rag_ingest_run_summary.json"
+    Write-Host '[WARN]Geen rag_ingest_run_summary.json'
 }
 
 Write-Host ""
@@ -64,7 +64,7 @@ if (Test-Path $liveCli) {
             default { '[WARN]' }
         }
         if ($liveReport.reconciled) {
-            Write-Host "[OK] live_status gesynchroniseerd met eindrapport"
+            Write-Host '[OK]live_status gesynchroniseerd met eindrapport'
         }
         Write-Host "$tag Live: $($liveReport.human)"
         if ($liveReport.display_state -eq 'running' -and $liveReport.pid_alive) {
@@ -72,9 +72,9 @@ if (Test-Path $liveCli) {
         }
     }
 } elseif (Test-Path (Join-Path $ldb "rag_ingest_live_status.json")) {
-    Write-Host "[WARN] live_status aanwezig maar CLI ontbreekt - update hermes-agent repo"
+    Write-Host '[WARN]live_status aanwezig maar CLI ontbreekt - update hermes-agent repo'
 } else {
-    Write-Host "[INFO] Geen live_status"
+    Write-Host '[INFO]Geen live_status'
 }
 
 Write-Host ""

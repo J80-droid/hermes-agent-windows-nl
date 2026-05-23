@@ -1,4 +1,4 @@
-﻿# Toont actieve Hermes-checkout en per-domein RAG/MCP-status (domains.yaml).
+# Toont actieve Hermes-checkout en per-domein RAG/MCP-status (domains.yaml).
 #Requires -Version 5.1
 $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "rag_python_resolve.ps1")
@@ -21,7 +21,7 @@ if (Test-Path -LiteralPath $domainsYaml) {
         & $py --list --domains-yaml $domainsYaml
     }
 } else {
-    Write-Host "[WARN] domains.yaml ontbreekt" -ForegroundColor Yellow
+    Write-Host '[WARN]domains.yaml ontbreekt' -ForegroundColor Yellow
 }
 
 $profilesRoot = Join-Path $env:LOCALAPPDATA "hermes\profiles"

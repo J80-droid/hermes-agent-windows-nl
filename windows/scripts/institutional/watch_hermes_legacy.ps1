@@ -31,7 +31,7 @@ while ($true) {
         # Filter op bruikbare inhoud om valse triggers van systeem-metadata te voorkomen
         if ($Content -match "<verification>" -or $Content -match "##") {
             Clear-Host
-            Write-Host "[MUTATIE GEDETECTEERD: $($LatestFile.Name) op $(Get-Date -Format 'HH:mm:ss')]" -ForegroundColor DarkGray
+            Write-Host ('[MUTATIE GEDETECTEERD: ' + $($LatestFile.Name) + ' op ' + $(Get-Date -Format 'HH:mm:ss')) -ForegroundColor DarkGray
             Write-Host "─────────────────────────────────────────────────────────────────" -ForegroundColor DarkGray
             
             # Schiet de data direct door de universele renderer

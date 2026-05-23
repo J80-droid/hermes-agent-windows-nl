@@ -76,7 +76,7 @@ foreach ($rel in $requiredTemplates) {
 
 if ($missing.Count -gt 0) {
 
-    foreach ($m in $missing) { Write-Host "[FAIL] Ontbreekt: $m" -ForegroundColor Red }
+    foreach ($m in $missing) { Write-Host ('[FAIL] ' + 'Ontbreekt: ' + $m) -ForegroundColor Red }
 
     exit 1
 
@@ -104,7 +104,7 @@ function Test-RepoSoulTemplatesAnatomy {
 
             $templateFail = $true
 
-            Write-Host "[FAIL] $($f.Name): mist anatomy header" -ForegroundColor Red
+            Write-Host ('[FAIL] ' + $($f.Name) + ': mist anatomy header') -ForegroundColor Red
 
         }
 
@@ -112,7 +112,7 @@ function Test-RepoSoulTemplatesAnatomy {
 
             $templateFail = $true
 
-            Write-Host "[FAIL] $($f.Name): mist Example Interaction" -ForegroundColor Red
+            Write-Host ('[FAIL] ' + $($f.Name) + ': mist Example Interaction') -ForegroundColor Red
 
         }
 
@@ -120,7 +120,7 @@ function Test-RepoSoulTemplatesAnatomy {
 
             $templateFail = $true
 
-            Write-Host "[FAIL] $($f.Name): mist Expertise & Knowledge" -ForegroundColor Red
+            Write-Host ('[FAIL] ' + $($f.Name) + ': mist Expertise & Knowledge') -ForegroundColor Red
 
         }
 
@@ -128,7 +128,7 @@ function Test-RepoSoulTemplatesAnatomy {
 
             $templateFail = $true
 
-            Write-Host "[FAIL] $($f.Name): mist Output conventions stub" -ForegroundColor Red
+            Write-Host ('[FAIL] ' + $($f.Name) + ': mist Output conventions stub') -ForegroundColor Red
 
         }
 
@@ -224,7 +224,7 @@ Get-ChildItem -LiteralPath $profilesDir -Directory | Sort-Object Name | ForEach-
 
 if ($failures.Count -gt 0) {
 
-    foreach ($f in $failures) { Write-Host "[FAIL] $f" -ForegroundColor Red }
+    foreach ($f in $failures) { Write-Host ('[FAIL] ' + $f) -ForegroundColor Red }
 
     Write-Host '[ACTION] windows\APPLY_SOUL_ANATOMY_RUNTIME.bat of windows\SYNC_SOUL_SNIPPETS.bat -Force' -ForegroundColor Yellow
 
@@ -240,7 +240,7 @@ $soulCount = @($allowedProfiles | Where-Object {
 
 }).Count
 
-Write-Host "[OK] Runtime anatomy op $soulCount domeinprofiel(en) (van $($allowedProfiles.Count) verwacht)" -ForegroundColor Green
+Write-Host ('[OK] ' + 'Runtime anatomy op ' + $soulCount + ' domeinprofiel(en) (van ' + $($allowedProfiles.Count) + ' verwacht)') -ForegroundColor Green
 
 exit 0
 

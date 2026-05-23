@@ -4,6 +4,8 @@ param(
     [string]$HermesRoot = ''
 )
 
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
+
 $ErrorActionPreference = 'Stop'
 $scriptRoot = $PSScriptRoot
 if (-not $RepoRoot) {
@@ -67,13 +69,13 @@ function Add-Report {
 
 function Step-Ok {
     param([string]$Name, [string]$Detail = '')
-    Write-Host "[OK] $Name" -ForegroundColor Green
+    Write-Host ('[OK] ' + $Name) -ForegroundColor Green
     if ($Detail) { Add-Report "- **$Name**: $Detail" } else { Add-Report "- **$Name**: OK" }
 }
 
 function Step-Fail {
     param([string]$Name, [string]$Detail)
-    Write-Host "[FAIL] $Name — $Detail" -ForegroundColor Red
+    Write-Host ('[FAIL] ' + $Name + ' — ' + $Detail) -ForegroundColor Red
     Add-Report "- **$Name**: FAIL — $Detail"
     $script:failures++
 }
@@ -92,7 +94,7 @@ Write-Host '=== Toolset domain E2E (1/6 hermes home) ===' -ForegroundColor Cyan
 $verifyHome = Join-Path $RepoRoot 'windows/scripts/verify_hermes_home.ps1'
 if (Test-Path -LiteralPath $verifyHome) {
     & $verifyHome
-    if ($LASTEXITCODE -ne 0) {
+    if (Test-NativeCommandFailed) {
         Step-Fail 'verify_hermes_home' 'Zie verify_hermes_home.ps1'
     } else {
         Step-Ok 'verify_hermes_home'
@@ -120,7 +122,7 @@ try {
         tests/windows/test_domain_toolsets_manifest.py `
         tests/hermes_cli/test_platform_toolsets_empty_cli.py `
         -q --tb=short 2>&1 | Tee-Object -Variable pytestOut | Out-Host
-    if ($LASTEXITCODE -ne 0) {
+    if (Test-NativeCommandFailed) {
         Step-Fail 'pytest' "exit $LASTEXITCODE"
     } else {
         Step-Ok 'pytest' (($pytestOut | Select-Object -Last 1) -join ' ').Trim()
@@ -132,7 +134,7 @@ try {
 Write-Host '=== Toolset domain E2E (4/6 manifest drift --check) ===' -ForegroundColor Cyan
 $checkScript = Join-Path $RepoRoot 'windows/scripts/sync_profile_toolsets_from_manifest.py'
 & $py $checkScript --repo-root $RepoRoot --hermes-root $hermes --check 2>&1 | Out-Host
-if ($LASTEXITCODE -ne 0) {
+if (Test-NativeCommandFailed) {
     Step-Fail 'manifest-check' 'Draai windows\SYNC_DOMAIN_TOOLSETS.bat'
 } else {
     Step-Ok 'manifest-check' 'platform_toolsets.cli matcht manifest'
@@ -239,7 +241,7 @@ try {
             $line -match '^\s+~'
         )
         if ($isNonFatal) {
-            Write-Host "[WARN] (non-fatal) $line" -ForegroundColor DarkGray
+            Write-Host ('[WARN] ' + '(non-fatal) ' + $line) -ForegroundColor DarkGray
             return $false
         }
         return $true
@@ -248,7 +250,7 @@ try {
 } finally {
     $ErrorActionPreference = $prevEap
 }
-if ($LASTEXITCODE -ne 0) {
+if (Test-NativeCommandFailed) {
     Step-Fail 'runtime-tool-counts' 'Zie console-output'
 } else {
     $summary = ($runtimeOut | Where-Object { $_ -match '^\[OK\]' } | ForEach-Object { $_.ToString().Trim() }) -join '; '

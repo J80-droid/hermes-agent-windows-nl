@@ -54,7 +54,7 @@ foreach ($path in $targets) {
 
     if ($newContent -ne $content) {
         $changed++
-        Write-Host "[$(if ($Apply) { 'APPLY' } else { 'DRY' })] $path" -ForegroundColor $(if ($Apply) { 'Green' } else { 'Yellow' })
+        Write-Host ('[$(if ($Apply) { 'APPLY' } else { 'DRY' })] ' + $path) -ForegroundColor $(if ($Apply) { 'Green' } else { 'Yellow' })
         if ($remainingLegacy.Count -gt 0) {
             Write-Host "  Legacy koppen over (los SYNC_SOUL_SNIPPETS.bat draaien): $($remainingLegacy -join ', ')" -ForegroundColor DarkYellow
         }

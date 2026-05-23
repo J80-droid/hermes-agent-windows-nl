@@ -1,4 +1,4 @@
-﻿# Installeert pyproject [rag] op conda hermes-env (institutioneel), MCP-config, modelcache (idempotent).
+# Installeert pyproject [rag] op conda hermes-env (institutioneel), MCP-config, modelcache (idempotent).
 param(
     [string]$RepoRoot = "",
     [switch]$SkipPip,
@@ -6,6 +6,8 @@ param(
     [switch]$SkipModelWarm,
     [switch]$Quiet
 )
+
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 
 $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "..\HermesPythonPolicy.ps1")
@@ -41,15 +43,15 @@ if (-not $SkipPip) {
         }
         Write-RagMsg "[INFO] RAG-deps via: $py" "Cyan"
         & $py -m pip install -e "${RepoRoot}[rag]"
-        if ($LASTEXITCODE -ne 0) {
+        if (Test-NativeCommandFailed) {
             Write-Error "pip install -e [rag] mislukt voor $py (exit $LASTEXITCODE)."
         }
         & $py -m pip install "markitdown[all]==0.1.5"
-        if ($LASTEXITCODE -ne 0) {
+        if (Test-NativeCommandFailed) {
             Write-RagMsg "[WARN] markitdown[all] apart mislukt - Office/PDF kan beperkt zijn." "Yellow"
         }
         & $py -m pip install "colorama>=0.4.6" "tqdm>=4.66"
-        if ($LASTEXITCODE -ne 0) {
+        if (Test-NativeCommandFailed) {
             Write-RagMsg "[WARN] colorama/tqdm mislukt - RAG-terminal kan zonder kleuren/balk." "Yellow"
         }
         $installed++
@@ -90,7 +92,7 @@ if (-not $SkipMcp) {
     } else {
         & powershell -NoProfile -ExecutionPolicy Bypass -File $reg -RepoRoot $RepoRoot
     }
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 }
 
 if (-not $Quiet) {

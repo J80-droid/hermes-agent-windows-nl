@@ -1,7 +1,9 @@
-﻿# Verify all .bat -> .ps1 chains under windows/ and critical backup files in git.
+# Verify all .bat -> .ps1 chains under windows/ and critical backup files in git.
 param(
     [string]$RepoRoot = ''
 )
+
+. (Join-Path $PSScriptRoot 'HermesShellCommon.ps1')
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'WindowsLocalAssetsManifest.ps1')
@@ -60,7 +62,7 @@ if (-not $repo) {
 $winDir = Join-Path $repo 'windows'
 $failures = New-Object System.Collections.Generic.List[string]
 
-Write-Host "[INFO] Repo: $repo" -ForegroundColor Cyan
+Write-Host ('[INFO] ' + 'Repo: ' + $repo) -ForegroundColor Cyan
 Write-Host '[INFO] Kritieke bestanden in git...' -ForegroundColor Cyan
 foreach ($rel in Get-HermesCriticalWindowsRepoPath) {
     $full = Join-Path $repo ($rel -replace '/', [IO.Path]::DirectorySeparatorChar)
@@ -194,7 +196,7 @@ Write-Host '[INFO] Taakbalk-.lnk iconen...' -ForegroundColor Cyan
 $verifyTb = Join-Path $scriptsDir 'verify_taskbar_shortcut_icons.ps1'
 if (Test-Path -LiteralPath $verifyTb) {
     & $verifyTb -RepoRoot $repo -Quiet
-    if ($LASTEXITCODE -ne 0) {
+    if (Test-NativeCommandFailed) {
         [void]$failures.Add('Taakbalk-.lnk IconLocation wijkt af (windows/FIX_TASKBAR_ICONS.bat)')
         Write-Host '  [FAIL] Taakbalk-.lnk iconen' -ForegroundColor Red
     } else {
@@ -207,7 +209,7 @@ if (Test-Path -LiteralPath $verifyTb) {
 
 Write-Host ''
 if ($failures.Count -gt 0) {
-    Write-Host "[FAIL] $($failures.Count) probleem(en):" -ForegroundColor Red
+    Write-Host ('[FAIL] ' + $($failures.Count) + ' probleem(en):') -ForegroundColor Red
     foreach ($f in $failures) { Write-Host "  - $f" -ForegroundColor Red }
     exit 1
 }

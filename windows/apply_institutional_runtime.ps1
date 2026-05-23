@@ -18,6 +18,8 @@ param(
     [switch]$NoPause
 )
 
+. (Join-Path $PSScriptRoot 'HermesShellCommon.ps1')
+
 $ErrorActionPreference = 'Stop'
 $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
 $repoRoot = (Resolve-Path (Join-Path $scriptRoot '..')).Path
@@ -28,30 +30,30 @@ Write-Host '=== Institutioneel runtime (display + SOUL) ===' -ForegroundColor Cy
 if (-not $SkipDisplay) {
     Write-Host '--- Team display (alle profielen) ---' -ForegroundColor Cyan
     & (Join-Path $scriptRoot 'apply_team_display.ps1')
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 }
 
 if (-not $SkipSoul) {
     & (Join-Path $scriptRoot 'scripts\sync_soul_anatomy_snippets.ps1') -Force -RepoRoot $repoRoot
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
     Write-Host '[OK] SOUL anatomy snippets gesynchroniseerd (alle profielen FORCED).' -ForegroundColor Green
 }
 
 if ($IncludeTrustRuntime) {
     Write-Host '--- Trust runtime (legal template + SOUL + memory) ---' -ForegroundColor Cyan
     & (Join-Path $scriptRoot 'scripts\sync_legal_soul_from_template.ps1')
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
     & (Join-Path $scriptRoot 'scripts\sync_soul_anatomy_snippets.ps1') -Force -RepoRoot $repoRoot -Quiet
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
     & (Join-Path $scriptRoot 'scripts\sync_profile_memories.ps1')
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
     & (Join-Path $scriptRoot 'scripts\apply_trust_memory_limits.ps1')
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
     $toolSync = Join-Path $scriptRoot 'scripts\sync_profile_toolsets_from_manifest.ps1'
     if (Test-Path -LiteralPath $toolSync) {
         Write-Host '--- Domein-toolsets ---' -ForegroundColor Cyan
         & $toolSync
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
     }
     Write-Host '[OK] Trust runtime + toolsets (geen scrub).' -ForegroundColor Green
 }
@@ -59,7 +61,7 @@ if ($IncludeTrustRuntime) {
 if (-not $SkipE2E) {
     Write-Host '--- E2E audit ---' -ForegroundColor Cyan
     & (Join-Path $scriptRoot 'audits\RUN_INSTITUTIONAL_E2E.ps1')
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 }
 
 Write-Host '=== INSTITUTIONEEL RUNTIME: KLAAR ===' -ForegroundColor Green

@@ -1,4 +1,4 @@
-﻿#requires -Version 5.1
+#requires -Version 5.1
 # Vernieuwt Hermes-taakbalk-.lnk (bat+ico in windows\) en taakbalk-pins (cmd-wrapper in User Pinned).
 [CmdletBinding(SupportsShouldProcess)]
 param(
@@ -71,7 +71,7 @@ function Remove-HermesTaskbarShortcutFiles {
 
 $createPs1 = Join-Path $scriptDir 'create_taskbar_shortcuts.ps1'
 if (-not (Test-Path -LiteralPath $createPs1)) {
-    Write-Host "[ERROR] Ontbreekt: $createPs1" -ForegroundColor Red
+    Write-Host ('[ERROR] ' + 'Ontbreekt: ' + $createPs1) -ForegroundColor Red
     exit 1
 }
 

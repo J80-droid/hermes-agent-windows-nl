@@ -94,7 +94,8 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 | Check | Script |
 | ----- | ------ |
 | `.bat` → `.ps1` ketens + pad-literals | `VERIFY_WINDOWS_CHAIN.bat` → `verify_windows_script_chain.ps1` (geen `windows\scripts` in PS1-strings; voorkomt IDE false positives) |
-| SOUL sync module | `scripts/SyncSoulSnippet.psm1` — `Test-NativeCommandFailed` na child-scripts; zie `docs/SOUL_ANATOMY_SPEC.md` |
+| SOUL sync / PS helpers | `HermesShellCommon.ps1` + `scripts/SyncSoulSnippet.psm1` — `Test-NativeCommandFailed`, IDE-safe logging; zie `docs/SOUL_ANATOMY_SPEC.md` |
+| PS1-onderhoud (tags/exit) | `tools/repair_ps1_write_host_tags.py`, `tools/repair_ps1_native_exit.ps1` |
 
 ## Hermes-profielen en model
 

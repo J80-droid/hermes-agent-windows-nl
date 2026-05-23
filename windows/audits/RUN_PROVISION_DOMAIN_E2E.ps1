@@ -3,6 +3,8 @@ param(
     [string]$RepoRoot = ''
 )
 
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
+
 $ErrorActionPreference = 'Stop'
 
 if (-not $RepoRoot) {
@@ -59,7 +61,7 @@ try {
     }
     $script = Join-Path $RepoRoot 'windows/scripts/sync_profile_toolsets_from_manifest.py'
     & $py $script --repo-root $RepoRoot --hermes-root $tempHome --profile $testProfile --create-missing
-    if ($LASTEXITCODE -ne 0) { throw "provision sync exit $LASTEXITCODE" }
+    if (Test-NativeCommandFailed) { throw "provision sync exit $LASTEXITCODE" }
 
     $cfg = Join-Path $tempHome "profiles\$testProfile\config.yaml"
     $soul = Join-Path $tempHome "profiles\$testProfile\SOUL.md"
@@ -69,9 +71,9 @@ try {
     }
 
     & $py $script --repo-root $RepoRoot --hermes-root $tempHome --profile $testProfile --check
-    if ($LASTEXITCODE -ne 0) { throw "check exit $LASTEXITCODE" }
+    if (Test-NativeCommandFailed) { throw "check exit $LASTEXITCODE" }
 
-    Write-Host "[PASS] Provision E2E ${testProfile}" -ForegroundColor Green
+    Write-Host ('[PASS] ' + 'Provision E2E ' + ${testProfile}) -ForegroundColor Green
     exit 0
 }
 finally {
