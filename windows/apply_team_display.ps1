@@ -27,6 +27,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+. (Join-Path $scriptDir 'HermesShellCommon.ps1')
 
 $repoRoot = (Resolve-Path (Join-Path $scriptDir '..')).Path
 
