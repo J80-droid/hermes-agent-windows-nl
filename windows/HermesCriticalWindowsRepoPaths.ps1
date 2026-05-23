@@ -70,6 +70,7 @@ function Get-HermesCriticalWindowsRepoPathList {
     'windows/audits/TrustForensicE2E.core.ps1',
     'windows/audits/RUN_TRUST_FORENSIC_E2E.bat',
     'windows/audits/RUN_MEMORY_ARCHITECTURE_E2E.ps1',
+    'windows/audits/MemoryArchitectureE2E.core.ps1',
     'windows/audits/RUN_MEMORY_ARCHITECTURE_E2E.bat',
     'windows/audits/RUN_MEMORY_PRODUCTION_GATE.ps1',
     'windows/audits/RUN_MEMORY_PRODUCTION_GATE.bat',

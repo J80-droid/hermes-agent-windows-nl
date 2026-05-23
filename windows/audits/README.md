@@ -12,6 +12,8 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 
 **Trust E2E:** `RUN_TRUST_FORENSIC_E2E.ps1` is alleen een launcher; logica staat in `TrustForensicE2E.core.ps1` (dot-source naar `HermesTrustForensicPatterns.ps1`, `HermesTrustForensicProfileChecks.ps1`, `MemoryAuditCommon.ps1`). BAT en `RUN_AUDITS` blijven de launcher aanroepen.
 
+**Memory E2E:** `RUN_MEMORY_ARCHITECTURE_E2E.ps1` is alleen een launcher; logica staat in `MemoryArchitectureE2E.core.ps1` (dot-source naar `MemoryAuditCommon.ps1`). Geen dot-source in de launcher — stabiel in Cursor/PSES.
+
 | Runner | Doel |
 | ------ | ---- |
 | **`RUN_AUDITS.bat`** | Gecombineerd: `verify_hermes_home`, PSScriptAnalyzer (SKIP indien ontbreekt), `check-windows-footguns.py`, ruff (SKIP), pytest profiel-subset |

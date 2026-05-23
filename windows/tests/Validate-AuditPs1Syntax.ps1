@@ -9,6 +9,7 @@ $files = @(
     'windows\audits\RUN_TRUST_FORENSIC_E2E.ps1',
     'windows\audits\TrustForensicE2E.core.ps1',
     'windows\audits\RUN_MEMORY_ARCHITECTURE_E2E.ps1',
+    'windows\audits\MemoryArchitectureE2E.core.ps1',
     'windows\WindowsLocalAssetsManifest.ps1'
 )
 
