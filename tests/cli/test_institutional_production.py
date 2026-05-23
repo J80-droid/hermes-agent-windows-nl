@@ -58,6 +58,13 @@ def test_team_display_drift_clean_when_synced(monkeypatch):
     assert diag._check_team_display_drift() == []
 
 
+def test_nfr_normalizer_self_test_ok():
+    import scripts.diagnose_renderer as diag
+
+    ok, reason = diag._nfr_normalizer_self_test_ok()
+    assert ok, reason
+
+
 def test_diagnose_renderer_verify_passes():
     """diagnose_renderer --verify should pass with default settings."""
     s = get_assistant_render_settings()

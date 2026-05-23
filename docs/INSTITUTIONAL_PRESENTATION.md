@@ -105,7 +105,7 @@ python scripts/score_institutional_render.py --verify
 Toont:
 - Actief profiel, renderer-stijl, palet, label-kolommen (config; layout altijd verticaal)
 - Kleurlegenda h2 vs tabelkolom 0
-- NFR-prose lint (probe + normalizer-herstel)
+- NFR normalizer self-test (prose→tabel; `[OK]` in diagnose, `[WARN]` alleen bij falende pipeline)
 - Config cache state (live vs gecachet)
 - Visuele preview via de echte `format_response_ansi()` pipeline
 
@@ -194,7 +194,7 @@ Na wijzigingen via Cursor, upstream-merge of handmatige config-edits:
 | Eindpaneel goud, gateway wel demo | Oud `ChatConsole` zonder assistant-theme | Update fork; herstart chat |
 | Geen witregel tussen hoofdstukken | Model + geen normalizer | SOUL-sync; `markdown_output_normalize` |
 | Label en waarde op één regel | Inline markdown in heading-body (oud) | Pull/update fork; renderer pelt labels; normalizer splitst inline |
-| NFR prose i.p.v. tabel | Model negeert SOUL | `diagnose_renderer.py` toont NFR-lint; normalizer herstelt; SOUL-sync + `/new` |
+| NFR prose i.p.v. tabel | Model negeert SOUL | Normalizer herstelt prose→tabel; `diagnose_renderer --verify` faalt als pipeline kapot; SOUL-sync + `/new` |
 | Magenta koppen (oude Rich) | `markdown_legacy` | `assistant_render_style: institutional_rich` |
 | Blauw i.p.v. goud (UI) | Legacy cmd of `skin: slate` | Windows Terminal + `skin: default` |
 | Geen institutioneel format | Geen SOUL-sync | `SYNC_SOUL_SNIPPETS.bat` + nieuwe sessie (`/new`) |

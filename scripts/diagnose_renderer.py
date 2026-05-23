@@ -178,6 +178,38 @@ def _nfr_prose_warning(md: str) -> str | None:
     return None
 
 
+_NFR_NORMALIZER_PROBE = (
+    "### Niet-functionele requirements\n"
+    "**Performantie**\nRender snel.\n"
+    "Robuustheid — Stabiel — Test\n"
+)
+
+
+def _nfr_normalizer_self_test_ok() -> tuple[bool, str | None]:
+    """Return (ok, failure_reason). Probes prose→table via normalize_assistant_markdown."""
+    if _nfr_prose_warning(_NFR_NORMALIZER_PROBE) is None:
+        return True, None
+    try:
+        from hermes_cli.markdown_output_normalize import normalize_assistant_markdown
+
+        normalized = normalize_assistant_markdown(_NFR_NORMALIZER_PROBE)
+        if _nfr_prose_warning(normalized) is None:
+            return True, None
+        return False, "NFR normalizer herstelt prose niet (output nog steeds zonder |)"
+    except Exception as exc:
+        return False, f"NFR normalizer-check mislukt: {exc}"
+
+
+def _print_nfr_normalizer_status() -> None:
+    """Report NFR normalizer health; warn only when the pipeline fails."""
+    ok, reason = _nfr_normalizer_self_test_ok()
+    if ok:
+        print("\n  [OK] NFR normalizer: prose → markdown-tabel (pipeline actief)")
+    else:
+        print(f"\n  [WARN] {reason}")
+        print("  -> Controleer markdown_output_normalize.py en SOUL Outputformaat-sync")
+
+
 def _print_color_legend(palette: str) -> None:
     try:
         from hermes_cli.institutional_render import assistant_markdown_theme, table_header_palette
@@ -229,21 +261,7 @@ def _print_report() -> None:
         for w in drift_warnings:
             print(f"    - {w}")
 
-    nfr_probe = (
-        "### Niet-functionele requirements\n"
-        "**Performantie**\nRender snel.\n"
-        "Robuustheid — Stabiel — Test\n"
-    )
-    nfr_warn = _nfr_prose_warning(nfr_probe)
-    if nfr_warn:
-        print(f"\n  [LINT] {nfr_warn}")
-        try:
-            from hermes_cli.markdown_output_normalize import normalize_assistant_markdown
-
-            if _nfr_prose_warning(normalize_assistant_markdown(nfr_probe)) is None:
-                print("  [LINT] Na normalize_assistant_markdown: NFR-tabel OK")
-        except Exception as exc:
-            print(f"  [LINT] Normalizer-check mislukt: {exc}")
+    _print_nfr_normalizer_status()
 
     print(f"\n  Config display block:")
     for key in sorted(display.keys()):
@@ -344,6 +362,10 @@ def main() -> int:
             for w in drift_warnings:
                 print(f"  - {w}")
             print("  -> windows\\APPLY_INSTITUTIONAL_RUNTIME.bat")
+            return 1
+        nfr_ok, nfr_reason = _nfr_normalizer_self_test_ok()
+        if not nfr_ok:
+            print(f"\n[VERIFY FAIL] {nfr_reason}")
             return 1
         print("\n[VERIFY OK] institutional_rich + demo palette active (geen team display drift)")
 
