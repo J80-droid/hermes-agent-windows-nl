@@ -30,5 +30,19 @@ if errorlevel 1 (
 )
 
 echo.
-echo [OK] Trust runtime gesynchroniseerd (geen scrub). Nieuwe chat starten (/new).
+echo [INFO] Audit + productie-poort + /new-reminder...
+set "HERMES_SKIP_PAUSE=1"
+if "%HERMES_SKIP_MEMORY_PRODUCTION_GATE%"=="1" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Invoke-MemoryTrustPostSync.ps1" -SkipProductionGate %*
+) else (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Invoke-MemoryTrustPostSync.ps1" %*
+)
+if errorlevel 1 (
+  echo [FAIL] Memory/trust post-sync mislukt.
+  if not "%HERMES_SKIP_PAUSE%"=="1" pause
+  exit /b 1
+)
+
+echo.
+echo [OK] Trust runtime volledig gesynchroniseerd. Hermes toont /new-banner bij start.
 exit /b 0

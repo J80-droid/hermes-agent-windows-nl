@@ -38,16 +38,16 @@ windows\audits\RUN_MEMORY_ARCHITECTURE_E2E.bat
 windows\audits\RUN_MEMORY_PRODUCTION_GATE.bat
 ```
 
-## Productie-checklist
+## Productie-checklist (automatisch via `SYNC_TRUST_RUNTIME.bat`)
 
 | Stap | Actie | Succes |
 |------|--------|--------|
-| 1 | `apply_trust_memory_limits.ps1` | `[OK]` root + 13 profielen |
-| 2 | `SYNC_HERMES_API_ENV.bat` | vault-paden op alle `.env` |
-| 3 | `scripts\audit_profile_memories.ps1` | geen OVER, geen `Â§`, geen identiteitslek; bij `Â§`: `-FixEncoding` |
-| 3b | (automatisch) `SYNC_TRUST_RUNTIME.bat` → `invoke_deduplicate_memories.ps1` | na memory-seed sync: §-dedup via hermes-env |
-| 4 | `audits\RUN_MEMORY_PRODUCTION_GATE.bat` | PASS |
-| 5 | Hermes **`/new`** | nieuwe sessie laadt config + memory-snapshot |
+| 1–3 | `SYNC_TRUST_RUNTIME.bat` | SOUL + memory-seed + dedup + limits + vault-env + snapshot |
+| 4 | (zelfde BAT) `audit_profile_memories.ps1` | geen OVER, geen `Â§`, geen identiteitslek |
+| 5 | (zelfde BAT) `RUN_MEMORY_PRODUCTION_GATE` | PASS (tenzij `HERMES_SKIP_MEMORY_PRODUCTION_GATE=1`) |
+| 6 | (zelfde BAT) `/new`-reminder JSON | gele banner bij Hermes-start; **`/new`** wist vlag |
+
+Handmatig alleen bij incident: `audit_profile_memories.ps1 -FixEncoding`, of `python scripts\deduplicate_memories.py` zonder volledige trust-sync.
 
 ### Profiel-lek (waarom elk profiel eigen `memory:` nodig heeft)
 

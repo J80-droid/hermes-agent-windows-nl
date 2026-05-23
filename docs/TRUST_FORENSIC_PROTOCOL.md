@@ -20,7 +20,7 @@ Operationele handleiding voor J.'s Hermes Windows NL fork: verifieerbaar gedrag 
 ## Toepassen (Windows)
 
 1. Backup: `MANAGE_BACKUPS.bat` of `backup_soul_profiles.ps1` (inclusief memories).
-2. Dagelijks / na git pull: `windows\SYNC_TRUST_RUNTIME.bat` (geen scrub) — memory-seed sync, daarna **automatisch** `deduplicate_memories.py` (hermes-env), limits, vault-env sync, `[trust-memory]` snapshot. Bij succes **geen** `pause`; alleen bij fout.
+2. Dagelijks / na git pull: `windows\SYNC_TRUST_RUNTIME.bat` (geen scrub) — volledige keten: sync → dedup → limits → vault-env → snapshot → **audit** → **RUN_MEMORY_PRODUCTION_GATE** → **`/new`-reminder** (`institutional_new_chat_required.json`). Ook via `POST_GIT_PULL.bat` en `UPDATE_HERMES.bat` (`HERMES_SKIP_PAUSE=1`). Snelle sync zonder pytest: `set HERMES_SKIP_MEMORY_PRODUCTION_GATE=1` vóór de BAT.
 3. Volledig incl. scrub: `windows\APPLY_TRUST_PROTOCOL.bat` (sync → scrub → E2E audit, zonder tussentijdse pause) of `SYNC_TRUST_PROTOCOL.bat` (sync + scrub)
 4. Audit: `windows\audits\RUN_TRUST_FORENSIC_E2E.bat` (of `.ps1`) of `RUN_AUDITS.ps1 -IncludeTrustForensicE2E`
 
