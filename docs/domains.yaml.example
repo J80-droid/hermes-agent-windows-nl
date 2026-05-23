@@ -110,6 +110,34 @@ domains:
     mcp_name: lancedb-ventures
     profile_name: ventures
 
+  - name: ict
+    source_dir: 09_ICT
+    description: ICT infrastructuur, DevOps, support, sysadmin
+    lancedb_path: ~/data/lancedb/ict
+    mcp_name: lancedb-ict
+    profile_name: ict
+
+  - name: security
+    source_dir: 10_Security
+    description: Security assessments, compliance, incident response, forensics
+    lancedb_path: ~/data/lancedb/security
+    mcp_name: lancedb-security
+    profile_name: security
+
+  - name: dev
+    source_dir: 11_Development
+    description: Software engineering, backend, frontend, architecture, quality
+    lancedb_path: ~/data/lancedb/dev
+    mcp_name: lancedb-dev
+    profile_name: dev
+
+  - name: data
+    source_dir: 12_Data
+    description: Data engineering, analytics, pipelines, governance
+    lancedb_path: ~/data/lancedb/data
+    mcp_name: lancedb-data
+    profile_name: data
+
 # --- Sjabloon nieuw domein (uncomment + invullen) ---
 #  - name: mijn_domein
 #    source_dir: 09_Mijn_Domein

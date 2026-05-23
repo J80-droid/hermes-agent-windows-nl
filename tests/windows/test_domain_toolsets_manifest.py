@@ -16,6 +16,10 @@ REQUIRED_PROFILES = {
     "philosophy",
     "gaming",
     "ventures",
+    "ict",
+    "security",
+    "dev",
+    "data",
 }
 
 REQUIRED_BASE = {"mcp", "file", "memory", "skills", "clarify"}
@@ -68,6 +72,45 @@ def test_legal_has_lenses_doc():
     lenses = legal.get("legal_lenses") or {}
     assert "arb" in lenses
     assert "klok" in lenses
+
+
+def test_ict_has_lenses():
+    data = _load()
+    ict = (data.get("profiles") or {}).get("ict") or {}
+    lenses = ict.get("ict_lenses") or {}
+    assert "infra" in lenses
+    assert "support" in lenses
+
+
+def test_security_has_lenses():
+    data = _load()
+    sec = (data.get("profiles") or {}).get("security") or {}
+    lenses = sec.get("security_lenses") or {}
+    assert "pentest" in lenses
+    assert "incident" in lenses
+
+
+def test_dev_has_lenses():
+    data = _load()
+    dev = (data.get("profiles") or {}).get("dev") or {}
+    lenses = dev.get("dev_lenses") or {}
+    assert "backend" in lenses
+    assert "quality" in lenses
+
+
+def test_data_has_lenses():
+    data = _load()
+    data_prof = (data.get("profiles") or {}).get("data") or {}
+    lenses = data_prof.get("data_lenses") or {}
+    assert "database" in lenses
+    assert "pipeline" in lenses
+
+
+def test_soul_templates_exist():
+    assert (REPO / "docs/templates/SOUL_ICT_DOMAIN.md").is_file()
+    assert (REPO / "docs/templates/SOUL_SECURITY_DOMAIN.md").is_file()
+    assert (REPO / "docs/templates/SOUL_DEV_DOMAIN.md").is_file()
+    assert (REPO / "docs/templates/SOUL_DATA_DOMAIN.md").is_file()
 
 
 def test_sync_scripts_exist():

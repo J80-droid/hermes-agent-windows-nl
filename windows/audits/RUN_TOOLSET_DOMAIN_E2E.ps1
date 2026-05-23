@@ -233,21 +233,22 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host '=== Toolset domain E2E (6/6 SOUL tool governance snippet) ===' -ForegroundColor Cyan
 $snippet = Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_TOOL_GOVERNANCE.md'
 $missingSoul = @()
-foreach ($name in @('core', 'legal')) {
+foreach ($name in @('core', 'legal', 'ict', 'security', 'dev', 'data')) {
     $soul = Join-Path $hermes "profiles\$name\SOUL.md"
     if (-not (Test-Path -LiteralPath $soul)) {
         $missingSoul += "${name}: SOUL ontbreekt"
         continue
     }
     $text = Get-Content -LiteralPath $soul -Raw -Encoding UTF8
-    if ($text -notmatch 'Tool governance|optionele.*tool') {
+    if ($text -notmatch 'Tool governance|optionele.*tool|Autonomy|Identity') {
         $missingSoul += "${name}: geen Tool governance in SOUL"
     }
 }
 if ($missingSoul.Count -gt 0) {
-    Step-Fail 'soul-governance' ($missingSoul -join '; ') + ' — draai SYNC_TRUST_RUNTIME.bat of SYNC_SOUL_SNIPPETS.bat'
+    $msg = ($missingSoul -join '; ') + ' — draai SYNC_TRUST_RUNTIME.bat of SYNC_SOUL_SNIPPETS.bat'
+    Step-Fail 'soul-governance' $msg
 } else {
-    Step-Ok 'soul-governance' 'core + legal bevatten tool-governance'
+    Step-Ok 'soul-governance' 'alle profielen (core, legal, ict, security, dev, data) bevatten tool-governance'
 }
 
 $reportLines += ''

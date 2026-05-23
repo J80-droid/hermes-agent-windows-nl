@@ -25,6 +25,10 @@ Zie routing-matrix (repo: `docs/ORCHESTRATOR_ROUTING.md`). Samenvatting:
 | Startups, BM, incubatie | `ventures` |
 | Games, performance, specs | `gaming` |
 | Filosofie, psychologie, reflectie | `philosophy` |
+| Infra, cloud, netwerk, servers | `ict` |
+| Kwetsbaarheden, compliance, incident | `security` |
+| Code, build, test, deploy | `dev` |
+| Database, ETL, BI, analytics | `data` |
 | Personal Brain, cross-domein, onduidelijk | `core` (+ Kanban naar specialist) |
 
 Bij multi-domein: label bronnen per domein; routeer bindende stappen naar specialisten. Profiel `legal` kiest intern rechtsgebied-lenzen (arbeidsrecht, bestuursrecht, klokkenluiders, …) — zie `docs/LEGAL_DOMAIN_ARCHITECTURE.md`.

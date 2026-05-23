@@ -198,6 +198,10 @@ function Get-HermesCriticalWindowsRepoPath {
         'docs/LEGAL_TAXONOMY.md',
         'docs/LEGAL_DOMAIN_ARCHITECTURE.md',
         'docs/templates/SOUL_LEGAL_DOMAIN.md',
+        'docs/templates/SOUL_ICT_DOMAIN.md',
+        'docs/templates/SOUL_SECURITY_DOMAIN.md',
+        'docs/templates/SOUL_DEV_DOMAIN.md',
+        'docs/templates/SOUL_DATA_DOMAIN.md',
         'scripts/windows/setup_hermes_windows.ps1',
         'pyproject.toml'
     )

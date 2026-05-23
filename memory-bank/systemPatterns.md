@@ -52,6 +52,14 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 
 Defaults: `windows/team_display.defaults`; toepassen: `apply_team_display_profiles.py` / `APPLY_INSTITUTIONAL_RUNTIME.bat`. Audit: `RUN_INSTITUTIONAL_E2E.ps1` (11 stappen).
 
+## Profiel-uitbreiding (ICT-team)
+
+- Nieuwe profielen volgen **legal-blauwdruk**: generieke SOUL + lenzen in RAG-submappen, zelfde toolset per profiel.
+- Security = **apart profiel** (niet lens) vanwege governance-risico en tegengestelde autonomy (`mag exploiteren` vs `mag NIET exploiteren`).
+- Toolset verschillen per rol: `code_execution` aan voor security/dev (PoC/scripts), uit voor ict (alleen infra); `vision` optioneel voor ict/dev/security, uit voor data.
+- RAG-bronnen in `docs/09_ICT/`, `10_Security/`, `11_Development/`, `12_Data/` met submappen per lens.
+- Sync volgorde: manifest → `SYNC_DOMAIN_TOOLSETS.bat` → `sync_profile_mcp_from_domains.py` → `SYNC_SOUL_SNIPPETS.bat` → E2E audit.
+
 ## Veiligheid
 
 - Geen ingest + zware Kanban-werk op dezelfde LanceDB tegelijk (lock-risico).

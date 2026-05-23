@@ -27,4 +27,19 @@ Zie `docs/PROFILE_MODEL_INHERITANCE.md`.
 
 - Windows-first: `.bat`-starters, taakbalk, geen conda in PATH vereist voor `hermes.bat`.
 - `domains.yaml` en LanceDB buiten de repo (geen secrets, geen bulk-data in git).
-- Live ingest-status en eindrapporten voor vertrouwen (“is legal klaar?”).
+- Live ingest-status en eindrapporten voor vertrouwen ("is legal klaar?").
+
+## Team (13 profielen)
+
+| Team | Profielen |
+|------|-----------|
+| Leadership | `core` |
+| Legal | `legal` (arb, bbk, klok, aanspr, corp) |
+| ICT | `ict` (infra, devops, support, sysadmin) |
+| Security | `security` (pentest, compliance, incident, forensics) |
+| Development | `dev` (backend, frontend, architecture, quality) |
+| Data | `data` (database, analytics, pipeline, governance) |
+| Business | `operations`, `logistics`, `trading`, `ventures` |
+| Kennis | `academics`, `philosophy`, `gaming` |
+
+Alle profielen delen **één** inference-model (root `config.yaml`); verschillen in MCP, SOUL, `platform_toolsets.cli`.

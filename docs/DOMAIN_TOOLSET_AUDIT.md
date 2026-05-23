@@ -170,6 +170,69 @@ Profiel-`config.yaml` is leidend voor CLI-chat (`hermes -p legal`). Zonder `-p` 
 
 ---
 
+## Profiel: ict (+ lenzen infra, devops, support, sysadmin)
+
+|| Standaard | Optioneel | Uit |
+||-----------|-----------|-----|
+|| mcp, file, memory, skills, clarify, web, terminal, browser | vision, session_search, todo, kanban | delegation, code_execution, moa |
+
+**Vraag optioneel wanneer:**
+- `vision`: Screenshot van error/UI of gescande netwerkdiagrammen
+- `session_search`: Eerdere troubleshooting-sessies terugvinden
+- `todo`: Meerstaps incident of change-planning
+- `kanban`: Ticket-board beheer voor ITIL/change processen
+
+**Governance:** Productie wijzigingen altijd J.-goedkeuring.
+
+---
+
+## Profiel: security (+ lenzen pentest, compliance, incident, forensics)
+
+|| Standaard | Optioneel | Uit |
+||-----------|-----------|-----|
+|| mcp, file, memory, skills, clarify, web, terminal, browser, **code_execution** | vision, session_search, todo, delegation | moa, image_gen, video_gen |
+
+**Vraag optioneel wanneer:**
+- `vision`: CVE dashboard screenshots
+- `session_search`: Eerdere pentest/audit sessies
+- `todo`: Incident-response checklist
+- `delegation`: Crisis-response (parallel forensics + communicatie)
+
+**Governance:** Impact op productie vereist expliciete J.-goedkeuring per actie. Chain of custody bij forensics.
+
+---
+
+## Profiel: dev (+ lenzen backend, frontend, architecture, quality)
+
+|| Standaard | Optioneel | Uit |
+||-----------|-----------|-----|
+|| mcp, file, memory, skills, clarify, web, terminal, browser, **code_execution** | vision, session_search, todo, kanban | delegation, moa, image_gen |
+
+**Vraag optioneel wanneer:**
+- `vision`: UI screenshots voor bug-reports
+- `session_search`: Eerdere debug/architecture sessies
+- `todo`: Sprint planning
+- `kanban`: Development workflow tickets
+
+**Governance:** Geen productie deploy zonder J.-goedkeuring.
+
+---
+
+## Profiel: data (+ lenzen database, analytics, pipeline, governance)
+
+|| Standaard | Optioneel | Uit |
+||-----------|-----------|-----|
+|| mcp, file, memory, skills, clarify, web, terminal, browser | code_execution, session_search, todo | delegation, moa, image_gen, vision |
+
+**Vraag optioneel wanneer:**
+- `code_execution`: ETL scripts testen in sandbox
+- `session_search`: Eerdere data modeling sessies
+- `todo`: Data migration checklist
+
+**Governance:** Schema wijzigingen / data exports altijd J.-goedkeuring. PII altijd maskeren in non-prod.
+
+---
+
 ## Sync en verify
 
 ```cmd

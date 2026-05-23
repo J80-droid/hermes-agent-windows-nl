@@ -225,3 +225,133 @@ profiles:
     max_tools: 24
     ask_triggers:
       code_execution: "Financial model of spreadsheet-automatisering in sandbox."
+
+  ict:
+    platform_toolsets:
+      cli:
+        - mcp
+        - file
+        - memory
+        - skills
+        - clarify
+        - web
+        - terminal
+        - browser
+    optional_toolsets:
+      - vision
+      - session_search
+      - todo
+      - kanban
+    never_default:
+      - delegation
+      - code_execution
+      - moa
+    max_tools: 24
+    ask_triggers:
+      vision: "Screenshot van error/UI of gescande netwerkdiagrammen."
+      session_search: "Eerdere troubleshooting-sessies terugvinden."
+      todo: "Meerstaps incident of change-planning met checklist."
+      kanban: "Ticket-board beheer voor ITIL/change processen."
+    ict_lenses:
+      infra: "terminal voor server commands; vision bij netwerkdiagrammen."
+      devops: "web voor CI/CD docs; terminal voor pipeline debug."
+      support: "session_search voor eerdere tickets; clarify bij onduidelijke meldingen."
+      sysadmin: "file voor config audit; terminal voor OS-beheer."
+
+  security:
+    platform_toolsets:
+      cli:
+        - mcp
+        - file
+        - memory
+        - skills
+        - clarify
+        - web
+        - terminal
+        - browser
+        - code_execution
+    optional_toolsets:
+      - vision
+      - session_search
+      - todo
+      - delegation
+    never_default:
+      - moa
+      - image_gen
+      - video_gen
+    max_tools: 24
+    ask_triggers:
+      vision: "Screenshot van kwetsbaarheid-dashboard of CVE-details."
+      session_search: "Eerdere pentest- of audit-sessies terugvinden."
+      todo: "Incident-response checklist of compliance audit-stappen."
+      delegation: "Crisis-response: parallel forensics + communicatie (J.-goedkeuring vereist)."
+      code_execution: "PoC script voor kwetsbaarheid — alleen op geisoleerde test-omgeving."
+    security_lenses:
+      pentest: "browser voor web app testing; code_execution voor PoC scripts."
+      compliance: "web voor NIST/ISO docs; file voor policy audit."
+      incident: "terminal voor log analyse; todo voor IR checklist."
+      forensics: "file voor evidence handling; session_search voor chain of custody."
+
+  dev:
+    platform_toolsets:
+      cli:
+        - mcp
+        - file
+        - memory
+        - skills
+        - clarify
+        - web
+        - terminal
+        - browser
+        - code_execution
+    optional_toolsets:
+      - vision
+      - session_search
+      - todo
+      - kanban
+    never_default:
+      - delegation
+      - moa
+      - image_gen
+    max_tools: 24
+    ask_triggers:
+      vision: "UI-screenshot voor bug-report of design review."
+      session_search: "Eerdere debug-sessies of architecture decisions terugvinden."
+      todo: "Sprint-planning of feature breakdown checklist."
+      kanban: "Ticket-board beheer voor development workflow."
+    dev_lenses:
+      backend: "terminal voor API debug; code_execution voor unit tests."
+      frontend: "browser voor UI testing; vision bij responsive design issues."
+      architecture: "web voor design patterns; file voor ADR docs."
+      quality: "code_execution voor coverage reports; file voor review checklist."
+
+  data:
+    platform_toolsets:
+      cli:
+        - mcp
+        - file
+        - memory
+        - skills
+        - clarify
+        - web
+        - terminal
+        - browser
+    optional_toolsets:
+      - code_execution
+      - session_search
+      - todo
+    never_default:
+      - delegation
+      - moa
+      - image_gen
+      - vision
+    max_tools: 24
+    ask_triggers:
+      code_execution: "ETL-script testen of data quality checks in sandbox."
+      session_search: "Eerdere data modelering of analyse-sessies terugvinden."
+      todo: "Data migration of governance audit checklist."
+    data_lenses:
+      database: "terminal voor SQL/DB admin; file voor schema docs."
+      analytics: "browser voor BI dashboards; web voor reporting standards."
+      pipeline: "code_execution voor ETL tests; terminal voor pipeline debug."
+      governance: "file voor data classification docs; web voor privacy regels."
