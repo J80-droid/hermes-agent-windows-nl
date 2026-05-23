@@ -65,7 +65,9 @@ Toepassen: `windows\scripts\apply_trust_memory_limits.ps1` (idempotent). Na nieu
 - `AppData\Local\hermes`
 - `data\lancedb\`
 
-Fail op `Â§` (double-encoding) in MEMORY/USER — herstel: `audit_profile_memories.ps1 -FixEncoding`.
+Fail op `Â§` (double-encoding) in MEMORY/USER — herstel: `audit_profile_memories.ps1 -FixEncoding`. Dubbele §-secties na sync: `python scripts\deduplicate_memories.py` (runtime, idempotent).
+
+**Pad-whitelist (identiteits-E2E):** centraal in `windows\scripts\MemoryAuditCommon.ps1` (`MemoryIdentityAllowPatterns`), niet inline in `RUN_TRUST_FORENSIC_E2E.ps1`. Nieuwe toegestane paden: alleen daar uitbreiden.
 
 ## Identiteit (J.)
 

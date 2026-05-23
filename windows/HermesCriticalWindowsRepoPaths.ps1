@@ -27,6 +27,7 @@ function Get-HermesCriticalWindowsRepoPathList {
     'windows/scripts/apply_trust_memory_limits.ps1',
     'windows/scripts/MemoryAuditCommon.ps1',
     'windows/scripts/audit_profile_memories.ps1',
+    'scripts/deduplicate_memories.py',
     'windows/HermesAuditBundleFiles.ps1',
     'windows/HermesTrustForensicPatterns.ps1',
     'windows/HermesTrustForensicProfileChecks.ps1',
