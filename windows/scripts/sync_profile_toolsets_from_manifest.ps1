@@ -7,13 +7,22 @@ param(
     [switch]$Check,
     [switch]$CreateMissing,
     [switch]$NoSoulInject,
-    [switch]$SyncSoulSnippets
+    [switch]$SyncSoulSnippets,
+    [switch]$ProvisionOnly,
+    [string]$CloneFrom = ''
 )
 
 # BAT doorgeeft --flags als losse argumenten
 if ($args -contains '--create-missing') { $CreateMissing = $true }
 if ($args -contains '--no-soul-inject') { $NoSoulInject = $true }
 if ($args -contains '--sync-soul-snippets') { $SyncSoulSnippets = $true }
+if ($args -contains '--provision-only') { $ProvisionOnly = $true }
+if (-not $CloneFrom) {
+    $cfIdx = [array]::IndexOf($args, '--clone-from')
+    if ($cfIdx -ge 0 -and $cfIdx + 1 -lt $args.Count) {
+        $CloneFrom = $args[$cfIdx + 1]
+    }
+}
 
 $ErrorActionPreference = 'Stop'
 
@@ -40,6 +49,8 @@ if ($Check) { $argsList += '--check' }
 if ($CreateMissing) { $argsList += '--create-missing' }
 if ($NoSoulInject) { $argsList += '--no-soul-inject' }
 if ($SyncSoulSnippets) { $argsList += '--sync-soul-snippets' }
+if ($ProvisionOnly) { $argsList += '--provision-only' }
+if ($CloneFrom) { $argsList += @('--clone-from', $CloneFrom) }
 
 & $py $script @argsList
 exit $LASTEXITCODE

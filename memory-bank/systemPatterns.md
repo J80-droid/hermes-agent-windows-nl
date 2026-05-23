@@ -81,7 +81,8 @@ Defaults: `windows/team_display.defaults`; toepassen: `APPLY_INSTITUTIONAL_RUNTI
 - Security = **apart profiel** (niet lens) vanwege governance-risico en tegengestelde autonomy (`mag exploiteren` vs `mag NIET exploiteren`).
 - Toolset verschillen per rol: `code_execution` aan voor security/dev (PoC/scripts), uit voor ict (alleen infra); `vision` optioneel voor ict/dev/security, uit voor data.
 - RAG-bronnen in `docs/09_ICT/`, `10_Security/`, `11_Development/`, `12_Data/` met submappen per lens.
-- Sync volgorde: manifest → `SYNC_DOMAIN_TOOLSETS.bat` → `sync_profile_mcp_from_domains.py` → `SYNC_SOUL_SNIPPETS.bat` → E2E audit.
+- Sync volgorde: manifest → `SYNC_DOMAIN_TOOLSETS.bat --create-missing` (ontbrekend profiel) → `sync_profile_mcp_from_domains.py` → `SYNC_SOUL_SNIPPETS.bat` → E2E audit (`RUN_TOOLSET_DOMAIN_E2E`, `RUN_PROVISION_DOMAIN_E2E`).
+- Provision blijft in fork-script (`windows/scripts/sync_profile_toolsets_from_manifest.py`); importeert alleen `_PROFILE_DIRS` / validatie uit upstream — geen wijziging `create_profile()`-logica.
 
 ## Veiligheid
 

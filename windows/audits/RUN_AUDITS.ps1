@@ -8,6 +8,7 @@ param(
     [switch]$IncludeLegalDomainE2E,
     [switch]$IncludeTrustForensicE2E,
     [switch]$IncludeToolsetDomainE2E,
+    [switch]$IncludeProvisionDomainE2E,
     [switch]$SkipPytest,
     [switch]$SkipFootguns,
     [switch]$SkipRuff,
@@ -168,6 +169,14 @@ if ($IncludeTrustForensicE2E -or $IncludeAllE2E) {
     $trustE2e = Join-Path $scriptRoot 'RUN_TRUST_FORENSIC_E2E.ps1'
     Invoke-Step 'trust-forensic-e2e' {
         & $trustE2e
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeProvisionDomainE2E -or $IncludeAllE2E) {
+    $provE2e = Join-Path $scriptRoot 'RUN_PROVISION_DOMAIN_E2E.ps1'
+    Invoke-Step 'provision-domain-e2e' {
+        & $provE2e -RepoRoot $repoRoot
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

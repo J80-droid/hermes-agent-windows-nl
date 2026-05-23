@@ -199,6 +199,17 @@ def _inject_soul_shared_sections(content: str, repo: Path) -> str:
     return content
 
 
+def _copy_soul_from_profile(hermes: Path, canon: str, clone_from: str) -> bool:
+    """Fallback SOUL: kopieer van bestaand profiel (geen template)."""
+    src = hermes / "profiles" / clone_from / "SOUL.md"
+    dst = hermes / "profiles" / canon / "SOUL.md"
+    if not src.is_file():
+        return False
+    dst.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+    print(f"[OK] {canon}: SOUL.md gekopieerd van profiel '{clone_from}'")
+    return True
+
+
 def _provision_profile(
     hermes: Path,
     repo: Path,
@@ -206,6 +217,7 @@ def _provision_profile(
     *,
     dry_run: bool = False,
     inject_soul: bool = True,
+    clone_from: str = "legal",
 ) -> bool:
     """Create profile directory structure + minimal config + SOUL from template."""
     try:
@@ -256,8 +268,12 @@ def _provision_profile(
             body = _inject_soul_shared_sections(body, repo)
             soul_path.write_text(body + "\n", encoding="utf-8")
             print(f"[OK] {name}: SOUL.md van template {template.name}")
-        else:
-            print(f"[WARN] {name}: geen SOUL-template — draai SYNC_SOUL_SNIPPETS.bat na sync")
+        elif clone_from:
+            if not _copy_soul_from_profile(hermes, canon, clone_from):
+                print(
+                    f"[WARN] {name}: geen SOUL-template en geen SOUL bij '{clone_from}' "
+                    f"— draai SYNC_SOUL_SNIPPETS.bat na sync"
+                )
 
     try:
         from hermes_cli.profile_model_inheritance import strip_model_block_from_profile_config
@@ -314,6 +330,17 @@ def main() -> int:
         action="store_true",
         help="Na sync: windows/SYNC_SOUL_SNIPPETS.bat (alle runtime SOUL's)",
     )
+    parser.add_argument(
+        "--clone-from",
+        default="legal",
+        metavar="NAME",
+        help="Fallback SOUL-bron als domein-template ontbreekt (default: legal)",
+    )
+    parser.add_argument(
+        "--provision-only",
+        action="store_true",
+        help="Alleen ontbrekende profielen aanmaken, geen toolset-sync",
+    )
     args = parser.parse_args()
 
     repo = Path(args.repo_root).resolve()
@@ -326,6 +353,7 @@ def main() -> int:
         ok = _sync_root(repo, hermes, manifest, dry_run=args.dry_run) and ok
     names = [args.profile] if args.profile else sorted(profiles.keys())
     inject_soul = not args.no_soul_inject
+    clone_from = (args.clone_from or "legal").strip()
     for name in names:
         if name not in profiles:
             print(f"[FAIL] Onbekend profiel in manifest: {name}")
@@ -340,9 +368,12 @@ def main() -> int:
                     name,
                     dry_run=args.dry_run,
                     inject_soul=inject_soul,
+                    clone_from=clone_from,
                 ):
                     ok = False
                     continue
+        if args.provision_only:
+            continue
         if not _sync_profile(hermes, name, profiles[name], dry_run=args.dry_run, check=args.check):
             ok = False
     if ok and args.sync_soul_snippets and not args.check:

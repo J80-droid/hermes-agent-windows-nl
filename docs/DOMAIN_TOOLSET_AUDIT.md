@@ -244,7 +244,17 @@ windows\audits\RUN_PROVISION_DOMAIN_E2E.bat
 hermes -p legal chat --list-tools
 ```
 
-**`--create-missing`:** voor elk profiel in `domain_toolsets.yaml` zonder `profiles/<naam>/config.yaml` — mapstructuur, minimale config, SOUL uit template (inline shared snippets). Bestaande profielen: alleen toolset-sync. Optioneel: `--sync-soul-snippets` roept `SYNC_SOUL_SNIPPETS.bat` aan.
+**`--create-missing`:** voor elk profiel in `domain_toolsets.yaml` zonder `profiles/<naam>/config.yaml` — mapstructuur, minimale config, SOUL uit template (inline shared snippets). Bestaande profielen: alleen toolset-sync.
+
+| Flag | Gedrag |
+|------|--------|
+| `--create-missing` | Provision + sync |
+| `--provision-only` | Alleen aanmaken, geen toolset-wijziging |
+| `--clone-from legal` | SOUL-fallback als domein-template ontbreekt |
+| `--sync-soul-snippets` | Na sync: `SYNC_SOUL_SNIPPETS.bat` (alle profielen) |
+| `--check` | Drift detectie (vóór apply in script) |
+
+Altijd `HERMES_HOME` op root (`%LOCALAPPDATA%\hermes`), niet `profiles\legal`.
 
 **Rooktest (nieuwe chat):**
 

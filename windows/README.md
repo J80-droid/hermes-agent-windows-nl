@@ -37,6 +37,9 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | SOUL sync (Interaction + Output + Tool governance) | `SYNC_SOUL_SNIPPETS.bat` — `docs\templates\SOUL_SHARED_*.md` |
 | Trust & Forensic (SOUL + memory + J.) | `SYNC_TRUST_RUNTIME.bat` (dagelijks) / `APPLY_TRUST_PROTOCOL.bat` (incl. scrub) — `docs\TRUST_FORENSIC_PROTOCOL.md` |
 | Domein-toolsets (minimaal + opt-in) | `SYNC_DOMAIN_TOOLSETS.bat` — `docs\domain_toolsets.yaml`, `docs\DOMAIN_TOOLSET_AUDIT.md` |
+| Nieuw profiel (runtime) | `set HERMES_HOME=%LOCALAPPDATA%\hermes` → `SYNC_DOMAIN_TOOLSETS.bat --create-missing` — zie `docs\DOMAIN_BLUEPRINT.md` |
+| Provision E2E (smoke) | `audits\RUN_PROVISION_DOMAIN_E2E.bat` |
+| Toolset E2E (13 profielen) | `audits\RUN_TOOLSET_DOMAIN_E2E.bat` of `RUN_AUDITS.bat -IncludeToolsetDomainE2E` |
 | Institutionele presentatie | `docs\INSTITUTIONAL_PRESENTATION.md` |
 | Core routing / landkaart | `docs\ORCHESTRATOR_ROUTING.md`, skill `landkaart` (`/landkaart`) |
 | Legal lenzen (één bucket) | `docs\LEGAL_DOMAIN_ARCHITECTURE.md`, `docs\LEGAL_TAXONOMY.md`, `MIGRATE_LEGAL_LAYOUT.bat` |

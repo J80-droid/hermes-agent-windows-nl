@@ -15,6 +15,8 @@ Deze map bevat de **fork** kwaliteitspoorten (geen 1:1 upstream-kloon).
 | **`RUN_INSTITUTIONAL_E2E.bat -ApplyRuntime`** | Zelfde als `APPLY_INSTITUTIONAL_RUNTIME.bat` (zonder dubbele E2E) |
 | **`RUN_LEGAL_DOMAIN_E2E.bat`** | Legal lenzen, actieve zaken, bronlayout |
 | **`RUN_TOOLSET_DOMAIN_E2E.bat`** | 6-stappen E2E: home verify, manifest, pytest, drift, tool-counts, SOUL governance |
+| **`RUN_PROVISION_DOMAIN_E2E.bat`** | Smoke: `--create-missing` op tijdelijke HERMES_HOME (geen productie) |
+| **`RUN_AUDITS.bat -IncludeProvisionDomainE2E`** | Alleen provision-smoke |
 | **`RUN_AUDITS.bat -RequirePSScriptAnalyzer`** | PSSA verplicht (exit 1 als module ontbreekt) |
 | **`RUN_PROFILE_SWITCH_E2E.bat`** | Alleen profielwissel E2E |
 | **`windows\tests\RUN_PYTEST.bat`** | Brede pytest (excl. integration) |
@@ -85,6 +87,8 @@ windows\audits\RUN_AUDITS.bat -IncludeToolsetDomainE2E
 | 6/6 | SOUL: Tool governance in `core` + `legal` |
 
 **Vóór audit (bij drift):** `windows\SYNC_DOMAIN_TOOLSETS.bat`
+
+**Schone machine / ontbrekend profiel in manifest:** eerst `windows\SYNC_DOMAIN_TOOLSETS.bat --create-missing` (zet `HERMES_HOME` op root, niet `profiles\legal`). Smoke: `RUN_PROVISION_DOMAIN_E2E.bat`.
 
 **Rapport:** `TOOLSET_DOMAIN_E2E_LAST_RUN.log` (gitignored)
 
