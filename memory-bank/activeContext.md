@@ -2,7 +2,7 @@
 
 ## Focus
 
-**Institutioneel 10/10 (2026-05-23):** palet ontkoppeld (h2 groen ≠ kolom 0 cyaan), NFR prose→tabel, Web/Ink normalizer-pariteit, `score_institutional_render.py` (E2E 2g). **Na pull:** `APPLY_INSTITUTIONAL_RUNTIME.bat` + `/new`. Verify: `diagnose_renderer.py`, `score_institutional_render.py --verify`.
+**Institutioneel 10/10 (2026-05-23, afgerond):** palet (h2 groen ≠ kolom 0 cyaan), NFR prose→tabel, normalizer-pariteit Python↔Web/Ink (`test_normalizer_ts_parity.py`), score 7 checks (10.0/10), labels verticaal (peel uit heading-body). **Na pull:** `APPLY_INSTITUTIONAL_RUNTIME.bat` + `/new`. Verify: `diagnose_renderer.py`, `score_institutional_render.py --verify`, rooktest `INSTITUTIONAL_RENDERER_TEST_PROMPT.md`.
 
 **Legal domein herstructurering** (2026-05): één RAG-bucket `legal`, rechtsgebied-**lenzen**, generieke `profiles\legal\SOUL.md`, zaak GCR in `LEGAL_ACTIVE_MATTERS.md`. Audit: `RUN_LEGAL_DOMAIN_E2E.bat`.
 

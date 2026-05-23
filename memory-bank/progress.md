@@ -33,7 +33,7 @@
 - [x] Python-policy institutioneel: `HermesPythonPolicy.ps1`, `REPAIR_PYTHON.bat`, `ensure_hermes_python.ps1`; kapotte `.venv` → `.venv.disabled-*` (gitignore); conda `hermes-env` canoniek; verify-keten + setup-hook
 - [x] TUI display: skin `default` (`team_display.defaults`), `apply_team_display.ps1` → `profiles\<active>\config.yaml` (conda `--env-vars`)
 - [x] E2E institutioneel: `RUN_INSTITUTIONAL_E2E.ps1` (**11 stappen + 2f diagnose + 2g score**, PASS 2026-05-23)
-- [x] Assistant Rich-renderer: `institutional_render.py` (`TightHeadingBody`, `SectionSpacer`, per-kolom tabellen, label-kolommen)
+- [x] Assistant Rich-renderer: `institutional_render.py` (`TightHeadingBody`, `SectionSpacer`, per-kolom tabellen, labels verticaal — peel uit heading-body)
 - [x] Markdown pipeline: `display_markdown.py` + `agent/rich_output.py` + `ChatConsole(get_assistant_console_theme())` in `cli.py`
 - [x] Pariteit Ink/Web: `institutionalMarkdown.ts`, `institutionalMarkdownNormalize.ts`, `institutionalColors.ts` (cyaan-first tabelpalet)
 - [x] Normalizer-pariteit pytest: `tests/hermes_cli/test_normalizer_ts_parity.py` + `scripts/normalize_assistant_markdown_*_runner.ts` (Python ↔ Web/Ink via `npx tsx`)
@@ -44,6 +44,7 @@
 - [x] Web: celkleur per tabelkolom (`tableCellClass` op `<td>`, parity CLI)
 - [x] Score/diagnose: `score_institutional_render.py` (**7 checks**, 10.0/10 sample), `diagnose_renderer.py` (kleurlegenda + NFR-prose lint)
 - [x] Legal SOUL: NFR-tabel reminder in `docs/templates/SOUL_LEGAL_DOMAIN.md`
+- [x] Labels checklist #5: waarde onder label (CLI peel + Web `flex-col`); inline `**Label:** waarde` via normalizer + renderer (rooktest 10/10)
 - [x] Nieuwe-chat vlag na SOUL-sync: `institutional_new_chat_notice.py` + banner in `cli.py`
 - [x] Tests: `test_institutional_rich_render.py`, `test_markdown_output_normalize.py`, `test_institutional_production.py`
 - [x] Team display: `compact=false`, `render`, `skin=default` (`team_display.defaults`)
@@ -96,7 +97,7 @@
 ## Sluit-checklist (aanbevolen volgorde)
 
 1. ~~Legal rooktest~~ / ~~Kanban legal~~ — afgerond (2026-05-21)
-2. **Institutioneel 10/10:** `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` → `/new` → rooktest `docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md`
+2. **Institutioneel 10/10:** `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` → `/new` → rooktest `docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md` (visueel + score)
 3. **Verify:** `python scripts/diagnose_renderer.py` + `python scripts/score_institutional_render.py --verify`
 4. Bronnen in 7 lege `raw_source_files`-mappen
 5. `institutional_p0_p1.bat --ingest-remaining`

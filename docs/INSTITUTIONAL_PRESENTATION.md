@@ -36,7 +36,7 @@ Voor dagelijks gebruik: `APPLY_INSTITUTIONAL_RUNTIME.bat` gebruikt automatisch `
 - Kop (`##`, `###`) op **eigen regel**; inhoud op de **volgende regel** (geen lege regel tussen kop en tabel/lijst in markdown — renderer zet ze visueel flush).
 - **Tussen secties:** renderer voegt één subtiele witregel toe (`SectionSpacer`).
 - Hoofdstukken als `##`, niet alleen `1 Stap 1:` zonder hash (normalizer vangt outline af).
-- `**Label:**` op eigen regel; waarde op de volgende regel.
+- `**Label:**` op eigen regel; waarde op de **volgende regel** (visueel eronder, niet ernaast). Normalizer splitst inline `**Label:** waarde`; renderer pelt labels ook uit heading-body (bijv. `**Dossierstatus:**` onder `## Projectoverzicht`).
 - Tabellen als markdown (`| kolom |`); NFR **alleen** als tabel onder `### Niet-functionele requirements`.
 - Lijsten: `- item` in bron (UI toont `•`).
 - Geen `[COLOR_*]` in antwoordtekst.
@@ -52,24 +52,24 @@ Alleen **LLM-antwoorden** — niet de Hermes-banner of prompt.
 | `display.final_response_markdown` | `render` | Rich i.p.v. strip |
 | `display.assistant_render_style` | `institutional_rich` | Per-kolom tabelkoppen, demo-palet |
 | `display.assistant_palette` | `demo` | cyaan/groen/magenta/geel (geen goud) |
-| `display.assistant_label_columns` | `true` | `**Label:**` links, inhoud rechts |
+| `display.assistant_label_columns` | `true` | Legacy config-naam; layout is **altijd verticaal** (label boven waarde) |
 | `display.compact` | `false` | Witruimte tussen blokken |
 
 Code: [`hermes_cli/institutional_render.py`](../hermes_cli/institutional_render.py), [`hermes_cli/display_markdown.py`](../hermes_cli/display_markdown.py), normalizer [`markdown_output_normalize.py`](../hermes_cli/markdown_output_normalize.py).
 
-**Pipeline:** `prepare_assistant_markdown_plain()` normaliseert één keer → `render_institutional_assistant(..., already_normalized=True)` splitst op `##`-koppen en `**Label:**`-blokken, voegt lege regels tussen Rich-`Group`-delen toe.
+**Pipeline:** `prepare_assistant_markdown_plain()` normaliseert één keer → `render_institutional_assistant(..., already_normalized=True)` splitst op `##`-koppen en `**Label:**`-blokken, voegt lege regels tussen Rich-`Group`-delen toe. Labels in sectie-body worden expliciet gepeeld (`_render_body_with_embedded_labels`) zodat ze niet via markdown op één regel vallen.
 
 **`<institutional_check>`:** tags worden in de renderer niet getoond; checklist op één compacte regel (`Controle  · item · item`).
 
-**Kop + inhoud:** elke `#`–`######` via `TightHeadingBody` **flush** op tabel/lijst/proza. **Tussen** secties één subtiele lege regel (`SectionSpacer`). Tabellen: `leading=0`, minimale cel-padding.
+**Kop + inhoud:** elke `#`–`######` via `TightHeadingBody` **flush** op tabel/lijst/proza. **Labels:** roze/oranje kopregel, waarde op regel eronder (`TightHeadingBody`, geen kolom-layout). **Tussen** secties één subtiele lege regel (`SectionSpacer`). Tabellen: `leading=0`, minimale cel-padding; celinhoud erft kolomkleur (CLI + Web `tableCellClass`).
 
-**Pariteit:** CLI/TUI-gateway = volledige Python-renderer. Web/Ink = zelfde normalizer (`institutionalMarkdown.ts`, `ui-tui/.../institutionalMarkdownNormalize.ts`) + compacte layout.
+**Pariteit:** CLI/TUI-gateway = volledige Python-renderer. Web/Ink = zelfde normalizer (`institutionalMarkdown.ts`, `ui-tui/.../institutionalMarkdownNormalize.ts`) + compacte layout. **Drift-test:** `pytest tests/hermes_cli/test_normalizer_ts_parity.py` (Python ↔ Web/Ink via `npx tsx` + `scripts/normalize_assistant_markdown_*_runner.ts`).
 
-**Kleuren:** sectiekoppen (h1–h4) = niveau-gebaseerd; tabelkolommen = apart palet (`header_palette`, **cyaan-first** zodat `##` groen ≠ kolom `ID` cyaan). Celinhoud erft kolomkleur.
+**Kleuren:** sectiekoppen (h1–h4) = niveau-gebaseerd; tabelkolommen = apart palet (`header_palette` op alle YAML-paletten, **cyaan-first** zodat `##` groen ≠ kolom `ID` cyaan).
 
-**Score:** `python scripts/score_institutional_render.py --verify` (E2E stap 2g).
+**Score (7 checks):** checklist, kop-op-inhoud, sectie-spacing, labels, NFR-tabel, kleur h2≠kolom0, render-pipeline — `python scripts/score_institutional_render.py --verify` (E2E stap 2g, drempel ≥ 9.0).
 
-**Normalizer (fallback):** zet platte outline om naar `##`/`###`; `N Stap N:` → `## Stap N:`; platte `Categorie: … Eis: …` en **NFR-prose** (streepjes, `**Performantie**`-blokken) → markdown-tabel; `<institutional_check>` op eigen regels.
+**Normalizer (fallback):** zet platte outline om naar `##`/`###`; `N Stap N:` → `## Stap N:`; inline `**Label:** waarde` → label + waarde op aparte regels; platte `Categorie: … Eis: …` en **NFR-prose** (streepjes, `**Performantie**`-blokken) → markdown-tabel; `<institutional_check>` op eigen regels.
 
 **Rooktest-prompt:** [`templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md`](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md) — plak in nieuwe chat na SOUL-sync; gebruik **dezelfde** prompt om runs te vergelijken.
 
@@ -98,7 +98,9 @@ python scripts/score_institutional_render.py --verify
 ```
 
 Toont:
-- Actief profiel, renderer-stijl, palet, label-kolommen
+- Actief profiel, renderer-stijl, palet, label-kolommen (config; layout altijd verticaal)
+- Kleurlegenda h2 vs tabelkolom 0
+- NFR-prose lint (probe + normalizer-herstel)
 - Config cache state (live vs gecachet)
 - Visuele preview via de echte `format_response_ansi()` pipeline
 
@@ -168,7 +170,8 @@ Archief: [`windows/scripts/institutional/`](../windows/scripts/institutional/REA
 | Antwoord nog goud | `assistant_palette: hermes` of legacy | Zet `assistant_palette: demo`; `APPLY_INSTITUTIONAL_RUNTIME.bat` |
 | Eindpaneel goud, gateway wel demo | Oud `ChatConsole` zonder assistant-theme | Update fork; herstart chat |
 | Geen witregel tussen hoofdstukken | Model + geen normalizer | SOUL-sync; `markdown_output_normalize` |
-| Labels niet in twee kolommen | `assistant_label_columns: false` | Zet `true` in profiel-`config.yaml` |
+| Label en waarde op één regel | Inline markdown in heading-body (oud) | Pull/update fork; renderer pelt labels; normalizer splitst inline |
+| NFR prose i.p.v. tabel | Model negeert SOUL | `diagnose_renderer.py` toont NFR-lint; normalizer herstelt; SOUL-sync + `/new` |
 | Magenta koppen (oude Rich) | `markdown_legacy` | `assistant_render_style: institutional_rich` |
 | Blauw i.p.v. goud (UI) | Legacy cmd of `skin: slate` | Windows Terminal + `skin: default` |
 | Structuur alleen bij analyst | Geen SOUL-sync | `SYNC_SOUL_SNIPPETS.bat` + nieuwe sessie |

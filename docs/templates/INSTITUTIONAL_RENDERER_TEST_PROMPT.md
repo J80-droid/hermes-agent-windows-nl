@@ -89,3 +89,9 @@ Geen inleiding, geen afsluitende uitleg, geen codefence rond het antwoord.
 | 6 | NFR **altijd** markdown-tabel (geen prose/streepjes) |
 
 Bij afwijking: `python scripts/diagnose_renderer.py` en `python scripts/score_institutional_render.py --verify`.
+
+**Geautomatiseerde checks (7):** checklist, kop-op-inhoud, sectie-spacing, labels, NFR-tabel, kleur h2≠kolom0, render-pipeline. Drempel verify: gemiddeld ≥ 9.0 (sample: 10.0/10).
+
+**Pariteit normalizer:** `pytest tests/hermes_cli/test_normalizer_ts_parity.py` (vereist Node/npx).
+
+**Opmerking:** als het model `**Dossierstatus:** waarde` op één regel stuurt, corrigeren normalizer + renderer dat automatisch — geen extra SOUL nodig.
