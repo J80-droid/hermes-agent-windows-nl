@@ -58,7 +58,7 @@ try {
     if (-not $py) {
         $py = Join-Path $env:USERPROFILE 'miniconda3\envs\hermes-env\python.exe'
     }
-    $script = Join-Path $RepoRoot 'windows\scripts\sync_profile_toolsets_from_manifest.py'
+    $script = Join-Path $RepoRoot 'windows/scripts/sync_profile_toolsets_from_manifest.py'
     & $py $script --repo-root $RepoRoot --hermes-root $tempHome --profile $testProfile --create-missing
     if ($LASTEXITCODE -ne 0) { throw "provision sync exit $LASTEXITCODE" }
 

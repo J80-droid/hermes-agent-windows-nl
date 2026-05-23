@@ -282,9 +282,11 @@ Geen verplichting; git history blijft de volledige changelog.
 5. `windows\scripts\which_hermes_repo.ps1` — `lancedb-knowledge: JA`
 6. `VERIFY_WINDOWS_CHAIN.bat` (of vertrouw op UPDATE-keten).
 7. Nieuwe Hermes-sessie; rooktest: `search_knowledge` (zie `scripts/rag_pipeline/ACTIVATION.md`)
-8. Display/API-home: `APPLY_TEAM_DISPLAY.bat`, `SYNC_HERMES_API_ENV.bat`, `SYNC_SOUL_SNIPPETS.bat` (zie `TERMINAL_WINDOWS.md`, `docs/INSTITUTIONAL_PRESENTATION.md`)
-9. Institutioneel E2E: `windows\audits\RUN_INSTITUTIONAL_E2E.bat` (**11 stappen**: SOUL, display alle profielen incl. `assistant_*`, Rich-renderer 2e, profielwissel 9–11)
-10. Rooktest presentatie (subset): `pytest tests/cli/test_institutional_rich_render.py tests/cli/test_skin_markdown_theme.py tests/agent/test_rich_output.py -q`
+8. Display/SOUL: **automatisch** in `UPDATE_HERMES.bat` post-merge (`apply_institutional_runtime.ps1 -SkipE2E -NoPause`). Handmatig alleen bij skip/fout: `APPLY_INSTITUTIONAL_RUNTIME.bat`
+9. Institutioneel E2E: `windows\audits\RUN_INSTITUTIONAL_E2E.bat` (**11 stappen**)
+10. Rooktest presentatie: `pytest tests/cli/test_institutional_rich_render.py … -q`
+
+**Laatste volledige audit:** `windows/audits/UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md` (merge 58 commits + UPDATE + E2E PASS).
 
 ---
 

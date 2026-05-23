@@ -10,7 +10,7 @@ Deze map bevat de **fork** kwaliteitspoorten (geen 1:1 upstream-kloon).
 | **`RUN_AUDITS.bat -IncludeAllE2E`** | Institutioneel + legal-domein + profielwissel + toolset E2E |
 | **`RUN_AUDITS.bat -IncludeToolsetDomainE2E`** | `platform_toolsets.cli` per profiel vs manifest |
 | **`RUN_AUDITS.bat -IncludeLegalDomainE2E`** | Legal taxonomie, SOUL, submappen, rooktest |
-| **`APPLY_INSTITUTIONAL_RUNTIME.bat`** | **Automatisch:** display (alle profielen) + SOUL-sync + E2E |
+| **`APPLY_INSTITUTIONAL_RUNTIME.bat`** | Handmatig: display + SOUL + E2E; **automatisch** na `UPDATE_HERMES.bat` (post-merge, `-SkipE2E`) |
 | **`RUN_INSTITUTIONAL_E2E.bat`** | Audit (11 stappen incl. profiel-chat-UX); `-ApplyRuntime` = eerst runtime |
 | **`RUN_INSTITUTIONAL_E2E.bat -ApplyRuntime`** | Zelfde als `APPLY_INSTITUTIONAL_RUNTIME.bat` (zonder dubbele E2E) |
 | **`RUN_LEGAL_DOMAIN_E2E.bat`** | Legal lenzen, actieve zaken, bronlayout |
@@ -63,7 +63,8 @@ Stappen: repo → pytest (landkaart, presentatie, **2d profiel-chat-UX**, **2e R
 
 Presentatie: zie `docs/INSTITUTIONAL_PRESENTATION.md`. **Eén commando:** `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` (of E2E met `-ApplyRuntime`). Display-check stap 6/11: **alle** profielen onder `profiles\`.
 
-Laatste rapport: `INSTITUTIONAL_E2E_REPORT_2026-05-22.md` (log `INSTITUTIONAL_E2E_LAST_RUN.log` is gitignored).
+Laatste rapport: `INSTITUTIONAL_E2E_REPORT_2026-05-22.md` (log `INSTITUTIONAL_E2E_LAST_RUN.log` is gitignored).  
+Upstream + UPDATE audit: `UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md`.
 
 ## Domein-toolsets E2E
 

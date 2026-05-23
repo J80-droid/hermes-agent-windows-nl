@@ -2,7 +2,9 @@
 
 ## Focus
 
-**Institutioneel 10/10 (2026-05-23, afgerond):** palet (h2 groen ≠ kolom 0 cyaan), NFR prose→tabel, normalizer-pariteit Python↔Web/Ink (`test_normalizer_ts_parity.py`), score 7 checks (10.0/10), labels verticaal (peel uit heading-body). **Na pull:** `APPLY_INSTITUTIONAL_RUNTIME.bat` + `/new`. Verify: `diagnose_renderer.py`, `score_institutional_render.py --verify`, rooktest `INSTITUTIONAL_RENDERER_TEST_PROMPT.md`.
+**Upstream + UPDATE E2E (2026-05-23, PASS):** merge 58 Nous-commits (`dd44205dd`), `UPDATE_HERMES.bat` post-merge incl. `apply_institutional_runtime -SkipE2E`, institutional E2E 11/11, push `e445d1cca`. Rapport: `windows/audits/UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md`. Volgende upstream: `MERGE_UPSTREAM.bat -PromptOnly` → IDE-prompt.
+
+**Institutioneel 10/10 (2026-05-23, afgerond):** palet, NFR, normalizer-pariteit, score 10/10, labels verticaal, Web live palette. **Na pull/update:** `/new` (institutional runtime zit in UPDATE-keten; handmatig `APPLY_INSTITUTIONAL_RUNTIME.bat` alleen bij fout).
 
 **Legal domein herstructurering** (2026-05): één RAG-bucket `legal`, rechtsgebied-**lenzen**, generieke `profiles\legal\SOUL.md`, zaak GCR in `LEGAL_ACTIVE_MATTERS.md`. Audit: `RUN_LEGAL_DOMAIN_E2E.bat`.
 
@@ -40,7 +42,7 @@
 | Hermes start (bat) | `../../HERMES_START.md` |
 | Windows | `windows/README.md` |
 | Terminal / display / API-home | `windows/TERMINAL_WINDOWS.md` |
-| Nous upstream | `windows/UPSTREAM_SYNC.md` (merge + git inspectie + rooktest-matrix) |
+| Nous upstream | `windows/UPSTREAM_SYNC.md`; merge: `MERGE_UPSTREAM.bat`; audit: `windows/audits/UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md` |
 | Voortgang | `memory-bank/progress.md` |
 
 ## Volgende stappen (volgorde)
@@ -56,7 +58,7 @@
 
 | Script | Rol |
 |--------|-----|
-| `UPDATE_HERMES.bat` | Update + verify (`.ps1`, geen pause; `HERMES_SKIP_PAUSE_AFTER_UPDATE=1`) + auto `fix_hermes_taskbar_pins` |
+| `UPDATE_HERMES.bat` | Update + post-merge (trust, toolsets, **institutional runtime**, RAG, verify) |
 | `SYNC_SOUL_SNIPPETS.bat` | Interaction + Output + Tool governance (`SOUL_SHARED_*.md`) |
 | `SYNC_DOMAIN_TOOLSETS.bat` | Manifest → `platform_toolsets.cli` (root + profielen) |
 | `MANAGE_BACKUPS.bat` | Inclusief `backup_soul_profiles` → `localappdata_hermes/` in backup |

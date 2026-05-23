@@ -20,7 +20,9 @@
 - [x] Domein-toolsets: `docs/domain_toolsets.yaml`, `DOMAIN_TOOLSET_AUDIT.md`, `SYNC_DOMAIN_TOOLSETS.bat`, `SOUL_SHARED_TOOL_GOVERNANCE`, `RUN_TOOLSET_DOMAIN_E2E.ps1`
 - [x] Runtime provision: `--create-missing` in `sync_profile_toolsets_from_manifest.py` (+ `--clone-from`, `--provision-only`, `--sync-soul-snippets`); tests `test_provision_profile_from_manifest.py`; E2E `RUN_PROVISION_DOMAIN_E2E.bat`; skill `create_fork_domain`
 - [x] ICT-team profielen: `ict`, `security`, `dev`, `data` — SOUL's, toolsets, RAG-mappen, procedures, E2E PASS
-- [x] Upstream-update keten: `windows/upstream_sync.ps1`, `UPDATE_HERMES.bat`, `UPSTREAM_SYNC.md` (+ post-merge git-inspectie + rooktest-matrix, geen handmatig Nous-changelog)
+- [x] Upstream-update keten: `windows/upstream_sync.ps1`, `UPDATE_HERMES.bat`, `UPSTREAM_SYNC.md` (+ post-merge institutional runtime, git-inspectie + rooktest-matrix)
+- [x] Upstream merge 2026-05-23: 58 Nous-commits, 1 conflict (CI tests.yml), E2E PASS — `windows/audits/UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md`
+- [x] `MERGE_UPSTREAM.bat` + IDE-prompt (`merge_upstream_fork.ps1`); default IDE-guided, `-AutoResolve` opt-in
 - [x] Taakbalk `windows\*.lnk`: `cmd.exe /c` (+ RAG: `/k`) + gekleurd `.ico` (7 lagen 16–256 px); `FIX_TASKBAR_ICONS.bat`; `POST_GIT_PULL.bat`
 - [x] Icoon-generator: PNG uit `assets/Hermes_logo.png` of `%USERPROFILE%\.hermes\_local_assets\assets\`; geen synthetische H-stub
 - [x] `SETUP_HERMES.bat` → standaard `--full-setup` + `OPEN_SETUP.bat`; `--files-only` voor alleen bestanden
@@ -41,7 +43,7 @@
 - [x] Normalizer: outline, institutional_check, NFR prose→tabel (`markdown_output_normalize.py` + TS parity)
 - [x] Palet: h2 groen ≠ tabelkolom 0 cyaan (`header_palette` op **alle** YAML-paletten in `config/palettes.yaml`)
 - [x] Rooktest: `docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md` (10/10 checklist)
-- [x] Web: celkleur per tabelkolom + **palet-aware** kleuren (`institutionalWebPalette.ts`, prop `assistantPalette` op `Markdown`)
+- [x] Web: live `assistantPalette` via `GET /api/display/assistant` + `AssistantDisplayProvider` (commit `19239a6fd`)
 - [x] Score/diagnose: `score_institutional_render.py` (**7 checks**, 10.0/10 sample), `diagnose_renderer.py` (kleurlegenda + NFR-prose lint)
 - [x] Legal SOUL: NFR-tabel reminder in `docs/templates/SOUL_LEGAL_DOMAIN.md`
 - [x] Labels checklist #5: waarde onder label (CLI peel + Web `flex-col`); inline `**Label:** waarde` via normalizer + renderer (rooktest 10/10)
