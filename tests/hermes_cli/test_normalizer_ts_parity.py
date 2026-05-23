@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -23,6 +24,12 @@ PARITY_FIXTURES: list[tuple[str, str]] = [
         "### Niet-functionele requirements\n\n"
         "**Performantie**\nRender snel.\n"
         "Robuustheid - Stabiel - Test\n",
+    ),
+    (
+        "nfr_prose_emdash",
+        "### Niet-functionele requirements\n\n"
+        "**Performantie**\nRender snel.\n"
+        "Robuustheid \u2014 Stabiel \u2014 Test\n",
     ),
     (
         "nfr_inline",
@@ -54,8 +61,11 @@ def _run_ts_runner(runner: Path, text: str) -> str:
         input=text,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="strict",
         cwd=REPO,
         timeout=120,
+        env={**os.environ, "PYTHONIOENCODING": "utf-8"},
     )
     if proc.returncode != 0:
         raise RuntimeError(
