@@ -11,6 +11,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_soul_anat
 if errorlevel 1 exit /b 1
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_profile_memories.ps1" %*
 if errorlevel 1 exit /b 1
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\invoke_deduplicate_memories.ps1" %*
+if errorlevel 1 exit /b 1
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\apply_trust_memory_limits.ps1" %*
 if errorlevel 1 exit /b 1
 echo.

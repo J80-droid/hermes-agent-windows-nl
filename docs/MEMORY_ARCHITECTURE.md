@@ -45,7 +45,7 @@ windows\audits\RUN_MEMORY_PRODUCTION_GATE.bat
 | 1 | `apply_trust_memory_limits.ps1` | `[OK]` root + 13 profielen |
 | 2 | `SYNC_HERMES_API_ENV.bat` | vault-paden op alle `.env` |
 | 3 | `scripts\audit_profile_memories.ps1` | geen OVER, geen `Â§`, geen identiteitslek; bij `Â§`: `-FixEncoding` |
-| 3b | (optioneel) `python scripts\deduplicate_memories.py` | na sync-duplicaten: USER/MEMORY per profiel §-secties dedupliceren |
+| 3b | (automatisch) `SYNC_TRUST_RUNTIME.bat` → `invoke_deduplicate_memories.ps1` | na memory-seed sync: §-dedup via hermes-env |
 | 4 | `audits\RUN_MEMORY_PRODUCTION_GATE.bat` | PASS |
 | 5 | Hermes **`/new`** | nieuwe sessie laadt config + memory-snapshot |
 
