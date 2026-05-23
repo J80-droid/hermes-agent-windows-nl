@@ -38,31 +38,21 @@ if (-not (Test-Path -LiteralPath $manifestDir)) {
 $manifestStamp = Get-Date -Format 'yyyyMMdd_HHmmss'
 
 if (-not $SkipSoul) {
-    Write-Host '--- SOUL Interaction ---' -ForegroundColor Cyan
-    & (Join-Path $scriptRoot 'scripts\sync_soul_interaction_snippet.ps1') -Force -ManifestPath (Join-Path $manifestDir "interaction_${manifestStamp}.json")
+    & (Join-Path $scriptRoot 'scripts\sync_soul_anatomy_snippets.ps1') -Force -RepoRoot $repoRoot
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    Write-Host '--- SOUL Outputformaat ---' -ForegroundColor Cyan
-    & (Join-Path $scriptRoot 'scripts\sync_soul_output_format_snippet.ps1') -Force -ManifestPath (Join-Path $manifestDir "outputformat_${manifestStamp}.json")
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    & (Join-Path $scriptRoot 'scripts\sync_soul_tool_governance_snippet.ps1')
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    Write-Host '[OK] SOUL Interaction + Outputformaat + Tool governance gesynchroniseerd (alle profielen FORCED).' -ForegroundColor Green
+    Write-Host '[OK] SOUL anatomy snippets gesynchroniseerd (alle profielen FORCED).' -ForegroundColor Green
 }
 
 if ($IncludeTrustRuntime) {
-    Write-Host '--- Trust runtime (advisory + legal + memory) ---' -ForegroundColor Cyan
+    Write-Host '--- Trust runtime (legal template + SOUL + memory) ---' -ForegroundColor Cyan
     & (Join-Path $scriptRoot 'scripts\sync_legal_soul_from_template.ps1')
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    & (Join-Path $scriptRoot 'scripts\sync_soul_advisory_snippet.ps1')
+    & (Join-Path $scriptRoot 'scripts\sync_soul_anatomy_snippets.ps1') -Force -RepoRoot $repoRoot -Quiet
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     & (Join-Path $scriptRoot 'scripts\sync_profile_memories.ps1')
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     & (Join-Path $scriptRoot 'scripts\apply_trust_memory_limits.ps1')
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    if ($SkipSoul) {
-        & (Join-Path $scriptRoot 'scripts\sync_soul_tool_governance_snippet.ps1')
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    }
     $toolSync = Join-Path $scriptRoot 'scripts\sync_profile_toolsets_from_manifest.ps1'
     if (Test-Path -LiteralPath $toolSync) {
         Write-Host '--- Domein-toolsets ---' -ForegroundColor Cyan

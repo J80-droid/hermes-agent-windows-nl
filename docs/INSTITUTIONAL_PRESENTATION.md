@@ -6,11 +6,16 @@ Drie gescheiden lagen: **wat het model schrijft** (SOUL), **assistant-antwoorden
 
 | Bestand | Rol |
 |---------|-----|
-| [`templates/SOUL_SHARED_OUTPUT_FORMAT.md`](templates/SOUL_SHARED_OUTPUT_FORMAT.md) | Typografie, lijsten, `<institutional_check>`, standaardsecties |
-| [`templates/SOUL_SHARED_INTERACTION.md`](templates/SOUL_SHARED_INTERACTION.md) | Interaction met J., landkaart |
-| [`templates/SOUL_SHARED_ADVISORY.md`](templates/SOUL_SHARED_ADVISORY.md) | Trust: pushback, bronplicht, geen pleaser-taal |
-| `windows\SYNC_SOUL_SNIPPETS.bat` | Schrijft Interaction + Outputformaat naar SOUL (met `--force` optie) |
-| `windows\SYNC_TRUST_RUNTIME.bat` | + Advisory, legal forensic, memory seed (geen scrub) |
+| [`SOUL_ANATOMY_SPEC.md`](SOUL_ANATOMY_SPEC.md) | Canonieke SOUL-sectievolgorde (10 anatomy-blokken) |
+| [`templates/SOUL_SHARED_VALUES.md`](templates/SOUL_SHARED_VALUES.md) | Values & Principles |
+| [`templates/SOUL_SHARED_TRUST_VERIFICATION.md`](templates/SOUL_SHARED_TRUST_VERIFICATION.md) | Trust onder Hard Limits |
+| [`templates/SOUL_SHARED_OUTPUT_FORMAT.md`](templates/SOUL_SHARED_OUTPUT_FORMAT.md) | `### Output conventions (institutional)` |
+| [`templates/SOUL_SHARED_INTERACTION.md`](templates/SOUL_SHARED_INTERACTION.md) | `### Interaction met J.` |
+| [`templates/SOUL_SHARED_WORKFLOW.md`](templates/SOUL_SHARED_WORKFLOW.md) | Workflow (Assess→Deliver) |
+| [`templates/SOUL_SHARED_TOOL_GOVERNANCE.md`](templates/SOUL_SHARED_TOOL_GOVERNANCE.md) | `## Tool Usage` |
+| [`templates/SOUL_SHARED_MEMORY_POLICY.md`](templates/SOUL_SHARED_MEMORY_POLICY.md) | Memory Policy |
+| `windows\SYNC_SOUL_SNIPPETS.bat` | Values → Interaction → Output → Trust → Workflow → Tool → Memory |
+| `windows\SYNC_TRUST_RUNTIME.bat` | + legal template, trust/values, memory seed (geen scrub) |
 
 **Sync-methode:** Centrale PowerShell-module `SyncSoulSnippet.psm1` (in `windows/scripts/`). Deze module:
 - Leest templates uit `docs/templates/`

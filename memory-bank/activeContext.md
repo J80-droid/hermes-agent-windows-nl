@@ -14,6 +14,8 @@
 
 **ICT-team uitbreiding** (2026-05-23): 4 nieuwe profielen toegevoegd — `ict`, `security`, `dev`, `data`. Elk met eigen SOUL, lenzen, toolset, RAG-mappen en governance. Security = apart profiel (geen lens) met impact na J.-goedkeuring. E2E audit PASS met alle 13 profielen.
 
+**SOUL Anatomy** (2026-05-23, afgerond + gedocumenteerd): canonieke 10 secties (`docs/SOUL_ANATOMY_SPEC.md`), 14 runtime-profielen (13 domeinen + core + analyst-template), `sync_soul_anatomy_snippets.ps1`, `APPLY_SOUL_ANATOMY_RUNTIME.bat`, BOM-vrije I/O in `SyncSoulSnippet.psm1`, `Test-SoulAnatomyContent` + `RUN_SOUL_ANATOMY_E2E.ps1`, `validate_soul_anatomy.py --all-profiles`. Trust-keten: legal template → volledige snippet-sync. Seed: `hermes_cli/default_soul.py`. Na sync: `/new`.
+
 **P0+P1 afgerond**; Windows institutioneel: conda `hermes-env`, WT/skin, API-env sync. Open: bronnen in 7 lege `raw_source_files`-mappen (legal bronnen + submappen actief).
 
 ## Dev vs. install-clone
@@ -30,6 +32,7 @@
 | User-data sync | `docs/USER_DATA_OPERATIONS.md` |
 | Model alle profielen | `docs/PROFILE_MODEL_INHERITANCE.md` |
 | SOUL per profiel | `docs/PROFILE_SOUL.md` |
+| SOUL anatomy | `docs/SOUL_ANATOMY_SPEC.md`, `docs/templates/SOUL_ANATOMY_BASE.md` |
 | Domein-toolsets | `docs/DOMAIN_TOOLSET_AUDIT.md`, `docs/domain_toolsets.yaml` |
 | Core routing / orchestrator | `docs/ORCHESTRATOR_ROUTING.md` |
 | Legal architectuur / taxonomie | `docs/LEGAL_DOMAIN_ARCHITECTURE.md`, `docs/LEGAL_TAXONOMY.md` |

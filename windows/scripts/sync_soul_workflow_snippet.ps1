@@ -1,9 +1,10 @@
-# Sync ## Tool Usage from repo template into all profile SOUL.md files.
+# Sync ## Workflow from repo template into all profile SOUL.md files.
 param(
     [string]$RepoRoot = '',
     [string]$HermesRoot = '',
     [switch]$Force,
-    [switch]$Verify
+    [switch]$Verify,
+    [string]$ManifestPath = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -15,14 +16,14 @@ if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 }
 
-$templatePath = Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_TOOL_GOVERNANCE.md'
+$templatePath = Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_WORKFLOW.md'
 
-Write-Host '--- SOUL Tool Usage sync ---' -ForegroundColor Cyan
+Write-Host '--- SOUL Workflow sync ---' -ForegroundColor Cyan
 Sync-SoulSnippet `
     -TemplatePath $templatePath `
-    -SectionRegex '^## Tool Usage\s' `
-    -LegacySectionRegex @('^## Tool governance \(domein-minimum\)\s') `
-    -InsertBeforeRegex '## Memory Policy\s|## Example Interaction\s|## Workflow\s' `
+    -SectionRegex '^## Workflow\s' `
+    -InsertBeforeRegex '## Tool Usage\s|## Tool governance \(domein-minimum\)\s' `
     -HermesRoot $HermesRoot `
     -Force:$Force `
-    -Verify:$Verify
+    -Verify:$Verify `
+    -ManifestPath $ManifestPath

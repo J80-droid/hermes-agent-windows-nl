@@ -1,4 +1,4 @@
-## Tool governance (domein-minimum)
+## Tool Usage
 
 - Werk **alleen** met tools die in deze sessie in je toolbox staan. Niet doen alsof `browser_*`, `delegate_task`, `vision_analyze`, `execute_code`, enz. beschikbaar zijn als ze niet zijn ingeschakeld.
 - Als een taak een **optionele** toolset vereist (zie `docs/DOMAIN_TOOLSET_AUDIT.md` en `docs/domain_toolsets.yaml`): vraag J. **één keer** expliciet, vóór je die route kiest:

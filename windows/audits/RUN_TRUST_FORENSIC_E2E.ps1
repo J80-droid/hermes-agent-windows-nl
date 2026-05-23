@@ -83,8 +83,12 @@ if (Test-Path -LiteralPath $profilesDir) {
                 Write-Host "[FAIL] $($_.Name): SOUL.md bevat nog identiteitsnaam" -ForegroundColor Red
                 $failures++
             }
-            if ($soulText -notmatch 'Advisory & trust') {
-                Write-Host "[FAIL] $($_.Name): SOUL.md mist Advisory & trust" -ForegroundColor Red
+            if ($soulText -notmatch 'Values & Principles|Advisory & trust') {
+                Write-Host "[FAIL] $($_.Name): SOUL.md mist Values & Principles (of legacy Advisory)" -ForegroundColor Red
+                $failures++
+            }
+            if ($soulText -notmatch 'Trust & verification|Advisory & trust') {
+                Write-Host "[FAIL] $($_.Name): SOUL.md mist Trust & verification" -ForegroundColor Red
                 $failures++
             }
         }

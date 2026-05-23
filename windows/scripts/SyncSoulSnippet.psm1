@@ -1,6 +1,22 @@
 # Shared PowerShell helper for SOUL snippet syncing.
 # Used by sync_soul_interaction_snippet.ps1, sync_soul_output_format_snippet.ps1, etc.
 
+function Get-SoulFileContent {
+    param([Parameter(Mandatory)][string]$Path)
+    $utf8 = [System.Text.UTF8Encoding]::new($false)
+    $text = [System.IO.File]::ReadAllText($Path, $utf8)
+    return $text.TrimStart([char]0xFEFF)
+}
+
+function Set-SoulFileContent {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][string]$Content
+    )
+    $utf8 = [System.Text.UTF8Encoding]::new($false)
+    [System.IO.File]::WriteAllText($Path, $Content, $utf8)
+}
+
 function Get-HermesRoot {
     $localRoot = Join-Path $env:LOCALAPPDATA 'hermes'
     if (Test-Path -LiteralPath (Join-Path $localRoot 'config.yaml')) { return $localRoot }
@@ -25,11 +41,35 @@ function Get-SoulTargets {
     return @($targets)
 }
 
+function Get-SoulSectionEndPattern {
+    param(
+        [string]$SectionRegex,
+        [string]$SectionEndRegex = ''
+    )
+    if ($SectionEndRegex) { return $SectionEndRegex }
+    # ### subsections: default next ### sibling; NOT ## inside code fences in output template
+    if ($SectionRegex -match 'Output conventions') {
+        return '(?=^\#\# (Expertise & Knowledge|Hard Limits|Workflow|Tool Usage|Memory Policy|Example Interaction)\s|\z)'
+    }
+    if ($SectionRegex -match '^### Interaction') {
+        return '(?=^### Output conventions \(institutional\)\s|\z)'
+    }
+    if ($SectionRegex -match '^### Trust') {
+        return '(?=^### (?!Trust)|^\#\# |\z)'
+    }
+    if ($SectionRegex -match '^###') {
+        return '(?=^### |^\#\# (Workflow|Tool Usage|Memory Policy|Example Interaction|Expertise|Hard Limits)\s|\z)'
+    }
+    return '(?=^\#\# |\z)'
+}
+
 function Sync-SoulSnippet {
     param(
         [Parameter(Mandatory)][string]$TemplatePath,
         [Parameter(Mandatory)][string]$SectionRegex,
+        [string[]]$LegacySectionRegex = @(),
         [string]$InsertBeforeRegex = '',
+        [string]$SectionEndRegex = '',
         [string]$HermesRoot = '',
         [switch]$Force,
         [switch]$Verify,
@@ -43,6 +83,8 @@ function Sync-SoulSnippet {
     $snippet = (Get-Content -LiteralPath $TemplatePath -Raw -Encoding UTF8).Trim()
     $targets = Get-SoulTargets -HermesRoot $HermesRoot
     $sectionPattern = [regex]$SectionRegex
+    $allPatterns = @($SectionRegex) + @($LegacySectionRegex)
+    $sectionEnd = Get-SoulSectionEndPattern -SectionRegex $SectionRegex -SectionEndRegex $SectionEndRegex
     $results = @()
     $updated = 0
     $skipped = 0
@@ -50,11 +92,18 @@ function Sync-SoulSnippet {
     foreach ($path in $targets) {
         $profileName = '(root)'
         if ($path -match 'profiles\\([^\\]+)\\SOUL\.md$') { $profileName = $matches[1] }
-        $content = Get-Content -LiteralPath $path -Raw -Encoding UTF8
+        $content = Get-SoulFileContent -Path $path
 
-        $hasSection = $content -match $sectionPattern
+        $matchedPattern = $null
+        foreach ($pat in $allPatterns) {
+            if ($content -match ('(?ms)^' + $pat)) {
+                $matchedPattern = $pat
+                break
+            }
+        }
+        $hasSection = [bool]$matchedPattern
         if ($hasSection) {
-            $newContent = $content -replace ('(?ms)^' + $SectionRegex + '\s*\r?\n.*?(?=^\#\# |\z)'), ($snippet + "`r`n`r`n")
+            $newContent = $content -replace ('(?ms)^' + $matchedPattern + '\s*\r?\n.*?' + $sectionEnd), ($snippet + "`r`n`r`n")
         } elseif ($InsertBeforeRegex -and ($content -match ('(?ms)^(' + $InsertBeforeRegex + ')'))) {
             # Escape $ in replacement to prevent PowerShell variable interpolation
             $escapedSnippet = $snippet -replace '\$', '$$$$'
@@ -75,7 +124,7 @@ function Sync-SoulSnippet {
                 Write-Host "  [VERIFY_OK]   $profileName : up-to-date" -ForegroundColor Green
             }
         } elseif ($Force -or $changed) {
-            Set-Content -LiteralPath $path -Value $newContent -Encoding UTF8 -NoNewline
+            Set-SoulFileContent -Path $path -Content $newContent
             if ($changed) {
                 $action = 'UPDATED'
                 Write-Host "  [UPDATED]     $profileName : $path" -ForegroundColor Green
@@ -136,6 +185,80 @@ function Sync-SoulSnippet {
     return $results
 }
 
+function Repair-SoulDuplicateOutputBlocks {
+    param([string]$Content)
+    $marker = '(?ms)^### Output conventions \(institutional\)\s*\r?\n'
+    $changed = $false
+    while ([regex]::Matches($Content, $marker).Count -gt 1) {
+        $changed = $true
+        $matches = [regex]::Matches($Content, $marker)
+        $second = $matches[1].Index
+        $before = $Content.Substring(0, $second)
+        $after = $Content.Substring($second)
+        $after = $after -replace '(?ms)^### Output conventions \(institutional\)\s*\r?\n.*?(?=^\#\# |\z)', ''
+        $Content = ($before.TrimEnd() + "`r`n`r`n" + $after.TrimStart()).TrimEnd()
+    }
+    if ($changed) { return $Content + "`r`n" }
+    return $Content
+}
+
+function Test-SoulAnatomyContent {
+    param(
+        [Parameter(Mandatory)][string]$Content,
+        [string]$Label = ''
+    )
+    $failures = [System.Collections.Generic.List[string]]::new()
+    $required = @(
+        '^# SOUL\.md - ',
+        '^## Identity\s',
+        '^## Values & Principles\s',
+        '^## Communication Style\s',
+        '^### Interaction met J\.\s',
+        '^### Output conventions \(institutional\)\s',
+        '^## Expertise & Knowledge\s',
+        '^## Hard Limits\s',
+        '^## Workflow\s',
+        '^## Tool Usage\s',
+        '^## Memory Policy\s',
+        '^## Example Interaction\s'
+    )
+    foreach ($pat in $required) {
+        if ($Content -notmatch "(?m)$pat") {
+            $failures.Add("mist sectie: $pat")
+        }
+    }
+    $legacy = @(
+        '^## Advisory & trust\s',
+        '^## Outputformaat \(institutioneel\)\s',
+        '^## Tool governance \(domein-minimum\)\s',
+        '^## Interaction met J\.\s'
+    )
+    foreach ($pat in $legacy) {
+        if ($Content -match "(?m)$pat") {
+            $failures.Add("legacy kop: $pat")
+        }
+    }
+    $outCount = ([regex]::Matches($Content, '(?m)^### Output conventions \(institutional\)')).Count
+    if ($outCount -ne 1) {
+        $failures.Add("verwacht 1 Output conventions-blok, gevonden $outCount")
+    }
+    if ($Content -notmatch '(?m)^### Trust & verification') {
+        $failures.Add('mist ### Trust & verification')
+    }
+    $comm = [regex]::Match($Content, '(?m)^## Communication Style')
+    $out = [regex]::Match($Content, '(?m)^### Output conventions \(institutional\)')
+    $exp = [regex]::Match($Content, '(?m)^## Expertise & Knowledge')
+    if ($comm.Success -and $out.Success -and $exp.Success) {
+        if ($out.Index -lt $comm.Index -or $out.Index -gt $exp.Index) {
+            $failures.Add('Output conventions staat niet tussen Communication Style en Expertise')
+        }
+    }
+    if ($Label) {
+        return @($failures | ForEach-Object { "${Label}: $_" })
+    }
+    return @($failures)
+}
+
 function Set-InstitutionalNewChatReminder {
     param(
         [string]$Reason = 'SOUL/presentatie gewijzigd',
@@ -158,4 +281,4 @@ function Set-InstitutionalNewChatReminder {
     Write-Host "  Rooktest: $SmokeTestPrompt" -ForegroundColor DarkYellow
 }
 
-Export-ModuleMember -Function Sync-SoulSnippet, Get-HermesRoot, Get-SoulTargets, Set-InstitutionalNewChatReminder
+Export-ModuleMember -Function Sync-SoulSnippet, Get-HermesRoot, Get-SoulTargets, Get-SoulFileContent, Set-SoulFileContent, Set-InstitutionalNewChatReminder, Get-SoulSectionEndPattern, Repair-SoulDuplicateOutputBlocks, Test-SoulAnatomyContent

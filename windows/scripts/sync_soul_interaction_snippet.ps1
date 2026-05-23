@@ -26,8 +26,9 @@ $templatePath = Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_INTERACTION.md'
 Write-Host '--- SOUL Interaction sync ---' -ForegroundColor Cyan
 Sync-SoulSnippet `
     -TemplatePath $templatePath `
-    -SectionRegex '^## Interaction met J\.\s' `
-    -InsertBeforeRegex '## Tone\s' `
+    -SectionRegex '^### Interaction met J\.\s' `
+    -LegacySectionRegex @('^## Interaction met J\.\s') `
+    -InsertBeforeRegex '## Expertise & Knowledge\s|### Output conventions \(institutional\)\s|## Outputformaat \(institutioneel\)\s|## Mission\s' `
     -HermesRoot $HermesRoot `
     -Force:$Force `
     -Verify:$Verify `

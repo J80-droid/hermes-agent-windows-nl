@@ -1,4 +1,4 @@
-## Outputformaat (institutioneel)
+### Output conventions (institutional)
 
 Dit blok geldt voor **alle** antwoorden, ongeacht profiel. Kleur en layout doet de **assistant Rich-renderer** (`institutional_rich`); schrijf normale markdown, geen `[COLOR_*]`-tokens. Hermes UI (banner/prompt) blijft skin `default`.
 

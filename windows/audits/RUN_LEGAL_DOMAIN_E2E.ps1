@@ -60,8 +60,16 @@ if (-not (Test-Path -LiteralPath $legalSoul)) {
         Write-Host '[FAIL] Forensic & trust sectie ontbreekt in legal SOUL' -ForegroundColor Red
         $failures++
     }
-    if ($soul -notmatch 'Advisory & trust') {
-        Write-Host '[FAIL] Advisory & trust ontbreekt in legal SOUL' -ForegroundColor Red
+    if ($soul -notmatch 'Values & Principles|Advisory & trust') {
+        Write-Host '[FAIL] Values & Principles ontbreekt in legal SOUL' -ForegroundColor Red
+        $failures++
+    }
+    if ($soul -notmatch 'Trust & verification|Advisory & trust') {
+        Write-Host '[FAIL] Trust & verification ontbreekt in legal SOUL' -ForegroundColor Red
+        $failures++
+    }
+    if ($soul -notmatch 'Example Interaction') {
+        Write-Host '[FAIL] Example Interaction ontbreekt in legal SOUL' -ForegroundColor Red
         $failures++
     }
     if ($soul -match 'LEGAL_ACTIVE_MATTERS') {

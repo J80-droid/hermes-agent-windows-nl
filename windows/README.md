@@ -34,8 +34,10 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | Toolsets per profiel | `hermes -p <naam> tools` of `SYNC_DOMAIN_TOOLSETS.bat` |
 | HERMES_HOME controleren | `scripts\verify_hermes_home.ps1` |
 | Profielwissel E2E-audit | `audits\RUN_PROFILE_SWITCH_E2E.bat` |
-| SOUL sync (Interaction + Output + Tool governance) | `SYNC_SOUL_SNIPPETS.bat` — `docs\templates\SOUL_SHARED_*.md` |
-| Trust & Forensic (SOUL + memory + J.) | `SYNC_TRUST_RUNTIME.bat` (dagelijks) / `APPLY_TRUST_PROTOCOL.bat` (incl. scrub) — `docs\TRUST_FORENSIC_PROTOCOL.md` |
+| SOUL anatomy (shared snippets, 7 blokken) | `SYNC_SOUL_SNIPPETS.bat` → `scripts\sync_soul_anatomy_snippets.ps1` — zie `docs\SOUL_ANATOMY_SPEC.md` |
+| SOUL anatomy runtime (templates + snippets + E2E) | `APPLY_SOUL_ANATOMY_RUNTIME.bat` |
+| SOUL legacy → anatomy | `MIGRATE_SOUL_ANATOMY.bat` |
+| Trust & Forensic (legal + SOUL + memory + J.) | `SYNC_TRUST_RUNTIME.bat` (dagelijks) / `APPLY_TRUST_PROTOCOL.bat` (incl. scrub) — `docs\TRUST_FORENSIC_PROTOCOL.md` |
 | Domein-toolsets (minimaal + opt-in) | `SYNC_DOMAIN_TOOLSETS.bat` — `docs\domain_toolsets.yaml`, `docs\DOMAIN_TOOLSET_AUDIT.md` |
 | Nieuw profiel (runtime) | `set HERMES_HOME=%LOCALAPPDATA%\hermes` → `SYNC_DOMAIN_TOOLSETS.bat --create-missing` — zie `docs\DOMAIN_BLUEPRINT.md` |
 | Provision E2E (smoke) | `audits\RUN_PROVISION_DOMAIN_E2E.bat` |

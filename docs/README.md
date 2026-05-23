@@ -12,6 +12,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Model/provider voor **alle** profielen instellen | [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md) |
 | Profiel wisselen (chat, CLI, audit) | [PROFILE_SWITCH.md](PROFILE_SWITCH.md) |
 | SOUL.md per domeinprofiel (waar, bewerken) | [PROFILE_SOUL.md](PROFILE_SOUL.md) |
+| SOUL anatomy (10 secties, sync, migratie) | [SOUL_ANATOMY_SPEC.md](SOUL_ANATOMY_SPEC.md) |
 | ICT domein (infra, devops, support, sysadmin) | `docs/09_ICT/`, `docs/templates/SOUL_ICT_DOMAIN.md` |
 | Security domein (pentest, compliance, incident, forensics) | `docs/10_Security/`, `docs/templates/SOUL_SECURITY_DOMAIN.md` |
 | Development domein (backend, frontend, architecture, quality) | `docs/11_Development/`, `docs/templates/SOUL_DEV_DOMAIN.md` |
@@ -88,6 +89,7 @@ flowchart TB
 - **Domein-toolsets:** [DOMAIN_TOOLSET_AUDIT.md](DOMAIN_TOOLSET_AUDIT.md) — `SYNC_DOMAIN_TOOLSETS.bat` (`--create-missing` voor nieuw profiel); audit `RUN_TOOLSET_DOMAIN_E2E.bat`
 - **Runtime provision (nieuw profiel):** `set HERMES_HOME=%LOCALAPPDATA%\hermes` → `windows\SYNC_DOMAIN_TOOLSETS.bat --create-missing` — zie [DOMAIN_BLUEPRINT.md](DOMAIN_BLUEPRINT.md) stap 9–10
 - **SOUL sync + presentatie (10/10):** `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` (display + SOUL + E2E); docs [INSTITUTIONAL_PRESENTATION.md](INSTITUTIONAL_PRESENTATION.md); rooktest [templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md); verify: `python scripts/diagnose_renderer.py`, `python scripts/score_institutional_render.py --verify`; pariteit: `pytest tests/hermes_cli/test_normalizer_ts_parity.py`
+- **SOUL anatomy (10 secties, 14 profielen):** [SOUL_ANATOMY_SPEC.md](SOUL_ANATOMY_SPEC.md) — runtime: `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat`; snippets: `windows\SYNC_SOUL_SNIPPETS.bat`; validatie: `windows\audits\RUN_SOUL_ANATOMY_E2E.ps1`
 - **Core SOUL referentie (repo):** `docs/templates/SOUL_CORE_ORCHESTRATOR.md` — runtime: `%LOCALAPPDATA%\hermes\profiles\core\SOUL.md`
 
 ## Memory bank (agent-context)

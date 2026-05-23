@@ -42,9 +42,26 @@ $requiredRepo = @(
     'docs/ORCHESTRATOR_ROUTING.md',
     'docs/LEGAL_TAXONOMY.md',
     'docs/LEGAL_DOMAIN_ARCHITECTURE.md',
+    'docs/SOUL_ANATOMY_SPEC.md',
+    'docs/templates/SOUL_ANATOMY_BASE.md',
     'docs/templates/SOUL_LEGAL_DOMAIN.md',
+    'docs/templates/SOUL_SHARED_VALUES.md',
+    'docs/templates/SOUL_SHARED_WORKFLOW.md',
+    'docs/templates/SOUL_SHARED_MEMORY_POLICY.md',
+    'docs/templates/SOUL_SHARED_TRUST_VERIFICATION.md',
     'docs/templates/SOUL_SHARED_INTERACTION.md',
     'docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md',
+    'docs/templates/SOUL_ANALYST_DOMAIN.md',
+    'docs/templates/SOUL_ACADEMICS_DOMAIN.md',
+    'docs/templates/SOUL_OPERATIONS_DOMAIN.md',
+    'docs/templates/SOUL_TRADING_DOMAIN.md',
+    'docs/templates/SOUL_GAMING_DOMAIN.md',
+    'docs/templates/SOUL_PHILOSOPHY_DOMAIN.md',
+    'docs/templates/SOUL_LOGISTICS_DOMAIN.md',
+    'docs/templates/SOUL_VENTURES_DOMAIN.md',
+    'windows/scripts/sync_soul_values_snippet.ps1',
+    'windows/scripts/migrate_soul_anatomy.ps1',
+    'scripts/validate_soul_anatomy.py',
     'windows/scripts/sync_soul_output_format_snippet.ps1',
     'hermes_cli/display_markdown.py',
     'agent/rich_output.py',
@@ -224,8 +241,8 @@ if (-not (Test-Path -LiteralPath $coreSoulPath)) {
     Write-Host "[SKIP] Geen runtime core SOUL: $coreSoulPath" -ForegroundColor Yellow
 } else {
     $coreSoul = Get-Content -LiteralPath $coreSoulPath -Raw -Encoding UTF8
-    if ($coreSoul -notmatch '## Interaction met J\.') {
-        Write-Host '[FAIL] core SOUL mist ## Interaction met J.' -ForegroundColor Red
+    if ($coreSoul -notmatch '(?m)^#{2,3} Interaction met J\.') {
+        Write-Host '[FAIL] core SOUL mist Interaction met J. (## of ###)' -ForegroundColor Red
         exit 1
     }
     if ($template.Trim() -notmatch 'landkaart' -or $coreSoul -notmatch 'landkaart|volledige lijst') {
@@ -241,8 +258,8 @@ if (-not (Test-Path -LiteralPath $coreSoulPath)) {
     Write-Host "[SKIP] Geen runtime core SOUL voor Outputformaat-check" -ForegroundColor Yellow
 } else {
     $coreSoul = Get-Content -LiteralPath $coreSoulPath -Raw -Encoding UTF8
-    if ($coreSoul -notmatch '## Outputformaat \(institutioneel\)') {
-        Write-Host '[FAIL] core SOUL mist ## Outputformaat (institutioneel)' -ForegroundColor Red
+    if ($coreSoul -notmatch '(?m)Output conventions \(institutional\)|Outputformaat \(institutioneel\)') {
+        Write-Host '[FAIL] core SOUL mist Output conventions / Outputformaat' -ForegroundColor Red
         exit 1
     }
     if ($outputTemplate -notmatch 'institutional_check' -or $coreSoul -notmatch 'institutional_check|<institutional_check>') {

@@ -2,6 +2,8 @@
 
 Elk RAG-domein heeft een **Hermes-profiel** met eigen persona (`SOUL.md`), MCP (`lancedb-<domein>`) en toolsets. Dit staat **buiten de git-repo** op je machine.
 
+**Anatomy (canoniek):** alle SOUL-bestanden volgen [SOUL_ANATOMY_SPEC.md](SOUL_ANATOMY_SPEC.md) (Identity → Example Interaction). Repo-templates: `docs/templates/SOUL_*_DOMAIN.md` (13 domeinen + `SOUL_CORE_ORCHESTRATOR.md`).
+
 ## Waar SOUL.md staat
 
 | Concept | Pad (Windows) |
@@ -33,6 +35,7 @@ Uit `%USERPROFILE%\data\domains.yaml` (veld `profile_name`):
 | security | `security` | `...\profiles\security\SOUL.md` |
 | dev | `dev` | `...\profiles\dev\SOUL.md` |
 | data | `data` | `...\profiles\data\SOUL.md` |
+| analyst | `analyst` | `...\profiles\analyst\SOUL.md` (optioneel; geen entry in `domain_toolsets.yaml`) |
 
 RAG-bronnen staan apart onder `%USERPROFILE%\data\raw_source_files\<source_dir>\`.
 
@@ -56,7 +59,7 @@ Wijzigingen in SOUL.md werken het best in een **nieuwe sessie** (bestaande chats
 |---------|-----|
 | `%LOCALAPPDATA%\hermes\config.yaml` | Model, provider (alle profielen) |
 | `profiles\<naam>\config.yaml` | `platform_toolsets.cli`, `mcp_servers` — **geen** `model:` (niet `enabled_toolsets`) |
-| `profiles\<naam>\SOUL.md` | Persona, missie, tone, grenzen, **Tool governance** |
+| `profiles\<naam>\SOUL.md` | Anatomy: Identity, Values, Communication, Expertise, Hard Limits, Workflow, Tool Usage, Memory, Example |
 | `%USERPROFILE%\data\domains.yaml` | Bronpaden, LanceDB, ingest |
 
 Zie ook [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md), [DOMAIN_TOOLSET_AUDIT.md](DOMAIN_TOOLSET_AUDIT.md) en [RAG_TWEE_FASEN.md](RAG_TWEE_FASEN.md).
@@ -86,7 +89,12 @@ notepad %LOCALAPPDATA%\hermes\profiles\mijn-domein\SOUL.md
 
 | Actie | Hoe |
 |-------|-----|
-| Interaction + Outputformaat + Tool governance | `windows\SYNC_SOUL_SNIPPETS.bat` of `SYNC_TRUST_RUNTIME.bat` (`SOUL_SHARED_*.md`, `SOUL_SHARED_TOOL_GOVERNANCE.md`) |
+| Anatomy shared snippets (Values, Interaction, Output, Trust, Workflow, Tool, Memory) | `windows\SYNC_SOUL_SNIPPETS.bat` of `SYNC_TRUST_RUNTIME.bat` |
+| Legacy → anatomy headers | `windows\scripts\migrate_soul_anatomy.ps1` (-DryRun, daarna `-Apply`) |
+| Validatie | `python scripts/validate_soul_anatomy.py --all-profiles` (alleen `profiles/*/SOUL.md`) of `windows\audits\RUN_SOUL_ANATOMY_E2E.ps1` |
+| Snippet-sync (één script) | `windows\scripts\sync_soul_anatomy_snippets.ps1 -Force` |
+| Volledige template push per profiel | `windows\scripts\sync_domain_soul_from_template.ps1 -Profile <naam>` |
+| **Alles in één keer (aanbevolen)** | `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat` (14 templates + snippets + E2E) |
 | Presentatie (kleur + structuur) | `docs/INSTITUTIONAL_PRESENTATION.md` |
 | Core SOUL referentie in repo | `docs/templates/SOUL_CORE_ORCHESTRATOR.md` |
 | Runtime SOUL in backup | `MANAGE_BACKUPS.bat` → `backup_soul_profiles` (map `localappdata_hermes/` in backup) |
