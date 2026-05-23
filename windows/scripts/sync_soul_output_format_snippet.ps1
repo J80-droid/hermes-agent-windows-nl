@@ -16,7 +16,7 @@ if (-not (Test-Path -LiteralPath $modulePath)) {
 Import-Module "$modulePath" -Force
 
 if (-not $RepoRoot) {
-    $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+    $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 } else {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 }
@@ -40,7 +40,7 @@ if (-not $Verify) {
         $fixed = Repair-SoulDuplicateOutputBlocks -Content $content
         if ($fixed -ne $content) {
             Set-SoulFileContent -Path $path -Content $fixed
-            Write-Host "  [REPAIR] $path" -ForegroundColor Yellow
+            Write-Host ('  REPAIR: ' + $path) -ForegroundColor Yellow
         }
     }
     if ($Force) {

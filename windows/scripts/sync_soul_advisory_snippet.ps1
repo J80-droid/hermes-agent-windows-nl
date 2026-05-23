@@ -6,10 +6,12 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+Import-Module (Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1') -Force
 $scriptDir = $PSScriptRoot
 
 Write-Host '--- SOUL Advisory (legacy) -> Values + Trust ---' -ForegroundColor Cyan
 & (Join-Path $scriptDir 'sync_soul_values_snippet.ps1') -RepoRoot $RepoRoot -HermesRoot $HermesRoot -Force:$Force
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 & (Join-Path $scriptDir 'sync_soul_trust_verification_snippet.ps1') -RepoRoot $RepoRoot -HermesRoot $HermesRoot -Force:$Force
-exit $LASTEXITCODE
+if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
+exit 0

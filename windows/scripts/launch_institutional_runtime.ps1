@@ -17,9 +17,9 @@ if ($RepoRoot) {
     $RepoRoot = $RepoRoot.Trim().Trim('"')
 }
 if (-not $RepoRoot) {
-    $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+    $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 } elseif (-not (Test-Path -LiteralPath $RepoRoot)) {
-    Write-Host "[ERROR] RepoRoot bestaat niet: $RepoRoot" -ForegroundColor Red
+    Write-Host ('ERROR: RepoRoot bestaat niet: ' + $RepoRoot) -ForegroundColor Red
     exit 1
 } else {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
