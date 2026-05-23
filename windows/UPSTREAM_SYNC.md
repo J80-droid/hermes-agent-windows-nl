@@ -70,7 +70,7 @@ windows\UPDATE_HERMES.bat
 windows\MERGE_UPSTREAM.bat -PromptOnly
 ```
 
-Voorspelt conflicten via `git merge-tree` — **geen git-wijziging**. Schrijft een markdown-prompt naar `%LOCALAPPDATA%\hermes\merge_prompts\` die je in Cursor plakt.
+Voorspelt conflicten via `git merge-tree` — **geen git-wijziging**. Schrijft een markdown-prompt naar `%LOCALAPPDATA%\hermes\merge_prompts\` die je in Cursor plakt. Per conflictbestand bevat de prompt een **git-diff snippet** (`HEAD` vs `upstream/main`) zodat de IDE inhoud ziet vóór de merge — ook zonder `<<<<<<<` markers op schijf.
 
 **Echte merge + prompt:**
 

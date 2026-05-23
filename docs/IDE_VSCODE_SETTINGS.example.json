@@ -1,4 +1,6 @@
 {
+  "python.defaultInterpreterPath": "C:\\Users\\jamel\\miniconda3\\envs\\hermes-env\\python.exe",
+  "python.terminal.activateEnvironment": false,
   "files.associations": {
     "*.ps1": "powershell",
     "*.psm1": "powershell",

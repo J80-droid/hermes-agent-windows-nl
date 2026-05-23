@@ -1,0 +1,25 @@
+---
+description: Canonieke Python-interpreter (conda hermes-env) voor Hermes
+globs: hermes-agent/**/*.py,hermes-agent/scripts/**/*
+alwaysApply: false
+---
+
+# Python / conda (Hermes)
+
+## Interpreter
+
+Gebruik voor tests, RAG-scripts en diagnose **altijd** conda `hermes-env`:
+
+`C:\Users\jamel\miniconda3\envs\hermes-env\python.exe`
+
+Niet de repo `.venv` tenzij `HERMES_ALLOW_UV_VENV=1` en pip werkt.
+
+## Terminal
+
+- Pytest: `windows\tests\RUN_PYTEST.ps1`
+- LanceDB onderhoud: `windows\LANCEDB_MAINTENANCE.bat --list`
+- Renderer: `python scripts\diagnose_renderer.py --verify`
+
+## Recovery
+
+Kapotte `.venv`: `windows\REPAIR_PYTHON.bat` (quarantaine, geen handmatig rmdir).

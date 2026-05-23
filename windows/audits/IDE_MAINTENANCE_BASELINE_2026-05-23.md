@@ -1,0 +1,61 @@
+# IDE-onderhoud baseline — 23 mei 2026
+
+**Repo:** `D:\A.I\APPS\Hermes_agent_WS\hermes-agent`  
+**Plan:** Hermes landkaart IDE-onderhoud
+
+## Pre-implementatie (vóór landkaart-wijzigingen)
+
+| Check | Status | Opmerking |
+|-------|--------|-----------|
+| `VERIFY_WINDOWS_CHAIN.bat` | PASS | Pad-literals OK, setup-wrapper OK, conda OK |
+| `score_institutional_render.py --verify` | PASS | 10.0/10 |
+| `diagnose_renderer.py --verify` | PASS (na fix) | `apply_team_display_profiles.py` patcht nu ook root `config.yaml` display |
+| Upstream merge snippets | DEFER | Zie implementatie merge_upstream_fork.ps1 |
+
+## Post-implementatie (uitgevoerd)
+
+| Check | Status |
+|-------|--------|
+| `VERIFY_WINDOWS_CHAIN` | PASS |
+| `test_merge_upstream_snippets` + `test_lancedb_maintenance` | 7 passed |
+| `test_normalizer_ts_parity` | 13 passed |
+| `score_institutional_render --verify` | 10.0/10 |
+| `diagnose_renderer --verify` | PASS |
+| `RUN_INSTITUTIONAL_E2E` | 11/11 PASS |
+| `LANCEDB_MAINTENANCE --inspect` | 9 domeinen OK (user `domains.yaml`) |
+| `audit_skill_drift.py` | 0 bevindingen |
+
+| Artefact | Pad |
+|----------|-----|
+| LanceDB maintenance | `scripts/rag_pipeline/lancedb_maintenance.py`, `windows/LANCEDB_MAINTENANCE.bat` |
+| Merge git-diff snippets | `windows/merge_upstream_fork.ps1` |
+| Skill drift audit | `scripts/audit_skill_drift.py` |
+| IDE Python | `.vscode/settings.json`, `.cursor/rules/python-conda.mdc` |
+| Root display sync fix | `windows/scripts/apply_team_display_profiles.py` |
+| Nachschärfe (review) | Manifest + verify-kritieke paden; `LANCEDB_MAINTENANCE.bat` args-fix; `optimize()` na compact; merge-prompt `cd` dynamisch; tests + ACTIVATION/HERMES_START |
+
+**Open (user-data):** `domains.yaml` heeft 9 domeinen; voorbeeld in repo heeft 13 — voeg `ict`, `security`, `dev`, `data` toe indien gewenst.
+
+## Volledige E2E (aanbevolen)
+
+```cmd
+windows\audits\RUN_IDE_MAINTENANCE_E2E.bat -ApplyDisplayFix
+```
+
+Optioneel inclusief upstream-preview + institutioneel 11/11:
+
+```cmd
+windows\audits\RUN_IDE_MAINTENANCE_E2E.bat -Full
+```
+
+Rapport: `windows\audits\IDE_MAINTENANCE_E2E_REPORT_<timestamp>.md`
+
+## Snelle herhaal-audit (subset)
+
+```cmd
+windows\VERIFY_WINDOWS_CHAIN.bat
+C:\Users\jamel\miniconda3\envs\hermes-env\python.exe -m pytest tests/windows/test_merge_upstream_snippets.py tests/rag_pipeline/test_lancedb_maintenance.py -q
+windows\LANCEDB_MAINTENANCE.bat --list
+windows\LANCEDB_MAINTENANCE.bat --inspect
+C:\Users\jamel\miniconda3\envs\hermes-env\python.exe scripts\audit_skill_drift.py
+```

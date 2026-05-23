@@ -13,6 +13,8 @@ Deze map bevat de **fork** kwaliteitspoorten (geen 1:1 upstream-kloon).
 | **`RUN_AUDITS.bat -IncludeToolsetDomainE2E`** | `platform_toolsets.cli` per profiel vs manifest |
 | **`RUN_AUDITS.bat -IncludeLegalDomainE2E`** | Legal taxonomie, SOUL, submappen, rooktest |
 | **`APPLY_INSTITUTIONAL_RUNTIME.bat`** | Handmatig: display + SOUL + E2E; **automatisch** na `UPDATE_HERMES.bat` (post-merge, `-SkipE2E`) |
+| **`RUN_IDE_MAINTENANCE_E2E.bat`** | Volledige IDE-landkaart E2E (16 stappen, rapport `IDE_MAINTENANCE_E2E_REPORT_*.md`); `-Full` = display-fix + `RUN_INSTITUTIONAL_E2E`; `-SkipMergePreview` = zonder git fetch |
+| **`RUN_AUDITS.bat -IncludeIdeMaintenanceE2E`** | Bovenstaande IDE-onderhoud E2E in gecombineerde poort |
 | **`RUN_INSTITUTIONAL_E2E.bat`** | Audit (11 stappen incl. profiel-chat-UX); `-ApplyRuntime` = eerst runtime |
 | **`RUN_INSTITUTIONAL_E2E.bat -ApplyRuntime`** | Zelfde als `APPLY_INSTITUTIONAL_RUNTIME.bat` (zonder dubbele E2E) |
 | **`RUN_LEGAL_DOMAIN_E2E.bat`** | Legal lenzen, actieve zaken, bronlayout |
@@ -69,6 +71,25 @@ Presentatie: zie `docs/INSTITUTIONAL_PRESENTATION.md`. **Eén commando:** `windo
 
 Laatste rapport: `INSTITUTIONAL_E2E_REPORT_2026-05-22.md` (log `INSTITUTIONAL_E2E_LAST_RUN.log` is gitignored).  
 Upstream + UPDATE audit: `UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md`.
+
+## IDE-onderhoud E2E (volledige landkaart)
+
+```text
+windows\audits\RUN_IDE_MAINTENANCE_E2E.bat -ApplyDisplayFix
+```
+
+**15 stappen** (landkaart categorie I-V): repo-artefacten → verify-keten → setup-wrapper pytest → IDE pytest (merge/LanceDB/display) → `LANCEDB_MAINTENANCE.bat --list` → schema `--inspect` → `audit_skill_drift.py` → merge git-diff snippet → (optioneel) `MERGE_UPSTREAM -PromptOnly` → display-fix → `diagnose_renderer --verify` → score ≥9.0 → normalizer-pariteit → institutional guard → `.vscode` + `python-conda.mdc` → LanceDB benchmark (core, 500ms).
+
+| Vlag | Effect |
+| ---- | ------ |
+| `-ApplyDisplayFix` | `apply_team_display.ps1` vóór diagnose (root + profielen) |
+| `-SkipMergePreview` | Geen `git fetch` / merge-tree (sneller) |
+| `-Full` | `-ApplyDisplayFix` + `RUN_INSTITUTIONAL_E2E` (11/11) |
+| `-IncludeInstitutional` | Alleen institutioneel E2E extra |
+
+Rapport: `IDE_MAINTENANCE_E2E_REPORT_<timestamp>.md`. Baseline: `IDE_MAINTENANCE_BASELINE_2026-05-23.md`.
+
+**Niet in deze E2E:** volledige `RUN_AUDITS` (ruff/footguns), legal/toolset E2E, LanceDB `--compact` (destructief; handmatig).
 
 ## Domein-toolsets E2E
 

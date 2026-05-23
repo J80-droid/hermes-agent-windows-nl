@@ -12,6 +12,7 @@ function Get-HermesWindowsLocalAssetsManifest {
         'RESTORE_FROM_BACKUP.bat',
         'UPDATE_HERMES.bat',
         'MERGE_UPSTREAM.bat',
+        'LANCEDB_MAINTENANCE.bat',
         'merge_upstream_fork.ps1',
         'upstream_sync.ps1',
         'hermes_update.bat',
@@ -30,6 +31,7 @@ function Get-HermesWindowsLocalAssetsManifest {
         'HERMES_SETUP_WIZARD.bat',
         'DOCTOR_FIX.bat',
         'VERIFY_WINDOWS_CHAIN.bat',
+        'scripts/run_lancedb_maintenance.ps1',
         'CREATE_DESKTOP_SHORTCUT.bat',
         'REFRESH_TASKBAR_SHORTCUTS.bat',
         'FIX_TASKBAR_ICONS.bat',
@@ -198,6 +200,8 @@ function Get-HermesCriticalWindowsRepoPath {
         'windows/audits/RUN_PROFILE_SWITCH_E2E.bat',
         'windows/audits/RUN_INSTITUTIONAL_E2E.ps1',
         'windows/audits/RUN_INSTITUTIONAL_E2E.bat',
+        'windows/audits/RUN_IDE_MAINTENANCE_E2E.ps1',
+        'windows/audits/RUN_IDE_MAINTENANCE_E2E.bat',
         'windows/audits/RUN_BACKUP_E2E.ps1',
         'windows/audits/RUN_BACKUP_E2E.bat',
         'tests/windows/test_backup_runtime.ps1',
@@ -220,6 +224,8 @@ function Get-HermesCriticalWindowsRepoPath {
         'docs/templates/SOUL_DEV_DOMAIN.md',
         'docs/templates/SOUL_DATA_DOMAIN.md',
         'scripts/windows/setup_hermes_windows.ps1',
+        'scripts/rag_pipeline/lancedb_maintenance.py',
+        'scripts/audit_skill_drift.py',
         'pyproject.toml'
     )
 }

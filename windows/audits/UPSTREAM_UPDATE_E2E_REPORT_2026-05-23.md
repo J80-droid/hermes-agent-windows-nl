@@ -18,7 +18,7 @@
 | `RUN_INSTITUTIONAL_E2E.bat` | PASS | 11/11 stappen |
 | `git push origin main` | PASS | sync met remote |
 | `MERGE_UPSTREAM.bat` conflict-flow | PARTIAL | Handmatige merge; `-PromptOnly` getest (0 conflicts na merge) |
-| IDE-prompt met echte snippets | DEFER | Volgende upstream-merge; script aanwezig |
+| IDE-prompt met git-diff snippets (-PromptOnly) | PASS | `Get-ConflictSnippetForPrompt` in merge_upstream_fork.ps1 |
 
 ---
 

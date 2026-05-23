@@ -206,6 +206,67 @@ function Get-PredictedMergeConflicts {
     return @($paths)
 }
 
+function Get-MergeTreeRawOutput {
+    $base = git merge-base HEAD upstream/main 2>$null
+    if (-not $base) { return '' }
+    return (git merge-tree $base HEAD upstream/main 2>&1 | Out-String)
+}
+
+function Get-ConflictSnippetFromGitDiff {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [int]$MaxLines = 40
+    )
+
+    Push-Location $RepoRoot
+    try {
+        $diff = @(git diff HEAD upstream/main -- $Path 2>$null)
+        if ($diff.Count -eq 0) {
+            return '(geen diff tussen HEAD en upstream/main voor dit pad)'
+        }
+        $take = [Math]::Min($MaxLines, $diff.Count)
+        $chunk = ($diff[0..($take - 1)] -join "`n")
+        if ($diff.Count -gt $MaxLines) { $chunk += "`n... (truncated)" }
+        return $chunk
+    } finally {
+        Pop-Location
+    }
+}
+
+function Get-ConflictSnippetFromMergeTree {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [string]$MergeTreeOutput,
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [int]$MaxLines = 40
+    )
+
+    $norm = ($Path -replace '\\', '/').TrimStart('./')
+    if ($MergeTreeOutput) {
+        $lines = $MergeTreeOutput -split "`n"
+        $buf = [System.Collections.Generic.List[string]]::new()
+        $capture = $false
+        foreach ($line in $lines) {
+            if ($line -match '<<<<<<<') { $capture = $true }
+            if ($capture) {
+                [void]$buf.Add($line)
+                if ($buf.Count -ge $MaxLines) { break }
+            }
+            elseif ($line -match [regex]::Escape($norm) -and $line -match 'changed in both|CONFLICT|<<<<<<<') {
+                $capture = $true
+                [void]$buf.Add($line)
+            }
+        }
+        if ($buf.Count -gt 0 -and (($buf -join "`n") -match '<<<<<<<|=======|>>>>>>>')) {
+            $chunk = $buf -join "`n"
+            if ($buf.Count -ge $MaxLines) { $chunk += "`n... (truncated)" }
+            return $chunk
+        }
+    }
+    return Get-ConflictSnippetFromGitDiff -Path $Path -RepoRoot $RepoRoot -MaxLines $MaxLines
+}
+
 function Get-ConflictSnippet {
     param([string]$Path, [int]$MaxLines = 40)
 
@@ -217,12 +278,28 @@ function Get-ConflictSnippet {
     for ($i = 0; $i -lt $lines.Count; $i++) {
         if ($lines[$i] -match '^<<<<<<< ') { $start = $i; break }
     }
-    if ($start -lt 0) { return '(geen conflict-markers in bestand - merge-tree preview)' }
+    if ($start -lt 0) { return '' }
 
     $end = [Math]::Min($lines.Count - 1, $start + $MaxLines)
     $chunk = $lines[$start..$end] -join "`n"
     if ($end -lt $lines.Count - 1) { $chunk += "`n... (truncated)" }
     return $chunk
+}
+
+function Get-ConflictSnippetForPrompt {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [string]$MergeTreeOutput = '',
+        [switch]$PreferGitPreview
+    )
+
+    $fullPath = Join-Path $RepoRoot ($Path -replace '/', [IO.Path]::DirectorySeparatorChar)
+    if (-not $PreferGitPreview -and (Test-Path -LiteralPath $fullPath)) {
+        $fromFile = Get-ConflictSnippet -Path $fullPath
+        if ($fromFile) { return $fromFile }
+    }
+    return Get-ConflictSnippetFromMergeTree -Path $Path -MergeTreeOutput $MergeTreeOutput -RepoRoot $RepoRoot
 }
 
 function New-IdeMergePrompt {
@@ -232,7 +309,9 @@ function New-IdeMergePrompt {
         [string]$Repo,
         [int]$Behind,
         [int]$Ahead,
-        [string]$OutPath
+        [string]$OutPath,
+        [string]$MergeTreeOutput = '',
+        [switch]$PreferGitPreview
     )
 
     $sb = New-Object System.Text.StringBuilder
@@ -279,7 +358,7 @@ function New-IdeMergePrompt {
         [void]$sb.AppendLine("#### ``$path``")
         [void]$sb.AppendLine("- $strategyLabel - $($d.Reason)")
         [void]$sb.AppendLine("- $($d.IdeHint)")
-        $snippet = Get-ConflictSnippet -Path $path
+        $snippet = Get-ConflictSnippetForPrompt -Path $path -RepoRoot $Repo -MergeTreeOutput $MergeTreeOutput -PreferGitPreview:$PreferGitPreview
         if ($snippet) {
             [void]$sb.AppendLine('')
             [void]$sb.AppendLine('```')
@@ -292,7 +371,7 @@ function New-IdeMergePrompt {
     [void]$sb.AppendLine('## Na oplossen (terminal)')
     [void]$sb.AppendLine('')
     [void]$sb.AppendLine('```cmd')
-    [void]$sb.AppendLine('cd D:\A.I\APPS\Hermes_agent_WS\hermes-agent')
+    [void]$sb.AppendLine("cd ``$Repo``")
     [void]$sb.AppendLine('git status')
     [void]$sb.AppendLine('git add .')
     [void]$sb.AppendLine('windows\MERGE_UPSTREAM.bat -FinalizeOnly')
@@ -416,7 +495,10 @@ function Invoke-WriteMergePrompt {
     $defaultDir = Join-Path $env:LOCALAPPDATA 'hermes\merge_prompts'
     $out = if ($CustomOut) { $CustomOut } else { Join-Path $defaultDir "UPSTREAM_MERGE_PROMPT_$stamp.md" }
 
-    $info = New-IdeMergePrompt -ConflictPaths $Paths -Repo $Repo -Behind $behind -Ahead $ahead -OutPath $out
+    $mergeTreeRaw = if ($script:HermesMergeTreeRaw) { $script:HermesMergeTreeRaw } else { Get-MergeTreeRawOutput }
+    $preferGit = [bool]$script:HermesMergePreferGitPreview
+    $info = New-IdeMergePrompt -ConflictPaths $Paths -Repo $Repo -Behind $behind -Ahead $ahead -OutPath $out `
+        -MergeTreeOutput $mergeTreeRaw -PreferGitPreview:$preferGit
     Write-Ok "IDE-prompt geschreven: $($info.Path)"
     Write-Uitleg @(
         'Plak de inhoud in Cursor-chat of @-reference het bestand.'
@@ -470,7 +552,14 @@ try {
         }
         Write-Warn "$($predicted.Count) voorspeld(e) conflict(en)."
         if (-not $NoPrompt) {
-            Invoke-WriteMergePrompt -Paths $predicted -Repo $repo -CustomOut $PromptOut | Out-Null
+            $script:HermesMergeTreeRaw = Get-MergeTreeRawOutput
+            $script:HermesMergePreferGitPreview = $true
+            try {
+                Invoke-WriteMergePrompt -Paths $predicted -Repo $repo -CustomOut $PromptOut | Out-Null
+            } finally {
+                $script:HermesMergeTreeRaw = $null
+                $script:HermesMergePreferGitPreview = $false
+            }
         }
         exit 0
     }

@@ -61,6 +61,18 @@ def main() -> int:
     display = _parse_defaults(defaults_path)
     from utils import atomic_yaml_write
 
+    root_cfg = root / "config.yaml"
+    if root_cfg.is_file():
+        with root_cfg.open(encoding="utf-8") as f:
+            root_data = yaml.safe_load(f) or {}
+        root_block = root_data.get("display")
+        if not isinstance(root_block, dict):
+            root_block = {}
+        root_block.update(display)
+        root_data["display"] = root_block
+        atomic_yaml_write(root_cfg, root_data, sort_keys=False)
+        print(f"  [OK] root -> {root_cfg}")
+
     names: list[str] = []
     for prof_dir in sorted(profiles_dir.iterdir()):
         if not prof_dir.is_dir():

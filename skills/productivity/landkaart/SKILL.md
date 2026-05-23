@@ -47,6 +47,10 @@ Output: markdown met **alle** regels + categorie-tags; JSON-modus voor tooling.
 
 `/landkaart` — start deze workflow op de huidige vraag/context.
 
+## Onderhoud (IDE-landkaart)
+
+Periodiek op de fork: `windows\VERIFY_WINDOWS_CHAIN.bat`, `windows\LANCEDB_MAINTENANCE.bat --inspect`, `windows\MERGE_UPSTREAM.bat -PromptOnly`, `python scripts\audit_skill_drift.py`. Zie `windows/audits/IDE_MAINTENANCE_BASELINE_*.md`.
+
 ## Regels
 
 - Nooit stilletjes trunceren naar top-3

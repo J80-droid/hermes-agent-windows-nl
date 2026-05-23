@@ -2,6 +2,15 @@
 
 Je `(venv)` in deze map is **niet** `hermes-env`. Gebruik:
 
+## Python / IDE (canoniek)
+
+| Doel | Pad / commando |
+|------|------------------|
+| Interpreter | `C:\Users\jamel\miniconda3\envs\hermes-env\python.exe` |
+| VS Code/Cursor | `hermes-agent/.vscode/settings.json` → `python.defaultInterpreterPath` |
+| Pytest | `hermes-agent\windows\tests\RUN_PYTEST.ps1` |
+| Kapotte `.venv` | `hermes-agent\windows\REPAIR_PYTHON.bat` |
+
 ## Snel (aanbevolen)
 
 ```bat

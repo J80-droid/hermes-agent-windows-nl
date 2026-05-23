@@ -10,6 +10,7 @@ param(
     [switch]$IncludeToolsetDomainE2E,
     [switch]$IncludeProvisionDomainE2E,
     [switch]$IncludeSoulDeployStartE2E,
+    [switch]$IncludeIdeMaintenanceE2E,
     [switch]$SkipPytest,
     [switch]$SkipFootguns,
     [switch]$SkipRuff,
@@ -138,6 +139,14 @@ if (-not $SkipPytest) {
             tests/hermes_cli/test_relaunch.py::TestRelaunchChatAfterProfileSwitch `
             tests/hermes_cli/test_relaunch.py::TestStripProfileFlags `
             -q --tb=short
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeIdeMaintenanceE2E -or $IncludeAllE2E) {
+    $ideE2e = Join-Path $scriptRoot 'RUN_IDE_MAINTENANCE_E2E.ps1'
+    Invoke-Step 'ide-maintenance-e2e' {
+        & $ideE2e -ApplyDisplayFix
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

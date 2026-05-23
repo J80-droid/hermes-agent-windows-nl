@@ -21,6 +21,7 @@ Scripts in deze map:
 - `audio_transcriber.py` — lokale audio/video via faster-whisper + ffmpeg.
 - `mcp_server.py` — stdio MCP-server met tool `search_knowledge`.
 - `kb_schema.py` — gedeeld `KnowledgeSchema` (velden **`id`**, `text`, `vector`, `source`), padconstanten en `list_all_table_names()` (LanceDB `list_tables()` API).
+- `lancedb_maintenance.py` — multi-domein onderhoud uit `domains.yaml`: `--list`, `--inspect`, `--compact`, `--benchmark` (Windows: `windows/LANCEDB_MAINTENANCE.bat`).
 
 **Idempotente upsert:** elke chunk krijgt een vaste **`id`** = SHA-256 van `(<relatief pad>\\0#<chunk-index>)`. **`merge_insert(..., on='id')`** werkt bestaande rijen bij. **Orphan cleanup** (standaard aan) verwijdert chunk-`id`s die niet meer in de nieuwste chunk-set van die bron zitten. **Incrementele ingest** (standaard aan) slaat ongewijzigde bronnen over via ingest-staat naast LanceDB.
 
