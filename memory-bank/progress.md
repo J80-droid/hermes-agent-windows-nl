@@ -36,6 +36,7 @@
 - [x] IDE-onderhoud E2E: `RUN_IDE_MAINTENANCE_E2E.ps1` + `.bat` (15 stappen landkaart, rapport `IDE_MAINTENANCE_E2E_REPORT_*.md`); `RUN_AUDITS -IncludeIdeMaintenanceE2E`
 - [x] Memory productie-poort: `RUN_MEMORY_PRODUCTION_GATE.ps1` + `.bat`; trust limits 4000/1800 alle profielen; `MemoryAuditCommon.ps1`, `audit_profile_memories.ps1`
 - [x] Trust E2E PSES-refactor: launcher + `TrustForensicE2E.core.ps1`; manifest-paden in `HermesCriticalWindowsRepoPaths.ps1`; `VALIDATE_AUDIT_PS1_SYNTAX.bat`
+- [x] Memory E2E PSES-refactor: launcher + `MemoryArchitectureE2E.core.ps1` (16/16); idem validate-lijst
 - [x] TUI statusbalk-kosten (rich): defaults `show_cost`/`cost_bar_mode`; altijd zichtbaar + gereserveerd segment; live `~$turn`/`~NK tok`; breakdown-tier ≥72 cols; E2E `RUN_STATUS_BAR_COST_E2E`
 - [x] OpenRouter Pareto Code router E2E: `RUN_PARETO_E2E.bat` (8 stappen), `verify_pareto_router.py`, `test_pareto_e2e.py`
 - [x] Taakbalk `windows\*.lnk`: `cmd.exe /c` (+ RAG: `/k`) + gekleurd `.ico` (7 lagen 16–256 px); `FIX_TASKBAR_ICONS.bat`; `POST_GIT_PULL.bat`

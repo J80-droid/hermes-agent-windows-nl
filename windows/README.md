@@ -86,6 +86,7 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 | Statusbalk-kosten E2E (rich) | `audits\RUN_STATUS_BAR_COST_E2E.bat` · `-ApplyDisplayFix` · `RUN_AUDITS.bat -IncludeStatusBarCostE2E` |
 | Pareto Code router E2E | `audits\RUN_PARETO_E2E.bat` · `RUN_AUDITS.bat -IncludeParetoE2E` |
 | Memory productie-poort | `audits\RUN_MEMORY_PRODUCTION_GATE.bat` (limits + memory + trust E2E + pytest) |
+| Memory-architectuur E2E | `audits\RUN_MEMORY_ARCHITECTURE_E2E.bat` (launcher → `MemoryArchitectureE2E.core.ps1`, 16/16) |
 | Trust forensic E2E | `audits\RUN_TRUST_FORENSIC_E2E.bat` (launcher → `TrustForensicE2E.core.ps1`) |
 | Audit PS1 syntax (IDE) | `audits\VALIDATE_AUDIT_PS1_SYNTAX.bat` |
 | Taakbalk-snelkoppelingen vernieuwen | `REFRESH_TASKBAR_SHORTCUTS.bat` (`windows\*.lnk` = `cmd /c` + gekleurd `.ico`) |

@@ -36,7 +36,16 @@ Na wijziging in `~/.hermes\.env`: sync uitvoeren; Hermes TUI start daarna automa
 ```bat
 windows\audits\RUN_MEMORY_ARCHITECTURE_E2E.bat
 windows\audits\RUN_MEMORY_PRODUCTION_GATE.bat
+windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat
 ```
+
+| Bestand | Rol |
+|---------|-----|
+| `RUN_MEMORY_ARCHITECTURE_E2E.bat` / `.ps1` | Entry; `.ps1` is dunne launcher (geen dot-source — stabiel in Cursor/PSES) |
+| `MemoryArchitectureE2E.core.ps1` | Implementatie: 16 stappen, dot-source `MemoryAuditCommon.ps1` |
+| `RUN_MEMORY_PRODUCTION_GATE.ps1` | Limits + memory E2E + trust E2E + 55 pytest |
+
+**IDE:** rode strepen op audit-`.ps1` → `VALIDATE_AUDIT_PS1_SYNTAX.bat`, daarna PowerShell-sessie herstarten en venster reloaden. Zie `windows\audits\README.md`.
 
 | Stap | Controle |
 |------|----------|

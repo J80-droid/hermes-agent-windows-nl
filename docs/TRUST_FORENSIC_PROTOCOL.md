@@ -53,6 +53,9 @@ Toepassen: `windows\scripts\apply_trust_memory_limits.ps1` (idempotent). Na nieu
 | `windows\HermesTrustForensicProfileChecks.ps1` | Profiel-loop MEMORY/USER/SOUL + **alle profielen binnen char-limiet** |
 | `windows\scripts\MemoryAuditCommon.ps1` | Gedeeld: identiteitslek per regel, §-encoding, config-limits |
 | `windows\scripts\audit_profile_memories.ps1` | Rapport + optioneel `-FixEncoding` |
+| `windows\audits\RUN_MEMORY_ARCHITECTURE_E2E.ps1` | Dunne launcher (`& MemoryArchitectureE2E.core.ps1`) — stabiel in Cursor/PSES |
+| `windows\audits\MemoryArchitectureE2E.core.ps1` | Memory-architectuur E2E: vault, limits, alle profielen, dedup-keten, TUI auto `/new` (16/16) |
+| `windows\audits\RUN_MEMORY_PRODUCTION_GATE.ps1` | Gecombineerde productie-poort (memory + trust E2E + pytest) |
 
 **IDE:** rode strepen op audit-`.ps1` → `windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat`, daarna PowerShell-sessie herstarten en venster reloaden. Zie `windows\audits\README.md`.
 
