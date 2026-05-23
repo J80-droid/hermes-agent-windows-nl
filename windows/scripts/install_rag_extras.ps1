@@ -31,53 +31,53 @@ if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot "pyproject.toml"))) {
 
 $pythons = @(Get-HermesRagPython -RepoRoot $RepoRoot)
 if ($pythons.Count -eq 0) {
-    Write-RagMsg "[WARN] Geen conda hermes-env — REPAIR_PYTHON.bat of: conda activate hermes-env" "Yellow"
+    Write-RagMsg '[WARN] Geen conda hermes-env - REPAIR_PYTHON.bat of: conda activate hermes-env' 'Yellow'
 }
 
 if (-not $SkipPip) {
     $installed = 0
     foreach ($py in $pythons) {
         if (-not (Test-HermesPythonHasPip -PythonExe $py)) {
-            Write-RagMsg "[WARN] Geen pip op $py - overgeslagen." "Yellow"
+            Write-RagMsg ('[WARN] Geen pip op {0} - overgeslagen.' -f $py) 'Yellow'
             continue
         }
-        Write-RagMsg "[INFO] RAG-deps via: $py" "Cyan"
-        & $py -m pip install -e "${RepoRoot}[rag]"
+        Write-RagMsg ('[INFO] RAG-deps via: {0}' -f $py) 'Cyan'
+        & $py -m pip install -e ($RepoRoot + '[rag]')
         if (Test-NativeCommandFailed) {
-            Write-Error "pip install -e [rag] mislukt voor $py (exit $LASTEXITCODE)."
+            Write-Error ('pip install -e [rag] mislukt voor {0} (exit {1}).' -f $py, $LASTEXITCODE)
         }
-        & $py -m pip install "markitdown[all]==0.1.5"
+        & $py -m pip install 'markitdown[all]==0.1.5'
         if (Test-NativeCommandFailed) {
-            Write-RagMsg "[WARN] markitdown[all] apart mislukt - Office/PDF kan beperkt zijn." "Yellow"
+            Write-RagMsg '[WARN] markitdown[all] apart mislukt - Office/PDF kan beperkt zijn.' 'Yellow'
         }
         & $py -m pip install "colorama>=0.4.6" "tqdm>=4.66"
         if (Test-NativeCommandFailed) {
-            Write-RagMsg "[WARN] colorama/tqdm mislukt - RAG-terminal kan zonder kleuren/balk." "Yellow"
+            Write-RagMsg '[WARN] colorama/tqdm mislukt - RAG-terminal kan zonder kleuren/balk.' 'Yellow'
         }
         $installed++
     }
     if ($installed -gt 0) {
-        Write-RagMsg "[OK] RAG-dependencies op $installed interpreter(s)." "Green"
+        Write-RagMsg ('[OK] RAG-dependencies op {0} interpreter(s).' -f $installed) 'Green'
     } elseif ($pythons.Count -eq 0) {
-        Write-RagMsg "[WARN] Geen Python met pip — conda: conda activate hermes-env; pip install -e .[rag]" "Yellow"
+        Write-RagMsg '[WARN] Geen Python met pip — conda: conda activate hermes-env; pip install -e .[rag]' 'Yellow'
     }
     if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
-        Write-RagMsg "[WARN] ffmpeg niet op PATH - Whisper/media kan falen." "Yellow"
+        Write-RagMsg '[WARN] ffmpeg niet op PATH - Whisper/media kan falen.' 'Yellow'
     }
 }
 
 if (-not $SkipModelWarm) {
     $py = ($pythons | Where-Object { Test-HermesPythonHasPip -PythonExe $_ } | Select-Object -First 1)
     if ($py) {
-        Write-RagMsg "[INFO] Embedding-modelcache warmen..." "Cyan"
+        Write-RagMsg '[INFO] Embedding-modelcache warmen...' 'Cyan'
         $prevEap = $ErrorActionPreference
         $ErrorActionPreference = 'SilentlyContinue'
         try {
-            $null = & $py -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" 2>&1
+            $null = & $py -c 'from sentence_transformers import SentenceTransformer; SentenceTransformer("all-MiniLM-L6-v2")' 2>&1
             if ($LASTEXITCODE -eq 0) {
-                Write-RagMsg "[OK] Modelcache klaar." "Green"
+                Write-RagMsg '[OK] Modelcache klaar.' 'Green'
             } else {
-                Write-RagMsg "[WARN] Modelcache warmen mislukt (exit $LASTEXITCODE)." "Yellow"
+                Write-RagMsg ('[WARN] Modelcache warmen mislukt (exit {0}).' -f $LASTEXITCODE) 'Yellow'
             }
         } finally {
             $ErrorActionPreference = $prevEap
@@ -96,7 +96,8 @@ if (-not $SkipMcp) {
 }
 
 if (-not $Quiet) {
-    Write-RagMsg "[OK] RAG-extras klaar." "Green"
-    Write-RagMsg "  Dev-repo: $RepoRoot" "DarkGray"
-    Write-RagMsg "  Andere clone: $(Join-Path $env:LOCALAPPDATA 'hermes\hermes-agent')" "DarkGray"
+    Write-RagMsg '[OK] RAG-extras klaar.' 'Green'
+    Write-RagMsg ('  Dev-repo: {0}' -f $RepoRoot) 'DarkGray'
+    $cloneRoot = Join-Path $env:LOCALAPPDATA 'hermes\hermes-agent'
+    Write-RagMsg ('  Andere clone: {0}' -f $cloneRoot) 'DarkGray'
 }

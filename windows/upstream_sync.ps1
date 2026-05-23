@@ -314,7 +314,7 @@ try {
                         if (Test-NativeCommandFailed) { $script:UpstreamExitCode = $LASTEXITCODE }
                     } else {
                         Write-Step 'pip install -e ".[rag]"...'
-                        & $py -m pip install -e "${repo}[rag]" -q
+                        & $py -m pip install -e ($repo + '[rag]') -q
                         if (Test-NativeCommandFailed) { $script:UpstreamExitCode = $LASTEXITCODE }
                     }
                     if ($script:UpstreamExitCode -eq 0) {
