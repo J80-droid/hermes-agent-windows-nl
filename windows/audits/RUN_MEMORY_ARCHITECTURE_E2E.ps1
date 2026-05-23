@@ -82,7 +82,10 @@ $trustBat = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/SYNC_TRUST_RU
 if ($upstream -notmatch 'sync_hermes_api_env\.ps1') { $repoOk = $false }
 if ($postPull -notmatch 'SYNC_HERMES_API_ENV') { $repoOk = $false }
 if ($trustBat -notmatch 'SYNC_HERMES_API_ENV') { $repoOk = $false }
-Add-StepResult -Name '1/10 repo + sync-ketens' -Ok $repoOk -Detail 'upstream, POST_GIT_PULL, SYNC_TRUST_RUNTIME'
+if ($trustBat -notmatch 'invoke_deduplicate_memories') { $repoOk = $false }
+if ($trustBat -notmatch 'Invoke-MemoryTrustPostSync') { $repoOk = $false }
+if ($postPull -notmatch 'SYNC_TRUST_RUNTIME') { $repoOk = $false }
+Add-StepResult -Name '1/16 repo + sync-ketens' -Ok $repoOk -Detail 'upstream, POST_GIT_PULL, SYNC_TRUST_RUNTIME+dedup+post-sync'
 
 # --- 2 Legacy env bron ---
 $legacyOk = $true
@@ -92,8 +95,8 @@ foreach ($k in $VaultKeys) {
 }
 $examplePath = Join-Path $RepoRoot 'docs/templates/MEMORY_ENV_VAULT.example'
 $exampleOk = Test-Path -LiteralPath $examplePath
-Add-StepResult -Name '2/10 ~/.hermes/.env vault-paden' -Ok $legacyOk -Detail $LegacyEnv
-Add-StepResult -Name '3/10 env-voorbeeld in repo' -Ok $exampleOk -Detail 'docs/templates/MEMORY_ENV_VAULT.example'
+Add-StepResult -Name '2/16 ~/.hermes/.env vault-paden' -Ok $legacyOk -Detail $LegacyEnv
+Add-StepResult -Name '3/16 env-voorbeeld in repo' -Ok $exampleOk -Detail 'docs/templates/MEMORY_ENV_VAULT.example'
 
 # --- 3 Sync script ---
 if (-not $SkipSyncRun) {
@@ -101,9 +104,9 @@ if (-not $SkipSyncRun) {
     $syncScript = $syncPs1
     & $syncScript
     $syncOk = -not (Test-NativeCommandFailed)
-    Add-StepResult -Name '4/10 sync_hermes_api_env.ps1' -Ok $syncOk
+    Add-StepResult -Name '4/16 sync_hermes_api_env.ps1' -Ok $syncOk
 } else {
-    Add-StepResult -Name '4/10 sync_hermes_api_env.ps1' -Ok $true -Detail 'overgeslagen (-SkipSyncRun)'
+    Add-StepResult -Name '4/16 sync_hermes_api_env.ps1' -Ok $true -Detail 'overgeslagen (-SkipSyncRun)'
 }
 
 # --- 4 Root runtime .env ---
@@ -113,7 +116,7 @@ foreach ($k in $VaultKeys) {
     $v = Read-EnvVar -Path $rootEnv -Key $k
     if (-not (Test-VaultPathValue -Value $v)) { $rootOk = $false }
 }
-Add-StepResult -Name '5/10 root .env' -Ok $rootOk -Detail $rootEnv
+Add-StepResult -Name '5/16 root .env' -Ok $rootOk -Detail $rootEnv
 
 # --- 5 Alle profielen: vault-.env per profielmap ---
 $hermesProfilesPath = Join-Path $hermesRoot 'profiles'
@@ -130,7 +133,7 @@ if (Test-Path -LiteralPath $hermesProfilesPath) {
 } else {
     $allProfileVaultsOk = $false
 }
-Add-StepResult -Name '6/10 profiel-.env OBSIDIAN' -Ok $allProfileVaultsOk -Detail ("$profileEnvCount profielen")
+Add-StepResult -Name '6/16 profiel-.env OBSIDIAN' -Ok $allProfileVaultsOk -Detail ("$profileEnvCount profielen")
 
 # --- 6 Vault filesystem ---
 $vaultPath = $CanonicalVault
@@ -154,7 +157,7 @@ $vaultOk = $true
 foreach ($rel in $vaultFiles) {
     if (-not (Test-Path -LiteralPath (Join-Path $vaultPath $rel))) { $vaultOk = $false }
 }
-Add-StepResult -Name '7/10 vault structuur' -Ok $vaultOk -Detail $vaultPath
+Add-StepResult -Name '7/16 vault structuur' -Ok $vaultOk -Detail $vaultPath
 
 # --- 7 Layer 3 uit ---
 $configPath = Join-Path $hermesRoot 'config.yaml'
@@ -172,7 +175,7 @@ if (Test-Path -LiteralPath $configPath) {
     }
     $l3Ok = [string]::IsNullOrWhiteSpace($memProvider)
 }
-Add-StepResult -Name '8/10 geen externe memory provider' -Ok $l3Ok -Detail 'memory.provider niet actief'
+Add-StepResult -Name '8/16 geen externe memory provider' -Ok $l3Ok -Detail 'memory.provider niet actief'
 
 # --- 8 KANBAN + core MEMORY vault-regel ---
 $kanban = Join-Path $hermesRoot 'profiles/core/KANBAN_WORKFLOWS.md'
@@ -188,7 +191,7 @@ else {
     $mText = Get-Content -LiteralPath $coreMem -Raw -Encoding UTF8
     if ($mText -notmatch 'Hermes Knowledge') { $metaOk = $false }
 }
-Add-StepResult -Name '9/10 KANBAN + core MEMORY' -Ok $metaOk
+Add-StepResult -Name '9/16 KANBAN + core MEMORY' -Ok $metaOk
 
 $skillPath = Join-Path $RepoRoot 'skills/note-taking/obsidian/SKILL.md'
 $skillOk = $false
@@ -196,13 +199,13 @@ if (Test-Path -LiteralPath $skillPath) {
     $skillText = Get-Content -LiteralPath $skillPath -Raw -Encoding UTF8
     $skillOk = ($skillText -match 'Hermes Knowledge')
 }
-Add-StepResult -Name '10/13 obsidian skill fallback' -Ok $skillOk -Detail 'fork default in SKILL.md'
+Add-StepResult -Name '10/16 obsidian skill fallback' -Ok $skillOk -Detail 'fork default in SKILL.md'
 
 # --- 11 Alle profiel-configs memory 4000/1800 ---
 $configFails = Test-AllProfileMemoryConfigLimits -HermesRoot $hermesRoot
 $step11Ok = ($configFails.Count -eq 0)
 $step11Detail = if ($step11Ok) { 'root + 13 profielen' } else { ($configFails -join '; ') }
-Add-StepResult -Name '11/13 profiel memory limits' -Ok $step11Ok -Detail $step11Detail
+Add-StepResult -Name '11/16 profiel memory limits' -Ok $step11Ok -Detail $step11Detail
 
 # --- 12 core MEMORY.md lengte vs limit ---
 $coreCfg = Join-Path $hermesRoot 'profiles/core/config.yaml'
@@ -216,7 +219,7 @@ if (Test-Path -LiteralPath $coreMemPath) {
     $step12Ok = ($memLen -le $memLimit)
     $step12Detail = "$memLen / $memLimit tekens"
 }
-Add-StepResult -Name '12/13 core MEMORY grootte' -Ok $step12Ok -Detail $step12Detail
+Add-StepResult -Name '12/16 core MEMORY grootte' -Ok $step12Ok -Detail $step12Detail
 
 # --- 13 core USER/MEMORY UTF-8 encoding ---
 $encOk = $true
@@ -231,7 +234,39 @@ foreach ($rel in @('USER.md', 'MEMORY.md')) {
         }
     }
 }
-Add-StepResult -Name '13/13 core UTF-8 encoding' -Ok $encOk -Detail $(if ($encDetail.Count) { 'double-encoding in: ' + ($encDetail -join ', ') } else { 'geen double-encoding' })
+Add-StepResult -Name '13/16 core UTF-8 encoding' -Ok $encOk -Detail $(if ($encDetail.Count) { 'double-encoding in: ' + ($encDetail -join ', ') } else { 'geen double-encoding' })
+
+# --- 14 Alle profielen MEMORY/USER binnen limiet ---
+$sizeFails = Test-AllProfileMemoryFileSizes -HermesRoot $hermesRoot
+$step14Ok = ($sizeFails.Count -eq 0)
+$step14Detail = if ($step14Ok) { 'alle profielen binnen limiet' } else { ($sizeFails | Select-Object -First 4) -join '; ' }
+Add-StepResult -Name '14/16 alle profiel MEMORY/USER' -Ok $step14Ok -Detail $step14Detail
+
+# --- 15 deduplicate + post-sync scripts in repo ---
+$dedupPy = Join-Path $RepoRoot 'scripts/deduplicate_memories.py'
+$dedupPs1 = Join-Path $RepoRoot 'windows/scripts/invoke_deduplicate_memories.ps1'
+$postSync = Join-Path $RepoRoot 'windows/scripts/Invoke-MemoryTrustPostSync.ps1'
+$noticePy = Join-Path $RepoRoot 'hermes_cli/institutional_new_chat_notice.py'
+$step15Ok = (Test-Path -LiteralPath $dedupPy) -and (Test-Path -LiteralPath $dedupPs1) -and (Test-Path -LiteralPath $postSync) -and (Test-Path -LiteralPath $noticePy)
+if ($step15Ok) {
+    $dedupText = Get-Content -LiteralPath $dedupPy -Raw -Encoding UTF8
+    if ($dedupText -notmatch 'deduplicate_content') { $step15Ok = $false }
+    $postText = Get-Content -LiteralPath $postSync -Raw -Encoding UTF8
+    if ($postText -notmatch 'Set-InstitutionalNewChatReminder') { $step15Ok = $false }
+}
+Add-StepResult -Name '15/16 dedup + post-sync keten' -Ok $step15Ok -Detail 'deduplicate_memories + Invoke-MemoryTrustPostSync'
+
+# --- 16 TUI auto /new na sync ---
+$tuiNotice = Join-Path $RepoRoot 'ui-tui/src/lib/newChatNotice.ts'
+$tuiWatch = Join-Path $RepoRoot 'ui-tui/src/app/useInstitutionalNewChatAutoReset.ts'
+$tuiHandler = Join-Path $RepoRoot 'ui-tui/src/app/createGatewayEventHandler.ts'
+$step16Ok = (Test-Path -LiteralPath $tuiNotice) -and (Test-Path -LiteralPath $tuiWatch) -and (Test-Path -LiteralPath $tuiHandler)
+if ($step16Ok) {
+    $handlerText = Get-Content -LiteralPath $tuiHandler -Raw -Encoding UTF8
+    if ($handlerText -notmatch 'hasPendingNewChatNotice') { $step16Ok = $false }
+    if ($handlerText -notmatch 'clearNewChatNotice') { $step16Ok = $false }
+}
+Add-StepResult -Name '16/16 TUI auto /new' -Ok $step16Ok -Detail 'newChatNotice + gateway.ready + fs.watch'
 $reportFileName = 'MEMORY_ARCHITECTURE_E2E_REPORT_' + $reportStamp + '.md'
 $reportPath = Join-Path $scriptRoot $reportFileName
 $status = if ($failures -eq 0) { 'PASS' } else { 'FAIL' }
@@ -253,7 +288,7 @@ foreach ($s in $steps) {
 if ($failures -gt 0) {
     [void]$sb.AppendLine("**$failures** stap(pen) gefaald. Herstel: ``windows\SYNC_HERMES_API_ENV.bat``, controleer ``~/.hermes/.env`` vault-paden.")
 } else {
-    [void]$sb.AppendLine('Alle stappen geslaagd. Na wijziging env: `/new` in Hermes.')
+    [void]$sb.AppendLine('Alle stappen geslaagd. Na trust-sync: TUI auto `/new`; klassieke CLI: banner + `/new`.')
 }
 $sb.ToString() | Set-Content -LiteralPath $reportPath -Encoding UTF8
 Write-Host ''

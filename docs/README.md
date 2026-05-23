@@ -8,7 +8,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 |--------|----------|
 | Begrijpen: index vs. chat (twee fasen) | [RAG_TWEE_FASEN.md](RAG_TWEE_FASEN.md) |
 | Trust & Forensic (SOUL, memory, J.) | [TRUST_FORENSIC_PROTOCOL.md](TRUST_FORENSIC_PROTOCOL.md) — dagelijks: `windows/SYNC_TRUST_RUNTIME.bat` |
-| Memory L1–L4 (vault, geen L3) | [MEMORY_ARCHITECTURE.md](MEMORY_ARCHITECTURE.md) — E2E: `RUN_MEMORY_ARCHITECTURE_E2E.bat` · productie: `RUN_MEMORY_PRODUCTION_GATE.bat` |
+| Memory L1–L4 (vault, geen L3) | [MEMORY_ARCHITECTURE.md](MEMORY_ARCHITECTURE.md) — E2E **16/16**: `RUN_MEMORY_ARCHITECTURE_E2E.bat` · productie: `RUN_MEMORY_PRODUCTION_GATE.bat` (55 pytest) |
 | TUI statusbalk-kosten (rich: turn/sessie, breakdown, tools) | `windows/audits/RUN_STATUS_BAR_COST_E2E.bat` · `-ApplyDisplayFix` · `RUN_AUDITS.bat -IncludeStatusBarCostE2E` — rapport `windows/audits/STATUS_BAR_COST_E2E_REPORT_2026-05-23.md` |
 | OpenRouter Pareto Code router | `windows/audits/RUN_PARETO_E2E.bat` · `RUN_AUDITS.bat -IncludeParetoE2E` — rapport lokaal: `PARETO_E2E_REPORT_*.md` (gitignored) |
 | Toolsets per domein (minimaal + opt-in) | [DOMAIN_TOOLSET_AUDIT.md](DOMAIN_TOOLSET_AUDIT.md) — sync: `windows/SYNC_DOMAIN_TOOLSETS.bat` |

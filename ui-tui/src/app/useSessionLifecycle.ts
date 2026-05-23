@@ -15,6 +15,7 @@ import type {
   SessionTitleResponse,
   SetupStatusResponse
 } from '../gatewayTypes.js'
+import { clearNewChatNotice } from '../lib/newChatNotice.js'
 import { asRpcResult } from '../lib/rpc.js'
 import type { Msg, PanelSection, SessionInfo, Usage } from '../types.js'
 
@@ -168,6 +169,8 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
       if (msg) {
         sys(msg)
       }
+
+      clearNewChatNotice()
 
       if (requestedTitle) {
         rpc<SessionTitleResponse>('session.title', {

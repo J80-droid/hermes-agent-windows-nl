@@ -62,5 +62,11 @@ function Invoke-HermesTrustForensicProfileChecks {
         }
     }
 
+    $sizeFails = Test-AllProfileMemoryFileSizes -HermesRoot $HermesRoot
+    foreach ($sf in $sizeFails) {
+        Write-Host ('[FAIL] memory size/quality: ' + $sf) -ForegroundColor Red
+        $failureCount++
+    }
+
     return $failureCount
 }

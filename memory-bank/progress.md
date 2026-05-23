@@ -68,7 +68,11 @@
 - [x] Team display: `compact=false`, `render`, `skin=default` (`team_display.defaults`)
 - [x] Docs: `docs/INSTITUTIONAL_PRESENTATION.md`; legacy `windows/scripts/institutional/`
 - [x] Split Hermes-home: `sync_hermes_api_env.ps1` + `SYNC_HERMES_API_ENV.bat` (API + vault naar alle profielen; UPDATE/POST_GIT_PULL/SYNC_TRUST)
-- [x] Memory L4 vault: `Hermes Knowledge` + `docs/MEMORY_ARCHITECTURE.md`; E2E `RUN_MEMORY_ARCHITECTURE_E2E.bat` (10 stappen, PASS)
+- [x] Memory L4 vault: `Hermes Knowledge` + `docs/MEMORY_ARCHITECTURE.md`; E2E `RUN_MEMORY_ARCHITECTURE_E2E.bat` (**16 stappen**, PASS)
+- [x] TUI auto `/new` na trust-sync: `newChatNotice.ts`, `useInstitutionalNewChatAutoReset`, `gateway.ready` hook; vitest
+- [x] §-dedup preamble + mojibake: `deduplicate_content()` + `tests/scripts/test_deduplicate_memories.py`
+- [x] Memory E2E stap 14: alle profielen MEMORY/USER binnen limiet (`Test-AllProfileMemoryFileSizes`)
+- [x] Production gate pytest: 55 tests (dedup + institutional notice + trust docs)
 - [x] Profielwissel productie: `profile_switch.py`, `/profile use` + `-p` relaunch, `SWITCH_PROFILE.bat`, E2E `RUN_PROFILE_SWITCH_E2E.bat`, `docs/PROFILE_SWITCH.md`
 - [x] Profielwissel v2: `_apply_profile_override` sticky>stale env, kanban reclaim, `RUN_AUDITS.ps1`, `test_profile_switch_e2e.py` (HERMES_PROFILE_E2E=1)
 - [x] Optimalisatiepakket: `ORCHESTRATOR_ROUTING.md`, skill `landkaart`, `backup_soul_profiles.ps1`, `SYNC_SOUL_SNIPPETS.bat`, UPDATE-uitleg + verify zonder pause, RAG pin-docs

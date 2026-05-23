@@ -39,7 +39,9 @@ if (Test-NativeCommandFailed) { $failures++ }
 $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
 $pytestTargets = @(
     (Join-Path $RepoRoot 'tests/windows/test_trust_forensic_docs.py'),
-    (Join-Path $RepoRoot 'tests/tools/test_memory_tool.py')
+    (Join-Path $RepoRoot 'tests/tools/test_memory_tool.py'),
+    (Join-Path $RepoRoot 'tests/scripts/test_deduplicate_memories.py'),
+    (Join-Path $RepoRoot 'tests/hermes_cli/test_institutional_new_chat_notice.py')
 )
 Write-Host '--- pytest memory/trust ---' -ForegroundColor Cyan
 if (Test-Path -LiteralPath $conda) {

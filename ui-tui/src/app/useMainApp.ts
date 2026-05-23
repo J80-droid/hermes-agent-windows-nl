@@ -38,6 +38,7 @@ import { useComposerState } from './useComposerState.js'
 import { useConfigSync } from './useConfigSync.js'
 import { useInputHandlers } from './useInputHandlers.js'
 import { useLongRunToolCharms } from './useLongRunToolCharms.js'
+import { useInstitutionalNewChatAutoReset } from './useInstitutionalNewChatAutoReset.js'
 import { useSessionLifecycle } from './useSessionLifecycle.js'
 import { useSubmission } from './useSubmission.js'
 
@@ -397,6 +398,8 @@ export function useMainApp(gw: GatewayClient) {
     setVoiceRecording,
     sys
   })
+
+  useInstitutionalNewChatAutoReset(session.newSession)
 
   useEffect(() => {
     if (ui.busy) {

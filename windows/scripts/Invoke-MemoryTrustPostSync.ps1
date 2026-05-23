@@ -52,6 +52,6 @@ Set-InstitutionalNewChatReminder `
     -Quiet:$Quiet
 
 if (-not $Quiet) {
-    Write-Host '[OK] /new-reminder gezet (banner bij volgende Hermes-start; /new wist vlag)' -ForegroundColor Green
+    Write-Host '[OK] /new-reminder gezet - TUI start automatisch een nieuwe sessie (banner + live reset)' -ForegroundColor Green
 }
 exit 0

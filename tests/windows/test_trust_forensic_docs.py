@@ -58,3 +58,28 @@ def test_trust_memory_user_snapshot_script():
     text = script.read_text(encoding="utf-8")
     assert "pleaser-behavior" in text
     assert "[trust-memory]" in text
+
+
+def test_sync_trust_runtime_chain():
+    bat = (REPO / "windows/SYNC_TRUST_RUNTIME.bat").read_text(encoding="utf-8")
+    assert "invoke_deduplicate_memories" in bat
+    assert "Invoke-MemoryTrustPostSync" in bat
+    post = (REPO / "windows/POST_GIT_PULL.bat").read_text(encoding="utf-8")
+    assert "SYNC_TRUST_RUNTIME" in post
+
+
+def test_institutional_new_chat_notice_module():
+    mod = REPO / "hermes_cli/institutional_new_chat_notice.py"
+    text = mod.read_text(encoding="utf-8")
+    assert "institutional_new_chat_required.json" in text
+    assert "acknowledge_new_chat_notice" in text
+
+
+def test_tui_auto_new_session_files():
+    notice = REPO / "ui-tui/src/lib/newChatNotice.ts"
+    watch = REPO / "ui-tui/src/app/useInstitutionalNewChatAutoReset.ts"
+    handler = REPO / "ui-tui/src/app/createGatewayEventHandler.ts"
+    assert notice.is_file() and watch.is_file() and handler.is_file()
+    handler_text = handler.read_text(encoding="utf-8")
+    assert "hasPendingNewChatNotice" in handler_text
+    assert "clearNewChatNotice" in handler_text

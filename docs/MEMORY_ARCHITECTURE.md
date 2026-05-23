@@ -27,16 +27,26 @@ WIKI_PATH="C:/Users/jamel/Documents/Hermes Knowledge"
 KNOWLEDGE_BASE_PATH="C:/Users/jamel/Documents/Hermes Knowledge"
 ```
 
-Na wijziging in `~/.hermes\.env`: sync uitvoeren, dan nieuwe Hermes-sessie (`/new`).
+Na wijziging in `~/.hermes\.env`: sync uitvoeren; Hermes TUI start daarna automatisch een nieuwe sessie (zie `/new` hieronder).
 
 **Automatisch:** `UPDATE_HERMES.bat`, `POST_GIT_PULL.bat` en `SYNC_TRUST_RUNTIME.bat` roepen `sync_hermes_api_env.ps1` aan.
 
-**E2E audit:**
+**E2E audit (16 stappen + productie-poort):**
 
 ```bat
 windows\audits\RUN_MEMORY_ARCHITECTURE_E2E.bat
 windows\audits\RUN_MEMORY_PRODUCTION_GATE.bat
 ```
+
+| Stap | Controle |
+|------|----------|
+| 1/16 | Repo: upstream, `POST_GIT_PULL`, `SYNC_TRUST_RUNTIME` + dedup + post-sync |
+| 2–7 | Vault-env sync, profiel-.env, vault-structuur, geen L3, KANBAN + core MEMORY |
+| 8–10 | Obsidian skill, config-limits 4000/1800 (root + 13 profielen) |
+| 11–13 | core MEMORY-grootte, UTF-8 §-encoding |
+| 14/16 | **Alle profielen:** MEMORY/USER binnen limiet, geen dubbele §, geen mojibake-regel |
+| 15/16 | Repo: `deduplicate_memories.py`, `Invoke-MemoryTrustPostSync`, notice-module |
+| 16/16 | TUI auto `/new`: `newChatNotice.ts`, `useInstitutionalNewChatAutoReset`, `gateway.ready` |
 
 ## Productie-checklist (automatisch via `SYNC_TRUST_RUNTIME.bat`)
 
@@ -44,10 +54,20 @@ windows\audits\RUN_MEMORY_PRODUCTION_GATE.bat
 |------|--------|--------|
 | 1–3 | `SYNC_TRUST_RUNTIME.bat` | SOUL + memory-seed + dedup + limits + vault-env + snapshot |
 | 4 | (zelfde BAT) `audit_profile_memories.ps1` | geen OVER, geen `Â§`, geen identiteitslek |
-| 5 | (zelfde BAT) `RUN_MEMORY_PRODUCTION_GATE` | PASS (tenzij `HERMES_SKIP_MEMORY_PRODUCTION_GATE=1`) |
-| 6 | (zelfde BAT) `/new`-reminder JSON | gele banner bij Hermes-start; **`/new`** wist vlag |
+| 5 | (zelfde BAT) `RUN_MEMORY_PRODUCTION_GATE` | PASS (tenzij `HERMES_SKIP_MEMORY_PRODUCTION_GATE=1`; 55 pytest) |
+| 6 | (zelfde BAT) `/new`-reminder JSON | TUI: auto `/new` bij start + live tijdens sync; CLI: gele banner |
 
-Handmatig alleen bij incident: `audit_profile_memories.ps1 -FixEncoding`, of `python scripts\deduplicate_memories.py` zonder volledige trust-sync.
+Handmatig alleen bij incident: `audit_profile_memories.ps1 -FixEncoding`, of `python scripts\deduplicate_memories.py` zonder volledige trust-sync. Dedup verwijdert ook **preamble-duplicaten** vóór de eerste `§` en losse mojibake-regels (`Â`).
+
+### Nieuwe sessie na sync (`/new`)
+
+| Client | Gedrag |
+|--------|--------|
+| **TUI** | Bij `gateway.ready`: pending notice → automatisch `newSession`; tijdens open TUI: `fs.watch` op `institutional_new_chat_required.json` |
+| **Klassieke CLI** | Gele banner via `format_new_chat_notice_rich()`; handmatig `/new` wist vlag |
+| **Beide** | `acknowledge_new_chat_notice()` na succesvolle `/new` |
+
+Runtime-vlag: `%LOCALAPPDATA%\hermes\institutional_new_chat_required.json` (geschreven door `Set-InstitutionalNewChatReminder` in post-sync).
 
 ### Profiel-lek (waarom elk profiel eigen `memory:` nodig heeft)
 
@@ -64,7 +84,7 @@ flowchart LR
 
 ### Frozen snapshot
 
-Memory wordt bij sessiestart ingefroren. Na sync van config, SOUL of MEMORY/USER: altijd **`/new`** — anders draait de agent op oude limieten of oude L1-tekst.
+Memory wordt bij sessiestart ingefrozen. Na sync van config, SOUL of MEMORY/USER: **nieuwe sessie** verplicht — TUI doet dit automatisch na trust-sync; klassieke CLI: `/new` of banner volgen.
 
 ### Gedeelde audit-modules
 
@@ -72,7 +92,10 @@ Memory wordt bij sessiestart ingefroren. Na sync van config, SOUL of MEMORY/USER
 |--------|-----|
 | E2E + gate helpers | `windows\scripts\MemoryAuditCommon.ps1` |
 | Profiel-rapport | `windows\scripts\audit_profile_memories.ps1` |
-| §-deduplicatie (runtime) | `scripts\deduplicate_memories.py` |
+| §-deduplicatie (runtime) | `scripts\deduplicate_memories.py` (`deduplicate_content`) |
+| Post-sync keten | `windows\scripts\Invoke-MemoryTrustPostSync.ps1` |
+| `/new`-reminder | `hermes_cli\institutional_new_chat_notice.py` |
+| TUI auto `/new` | `ui-tui\src\lib\newChatNotice.ts`, `useInstitutionalNewChatAutoReset.ts` |
 | Manifest / backup-paden | `windows\HermesAuditBundleFiles.ps1`, `windows\HermesCriticalWindowsRepoPaths.ps1` |
 
 ## Gerelateerd

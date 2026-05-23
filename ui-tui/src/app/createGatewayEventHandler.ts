@@ -11,6 +11,11 @@ import type {
   GatewaySkin,
   SessionMostRecentResponse
 } from '../gatewayTypes.js'
+import {
+  clearNewChatNotice,
+  formatNewChatNoticeSysMessage,
+  hasPendingNewChatNotice
+} from '../lib/newChatNotice.js'
 import { rpcErrorMessage } from '../lib/rpc.js'
 import { topLevelSubagents } from '../lib/subagentTree.js'
 import { formatToolCall, stripAnsi } from '../lib/text.js'
@@ -212,6 +217,16 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
   const handleReady = (skin?: GatewaySkin) => {
     if (skin) {
       applySkin(skin)
+    }
+
+    if (hasPendingNewChatNotice()) {
+      patchUiState({ status: 'forging session (sync)…' })
+      void Promise.resolve(newSession(formatNewChatNoticeSysMessage())).then(() => {
+        clearNewChatNotice()
+        scheduleStartupPrompt()
+      })
+
+      return
     }
 
     rpc<CommandsCatalogResponse>('commands.catalog', {})

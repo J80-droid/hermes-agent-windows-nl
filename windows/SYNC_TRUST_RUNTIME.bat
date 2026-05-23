@@ -44,5 +44,5 @@ if errorlevel 1 (
 )
 
 echo.
-echo [OK] Trust runtime volledig gesynchroniseerd. Hermes toont /new-banner bij start.
+echo [OK] Trust runtime volledig gesynchroniseerd. Open TUI: auto /new; anders banner bij start.
 exit /b 0

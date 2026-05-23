@@ -34,8 +34,8 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | **`RUN_AUDITS.bat -RequirePSScriptAnalyzer`** | PSSA verplicht (exit 1 als module ontbreekt) |
 | **`windows\tests\RUN_PSScriptAnalyzer.bat`** | Volledige `windows\` lint (instellingen: `PSScriptAnalyzerSettings.psd1`) — verwacht **0 Warning/Error** |
 | **`RUN_PROFILE_SWITCH_E2E.bat`** | Alleen profielwissel E2E |
-| **`RUN_MEMORY_ARCHITECTURE_E2E.bat`** | L4 vault-paden, sync, geen L3, profiel-limits 4000/1800, core MEMORY-grootte, UTF-8 § (13 stappen) |
-| **`RUN_MEMORY_PRODUCTION_GATE.bat`** | Gecombineerd: trust limits + memory E2E + trust forensic E2E + pytest memory/trust |
+| **`RUN_MEMORY_ARCHITECTURE_E2E.bat`** | L4 vault-paden, sync, geen L3, profiel-limits 4000/1800, **alle profielen** MEMORY/USER, dedup-keten, TUI auto `/new` (**16 stappen**) |
+| **`RUN_MEMORY_PRODUCTION_GATE.bat`** | Gecombineerd: trust limits + memory E2E (16/16) + trust forensic E2E + **55 pytest** memory/trust |
 | **`RUN_AUDITS.bat -IncludeMemoryProductionGate`** | Alleen memory productie-poort (ook in `-IncludeAllE2E`) |
 | **`RUN_STATUS_BAR_COST_E2E.bat`** | TUI statusbalk (rich): `show_cost`, `cost_bar_mode`, breakdown, turn-delta, live `~$turn`, gateway smoke |
 | **`RUN_PARETO_E2E.bat`** | OpenRouter Pareto Code router: model-gate, transport/summary parity, pytest, verify script |
@@ -89,8 +89,32 @@ Presentatie: zie `docs/INSTITUTIONAL_PRESENTATION.md`. **Eén commando:** `windo
 
 Laatste rapport: `INSTITUTIONAL_E2E_REPORT_2026-05-22.md` (log `INSTITUTIONAL_E2E_LAST_RUN.log` is gitignored).  
 Upstream + UPDATE audit: `UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md`.  
-Memory L1–L4 audit: `MEMORY_ARCHITECTURE_E2E_REPORT_2026-05-23.md` (10 stappen; tijdelijke logs `MEMORY_ARCHITECTURE_E2E_REPORT_*_*.md` gitignored).  
+Memory L1–L4 audit: `MEMORY_ARCHITECTURE_E2E_REPORT_2026-05-23.md` (**16 stappen** sinds 2026-05-24; tijdelijke logs `MEMORY_ARCHITECTURE_E2E_REPORT_*_*.md` gitignored).  
 Statusbalk-kosten audit: `STATUS_BAR_COST_E2E_REPORT_*.md` (10 stappen; `RUN_STATUS_BAR_COST_E2E.bat`).
+
+## Memory-architectuur E2E (L1–L4)
+
+```text
+windows\audits\RUN_MEMORY_ARCHITECTURE_E2E.bat
+```
+
+Optioneel: `-SkipSyncRun` (geen live `sync_hermes_api_env.ps1`).
+
+| Stap | Controle |
+| ---- | -------- |
+| 1/16 | Repo: upstream, `POST_GIT_PULL`, `SYNC_TRUST_RUNTIME` + dedup + post-sync |
+| 2–7 | Legacy/runtime vault-env, sync-script, profiel-.env, vault-structuur, geen L3 |
+| 8–10 | KANBAN + core MEMORY, obsidian skill, config-limits 4000/1800 |
+| 11–13 | core MEMORY-grootte, UTF-8 §-encoding |
+| 14/16 | **Alle 13 profielen:** MEMORY/USER binnen limiet, geen dubbele §, geen mojibake |
+| 15/16 | Repo: `deduplicate_memories.py`, `Invoke-MemoryTrustPostSync`, notice-module |
+| 16/16 | TUI auto `/new`: `newChatNotice.ts`, `useInstitutionalNewChatAutoReset`, `gateway.ready` |
+
+**Productie-poort:** `RUN_MEMORY_PRODUCTION_GATE.bat` = bovenstaande + trust forensic E2E + pytest (`test_deduplicate_memories`, `test_institutional_new_chat_notice`, …).
+
+**Niet in deze E2E:** live Ink-TUI pixel-test van auto `/new` (vitest: `newChatNotice.test.ts`, `createGatewayEventHandler.newChatNotice.test.ts`).
+
+Zie `docs/MEMORY_ARCHITECTURE.md`, `docs/TRUST_FORENSIC_PROTOCOL.md`.
 
 ## Statusbalk-kosten E2E (rich)
 

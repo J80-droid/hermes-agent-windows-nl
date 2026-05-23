@@ -20,13 +20,13 @@ Operationele handleiding voor J.'s Hermes Windows NL fork: verifieerbaar gedrag 
 ## Toepassen (Windows)
 
 1. Backup: `MANAGE_BACKUPS.bat` of `backup_soul_profiles.ps1` (inclusief memories).
-2. Dagelijks / na git pull: `windows\SYNC_TRUST_RUNTIME.bat` (geen scrub) — volledige keten: sync → dedup → limits → vault-env → snapshot → **audit** → **RUN_MEMORY_PRODUCTION_GATE** → **`/new`-reminder** (`institutional_new_chat_required.json`). Ook via `POST_GIT_PULL.bat` en `UPDATE_HERMES.bat` (`HERMES_SKIP_PAUSE=1`). Snelle sync zonder pytest: `set HERMES_SKIP_MEMORY_PRODUCTION_GATE=1` vóór de BAT.
+2. Dagelijks / na git pull: `windows\SYNC_TRUST_RUNTIME.bat` (geen scrub) — volledige keten: sync → dedup → limits → vault-env → snapshot → **audit** → **RUN_MEMORY_PRODUCTION_GATE** → **`/new`-reminder** (`institutional_new_chat_required.json`; TUI auto `/new`). Ook via `POST_GIT_PULL.bat` en `UPDATE_HERMES.bat` (`HERMES_SKIP_PAUSE=1`). Snelle sync zonder pytest: `set HERMES_SKIP_MEMORY_PRODUCTION_GATE=1` vóór de BAT.
 3. Volledig incl. scrub: `windows\APPLY_TRUST_PROTOCOL.bat` (sync → scrub → E2E audit, zonder tussentijdse pause) of `SYNC_TRUST_PROTOCOL.bat` (sync + scrub)
 4. Audit: `windows\audits\RUN_TRUST_FORENSIC_E2E.bat` (of `.ps1`) of `RUN_AUDITS.ps1 -IncludeTrustForensicE2E`
 
 **Geautomatiseerd:** `UPDATE_HERMES.bat` en `POST_GIT_PULL.bat` roepen `SYNC_TRUST_RUNTIME`, `launch_soul_anatomy_deploy.ps1 -Force` (13 SOUL-templates + stamp) en `SYNC_DOMAIN_TOOLSETS` aan. **Niet** automatisch: alleen `git pull` zonder `POST_GIT_PULL.bat` (eerste `start_hermes.bat` pikt SOUL-stamp wel op), of `hermes update` zonder `UPDATE_HERMES.bat`. Toolset-audit: `docs/DOMAIN_TOOLSET_AUDIT.md`.
 
-**Nieuwe chat verplicht** na SOUL/memory-sync (agent laadt memory-snapshot pas bij sessiestart).
+**Nieuwe chat verplicht** na SOUL/memory-sync (agent laadt memory-snapshot pas bij sessiestart). **TUI:** automatisch via notice-vlag + `gateway.ready` / live `fs.watch`; **klassieke CLI:** gele banner + handmatig `/new`.
 
 ## Geheugenlimieten (runtime)
 
@@ -40,7 +40,7 @@ memory:
 
 Toepassen: `windows\scripts\apply_trust_memory_limits.ps1` (idempotent). Na nieuw profiel (`sync_profile_toolsets_from_manifest.py --create-missing`): automatisch via provision-hook, anders `SYNC_TRUST_RUNTIME.bat`.
 
-**Productie-poort:** `windows\audits\RUN_MEMORY_PRODUCTION_GATE.bat` (limits + memory E2E + trust E2E + pytest).
+**Productie-poort:** `windows\audits\RUN_MEMORY_PRODUCTION_GATE.bat` (limits + memory E2E **16/16** + trust E2E + **55 pytest** memory/trust).
 
 ## Audit-scripts (structuur)
 
@@ -50,7 +50,7 @@ Toepassen: `windows\scripts\apply_trust_memory_limits.ps1` (idempotent). Na nieu
 | `windows\audits\RUN_TRUST_FORENSIC_E2E.ps1` | Dunne launcher (`& TrustForensicE2E.core.ps1`) — stabiel in Cursor/PSES |
 | `windows\audits\TrustForensicE2E.core.ps1` | Implementatie: repo-docs, profielen, config-limits, pytest |
 | `windows\HermesTrustForensicPatterns.ps1` | SOUL/trust-checkfuncties (geen inline wildcards in E2E) |
-| `windows\HermesTrustForensicProfileChecks.ps1` | Profiel-loop MEMORY/USER/SOUL |
+| `windows\HermesTrustForensicProfileChecks.ps1` | Profiel-loop MEMORY/USER/SOUL + **alle profielen binnen char-limiet** |
 | `windows\scripts\MemoryAuditCommon.ps1` | Gedeeld: identiteitslek per regel, §-encoding, config-limits |
 | `windows\scripts\audit_profile_memories.ps1` | Rapport + optioneel `-FixEncoding` |
 
@@ -65,7 +65,7 @@ Toepassen: `windows\scripts\apply_trust_memory_limits.ps1` (idempotent). Na nieu
 - `AppData\Local\hermes`
 - `data\lancedb\`
 
-Fail op `Â§` (double-encoding) in MEMORY/USER — herstel: `audit_profile_memories.ps1 -FixEncoding`. Dubbele §-secties na sync: `python scripts\deduplicate_memories.py` (runtime, idempotent).
+Fail op `Â§` (double-encoding) in MEMORY/USER — herstel: `audit_profile_memories.ps1 -FixEncoding`. Dubbele §-secties of preamble-duplicaat vóór eerste `§`: `scripts\deduplicate_memories.py` via `SYNC_TRUST_RUNTIME` (runtime, idempotent; ook mojibake-regels).
 
 **Pad-whitelist (identiteits-E2E):** centraal in `windows\scripts\MemoryAuditCommon.ps1` (`MemoryIdentityAllowPatterns`), niet inline in `RUN_TRUST_FORENSIC_E2E.ps1`. Nieuwe toegestane paden: alleen daar uitbreiden.
 

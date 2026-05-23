@@ -170,3 +170,50 @@ function Get-DuplicateMemorySections {
     }
     return $dups
 }
+
+function Test-MemoryFileHasMojibakeLine {
+    param([string]$Text)
+    if ([string]::IsNullOrEmpty($Text)) { return $false }
+    $lonelyC2 = [string][char]0x00C2
+    $pattern = '(?m)^\s*' + [regex]::Escape($lonelyC2) + '\s*$'
+    return ($Text -match $pattern)
+}
+
+function Test-AllProfileMemoryFileSizes {
+    param([string]$HermesRoot)
+    $failures = [System.Collections.Generic.List[string]]::new()
+    $profilesDir = Join-Path $HermesRoot 'profiles'
+    if (-not (Test-Path -LiteralPath $profilesDir)) {
+        return @('profiles map ontbreekt')
+    }
+    Get-ChildItem -LiteralPath $profilesDir -Directory | ForEach-Object {
+        $name = $_.Name
+        $cfg = Join-Path $_.FullName 'config.yaml'
+        $lim = Get-MemoryLimitsFromConfig -ConfigPath $cfg
+        $memLimit = if ($lim.MemoryCharLimit -gt 0) { $lim.MemoryCharLimit } else { 4000 }
+        $userLimit = if ($lim.UserCharLimit -gt 0) { $lim.UserCharLimit } else { 1800 }
+        foreach ($file in @('MEMORY.md', 'USER.md')) {
+            $path = Join-Path $_.FullName "memories\$file"
+            if (-not (Test-Path -LiteralPath $path)) {
+                $failures.Add("$name/$file ontbreekt")
+                continue
+            }
+            $raw = Get-Content -LiteralPath $path -Raw -Encoding UTF8
+            $cap = if ($file -eq 'MEMORY.md') { $memLimit } else { $userLimit }
+            if ($raw.Length -gt $cap) {
+                $failures.Add("$name/$file OVER $($raw.Length)/$cap")
+            }
+            if (Test-MemoryDoubleEncoding -Text $raw) {
+                $failures.Add("$name/$file double-encoding")
+            }
+            if (Test-MemoryFileHasMojibakeLine -Text $raw) {
+                $failures.Add("$name/$file mojibake-regel")
+            }
+            $dups = Get-DuplicateMemorySections -FilePath $path
+            if ($dups.Count -gt 0) {
+                $failures.Add("$name/$file dubbele-sectie($($dups.Count))")
+            }
+        }
+    }
+    return $failures
+}

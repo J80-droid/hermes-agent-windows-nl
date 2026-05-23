@@ -11,38 +11,40 @@ import sys
 from pathlib import Path
 
 SECTION_RE = re.compile(r"\s*§\s*")
+_MOJIBAKE_LINE_RE = re.compile(r"^\s*Â\s*$", re.MULTILINE)
+
+
+def _normalize_section(text: str) -> str:
+    cleaned = _MOJIBAKE_LINE_RE.sub("", text)
+    return " ".join(cleaned.split()).lower()
+
+
+def deduplicate_content(content: str) -> str:
+    """Return §-deduplicated body (strips mojibake lines, drops duplicate preamble/sections)."""
+    sections = SECTION_RE.split(content)
+    seen_norms: set[str] = set()
+    unique_sections: list[str] = []
+
+    for sec in sections:
+        sec_clean = _MOJIBAKE_LINE_RE.sub("", sec).strip()
+        if not sec_clean:
+            continue
+        norm = _normalize_section(sec_clean)
+        if norm not in seen_norms:
+            seen_norms.add(norm)
+            unique_sections.append(sec_clean)
+
+    new_content = "\n§\n".join(unique_sections)
+    return new_content.strip() + "\n"
 
 
 def deduplicate_file(path: Path) -> bool:
     if not path.is_file():
         return False
     try:
-        # Read file with UTF-8, handling BOM if present
         content = path.read_text(encoding='utf-8-sig')
-        
-        # Split by § character
         sections = SECTION_RE.split(content)
-        
-        seen_norms = set()
-        unique_sections = []
-        
-        for sec in sections:
-            sec_clean = sec.strip()
-            if not sec_clean:
-                continue
-            # Normalize whitespace for duplicate detection
-            norm = " ".join(sec_clean.split()).lower()
-            if norm not in seen_norms:
-                seen_norms.add(norm)
-                unique_sections.append(sec_clean)
-        
-        # Join back with standard separator
-        # Keep UTF-8 BOM if it was there or write normal UTF-8
-        new_content = "\n§\n".join(unique_sections)
-        # Ensure a trailing newline is not adding empty sections
-        new_content = new_content.strip() + "\n"
-        
-        # Write back to file as UTF-8
+        new_content = deduplicate_content(content)
         path.write_text(new_content, encoding='utf-8')
         print(
             f"[OK] Deduplicated {path}: {len(sections)} -> {len(unique_sections)} sections. "

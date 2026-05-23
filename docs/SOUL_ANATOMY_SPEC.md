@@ -19,7 +19,7 @@ Hermes scheidt **broncode** (git) en **gebruikersdata** (`HERMES_HOME`). Dat is 
 ### Verplichte keten (per machine)
 
 ```text
-git pull  →  POST_GIT_PULL.bat of eerste start_hermes.bat  →  /new in Hermes
+git pull  →  POST_GIT_PULL.bat of SYNC_TRUST_RUNTIME.bat  →  TUI: auto /new (of klassieke CLI: banner + /new)
 ```
 
 | Moment | Actie |

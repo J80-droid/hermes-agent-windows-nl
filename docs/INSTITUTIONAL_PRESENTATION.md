@@ -78,7 +78,14 @@ Code: [`hermes_cli/institutional_render.py`](../hermes_cli/institutional_render.
 
 **Rooktest-prompt:** [`templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md`](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md) — plak in nieuwe chat na SOUL-sync; gebruik **dezelfde** prompt om runs te vergelijken.
 
-**Nieuwe chat (geautomatiseerd):** na SOUL-sync schrijft `SyncSoulSnippet.psm1` / `APPLY_INSTITUTIONAL_RUNTIME.bat` een vlag `%LOCALAPPDATA%\hermes\institutional_new_chat_required.json`. Hermes toont bij start een gele banner; `/new` wist de vlag. Hermes hoeft niet herstart te worden voor de banner — wel **nieuwe sessie** voor de system prompt.
+**Nieuwe chat (geautomatiseerd):** na SOUL-/memory-sync schrijft `SyncSoulSnippet.psm1` / `Invoke-MemoryTrustPostSync.ps1` een vlag `%LOCALAPPDATA%\hermes\institutional_new_chat_required.json`.
+
+| Client | Gedrag |
+|--------|--------|
+| **TUI** | Auto `/new` bij `gateway.ready` als vlag bestaat; live reset via `fs.watch` tijdens open TUI |
+| **Klassieke CLI** | Gele banner bij start; handmatig `/new` wist vlag |
+
+Hermes hoeft niet herstart te worden voor de banner — wel **nieuwe sessie** (TUI: automatisch) voor de actuele system prompt.
 
 **Console-theme:** `get_assistant_console_theme()` (demo/legacy) — gebruikt door gateway/`format_response_ansi` én klassieke CLI `ChatConsole` bij het eindpaneel (`cli.py`). Zonder dit kreeg het antwoord-Panel nog skin-goud terwijl de gateway al demo toonde.
 
