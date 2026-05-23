@@ -11,4 +11,5 @@
 
 **Sessie:**
 - Na SOUL-sync of profielwissel: nieuwe chat voor actuele system prompt (`/new`).
-- Grote outputs: liever bestand + RAG dan stille inhoudsverlies.
+- **Inventaris/landkaart:** volledige lijst 1…N in één antwoord.
+- **Dossieranalyse (deel 1/N):** deel 1, dan stoppen — deel 2+ pas na expliciet **"ga door"** van J.; bij limiet: bestand + RAG, geen stille inhoudsverlies.

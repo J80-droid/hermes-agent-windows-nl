@@ -36,6 +36,19 @@ LEGACY_ALLOWED_WITH_WARNING = [
     r"^## Mission\s",
 ]
 
+GOVERNANCE_MARKERS = [
+    (r"Zekerheid:\s*NN%", "zekerheidspercentage (Zekerheid: NN%)"),
+    (r"Ontbrekende informatie \(voor deze conclusie\)", "gap-blok per strategie"),
+    (r'ga door', "1/N ga-door gate"),
+    (r"max\.\s*1×", "tool retry-limiet"),
+]
+
+LEGACY_GOVERNANCE_FORBIDDEN = [
+    (r"bij twijfel:\s*zeg het", "oude twijfel-formulering"),
+    (r"bij zwakke strategie,\s*ontbrekende feiten", "oude gap-trigger alleen bij zwakke strategie"),
+    (r"voortzetting in volgende turn", "automatische 1/N-voortzetting"),
+]
+
 
 def hermes_home() -> Path:
     local = Path(os.environ.get("LOCALAPPDATA", "")) / "hermes"
@@ -77,13 +90,25 @@ def _section_order_issues(text: str) -> list[str]:
     return issues
 
 
-def validate_file(path: Path) -> tuple[list[str], list[str]]:
+def _governance_issues(text: str) -> list[str]:
+    issues: list[str] = []
+    for pat, label in LEGACY_GOVERNANCE_FORBIDDEN:
+        if re.search(pat, text, re.IGNORECASE):
+            issues.append(f"governance_legacy:{label}")
+    for pat, label in GOVERNANCE_MARKERS:
+        if not re.search(pat, text, re.IGNORECASE):
+            issues.append(f"governance_missing:{label}")
+    return issues
+
+
+def validate_file(path: Path, *, check_governance: bool = False) -> tuple[list[str], list[str]]:
     text = path.read_text(encoding="utf-8-sig")
     missing = [pat for pat in REQUIRED_SECTIONS if not re.search(pat, text, re.MULTILINE)]
     legacy = [pat for pat in LEGACY_FORBIDDEN if re.search(pat, text, re.MULTILINE)]
     warnings = [pat for pat in LEGACY_ALLOWED_WITH_WARNING if re.search(pat, text, re.MULTILINE)]
     order_issues = _section_order_issues(text)
-    return missing, legacy + order_issues + [f"warn:{w}" for w in warnings]
+    governance = _governance_issues(text) if check_governance else []
+    return missing, legacy + order_issues + governance + [f"warn:{w}" for w in warnings]
 
 
 def main() -> int:
@@ -91,6 +116,11 @@ def main() -> int:
     parser.add_argument("path", nargs="?", help="Single SOUL.md file")
     parser.add_argument("--all-profiles", action="store_true", help="Validate all runtime SOUL files")
     parser.add_argument("--repo-templates", action="store_true", help="Validate docs/templates/SOUL_*")
+    parser.add_argument(
+        "--check-governance",
+        action="store_true",
+        help="Require trust/values governance markers; fail on legacy twijfel/1/N wording",
+    )
     args = parser.parse_args()
 
     paths: list[Path] = []
@@ -115,7 +145,7 @@ def main() -> int:
         if not p.exists():
             print(f"[SKIP] {p} (ontbreekt)")
             continue
-        missing, issues = validate_file(p)
+        missing, issues = validate_file(p, check_governance=args.check_governance)
         if missing or [i for i in issues if not i.startswith("warn:")]:
             failed += 1
             print(f"[FAIL] {p}")
@@ -123,7 +153,8 @@ def main() -> int:
                 print(f"  mist: {m}")
             for i in issues:
                 if not i.startswith("warn:"):
-                    print(f"  legacy: {i}")
+                    label = "governance" if i.startswith("governance_") else "legacy"
+                    print(f"  {label}: {i}")
         else:
             print(f"[OK] {p}")
             for w in issues:

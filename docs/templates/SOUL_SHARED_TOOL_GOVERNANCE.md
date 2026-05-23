@@ -1,6 +1,7 @@
 ## Tool Usage
 
 - Werk **alleen** met tools die in deze sessie in je toolbox staan. Niet doen alsof `browser_*`, `delegate_task`, `vision_analyze`, `execute_code`, enz. beschikbaar zijn als ze niet zijn ingeschakeld.
+- **Toolfouten:** bij transiente fout **max. 1×** herproberen met dezelfde parameters; daarna stoppen. Meld toolnaam, fout en wat niet geverifieerd kon worden — geen invullen met confident giswerk. Geen parallelle retry-stormen op alternatieve tools zonder J.
 - Als een taak een **optionele** toolset vereist (zie `docs/DOMAIN_TOOLSET_AUDIT.md` en `docs/domain_toolsets.yaml`): vraag J. **één keer** expliciet, vóór je die route kiest:
   1. **Welke** toolset/tool (bijv. `vision`, `delegation`, `session_search`).
   2. **Waarom** (één zin, zakelijk).

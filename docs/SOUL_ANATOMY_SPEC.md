@@ -47,10 +47,13 @@ Start-flags: `HERMES_SKIP_SOUL_DEPLOY_ON_START=1`, geforceerd `HERMES_FORCE_SOUL
 ### Valideren op deze PC
 
 ```powershell
-python scripts/validate_soul_anatomy.py --all-profiles
+python scripts/validate_soul_anatomy.py --all-profiles --check-governance
+python scripts/validate_soul_anatomy.py "%LOCALAPPDATA%\hermes\SOUL.md" --check-governance
 # of
 windows\audits\RUN_SOUL_ANATOMY_E2E.ps1
 ```
+
+Governance-regels (zekerheid %, ga-door, tool-retry): [SOUL_GOVERNANCE.md](SOUL_GOVERNANCE.md).
 
 Dat controleert `%LOCALAPPDATA%\hermes\profiles\*\SOUL.md`, niet de repo-templates allein.
 
@@ -174,7 +177,7 @@ Na elke sync: **nieuwe chat** (`/new`). Runtime-bestanden worden zonder UTF-8 BO
 
 **Profielen in repo:** 13 domeinen (zie `docs/domain_toolsets.yaml` + `Get-DomainSoulProfileNames` in `SyncSoulSnippet.psm1`). Geen apart `analyst`-domein — dat is upstream/Kanban-rolnaam of een orphan CLI-wrapper, geen RAG-profiel.
 
-**Root `%LOCALAPPDATA%\hermes\SOUL.md`:** legacy fallback bij chat zonder `-p <profiel>`. Snippet-sync raakt deze file **niet** aan (alleen `profiles/*/SOUL.md`). Optioneel: `-IncludeRootSoul` op `Get-SoulTargets` voor handmatige sync.
+**Root `%LOCALAPPDATA%\hermes\SOUL.md`:** legacy fallback bij chat zonder `-p <profiel>`. Template: `docs/templates/SOUL_ROOT_FALLBACK.md`. Deploy: `sync_root_soul_fallback.ps1` (automatisch na `sync_all_domain_souls_from_templates.ps1` / `APPLY_SOUL_ANATOMY_RUNTIME.bat`). Gebruik bij voorkeur altijd een domeinprofiel.
 
 **Runtime `profiles/analyst/`:** indien aanwezig van een oude installatie — geen domein-template; verwijder map of migreer handmatig; `hermes doctor` kan orphan wrappers opruimen.
 

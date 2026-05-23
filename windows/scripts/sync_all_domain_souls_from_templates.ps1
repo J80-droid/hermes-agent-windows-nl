@@ -40,6 +40,14 @@ if (Test-NativeCommandFailed) {
     Write-Error "SOUL anatomy snippet sync mislukt (exit $LASTEXITCODE)"
     exit 1
 }
+
+Write-Host '=== Root SOUL fallback (legacy) ===' -ForegroundColor Cyan
+& (Join-Path $PSScriptRoot 'sync_root_soul_fallback.ps1') -RepoRoot $RepoRoot -HermesRoot $HermesRoot -Quiet
+if (Test-NativeCommandFailed) {
+    Write-Error "Root SOUL fallback sync mislukt (exit $LASTEXITCODE)"
+    exit 1
+}
+
 if ($UpdateDeployStamp) {
     Set-SoulAnatomyDeployStamp
 }

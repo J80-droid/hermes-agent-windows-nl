@@ -23,6 +23,7 @@ Schrijf het fictieve dossier **"Hermes Render Test"** exact volgens onderstaande
 <institutional_check>
 - Controle hyperbolen: [Uitgevoerd]
 - Controle stelligheden: [Uitgevoerd]
+- Controle zekerheidspercentages (<100% expliciet): [Uitgevoerd]
 - Controle conclusies: [Uitgevoerd]
 </institutional_check>
 

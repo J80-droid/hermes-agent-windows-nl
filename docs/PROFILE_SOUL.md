@@ -6,6 +6,8 @@ Elk RAG-domein heeft een **Hermes-profiel** met eigen persona (`SOUL.md`), MCP (
 
 **Anatomy (canoniek):** alle SOUL-bestanden volgen [SOUL_ANATOMY_SPEC.md](SOUL_ANATOMY_SPEC.md) (Identity → Example Interaction). Repo-templates: `docs/templates/SOUL_*_DOMAIN.md` (13 domeinen + `SOUL_CORE_ORCHESTRATOR.md`).
 
+**Governance (2026-05):** zekerheidspercentages, gaps per strategie, ga-door bij 1/N, tool-retry-limiet — zie [SOUL_GOVERNANCE.md](SOUL_GOVERNANCE.md).
+
 ## Waar SOUL.md staat
 
 | Concept | Pad (Windows) |
@@ -94,7 +96,8 @@ notepad %LOCALAPPDATA%\hermes\profiles\mijn-domein\SOUL.md
 |-------|-----|
 | Anatomy shared snippets (Values, Interaction, Output, Trust, Workflow, Tool, Memory) | `windows\SYNC_SOUL_SNIPPETS.bat` of `SYNC_TRUST_RUNTIME.bat` |
 | Legacy → anatomy headers | `windows\scripts\migrate_soul_anatomy.ps1` (-DryRun, daarna `-Apply`) |
-| Validatie | `validate_soul_anatomy.py --all-profiles`, `windows\audits\RUN_SOUL_ANATOMY_E2E.ps1`, `windows\audits\RUN_SOUL_DEPLOY_START_E2E.ps1` (stamp/startketen) |
+| Validatie | `validate_soul_anatomy.py --all-profiles [--check-governance]`, `windows\audits\RUN_SOUL_ANATOMY_E2E.ps1`, `windows\audits\RUN_SOUL_DEPLOY_START_E2E.ps1` (stamp/startketen) |
+| Root legacy SOUL | `windows\scripts\sync_root_soul_fallback.ps1`; template [SOUL_ROOT_FALLBACK.md](templates/SOUL_ROOT_FALLBACK.md) |
 | Snippet-sync (één script) | `windows\scripts\sync_soul_anatomy_snippets.ps1 -Force` |
 | Volledige template push per profiel | `windows\scripts\sync_domain_soul_from_template.ps1 -ProfileName <naam>` |
 | **Alles in één keer (aanbevolen)** | `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat` (13 domeinen + snippets + E2E) |

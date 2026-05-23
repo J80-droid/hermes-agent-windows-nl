@@ -41,11 +41,21 @@ function Get-DomainSoulProfileNames {
     )
 }
 
+$script:SoulSyncIncludeRoot = $false
+
+function Set-SoulSyncIncludeRoot {
+    param([bool]$Value)
+    $script:SoulSyncIncludeRoot = $Value
+}
+
 function Get-SoulTargets {
     param(
         [string]$HermesRoot,
         [switch]$IncludeRootSoul
     )
+    if (-not $IncludeRootSoul -and ($script:SoulSyncIncludeRoot -or $env:HERMES_SYNC_ROOT_SOUL -eq '1')) {
+        $IncludeRootSoul = $true
+    }
     $root = if ($HermesRoot) { (Resolve-Path -LiteralPath $HermesRoot).Path } else { Get-HermesRoot }
     $targets = @()
     if ($IncludeRootSoul) {
@@ -94,7 +104,8 @@ function Sync-SoulSnippet {
         [string]$HermesRoot = '',
         [switch]$Force,
         [switch]$Verify,
-        [string]$ManifestPath = ''
+        [string]$ManifestPath = '',
+        [string[]]$OnlyTargets = @()
     )
 
     if (-not (Test-Path -LiteralPath $TemplatePath)) {
@@ -103,6 +114,9 @@ function Sync-SoulSnippet {
 
     $snippet = (Get-Content -LiteralPath $TemplatePath -Raw -Encoding UTF8).Trim()
     $targets = Get-SoulTargets -HermesRoot $HermesRoot
+    if ($OnlyTargets -and $OnlyTargets.Count -gt 0) {
+        $targets = @($OnlyTargets | Where-Object { Test-Path -LiteralPath $_ })
+    }
     $allPatterns = @($SectionRegex) + @($LegacySectionRegex)
     $sectionEnd = Get-SoulSectionEndPattern -SectionRegex $SectionRegex -SectionEndRegex $SectionEndRegex
     $results = @()
@@ -265,6 +279,27 @@ function Test-SoulAnatomyContent {
     if ($Content -notmatch '(?m)^### Trust & verification') {
         $failures.Add('mist ### Trust & verification')
     }
+    $governanceRequired = @(
+        @{ Pattern = 'Zekerheid:\s*NN%'; Label = 'zekerheidspercentage (Zekerheid: NN%)' },
+        @{ Pattern = 'Ontbrekende informatie \(voor deze conclusie\)'; Label = 'gap-blok per strategie' },
+        @{ Pattern = 'ga door'; Label = '1/N ga-door gate' },
+        @{ Pattern = 'max\.\s*1×'; Label = 'tool retry-limiet' }
+    )
+    foreach ($g in $governanceRequired) {
+        if ($Content -notmatch $g.Pattern) {
+            $failures.Add("governance mist: $($g.Label)")
+        }
+    }
+    $governanceForbidden = @(
+        @{ Pattern = 'bij twijfel:\s*zeg het'; Label = 'oude twijfel-formulering' },
+        @{ Pattern = 'bij zwakke strategie,\s*ontbrekende feiten'; Label = 'oude gap-trigger' },
+        @{ Pattern = 'voortzetting in volgende turn'; Label = 'automatische 1/N-voortzetting' }
+    )
+    foreach ($g in $governanceForbidden) {
+        if ($Content -match $g.Pattern) {
+            $failures.Add("governance legacy: $($g.Label)")
+        }
+    }
     $comm = [regex]::Match($Content, '(?m)^## Communication Style')
     $out = [regex]::Match($Content, '(?m)^### Output conventions \(institutional\)')
     $exp = [regex]::Match($Content, '(?m)^## Expertise & Knowledge')
@@ -293,6 +328,7 @@ function Get-SoulAnatomyWatchPaths {
         Get-ChildItem -LiteralPath $templatesDir -File -ErrorAction SilentlyContinue | ForEach-Object {
             if ($_.Name -like 'SOUL_*_DOMAIN.md' -or
                 $_.Name -eq 'SOUL_CORE_ORCHESTRATOR.md' -or
+                $_.Name -eq 'SOUL_ROOT_FALLBACK.md' -or
                 $_.Name -eq 'SOUL_ANATOMY_BASE.md' -or
                 $_.Name -like 'SOUL_SHARED_*.md') {
                 [void]$paths.Add($_.FullName)
@@ -381,4 +417,4 @@ function Set-InstitutionalNewChatReminder {
     }
 }
 
-Export-ModuleMember -Function Sync-SoulSnippet, Get-HermesRoot, Get-SoulTargets, Get-DomainSoulProfileNames, Get-SoulFileContent, Set-SoulFileContent, Set-InstitutionalNewChatReminder, Get-SoulSectionEndPattern, Repair-SoulDuplicateOutputBlocks, Test-SoulAnatomyContent, Get-SoulAnatomyDeployStampPath, Get-SoulAnatomyWatchPaths, Test-SoulAnatomyDeployNeeded, Test-SoulAnatomyDeployJustRan, Set-SoulAnatomyDeployStamp, Test-NativeCommandFailed
+Export-ModuleMember -Function Sync-SoulSnippet, Get-HermesRoot, Get-SoulTargets, Get-DomainSoulProfileNames, Get-SoulFileContent, Set-SoulFileContent, Set-SoulSyncIncludeRoot, Set-InstitutionalNewChatReminder, Get-SoulSectionEndPattern, Repair-SoulDuplicateOutputBlocks, Test-SoulAnatomyContent, Get-SoulAnatomyDeployStampPath, Get-SoulAnatomyWatchPaths, Test-SoulAnatomyDeployNeeded, Test-SoulAnatomyDeployJustRan, Set-SoulAnatomyDeployStamp, Test-NativeCommandFailed

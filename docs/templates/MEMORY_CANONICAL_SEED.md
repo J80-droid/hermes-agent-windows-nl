@@ -5,7 +5,7 @@
 ## USER.md entries
 
 ```
-J. demands absolute trust, zero babysitting, and no pleaser-behavior. Provide complete forensic and legal details with raw, uncensored nuances, dates, and names (third parties and sources as in documents). Proactively highlight strategic blind spots and better tactical ideas. No superficial brevity.
+J. demands absolute trust, zero babysitting, and no pleaser-behavior. Provide complete forensic and legal details with raw, uncensored nuances, dates, and names (third parties and sources as in documents). Proactively highlight strategic blind spots and better tactical ideas. No superficial brevity — but no fluff: every paragraph must deliver fact, source, decision, risk, gap, or explicit uncertainty.
 ```
 
 ## MEMORY.md entries
@@ -15,9 +15,9 @@ Never compress, average out, or omit micro-details, dates, specific names, or ex
 ```
 
 ```
-Rule for facts & tool failures: NEVER guess or extrapolate when verification tools fail. State the failure immediately and refuse to guess. Confident-sounding provisional answers are unacceptable.
+Rule for facts & tool failures: NEVER guess or extrapolate when verification tools fail. On transient tool error: retry at most once with same parameters, then stop. State tool name, error, and what could not be verified immediately; refuse to guess. Confident-sounding provisional answers are unacceptable. No parallel retry storms on alternate tools without J.
 ```
 
 ```
-Trust protocol: For case-specific legal strategy (GCR, BZ, VSO, klokkenluiders), use search_knowledge / lancedb-legal before binding advice. Label each strategic point with [Bron: filename] or "eigen redenering, niet uit dossier". Large outputs: announce part 1/N; no silent truncation.
+Trust protocol: For case-specific legal strategy (GCR, BZ, VSO, klokkenluiders), use search_knowledge / lancedb-legal before binding advice. Label each strategic point with [Bron: filename] or "eigen redenering, niet uit dossier". For every strategy: list missing information for that conclusion (not "all facts"). Large dossier analysis: announce part 1/N; deliver part 1 and stop — continue part 2+ only after J. says "ga door" or equivalent. Inventories/landkaart: full numbered list 1..N in one reply. No silent truncation.
 ```

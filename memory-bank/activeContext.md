@@ -22,6 +22,8 @@
 
 **SOUL Anatomy** (2026-05-23): 13 domeinprofielen (`domain_toolsets.yaml`); geen `analyst`-domein. Stamp `%LOCALAPPDATA%\hermes\soul_anatomy_deploy.stamp` via `launch_soul_anatomy_deploy.ps1` (start + `POST_GIT_PULL -Force`). Keten: bootstrap → soul deploy → institutional (display; SkipSoul indien net deployed). Snippet-sync: `Test-NativeCommandFailed` + expliciet `exit 0` op child-scripts; pad-literals `/` in PS1; IDE-safe logging (geen `[TAG]` in double quotes). Audits: `RUN_SOUL_ANATOMY_E2E`, `RUN_SOUL_DEPLOY_START_E2E`. Na sync: `/new`.
 
+**SOUL governance** (2026-05-23): shared snippets — `Zekerheid: NN%`, gaps bij elke strategie, fluff-definitie, geen multi-domein-compromis, tool max 1× retry, dossier 1/N wacht op "ga door", MC max 1 zin/optie. Root fallback: `SOUL_ROOT_FALLBACK.md` + `sync_root_soul_fallback.ps1` (ook na `SYNC_SOUL_SNIPPETS.bat`). Validatie: `validate_soul_anatomy.py --check-governance`. Doc: `docs/SOUL_GOVERNANCE.md`.
+
 **P0+P1 afgerond**; Windows institutioneel: conda `hermes-env`, WT/skin, API-env sync. Open: bronnen in 7 lege `raw_source_files`-mappen (legal bronnen + submappen actief).
 
 ## Dev vs. install-clone
@@ -38,6 +40,7 @@
 | User-data sync | `docs/USER_DATA_OPERATIONS.md` |
 | Model alle profielen | `docs/PROFILE_MODEL_INHERITANCE.md` |
 | SOUL per profiel | `docs/PROFILE_SOUL.md` |
+| SOUL governance | `docs/SOUL_GOVERNANCE.md` |
 | SOUL anatomy | `docs/SOUL_ANATOMY_SPEC.md`, `docs/templates/SOUL_ANATOMY_BASE.md` |
 | Domein-toolsets | `docs/DOMAIN_TOOLSET_AUDIT.md`, `docs/domain_toolsets.yaml` |
 | Core routing / orchestrator | `docs/ORCHESTRATOR_ROUTING.md` |

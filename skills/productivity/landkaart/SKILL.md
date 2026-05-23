@@ -54,5 +54,5 @@ Zie **`docs/IDE_MAINTENANCE.md`** (alle commando's: list, inspect, init-missing,
 ## Regels
 
 - Nooit stilletjes trunceren naar top-3
-- Bij onduidelijke scope: max. 3 verduidelijkingsopties + "anders" vóór inventarisatie
+- Bij onduidelijke scope: max. 3 verduidelijkingsopties + "anders" vóór inventarisatie (elk max. 1 zin)
 - Relevante URLs alleen als werkend/gecheckt
