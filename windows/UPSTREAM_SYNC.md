@@ -60,6 +60,49 @@ Taakbalk-.lnk: update = `hermes_logo_update.ico` (wit/zilver). Gebruik **niet** 
 windows\UPDATE_HERMES.bat
 ```
 
+### Merge mislukt (conflicten)? Gebruik `MERGE_UPSTREAM.bat`
+
+`hermes update` doet **`git merge --abort`** bij conflicten — je ziet geen conflict-markers.
+
+**Aanbevolen (IDE-guided, geen blind merge):**
+
+```cmd
+windows\MERGE_UPSTREAM.bat -PromptOnly
+```
+
+Voorspelt conflicten via `git merge-tree` — **geen git-wijziging**. Schrijft een markdown-prompt naar `%LOCALAPPDATA%\hermes\merge_prompts\` die je in Cursor plakt.
+
+**Echte merge + prompt:**
+
+```cmd
+windows\MERGE_UPSTREAM.bat
+```
+
+Start merge, genereert IDE-prompt voor open conflicten, **geen** blind `checkout --ours/theirs` (tenzij `-AutoResolve`).
+
+**Na IDE-fix:**
+
+```cmd
+git add .
+windows\MERGE_UPSTREAM.bat -FinalizeOnly
+```
+
+| Stap | Script |
+| ---- | ------ |
+| 0 (optioneel) | `-PromptOnly` — preview + prompt, geen merge |
+| 1 | `git merge upstream/main` (conflicten blijven open) |
+| 2 | IDE-prompt met per-bestand richtlijn + conflict-snippet |
+| 3 | Cursor lost semantisch op (`pyproject.toml`, `prompt_builder.py`, …) |
+| 4 | `-FinalizeOnly` → merge-commit + `UPDATE_HERMES.bat` |
+
+**Power users (blind auto-resolve, oude gedrag):**
+
+```cmd
+windows\MERGE_UPSTREAM.bat -AutoResolve
+```
+
+**Flags:** `-PromptOnly`, `-NoPrompt`, `-AutoResolve`, `-FinalizeOnly`, `-LockTheirs`, `-SkipContinueUpdate`, `-PromptOut <pad>`.
+
 | Stap | In script? |
 | ---- | ---------- |
 | Schone `git status` + `git fetch upstream` + ahead/behind | Ja (preflight) |
@@ -67,6 +110,7 @@ windows\UPDATE_HERMES.bat
 | `hermes update` (merge upstream + deps) | Ja |
 | Trust runtime (`SYNC_TRUST_RUNTIME.bat`, geen scrub + USER-regel snapshot) | Ja (post-merge, `HERMES_SKIP_PAUSE=1`) |
 | Domein-toolsets (`SYNC_DOMAIN_TOOLSETS.bat`) | Ja (post-merge, na trust runtime) |
+| Institutioneel runtime (`apply_institutional_runtime.ps1 -SkipE2E -NoPause`) | Ja (post-merge: display + SOUL) |
 | RAG `[rag]` + script-keten verify | Ja (post-merge, via `verify_windows_script_chain.ps1` — **geen** pause) |
 | Merge-conflicten oplossen | **Nee** (handmatig) |
 | Waarschuwing tegen `git reset --hard` | Ja (banner bij Update) |

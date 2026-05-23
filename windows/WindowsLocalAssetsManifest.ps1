@@ -11,6 +11,8 @@ function Get-HermesWindowsLocalAssetsManifest {
         'MANAGE_BACKUPS.bat',
         'RESTORE_FROM_BACKUP.bat',
         'UPDATE_HERMES.bat',
+        'MERGE_UPSTREAM.bat',
+        'merge_upstream_fork.ps1',
         'upstream_sync.ps1',
         'hermes_update.bat',
         'UPSTREAM_SYNC.md',

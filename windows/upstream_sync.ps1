@@ -360,6 +360,20 @@ try {
             }
 
             if ($script:UpstreamExitCode -eq 0) {
+                $instPs1 = Join-Path $repo 'windows/apply_institutional_runtime.ps1'
+                if (Test-Path -LiteralPath $instPs1) {
+                    Write-Step 'Institutioneel runtime (display + SOUL, geen E2E)...'
+                    $env:HERMES_SKIP_PAUSE = '1'
+                    & $instPs1 -SkipE2E -NoPause
+                    if ($LASTEXITCODE -ne 0) {
+                        Write-Warn 'apply_institutional_runtime.ps1 faalde — draai APPLY_INSTITUTIONAL_RUNTIME.bat handmatig.'
+                    } else {
+                        Write-Ok 'Institutioneel runtime toegepast (display + SOUL).'
+                    }
+                }
+            }
+
+            if ($script:UpstreamExitCode -eq 0) {
                 # .ps1 direct: VERIFY_WINDOWS_CHAIN.bat heeft pause — blokkeert anders de update-keten.
                 $verify = Join-Path $repo 'windows/verify_windows_script_chain.ps1'
                 if (Test-Path -LiteralPath $verify) {
