@@ -36,26 +36,17 @@
 
 **User-data (2026-05-23):** `domains.yaml` → 13 domeinen; bronmappen `01`–`12` + `00_Core`; MCP/toolsets OK; lege LanceDB via `LANCEDB_MAINTENANCE.bat --init-missing`; `--inspect` 13/13 OK.
 
-## Volledige E2E (aanbevolen)
+## Commando's
+
+**Canoniek (alle regels op één plek):** `docs/IDE_MAINTENANCE.md`
+
+Snel:
 
 ```cmd
-windows\audits\RUN_IDE_MAINTENANCE_E2E.bat -ApplyDisplayFix
-```
-
-Optioneel inclusief upstream-preview + institutioneel 11/11:
-
-```cmd
-windows\audits\RUN_IDE_MAINTENANCE_E2E.bat -Full
-```
-
-Rapport: `windows\audits\IDE_MAINTENANCE_E2E_REPORT_<timestamp>.md`
-
-## Snelle herhaal-audit (subset)
-
-```cmd
-windows\VERIFY_WINDOWS_CHAIN.bat
-C:\Users\jamel\miniconda3\envs\hermes-env\python.exe -m pytest tests/windows/test_merge_upstream_snippets.py tests/rag_pipeline/test_lancedb_maintenance.py -q
 windows\LANCEDB_MAINTENANCE.bat --list
 windows\LANCEDB_MAINTENANCE.bat --inspect
-C:\Users\jamel\miniconda3\envs\hermes-env\python.exe scripts\audit_skill_drift.py
+windows\LANCEDB_MAINTENANCE.bat --init-missing
+windows\audits\RUN_IDE_MAINTENANCE_E2E.bat -ApplyDisplayFix -SkipMergePreview
 ```
+
+Laatste PASS-rapport: `IDE_MAINTENANCE_E2E_REPORT_2026-05-23_214811.md`

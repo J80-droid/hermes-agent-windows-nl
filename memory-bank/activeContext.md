@@ -54,18 +54,7 @@
 
 ## Periodiek IDE-onderhoud (handmatig)
 
-Canonieke volgorde op de fork (uit landkaart + baseline `windows/audits/IDE_MAINTENANCE_BASELINE_2026-05-23.md`):
-
-```cmd
-cd D:\A.I\APPS\Hermes_agent_WS\hermes-agent
-windows\LANCEDB_MAINTENANCE.bat --list
-windows\LANCEDB_MAINTENANCE.bat --inspect
-windows\MERGE_UPSTREAM.bat -PromptOnly
-C:\Users\jamel\miniconda3\envs\hermes-env\python.exe scripts\audit_skill_drift.py
-windows\audits\RUN_INSTITUTIONAL_E2E.bat
-```
-
-Geautomatiseerd (zelfde scope + verify/pytest): `windows\audits\RUN_IDE_MAINTENANCE_E2E.bat -ApplyDisplayFix` (rapport `IDE_MAINTENANCE_E2E_REPORT_*.md`).
+**Alle commando's (één doc):** `docs/IDE_MAINTENANCE.md` — snel: list, inspect, init-missing, `RUN_IDE_MAINTENANCE_E2E -ApplyDisplayFix -SkipMergePreview`; periodiek: verify, merge preview, skill drift, institutioneel E2E.
 
 **Kernbestanden:** `windows/merge_upstream_fork.ps1` (merge + git-diff snippets), `windows/WindowsLocalAssetsManifest.ps1` (manifest sync/verify-keten).
 
