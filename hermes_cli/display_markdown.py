@@ -127,13 +127,24 @@ def _display_config() -> dict:
 
 def get_assistant_render_settings() -> dict:
     """Assistant answer render options (independent of Hermes UI skin)."""
+    import logging
+
+    logger = logging.getLogger(__name__)
     d = _display_config()
-    style = str(d.get("assistant_render_style", "institutional_rich")).strip().lower()
-    if style not in {"institutional_rich", "markdown_legacy"}:
-        style = "institutional_rich"
-    palette = str(d.get("assistant_palette", "demo")).strip().lower()
-    if palette not in {"demo", "hermes", "neutral"}:
-        palette = "demo"
+
+    style_raw = str(d.get("assistant_render_style", "institutional_rich") or "").strip().lower()
+    style = style_raw if style_raw in {"institutional_rich", "markdown_legacy"} else "institutional_rich"
+    if style_raw and style_raw not in {"institutional_rich", "markdown_legacy"}:
+        logger.warning("Unknown assistant_render_style '%s' — falling back to institutional_rich", style_raw)
+
+    palette_raw = str(d.get("assistant_palette", "demo") or "").strip().lower()
+    from hermes_cli.institutional_render import _get_all_palettes
+
+    known_palettes = set(_get_all_palettes().keys())
+    palette = palette_raw if palette_raw in known_palettes else "demo"
+    if palette_raw and palette_raw not in known_palettes:
+        logger.warning("Unknown assistant_palette '%s' — falling back to demo. Known: %s", palette_raw, sorted(known_palettes))
+
     label_cols = d.get("assistant_label_columns", True)
     if isinstance(label_cols, str):
         label_cols = label_cols.strip().lower() in {"1", "true", "yes", "on"}

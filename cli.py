@@ -8779,7 +8779,7 @@ class HermesCLI:
                         title_align="left",
                         border_style=_resp_color,
                         style=_resp_text,
-                        box=rich_box.HORIZONTALS,
+                        box=rich_box.ROUNDED,
                         padding=(1, 4),
                         width=self._scrollback_box_width(),
                     ))
@@ -11867,7 +11867,7 @@ class HermesCLI:
                         title_align="left",
                         border_style=_resp_color,
                         style=_resp_text,
-                        box=rich_box.HORIZONTALS,
+                        box=rich_box.ROUNDED,
                         padding=(1, 4),
                         width=self._scrollback_box_width(),
                     ))

@@ -12,6 +12,6 @@
 - **pytest Windows:** `tests/tools/test_search_hidden_dirs.py` (`shutil.which`); `pyproject.toml` marker `ssh`; `timeout-method=thread`
 - **Hermes config:** root `%LOCALAPPDATA%\hermes\config.yaml` (model); profielen `%LOCALAPPDATA%\hermes\profiles\<naam>\` (MCP, `SOUL.md`, **display**-overlay via `APPLY_TEAM_DISPLAY.bat`, geen `model:`). Secrets: root `.env`; legacy `%USERPROFILE%\.hermes\.env` → `windows/SYNC_HERMES_API_ENV.bat`
 - **Presentatie:** `docs/INSTITUTIONAL_PRESENTATION.md`; SOUL-sync `SYNC_SOUL_SNIPPETS.bat`; audit `windows/audits/RUN_INSTITUTIONAL_E2E.bat`
-- **TUI/CLI markdown:** Laag B = `institutional_render.py` + `display_markdown.py` (`get_assistant_console_theme`, demo-palet, **live config** `load_config_readonly`); Laag C UI = skin `default` via `skin_markdown_theme()`; gateway `agent/rich_output.py`
+- **TUI/CLI markdown:** Laag B = `institutional_render.py` (YAML-paletten + built-ins) + `display_markdown.py` (`get_assistant_console_theme`, **live config** `load_config_readonly`); Laag C UI = skin `default` via `skin_markdown_theme()`; gateway `agent/rich_output.py`; diagnose `scripts/diagnose_renderer.py`
 - **SOUL-docs:** `docs/PROFILE_SOUL.md`
 - **Institutionele env (defaults):** `HERMES_RAG_LIVE_STALE_SEC=120`, `HERMES_RAG_QUIET_TORCH=1` via `rag_institutional_defaults.py` + `_rag_apply_institutional_env.bat`

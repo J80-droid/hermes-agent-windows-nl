@@ -10,7 +10,7 @@ def test_assistant_markdown_theme_demo_not_gold():
     theme = assistant_markdown_theme("demo")
     h1 = str(theme.styles["markdown.h1"]).lower()
     assert "ffd700" not in h1
-    assert "cyan" in h1
+    assert "cyan" in h1 or "66d9ef" in h1
 
 
 def test_table_render_produces_multiple_header_styles():

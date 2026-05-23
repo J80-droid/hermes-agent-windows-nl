@@ -1,8 +1,14 @@
-"""Institutional Rich renderer for assistant answers (demo palette, per-column tables)."""
+"""Institutional Rich renderer for assistant answers (demo palette, per-column tables).
+
+Palettes are loaded from ``config/palettes.yaml`` (user-editable) and merged with
+built-in defaults.  Missing keys fall back to the ``demo`` palette.
+"""
 
 from __future__ import annotations
 
+import logging
 import re
+from pathlib import Path
 from typing import ClassVar, Iterator
 
 from rich import box
@@ -16,30 +22,33 @@ from rich.theme import Theme
 
 from hermes_cli.markdown_output_normalize import normalize_assistant_markdown
 
+logger = logging.getLogger(__name__)
+
 # Per-column table header styles (Rich demo order).
 TABLE_HEADER_PALETTE_DEMO = (
-    "bold cyan",
-    "bold green",
-    "bold magenta",
-    "bold yellow",
+    "bold #a6e22e",  # Monokai Green
+    "bold #66d9ef",  # Monokai Blue
+    "bold #f8f8f2",  # Monokai White/Light Grey
+    "bold #f92672",  # Monokai Pink/Red
 )
 
 _LABEL_ONLY_LINE_RE = re.compile(r"^\*\*(?P<label>[^*\n]+?):\*\*\s*$")
 
-_PALETTES: dict[str, dict[str, str]] = {
+# Built-in palettes — always available as fallback.
+_BUILTIN_PALETTES: dict[str, dict[str, str]] = {
     "demo": {
-        "h1": "bold cyan",
-        "h2": "bold green",
-        "h3": "bold magenta",
-        "h4": "bold yellow",
-        "h5": "italic bright_white",
+        "h1": "bold #66d9ef underline",
+        "h2": "bold #a6e22e",
+        "h3": "bold #e6db74",
+        "h4": "bold #ae81ff italic",
+        "h5": "italic #cbd5e1",
         "h6": "dim",
-        "strong": "bold bright_white",
-        "code": "cyan",
-        "link": "underline cyan",
-        "table_header": "bold cyan",
-        "label": "bold magenta",
-        "text": "white",
+        "strong": "bold #ff9e64",
+        "code": "#66d9ef",
+        "link": "underline #66d9ef",
+        "table_header": "bold #66d9ef",
+        "label": "bold #f92672",
+        "text": "#cbd5e1",
     },
     "hermes": {
         "h1": "bold #FFD700 underline",
@@ -71,25 +80,82 @@ _PALETTES: dict[str, dict[str, str]] = {
     },
 }
 
+# Required keys for a valid palette (all other keys have module-level defaults).
+_PALETTE_REQUIRED_KEYS = frozenset({"h1", "h2", "h3", "h4", "strong", "label", "text", "table_header"})
+
+_PALETTES_CACHE: dict[str, dict[str, str]] | None = None
+
+
+def _load_yaml_palettes() -> dict[str, dict[str, str]]:
+    """Load user-defined palettes from ``config/palettes.yaml`` (repo root or config/)."""
+    try:
+        import yaml
+    except ImportError:  # pragma: no cover
+        logger.debug("PyYAML not installed; skipping external palette loading")
+        return {}
+
+    repo_root = Path(__file__).resolve().parent.parent
+    search_paths = [
+        repo_root / "config" / "palettes.yaml",
+        repo_root / "palettes.yaml",
+    ]
+
+    validated: dict[str, dict[str, str]] = {}
+    for path in search_paths:
+        if not path.exists():
+            continue
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+            if not isinstance(data, dict):
+                logger.warning("Palette file %s: expected YAML mapping, got %s", path, type(data).__name__)
+                continue
+            for name, colors in data.items():
+                if not isinstance(colors, dict):
+                    logger.warning("Palette '%s' in %s: expected mapping, skipping", name, path)
+                    continue
+                missing = _PALETTE_REQUIRED_KEYS - colors.keys()
+                if missing:
+                    logger.warning("Palette '%s' in %s: missing keys %s, skipping", name, path, sorted(missing))
+                    continue
+                # Coerce all values to strings and strip whitespace
+                validated[name] = {k: str(v).strip() for k, v in colors.items()}
+            logger.info("Loaded %d palette(s) from %s", len(validated), path)
+            break  # stop at first found file
+        except Exception as exc:
+            logger.warning("Failed to load palettes from %s: %s", path, exc)
+
+    return validated
+
+
+def _get_all_palettes() -> dict[str, dict[str, str]]:
+    """Return merged built-in + YAML palettes (YAML overrides built-ins for same name)."""
+    global _PALETTES_CACHE
+    if _PALETTES_CACHE is None:
+        yaml_palettes = _load_yaml_palettes()
+        _PALETTES_CACHE = {**_BUILTIN_PALETTES, **yaml_palettes}
+    return _PALETTES_CACHE
+
 
 def assistant_markdown_theme(palette: str = "demo") -> Theme:
     """Rich theme for assistant answers only (not Hermes UI skin)."""
+    palettes = _get_all_palettes()
     key = (palette or "demo").strip().lower()
-    colors = _PALETTES.get(key, _PALETTES["demo"])
+    colors = palettes.get(key, palettes["demo"])
     return Theme(
         {
             "markdown.h1": colors["h1"],
             "markdown.h2": colors["h2"],
             "markdown.h3": colors["h3"],
             "markdown.h4": colors["h4"],
-            "markdown.h5": colors["h5"],
-            "markdown.h6": colors["h6"],
+            "markdown.h5": colors.get("h5", "dim"),
+            "markdown.h6": colors.get("h6", "dim italic"),
             "markdown.strong": colors["strong"],
             "markdown.em": "italic",
             "markdown.block_quote": "dim",
-            "markdown.code": colors["code"],
+            "markdown.code": colors.get("code", "bright_black"),
             "markdown.code_block": "dim",
-            "markdown.link": colors["link"],
+            "markdown.link": colors.get("link", "underline bright_cyan"),
             "markdown.link_url": "dim underline",
             "markdown.hr": "dim",
             "markdown.item": colors["text"],
@@ -102,7 +168,16 @@ def assistant_markdown_theme(palette: str = "demo") -> Theme:
 
 
 def table_header_palette(palette: str = "demo") -> tuple[str, ...]:
+    palettes = _get_all_palettes()
     key = (palette or "demo").strip().lower()
+    colors = palettes.get(key, palettes["demo"])
+    # If the palette defines a custom ``header_palette`` tuple string, parse it.
+    custom = colors.get("header_palette", "")
+    if isinstance(custom, str) and custom:
+        parts = [p.strip() for p in custom.split(",")]
+        if len(parts) >= 2:
+            return tuple(parts)
+    # Default per-column rotation for built-ins
     if key == "hermes":
         return ("bold #FFD700", "bold #FFBF00", "bold #DAA520", "bold #FFF8DC")
     if key == "neutral":
@@ -130,7 +205,8 @@ class InstitutionalTableElement(TableElement):
             for idx, column in enumerate(self.header.row.cells):
                 heading = column.content.copy()
                 style = palette[idx % len(palette)]
-                table.add_column(heading, header_style=style)
+                cell_style = style.replace("bold ", "")
+                table.add_column(heading, header_style=style, style=cell_style)
 
         if self.body is not None:
             for row in self.body.rows:
@@ -183,7 +259,8 @@ def render_institutional_assistant(
         return RichText("")
 
     palette_key = (palette or "demo").strip().lower()
-    colors = _PALETTES.get(palette_key, _PALETTES["demo"])
+    all_palettes = _get_all_palettes()
+    colors = all_palettes.get(palette_key, all_palettes["demo"])
     InstitutionalTableElement.header_palette = table_header_palette(palette_key)
 
     parts: list[RenderableType] = []

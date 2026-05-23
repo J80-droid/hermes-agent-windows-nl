@@ -57,7 +57,37 @@ Code: [`hermes_cli/institutional_render.py`](../hermes_cli/institutional_render.
 
 Fallback: `assistant_render_style: markdown_legacy` + goud via `skin_markdown_theme()` (oude pad).
 
-Defaults in repo: [`windows/team_display.defaults`](../windows/team_display.defaults). E2E pytest: stap **2e** in `RUN_INSTITUTIONAL_E2E.ps1` (`test_institutional_rich_render.py`).
+Defaults in repo: [`windows/team_display.defaults`](../windows/team_display.defaults).
+
+E2E pytest: stap **2e** (`test_institutional_rich_render.py`).
+E2E diagnose: stap **2f** (`scripts/diagnose_renderer.py --verify`) controleert runtime renderer + palet.
+
+### Runtime verifiëren
+
+```bat
+python scripts/diagnose_renderer.py
+```
+
+Toont:
+- Actief profiel, renderer-stijl, palet, label-kolommen
+- Config cache state (live vs gecachet)
+- Visuele preview via de echte `format_response_ansi()` pipeline
+
+```bat
+python scripts/diagnose_renderer.py --show-palettes
+```
+
+Toont alle geregistreerde paletten (built-in + YAML) met een test-tabel + koppen.
+
+### Nieuwe paletten toevoegen (geen code-edit)
+
+1. Open [`config/palettes.yaml`](../config/palettes.yaml)
+2. Kopieer een bestaand palet en pas kleuren aan (Rich style strings: hex `#RRGGBB` of Rich kleurnamen zoals `bright_cyan`)
+3. Vereiste keys: `h1`, `h2`, `h3`, `h4`, `strong`, `label`, `text`, `table_header`
+4. Optioneel: `header_palette` (komma-gescheiden string voor per-kolom tabelkoppen)
+5. `display.assistant_palette: <jouw_naam>` in profiel-config
+
+Bij onbekend palet: automatische fallback naar `demo` + warning in log.
 
 ## Laag C — Hermes UI (skin)
 
@@ -96,6 +126,8 @@ Onafhankelijk van `display.compact`. Toggle in TUI via `/compact`. Alleen TUI-wi
 | `render_colors.py` (ANSI wit/blauw/groen) | Rich `render` + skin |
 | `watch-hermes` + klembord | Matrix Cockpit / `start_hermes.bat` |
 | `[COLOR_*]` tokens in SOUL | Normale markdown `##` / `**` |
+| `show_colors.py` (hardcoded preview) | `scripts/diagnose_renderer.py --show-palettes` |
+| `analyst\SOUL.md` met tokens | `SYNC_SOUL_SNIPPETS.bat` + `scripts/migrate_soul_tokens.py` |
 
 Archief: [`windows/scripts/institutional/`](../windows/scripts/institutional/README.md).
 

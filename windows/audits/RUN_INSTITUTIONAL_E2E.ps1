@@ -119,6 +119,15 @@ Write-Host '=== 2e/11 pytest institutional Rich renderer ===' -ForegroundColor C
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Write-Host '[OK] institutional Rich renderer pytest' -ForegroundColor Green
 
+Write-Host '=== 2f/11 runtime diagnose renderer (palette + config live) ===' -ForegroundColor Cyan
+$diag = Join-Path $repoRoot 'scripts/diagnose_renderer.py'
+& $python $diag --verify
+if ($LASTEXITCODE -ne 0) {
+    Write-Host '[FAIL] diagnose_renderer --verify faalde (renderer of palette niet correct)' -ForegroundColor Red
+    exit 1
+}
+Write-Host '[OK] diagnose_renderer institutional_rich + demo geverifieerd' -ForegroundColor Green
+
 Write-Host '=== 2c/11 team_display.defaults inhoud ===' -ForegroundColor Cyan
 $td = Get-Content -LiteralPath (Join-Path $repoRoot 'windows/team_display.defaults') -Raw -Encoding UTF8
 foreach ($needle in @(

@@ -50,7 +50,15 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 2. **Assistant** — `display.assistant_render_style=institutional_rich`, normalizer → `institutional_render.py`; theme via `get_assistant_console_theme()` (CLI `ChatConsole`, gateway `rich_output.py`). Config wordt **live** geladen (`load_config_readonly`), dus profielwissel zonder herstart werkt direct.
 3. **UI** — `display.skin=default` (goud); banners/prompt, niet LLM-antwoordtekst.
 
-Defaults: `windows/team_display.defaults`; toepassen: `apply_team_display_profiles.py` / `APPLY_INSTITUTIONAL_RUNTIME.bat`. Audit: `RUN_INSTITUTIONAL_E2E.ps1` (11 stappen).
+### Paletten (YAML-driven)
+
+- Built-in: `demo`, `hermes`, `neutral` in `_BUILTIN_PALETTES` (`institutional_render.py`)
+- User-defined: `config/palettes.yaml` — loaded at runtime, overrides built-ins for same name
+- Validation: required keys (`h1`, `h2`, `h3`, `h4`, `strong`, `label`, `text`, `table_header`)
+- Fallback: unknown palette → `demo` + warning
+- Diagnostics: `scripts/diagnose_renderer.py --verify` (E2E stap 2f)
+
+Defaults: `windows/team_display.defaults`; toepassen: `apply_team_display_profiles.py` / `APPLY_INSTITUTIONAL_RUNTIME.bat`. Audit: `RUN_INSTITUTIONAL_E2E.ps1` (11 stappen + diagnose).
 
 ## Profiel-uitbreiding (ICT-team)
 

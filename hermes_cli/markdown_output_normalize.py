@@ -7,7 +7,7 @@ import re
 # Heading with trailing prose on the same line (Dutch/English sentence starters).
 _HEADING_INLINE_BODY_RE = re.compile(
     r"^(?P<prefix>\s{0,3}#{1,6}\s+)(?P<title>.+?)\s+"
-    r"(?P<body>(?:Dit|Het|De|Een|Bij|In|Op|Na|Voor|The|This|These|When|If)\s.+)$",
+    r"(?P<body>(?:Dit|Het|De|Een|The|This|These|When|If)\s.+)$",
     re.MULTILINE | re.IGNORECASE,
 )
 
@@ -49,7 +49,7 @@ def ensure_heading_line_breaks(text: str) -> str:
         lead = match.group(1)
         label = match.group(2).strip()
         value = match.group(3).strip()
-        return f"{lead}**{label}:**\n\n{value}"
+        return f"{lead}**{label}:**\n{value}"
 
     out = _LABEL_INLINE_VALUE_RE.sub(_split_label, out)
 

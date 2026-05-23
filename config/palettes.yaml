@@ -1,0 +1,118 @@
+# Hermes institutional colour palettes — user-editable, hot-reload friendly.
+# Place this file in the repo root or under config/palettes.yaml.
+# The renderer loads it at runtime; missing keys fall back to the built-in demo palette.
+
+# Each palette MUST define at least: h1, h2, h3, h4, strong, label, text, table_header, code, link.
+# Values are Rich style strings (hex colours or Rich colour names).
+
+demo:
+  h1: "bold #66d9ef underline"
+  h2: "bold #a6e22e"
+  h3: "bold #e6db74"
+  h4: "bold #ae81ff italic"
+  h5: "italic #cbd5e1"
+  h6: "dim"
+  strong: "bold #ff9e64"
+  code: "#66d9ef"
+  link: "underline #66d9ef"
+  table_header: "bold #66d9ef"
+  label: "bold #f92672"
+  text: "#cbd5e1"
+
+hermes:
+  h1: "bold #FFD700 underline"
+  h2: "bold #FFBF00 underline"
+  h3: "bold #DAA520"
+  h4: "bold #DAA520 italic"
+  h5: "#DAA520 italic"
+  h6: "#B8860B italic"
+  strong: "bold #DAA520"
+  code: "#FFBF00"
+  link: "underline #FFBF00"
+  table_header: "bold #FFBF00"
+  label: "bold #DAA520"
+  text: "#FFF8DC"
+
+neutral:
+  h1: "bold bright_white"
+  h2: "bold white"
+  h3: "bold bright_black"
+  h4: "italic white"
+  h5: "dim"
+  h6: "dim italic"
+  strong: "bold white"
+  code: "bright_black"
+  link: "underline bright_cyan"
+  table_header: "bold bright_cyan"
+  label: "bold bright_white"
+  text: "white"
+
+monokai:
+  h1: "bold #66d9ef underline"
+  h2: "bold #a6e22e"
+  h3: "bold #e6db74"
+  h4: "bold #ae81ff italic"
+  h5: "italic #f8f8f2"
+  h6: "dim"
+  strong: "bold #fd971f"
+  code: "#66d9ef"
+  link: "underline #66d9ef"
+  table_header: "bold #66d9ef"
+  label: "bold #f92672"
+  text: "#f8f8f2"
+
+dracula:
+  h1: "bold #8be9fd underline"
+  h2: "bold #50fa7b"
+  h3: "bold #ffb86c"
+  h4: "bold #bd93f9 italic"
+  h5: "italic #f8f8f2"
+  h6: "dim"
+  strong: "bold #ff79c6"
+  code: "#8be9fd"
+  link: "underline #8be9fd"
+  table_header: "bold #8be9fd"
+  label: "bold #ff79c6"
+  text: "#f8f8f2"
+
+tokyo:
+  h1: "bold #00f0ff underline"
+  h2: "bold #39ff14"
+  h3: "bold #fff000"
+  h4: "bold #b10dc9 italic"
+  h5: "italic #e0f7fa"
+  h6: "dim"
+  strong: "bold #ff5e00"
+  code: "#00f0ff"
+  link: "underline #00f0ff"
+  table_header: "bold #00f0ff"
+  label: "bold #ff007f"
+  text: "#e0f7fa"
+
+nordic:
+  h1: "bold #88c0d0 underline"
+  h2: "bold #8fbcbb"
+  h3: "bold #81a1c1"
+  h4: "bold #b48ead italic"
+  h5: "italic #eceff4"
+  h6: "dim"
+  strong: "bold #d08770"
+  code: "#88c0d0"
+  link: "underline #88c0d0"
+  table_header: "bold #88c0d0"
+  label: "bold #f92672"
+  text: "#eceff4"
+
+pacific:
+  h1: "bold #20b2aa underline"
+  h2: "bold #98fb98"
+  h3: "bold #afeeee"
+  h4: "bold #dda0dd italic"
+  h5: "italic #e0eee0"
+  h6: "dim"
+  strong: "bold #ff7f50"
+  code: "#20b2aa"
+  link: "underline #20b2aa"
+  table_header: "bold #20b2aa"
+  label: "bold #f92672"
+  text: "#e0eee0"

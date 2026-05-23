@@ -14,5 +14,10 @@
 |--------|-----|
 | `render_colors_legacy.py` | Oud ANSI-palet (wit/blauw/groen) via klembord-pipeline |
 | `watch_hermes_archive.ps1` | Archief-monitor zonder kleur-render (optioneel) |
+| `show_colors_legacy.py` | Oud hardcoded kleurenpalet preview (5 Monokai-varianten) |
+| `watch_hermes_legacy.ps1` | Oud live-monitor via file-polling + klembord |
 
-Vervangen door Rich markdown + globale SOUL-templates.
+Vervangen door:
+- Rich markdown + globale SOUL-templates
+- `scripts/diagnose_renderer.py --show-palettes` (echte renderer preview)
+- `institutional_render.py` + `display_markdown.py` (live rendering)
