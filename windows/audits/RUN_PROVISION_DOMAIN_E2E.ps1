@@ -1,7 +1,6 @@
 # Smoke: provision tijdelijk profiel via --create-missing (schone HERMES_HOME).
 param(
-    [string]$RepoRoot = '',
-    [string]$HermesRoot = ''
+    [string]$RepoRoot = ''
 )
 
 $ErrorActionPreference = 'Stop'

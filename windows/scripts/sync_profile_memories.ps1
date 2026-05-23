@@ -14,6 +14,10 @@ if (-not $RepoRoot) {
 }
 
 function Get-HermesRoot {
+    param([string]$OverrideRoot = '')
+    if ($OverrideRoot) {
+        return (Resolve-Path -LiteralPath $OverrideRoot).Path
+    }
     $localRoot = Join-Path $env:LOCALAPPDATA 'hermes'
     if (Test-Path -LiteralPath (Join-Path $localRoot 'config.yaml')) { return $localRoot }
     $homeRoot = Join-Path $env:USERPROFILE '.hermes'
@@ -57,7 +61,8 @@ function Get-SeedEntries {
 function Merge-MemoryFile {
     param(
         [string]$FilePath,
-        [string[]]$SeedEntries
+        [string[]]$SeedEntries,
+        [switch]$DryRun
     )
     $existing = @()
     if (Test-Path -LiteralPath $FilePath) {
@@ -86,7 +91,7 @@ function Merge-MemoryFile {
     Write-Host "[OK] $FilePath" -ForegroundColor Green
 }
 
-$root = if ($HermesRoot) { (Resolve-Path -LiteralPath $HermesRoot).Path } else { Get-HermesRoot }
+$root = Get-HermesRoot -OverrideRoot $HermesRoot
 $userSeed = Get-SeedEntries -SectionName 'USER.md'
 $memorySeed = Get-SeedEntries -SectionName 'MEMORY.md'
 
@@ -104,7 +109,7 @@ if (Test-Path -LiteralPath $profilesDir) {
 }
 
 foreach ($t in $targets) {
-    Merge-MemoryFile -FilePath $t.User -SeedEntries $userSeed
-    Merge-MemoryFile -FilePath $t.Memory -SeedEntries $memorySeed
+    Merge-MemoryFile -FilePath $t.User -SeedEntries $userSeed -DryRun:$DryRun
+    Merge-MemoryFile -FilePath $t.Memory -SeedEntries $memorySeed -DryRun:$DryRun
 }
 Write-Host '[INFO] Memory seed merge voltooid (profiel-scoped leidend bij actief profiel).' -ForegroundColor Cyan

@@ -8,8 +8,9 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Get-HermesRoot {
-    if ($HermesRoot) {
-        return (Resolve-Path -LiteralPath $HermesRoot).Path
+    param([string]$OverrideRoot = '')
+    if ($OverrideRoot) {
+        return (Resolve-Path -LiteralPath $OverrideRoot).Path
     }
     $localRoot = Join-Path $env:LOCALAPPDATA 'hermes'
     if (Test-Path -LiteralPath (Join-Path $localRoot 'config.yaml')) { return $localRoot }
@@ -36,7 +37,7 @@ function Format-Preview {
     return $one.Substring(0, $Max) + '...'
 }
 
-$root = Get-HermesRoot
+$root = Get-HermesRoot -OverrideRoot $HermesRoot
 $failures = 0
 $targets = @(
     @{ Name = 'root'; UserPath = Join-Path $root 'memories/USER.md' }

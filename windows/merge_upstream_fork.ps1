@@ -78,7 +78,10 @@ function Get-UnmergedPaths {
 }
 
 function Get-MergeConflictResolution {
-    param([string]$Path)
+    param(
+        [string]$Path,
+        [switch]$LockTheirs
+    )
 
     $keepOurs = @(
         'scripts/rag_pipeline/**',
@@ -215,6 +218,7 @@ function Get-ConflictSnippet {
 }
 
 function New-IdeMergePrompt {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [string[]]$ConflictPaths,
         [string]$Repo,
@@ -256,7 +260,7 @@ function New-IdeMergePrompt {
     $autoHint = @()
 
     foreach ($path in ($ConflictPaths | Sort-Object)) {
-        $d = Get-MergeConflictResolution -Path $path
+        $d = Get-MergeConflictResolution -Path $path -LockTheirs:$preferUpstreamLocks
         $strategyLabel = switch ($d.Strategy) {
             'ours'   { 'Voorkeur: **fork (ours)**' }
             'theirs' { 'Voorkeur: **upstream (theirs)**' }
@@ -295,7 +299,15 @@ function New-IdeMergePrompt {
     [void]$sb.AppendLine('- Hermes: `/new` + docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md')
     [void]$sb.AppendLine('')
 
-  $dir = Split-Path -Parent $OutPath
+    if (-not $PSCmdlet.ShouldProcess($OutPath, 'Write IDE merge prompt')) {
+        return @{
+            Path        = $OutPath
+            ManualCount = $manual.Count
+            HintCount   = $autoHint.Count
+            Total       = $ConflictPaths.Count
+        }
+    }
+    $dir = Split-Path -Parent $OutPath
     if ($dir -and -not (Test-Path -LiteralPath $dir)) {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
@@ -310,7 +322,8 @@ function New-IdeMergePrompt {
 }
 
 function Invoke-AutoResolveMergeConflicts {
-    param([switch]$WhatIf)
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
 
     $conflicts = Get-UnmergedPaths
     if ($conflicts.Count -eq 0) { return @{ Resolved = @(); Manual = @() } }
@@ -319,14 +332,14 @@ function Invoke-AutoResolveMergeConflicts {
     $manual = [System.Collections.Generic.List[string]]::new()
 
     foreach ($path in $conflicts) {
-        $decision = Get-MergeConflictResolution -Path $path
+        $decision = Get-MergeConflictResolution -Path $path -LockTheirs:$preferUpstreamLocks
         if ($decision.Strategy -eq 'manual') {
             $manual.Add("$path - $($decision.Reason)")
             continue
         }
         $side = if ($decision.Strategy -eq 'ours') { '--ours' } else { '--theirs' }
         $label = if ($decision.Strategy -eq 'ours') { 'fork (ours)' } else { 'upstream (theirs)' }
-        if ($WhatIf) {
+        if (-not $PSCmdlet.ShouldProcess($path, "checkout $label")) {
             Write-Host "  [dry-run] $path -> $label ($($decision.Reason))" -ForegroundColor DarkYellow
         } else {
             git checkout $side -- $path 2>$null
@@ -409,6 +422,8 @@ if (-not $repo) {
     Write-Err 'Geen Hermes-repo (pyproject.toml + cli.py).'
     exit 1
 }
+
+$preferUpstreamLocks = $LockTheirs.IsPresent
 
 Push-Location $repo
 try {

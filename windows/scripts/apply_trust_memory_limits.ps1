@@ -6,7 +6,8 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Get-HermesRoot {
-    if ($HermesRoot.Trim()) { return (Resolve-Path -LiteralPath $HermesRoot.Trim()).Path }
+    param([string]$OverrideRoot = '')
+    if ($OverrideRoot.Trim()) { return (Resolve-Path -LiteralPath $OverrideRoot.Trim()).Path }
     $localRoot = Join-Path $env:LOCALAPPDATA 'hermes'
     if (Test-Path -LiteralPath (Join-Path $localRoot 'config.yaml')) { return $localRoot }
     $homeRoot = Join-Path $env:USERPROFILE '.hermes'
@@ -14,7 +15,7 @@ function Get-HermesRoot {
     return $localRoot
 }
 
-$root = Get-HermesRoot
+$root = Get-HermesRoot -OverrideRoot $HermesRoot
 $configPath = Join-Path $root 'config.yaml'
 if (-not (Test-Path -LiteralPath $configPath)) {
     Write-Error "config.yaml ontbreekt: $configPath"

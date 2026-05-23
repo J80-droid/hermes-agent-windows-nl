@@ -24,7 +24,8 @@ function Find-Conda {
 }
 
 function Get-HermesRoot {
-    if ($HermesRoot) { return (Resolve-Path -LiteralPath $HermesRoot).Path }
+    param([string]$OverrideRoot = '')
+    if ($OverrideRoot) { return (Resolve-Path -LiteralPath $OverrideRoot).Path }
     $localRoot = Join-Path $env:LOCALAPPDATA 'hermes'
     if (Test-Path -LiteralPath (Join-Path $localRoot 'config.yaml')) { return $localRoot }
     return (Join-Path $env:USERPROFILE '.hermes')
@@ -83,7 +84,7 @@ if (-not (Test-Path -LiteralPath $py)) {
     exit 1
 }
 
-$hermes = Get-HermesRoot
+$hermes = Get-HermesRoot -OverrideRoot $HermesRoot
 $env:HERMES_HOME = $hermes
 $logPath = Join-Path $scriptRoot 'TOOLSET_DOMAIN_E2E_LAST_RUN.log'
 
@@ -255,7 +256,10 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host '=== Toolset domain E2E (6/6 SOUL tool governance snippet) ===' -ForegroundColor Cyan
-$snippet = Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_TOOL_GOVERNANCE.md'
+$snippetPath = Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_TOOL_GOVERNANCE.md'
+if (-not (Test-Path -LiteralPath $snippetPath)) {
+    Step-Fail 'SOUL tool governance template' 'docs/templates/SOUL_SHARED_TOOL_GOVERNANCE.md ontbreekt'
+}
 $missingSoul = @()
 foreach ($name in @('core', 'legal', 'ict', 'security', 'dev', 'data')) {
     $soul = Join-Path $hermes "profiles\$name\SOUL.md"

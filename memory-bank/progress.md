@@ -33,6 +33,7 @@
 - [x] IDE: `hermes-agent/.vscode/settings.json` + `docs/IDE_VSCODE_SETTINGS.example.json`
 - [x] Setup bat-templates (`scripts/windows/bat-templates/`); geen Copy-Item-spiegel meer; PSScriptAnalyzer 0 op `windows/**/*.ps1`
 - [x] pytest Windows: `timeout-method=thread`; `shutil.which` i.p.v. `which rg`; marker `ssh` in `pyproject.toml`; `tests/windows/test_critical_windows_scripts.py`
+- [x] PSScriptAnalyzer `windows\`: 0 Warning/Error (2026-05-23) — unused params/vars, ShouldProcess, catch-blokken, merge `-LockTheirs` wiring
 - [x] Python-policy institutioneel: `HermesPythonPolicy.ps1`, `REPAIR_PYTHON.bat`, `ensure_hermes_python.ps1`; kapotte `.venv` → `.venv.disabled-*` (gitignore); conda `hermes-env` canoniek; verify-keten + setup-hook
 - [x] TUI display: skin `default` (`team_display.defaults`), `apply_team_display.ps1` → `profiles\<active>\config.yaml` (conda `--env-vars`)
 - [x] E2E institutioneel: `RUN_INSTITUTIONAL_E2E.ps1` (**11 stappen + 2f diagnose + 2g score**, PASS 2026-05-23)

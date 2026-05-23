@@ -33,6 +33,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | Profiel + direct chat | `SWITCH_PROFILE_AND_CHAT.bat <naam>` (nieuwe chat = toolbox van dat profiel) |
 | Toolsets per profiel | `hermes -p <naam> tools` of `SYNC_DOMAIN_TOOLSETS.bat` |
 | HERMES_HOME controleren | `scripts\verify_hermes_home.ps1` |
+| PowerShell lint (PSScriptAnalyzer) | `tests\RUN_PSScriptAnalyzer.bat` — 0 Warning/Error op `windows\` |
 | Profielwissel E2E-audit | `audits\RUN_PROFILE_SWITCH_E2E.bat` |
 | SOUL anatomy bij start (stamp) | `launch_soul_anatomy_deploy.ps1` via `launch_hermes.bat` — zie `docs\SOUL_ANATOMY_SPEC.md` |
 | SOUL anatomy (handmatig + E2E) | `APPLY_SOUL_ANATOMY_RUNTIME.bat`; alleen snippets: `SYNC_SOUL_SNIPPETS.bat` |

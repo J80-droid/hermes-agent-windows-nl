@@ -152,7 +152,9 @@ if (Test-Path -LiteralPath $validateScript) {
 
         if ($LASTEXITCODE -eq 0) { $pyOk = $true }
 
-    } catch { }
+    } catch {
+        Write-Verbose 'py -3 ontbreekt of faalde; PowerShell fallback hieronder.'
+    }
 
 }
 

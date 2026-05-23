@@ -73,7 +73,9 @@ if (Test-Path -LiteralPath $authPath) {
         $corrupt = "$authPath.corrupt-$stamp"
         try {
             Copy-Item -LiteralPath $authPath -Destination $corrupt -Force
-        } catch { }
+        } catch {
+            Write-Verbose "Kon corrupt auth.json niet archiveren: $($_.Exception.Message)"
+        }
         @'
 {
   "version": 1,

@@ -20,6 +20,7 @@ Deze map bevat de **fork** kwaliteitspoorten (geen 1:1 upstream-kloon).
 | **`RUN_PROVISION_DOMAIN_E2E.bat`** | Smoke: `--create-missing` op tijdelijke HERMES_HOME (geen productie) |
 | **`RUN_AUDITS.bat -IncludeProvisionDomainE2E`** | Alleen provision-smoke |
 | **`RUN_AUDITS.bat -RequirePSScriptAnalyzer`** | PSSA verplicht (exit 1 als module ontbreekt) |
+| **`windows\tests\RUN_PSScriptAnalyzer.bat`** | Volledige `windows\` lint (instellingen: `PSScriptAnalyzerSettings.psd1`) — verwacht **0 Warning/Error** |
 | **`RUN_PROFILE_SWITCH_E2E.bat`** | Alleen profielwissel E2E |
 | **`windows\tests\RUN_PYTEST.bat`** | Brede pytest (excl. integration) |
 | **`windows\VERIFY_WINDOWS_CHAIN.bat`** | Script-keten backup/RAG (handmatig, pause) |
