@@ -5,6 +5,7 @@ Set-Location $repo
 
 $files = @(
     'windows\audits\RUN_STATUS_BAR_COST_E2E.ps1',
+    'windows\audits\RUN_PARETO_E2E.ps1',
     'windows\audits\RUN_TRUST_FORENSIC_E2E.ps1',
     'windows\audits\TrustForensicE2E.core.ps1',
     'windows\audits\RUN_MEMORY_ARCHITECTURE_E2E.ps1',

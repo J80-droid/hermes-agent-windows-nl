@@ -20,9 +20,9 @@ Operationele handleiding voor J.'s Hermes Windows NL fork: verifieerbaar gedrag 
 ## Toepassen (Windows)
 
 1. Backup: `MANAGE_BACKUPS.bat` of `backup_soul_profiles.ps1` (inclusief memories).
-2. Dagelijks / na git pull: `windows\SYNC_TRUST_RUNTIME.bat` (geen scrub) — sync ook vault-paden via `SYNC_HERMES_API_ENV`; logt daarna `[trust-memory]` per `USER.md`
-3. Volledig incl. scrub: `windows\APPLY_TRUST_PROTOCOL.bat` of `SYNC_TRUST_PROTOCOL.bat`
-4. Audit: `windows\audits\RUN_TRUST_FORENSIC_E2E.ps1` of `RUN_AUDITS.ps1 -IncludeTrustForensicE2E`
+2. Dagelijks / na git pull: `windows\SYNC_TRUST_RUNTIME.bat` (geen scrub) — sync ook vault-paden via `SYNC_HERMES_API_ENV`; logt daarna `[trust-memory]` per `USER.md`. Bij succes **geen** `pause` (venster sluit door); alleen bij snapshot-fout.
+3. Volledig incl. scrub: `windows\APPLY_TRUST_PROTOCOL.bat` (sync → scrub → E2E audit, zonder tussentijdse pause) of `SYNC_TRUST_PROTOCOL.bat` (sync + scrub)
+4. Audit: `windows\audits\RUN_TRUST_FORENSIC_E2E.bat` (of `.ps1`) of `RUN_AUDITS.ps1 -IncludeTrustForensicE2E`
 
 **Geautomatiseerd:** `UPDATE_HERMES.bat` en `POST_GIT_PULL.bat` roepen `SYNC_TRUST_RUNTIME`, `launch_soul_anatomy_deploy.ps1 -Force` (13 SOUL-templates + stamp) en `SYNC_DOMAIN_TOOLSETS` aan. **Niet** automatisch: alleen `git pull` zonder `POST_GIT_PULL.bat` (eerste `start_hermes.bat` pikt SOUL-stamp wel op), of `hermes update` zonder `UPDATE_HERMES.bat`. Toolset-audit: `docs/DOMAIN_TOOLSET_AUDIT.md`.
 
@@ -46,6 +46,7 @@ Toepassen: `windows\scripts\apply_trust_memory_limits.ps1` (idempotent). Na nieu
 
 | Bestand | Rol |
 |---------|-----|
+| `windows\audits\RUN_TRUST_FORENSIC_E2E.bat` | Entry voor verify/keten; roept `.ps1` aan |
 | `windows\audits\RUN_TRUST_FORENSIC_E2E.ps1` | Dunne launcher (`& TrustForensicE2E.core.ps1`) — stabiel in Cursor/PSES |
 | `windows\audits\TrustForensicE2E.core.ps1` | Implementatie: repo-docs, profielen, config-limits, pytest |
 | `windows\HermesTrustForensicPatterns.ps1` | SOUL/trust-checkfuncties (geen inline wildcards in E2E) |

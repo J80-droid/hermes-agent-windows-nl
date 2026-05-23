@@ -38,8 +38,10 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | **`RUN_MEMORY_PRODUCTION_GATE.bat`** | Gecombineerd: trust limits + memory E2E + trust forensic E2E + pytest memory/trust |
 | **`RUN_AUDITS.bat -IncludeMemoryProductionGate`** | Alleen memory productie-poort (ook in `-IncludeAllE2E`) |
 | **`RUN_STATUS_BAR_COST_E2E.bat`** | TUI statusbalk (rich): `show_cost`, `cost_bar_mode`, breakdown, turn-delta, live `~$turn`, gateway smoke |
+| **`RUN_PARETO_E2E.bat`** | OpenRouter Pareto Code router: model-gate, transport/summary parity, pytest, verify script |
 | **`RUN_AUDITS.bat -IncludeMemoryArchitectureE2E`** | Bovenstaande memory E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeStatusBarCostE2E`** | Bovenstaande statusbalk-kosten E2E in gecombineerde poort |
+| **`RUN_AUDITS.bat -IncludeParetoE2E`** | Bovenstaande Pareto router E2E in gecombineerde poort |
 | **`windows\tests\RUN_PYTEST.bat`** | Brede pytest (excl. integration) |
 | **`windows\VERIFY_WINDOWS_CHAIN.bat`** | Script-keten backup/RAG (handmatig, pause) |
 | **`RUN_BACKUP_E2E.bat`** | Lightweight backup schema v3 test (`tests/windows/test_backup_runtime.ps1`) |
@@ -112,6 +114,27 @@ Optioneel: `-ApplyDisplayFix` (display drift), `-SkipRuntime` (geen Hermes home)
 | 10/10 | `ui-tui/README.md` documenteert `/cost`, `config.set cost_bar_mode`, live `~$turn` |
 
 **Niet in deze E2E:** live Ink-TUI pixel-render (handmatig: statusbalk tijdens stream); prijs onbekend voor custom model (`cost_usd` ontbreekt — verwacht). Live turn-schatting wel gedekt via vitest (`liveTurnCost`, `createGatewayEventHandler`).
+
+## Pareto Code router E2E
+
+```text
+windows\audits\RUN_PARETO_E2E.bat
+```
+
+Optioneel: `-SkipPytest` (alleen repo/verify/docs).
+
+| Stap | Controle |
+| ---- | -------- |
+| 1/8 | Repo: openrouter plugin, transport, helpers, config, verify script |
+| 2/8 | Plugin model-gate `openrouter/pareto-code` + `pareto-router` |
+| 3/8 | `chat_completions.py` + `chat_completion_helpers.py` parity |
+| 4/8 | `config.py` `min_coding_score` + `models.py` catalog |
+| 5/8 | Pytest transport `-k openrouter_pareto` |
+| 6/8 | Pytest `test_pareto_e2e.py` + provider profiles `-k pareto` |
+| 7/8 | `verify_pareto_router.py --verify` |
+| 8/8 | Docs: `providers.md` + `configuration.md` |
+
+**Niet in deze E2E:** live OpenRouter API-call (router kiest daadwerkelijk model); handmatig met `model: openrouter/pareto-code` + `openrouter.min_coding_score`.
 
 ## IDE-onderhoud E2E (volledige landkaart)
 

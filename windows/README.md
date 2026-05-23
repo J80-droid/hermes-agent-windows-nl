@@ -84,6 +84,7 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 | Restore repo / runtime | `RESTORE_FROM_BACKUP.bat` — repo: altijd; runtime: `-RestoreRuntimeFull`; persona’s: `-RestoreRuntimePersonas`; legacy: `-RestoreLegacyProfile` |
 | Backup audit (lightweight) | `audits\RUN_BACKUP_E2E.bat` |
 | Statusbalk-kosten E2E (rich) | `audits\RUN_STATUS_BAR_COST_E2E.bat` · `-ApplyDisplayFix` · `RUN_AUDITS.bat -IncludeStatusBarCostE2E` |
+| Pareto Code router E2E | `audits\RUN_PARETO_E2E.bat` · `RUN_AUDITS.bat -IncludeParetoE2E` |
 | Memory productie-poort | `audits\RUN_MEMORY_PRODUCTION_GATE.bat` (limits + memory + trust E2E + pytest) |
 | Trust forensic E2E | `audits\RUN_TRUST_FORENSIC_E2E.bat` (launcher → `TrustForensicE2E.core.ps1`) |
 | Audit PS1 syntax (IDE) | `audits\VALIDATE_AUDIT_PS1_SYNTAX.bat` |

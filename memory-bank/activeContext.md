@@ -10,6 +10,8 @@
 
 **TUI statusbalk-kosten (2026-05-23, PASS → rich bar):** `display.show_cost: true` + `cost_bar_mode: rich` team-default; statusbalk `$turn / $session │ cw/out/in/cr │ calls │ tools`; **live turn-kosten tijdens stream** (`~$turn`) via client-side tokenschatting in `liveTurnCost.ts` (geen gateway-wijziging); fork-module `hermes_cli/usage_snapshot.py`; sync automatisch via `launch_institutional_runtime.ps1` (drift-check) + `UPDATE_HERMES.bat`; handmatig alleen bij `HERMES_SKIP_INSTITUTIONAL_RUNTIME=1`. E2E `RUN_STATUS_BAR_COST_E2E.bat`. Na wijziging: Hermes `/new`.
 
+**OpenRouter Pareto Code router (2026-05-24, PASS):** model-gated `min_coding_score` → `pareto-router` plugin op `openrouter/pareto-code`; verify `scripts/verify_pareto_router.py`; E2E `windows/audits/RUN_PARETO_E2E.bat` (8/8); `-IncludeParetoE2E` in `RUN_AUDITS.bat`. Geen live API-call in E2E.
+
 **Backup schema v3 (2026-05-23):** `backup_hermes.ps1` backupt `%LOCALAPPDATA%\hermes` → `runtime_hermes/`; legacy `~/.hermes` → `legacy_hermes/`; persona-subset → `localappdata_hermes/` (SOUL + `config.yaml`). Blokkeert als Hermes draait. Restore: `-RestoreRuntimeFull`, `-RestoreRuntimePersonas`, `-RestoreLegacyProfile`. Module: `windows/scripts/HermesBackupCommon.ps1`. Test: `windows/audits/RUN_BACKUP_E2E.bat`.
 
 **Legal domein herstructurering** (2026-05): één RAG-bucket `legal`, rechtsgebied-**lenzen**, generieke `profiles\legal\SOUL.md`, zaak GCR in `LEGAL_ACTIVE_MATTERS.md`. Audit: `RUN_LEGAL_DOMAIN_E2E.bat`.

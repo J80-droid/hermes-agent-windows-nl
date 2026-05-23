@@ -20,7 +20,7 @@
 | Gedeelde backup-module | `windows\scripts\HermesBackupCommon.ps1` | Runtime root, robocopy-excludes, safe-for-backup gate |
 | SOUL-backup | `windows\backup_soul_profiles.ps1` | `%LOCALAPPDATA%\hermes` → `localappdata_hermes/` (SOUL + `profiles/*/config.yaml`) |
 | SOUL-sync | `windows\SYNC_SOUL_SNIPPETS.bat` | `SOUL_SHARED_INTERACTION.md` + `SOUL_SHARED_OUTPUT_FORMAT.md` |
-| Trust runtime | `windows\SYNC_TRUST_RUNTIME.bat` | SOUL advisory + legal forensic + memory seed + limits (geen scrub) — na pull / dagelijks |
+| Trust runtime | `windows\SYNC_TRUST_RUNTIME.bat` | SOUL advisory + legal forensic + memory seed + limits (geen scrub); geen pause bij succes — na pull / dagelijks |
 | Trust volledig | `windows\APPLY_TRUST_PROTOCOL.bat` | Bovenstaande + scrub + `RUN_TRUST_FORENSIC_E2E` — zie `docs/TRUST_FORENSIC_PROTOCOL.md` |
 | Domein-toolsets | `windows\SYNC_DOMAIN_TOOLSETS.bat` | `docs/domain_toolsets.yaml` → `platform_toolsets.cli` per profiel; audit: `docs/DOMAIN_TOOLSET_AUDIT.md` |
 | Presentatie | `docs/INSTITUTIONAL_PRESENTATION.md`, `docs/INSTITUTIONAL_PORTING_GUIDE.md` | Rich render + globale typografie; legacy `windows/scripts/institutional/` |

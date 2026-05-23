@@ -14,6 +14,7 @@ param(
     [switch]$IncludeMemoryArchitectureE2E,
     [switch]$IncludeMemoryProductionGate,
     [switch]$IncludeStatusBarCostE2E,
+    [switch]$IncludeParetoE2E,
     [switch]$SkipPytest,
     [switch]$SkipFootguns,
     [switch]$SkipRuff,
@@ -230,6 +231,14 @@ if ($IncludeStatusBarCostE2E -or $IncludeAllE2E) {
     $costE2e = Join-Path $scriptRoot 'RUN_STATUS_BAR_COST_E2E.ps1'
     Invoke-Step 'status-bar-cost-e2e' {
         & $costE2e -RepoRoot $repoRoot
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeParetoE2E -or $IncludeAllE2E) {
+    $paretoE2e = Join-Path $scriptRoot 'RUN_PARETO_E2E.ps1'
+    Invoke-Step 'pareto-e2e' {
+        & $paretoE2e -RepoRoot $repoRoot
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

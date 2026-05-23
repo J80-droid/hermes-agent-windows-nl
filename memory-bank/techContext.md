@@ -14,5 +14,6 @@
 - **Presentatie:** `docs/INSTITUTIONAL_PRESENTATION.md`; SOUL-sync `SYNC_SOUL_SNIPPETS.bat`; audit `windows/audits/RUN_INSTITUTIONAL_E2E.bat`
 - **TUI/CLI markdown:** Laag B = `institutional_render.py` (YAML-paletten + built-ins) + `display_markdown.py` (`get_assistant_console_theme`, **live config** `load_config_readonly`); Laag C UI = skin `default` via `skin_markdown_theme()`; gateway `agent/rich_output.py`; diagnose `scripts/diagnose_renderer.py`
 - **TUI statusbalk-kosten (rich):** `hermes_cli/usage_snapshot.py` (gateway usage payload + breakdown), `ui-tui/src/domain/usageCostBar.ts` (formatter/tiers), `ui-tui/src/domain/liveTurnCost.ts` (live `~$turn`), client-side turn-delta/tools in `createGatewayEventHandler.ts`; `/cost` = zichtbaarheid, `config.set cost_bar_mode` = formaat; E2E `windows/audits/RUN_STATUS_BAR_COST_E2E.bat`
+- **OpenRouter Pareto Code router:** `plugins/model-providers/openrouter`, transport + summary helpers, `scripts/verify_pareto_router.py`; E2E `windows/audits/RUN_PARETO_E2E.bat`
 - **SOUL-docs:** `docs/PROFILE_SOUL.md`
 - **Institutionele env (defaults):** `HERMES_RAG_LIVE_STALE_SEC=120`, `HERMES_RAG_QUIET_TORCH=1` via `rag_institutional_defaults.py` + `_rag_apply_institutional_env.bat`
