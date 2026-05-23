@@ -20,15 +20,23 @@ if "%~1"=="" (
 
   echo.
 
-  echo  Optioneel ^(overschrijft %%USERPROFILE%%\.hermes — alleen disaster recovery^):
+  echo  Volledige runtime ^(schema v3, %%LOCALAPPDATA%%\hermes^):
 
-  echo    "%~nx0" "D:\...\backup_..." -RestoreUserProfile
+  echo    "%~nx0" "D:\...\backup_..." -RestoreRuntimeFull
 
   echo.
 
-  echo  Alleen runtime-persona's ^(%%LOCALAPPDATA%%\hermes\profiles\*\SOUL.md etc.^):
+  echo  Alleen runtime-persona's ^(SOUL, config.yaml, memories^):
 
   echo    "%~nx0" "D:\...\backup_..." -RestoreRuntimePersonas
+
+  echo.
+
+  echo  Legacy profiel ^(%%USERPROFILE%%\.hermes — disaster recovery^):
+
+  echo    "%~nx0" "D:\...\backup_..." -RestoreLegacyProfile
+
+  echo    ^(alias: -RestoreUserProfile^)
 
   echo.
 
@@ -36,7 +44,7 @@ if "%~1"=="" (
 
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0restore_from_backup.ps1" -BackupPath "%~1" %2 %3 %4
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0restore_from_backup.ps1" -BackupPath "%~1" %2 %3 %4 %5
 
 set ERR=%ERRORLEVEL%
 
@@ -55,4 +63,3 @@ echo.
 pause
 
 exit /b 0
-

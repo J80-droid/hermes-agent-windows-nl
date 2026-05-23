@@ -106,7 +106,9 @@ function Get-HermesWindowsLocalAssetsManifest {
                 'launch_soul_anatomy_deploy.ps1',
                 'rag_python_resolve.ps1',
                 'institutional_p0_p1.bat',
-                'verify_hermes_home.ps1'
+                'verify_hermes_home.ps1',
+                'HermesBackupCommon.ps1',
+                'apply_team_display_profiles.py'
             )
             RepoSub = 'scripts'
         },
@@ -122,6 +124,7 @@ function Get-HermesWindowsLocalAssetsManifest {
                 'RUN_AUDITS.ps1', 'RUN_AUDITS.bat',
                 'RUN_PROFILE_SWITCH_E2E.ps1', 'RUN_PROFILE_SWITCH_E2E.bat',
                 'RUN_INSTITUTIONAL_E2E.ps1', 'RUN_INSTITUTIONAL_E2E.bat',
+                'RUN_BACKUP_E2E.ps1', 'RUN_BACKUP_E2E.bat',
                 'RUN_LEGAL_DOMAIN_E2E.ps1', 'RUN_LEGAL_DOMAIN_E2E.bat',
                 'RUN_SOUL_DEPLOY_START_E2E.ps1', 'RUN_SOUL_DEPLOY_START_E2E.bat'
             )
@@ -148,6 +151,10 @@ function Get-HermesCriticalWindowsRepoPath {
         'windows/backup_hermes.ps1',
         'windows/backup_soul_profiles.ps1',
         'windows/restore_from_backup.ps1',
+        'windows/scripts/HermesBackupCommon.ps1',
+        'windows/scripts/apply_team_display_profiles.py',
+        'scripts/verify_institutional_guard.py',
+        'docs/INSTITUTIONAL_PORTING_GUIDE.md',
         'windows/SYNC_SOUL_SNIPPETS.bat',
         'windows/SYNC_TRUST_RUNTIME.bat',
         'windows/SYNC_TRUST_PROTOCOL.bat',
@@ -191,6 +198,9 @@ function Get-HermesCriticalWindowsRepoPath {
         'windows/audits/RUN_PROFILE_SWITCH_E2E.bat',
         'windows/audits/RUN_INSTITUTIONAL_E2E.ps1',
         'windows/audits/RUN_INSTITUTIONAL_E2E.bat',
+        'windows/audits/RUN_BACKUP_E2E.ps1',
+        'windows/audits/RUN_BACKUP_E2E.bat',
+        'tests/windows/test_backup_runtime.ps1',
         'windows/audits/RUN_LEGAL_DOMAIN_E2E.ps1',
         'windows/audits/RUN_LEGAL_DOMAIN_E2E.bat',
         'windows/audits/RUN_TOOLSET_DOMAIN_E2E.ps1',

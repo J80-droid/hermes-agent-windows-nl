@@ -100,8 +100,9 @@ notepad %LOCALAPPDATA%\hermes\profiles\mijn-domein\SOUL.md
 | **Alles in één keer (aanbevolen)** | `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat` (13 domeinen + snippets + E2E) |
 | Presentatie (kleur + structuur) | `docs/INSTITUTIONAL_PRESENTATION.md` |
 | Core SOUL referentie in repo | `docs/templates/SOUL_CORE_ORCHESTRATOR.md` |
-| Runtime SOUL in backup | `MANAGE_BACKUPS.bat` → `backup_soul_profiles` (map `localappdata_hermes/` in backup) |
-| Alleen persona's terugzetten | `restore_from_backup.ps1 -RestoreRuntimePersonas` (zie `RESTORE_FROM_BACKUP.bat` help) |
+| Runtime SOUL + config in backup | `MANAGE_BACKUPS.bat` → `backup_soul_profiles` (schema v3: `localappdata_hermes/`; volledige runtime: `runtime_hermes/`) |
+| Volledige runtime herstellen | `restore_from_backup.ps1 -RestoreRuntimeFull` (zie `RESTORE_FROM_BACKUP.bat`) |
+| Alleen persona's terugzetten | `restore_from_backup.ps1 -RestoreRuntimePersonas` (SOUL, `config.yaml`, memories) |
 
 Core routing staat in [ORCHESTRATOR_ROUTING.md](ORCHESTRATOR_ROUTING.md). Volledige lijsten: skill `landkaart` / `/landkaart`.
 

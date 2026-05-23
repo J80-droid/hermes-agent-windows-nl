@@ -1,21 +1,22 @@
-# Hermes Agent: institutioneel backup-pakket (user data + repo-snapshot + manifest)
-# - %USERPROFILE%\.hermes → backupmap (robocopy, *.log overal uitgesloten; /XD lsp, cache,
-#   __pycache__ op profiel — LSP-binaries zijn vaak symlinks/junctions → robocopy ERROR 3)
-# - Repo windows\     → backupmap\repo_windows\
-# - Repo assets\      → backupmap\repo_assets\   (branding / Hermes_logo.png)
-# - Kritieke repo-rootbestanden → backupmap\repo_root\ (allowlist + RELEASE_v*.md; geen live secrets)
-# - BACKUP_MANIFEST.json (schema, tijdstip, machine — audit trail)
-# - Taakbalk-.lnk in backup-root + SQLite-check + sync _local_assets
+# Hermes Agent: institutioneel backup-pakket (schema v3)
 #
-# Optioneel: -SkipPause of omgeving HERMES_BACKUP_NONINTERACTIVE=1 om "Press any key" over te slaan (CI/automation).
+# - runtime_hermes/     ← %LOCALAPPDATA%\hermes (canonieke runtime; bevat secrets)
+# - legacy_hermes/      ← %USERPROFILE%\.hermes (_local_assets spiegel)
+# - localappdata_hermes/← persona-subset (SOUL, config, memories) — v2 compat
+# - repo_windows/, repo_assets/, repo_root/
+# - BACKUP_MANIFEST.json (schema v3)
+#
+# VEREIST: Hermes/gateway volledig gestopt (Test-HermesSafeForBackup).
+# Optioneel: -SkipPause of HERMES_BACKUP_NONINTERACTIVE=1
 param(
-    [switch]$SkipPause
+    [switch]$SkipPause,
+    [switch]$WhatIf
 )
 
 . (Join-Path $PSScriptRoot 'HermesShellCommon.ps1')
-$ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot 'scripts/HermesBackupCommon.ps1')
+$ErrorActionPreference = 'Stop'
 
-$hermesSource = "$env:USERPROFILE\.hermes"
 $startDir = if ($PSScriptRoot) { $PSScriptRoot } elseif ($MyInvocation.MyCommand.Path) {
     Split-Path -Parent $MyInvocation.MyCommand.Path
 } else {
@@ -35,138 +36,89 @@ while ($d) {
     $d = $next
 }
 if (-not $repoRoot) {
-    Write-Host ('[ERROR] ' + 'Geen Hermes repo gevonden (pyproject.toml + windows\backup_hermes.ps1) vanaf: ' + $startDir) -ForegroundColor Red
+    Write-Host ('[ERROR] Geen Hermes repo gevonden (pyproject.toml + windows\backup_hermes.ps1) vanaf: ' + $startDir) -ForegroundColor Red
     exit 1
 }
 $repoRoot = (Resolve-Path -LiteralPath $repoRoot).Path
 
-$backupRoot = Join-Path $repoRoot "backups"
-$timestamp = Get-Date -Format "yyyy_MM_dd_HHmmss"
+$runtimeRoot = Get-HermesRuntimeRoot
+$legacyRoot = Get-HermesLegacyRoot
+$backupRoot = Join-Path $repoRoot 'backups'
+$timestamp = Get-Date -Format 'yyyy_MM_dd_HHmmss'
 $backupFolder = Join-Path $backupRoot "backup_$timestamp"
 
-function Get-HermesRobocopyExePath {
-    # WOW64: 32-bit PowerShell ziet System32 als SysWOW64 — Sysnative leidt naar echte 64-bit robocopy.
-    $windir = if ($env:SystemRoot) { $env:SystemRoot } else { $env:WINDIR }
-    foreach ($tail in @('System32\robocopy.exe', 'Sysnative\System32\robocopy.exe')) {
-        $p = Join-Path $windir $tail
-        if (Test-Path -LiteralPath $p) { return $p }
-    }
-    return $null
-}
+Write-Host '================================================' -ForegroundColor Cyan
+Write-Host '  Hermes Agent: backup (institutioneel v3)' -ForegroundColor Cyan
+Write-Host '================================================' -ForegroundColor Cyan
+Write-Host ('  Runtime: ' + $runtimeRoot) -ForegroundColor DarkGray
+Write-Host ('  Legacy:  ' + $legacyRoot) -ForegroundColor DarkGray
 
-$robocopyExe = Get-HermesRobocopyExePath
-
-function Invoke-HermesRobocopyBackup {
-    param(
-        [Parameter(Mandatory)][string]$Src,
-        [Parameter(Mandatory)][string]$Dst
-    )
-    if (-not (Test-Path -LiteralPath $Src)) {
-        Write-Host "  [SKIP] Bron ontbreekt: $Src" -ForegroundColor DarkYellow
-        return
-    }
-    New-Item -ItemType Directory -Path $Dst -Force | Out-Null
-    if ($robocopyExe -and (Test-Path -LiteralPath $robocopyExe)) {
-        # /E alle submappen; /XF *.log sluit .log overal uit (PowerShell Copy-Item -Exclude doet dat niet betrouwbaar recursief)
-        # /COPY:DT = data + tijdstempels, géén attributen — voorkomt ERROR 1920 / "geen toegang" op door Docker/UV
-        #   vergrendelde bestanden onder sandboxes\...\home\.cache\uv (attribuut-reset faalt).
-        # /XD: uv/pip-cache onder elke docker-sandbox-workspace (…\sandboxes\docker\<ws>\home\.cache).
-        #   Geen wildcards — oudere robocopy geeft dan "Invalid Parameter" (exit 16). Wel vaste relatieve
-        #   default + alle bestaande absolute paden die we onder sandboxes\docker\ vinden.
-        $srcN = $Src.TrimEnd('\', '/')
-        $xdDirs = [System.Collections.Generic.List[string]]::new()
-        [void]$xdDirs.Add('sandboxes\docker\default\home\.cache')
-        $dockerRoot = Join-Path $srcN 'sandboxes\docker'
-        if (Test-Path -LiteralPath $dockerRoot) {
-            Get-ChildItem -LiteralPath $dockerRoot -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-                $homeCache = Join-Path $_.FullName 'home\.cache'
-                if (Test-Path -LiteralPath $homeCache) {
-                    [void]$xdDirs.Add([System.IO.Path]::GetFullPath($homeCache))
-                }
-            }
-        }
-        # Profiel: geen LSP/npm-cache of Python bytecode — symlinks + ERROR 3 / eindeloze retries
-        $hermesNorm = [System.IO.Path]::GetFullPath($hermesSource.TrimEnd('\', '/'))
-        $srcNorm = [System.IO.Path]::GetFullPath($srcN)
-        if ($srcNorm -eq $hermesNorm) {
-            [void]$xdDirs.Add('lsp')
-            [void]$xdDirs.Add('cache')
-        }
-        [void]$xdDirs.Add('__pycache__')
-        $xdUnique = $xdDirs | Select-Object -Unique
-        $rcArgs = @(
-            $srcN, $Dst, '/E', '/COPY:DT', '/XF', '*.log',
-            '/R:1', '/W:1', '/NFL', '/NDL', '/NJH', '/NJS', '/NP',
-            '/XD'
-        ) + @($xdUnique)
-        & $robocopyExe @rcArgs
-        $rc = $LASTEXITCODE
-        if ($rc -ge 8) {
-            throw "robocopy eindigde met foutcode $rc ($Src -> $Dst)"
-        }
-        Write-Host "  [OK] robocopy -> $Dst" -ForegroundColor DarkGray
-    } else {
-        Write-Host "  [WARN] Geen robocopy.exe — fallback Copy-Item (top-level uitsluiting lsp/cache/__pycache__; geen diepe __pycache__-filter)." -ForegroundColor Yellow
-        $srcNormFb = [System.IO.Path]::GetFullPath($Src.TrimEnd('\', '/'))
-        $hermesNormFb = [System.IO.Path]::GetFullPath($hermesSource.TrimEnd('\', '/'))
-        $skipNames = [System.Collections.Generic.HashSet[string]]::new([string[]]@('__pycache__'))
-        if ($srcNormFb -eq $hermesNormFb) {
-            [void]$skipNames.UnionWith([string[]]@('lsp', 'cache'))
-        }
-        Get-ChildItem -LiteralPath $Src -Force | ForEach-Object {
-            if ($skipNames.Contains($_.Name)) { return }
-            $target = Join-Path $Dst $_.Name
-            Copy-Item -LiteralPath $_.FullName -Destination $target -Recurse -Force
-        }
-    }
-}
-
-Write-Host "================================================" -ForegroundColor Cyan
-Write-Host "  Hermes Agent: backup (institutioneel)" -ForegroundColor Cyan
-Write-Host "================================================" -ForegroundColor Cyan
-
-if (-not (Test-Path $hermesSource)) {
-    Write-Host ('[ERROR] ' + 'Bronmap ' + $hermesSource + ' niet gevonden!') -ForegroundColor Red
+if (-not (Test-HermesSafeForBackup -RuntimeRoot $runtimeRoot)) {
     exit 1
+}
+
+if (-not (Test-Path -LiteralPath $runtimeRoot)) {
+    Write-Host ('[WARN] Runtime-map ontbreekt: ' + $runtimeRoot) -ForegroundColor Yellow
+}
+
+if ($WhatIf) {
+    Write-Host '[INFO] WhatIf — geen bestanden gekopieerd.' -ForegroundColor Cyan
+    Write-Host ('  Zou backup maken: ' + $backupFolder) -ForegroundColor DarkGray
+    exit 0
 }
 
 if (-not (Test-Path $backupRoot)) { New-Item -ItemType Directory -Path $backupRoot | Out-Null }
 New-Item -ItemType Directory -Path $backupFolder | Out-Null
 
-Write-Host ('[1/11] ' + 'Hermes-gebruikersmap (' + $hermesSource + ')...') -ForegroundColor Gray
-Invoke-HermesRobocopyBackup -Src $hermesSource -Dst $backupFolder
+Write-Host ('[1/12] runtime_hermes <- ' + $runtimeRoot + ' ...') -ForegroundColor Gray
+$runtimeDst = Join-Path $backupFolder 'runtime_hermes'
+if (Test-Path -LiteralPath $runtimeRoot) {
+    Invoke-HermesRobocopyMirror -Src $runtimeRoot -Dst $runtimeDst -Label 'runtime_hermes'
+} else {
+    Write-Host '  [SKIP] Geen runtime-map' -ForegroundColor DarkYellow
+}
+
+Write-Host ('[2/12] legacy_hermes <- ' + $legacyRoot + ' ...') -ForegroundColor Gray
+$legacyDst = Join-Path $backupFolder 'legacy_hermes'
+if (Test-Path -LiteralPath $legacyRoot) {
+    Invoke-HermesRobocopyMirror -Src $legacyRoot -Dst $legacyDst -Label 'legacy_hermes'
+} else {
+    Write-Host '  [SKIP] Geen legacy ~/.hermes' -ForegroundColor DarkYellow
+}
 
 $soulBackupPs1 = Join-Path $repoRoot 'windows/backup_soul_profiles.ps1'
 $runtimePersonaFiles = @()
 if (Test-Path -LiteralPath $soulBackupPs1) {
-    Write-Host '[2/11]Runtime personas (LOCALAPPDATA\hermes SOUL)...' -ForegroundColor Gray
+    Write-Host '[3/12] Persona-subset (localappdata_hermes)...' -ForegroundColor Gray
     $runtimePersonaFiles = @(& $soulBackupPs1 -BackupFolder $backupFolder)
+    if ((Test-Path -LiteralPath $runtimeRoot) -and $runtimePersonaFiles.Count -eq 0) {
+        Write-Host '[WARN] Runtime aanwezig maar 0 persona-bestanden gekopieerd' -ForegroundColor Yellow
+    }
 } else {
-    Write-Host '[2/11][SKIP] backup_soul_profiles.ps1 ontbreekt' -ForegroundColor Yellow
+    Write-Host '[3/12][SKIP] backup_soul_profiles.ps1 ontbreekt' -ForegroundColor Yellow
 }
 
-Write-Host '[3/11]Repo windows\ -> repo_windows\ ...' -ForegroundColor Gray
-$repoWindowsSrc = Join-Path $repoRoot "windows"
-$repoWindowsDst = Join-Path $backupFolder "repo_windows"
+Write-Host '[4/12] Repo windows\ -> repo_windows\ ...' -ForegroundColor Gray
+$repoWindowsSrc = Join-Path $repoRoot 'windows'
+$repoWindowsDst = Join-Path $backupFolder 'repo_windows'
 if (Test-Path -LiteralPath $repoWindowsSrc) {
-    Invoke-HermesRobocopyBackup -Src $repoWindowsSrc -Dst $repoWindowsDst
+    Invoke-HermesRobocopyMirror -Src $repoWindowsSrc -Dst $repoWindowsDst
 } else {
     Write-Host "  [SKIP] Geen map: $repoWindowsSrc" -ForegroundColor Yellow
 }
 
-Write-Host '[4/11]Repo assets\ -> repo_assets\ ...' -ForegroundColor Gray
-$assetsSrc = Join-Path $repoRoot "assets"
-$assetsDst = Join-Path $backupFolder "repo_assets"
+Write-Host '[5/12] Repo assets\ -> repo_assets\ ...' -ForegroundColor Gray
+$assetsSrc = Join-Path $repoRoot 'assets'
+$assetsDst = Join-Path $backupFolder 'repo_assets'
 if (Test-Path -LiteralPath $assetsSrc) {
-    Invoke-HermesRobocopyBackup -Src $assetsSrc -Dst $assetsDst
+    Invoke-HermesRobocopyMirror -Src $assetsSrc -Dst $assetsDst
 } else {
     Write-Host "  [SKIP] Geen map: $assetsSrc" -ForegroundColor Yellow
 }
 
-Write-Host '[5/10]Kritieke repo-root -> repo_root\ (allowlist, veilig voor delen)...' -ForegroundColor Gray
-$repoRootDst = Join-Path $backupFolder "repo_root"
+Write-Host '[6/12] Kritieke repo-root -> repo_root\ (allowlist)...' -ForegroundColor Gray
+$repoRootDst = Join-Path $backupFolder 'repo_root'
 New-Item -ItemType Directory -Path $repoRootDst -Force | Out-Null
-# Alleen bestanden zonder typische secrets; géén cli-config.yaml / .env (kunnen keys bevatten).
 $repoRootSnapLeaves = @(
     'start_hermes.bat',
     'start_hermes_split.bat',
@@ -194,7 +146,6 @@ foreach ($leaf in $repoRootSnapLeaves) {
         Write-Host "  [OK] $leaf" -ForegroundColor DarkGray
     }
 }
-# Release-notes (veel losse bestanden; geen secrets) — mee in repo_root voor delen/DR.
 Get-ChildItem -LiteralPath $repoRoot -File -Filter 'RELEASE_v*.md' -ErrorAction SilentlyContinue |
     Sort-Object Name |
     ForEach-Object {
@@ -203,51 +154,63 @@ Get-ChildItem -LiteralPath $repoRoot -File -Filter 'RELEASE_v*.md' -ErrorAction 
         Write-Host "  [OK] $($_.Name)" -ForegroundColor DarkGray
     }
 
-Write-Host '[6/11]BACKUP_MANIFEST.json ...' -ForegroundColor Gray
-$runtimeHome = Join-Path $env:LOCALAPPDATA 'hermes'
-if (-not (Test-Path -LiteralPath (Join-Path $runtimeHome 'config.yaml'))) {
-    $runtimeHome = $hermesSource
+Write-Host '[7/12] BACKUP_MANIFEST.json (schema v3)...' -ForegroundColor Gray
+$displaySnapshot = Get-HermesInstitutionalDisplaySnapshot -RuntimeRoot $runtimeRoot
+$runtimeFileCount = 0
+if (Test-Path -LiteralPath $runtimeDst) {
+    $runtimeFileCount = @(Get-ChildItem -LiteralPath $runtimeDst -Recurse -File -ErrorAction SilentlyContinue).Count
+}
+$personaSoulCount = 0
+$personaDir = Join-Path $backupFolder 'localappdata_hermes'
+if (Test-Path -LiteralPath $personaDir) {
+    $personaSoulCount = @(Get-ChildItem -LiteralPath $personaDir -Recurse -Filter 'SOUL.md' -File -ErrorAction SilentlyContinue).Count
 }
 $manifest = [ordered]@{
-    schema_version = 2
-    format           = 'hermes_windows_backup'
-    created_utc      = (Get-Date).ToUniversalTime().ToString('o')
-    hostname         = $env:COMPUTERNAME
-    windows_user     = $env:USERNAME
-    repo_root        = $repoRoot
-    hermes_profile   = $hermesSource
-    hermes_runtime_home = $runtimeHome
-    backup_folder    = $backupFolder
-    repo_root_files  = $copiedRepoRoot
-    includes         = @(
-        'hermes_user_profile',
-        'hermes_runtime_personas',
+    schema_version               = 3
+    format                       = 'hermes_windows_backup'
+    created_utc                  = (Get-Date).ToUniversalTime().ToString('o')
+    hostname                     = $env:COMPUTERNAME
+    windows_user                 = $env:USERNAME
+    repo_root                    = $repoRoot
+    hermes_runtime_home          = $runtimeRoot
+    hermes_legacy_home           = $legacyRoot
+    backup_folder                = $backupFolder
+    contains_secrets             = $true
+    runtime_file_count           = $runtimeFileCount
+    persona_file_count           = @($runtimePersonaFiles).Count
+    persona_soul_count           = $personaSoulCount
+    repo_root_files              = $copiedRepoRoot
+    institutional_display_snapshot = $displaySnapshot
+    includes                     = @(
+        'runtime_hermes',
+        'legacy_hermes',
+        'localappdata_hermes',
         'repo_windows',
         'repo_assets',
         'repo_root',
         'taskbar_shortcuts_in_backup_root',
         'BACKUP_MANIFEST'
     )
-    runtime_personas = [ordered]@{
+    runtime_personas             = [ordered]@{
         backup_subdir = 'localappdata_hermes'
         files         = @($runtimePersonaFiles)
     }
 }
 $manifestPath = Join-Path $backupFolder 'BACKUP_MANIFEST.json'
-$manifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
+$manifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
 Write-Host "  -> $manifestPath" -ForegroundColor DarkGray
 
-Write-Host '[7/11]Taakbalk-.lnk in backup-map ...' -ForegroundColor Gray
-$taskbarPs1 = Join-Path $repoRoot "windows\create_taskbar_shortcuts.ps1"
+Write-Host '[8/12] Taakbalk-.lnk in backup-map ...' -ForegroundColor Gray
+$taskbarPs1 = Join-Path $repoRoot 'windows\create_taskbar_shortcuts.ps1'
 if (Test-Path -LiteralPath $taskbarPs1) {
     & $taskbarPs1 -RepoRoot $repoRoot -OutDir $backupFolder
 } else {
-    Write-Host "  [SKIP] create_taskbar_shortcuts.ps1 niet gevonden: $taskbarPs1" -ForegroundColor Yellow
+    Write-Host "  [SKIP] create_taskbar_shortcuts.ps1 niet gevonden" -ForegroundColor Yellow
 }
 
-Write-Host '[8/11]SQLite-integriteit (indien state.db) ...' -ForegroundColor Gray
-$dbPath = Join-Path $backupFolder "state.db"
-if (Test-Path $dbPath) {
+Write-Host '[9/12] SQLite-integriteit (runtime_hermes/state.db)...' -ForegroundColor Gray
+$dbPath = Join-Path $runtimeDst 'state.db'
+if (Test-Path -LiteralPath $dbPath) {
     $verifyCmd = "import sqlite3; conn = sqlite3.connect(r'$dbPath'); res = conn.execute('PRAGMA integrity_check').fetchone(); print(res[0])"
     $res = $null
     $prevE = $ErrorActionPreference
@@ -265,64 +228,70 @@ if (Test-Path $dbPath) {
         $res = python -c $verifyCmd 2>$null
     }
     $ErrorActionPreference = $prevE
-
-    if ($res -eq "ok") {
-        Write-Host '[SUCCESS]state.db: integrity_check ok.' -ForegroundColor Green
+    if ($res -eq 'ok') {
+        Write-Host '[OK] state.db: integrity_check ok.' -ForegroundColor Green
     } else {
-        Write-Host ('[WARNING] ' + 'Database check: ' + $res) -ForegroundColor Yellow
+        Write-Host ('[WARN] Database check: ' + $res) -ForegroundColor Yellow
     }
 } else {
-    Write-Host '[INFO]Geen state.db in deze backup.' -ForegroundColor Gray
+    Write-Host '[INFO] Geen state.db in runtime_hermes.' -ForegroundColor Gray
 }
 
-Write-Host '[9/11]Taakbalk-.lnk in repo windows\ vernieuwen ...' -ForegroundColor Gray
-$winDir = Join-Path $repoRoot "windows"
+Write-Host '[10/12] Taakbalk-.lnk in repo windows\ vernieuwen ...' -ForegroundColor Gray
+$winDir = Join-Path $repoRoot 'windows'
 if (Test-Path -LiteralPath $taskbarPs1) {
     & $taskbarPs1 -RepoRoot $repoRoot -OutDir $winDir -Quiet
 }
 
-Write-Host ('[10/11] ' + 'Sync naar ' + $env:USERPROFILE + '\.hermes\_local_assets ...') -ForegroundColor Gray
-
-$syncScript = Join-Path $repoRoot "windows\sync_local_assets_to_backup.ps1"
-if (Test-Path $syncScript) {
+Write-Host ('[11/12] Sync naar ' + $legacyRoot + '\_local_assets ...') -ForegroundColor Gray
+$syncScript = Join-Path $repoRoot 'windows\sync_local_assets_to_backup.ps1'
+if (Test-Path -LiteralPath $syncScript) {
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
         & $syncScript
         if (Test-NativeCommandFailed) {
-            Write-Host ('[WARNING] ' + 'sync_local_assets_to_backup.ps1 eindigde met code ' + $LASTEXITCODE + '.') -ForegroundColor Yellow
+            Write-Host ('[WARN] sync_local_assets_to_backup.ps1 exit ' + $LASTEXITCODE) -ForegroundColor Yellow
         }
     } catch {
-        Write-Host ('[WARNING] ' + 'Sync naar _local_assets mislukt: ' + $($_.Exception.Message)) -ForegroundColor Yellow
+        Write-Host ('[WARN] Sync mislukt: ' + $($_.Exception.Message)) -ForegroundColor Yellow
     } finally {
         $ErrorActionPreference = $prevEap
     }
 } else {
-    Write-Host ('[WARNING] ' + 'sync_local_assets_to_backup.ps1 niet gevonden: ' + $syncScript) -ForegroundColor Yellow
+    Write-Host ('[WARN] sync_local_assets_to_backup.ps1 niet gevonden') -ForegroundColor Yellow
 }
 
-Write-Host '[11/11]Verifieer Windows script-keten (bat -> ps1) ...' -ForegroundColor Gray
-$verifyScript = Join-Path $repoRoot "windows\verify_windows_script_chain.ps1"
+Write-Host '[12/12] Post-backup verify + script-keten ...' -ForegroundColor Gray
+$post = Test-HermesBackupPostVerify -BackupFolder $backupFolder -Strict
+if ($post.Ok) {
+    Write-Host '[OK] Post-backup verify PASS' -ForegroundColor Green
+} else {
+    foreach ($issue in $post.Issues) {
+        Write-Host ('[WARN] ' + $issue) -ForegroundColor Yellow
+    }
+}
+
+$verifyScript = Join-Path $repoRoot 'windows\verify_windows_script_chain.ps1'
 if (Test-Path -LiteralPath $verifyScript) {
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
         & $verifyScript -RepoRoot $repoRoot
         if (Test-NativeCommandFailed) {
-            Write-Host '[WARNING]verify_windows_script_chain.ps1: keten incompleet (git pull / restore_local_assets).' -ForegroundColor Yellow
+            Write-Host '[WARN] verify_windows_script_chain: keten incompleet' -ForegroundColor Yellow
         }
     } catch {
-        Write-Host ('[WARNING] ' + 'Verify mislukt: ' + $($_.Exception.Message)) -ForegroundColor Yellow
+        Write-Host ('[WARN] Verify mislukt: ' + $($_.Exception.Message)) -ForegroundColor Yellow
     } finally {
         $ErrorActionPreference = $prevEap
     }
-} else {
-    Write-Host '[WARNING]verify_windows_script_chain.ps1 niet gevonden.' -ForegroundColor Yellow
 }
 
-Write-Host ('[OK] ' + 'Backup voltooid: ' + $backupFolder) -ForegroundColor Green
+Write-Host ('[OK] Backup voltooid: ' + $backupFolder) -ForegroundColor Green
+Write-Host '[INFO] Bevat secrets (.env, auth) — niet delen buiten vertrouwde DR.' -ForegroundColor DarkYellow
 
-Write-Host ""
+Write-Host ''
 $nonInteractive = $SkipPause -or ($env:HERMES_BACKUP_NONINTERACTIVE -in @('1', 'true', 'True', 'yes', 'Yes'))
 if (-not $nonInteractive) {
     pause

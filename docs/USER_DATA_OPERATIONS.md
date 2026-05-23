@@ -22,8 +22,11 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 | Hermes starten (stamp SOUL deploy) | `start_hermes.bat` → `launch_soul_anatomy_deploy.ps1` (automatisch indien repo bron gewijzigd); overslaan: `HERMES_SKIP_SOUL_DEPLOY_ON_START=1` |
 | SOUL startketen valideren | `windows\audits\RUN_SOUL_DEPLOY_START_E2E.bat` |
 | SOUL Interaction + Outputformaat naar alle profielen | `windows\SYNC_SOUL_SNIPPETS.bat` |
-| Runtime SOUL in backup | `windows\MANAGE_BACKUPS.bat` (stap `backup_soul_profiles`) |
-| Alleen persona's uit backup | `restore_from_backup.ps1 -RestoreRuntimePersonas` (SOUL + `LEGAL_ACTIVE_MATTERS.md`) |
+| Runtime backup (schema v3) | `windows\MANAGE_BACKUPS.bat` — `%LOCALAPPDATA%\hermes` volledig; **Hermes moet gestopt zijn** |
+| Runtime SOUL + config in backup | zelfde backup; subset via `backup_soul_profiles` → `localappdata_hermes/` |
+| Volledige runtime uit backup | `restore_from_backup.ps1 -RestoreRuntimeFull` → `%LOCALAPPDATA%\hermes` |
+| Alleen persona's uit backup | `restore_from_backup.ps1 -RestoreRuntimePersonas` (SOUL, `config.yaml`, memories, `LEGAL_ACTIVE_MATTERS.md`) |
+| Legacy ~/.hermes uit backup | `restore_from_backup.ps1 -RestoreLegacyProfile` (alias `-RestoreUserProfile`) |
 | Legal bron-submappen | `windows\scripts\MIGRATE_LEGAL_LAYOUT.bat -Apply` → `update_knowledge.bat legal` |
 | Legal domein audit | `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat` |
 | **Institutioneel alles-in-één** | `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` (display alle profielen + SOUL + E2E) |

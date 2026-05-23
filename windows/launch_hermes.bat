@@ -215,9 +215,15 @@ echo [%DATE% %TIME%] Launching runtime wrapper... >> "%LAUNCH_LOG%"
 
 rem --- PREMIUM: Auto-Backup before Update ---
 echo "!CLEAN_ARGS!" | findstr /I "update" >nul
-if %errorlevel% equ 0 (
+if !errorlevel! equ 0 (
     echo %GOUD%[PREMIUM] Update gedetecteerd. Automatische backup wordt gestart voor veiligheid...%RESET%
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/backup_hermes.ps1"
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/stop_other_hermes_processes.ps1"
+    set "HERMES_BACKUP_NONINTERACTIVE=1"
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/backup_hermes.ps1" -SkipPause
+    if !errorLevel! neq 0 (
+        echo %GOUD%[WARN] Auto-backup overgeslagen of mislukt ^(exit !errorLevel!^) — update gaat door.%RESET%
+        echo [%DATE% %TIME%] WARN: auto-backup exit !errorLevel! >> "%LAUNCH_LOG%"
+    )
 )
 
 rem --- Check if .env exists ---

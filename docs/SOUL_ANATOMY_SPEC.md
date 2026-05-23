@@ -42,7 +42,7 @@ Start-flags: `HERMES_SKIP_SOUL_DEPLOY_ON_START=1`, geforceerd `HERMES_FORCE_SOUL
 | Handmatig notepad | Jouw lokale aanpassing; blijft tot volgende **template push** of snippet-sync die sectie raakt |
 | `migrate_soul_anatomy.ps1 -Apply` | Alleen koppen/structuur; geen volledige inhoud uit repo |
 
-**Backup:** persona’s zitten in `MANAGE_BACKUPS` / `restore_from_backup.ps1 -RestoreRuntimePersonas` (map `localappdata_hermes` in backup). Commit in git vervangt **geen** runtime-backup.
+**Backup (schema v3):** volledige runtime in `runtime_hermes/`; persona-subset in `localappdata_hermes/` via `MANAGE_BACKUPS.bat` / `restore_from_backup.ps1 -RestoreRuntimePersonas` of `-RestoreRuntimeFull`. Commit in git vervangt **geen** runtime-backup.
 
 ### Valideren op deze PC
 

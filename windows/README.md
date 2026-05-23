@@ -80,8 +80,9 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 
 | Taak | Script |
 | ---- | ------ |
-| Backups | `MANAGE_BACKUPS.bat` |
-| Lokale assets herstellen | `RESTORE_FROM_BACKUP.bat` |
+| Backups (schema v3) | `MANAGE_BACKUPS.bat` — Hermes moet gestopt zijn; `%LOCALAPPDATA%\hermes` → `backups\backup_*` |
+| Restore repo / runtime | `RESTORE_FROM_BACKUP.bat` — repo: altijd; runtime: `-RestoreRuntimeFull`; persona’s: `-RestoreRuntimePersonas`; legacy: `-RestoreLegacyProfile` |
+| Backup audit (lightweight) | `audits\RUN_BACKUP_E2E.bat` |
 | Taakbalk-snelkoppelingen vernieuwen | `REFRESH_TASKBAR_SHORTCUTS.bat` (`windows\*.lnk` = `cmd /c` + gekleurd `.ico`) |
 | Taakbalk-icoon herstellen | `FIX_TASKBAR_ICONS.bat` |
 | Nous upstream-merge (uitleg) | `UPSTREAM_SYNC.md` |

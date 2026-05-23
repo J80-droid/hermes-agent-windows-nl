@@ -7,6 +7,7 @@ REPO = Path(__file__).resolve().parents[2]
 CRITICAL = [
     "windows/backup_hermes.ps1",
     "windows/backup_soul_profiles.ps1",
+    "windows/scripts/HermesBackupCommon.ps1",
     "windows/restore_from_backup.ps1",
     "windows/MANAGE_BACKUPS.bat",
     "windows/RESTORE_FROM_BACKUP.bat",

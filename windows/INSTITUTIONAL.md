@@ -16,15 +16,16 @@
 
 | Onderdeel | Pad | Rol |
 | --------- | --- | --- |
-| Backup | `windows\backup_hermes.ps1` | **Moet in git** — `MANAGE_BACKUPS.bat`, `launch_hermes.bat update` |
-| SOUL-backup | `windows\backup_soul_profiles.ps1` | `%LOCALAPPDATA%\hermes` → `localappdata_hermes/` in backup |
+| Backup | `windows\backup_hermes.ps1` | **Moet in git** — `MANAGE_BACKUPS.bat`; schema **v3**; blokkeert als Hermes draait |
+| Gedeelde backup-module | `windows\scripts\HermesBackupCommon.ps1` | Runtime root, robocopy-excludes, safe-for-backup gate |
+| SOUL-backup | `windows\backup_soul_profiles.ps1` | `%LOCALAPPDATA%\hermes` → `localappdata_hermes/` (SOUL + `profiles/*/config.yaml`) |
 | SOUL-sync | `windows\SYNC_SOUL_SNIPPETS.bat` | `SOUL_SHARED_INTERACTION.md` + `SOUL_SHARED_OUTPUT_FORMAT.md` |
 | Trust runtime | `windows\SYNC_TRUST_RUNTIME.bat` | SOUL advisory + legal forensic + memory seed + limits (geen scrub) — na pull / dagelijks |
 | Trust volledig | `windows\APPLY_TRUST_PROTOCOL.bat` | Bovenstaande + scrub + `RUN_TRUST_FORENSIC_E2E` — zie `docs/TRUST_FORENSIC_PROTOCOL.md` |
 | Domein-toolsets | `windows\SYNC_DOMAIN_TOOLSETS.bat` | `docs/domain_toolsets.yaml` → `platform_toolsets.cli` per profiel; audit: `docs/DOMAIN_TOOLSET_AUDIT.md` |
 | Presentatie | `docs/INSTITUTIONAL_PRESENTATION.md`, `docs/INSTITUTIONAL_PORTING_GUIDE.md` | Rich render + globale typografie; legacy `windows/scripts/institutional/` |
 | Core SOUL template | `docs/templates/SOUL_CORE_ORCHESTRATOR.md` | Routing/clarification/landkaart; niet overschreven door sync |
-| Restore | `windows\restore_from_backup.ps1` | **Moet in git** — `RESTORE_FROM_BACKUP.bat`; `-RestoreRuntimePersonas` |
+| Restore | `windows\restore_from_backup.ps1` | **Moet in git** — `RESTORE_FROM_BACKUP.bat`; `-RestoreRuntimeFull`, `-RestoreRuntimePersonas`, `-RestoreLegacyProfile` |
 | Manifest | `windows\WindowsLocalAssetsManifest.ps1` | Enige lijst voor `_local_assets` sync/restore |
 | Verify | `windows\VERIFY_WINDOWS_CHAIN.bat` | Controleert alle `.bat` → `.ps1` + kritieke bestanden |
 | RAG perf | `windows\scripts\rag_ingest_perf_defaults.ps1` | **Niet** `windows\` root (sync kopieert naar `_local_assets\scripts\`) |
@@ -52,6 +53,18 @@ Kleuren: goud = start/RAG, groen = setup, wit = update, roze = backup, cyaan = r
 
 User-data docs (`%USERPROFILE%\data\STATUS.md`, `RECOVERY.md`) en profiel-Kanban: zie **`docs/USER_DATA_OPERATIONS.md`** (synchroon houden met repo-entrypoints).
 
+**Backup schema v3 (backup_YYYY_MM_DD_HHMMSS):**
+
+| Submap | Bron | Inhoud |
+| ------ | ---- | ------ |
+| `runtime_hermes/` | `%LOCALAPPDATA%\hermes` | Volledige runtime (config, sessions, auth, SOUL, `.env`) — **bevat secrets** |
+| `legacy_hermes/` | `%USERPROFILE%\.hermes` | `_local_assets`, legacy spiegel |
+| `localappdata_hermes/` | subset | SOUL, `profiles/*/config.yaml`, memories — v2 compat + snelle persona-restore |
+| `repo_windows/`, `repo_assets/`, `repo_root/` | repo | Script-keten + allowlist root |
+| `BACKUP_MANIFEST.json` | — | `schema_version: 3`, display-snapshot (audit) |
+
+Hermes moet **volledig gestopt** zijn vóór backup (`Test-HermesSafeForBackup`).
+
 **IDE:** `.vscode/settings.json` in repo-root (PSScriptAnalyzer → `windows/PSScriptAnalyzerSettings.psd1`). Workspace-parent: `docs/IDE_VSCODE_SETTINGS.example.json`.
 
 **Setup PS1 (single source of truth — future-proof):**
@@ -76,7 +89,7 @@ Na `git pull`: `VERIFY_WINDOWS_CHAIN.bat` — faalt als iemand de wrapper per on
 | Wel in git | Niet in git |
 | ---------- | ----------- |
 | `.bat`, `.ps1`, `.psd1`, defaults, tests, tools | `.lnk` (taakbalk) |
-| `backup_hermes.ps1`, `restore_from_backup.ps1` | `backups\backup_*` (snapshots, `.gitignore`) |
+| `backup_hermes.ps1`, `restore_from_backup.ps1`, `scripts/HermesBackupCommon.ps1` | `backups\backup_*` (snapshots, `.gitignore`) |
 | Canonieke `.ico` | `*_last_run.log`, corrupt backups |
 | `DELEN_MET_VRIENDEN.md`, deze gids | Runtime-fingerprints (root `.gitignore`) |
 

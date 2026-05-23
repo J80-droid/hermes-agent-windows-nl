@@ -24,6 +24,7 @@ Deze map bevat de **fork** kwaliteitspoorten (geen 1:1 upstream-kloon).
 | **`RUN_PROFILE_SWITCH_E2E.bat`** | Alleen profielwissel E2E |
 | **`windows\tests\RUN_PYTEST.bat`** | Brede pytest (excl. integration) |
 | **`windows\VERIFY_WINDOWS_CHAIN.bat`** | Script-keten backup/RAG (handmatig, pause) |
+| **`RUN_BACKUP_E2E.bat`** | Lightweight backup schema v3 test (`tests/windows/test_backup_runtime.ps1`) |
 | **`UPDATE_HERMES.bat`** | Zelfde verify via `verify_windows_script_chain.ps1` in keten (geen pause) |
 
 ## Legal domein E2E

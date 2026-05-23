@@ -91,8 +91,9 @@ Zonder `-p` in argv: als `HERMES_HOME=profiles/core` maar `active_profile=legal`
 | Actie | Commando |
 |-------|----------|
 | SOUL-sync (Interaction + Outputformaat) | `windows\SYNC_SOUL_SNIPPETS.bat` |
-| Runtime SOUL in backup | `MANAGE_BACKUPS.bat` → stap `backup_soul_profiles` (manifest v2: `localappdata_hermes/`) |
-| Restore alleen persona’s | `restore_from_backup.ps1 -RestoreRuntimePersonas` |
+| Runtime SOUL + config in backup | `MANAGE_BACKUPS.bat` → `backup_soul_profiles` (schema **v3**: `localappdata_hermes/` + volledige runtime in `runtime_hermes/`) |
+| Volledige runtime herstellen | `restore_from_backup.ps1 -RestoreRuntimeFull` → `%LOCALAPPDATA%\hermes` |
+| Restore alleen persona’s | `restore_from_backup.ps1 -RestoreRuntimePersonas` (SOUL, `config.yaml`, memories) |
 
 Na wijziging aan `profiles\<naam>\SOUL.md`: **nieuwe chat** starten (bestaande sessie houdt oude system prompt).
 

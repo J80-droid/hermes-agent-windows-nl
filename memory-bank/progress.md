@@ -31,7 +31,7 @@
 - [x] `SETUP_HERMES.bat` → standaard `--full-setup` + `OPEN_SETUP.bat`; `--files-only` voor alleen bestanden
 - [x] `verify_taskbar_shortcut_icons.ps1`; `Set-HermesShellShortcut` / pins in `fix_hermes_taskbar_pins.ps1`
 - [x] Setup single source: canoniek `scripts/windows/setup_hermes_windows.ps1`, wrapper `windows/setup_hermes_windows.ps1`, `HermesSetupScriptPolicy.ps1`, pytest `test_setup_single_canonical_ps1.py`
-- [x] User-data docs: `%USERPROFILE%\data\STATUS.md`, `RECOVERY.md`; `profiles\core\KANBAN_WORKFLOWS.md`; canoniek `docs/USER_DATA_OPERATIONS.md`
+- [x] Backup schema v3 (2026-05-23): `HermesBackupCommon.ps1`, `runtime_hermes/` + `legacy_hermes/` + persona-subset; safe-for-backup gate; restore `-RestoreRuntimeFull`; test `RUN_BACKUP_E2E.bat`
 - [x] IDE: `hermes-agent/.vscode/settings.json` + `docs/IDE_VSCODE_SETTINGS.example.json`
 - [x] Setup bat-templates (`scripts/windows/bat-templates/`); geen Copy-Item-spiegel meer; PSScriptAnalyzer 0 op `windows/**/*.ps1`
 - [x] pytest Windows: `timeout-method=thread`; `shutil.which` i.p.v. `which rg`; marker `ssh` in `pyproject.toml`; `tests/windows/test_critical_windows_scripts.py`

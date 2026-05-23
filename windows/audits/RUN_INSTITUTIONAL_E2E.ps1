@@ -74,6 +74,8 @@ $requiredRepo = @(
     'skills/productivity/landkaart/SKILL.md',
     'skills/productivity/landkaart/scripts/inventory_landkaart.py',
     'windows/backup_soul_profiles.ps1',
+    'windows/scripts/HermesBackupCommon.ps1',
+    'windows/audits/RUN_BACKUP_E2E.ps1',
     'windows/scripts/sync_soul_interaction_snippet.ps1',
     'windows/SYNC_SOUL_SNIPPETS.bat',
     'windows/SYNC_TRUST_RUNTIME.bat',
@@ -221,6 +223,12 @@ try {
     } else {
         Write-Host ('[OK] ' + 'backup_soul: ' + $($copied.Count) + ' bestand(en)') -ForegroundColor Green
         $coreSoul = Join-Path $personaRoot 'profiles\core\SOUL.md'
+        $coreCfg = Join-Path $personaRoot 'profiles\core\config.yaml'
+        if (-not (Test-Path -LiteralPath $coreCfg)) {
+            Write-Host '[FAIL] backup_soul mist profiles/core/config.yaml (schema v3 persona-subset)' -ForegroundColor Red
+            exit 1
+        }
+        Write-Host '[OK] backup_soul bevat profiles/core/config.yaml' -ForegroundColor Green
         if (Test-Path -LiteralPath $coreSoul) {
             $coreText = Get-Content -LiteralPath $coreSoul -Raw -Encoding UTF8
             if ($coreText -notmatch 'Routing|orchestrator|landkaart') {
