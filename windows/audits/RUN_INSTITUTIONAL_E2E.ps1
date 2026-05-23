@@ -1,4 +1,4 @@
-# E2E audit: institutioneel pakket (landkaart, SOUL, presentatie/markdown, templates)
+﻿# E2E audit: institutioneel pakket (landkaart, SOUL, presentatie/markdown, templates)
 #
 # Dekking profielwissel (geen live LLM):
 #   WEL  — CLI-intent (2d, 11), sticky prompt (2d), SOUL-tekst op schijf (5c), SWITCH legal->core (10), pytest subset (9)
