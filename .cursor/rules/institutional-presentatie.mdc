@@ -1,0 +1,73 @@
+---
+description: Institutionele markdown — beschermde paden, geen blind wijzigen, post-IDE workflow
+globs:
+  - hermes_cli/institutional_render.py
+  - hermes_cli/markdown_output_normalize.py
+  - hermes_cli/display_markdown.py
+  - web/src/components/Markdown.tsx
+  - web/src/lib/institutional*.ts
+  - config/palettes.yaml
+  - docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md
+  - windows/team_display.defaults
+  - windows/apply_team_display*.ps1
+  - windows/scripts/apply_team_display_profiles.py
+  - scripts/diagnose_renderer.py
+  - scripts/score_institutional_render.py
+---
+
+# Institutionele presentatie (Laag B)
+
+## Drie lagen — niet mengen
+
+1. **Laag A (SOUL):** wat het model schrijft — typografie, tabellen, labels
+2. **Laag B (renderer):** hoe antwoorden getoond worden — kleur, spacing, checklist
+3. **Laag C (app UI):** Hermes shell/banner/prompt — skin goud, **niet** assistant-kleuren
+
+Assistant-antwoorden: `institutional_rich` + `demo`-palet (Monokai), **niet** app-skin goud.
+
+## Beschermde bestanden
+
+Wijzig **niet** zonder expliciete opdracht **en** E2E-verificatie:
+
+- `hermes_cli/institutional_render.py`, `markdown_output_normalize.py`, `display_markdown.py`
+- `web/src/components/Markdown.tsx`, `web/src/lib/institutionalMarkdown.ts`, `institutionalWebPalette.ts`
+- `config/palettes.yaml`
+- `docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md`
+- `windows/team_display.defaults`, `apply_team_display.ps1`, `apply_team_display_profiles.py`
+
+Bij upstream-merge: behoud fork-versie (`windows/merge_upstream_fork.ps1` `$keepOurs`).
+
+## Config-regels (team defaults)
+
+Bron: `windows/team_display.defaults`
+
+- `final_response_markdown=render` — zonder dit geen Rich-kleuren
+- `assistant_render_style=institutional_rich`
+- `assistant_palette=demo`
+- `streaming=false` — **niet** `true` bij `render` (ruwe markdown tijdens stream)
+- `compact=false`
+
+Display per profiel: `profiles/<naam>/config.yaml`. Pas aan via `APPLY_TEAM_DISPLAY.bat` of `APPLY_INSTITUTIONAL_RUNTIME.bat`, niet handmatig per profiel tenzij bewust.
+
+## Na IDE-/merge-sessie (verplicht)
+
+1. `windows\APPLY_INSTITUTIONAL_RUNTIME.bat`
+2. Hermes herstarten
+3. `/new` in Hermes (SOUL + display)
+4. `python scripts/diagnose_renderer.py --verify`
+5. Rooktest: `docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md`
+
+## Tests vóór commit op renderer-paden
+
+```bat
+python scripts/verify_institutional_guard.py
+```
+
+Of handmatig:
+
+```bat
+pytest tests/cli/test_institutional_rich_render.py tests/hermes_cli/test_normalizer_ts_parity.py -q
+python scripts/score_institutional_render.py --verify
+```
+
+Zie ook: `docs/INSTITUTIONAL_PRESENTATION.md`, `docs/INSTITUTIONAL_PORTING_GUIDE.md`.

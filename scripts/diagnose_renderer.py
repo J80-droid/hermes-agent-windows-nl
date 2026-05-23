@@ -17,6 +17,97 @@ import argparse
 import re
 import shutil
 import sys
+from pathlib import Path
+
+
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[1]
+
+
+def _parse_team_display_defaults() -> dict[str, object]:
+    """Parse windows/team_display.defaults (key=value, één per regel)."""
+    path = _repo_root() / "windows" / "team_display.defaults"
+    if not path.is_file():
+        return {}
+    out: dict[str, object] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, val = line.split("=", 1)
+        key, val = key.strip(), val.strip()
+        if not key:
+            continue
+        low = val.lower()
+        if low in {"true", "yes", "on"}:
+            out[key] = True
+        elif low in {"false", "no", "off"}:
+            out[key] = False
+        else:
+            out[key] = val
+    return out
+
+
+def _raw_profile_display_block() -> dict:
+    """Read display block from profile config.yaml without normalization."""
+    try:
+        import yaml
+        from hermes_constants import get_hermes_home
+
+        cfg_path = get_hermes_home() / "config.yaml"
+        if not cfg_path.is_file():
+            return {}
+        with cfg_path.open(encoding="utf-8") as f:
+            cfg = yaml.safe_load(f) or {}
+        display = cfg.get("display")
+        return display if isinstance(display, dict) else {}
+    except Exception:
+        return {}
+
+
+def _truthy(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value or "").strip().lower() in {"true", "yes", "on", "1"}
+
+
+def _check_team_display_drift() -> list[str]:
+    """Warn when live profile YAML drifts from windows/team_display.defaults."""
+    defaults = _parse_team_display_defaults()
+    raw = _raw_profile_display_block()
+    if not defaults or not raw:
+        return []
+
+    warnings: list[str] = []
+    checks = (
+        "streaming",
+        "final_response_markdown",
+        "assistant_render_style",
+        "assistant_palette",
+        "compact",
+        "assistant_label_columns",
+    )
+    for key in checks:
+        if key not in defaults:
+            continue
+        expected = defaults[key]
+        actual = raw.get(key)
+        if actual is None:
+            continue
+        if actual != expected:
+            warnings.append(
+                f"display.{key}={actual!r} in profiel-YAML "
+                f"(team default: {expected!r}) — draai APPLY_INSTITUTIONAL_RUNTIME.bat"
+            )
+
+    mode = str(raw.get("final_response_markdown", "") or "").strip().lower()
+    if mode == "render" and _truthy(raw.get("streaming", False)):
+        warnings.append(
+            "display.streaming=true + final_response_markdown=render in profiel-YAML — "
+            "klassieke CLI toont ruwe markdown tijdens generatie; "
+            "Hermes forceert streaming=false bij load, maar sync team defaults"
+        )
+    return warnings
 
 
 def _get_settings() -> dict:
@@ -132,6 +223,12 @@ def _print_report() -> None:
 
     _print_color_legend(palette)
 
+    drift_warnings = _check_team_display_drift()
+    if drift_warnings:
+        print("\n  [WARN] Team display drift (profiel-YAML vs team_display.defaults):")
+        for w in drift_warnings:
+            print(f"    - {w}")
+
     nfr_probe = (
         "### Niet-functionele requirements\n"
         "**Performantie**\nRender snel.\n"
@@ -241,7 +338,14 @@ def main() -> int:
         if not ok:
             print(f"\n[VERIFY FAIL] style={style} palette={palette} (expected institutional_rich + demo)")
             return 1
-        print("\n[VERIFY OK] institutional_rich + demo palette active")
+        drift_warnings = _check_team_display_drift()
+        if drift_warnings:
+            print("\n[VERIFY FAIL] Team display drift (profiel-YAML vs team_display.defaults):")
+            for w in drift_warnings:
+                print(f"  - {w}")
+            print("  -> windows\\APPLY_INSTITUTIONAL_RUNTIME.bat")
+            return 1
+        print("\n[VERIFY OK] institutional_rich + demo palette active (geen team display drift)")
 
     return 0
 

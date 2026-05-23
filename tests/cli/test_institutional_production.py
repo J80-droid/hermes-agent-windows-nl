@@ -11,6 +11,53 @@ from hermes_cli.institutional_render import (
 )
 
 
+def test_team_display_drift_detects_streaming_mismatch(monkeypatch):
+    """_check_team_display_drift warns when YAML has streaming=true with render."""
+    import scripts.diagnose_renderer as diag
+
+    monkeypatch.setattr(
+        diag,
+        "_parse_team_display_defaults",
+        lambda: {
+            "streaming": False,
+            "final_response_markdown": "render",
+            "assistant_render_style": "institutional_rich",
+            "assistant_palette": "demo",
+            "compact": False,
+        },
+    )
+    monkeypatch.setattr(
+        diag,
+        "_raw_profile_display_block",
+        lambda: {
+            "streaming": True,
+            "final_response_markdown": "render",
+            "assistant_render_style": "institutional_rich",
+            "assistant_palette": "demo",
+            "compact": False,
+        },
+    )
+    warnings = diag._check_team_display_drift()
+    assert warnings
+    assert any("streaming" in w.lower() for w in warnings)
+
+
+def test_team_display_drift_clean_when_synced(monkeypatch):
+    import scripts.diagnose_renderer as diag
+
+    defaults = {
+        "streaming": False,
+        "final_response_markdown": "render",
+        "assistant_render_style": "institutional_rich",
+        "assistant_palette": "demo",
+        "compact": False,
+        "assistant_label_columns": True,
+    }
+    monkeypatch.setattr(diag, "_parse_team_display_defaults", lambda: dict(defaults))
+    monkeypatch.setattr(diag, "_raw_profile_display_block", lambda: dict(defaults))
+    assert diag._check_team_display_drift() == []
+
+
 def test_diagnose_renderer_verify_passes():
     """diagnose_renderer --verify should pass with default settings."""
     s = get_assistant_render_settings()

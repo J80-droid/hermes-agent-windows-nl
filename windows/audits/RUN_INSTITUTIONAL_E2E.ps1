@@ -1,4 +1,4 @@
-# E2E audit: institutioneel pakket (landkaart, SOUL, presentatie/markdown, templates)
+﻿# E2E audit: institutioneel pakket (landkaart, SOUL, presentatie/markdown, templates)
 #
 # Dekking profielwissel (geen live LLM):
 #   WEL  — CLI-intent (2d, 11), sticky prompt (2d), SOUL-tekst op schijf (5c), SWITCH legal->core (10), pytest subset (9)
@@ -81,6 +81,8 @@ $requiredRepo = @(
     'windows/scripts/migrate_legal_source_layout.ps1',
     'docs/LEGAL_ROLLOUT_CHECKLIST.md',
     'docs/INSTITUTIONAL_PRESENTATION.md',
+    'docs/INSTITUTIONAL_PORTING_GUIDE.md',
+    '.cursor/rules/institutional-presentatie.mdc',
     'windows/team_display.defaults',
     'windows/scripts/institutional/README.md',
     'windows/scripts/institutional/render_colors_legacy.py',
@@ -88,6 +90,7 @@ $requiredRepo = @(
     'config/palettes.yaml',
     'scripts/diagnose_renderer.py',
     'scripts/score_institutional_render.py',
+    'scripts/verify_institutional_guard.py',
     'scripts/migrate_soul_tokens.py',
     'hermes_cli/markdown_output_normalize.py',
     'hermes_cli/institutional_render.py',

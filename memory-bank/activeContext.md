@@ -4,7 +4,7 @@
 
 **Upstream + UPDATE E2E (2026-05-23, PASS):** merge 58 Nous-commits (`dd44205dd`), `UPDATE_HERMES.bat` post-merge incl. `apply_institutional_runtime -SkipE2E`, institutional E2E 11/11, push `e445d1cca`. Rapport: `windows/audits/UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md`. Volgende upstream: `MERGE_UPSTREAM.bat -PromptOnly` → IDE-prompt.
 
-**Institutioneel 10/10 (2026-05-23, afgerond):** palet, NFR, normalizer-pariteit, score 10/10, labels verticaal, Web live palette. **Na pull/update:** `/new` (institutional runtime zit in UPDATE-keten; handmatig `APPLY_INSTITUTIONAL_RUNTIME.bat` alleen bij fout).
+**Institutioneel 10/10 (2026-05-23, afgerond + guardrails):** palet, NFR, normalizer-pariteit, score 10/10, labels verticaal, Web live palette. **Herstel na IDE-drift:** `APPLY_INSTITUTIONAL_RUNTIME.bat` (config + SOUL + E2E 11/11). **Preventie:** `scripts/verify_institutional_guard.py`, drift in `diagnose_renderer.py --verify`, `.cursor/rules/institutional-presentatie.mdc`, `docs/INSTITUTIONAL_PORTING_GUIDE.md`. **Na pull/update/IDE:** `/new` + rooktest.
 
 **Legal domein herstructurering** (2026-05): één RAG-bucket `legal`, rechtsgebied-**lenzen**, generieke `profiles\legal\SOUL.md`, zaak GCR in `LEGAL_ACTIVE_MATTERS.md`. Audit: `RUN_LEGAL_DOMAIN_E2E.bat`.
 
@@ -38,7 +38,7 @@
 | Legal architectuur / taxonomie | `docs/LEGAL_DOMAIN_ARCHITECTURE.md`, `docs/LEGAL_TAXONOMY.md` |
 | Landkaart (volledige lijsten) | skill `landkaart`, `/landkaart` |
 | RAG twee fasen | `docs/RAG_TWEE_FASEN.md` |
-| Presentatie (kleur + structuur) | `docs/INSTITUTIONAL_PRESENTATION.md` |
+| Presentatie (kleur + structuur) | `docs/INSTITUTIONAL_PRESENTATION.md`, `docs/INSTITUTIONAL_PORTING_GUIDE.md` |
 | Rooktest renderer (10/10) | `docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md` |
 | Trust & Forensic | `docs/TRUST_FORENSIC_PROTOCOL.md` |
 | E2E institutioneel | `windows/audits/RUN_INSTITUTIONAL_E2E.bat` |

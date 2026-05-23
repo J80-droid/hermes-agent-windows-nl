@@ -2,9 +2,9 @@
 # Pas aan naar jullie afspraak; daarna APPLY_TEAM_DISPLAY.bat of (optioneel) na UPDATE_HERMES.bat.
 # Geen geheimen hier — alleen display.* waarden.
 #
-# streaming=false: bij final_response_markdown=render toont token-streaming in de klassieke CLI
-# ruwe markdown (###, **); Rich-markdown komt alleen op het eindpaneel. Hermes dwingt render+streaming
-# bij load_config al af; expliciet false houdt team-config voorspelbaar.
+# streaming=false: bij final_response_markdown=render streamt streaming=true ruwe markdown
+# tijdens generatie; Rich komt op het eindpaneel. Team-default false = geen token-stream,
+# alleen Rich eindpaneel. Hermes dwingt render+streaming=false bij load_config al af.
 
 streaming=false
 final_response_markdown=render

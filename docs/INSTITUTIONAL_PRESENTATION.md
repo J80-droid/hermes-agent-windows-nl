@@ -84,7 +84,7 @@ Code: [`hermes_cli/institutional_render.py`](../hermes_cli/institutional_render.
 
 **Live config:** `get_assistant_render_settings()` leest de actieve profiel-config bij elke aanroep (niet gecachet). Dit garandeert dat na een profielwissel (`/profile use <naam>`) direct het juiste palet wordt gebruikt zonder Hermes te herstarten.
 
-**Streaming:** bij `display.streaming=false` (team-default) streamt de klassieke CLI ruwe markdown; Rich-rendering alleen op het **eindpaneel**. Ink/Web/TUI-gateway: zelfde normalizer + renderer via `rich_output.py`.
+**Streaming:** bij `display.streaming=true` streamt de klassieke CLI **ruwe markdown** (zichtbare `##`, `<institutional_check>`-tags) **tijdens** generatie; Rich-rendering komt pas op het **eindpaneel**. Bij `display.streaming=false` (team-default) is er **geen** token-stream — alleen het Rich-eindpaneel. Hermes dwingt `streaming=false` af wanneer `final_response_markdown=render` (zie `_normalize_display_markdown_streaming` in `config.py`). Ink/Web/TUI-gateway: zelfde normalizer + renderer via `rich_output.py`.
 
 Fallback: `assistant_render_style: markdown_legacy` + goud via `skin_markdown_theme()` (oude pad).
 
@@ -167,6 +167,24 @@ Onafhankelijk van `display.compact`. Toggle in TUI via `/compact`. Alleen TUI-wi
 
 Archief: [`windows/scripts/institutional/`](../windows/scripts/institutional/README.md).
 
+## Na Cursor/IDE-werk
+
+Na wijzigingen via Cursor, upstream-merge of handmatige config-edits:
+
+1. `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` — display op alle profielen + SOUL-sync + E2E
+2. Hermes **herstarten** (lopen sessie laadt oude config)
+3. In Hermes: **`/new`** — nieuwe system prompt + display-effect
+4. Verifiëren:
+   ```bat
+   set HERMES_HOME=%LOCALAPPDATA%\hermes\profiles\core
+   python scripts\diagnose_renderer.py --verify
+   python scripts\score_institutional_render.py --verify
+   ```
+5. Visuele rooktest: [`templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md`](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md)
+6. Optioneel vóór commit bij renderer-wijzigingen: `python scripts/verify_institutional_guard.py`
+
+**Niet blind wijzigen:** renderer-bestanden (`institutional_render.py`, `Markdown.tsx`, …) — zie `.cursor/rules/institutional-presentatie.mdc`.
+
 ## Troubleshooting
 
 | Symptoom | Oorzaak | Actie |
@@ -180,6 +198,8 @@ Archief: [`windows/scripts/institutional/`](../windows/scripts/institutional/REA
 | Magenta koppen (oude Rich) | `markdown_legacy` | `assistant_render_style: institutional_rich` |
 | Blauw i.p.v. goud (UI) | Legacy cmd of `skin: slate` | Windows Terminal + `skin: default` |
 | Geen institutioneel format | Geen SOUL-sync | `SYNC_SOUL_SNIPPETS.bat` + nieuwe sessie (`/new`) |
+| Ruwe `##` / `<institutional_check>` zichtbaar | Config drift of `streaming=true` | `APPLY_INSTITUTIONAL_RUNTIME.bat`; diagnose drift-warnings |
+| Kleuren plat (structuur OK) | Geen TrueColor in terminal | `COLORTERM=truecolor` of `assistant_palette: neutral` |
 | TUI andere kleuren dan CLI | Normaal vóór rich_output | Zorg dat `agent/rich_output.py` aanwezig is |
 
 ## Legal SOUL opnieuw deployen

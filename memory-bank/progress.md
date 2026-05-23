@@ -104,7 +104,7 @@
 
 1. ~~Legal rooktest~~ / ~~Kanban legal~~ — afgerond (2026-05-21)
 2. **Institutioneel 10/10:** `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` → `/new` → rooktest `docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md` (visueel + score)
-3. **Verify:** `python scripts/diagnose_renderer.py` + `python scripts/score_institutional_render.py --verify`
+3. **Verify:** `python scripts/diagnose_renderer.py --verify` + `python scripts/score_institutional_render.py --verify`; vóór commit renderer-wijzigingen: `python scripts/verify_institutional_guard.py`
 4. Bronnen in 7 lege `raw_source_files`-mappen
 5. `institutional_p0_p1.bat --ingest-remaining`
 6. `update_knowledge.bat --mcp-test`
