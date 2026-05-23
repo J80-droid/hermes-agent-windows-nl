@@ -408,21 +408,25 @@ try {
             }
 
             if ($script:UpstreamExitCode -eq 0) {
+                $fixPins = Join-Path $repo 'windows/fix_hermes_taskbar_pins.ps1'
+                if (Test-Path -LiteralPath $fixPins) {
+                    Write-Step 'Taakbalk-iconen (.lnk + icooncache vóór verify)...'
+                    & powershell -NoProfile -ExecutionPolicy Bypass -File $fixPins -RepoRoot $repo -Quiet
+                    if (Test-NativeCommandFailed) {
+                        Write-Warn 'fix_hermes_taskbar_pins.ps1 faalde — draai handmatig FIX_TASKBAR_ICONS.bat.'
+                    } else {
+                        Write-Ok 'Taakbalk-snelkoppelingen bijgewerkt.'
+                    }
+                }
+            }
+
+            if ($script:UpstreamExitCode -eq 0) {
                 # .ps1 direct: VERIFY_WINDOWS_CHAIN.bat heeft pause — blokkeert anders de update-keten.
                 $verify = Join-Path $repo 'windows/verify_windows_script_chain.ps1'
                 if (Test-Path -LiteralPath $verify) {
                     Write-Step 'Windows script-keten verify (geautomatiseerd, geen pause)...'
                     & $verify
                     if (Test-NativeCommandFailed) { Write-Warn 'verify_windows_script_chain.ps1 faalde.' }
-                }
-            }
-
-            if ($script:UpstreamExitCode -eq 0) {
-                $fixPins = Join-Path $repo 'windows/fix_hermes_taskbar_pins.ps1'
-                if (Test-Path -LiteralPath $fixPins) {
-                    Write-Step "Taakbalk-iconen (update .lnk + icooncache)..."
-                    & powershell -NoProfile -ExecutionPolicy Bypass -File $fixPins -RepoRoot $repo -Quiet
-                    Write-Ok "Taakbalk-snelkoppelingen bijgewerkt (losmaken + opnieuw vastmaken als UPDATE nog H toont)."
                 }
             }
 

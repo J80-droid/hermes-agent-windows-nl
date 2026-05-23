@@ -124,7 +124,7 @@ Optionele flags (doorgeven aan `.bat` of ps1):
 powershell -File windows\upstream_sync.ps1 -Phase Update -McpTest -Push
 ```
 
-**Verify in de UPDATE-keten:** `upstream_sync.ps1` roept `verify_windows_script_chain.ps1` aan (niet `VERIFY_WINDOWS_CHAIN.bat`). De `.bat` eindigt met `pause` voor handmatig gebruik; in de keten zou dat de flow blokkeren tot je een toets indrukt.
+**Verify in de UPDATE-keten:** `upstream_sync.ps1` vernieuwt eerst taakbalk-.lnk (`fix_hermes_taskbar_pins.ps1`), daarna `verify_windows_script_chain.ps1` (niet `VERIFY_WINDOWS_CHAIN.bat`). Bij handmatige verify: auto-repair via dezelfde fix als `.lnk` afwijkt. De `.bat` eindigt met `pause` voor handmatig gebruik; in de keten zou dat de flow blokkeren tot je een toets indrukt.
 
 **Grijze uitleg in het venster:** bij preflight (ahead/behind), vóór `[j/N]`, en per fase (1/3–3/3).
 

@@ -195,12 +195,32 @@ if ((Test-Path -LiteralPath $brokenVenv) -and -not (Test-HermesVenvUsable -RepoR
 Write-Host '[INFO] Taakbalk-.lnk iconen...' -ForegroundColor Cyan
 $verifyTb = Join-Path $scriptsDir 'verify_taskbar_shortcut_icons.ps1'
 if (Test-Path -LiteralPath $verifyTb) {
+    $tbOk = $false
+    $tbRepaired = $false
     & $verifyTb -RepoRoot $repo -Quiet
-    if (Test-NativeCommandFailed) {
+    if (-not (Test-NativeCommandFailed)) {
+        $tbOk = $true
+    } else {
+        $fixPins = Join-Path $repo 'windows/fix_hermes_taskbar_pins.ps1'
+        if (Test-Path -LiteralPath $fixPins) {
+            Write-Host '  [INFO] .lnk iconen bijwerken (fix_hermes_taskbar_pins.ps1)...' -ForegroundColor Gray
+            & $fixPins -RepoRoot $repo -Quiet
+            $tbRepaired = $true
+            & $verifyTb -RepoRoot $repo -Quiet
+            if (-not (Test-NativeCommandFailed)) {
+                $tbOk = $true
+            }
+        }
+    }
+    if ($tbOk) {
+        if ($tbRepaired) {
+            Write-Host '  [OK] Taakbalk-.lnk iconen (na auto-repair)' -ForegroundColor Green
+        } else {
+            Write-Host '  [OK] Taakbalk-.lnk iconen' -ForegroundColor Green
+        }
+    } else {
         [void]$failures.Add('Taakbalk-.lnk IconLocation wijkt af (windows/FIX_TASKBAR_ICONS.bat)')
         Write-Host '  [FAIL] Taakbalk-.lnk iconen' -ForegroundColor Red
-    } else {
-        Write-Host '  [OK] Taakbalk-.lnk iconen' -ForegroundColor Green
     }
 } else {
     [void]$failures.Add('windows/scripts/verify_taskbar_shortcut_icons.ps1 ontbreekt')
