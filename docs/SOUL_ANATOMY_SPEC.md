@@ -150,6 +150,8 @@ Trust-runtime (`SYNC_TRUST_RUNTIME.bat`): legal template → volledige anatomy s
 
 | Actie | Script |
 |-------|--------|
+| Bij Hermes-start (stamp) | `launch_hermes.bat` → `windows\scripts\launch_soul_anatomy_deploy.ps1` |
+| Na `git pull` | `windows\POST_GIT_PULL.bat` (roept `launch_soul_anatomy_deploy -Force` aan) |
 | Templates + snippets + E2E | `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat` |
 | Alleen shared snippets | `windows\SYNC_SOUL_SNIPPETS.bat` of `windows\scripts\sync_soul_anatomy_snippets.ps1 -Force` |
 | Eén profiel-template | `windows\scripts\sync_domain_soul_from_template.ps1 -ProfileName <naam>` |

@@ -94,7 +94,7 @@ notepad %LOCALAPPDATA%\hermes\profiles\mijn-domein\SOUL.md
 |-------|-----|
 | Anatomy shared snippets (Values, Interaction, Output, Trust, Workflow, Tool, Memory) | `windows\SYNC_SOUL_SNIPPETS.bat` of `SYNC_TRUST_RUNTIME.bat` |
 | Legacy → anatomy headers | `windows\scripts\migrate_soul_anatomy.ps1` (-DryRun, daarna `-Apply`) |
-| Validatie | `python scripts/validate_soul_anatomy.py --all-profiles` (alleen `profiles/*/SOUL.md`) of `windows\audits\RUN_SOUL_ANATOMY_E2E.ps1` |
+| Validatie | `validate_soul_anatomy.py --all-profiles`, `windows\audits\RUN_SOUL_ANATOMY_E2E.ps1`, `windows\audits\RUN_SOUL_DEPLOY_START_E2E.ps1` (stamp/startketen) |
 | Snippet-sync (één script) | `windows\scripts\sync_soul_anatomy_snippets.ps1 -Force` |
 | Volledige template push per profiel | `windows\scripts\sync_domain_soul_from_template.ps1 -ProfileName <naam>` |
 | **Alles in één keer (aanbevolen)** | `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat` (13 domeinen + snippets + E2E) |

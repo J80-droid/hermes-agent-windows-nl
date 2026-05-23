@@ -110,7 +110,8 @@ windows\MERGE_UPSTREAM.bat -AutoResolve
 | `hermes update` (merge upstream + deps) | Ja |
 | Trust runtime (`SYNC_TRUST_RUNTIME.bat`, geen scrub + USER-regel snapshot) | Ja (post-merge, `HERMES_SKIP_PAUSE=1`) |
 | Domein-toolsets (`SYNC_DOMAIN_TOOLSETS.bat`) | Ja (post-merge, na trust runtime) |
-| Institutioneel runtime (`apply_institutional_runtime.ps1 -SkipE2E -NoPause`) | Ja (post-merge: display + SOUL) |
+| SOUL anatomy deploy (`launch_soul_anatomy_deploy.ps1 -Force -Quiet`) | Ja (post-merge: 13 templates + stamp) |
+| Institutioneel runtime (`apply_institutional_runtime.ps1 -SkipE2E -NoPause -SkipSoul`) | Ja (post-merge: display; snippets overgeslagen na soul deploy) |
 | RAG `[rag]` + script-keten verify | Ja (post-merge, via `verify_windows_script_chain.ps1` — **geen** pause) |
 | Merge-conflicten oplossen | **Nee** (handmatig) |
 | Waarschuwing tegen `git reset --hard` | Ja (banner bij Update) |
@@ -282,9 +283,10 @@ Geen verplichting; git history blijft de volledige changelog.
 5. `windows\scripts\which_hermes_repo.ps1` — `lancedb-knowledge: JA`
 6. `VERIFY_WINDOWS_CHAIN.bat` (of vertrouw op UPDATE-keten).
 7. Nieuwe Hermes-sessie; rooktest: `search_knowledge` (zie `scripts/rag_pipeline/ACTIVATION.md`)
-8. Display/SOUL: **automatisch** in `UPDATE_HERMES.bat` post-merge (`apply_institutional_runtime.ps1 -SkipE2E -NoPause`). Handmatig alleen bij skip/fout: `APPLY_INSTITUTIONAL_RUNTIME.bat`
-9. Institutioneel E2E: `windows\audits\RUN_INSTITUTIONAL_E2E.bat` (**11 stappen**)
-10. Rooktest presentatie: `pytest tests/cli/test_institutional_rich_render.py … -q`
+8. SOUL/display: **automatisch** in `UPDATE_HERMES.bat` post-merge (`launch_soul_anatomy_deploy -Force`, daarna `apply_institutional_runtime -SkipSoul`). Handmatig: `APPLY_SOUL_ANATOMY_RUNTIME.bat` of `APPLY_INSTITUTIONAL_RUNTIME.bat`
+9. SOUL startketen E2E: `windows\audits\RUN_SOUL_DEPLOY_START_E2E.bat`
+10. Institutioneel E2E: `windows\audits\RUN_INSTITUTIONAL_E2E.bat` (**11 stappen**)
+11. Rooktest presentatie: `pytest tests/cli/test_institutional_rich_render.py … -q`
 
 **Laatste volledige audit:** `windows/audits/UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md` (merge 58 commits + UPDATE + E2E PASS).
 

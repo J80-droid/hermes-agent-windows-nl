@@ -77,7 +77,9 @@ Preflight, merge, RAG-postinstall en script-keten-verify zitten in het script. V
 
 | Na actie | Script |
 | -------- | ------ |
-| `git pull` | `windows/POST_GIT_PULL.bat` |
+| `git pull` | `windows/POST_GIT_PULL.bat` (trust + SOUL anatomy stamp + toolsets) |
+| Hermes starten | `start_hermes.bat` → bootstrap + SOUL stamp-deploy + display (zie [SOUL_ANATOMY_SPEC.md](SOUL_ANATOMY_SPEC.md)) |
+| SOUL audit (stamp-keten) | `windows/audits/RUN_SOUL_DEPLOY_START_E2E.bat` |
 | Keten controleren (handmatig) | `windows/VERIFY_WINDOWS_CHAIN.bat` |
 | Setup + wizard | `windows/SETUP_HERMES.bat` (standaard) of `OPEN_SETUP.bat`; alleen bestanden: `--files-only` |
 | Icoon kapot / leeg in Explorer | `python windows/tools/generate_colored_hermes_icons.py` daarna `windows/FIX_TASKBAR_ICONS.bat` + F5 |
@@ -96,6 +98,6 @@ Zie [USER_DATA_OPERATIONS.md](USER_DATA_OPERATIONS.md) en [../windows/UPSTREAM_S
 - Core routing: [ORCHESTRATOR_ROUTING.md](ORCHESTRATOR_ROUTING.md)
 - Legal domein (lenzen): [LEGAL_DOMAIN_ARCHITECTURE.md](LEGAL_DOMAIN_ARCHITECTURE.md), rollout [LEGAL_ROLLOUT_CHECKLIST.md](LEGAL_ROLLOUT_CHECKLIST.md)
 - Landkaart / volledige lijsten: skill `landkaart` (`/landkaart`)
-- SOUL-sync na template-wijziging: `windows/SYNC_SOUL_SNIPPETS.bat` (Interaction + Outputformaat; zie `INSTITUTIONAL_PRESENTATION.md`)
+- SOUL anatomy: [SOUL_ANATOMY_SPEC.md](SOUL_ANATOMY_SPEC.md) — start/deploy stamp, `POST_GIT_PULL`, `APPLY_SOUL_ANATOMY_RUNTIME.bat`; snippets: `windows/SYNC_SOUL_SNIPPETS.bat`
 - RAG twee fasen: [RAG_TWEE_FASEN.md](RAG_TWEE_FASEN.md)
 - Voortgang: [../memory-bank/progress.md](../memory-bank/progress.md)

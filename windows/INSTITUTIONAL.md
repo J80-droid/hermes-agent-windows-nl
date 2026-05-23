@@ -31,7 +31,7 @@
 
 Na `git pull` of op een **nieuwe machine**:
 
-1. `windows\POST_GIT_PULL.bat` (verify + trust runtime + domein-toolsets + taakbalk-iconen + icooncache)
+1. `windows\POST_GIT_PULL.bat` (verify + trust + **SOUL anatomy deploy** `launch_soul_anatomy_deploy -Force` + domein-toolsets + taakbalk-iconen)
 2. Of handmatig: `VERIFY_WINDOWS_CHAIN.bat` en `FIX_TASKBAR_ICONS.bat`
 3. Bij oude clone zonder windows-bestanden: `restore_local_assets.bat`
 

@@ -34,9 +34,10 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | Toolsets per profiel | `hermes -p <naam> tools` of `SYNC_DOMAIN_TOOLSETS.bat` |
 | HERMES_HOME controleren | `scripts\verify_hermes_home.ps1` |
 | Profielwissel E2E-audit | `audits\RUN_PROFILE_SWITCH_E2E.bat` |
-| SOUL anatomy bij start (stamp) | `launch_soul_anatomy_deploy.ps1` via `launch_hermes.bat` — 13 templates + snippets indien repo gewijzigd |
-| SOUL anatomy (handmatig) | `APPLY_SOUL_ANATOMY_RUNTIME.bat` of `SYNC_SOUL_SNIPPETS.bat` — zie `docs\SOUL_ANATOMY_SPEC.md` |
-| SOUL anatomy runtime (templates + snippets + E2E) | `APPLY_SOUL_ANATOMY_RUNTIME.bat` |
+| SOUL anatomy bij start (stamp) | `launch_soul_anatomy_deploy.ps1` via `launch_hermes.bat` — zie `docs\SOUL_ANATOMY_SPEC.md` |
+| SOUL anatomy (handmatig + E2E) | `APPLY_SOUL_ANATOMY_RUNTIME.bat`; alleen snippets: `SYNC_SOUL_SNIPPETS.bat` |
+| SOUL deploy-start E2E | `audits\RUN_SOUL_DEPLOY_START_E2E.bat` of `RUN_AUDITS.bat -IncludeSoulDeployStartE2E` |
+| SOUL anatomy E2E (runtime) | `audits\RUN_SOUL_ANATOMY_E2E.ps1` |
 | SOUL legacy → anatomy | `MIGRATE_SOUL_ANATOMY.bat` |
 | Trust & Forensic (legal + SOUL + memory + J.) | `SYNC_TRUST_RUNTIME.bat` (dagelijks) / `APPLY_TRUST_PROTOCOL.bat` (incl. scrub) — `docs\TRUST_FORENSIC_PROTOCOL.md` |
 | Domein-toolsets (minimaal + opt-in) | `SYNC_DOMAIN_TOOLSETS.bat` — `docs\domain_toolsets.yaml`, `docs\DOMAIN_TOOLSET_AUDIT.md` |
