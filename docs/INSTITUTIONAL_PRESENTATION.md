@@ -51,6 +51,8 @@ Code: [`hermes_cli/institutional_render.py`](../hermes_cli/institutional_render.
 
 **Console-theme:** `get_assistant_console_theme()` (demo/legacy) — gebruikt door gateway/`format_response_ansi` én klassieke CLI `ChatConsole` bij het eindpaneel (`cli.py`). Zonder dit kreeg het antwoord-Panel nog skin-goud terwijl de gateway al demo toonde.
 
+**Live config:** `get_assistant_render_settings()` leest de actieve profiel-config bij elke aanroep (niet gecachet). Dit garandeert dat na een profielwissel (`/profile use <naam>`) direct het juiste palet wordt gebruikt zonder Hermes te herstarten.
+
 **Streaming:** bij `display.streaming=false` (team-default) streamt de klassieke CLI ruwe markdown; Rich-rendering alleen op het **eindpaneel**. Ink/Web/TUI-gateway: zelfde normalizer + renderer via `rich_output.py`.
 
 Fallback: `assistant_render_style: markdown_legacy` + goud via `skin_markdown_theme()` (oude pad).
