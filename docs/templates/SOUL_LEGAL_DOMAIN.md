@@ -47,6 +47,9 @@ Bij vragen die meerdere lenzen raken: label elk rechtsgebied in je antwoord; tre
 - Geen em dashes in publieke teksten
 - Zaak-specifieke terminologie en framing: zie `LEGAL_ACTIVE_MATTERS.md`
 
+## Institutionele presentatie (legal)
+- Onder `### Niet-functionele requirements` **altijd** een markdown-tabel (`Categorie | Eis | Meetmethode`) — nooit prose, streepjes of `Categorie: … Eis: …` op één regel (sync met `SOUL_SHARED_OUTPUT_FORMAT.md`).
+
 ## Outputformaat (institutioneel)
 Zie `docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md` — sync via `windows\SYNC_SOUL_SNIPPETS.bat`.
 

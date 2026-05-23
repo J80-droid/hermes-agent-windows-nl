@@ -19,7 +19,7 @@ const INSTITUTIONAL_CHECK_INLINE_RE =
   /^(<institutional_check>)\s*([\s\S]*?)(<\/institutional_check>)\s*$/gim
 
 const HEADING_TIGHT_TO_BODY_RE =
-  /^(?<h>(?:\s{0,3})#{1,6}\s+[^\n]+)\n\n+(?!(?:\s{0,3})#))(?=\S)/gm
+  /^(?<h>(?:\s{0,3})#{1,6}\s+[^\n]+)\n\n+(?!(?:\s{0,3})#)(?=\S)/gm
 const HEADING_TIGHT_BEFORE_TABLE_RE = /^(?<h>(?:\s{0,3})#{1,6}\s+[^\n]+)\n\n+(?=\|)/gm
 const LABEL_TIGHT_TO_VALUE_RE = /^(\s*(?:[-*+]\s+)?\*\*[^*\n]+:\*\*)\n\n+(?=\S)/gm
 
@@ -147,10 +147,10 @@ function normalizePlainNfrRowsToTable(text: string): string {
 }
 
 const NFR_SECTION_HEADING_RE = /^\s{0,3}(#{1,6}\s+Niet-functionele\s+requirements)\s*$/i
-const NFR_LONG_DASH_LINE_RE = /^[\s\-—_]{6,}\s*$/
+const NFR_LONG_DASH_LINE_RE = /^[\s\-_\u2013\u2014]{6,}\s*$/
 const NFR_BOLD_CATEGORY_RE = /^\*\*(.+?)\*\*\s*$/
 const NFR_CATEGORY_DASH_RE =
-  /^(\*\*[^*]+\*\*|[^|—\-\n]+?)\s*[—\-:]\s*(.+?)(?:\s*[—\-]\s*(.+))?\s*$/
+  /^(\*\*[^*]+\*\*|[^|\u2013\u2014\-\n]+?)\s*[\u2013\u2014\-:]\s*(.+?)(?:\s*[\u2013\u2014\-]\s*(.+))?\s*$/
 
 function stripMdBold(text: string): string {
   return text.replace(/^\*\*|\*\*$/g, '').trim()
@@ -304,6 +304,9 @@ export function normalizeAssistantMarkdown(text: string): string {
 
 export const tableHeaderClass = (index: number): string =>
   ASSISTANT_TABLE_HEADER_CLASSES[index % ASSISTANT_TABLE_HEADER_CLASSES.length]!
+
+/** Same per-column palette on body cells (parity with CLI/Ink column tint). */
+export const tableCellClass = tableHeaderClass
 
 export const headingClass = (level: number): string =>
   ASSISTANT_HEADING_CLASSES[Math.min(Math.max(level - 1, 0), ASSISTANT_HEADING_CLASSES.length - 1)]!

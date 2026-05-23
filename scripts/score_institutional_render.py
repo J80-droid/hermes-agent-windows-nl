@@ -30,6 +30,27 @@ def _score_checklist_rendered(md: str) -> tuple[int, str]:
         return 5, f"Checklist renderfout: {exc}"
 
 
+def _score_section_spacing(md: str) -> tuple[int, str]:
+    """Checklist #3: one blank line between sections (not between heading and body)."""
+    if re.search(r"(?<=\S\|)\n(#{1,6}\s)", md):
+        return 4, "Geen witregel tussen tabel-einde en volgende kop"
+    if re.search(r"^-\s.+\n(#{1,6}\s)", md, re.MULTILINE):
+        return 4, "Lijst direct op volgende kop (geen witregel)"
+    return 10, "Eén witregel tussen secties"
+
+
+def _score_labels(md: str) -> tuple[int, str]:
+    """Checklist #5: **Label:** on own line, value directly below."""
+    label_lines = re.findall(r"^\*\*([^*\n]+):\*\*\s*$", md, re.MULTILINE)
+    if not label_lines:
+        return 10, "Geen labels (n.v.t.)"
+    if re.search(r"^\*\*[^*\n]+:\*\*[ \t]+\S", md, re.MULTILINE):
+        return 4, "Label en waarde op dezelfde regel"
+    if re.search(r"^\*\*[^*\n]+:\*\*\s*\n\n+(?=\S)", md, re.MULTILINE):
+        return 6, "Lege regel tussen label en waarde"
+    return 10, "Labels op eigen regel, waarde eronder"
+
+
 def _score_heading_table_tight(md: str) -> tuple[int, str]:
     if re.search(r"^#{1,6}\s+.+\n\n+\|", md, re.MULTILINE):
         return 6, "Lege regel tussen kop en tabel in markdown"
@@ -93,6 +114,8 @@ def score_markdown(md: str) -> dict[str, tuple[int, str]]:
     checks = {
         "checklist": _score_checklist_rendered(normalized),
         "kop_op_inhoud": _score_heading_table_tight(normalized),
+        "sectie_spacing": _score_section_spacing(normalized),
+        "labels": _score_labels(normalized),
         "nfr_tabel": _score_nfr_table(normalized),
         "kleur_h2_kolom0": _score_heading_vs_table_color(),
         "render_pipeline": _score_render_pipeline(normalized),
@@ -136,8 +159,12 @@ def main() -> int:
             "<institutional_check>\n- Controle hyperbolen: [Uitgevoerd]\n</institutional_check>\n\n"
             "## Projectoverzicht\n"
             "Intro.\n\n"
+            "**Dossierstatus:**\n"
+            "Gereed voor controle.\n\n"
             "### Team Samenstelling\n"
             "| Naam | Rol | Status |\n|---|---|---|\n| A | Lead | Actief |\n\n"
+            "### Technische stack\n"
+            "- Python 3.11\n\n"
             "## Functionele requirements\n"
             "| ID | Requirement | Prioriteit |\n|---|---|---|\n| FR-001 | Test | Hoog |\n\n"
             "### Niet-functionele requirements\n"

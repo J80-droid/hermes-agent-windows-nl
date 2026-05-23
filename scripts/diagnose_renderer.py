@@ -67,6 +67,25 @@ def _get_palette_preview(palette: str, cols: int = 80) -> str | None:
         return f"[Render error: {exc}]"
 
 
+def _nfr_prose_warning(md: str) -> str | None:
+    """Warn when NFR section has no pipe table (raw model output before normalize)."""
+    m = re.search(
+        r"^#{1,6}\s+Niet-functionele\s+requirements\s*$",
+        md,
+        re.MULTILINE | re.IGNORECASE,
+    )
+    if not m:
+        return None
+    tail = md[m.end() :]
+    next_h = re.search(r"^#{1,6}\s+", tail, re.MULTILINE)
+    body = tail[: next_h.start()] if next_h else tail
+    if body.strip() and "|" not in body:
+        return (
+            "NFR-sectie zonder | (prose/streepjes) — draai normalizer of pas SOUL aan"
+        )
+    return None
+
+
 def _print_color_legend(palette: str) -> None:
     try:
         from hermes_cli.institutional_render import assistant_markdown_theme, table_header_palette
@@ -111,6 +130,22 @@ def _print_report() -> None:
     print(f"  Label columns       : {label_cols}")
 
     _print_color_legend(palette)
+
+    nfr_probe = (
+        "### Niet-functionele requirements\n"
+        "**Performantie**\nRender snel.\n"
+        "Robuustheid — Stabiel — Test\n"
+    )
+    nfr_warn = _nfr_prose_warning(nfr_probe)
+    if nfr_warn:
+        print(f"\n  [LINT] {nfr_warn}")
+        try:
+            from hermes_cli.markdown_output_normalize import normalize_assistant_markdown
+
+            if _nfr_prose_warning(normalize_assistant_markdown(nfr_probe)) is None:
+                print("  [LINT] Na normalize_assistant_markdown: NFR-tabel OK")
+        except Exception as exc:
+            print(f"  [LINT] Normalizer-check mislukt: {exc}")
 
     print(f"\n  Config display block:")
     for key in sorted(display.keys()):

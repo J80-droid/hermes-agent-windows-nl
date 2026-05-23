@@ -5,6 +5,7 @@ import {
   headingClass,
   normalizeAssistantMarkdown,
   tableHeaderClass,
+  tableCellClass,
 } from "../lib/institutionalMarkdown";
 
 /**
@@ -322,7 +323,7 @@ function Block({
               {block.rows.map((row, ri) => (
                 <tr key={ri} className="border-t border-border/40">
                   {row.map((cell, ci) => (
-                    <td key={ci} className="pr-4 py-1 align-top">
+                    <td key={ci} className={`pr-4 py-1 align-top ${tableCellClass(ci)}`}>
                       <InlineContent text={cell} highlightTerms={highlightTerms} />
                     </td>
                   ))}

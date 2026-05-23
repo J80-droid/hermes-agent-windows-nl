@@ -54,6 +54,27 @@ def test_table_header_palette_custom():
     assert demo[0].lower().startswith("bold #66d9ef")
 
 
+def test_header_palette_h2_distinct_for_all_yaml_palettes():
+    """header_palette col0 must not match h2 hex (checklist #4)."""
+    import re
+
+    all_p = _get_all_palettes()
+
+    def hexes(s: str) -> set[str]:
+        return set(re.findall(r"#[0-9a-fA-F]{6}", str(s).lower()))
+
+    for name in sorted(all_p.keys()):
+        theme = assistant_markdown_theme(name)
+        h2 = str(theme.styles.get("markdown.h2", ""))
+        col0 = table_header_palette(name)[0]
+        h2_hex = hexes(h2)
+        col0_hex = hexes(col0)
+        if h2_hex and col0_hex and h2_hex == col0_hex:
+            raise AssertionError(
+                f"Palette '{name}': h2 {h2} collides with table col0 {col0}"
+            )
+
+
 def test_score_institutional_render_verify():
     import subprocess
     import sys

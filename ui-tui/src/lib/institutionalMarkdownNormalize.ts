@@ -22,7 +22,7 @@ const INSTITUTIONAL_CHECK_BLOCK_RE =
   /<institutional_check>\s*([\s\S]*?)\s*<\/institutional_check>/gi
 
 const HEADING_TIGHT_TO_BODY_RE =
-  /^(?<h>(?:\s{0,3})#{1,6}\s+[^\n]+)\n\n+(?!(?:\s{0,3})#))(?=\S)/gm
+  /^(?<h>(?:\s{0,3})#{1,6}\s+[^\n]+)\n\n+(?!(?:\s{0,3})#)(?=\S)/gm
 const HEADING_TIGHT_BEFORE_TABLE_RE = /^(?<h>(?:\s{0,3})#{1,6}\s+[^\n]+)\n\n+(?=\|)/gm
 const LABEL_TIGHT_TO_VALUE_RE = /^(\s*(?:[-*+]\s+)?\*\*[^*\n]+:\*\*)\n\n+(?=\S)/gm
 
@@ -30,10 +30,10 @@ const NFR_INLINE_ROW_RE =
   /^Categorie:\s*(.+?)\s+Eis:\s*(.+?)\s+Meetmethode:\s*(.+?)\s*$/i
 
 const NFR_SECTION_HEADING_RE = /^\s{0,3}(#{1,6}\s+Niet-functionele\s+requirements)\s*$/i
-const NFR_LONG_DASH_LINE_RE = /^[\s\-—_]{6,}\s*$/
+const NFR_LONG_DASH_LINE_RE = /^[\s\-_\u2013\u2014]{6,}\s*$/
 const NFR_BOLD_CATEGORY_RE = /^\*\*(.+?)\*\*\s*$/
 const NFR_CATEGORY_DASH_RE =
-  /^(\*\*[^*]+\*\*|[^|—\-\n]+?)\s*[—\-:]\s*(.+?)(?:\s*[—\-]\s*(.+))?\s*$/
+  /^(\*\*[^*]+\*\*|[^|\u2013\u2014\-\n]+?)\s*[\u2013\u2014\-:]\s*(.+?)(?:\s*[\u2013\u2014\-]\s*(.+))?\s*$/
 
 const LIST_ITEM_VERB_PREFIX_RE =
   /^(?:doe|do|ga|open|voer|importeer|controleer|kies|zet|voeg|stel|maak|lees|schrijf|bewaar|start|stop|gebruik|download|upload|installeer|bekijk|test|verifieer)\b/i

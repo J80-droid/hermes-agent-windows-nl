@@ -31,6 +31,7 @@ hermes:
   code: "#FFBF00"
   link: "underline #FFBF00"
   table_header: "bold #FFBF00"
+  header_palette: "bold #FFD700, bold #FFBF00, bold #DAA520, bold #FFF8DC"
   label: "bold #DAA520"
   text: "#FFF8DC"
 
@@ -45,6 +46,7 @@ neutral:
   code: "bright_black"
   link: "underline bright_cyan"
   table_header: "bold bright_cyan"
+  header_palette: "bold bright_cyan, bold white, bold bright_black, dim"
   label: "bold bright_white"
   text: "white"
 
@@ -74,6 +76,7 @@ dracula:
   code: "#8be9fd"
   link: "underline #8be9fd"
   table_header: "bold #8be9fd"
+  header_palette: "bold #8be9fd, bold #50fa7b, bold #f8f8f2, bold #ff79c6"
   label: "bold #ff79c6"
   text: "#f8f8f2"
 
@@ -88,6 +91,7 @@ tokyo:
   code: "#00f0ff"
   link: "underline #00f0ff"
   table_header: "bold #00f0ff"
+  header_palette: "bold #00f0ff, bold #39ff14, bold #e0f7fa, bold #ff007f"
   label: "bold #ff007f"
   text: "#e0f7fa"
 
@@ -102,6 +106,7 @@ nordic:
   code: "#88c0d0"
   link: "underline #88c0d0"
   table_header: "bold #88c0d0"
+  header_palette: "bold #88c0d0, bold #8fbcbb, bold #eceff4, bold #d08770"
   label: "bold #f92672"
   text: "#eceff4"
 
@@ -116,5 +121,6 @@ pacific:
   code: "#20b2aa"
   link: "underline #20b2aa"
   table_header: "bold #20b2aa"
+  header_palette: "bold #20b2aa, bold #98fb98, bold #e0eee0, bold #f92672"
   label: "bold #f92672"
   text: "#e0eee0"
