@@ -161,7 +161,7 @@ Write-StepHeader 'LANCEDB_MAINTENANCE --inspect'
 $maintPy = Join-Path $repoRoot 'scripts/rag_pipeline/lancedb_maintenance.py'
 $inspectOut = & $python $maintPy --inspect 2>&1 | Out-String
 $inspectCode = if ($null -eq $LASTEXITCODE) { 0 } else { [int]$LASTEXITCODE }
-if ($inspectOut -match '(?m)\[FAIL\]') {
+if ($inspectOut -match '(?m)\[ACTIE\]') {
     Step-Fail 'LANCEDB --inspect (schema ACTIE op een of meer domeinen)'
 } elseif ($inspectCode -ne 0) {
     Step-Fail "LANCEDB --inspect exit $inspectCode"

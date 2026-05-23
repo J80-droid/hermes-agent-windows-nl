@@ -27,7 +27,8 @@
 - [x] Upstream merge 2026-05-23: 58 Nous-commits, 1 conflict (CI tests.yml), E2E PASS — `windows/audits/UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md`
 - [x] `MERGE_UPSTREAM.bat` + IDE-prompt (`merge_upstream_fork.ps1`); default IDE-guided, `-AutoResolve` opt-in
 - [x] Merge `-PromptOnly`: git-diff snippets per conflict (`Get-ConflictSnippetForPrompt`, `Get-ConflictSnippetFromGitDiff`)
-- [x] LanceDB onderhoud: `scripts/rag_pipeline/lancedb_maintenance.py`, `windows/LANCEDB_MAINTENANCE.bat` (list/inspect/compact/benchmark)
+- [x] LanceDB onderhoud: `scripts/rag_pipeline/lancedb_maintenance.py`, `windows/LANCEDB_MAINTENANCE.bat` (list/inspect/init-missing/compact/benchmark)
+- [x] `domains.yaml` user-data: 13 domeinen (ict/security/dev/data); lege LanceDB via `--init-missing`
 - [x] Skill drift audit: `scripts/audit_skill_drift.py` → `windows/audits/SKILL_DRIFT_AUDIT_*.md`
 - [x] IDE conda: `.vscode/settings.json` + `.cursor/rules/python-conda.mdc` + `docs/IDE_VSCODE_SETTINGS.example.json`
 - [x] IDE-onderhoud baseline/audit: `windows/audits/IDE_MAINTENANCE_BASELINE_2026-05-23.md`, `LANCEDB_SCHEMA_AUDIT_*.md`

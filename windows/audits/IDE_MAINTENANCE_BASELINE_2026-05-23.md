@@ -34,7 +34,7 @@
 | Root display sync fix | `windows/scripts/apply_team_display_profiles.py` |
 | Nachschärfe (review) | Manifest + verify-kritieke paden; `LANCEDB_MAINTENANCE.bat` args-fix; `optimize()` na compact; merge-prompt `cd` dynamisch; tests + ACTIVATION/HERMES_START |
 
-**Open (user-data):** `domains.yaml` heeft 9 domeinen; voorbeeld in repo heeft 13 — voeg `ict`, `security`, `dev`, `data` toe indien gewenst.
+**User-data (2026-05-23):** `domains.yaml` → 13 domeinen; bronmappen `01`–`12` + `00_Core`; MCP/toolsets OK; lege LanceDB via `LANCEDB_MAINTENANCE.bat --init-missing`; `--inspect` 13/13 OK.
 
 ## Volledige E2E (aanbevolen)
 

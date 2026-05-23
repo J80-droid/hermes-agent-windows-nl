@@ -16,7 +16,7 @@ import lancedb
 import pyarrow as pa
 
 from domains_config import DomainSpec, default_domains_yaml, load_domains, resolve_domain_paths
-from kb_schema import TABLE_NAME, list_all_table_names
+from kb_schema import TABLE_NAME, KnowledgeSchema, list_all_table_names
 
 RAG_DIR = Path(__file__).resolve().parent
 REPO_ROOT = RAG_DIR.parents[1]
@@ -89,7 +89,7 @@ def inspect_domain(spec: DomainSpec) -> DomainReport:
         schema_note="",
     )
     if not rep.exists:
-        rep.schema_note = "pad ontbreekt"
+        rep.schema_note = "nog niet geïndexeerd (pad ontbreekt)"
         return rep
 
     try:
@@ -172,6 +172,59 @@ def run_list(domains: list[DomainSpec]) -> int:
     return 0
 
 
+def init_missing_domain(spec: DomainSpec, *, dry_run: bool) -> str:
+    """Maak LanceDB-map + lege knowledge_base aan als pad/tabel ontbreekt."""
+    ldb_path, _raw, _profile = resolve_domain_paths(spec)
+    if ldb_path.is_dir():
+        try:
+            db = lancedb.connect(str(ldb_path))
+            if TABLE_NAME in list_all_table_names(db):
+                table = db.open_table(TABLE_NAME)
+                if _schema_has_id(table.schema):
+                    return "al aanwezig"
+                return "oud schema — schema_migrate.py of fresh ingest"
+        except Exception as exc:
+            return f"fout bij openen: {exc}"
+    if dry_run:
+        return f"dry-run: zou {ldb_path} initialiseren"
+    ldb_path.mkdir(parents=True, exist_ok=True)
+    db = lancedb.connect(str(ldb_path))
+    names = list_all_table_names(db)
+    if TABLE_NAME in names:
+        table = db.open_table(TABLE_NAME)
+        if _schema_has_id(table.schema):
+            return "al aanwezig"
+        return "oud schema — schema_migrate.py of fresh ingest"
+    db.create_table(TABLE_NAME, schema=KnowledgeSchema)
+    return "lege knowledge_base aangemaakt"
+
+
+def run_init_missing(domains: list[DomainSpec], *, dry_run: bool, domain_filter: str | None) -> int:
+    targets = domains
+    if domain_filter:
+        targets = [d for d in domains if d.name.lower() == domain_filter.lower()]
+        if not targets:
+            print(f"[ERROR] Onbekend domein: {domain_filter}", file=sys.stderr)
+            return 1
+    exit_code = 0
+    for spec in targets:
+        rep = inspect_domain(spec)
+        if rep.exists and rep.schema_ok:
+            print(f"[OK] {spec.name}: al aanwezig")
+            continue
+        if rep.exists and rep.schema_ok is False:
+            print(f"[ACTIE] {spec.name}: {rep.schema_note}")
+            exit_code = 1
+            continue
+        note = init_missing_domain(spec, dry_run=dry_run)
+        if dry_run or note == "al aanwezig" or note.startswith("lege knowledge_base"):
+            print(f"[OK] {spec.name}: {note}")
+        else:
+            print(f"[ACTIE] {spec.name}: {note}")
+            exit_code = 1
+    return exit_code
+
+
 def run_inspect(domains: list[DomainSpec], *, report_path: Path | None) -> int:
     lines: list[str] = [
         f"# LanceDB schema audit — {datetime.now().strftime('%Y-%m-%d %H:%M')}",
@@ -184,9 +237,15 @@ def run_inspect(domains: list[DomainSpec], *, report_path: Path | None) -> int:
     exit_code = 0
     for spec in domains:
         rep = inspect_domain(spec)
-        status = "OK" if rep.schema_ok else ("ACTIE" if rep.schema_ok is False else "—")
-        if rep.schema_ok is False:
+        if rep.schema_ok is True:
+            status = "OK"
+        elif rep.schema_ok is False:
+            status = "ACTIE"
             exit_code = 1
+        elif not rep.exists:
+            status = "SKIP"
+        else:
+            status = "—"
         lines.append(
             f"| {rep.name} | `{rep.lancedb_path}` | "
             f"{'ja' if rep.has_table else 'nee'} | {rep.row_count or '—'} | {status} | {rep.schema_note} |"
@@ -251,6 +310,11 @@ def main() -> int:
     parser.add_argument("--list", action="store_true", help="Toon domeinen + paden")
     parser.add_argument("--inspect", action="store_true", help="Schema-audit per domein")
     parser.add_argument(
+        "--init-missing",
+        action="store_true",
+        help="Maak lege LanceDB + knowledge_base voor domeinen zonder pad/tabel",
+    )
+    parser.add_argument(
         "--report",
         type=Path,
         help="Markdown-rapport bij --inspect (default: windows/audits/LANCEDB_SCHEMA_AUDIT_<datum>.md)",
@@ -268,13 +332,15 @@ def main() -> int:
         return 1
 
     domains = load_domains(yaml_path)
-    if not (args.list or args.inspect or args.compact or args.benchmark):
+    if not (args.list or args.inspect or args.init_missing or args.compact or args.benchmark):
         parser.print_help()
         return 0
 
     code = 0
     if args.list:
         code = max(code, run_list(domains))
+    if args.init_missing:
+        code = max(code, run_init_missing(domains, dry_run=args.dry_run, domain_filter=args.domain))
     if args.inspect:
         repo = RAG_DIR.parents[1]
         default_report = (

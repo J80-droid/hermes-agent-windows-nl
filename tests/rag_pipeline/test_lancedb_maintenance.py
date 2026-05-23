@@ -30,6 +30,29 @@ def test_maintenance_module_paths():
     assert (REPO / "windows" / "LANCEDB_MAINTENANCE.bat").is_file()
 
 
+def test_init_missing_domain_creates_empty_table(tmp_path, monkeypatch):
+    import domains_config as dc
+
+    spec = dc.DomainSpec(
+        name="testdom",
+        source_dir="99_Test",
+        description="test",
+        lancedb_path=str(tmp_path / "ldb"),
+        mcp_name="lancedb-testdom",
+        profile_name="testdom",
+    )
+    monkeypatch.setattr(
+        maint,
+        "resolve_domain_paths",
+        lambda s: (tmp_path / "ldb", tmp_path / "raw", tmp_path / "prof"),
+    )
+    note = maint.init_missing_domain(spec, dry_run=False)
+    assert "aangemaakt" in note or "aanwezig" in note
+    rep = maint.inspect_domain(spec)
+    assert rep.exists
+    assert rep.schema_ok is True
+
+
 def test_lancedb_bat_forwards_list_arg():
     import subprocess
 

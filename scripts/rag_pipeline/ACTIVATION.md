@@ -80,6 +80,8 @@ Scripts in deze map:
 
 **MCP-server:** start zonder crash ook als de database nog leeg is: ontbreekt `knowledge_base`, dan wordt een **lege** tabel met `KnowledgeSchema` aangemaakt. Voor echte antwoorden moet je daarna alsnog `ingest.py` draaien.
 
+**Nieuw domein in domains.yaml:** `windows\LANCEDB_MAINTENANCE.bat --init-missing` (lege DB + schema) vóór eerste `update_knowledge.bat`.
+
 ```mermaid
 flowchart LR
   deps[Pip dependencies]

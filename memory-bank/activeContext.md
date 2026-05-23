@@ -25,7 +25,7 @@
 ## Dev vs. install-clone
 
 - **Dev:** `D:\A.I\APPS\Hermes_agent_WS\hermes-agent`
-- **Config:** `%USERPROFILE%\data\domains.yaml` (niet in repo; voorbeeld `docs/domains.yaml.example`)
+- **Config:** `%USERPROFILE%\data\domains.yaml` — **13 domeinen** (ict/security/dev/data toegevoegd 2026-05-23); voorbeeld `docs/domains.yaml.example`
 - **User-data docs:** `%USERPROFILE%\data\STATUS.md`, `RECOVERY.md`; Kanban: `profiles\core\KANBAN_WORKFLOWS.md` — sync met `docs/USER_DATA_OPERATIONS.md`
 
 ## Documentatie (centraal)
@@ -52,9 +52,26 @@
 | Nous upstream | `windows/UPSTREAM_SYNC.md`; merge: `MERGE_UPSTREAM.bat`; audit: `windows/audits/UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md` |
 | Voortgang | `memory-bank/progress.md` |
 
+## Periodiek IDE-onderhoud (handmatig)
+
+Canonieke volgorde op de fork (uit landkaart + baseline `windows/audits/IDE_MAINTENANCE_BASELINE_2026-05-23.md`):
+
+```cmd
+cd D:\A.I\APPS\Hermes_agent_WS\hermes-agent
+windows\LANCEDB_MAINTENANCE.bat --list
+windows\LANCEDB_MAINTENANCE.bat --inspect
+windows\MERGE_UPSTREAM.bat -PromptOnly
+C:\Users\jamel\miniconda3\envs\hermes-env\python.exe scripts\audit_skill_drift.py
+windows\audits\RUN_INSTITUTIONAL_E2E.bat
+```
+
+Geautomatiseerd (zelfde scope + verify/pytest): `windows\audits\RUN_IDE_MAINTENANCE_E2E.bat -ApplyDisplayFix` (rapport `IDE_MAINTENANCE_E2E_REPORT_*.md`).
+
+**Kernbestanden:** `windows/merge_upstream_fork.ps1` (merge + git-diff snippets), `windows/WindowsLocalAssetsManifest.ps1` (manifest sync/verify-keten).
+
 ## Volgende stappen (volgorde)
 
-1. **Bronnen:** vul lege mappen onder `%USERPROFILE%\data\raw_source_files\` (01, 02, 03, 05–08)
+1. **Bronnen:** vul lege mappen onder `%USERPROFILE%\data\raw_source_files\` (01–03, 05–08, 09–12) — LanceDB-paden bestaan; echte kennis via `update_knowledge.bat`
 2. **Ingest:** `windows\scripts\institutional_p0_p1.bat --ingest-remaining`
 3. **MCP:** `update_knowledge.bat --mcp-test` (na ingest)
 4. **Taakbalk (eenmalig):** oude pin los → `.lnk` uit `windows\` opnieuw vastmaken; Verkenner **F5**

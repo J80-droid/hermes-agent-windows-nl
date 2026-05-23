@@ -72,7 +72,7 @@ flowchart TB
 ## Onderhoud
 
 - **Windows script-keten (handmatig):** `windows\VERIFY_WINDOWS_CHAIN.bat` — dubbelklik; controleert setup wrapper, `.bat`→`.ps1`, taakbalk-`.lnk` (eindigt met pause)
-- **LanceDB onderhoud (list/inspect/compact/benchmark):** `windows\LANCEDB_MAINTENANCE.bat --list` / `--inspect` / `--compact` / `--benchmark` — zie `scripts/rag_pipeline/lancedb_maintenance.py` (geen ingest parallel)
+- **LanceDB onderhoud (list/inspect/compact/benchmark):** `windows\LANCEDB_MAINTENANCE.bat --list` / `--inspect` / `--init-missing` / `--compact` / `--benchmark` — zie `scripts/rag_pipeline/lancedb_maintenance.py` (geen ingest parallel; `--init-missing` = lege DB voor nieuw domein)
 - **Skill/docs drift (fork):** `python scripts\audit_skill_drift.py` → `windows\audits\SKILL_DRIFT_AUDIT_*.md`
 - **Na `git pull`:** `windows/POST_GIT_PULL.bat` (verify + trust + **SOUL anatomy 13 profielen** + domein-toolsets + taakbalk-iconen)
 - **Nous upstream-update:** `windows\UPDATE_HERMES.bat` — preflight + merge + trust + toolsets + RAG + verify (zie [UPSTREAM_SYNC.md](../windows/UPSTREAM_SYNC.md))

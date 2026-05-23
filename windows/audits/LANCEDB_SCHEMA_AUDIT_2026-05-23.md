@@ -1,4 +1,4 @@
-# LanceDB schema audit — 2026-05-23 19:51
+# LanceDB schema audit — 2026-05-23 21:49
 
 Bron: `C:\Users\jamel\data\domains.yaml`
 
@@ -13,3 +13,7 @@ Bron: `C:\Users\jamel\data\domains.yaml`
 | philosophy | `C:\Users\jamel\data\lancedb\philosophy` | ja | — | OK | id-kolom aanwezig (upsert-schema) |
 | logistics | `C:\Users\jamel\data\lancedb\logistics` | ja | — | OK | id-kolom aanwezig (upsert-schema) |
 | ventures | `C:\Users\jamel\data\lancedb\ventures` | ja | — | OK | id-kolom aanwezig (upsert-schema) |
+| ict | `C:\Users\jamel\data\lancedb\ict` | ja | — | OK | id-kolom aanwezig (upsert-schema) |
+| security | `C:\Users\jamel\data\lancedb\security` | ja | — | OK | id-kolom aanwezig (upsert-schema) |
+| dev | `C:\Users\jamel\data\lancedb\dev` | ja | — | OK | id-kolom aanwezig (upsert-schema) |
+| data | `C:\Users\jamel\data\lancedb\data` | ja | — | OK | id-kolom aanwezig (upsert-schema) |

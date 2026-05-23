@@ -49,7 +49,17 @@ Output: markdown met **alle** regels + categorie-tags; JSON-modus voor tooling.
 
 ## Onderhoud (IDE-landkaart)
 
-Periodiek op de fork: `windows\VERIFY_WINDOWS_CHAIN.bat`, `windows\LANCEDB_MAINTENANCE.bat --inspect`, `windows\MERGE_UPSTREAM.bat -PromptOnly`, `python scripts\audit_skill_drift.py`. Zie `windows/audits/IDE_MAINTENANCE_BASELINE_*.md`.
+Periodiek op de fork:
+
+```cmd
+windows\LANCEDB_MAINTENANCE.bat --list
+windows\LANCEDB_MAINTENANCE.bat --inspect
+windows\MERGE_UPSTREAM.bat -PromptOnly
+python scripts\audit_skill_drift.py
+windows\audits\RUN_INSTITUTIONAL_E2E.bat
+```
+
+Zie `memory-bank/activeContext.md` en `windows/audits/IDE_MAINTENANCE_BASELINE_*.md`. Eén poort: `windows\audits\RUN_IDE_MAINTENANCE_E2E.bat`.
 
 ## Regels
 
