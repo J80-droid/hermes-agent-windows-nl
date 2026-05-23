@@ -29,7 +29,9 @@ KNOWLEDGE_BASE_PATH="C:/Users/jamel/Documents/Hermes Knowledge"
 
 Na wijziging in `~/.hermes\.env`: sync uitvoeren; Hermes TUI start daarna automatisch een nieuwe sessie (zie `/new` hieronder).
 
-**Automatisch:** `UPDATE_HERMES.bat`, `POST_GIT_PULL.bat` en `SYNC_TRUST_RUNTIME.bat` roepen `sync_hermes_api_env.ps1` aan.
+**Automatisch:** `UPDATE_HERMES.bat`, `POST_GIT_PULL.bat` en `SYNC_TRUST_RUNTIME.bat` roepen `sync_hermes_api_env.ps1` aan (inclusief idempotente vault-scaffold uit `docs/templates/obsidian_vault_scaffold/`).
+
+**Obsidian openen:** `windows\OPEN_OBSIDIAN_VAULT.bat` — env-sync, scaffold, start Obsidian op `OBSIDIAN_VAULT_PATH`. Eerste keer in Obsidian: *Open map als kluis* als het welkomstscherm verschijnt. Taakbalk: `Hermes - Obsidian vault - naar taakbalk slepen.lnk` (na `REFRESH_TASKBAR_SHORTCUTS.bat` of `FIX_TASKBAR_ICONS.bat`).
 
 **E2E audit (16 stappen + productie-poort):**
 
@@ -106,6 +108,7 @@ Memory wordt bij sessiestart ingefrozen. Na sync van config, SOUL of MEMORY/USER
 | `/new`-reminder | `hermes_cli\institutional_new_chat_notice.py` |
 | TUI auto `/new` | `ui-tui\src\lib\newChatNotice.ts`, `useInstitutionalNewChatAutoReset.ts` |
 | Manifest / backup-paden | `windows\HermesAuditBundleFiles.ps1`, `windows\HermesCriticalWindowsRepoPaths.ps1` |
+| Obsidian vault (L4) | `windows\OPEN_OBSIDIAN_VAULT.bat`, `scripts\open_obsidian_vault.ps1`, `scripts\ensure_hermes_knowledge_vault.ps1` |
 
 ## Gerelateerd
 

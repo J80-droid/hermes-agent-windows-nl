@@ -19,7 +19,8 @@ $checks = @(
     @{ Lnk = 'Hermes - setup Windows - naar taakbalk slepen.lnk'; Role = 'Setup' },
     @{ Lnk = 'Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk'; Role = 'Rag' },
     @{ Lnk = 'Hermes - lokale bestanden herstellen - naar taakbalk slepen.lnk'; Role = 'Restore' },
-    @{ Lnk = 'Hermes - backup - naar taakbalk slepen.lnk'; Role = 'Backup' }
+    @{ Lnk = 'Hermes - backup - naar taakbalk slepen.lnk'; Role = 'Backup' },
+    @{ Lnk = 'Hermes - Obsidian vault - naar taakbalk slepen.lnk'; Role = 'Obsidian' }
 )
 
 $fail = 0

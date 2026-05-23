@@ -238,7 +238,7 @@ function Get-HermesTaskbarRoleIconPath {
     #>
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Start', 'Setup', 'OpenSetup', 'Update', 'Backup', 'Restore', 'Rag')]
+        [ValidateSet('Start', 'Setup', 'OpenSetup', 'Update', 'Backup', 'Restore', 'Rag', 'Obsidian')]
         [string]$Role,
         [Parameter(Mandatory)][string]$WindowsDir
     )
@@ -246,6 +246,7 @@ function Get-HermesTaskbarRoleIconPath {
         'Update' { 'hermes_logo_update.ico' }
         'Setup' { 'hermes_logo_setup.ico' }
         'OpenSetup' { 'hermes_logo_setup.ico' }
+        'Obsidian' { 'hermes_logo_restore.ico' }
         'Restore' { 'hermes_logo_restore.ico' }
         'Backup' { 'hermes_logo_backup.ico' }
         'Rag' { 'hermes_logo.ico' }
@@ -261,7 +262,7 @@ function Get-HermesTaskbarRoleIconPath {
 function Get-HermesTaskbarRoleIconLocation {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Start', 'Setup', 'OpenSetup', 'Update', 'Backup', 'Restore', 'Rag')]
+        [ValidateSet('Start', 'Setup', 'OpenSetup', 'Update', 'Backup', 'Restore', 'Rag', 'Obsidian')]
         [string]$Role,
         [Parameter(Mandatory)][string]$WindowsDir
     )

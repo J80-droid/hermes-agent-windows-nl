@@ -35,6 +35,8 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 | Team display (alle profielen) | `windows\APPLY_TEAM_DISPLAY.bat` |
 | Taakbalk-iconen | `windows\FIX_TASKBAR_ICONS.bat` |
 | Snelkoppelingen vernieuwen | `windows\REFRESH_TASKBAR_SHORTCUTS.bat` |
+| Obsidian vault (L4) openen | `windows\OPEN_OBSIDIAN_VAULT.bat` — env-sync, scaffold, start Obsidian; zie [MEMORY_ARCHITECTURE.md](MEMORY_ARCHITECTURE.md) |
+| Vault-env naar alle profielen | `windows\SYNC_HERMES_API_ENV.bat` (incl. scaffold; ook in trust-sync) |
 | Setup (logica) | `scripts\windows\setup_hermes_windows.ps1` — **niet** volledig kopiëren naar `windows\` |
 | Setup (dubbelklik) | `windows\SETUP_HERMES.bat` — standaard wizard; `--files-only` = alleen bestanden |
 

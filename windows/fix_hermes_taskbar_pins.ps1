@@ -59,7 +59,8 @@ function Remove-HermesTaskbarShortcutFiles {
         'Hermes - lokale bestanden herstellen - naar taakbalk slepen.lnk',
         'Hermes - update - naar taakbalk slepen.lnk',
         'Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk',
-        'Hermes - Open Setup - naar taakbalk slepen.lnk'
+        'Hermes - Open Setup - naar taakbalk slepen.lnk',
+        'Hermes - Obsidian vault - naar taakbalk slepen.lnk'
     )
     foreach ($leaf in $names) {
         $p = Join-Path $Dir $leaf
@@ -123,6 +124,14 @@ if (Test-Path -LiteralPath $openBat) {
     Set-HermesShellShortcut -ShortcutPath (Join-Path $scriptDir 'Hermes - Open Setup - naar taakbalk slepen.lnk') `
         -TargetBatPath $openBat -IconIcoPath $openIcon -WorkingDirectory $RepoRoot `
         -Description 'Hermes - volledige setup-wizard (OPEN_SETUP)' | Out-Null
+}
+
+$obsidianBat = Join-Path $scriptDir 'OPEN_OBSIDIAN_VAULT.bat'
+if (Test-Path -LiteralPath $obsidianBat) {
+    $obsIcon = Get-HermesTaskbarRoleIconPath -Role 'Obsidian' -WindowsDir $scriptDir
+    Set-HermesShellShortcut -ShortcutPath (Join-Path $scriptDir 'Hermes - Obsidian vault - naar taakbalk slepen.lnk') `
+        -TargetBatPath $obsidianBat -IconIcoPath $obsIcon -WorkingDirectory $RepoRoot `
+        -Description 'Hermes Knowledge (Obsidian L4-vault)' | Out-Null
 }
 
 Clear-HermesShellIconCache

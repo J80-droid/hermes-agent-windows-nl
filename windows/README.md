@@ -28,7 +28,8 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | RAG-index bijwerken | `scripts/update_knowledge.bat` |
 | Doctor / fixes | `DOCTOR_FIX.bat` |
 | TUI-kleuren / display | `TERMINAL_WINDOWS.md`, `APPLY_TEAM_DISPLAY.bat` (skin + markdown) |
-| API-keys + vault sync (split home) | `SYNC_HERMES_API_ENV.bat` — `~/.hermes/.env` → root + alle `profiles\*\`.env` |
+| API-keys + vault sync (split home) | `SYNC_HERMES_API_ENV.bat` — `~/.hermes/.env` → root + alle `profiles\*\`.env` (+ L4-scaffold) |
+| Obsidian vault (L4) openen | `OPEN_OBSIDIAN_VAULT.bat` — sync env, scaffold, start Obsidian; zie `docs\MEMORY_ARCHITECTURE.md` |
 | Profiel wisselen | `SWITCH_PROFILE.bat <naam>` of in chat `/profile use <naam>` — zie `docs\PROFILE_SWITCH.md` |
 | Profiel + direct chat | `SWITCH_PROFILE_AND_CHAT.bat <naam>` (nieuwe chat = toolbox van dat profiel) |
 | Toolsets per profiel | `hermes -p <naam> tools` of `SYNC_DOMAIN_TOOLSETS.bat` |

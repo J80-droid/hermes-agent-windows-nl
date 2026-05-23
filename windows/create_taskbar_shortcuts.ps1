@@ -66,7 +66,8 @@ $shortcutNames = @(
     'Hermes - backup - naar taakbalk slepen.lnk',
     'Hermes - lokale bestanden herstellen - naar taakbalk slepen.lnk',
     'Hermes - update - naar taakbalk slepen.lnk',
-    'Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk'
+    'Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk',
+    'Hermes - Obsidian vault - naar taakbalk slepen.lnk'
 )
 $shortcutBats = @(
     $startHermesRel,
@@ -74,18 +75,20 @@ $shortcutBats = @(
     'windows/MANAGE_BACKUPS.bat',
     'windows/restore_local_assets.bat',
     'windows/UPDATE_HERMES.bat',
-    'windows/RAG_KNOWLEDGE_UPDATE.bat'
+    'windows/RAG_KNOWLEDGE_UPDATE.bat',
+    'windows/OPEN_OBSIDIAN_VAULT.bat'
 )
-$shortcutRoles = @('Start', 'Setup', 'Backup', 'Restore', 'Update', 'Rag')
+$shortcutRoles = @('Start', 'Setup', 'Backup', 'Restore', 'Update', 'Rag', 'Obsidian')
 $shortcutDescriptions = @(
     $startHermesDesc,
     'Hermes: Windows-setup (SETUP_HERMES.bat) - sleep naar taakbalk',
     'Hermes: fysieke backup uitvoeren (sleep naar taakbalk)',
     'Hermes: lokale scripts uit _local_assets herstellen (sleep naar taakbalk)',
     'Hermes: git/pip update via conda (sleep naar taakbalk)',
-    'Hermes RAG: interactief (J/N + pause) - sleep naar taakbalk. Nacht: RAG_KNOWLEDGE_UPDATE_NIGHT.bat'
+    'Hermes RAG: interactief (J/N + pause) - sleep naar taakbalk. Nacht: RAG_KNOWLEDGE_UPDATE_NIGHT.bat',
+    'Hermes Knowledge (Obsidian L4): env-sync, scaffold, open vault - sleep naar taakbalk'
 )
-$shortcutKeepOpen = @($false, $false, $false, $false, $false, $true)
+$shortcutKeepOpen = @($false, $false, $false, $false, $false, $true, $false)
 
 $legacyStartLnk = Join-Path $OutDir 'Hermes Agent - naar taakbalk slepen.lnk'
 if (Test-Path -LiteralPath $legacyStartLnk) {

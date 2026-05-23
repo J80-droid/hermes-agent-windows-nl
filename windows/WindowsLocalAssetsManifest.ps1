@@ -27,6 +27,10 @@ function Get-HermesWindowsLocalAssetsManifest {
         'apply_institutional_runtime.ps1',
         'SYNC_HERMES_API_ENV.bat',
         'sync_hermes_api_env.ps1',
+        'OPEN_OBSIDIAN_VAULT.bat',
+        'scripts/HermesObsidianVaultCommon.ps1',
+        'scripts/open_obsidian_vault.ps1',
+        'scripts/ensure_hermes_knowledge_vault.ps1',
         'FIX_GEMINI_CREDENTIAL_POOL.bat',
         'fix_gemini_credential_pool.ps1',
         'SWITCH_PROFILE.bat',
@@ -84,7 +88,8 @@ function Get-HermesWindowsLocalAssetsManifest {
         'Hermes - update - naar taakbalk slepen.lnk',
         'Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk',
         'Hermes - setup Windows - naar taakbalk slepen.lnk',
-        'Hermes - Open Setup - naar taakbalk slepen.lnk'
+        'Hermes - Open Setup - naar taakbalk slepen.lnk',
+        'Hermes - Obsidian vault - naar taakbalk slepen.lnk'
     ) | ForEach-Object { @{ RelPath = $_; DestRoot = 'windows' } }
 
     $repoRootFiles = @(
@@ -151,7 +156,7 @@ function Get-HermesWindowsLocalAssetsManifest {
 }
 
 function Get-HermesCriticalWindowsRepoPath {
-    Get-HermesCriticalWindowsRepoPathList
+    return @(Get-HermesCriticalWindowsRepoPathList)
 }
 
 function Resolve-HermesManifestSourcePath {

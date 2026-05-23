@@ -20,7 +20,7 @@ Operationele handleiding voor J.'s Hermes Windows NL fork: verifieerbaar gedrag 
 ## Toepassen (Windows)
 
 1. Backup: `MANAGE_BACKUPS.bat` of `backup_soul_profiles.ps1` (inclusief memories).
-2. Dagelijks / na git pull: `windows\SYNC_TRUST_RUNTIME.bat` (geen scrub) — volledige keten: sync → dedup → limits → vault-env → snapshot → **audit** → **RUN_MEMORY_PRODUCTION_GATE** → **`/new`-reminder** (`institutional_new_chat_required.json`; TUI auto `/new`). Ook via `POST_GIT_PULL.bat` en `UPDATE_HERMES.bat` (`HERMES_SKIP_PAUSE=1`). Snelle sync zonder pytest: `set HERMES_SKIP_MEMORY_PRODUCTION_GATE=1` vóór de BAT.
+2. Dagelijks / na git pull: `windows\SYNC_TRUST_RUNTIME.bat` (geen scrub) — volledige keten: sync → dedup → limits → vault-env (+ L4-scaffold uit `docs/templates/obsidian_vault_scaffold/`) → snapshot → **audit** → **RUN_MEMORY_PRODUCTION_GATE** → **`/new`-reminder** (`institutional_new_chat_required.json`; TUI auto `/new`). Ook via `POST_GIT_PULL.bat` en `UPDATE_HERMES.bat` (`HERMES_SKIP_PAUSE=1`). Snelle sync zonder pytest: `set HERMES_SKIP_MEMORY_PRODUCTION_GATE=1` vóór de BAT. Obsidian GUI: `windows\OPEN_OBSIDIAN_VAULT.bat` (env-sync + scaffold + start; eerste keer: *Open map als kluis*).
 3. Volledig incl. scrub: `windows\APPLY_TRUST_PROTOCOL.bat` (sync → scrub → E2E audit, zonder tussentijdse pause) of `SYNC_TRUST_PROTOCOL.bat` (sync + scrub)
 4. Audit: `windows\audits\RUN_TRUST_FORENSIC_E2E.bat` (of `.ps1`) of `RUN_AUDITS.ps1 -IncludeTrustForensicE2E`
 
@@ -56,6 +56,8 @@ Toepassen: `windows\scripts\apply_trust_memory_limits.ps1` (idempotent). Na nieu
 | `windows\audits\RUN_MEMORY_ARCHITECTURE_E2E.ps1` | Dunne launcher (`& MemoryArchitectureE2E.core.ps1`) — stabiel in Cursor/PSES |
 | `windows\audits\MemoryArchitectureE2E.core.ps1` | Memory-architectuur E2E: vault, limits, alle profielen, dedup-keten, TUI auto `/new` (16/16) |
 | `windows\audits\RUN_MEMORY_PRODUCTION_GATE.ps1` | Gecombineerde productie-poort (memory + trust E2E + pytest) |
+| `windows\OPEN_OBSIDIAN_VAULT.bat` | L4-vault openen (na `SYNC_HERMES_API_ENV` of trust-sync); scaffold idempotent |
+| `windows\scripts\ensure_hermes_knowledge_vault.ps1` | Ontbrekende scaffold-bestanden kopiëren (ook vanuit `sync_hermes_api_env.ps1`) |
 
 **IDE:** rode strepen op audit-`.ps1` → `windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat`, daarna PowerShell-sessie herstarten en venster reloaden. Zie `windows\audits\README.md`.
 
