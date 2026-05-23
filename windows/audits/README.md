@@ -37,7 +37,7 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | **`RUN_MEMORY_ARCHITECTURE_E2E.bat`** | L4 vault-paden, sync, geen L3, profiel-limits 4000/1800, core MEMORY-grootte, UTF-8 § (13 stappen) |
 | **`RUN_MEMORY_PRODUCTION_GATE.bat`** | Gecombineerd: trust limits + memory E2E + trust forensic E2E + pytest memory/trust |
 | **`RUN_AUDITS.bat -IncludeMemoryProductionGate`** | Alleen memory productie-poort (ook in `-IncludeAllE2E`) |
-| **`RUN_STATUS_BAR_COST_E2E.bat`** | TUI statusbalk (rich): `show_cost`, `cost_bar_mode`, breakdown, turn-delta, gateway smoke |
+| **`RUN_STATUS_BAR_COST_E2E.bat`** | TUI statusbalk (rich): `show_cost`, `cost_bar_mode`, breakdown, turn-delta, live `~$turn`, gateway smoke |
 | **`RUN_AUDITS.bat -IncludeMemoryArchitectureE2E`** | Bovenstaande memory E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeStatusBarCostE2E`** | Bovenstaande statusbalk-kosten E2E in gecombineerde poort |
 | **`windows\tests\RUN_PYTEST.bat`** | Brede pytest (excl. integration) |
@@ -109,9 +109,9 @@ Optioneel: `-ApplyDisplayFix` (display drift), `-SkipRuntime` (geen Hermes home)
 | 7/10 | Gateway smoke: `cost_usd` + `cost_breakdown_pct` (som 100%) |
 | 8/10 | `verify_usage_cost_bar.py --verify` |
 | 9/10 | `UPSTREAM_SYNC.md` conflict-tabel |
-| 10/10 | `ui-tui/README.md` documenteert `/cost` + `cost_bar_mode` |
+| 10/10 | `ui-tui/README.md` documenteert `/cost`, `config.set cost_bar_mode`, live `~$turn` |
 
-**Niet in deze E2E:** live Ink-TUI render (handmatig: statusbalk na API-call); prijs onbekend voor custom model (`cost_usd` ontbreekt — verwacht).
+**Niet in deze E2E:** live Ink-TUI pixel-render (handmatig: statusbalk tijdens stream); prijs onbekend voor custom model (`cost_usd` ontbreekt — verwacht). Live turn-schatting wel gedekt via vitest (`liveTurnCost`, `createGatewayEventHandler`).
 
 ## IDE-onderhoud E2E (volledige landkaart)
 

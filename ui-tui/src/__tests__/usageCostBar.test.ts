@@ -26,14 +26,23 @@ describe('usageCostBar', () => {
     expect(formatCostBreakdownPct(usage.cost_breakdown_pct)).toBe('cw 43% │ out 40% │ in 16% │ cr 1%')
   })
 
-  it('formatStatusBarCostRich full tier omits tilde', () => {
+  it('formatStatusBarCostRich full tier omits tilde on session cost', () => {
     const text = formatStatusBarCostRich(usage, { mode: 'rich', width: 120 })
 
     expect(text).toContain('$0.23 / $5.74')
     expect(text).toContain('cw 43%')
     expect(text).toContain('7 calls')
     expect(text).toContain('12 tools')
-    expect(text).not.toContain('~')
+    expect(text).not.toMatch(/~\$5\.74/)
+  })
+
+  it('formatStatusBarCostRich prefixes live turn cost with tilde', () => {
+    const text = formatStatusBarCostRich(
+      { ...usage, turn_cost_estimated: true, turn_cost_usd: 0.05 },
+      { mode: 'rich', width: 120 }
+    )
+
+    expect(text).toContain('~$0.05 / $5.74')
   })
 
   it('formatStatusBarCostRich costs tier drops breakdown', () => {

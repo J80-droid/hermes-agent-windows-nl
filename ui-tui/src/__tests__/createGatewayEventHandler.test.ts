@@ -5,6 +5,7 @@ import { getOverlayState, resetOverlayState } from '../app/overlayStore.js'
 import { turnController } from '../app/turnController.js'
 import { getTurnState, resetTurnState } from '../app/turnStore.js'
 import { getUiState, patchUiState, resetUiState } from '../app/uiStore.js'
+import { STREAM_BATCH_MS } from '../config/timing.js'
 import { estimateTokensRough } from '../lib/text.js'
 import type { Msg } from '../types.js'
 
@@ -1010,5 +1011,42 @@ describe('createGatewayEventHandler', () => {
 
     expect(getUiState().usage.turn_cost_usd).toBeCloseTo(0.23, 5)
     expect(getUiState().usage.cost_usd).toBe(1.23)
+    expect(getUiState().usage.turn_cost_estimated).toBe(false)
+  })
+
+  it('estimates live turn cost during streaming from token deltas', () => {
+    vi.useFakeTimers()
+    const appended: Msg[] = []
+    const onEvent = createGatewayEventHandler(buildCtx(appended))
+
+    patchUiState({
+      usage: {
+        calls: 2,
+        cost_breakdown_usd: { input: 1, output: 1 },
+        cost_usd: 2,
+        input: 1000,
+        output: 1000,
+        session_tools_executed: 0,
+        total: 2000
+      }
+    })
+
+    onEvent({ payload: {}, type: 'message.start' } as any)
+    onEvent({ payload: { text: 'abcd' }, type: 'message.delta' } as any)
+
+    vi.advanceTimersByTime(STREAM_BATCH_MS + 1)
+
+    expect(getUiState().usage.turn_cost_estimated).toBe(true)
+    expect(getUiState().usage.turn_cost_usd).toBeGreaterThan(0)
+
+    onEvent({
+      payload: { usage: { calls: 3, cost_usd: 2.05, input: 1100, output: 1104, total: 2204 } },
+      type: 'message.complete'
+    } as any)
+
+    expect(getUiState().usage.turn_cost_estimated).toBe(false)
+    expect(getUiState().usage.turn_cost_usd).toBeCloseTo(0.05, 5)
+
+    vi.useRealTimers()
   })
 })
