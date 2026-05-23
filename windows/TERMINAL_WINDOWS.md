@@ -52,9 +52,9 @@ Twee lagen (niet door elkaar halen):
 | **Hermes UI** | Banner, prompt, status | Skin **`default`** (goud) — `display.skin` |
 | **Assistant-antwoord** | LLM-tekst in panel/stream | **`institutional_rich`** + `assistant_palette: demo` (cyaan/groen/magenta/geel) |
 
-Team-defaults in `windows/team_display.defaults`: `assistant_render_style=institutional_rich`, `assistant_palette=demo`, `assistant_label_columns=true`, `streaming=false`, `compact=false`.
+Team-defaults in `windows/team_display.defaults`: `assistant_render_style=institutional_rich`, `assistant_palette=demo`, `assistant_label_columns=true`, `streaming=false`, `compact=false`, **`show_cost=true`** (geschatte sessiekosten rechts in de TUI-statusbalk).
 
-Code: `hermes_cli/institutional_render.py`, `hermes_cli/display_markdown.py` (`get_assistant_console_theme()`), gateway `agent/rich_output.py`. Klassieke CLI: eindpaneel via `ChatConsole(theme=get_assistant_console_theme())`; tijdens stream (met `streaming=false`) ruwe markdown, Rich pas op het eindpaneel.
+Code: `hermes_cli/institutional_render.py`, `hermes_cli/display_markdown.py` (`get_assistant_console_theme()`), gateway `agent/rich_output.py`. TUI statusbalk-kosten: `ui-tui/src/domain/usage.ts`, `ui-tui/src/components/appChrome.tsx`; toggle `/cost`; audit `windows/audits/RUN_STATUS_BAR_COST_E2E.bat`. Klassieke CLI: eindpaneel via `ChatConsole(theme=get_assistant_console_theme())`; tijdens stream (met `streaming=false`) ruwe markdown, Rich pas op het eindpaneel.
 
 Legacy: `assistant_render_style: markdown_legacy` → goud via `skin_markdown_theme()`. Upstream Rich-default (magenta) geldt alleen zonder deze fork-instellingen.
 

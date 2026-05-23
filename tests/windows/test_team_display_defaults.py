@@ -14,4 +14,5 @@ def test_team_display_defaults_institutional():
     assert "skin=default" in text
     assert "streaming=false" in text
     assert "compact=false" in text
+    assert "show_cost=true" in text
     assert "compact=true" not in text

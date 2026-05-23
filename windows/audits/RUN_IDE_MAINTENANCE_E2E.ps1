@@ -92,6 +92,8 @@ $required = @(
     'scripts/verify_institutional_guard.py',
     'tests/windows/test_merge_upstream_snippets.py',
     'tests/windows/test_apply_team_display_root.py',
+    'tests/windows/test_status_bar_cost_e2e.py',
+    'scripts/status_bar_cost_gateway_smoke.py',
     'tests/rag_pipeline/test_lancedb_maintenance.py',
     '.vscode/settings.json',
     '.cursor/rules/python-conda.mdc',
@@ -128,13 +130,14 @@ Write-StepHeader 'pytest IDE-onderhoud (merge, lancedb, display)'
 & $python -m pytest `
     tests/windows/test_merge_upstream_snippets.py `
     tests/windows/test_apply_team_display_root.py `
+    tests/windows/test_status_bar_cost_e2e.py `
     tests/rag_pipeline/test_lancedb_maintenance.py `
     tests/windows/test_merge_upstream_snippets.py::test_lancedb_maintenance_bat_exists `
     -q --tb=short
 if ($LASTEXITCODE -ne 0) {
     Step-Fail 'IDE-onderhoud pytest subset'
 } else {
-    Step-Ok 'merge snippets + lancedb + team display root'
+    Step-Ok 'merge snippets + lancedb + team display + status bar cost'
 }
 
 # --- 5 LANCEDB list via bat ---

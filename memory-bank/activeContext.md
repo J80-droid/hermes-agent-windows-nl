@@ -8,6 +8,8 @@
 
 **Institutioneel 10/10 (2026-05-23, afgerond + guardrails):** palet, NFR, normalizer-pariteit, score 10/10, labels verticaal, Web live palette. **Herstel na IDE-drift:** `APPLY_INSTITUTIONAL_RUNTIME.bat` (config + SOUL + E2E 11/11). **Preventie:** `scripts/verify_institutional_guard.py`, drift in `diagnose_renderer.py --verify`, `.cursor/rules/institutional-presentatie.mdc`, `docs/INSTITUTIONAL_PORTING_GUIDE.md`. **Na pull/update/IDE:** `/new` + rooktest.
 
+**TUI statusbalk-kosten (2026-05-23, PASS):** `display.show_cost: true` team-default (`team_display.defaults`); TUI toont geschatte sessiekosten (`~$X.XXXX`); `/cost` toggle; `mergeUsage` voorkomt wipe na `/usage`. E2E: `RUN_STATUS_BAR_COST_E2E.bat` (8/8); rapport `windows/audits/STATUS_BAR_COST_E2E_REPORT_2026-05-23.md`. Na UPDATE/APPLY_TEAM_DISPLAY: Hermes `/new`.
+
 **Backup schema v3 (2026-05-23):** `backup_hermes.ps1` backupt `%LOCALAPPDATA%\hermes` → `runtime_hermes/`; legacy `~/.hermes` → `legacy_hermes/`; persona-subset → `localappdata_hermes/` (SOUL + `config.yaml`). Blokkeert als Hermes draait. Restore: `-RestoreRuntimeFull`, `-RestoreRuntimePersonas`, `-RestoreLegacyProfile`. Module: `windows/scripts/HermesBackupCommon.ps1`. Test: `windows/audits/RUN_BACKUP_E2E.bat`.
 
 **Legal domein herstructurering** (2026-05): één RAG-bucket `legal`, rechtsgebied-**lenzen**, generieke `profiles\legal\SOUL.md`, zaak GCR in `LEGAL_ACTIVE_MATTERS.md`. Audit: `RUN_LEGAL_DOMAIN_E2E.bat`.
@@ -52,6 +54,7 @@
 | Trust & Forensic | `docs/TRUST_FORENSIC_PROTOCOL.md` |
 | Memory L1–L4 (vault, geen L3) | `docs/MEMORY_ARCHITECTURE.md`, `docs/templates/MEMORY_ENV_VAULT.example` |
 | E2E memory-architectuur | `windows/audits/RUN_MEMORY_ARCHITECTURE_E2E.bat` |
+| E2E statusbalk-kosten | `windows/audits/RUN_STATUS_BAR_COST_E2E.bat` |
 | E2E institutioneel | `windows/audits/RUN_INSTITUTIONAL_E2E.bat` |
 | Hermes start (bat) | `../../HERMES_START.md` |
 | Windows | `windows/README.md` |

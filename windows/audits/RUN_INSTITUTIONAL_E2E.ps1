@@ -322,7 +322,8 @@ $displayLabels = @(
     'assistant_label_columns=true',
     'skin=default',
     'streaming=false',
-    'compact=false'
+    'compact=false',
+    'show_cost=true'
 )
 $profileFailures = @()
 if (-not (Test-Path -LiteralPath $profilesDir)) {

@@ -39,3 +39,5 @@ def test_apply_team_display_updates_root_config(tmp_path, monkeypatch):
     assert root_cfg["display"]["compact"] is False
     assert prof_cfg["display"]["compact"] is False
     assert root_cfg["display"]["assistant_palette"] == "demo"
+    assert root_cfg["display"]["show_cost"] is True
+    assert prof_cfg["display"]["show_cost"] is True

@@ -1,4 +1,5 @@
 import { attachedImageNotice, introMsg, toTranscriptMessages } from '../../../domain/messages.js'
+import { mergeUsage } from '../../../domain/usage.js'
 import { TUI_SESSION_MODEL_FLAG } from '../../../domain/slash.js'
 import type {
   BackgroundStartResponse,
@@ -164,7 +165,7 @@ export const sessionCommands: SlashCommand[] = [
             }
 
             if (r.usage) {
-              patchUiState(state => ({ ...state, usage: { ...state.usage, ...r.usage } }))
+              patchUiState(state => ({ ...state, usage: mergeUsage(state.usage, r.usage!) }))
             }
 
             if (r.summary?.headline) {
@@ -510,9 +511,22 @@ export const sessionCommands: SlashCommand[] = [
         }
 
         if (r) {
-          patchUiState({
-            usage: { calls: r.calls ?? 0, input: r.input ?? 0, output: r.output ?? 0, total: r.total ?? 0 }
-          })
+          patchUiState(state => ({
+            usage: mergeUsage(state.usage, {
+              cache_read: r.cache_read,
+              cache_write: r.cache_write,
+              calls: r.calls,
+              compressions: r.compressions,
+              context_max: r.context_max,
+              context_percent: r.context_percent,
+              context_used: r.context_used,
+              cost_status: r.cost_status,
+              cost_usd: r.cost_usd,
+              input: r.input,
+              output: r.output,
+              total: r.total
+            })
+          }))
         }
 
         if (!r?.calls) {

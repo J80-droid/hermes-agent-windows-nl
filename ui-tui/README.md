@@ -210,6 +210,7 @@ The local slash handler covers the built-ins that need direct client behavior:
 - `/details`
 - `/logs`
 - `/statusbar`, `/sb`
+- `/cost`
 - `/queue`
 - `/undo`
 - `/retry`
@@ -221,6 +222,7 @@ Notes:
 - Text paste remains inline-only; `Cmd+V` / `Ctrl+V` handle layered text/OSC52/image fallback before `/paste` is needed.
 - `/details [hidden|collapsed|expanded|cycle]` controls thinking/tool-detail visibility.
 - `/statusbar` toggles the status rule on/off.
+- `/cost [on|off|toggle|status]` toggles estimated session cost in the status bar.
 
 Anything else falls through to:
 

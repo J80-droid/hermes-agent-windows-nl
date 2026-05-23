@@ -1417,6 +1417,56 @@ def test_config_set_statusbar_survives_non_dict_display(tmp_path, monkeypatch):
     assert saved["display"]["tui_statusbar"] == "bottom"
 
 
+def test_config_get_cost_survives_non_dict_display(monkeypatch):
+    monkeypatch.setattr(server, "_load_cfg", lambda: {"display": "broken"})
+
+    resp = server.handle_request(
+        {"id": "1", "method": "config.get", "params": {"key": "cost"}}
+    )
+
+    assert resp["result"]["value"] == "off"
+
+
+def test_config_set_cost_survives_non_dict_display(tmp_path, monkeypatch):
+    import yaml
+
+    cfg_path = tmp_path / "config.yaml"
+    cfg_path.write_text(yaml.safe_dump({"display": "broken"}))
+    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+
+    resp = server.handle_request(
+        {
+            "id": "1",
+            "method": "config.set",
+            "params": {"key": "cost", "value": "on"},
+        }
+    )
+
+    assert resp["result"]["value"] == "on"
+    saved = yaml.safe_load(cfg_path.read_text())
+    assert saved["display"]["show_cost"] is True
+
+
+def test_config_set_cost_toggle_empty_value(tmp_path, monkeypatch):
+    import yaml
+
+    cfg_path = tmp_path / "config.yaml"
+    cfg_path.write_text(yaml.safe_dump({"display": {"show_cost": False}}))
+    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+
+    resp = server.handle_request(
+        {
+            "id": "1",
+            "method": "config.set",
+            "params": {"key": "cost", "value": ""},
+        }
+    )
+
+    assert resp["result"]["value"] == "on"
+    saved = yaml.safe_load(cfg_path.read_text())
+    assert saved["display"]["show_cost"] is True
+
+
 def test_config_set_details_mode_pins_all_sections(tmp_path, monkeypatch):
     import yaml
 

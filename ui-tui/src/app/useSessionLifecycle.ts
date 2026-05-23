@@ -6,7 +6,7 @@ import { useCallback, type RefObject } from 'react'
 
 import { buildSetupRequiredSections, SETUP_REQUIRED_TITLE } from '../content/setup.js'
 import { introMsg, toTranscriptMessages } from '../domain/messages.js'
-import { ZERO } from '../domain/usage.js'
+import { ZERO, usageFromPartial } from '../domain/usage.js'
 import { type GatewayClient } from '../gatewayClient.js'
 import type {
   SessionCloseResponse,
@@ -23,8 +23,6 @@ import { patchOverlayState } from './overlayStore.js'
 import { turnController } from './turnController.js'
 import { patchTurnState } from './turnStore.js'
 import { getUiState, patchUiState } from './uiStore.js'
-
-const usageFrom = (info: null | SessionInfo): Usage => (info?.usage ? { ...ZERO, ...info.usage } : ZERO)
 
 export const writeActiveSessionFile = (sessionId: null | string, file = process.env.HERMES_TUI_ACTIVE_SESSION_FILE) => {
   if (!file || !sessionId) {
@@ -117,7 +115,7 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
       setLastUserMsg('')
       composerActions.setPasteSnips([])
       patchTurnState({ activity: [] })
-      patchUiState({ info, usage: usageFrom(info) })
+      patchUiState({ info, usage: usageFromPartial(info?.usage) })
     },
     [composerActions, setHistoryItems, setLastUserMsg, setStickyPrompt]
   )
@@ -152,7 +150,7 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
         info,
         sid: r.session_id,
         status: info?.version ? 'ready' : 'starting agent…',
-        usage: usageFrom(info)
+        usage: usageFromPartial(info?.usage)
       })
 
       if (info) {
@@ -234,7 +232,7 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
                 info: r.info ?? null,
                 sid: r.session_id,
                 status: 'ready',
-                usage: usageFrom(r.info ?? null)
+                usage: usageFromPartial(r.info?.usage)
               })
               setTimeout(() => scrollRef.current?.scrollToBottom(), 0)
             })

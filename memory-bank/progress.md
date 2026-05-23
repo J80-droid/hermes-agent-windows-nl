@@ -34,6 +34,7 @@
 - [x] IDE conda: `.vscode/settings.json` + `.cursor/rules/python-conda.mdc` + `docs/IDE_VSCODE_SETTINGS.example.json`
 - [x] IDE-onderhoud baseline/audit: `windows/audits/IDE_MAINTENANCE_BASELINE_2026-05-23.md`, `LANCEDB_SCHEMA_AUDIT_*.md`
 - [x] IDE-onderhoud E2E: `RUN_IDE_MAINTENANCE_E2E.ps1` + `.bat` (15 stappen landkaart, rapport `IDE_MAINTENANCE_E2E_REPORT_*.md`); `RUN_AUDITS -IncludeIdeMaintenanceE2E`
+- [x] TUI statusbalk-kosten: `show_cost` team-default, `mergeUsage`/`formatStatusBarCost`, `/cost`, gateway `cost_usd`; E2E `RUN_STATUS_BAR_COST_E2E.bat` (8/8 PASS) — `STATUS_BAR_COST_E2E_REPORT_2026-05-23.md`
 - [x] Taakbalk `windows\*.lnk`: `cmd.exe /c` (+ RAG: `/k`) + gekleurd `.ico` (7 lagen 16–256 px); `FIX_TASKBAR_ICONS.bat`; `POST_GIT_PULL.bat`
 - [x] Icoon-generator: PNG uit `assets/Hermes_logo.png` of `%USERPROFILE%\.hermes\_local_assets\assets\`; geen synthetische H-stub
 - [x] `SETUP_HERMES.bat` → standaard `--full-setup` + `OPEN_SETUP.bat`; `--files-only` voor alleen bestanden

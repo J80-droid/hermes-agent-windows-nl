@@ -547,6 +547,36 @@ export const coreCommands: SlashCommand[] = [
   },
 
   {
+    help: 'toggle estimated session cost in the status bar',
+    name: 'cost',
+    run: (arg, ctx) => {
+      const mode = arg.trim().toLowerCase()
+
+      if (mode === 'status') {
+        return ctx.transcript.sys(`cost display ${ctx.ui.showCost ? 'on' : 'off'}`)
+      }
+
+      const next =
+        !mode || mode === 'toggle'
+          ? !ctx.ui.showCost
+          : mode === 'on' || mode === 'true'
+            ? true
+            : mode === 'off' || mode === 'false'
+              ? false
+              : null
+
+      if (next === null) {
+        return ctx.transcript.sys('usage: /cost [on|off|toggle|status]')
+      }
+
+      patchUiState({ showCost: next })
+      ctx.gateway.rpc<ConfigSetResponse>('config.set', { key: 'cost', value: next ? 'on' : 'off' }).catch(() => {})
+
+      queueMicrotask(() => ctx.transcript.sys(`cost display ${next ? 'on' : 'off'}`))
+    }
+  },
+
+  {
     help: 'inspect or enqueue a message',
     name: 'queue',
     run: (arg, ctx) => {

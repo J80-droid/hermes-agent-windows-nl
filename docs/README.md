@@ -9,6 +9,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Begrijpen: index vs. chat (twee fasen) | [RAG_TWEE_FASEN.md](RAG_TWEE_FASEN.md) |
 | Trust & Forensic (SOUL, memory, J.) | [TRUST_FORENSIC_PROTOCOL.md](TRUST_FORENSIC_PROTOCOL.md) — dagelijks: `windows/SYNC_TRUST_RUNTIME.bat` |
 | Memory L1–L4 (vault, geen L3) | [MEMORY_ARCHITECTURE.md](MEMORY_ARCHITECTURE.md) — E2E: `windows/audits/RUN_MEMORY_ARCHITECTURE_E2E.bat` |
+| TUI statusbalk sessiekosten (`show_cost`, `/cost`) | `windows/audits/RUN_STATUS_BAR_COST_E2E.bat` — rapport `windows/audits/STATUS_BAR_COST_E2E_REPORT_2026-05-23.md` |
 | Toolsets per domein (minimaal + opt-in) | [DOMAIN_TOOLSET_AUDIT.md](DOMAIN_TOOLSET_AUDIT.md) — sync: `windows/SYNC_DOMAIN_TOOLSETS.bat` |
 | Model/provider voor **alle** profielen instellen | [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md) |
 | Profiel wisselen (chat, CLI, audit) | [PROFILE_SWITCH.md](PROFILE_SWITCH.md) |

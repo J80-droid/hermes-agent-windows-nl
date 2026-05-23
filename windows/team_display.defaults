@@ -13,6 +13,8 @@ assistant_palette=demo
 assistant_label_columns=true
 compact=false
 skin=default
+# Geschatte sessiekosten in de TUI-statusbalk (rechts, na duur/bg-taken).
+show_cost=true
 
 # Beschikbare assistant_palette waarden (built-in + config/palettes.yaml):
 #   demo    - Monokai-inspired (cyaan/groen/magenta/geel)  [default]

@@ -86,6 +86,7 @@ def _check_team_display_drift() -> list[str]:
         "assistant_palette",
         "compact",
         "assistant_label_columns",
+        "show_cost",
     )
     for key in checks:
         if key not in defaults:

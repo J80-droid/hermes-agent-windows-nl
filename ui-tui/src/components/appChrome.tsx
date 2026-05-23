@@ -10,6 +10,7 @@ import { $uiState } from '../app/uiStore.js'
 import { FACES } from '../content/faces.js'
 import { VERBS } from '../content/verbs.js'
 import { fmtDuration } from '../domain/messages.js'
+import { formatStatusBarCost, shouldShowStatusBarCost } from '../domain/usage.js'
 import { stickyPromptFromViewport } from '../domain/viewport.js'
 import { buildSubagentTree, treeTotals, widthByDepth } from '../lib/subagentTree.js'
 import { fmtK } from '../lib/text.js'
@@ -343,8 +344,8 @@ export function StatusRule({
             </Text>
           ) : null}
           {bgCount > 0 ? <Text color={t.color.muted}> │ {bgCount} bg</Text> : null}
-          {showCost && typeof usage.cost_usd === 'number' ? (
-            <Text color={t.color.muted}> │ ${usage.cost_usd.toFixed(4)}</Text>
+          {shouldShowStatusBarCost(showCost, usage) ? (
+            <Text color={t.color.muted}> │ {formatStatusBarCost(usage)}</Text>
           ) : null}
         </Text>
       </Box>

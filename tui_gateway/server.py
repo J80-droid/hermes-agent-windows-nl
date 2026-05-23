@@ -4196,6 +4196,26 @@ def _(rid, params: dict) -> dict:
         _write_config_key("display.tui_statusbar", nv)
         return _ok(rid, {"key": key, "value": nv})
 
+    if key == "cost":
+        raw = str(value or "").strip().lower()
+        display = _load_cfg().get("display")
+        d0 = display if isinstance(display, dict) else {}
+        current = bool(d0.get("show_cost", False))
+
+        if raw == "status":
+            return _ok(rid, {"key": key, "value": "on" if current else "off"})
+        if raw in {"", "toggle"}:
+            nv_b = not current
+        elif raw in {"on", "true", "yes", "1"}:
+            nv_b = True
+        elif raw in {"off", "false", "no", "0"}:
+            nv_b = False
+        else:
+            return _err(rid, 4002, f"unknown cost value: {value}")
+
+        _write_config_key("display.show_cost", nv_b)
+        return _ok(rid, {"key": key, "value": "on" if nv_b else "off"})
+
     if key == "mouse":
         # Explicit None check rather than `value or ""` so falsy non-string
         # inputs (0, False) reach the alias map as themselves — both map to
@@ -4386,6 +4406,10 @@ def _(rid, params: dict) -> dict:
             display.get("tui_statusbar", "top") if isinstance(display, dict) else "top"
         )
         return _ok(rid, {"value": _coerce_statusbar(raw)})
+    if key == "cost":
+        display = _load_cfg().get("display")
+        on = bool((display or {}).get("show_cost", False)) if isinstance(display, dict) else False
+        return _ok(rid, {"value": "on" if on else "off"})
     if key == "mouse":
         display = _load_cfg().get("display")
         return _ok(rid, {"value": _display_mouse_tracking(display)})
