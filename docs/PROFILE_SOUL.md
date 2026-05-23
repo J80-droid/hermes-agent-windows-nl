@@ -29,6 +29,10 @@ Uit `%USERPROFILE%\data\domains.yaml` (veld `profile_name`):
 | philosophy | `philosophy` | `...\profiles\philosophy\SOUL.md` |
 | logistics | `logistics` | `...\profiles\logistics\SOUL.md` |
 | ventures | `ventures` | `...\profiles\ventures\SOUL.md` |
+| ict | `ict` | `...\profiles\ict\SOUL.md` |
+| security | `security` | `...\profiles\security\SOUL.md` |
+| dev | `dev` | `...\profiles\dev\SOUL.md` |
+| data | `data` | `...\profiles\data\SOUL.md` |
 
 RAG-bronnen staan apart onder `%USERPROFILE%\data\raw_source_files\<source_dir>\`.
 
