@@ -51,7 +51,6 @@ $requiredRepo = @(
     'docs/templates/SOUL_SHARED_TRUST_VERIFICATION.md',
     'docs/templates/SOUL_SHARED_INTERACTION.md',
     'docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md',
-    'docs/templates/SOUL_ANALYST_DOMAIN.md',
     'docs/templates/SOUL_ACADEMICS_DOMAIN.md',
     'docs/templates/SOUL_OPERATIONS_DOMAIN.md',
     'docs/templates/SOUL_TRADING_DOMAIN.md',

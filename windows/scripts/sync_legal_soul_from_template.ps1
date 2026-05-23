@@ -5,5 +5,5 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-& (Join-Path $PSScriptRoot 'sync_domain_soul_from_template.ps1') -Profile legal -RepoRoot $RepoRoot -HermesRoot $HermesRoot
+& (Join-Path $PSScriptRoot 'sync_domain_soul_from_template.ps1') -ProfileName legal -RepoRoot $RepoRoot -HermesRoot $HermesRoot
 exit $LASTEXITCODE

@@ -32,7 +32,7 @@ Voor dagelijks gebruik: `APPLY_INSTITUTIONAL_RUNTIME.bat` gebruikt automatisch `
 
 | Profiel | `<institutional_check>` | Volledige analyse-secties |
 |---------|-------------------------|---------------------------|
-| legal, analyst | Verplicht bij analyse | Ja |
+| legal (dossier) | Verplicht bij analyse | Ja |
 | core, operations | Optioneel (korte Q&A) | Compact |
 | overige | Typografie altijd; structuur indien nodig | Domein-SOUL bepaalt inhoud |
 
@@ -134,7 +134,7 @@ Bij onbekend palet: automatische fallback naar `demo` + warning in log.
 
 **Automatisch (aanbevolen):** `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` — display op **alle** profielen, SOUL-sync, E2E-audit.
 
-**Bij start:** `start_hermes.bat` / `launch_hermes.bat` roept `launch_institutional_runtime.ps1` aan (display + SOUL wanneer templates/defaults wijzigen; stamp in `%LOCALAPPDATA%\hermes\launch_institutional_runtime.stamp`). Geen E2E bij elke start (te traag). Overslaan: `set HERMES_SKIP_INSTITUTIONAL_RUNTIME=1`. E2E bij start: `start_hermes.bat --institutional-e2e` of `set HERMES_INSTITUTIONAL_E2E_ON_START=1`.
+**Bij start:** `launch_hermes.bat` roept eerst `launch_soul_anatomy_deploy.ps1` aan (13 domein-templates + snippets wanneer repo-SOUL nieuwer dan `%LOCALAPPDATA%\hermes\soul_anatomy_deploy.stamp`), daarna `launch_institutional_runtime.ps1` (team display; snippets overgeslagen als anatomy net liep). Geen E2E bij elke start. Overslaan: `set HERMES_SKIP_SOUL_DEPLOY_ON_START=1` en/of `set HERMES_SKIP_INSTITUTIONAL_RUNTIME=1`. Geforceerd: `set HERMES_FORCE_SOUL_DEPLOY=1`. E2E bij start: `start_hermes.bat --institutional-e2e` of `set HERMES_INSTITUTIONAL_E2E_ON_START=1`.
 
 Los: `APPLY_TEAM_DISPLAY.bat`, `SYNC_SOUL_SNIPPETS.bat`. Na `UPDATE_HERMES.bat` wordt display al toegepast.
 
@@ -163,7 +163,7 @@ Onafhankelijk van `display.compact`. Toggle in TUI via `/compact`. Alleen TUI-wi
 | `watch-hermes` + klembord | Matrix Cockpit / `start_hermes.bat` |
 | `[COLOR_*]` tokens in SOUL | Normale markdown `##` / `**` |
 | `show_colors.py` (hardcoded preview) | `scripts/diagnose_renderer.py --show-palettes` |
-| `analyst\SOUL.md` met tokens | `SYNC_SOUL_SNIPPETS.bat` + `scripts/migrate_soul_tokens.py` |
+| SOUL met `[COLOR_*]` tokens | `SYNC_SOUL_SNIPPETS.bat` + `scripts/migrate_soul_tokens.py` |
 
 Archief: [`windows/scripts/institutional/`](../windows/scripts/institutional/README.md).
 
@@ -179,7 +179,7 @@ Archief: [`windows/scripts/institutional/`](../windows/scripts/institutional/REA
 | NFR prose i.p.v. tabel | Model negeert SOUL | `diagnose_renderer.py` toont NFR-lint; normalizer herstelt; SOUL-sync + `/new` |
 | Magenta koppen (oude Rich) | `markdown_legacy` | `assistant_render_style: institutional_rich` |
 | Blauw i.p.v. goud (UI) | Legacy cmd of `skin: slate` | Windows Terminal + `skin: default` |
-| Structuur alleen bij analyst | Geen SOUL-sync | `SYNC_SOUL_SNIPPETS.bat` + nieuwe sessie |
+| Geen institutioneel format | Geen SOUL-sync | `SYNC_SOUL_SNIPPETS.bat` + nieuwe sessie (`/new`) |
 | TUI andere kleuren dan CLI | Normaal vóór rich_output | Zorg dat `agent/rich_output.py` aanwezig is |
 
 ## Legal SOUL opnieuw deployen

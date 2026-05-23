@@ -34,8 +34,6 @@ $requiredTemplates = @(
 
     'docs/templates/SOUL_LEGAL_DOMAIN.md',
 
-    'docs/templates/SOUL_ANALYST_DOMAIN.md',
-
     'docs/templates/SOUL_ACADEMICS_DOMAIN.md',
 
     'docs/templates/SOUL_OPERATIONS_DOMAIN.md',
@@ -190,9 +188,19 @@ if (-not (Test-Path -LiteralPath $profilesDir)) {
 
 
 
+$allowedProfiles = Get-DomainSoulProfileNames
+
 $failures = @()
 
 Get-ChildItem -LiteralPath $profilesDir -Directory | Sort-Object Name | ForEach-Object {
+
+    if ($_.Name -notin $allowedProfiles) {
+
+        $failures += "$($_.Name): geen domeinprofiel (niet in domain_toolsets.yaml; bv. orphan analyst - map verwijderen)"
+
+        return
+
+    }
 
     $soulPath = Join-Path $_.FullName 'SOUL.md'
 
@@ -224,13 +232,13 @@ if ($failures.Count -gt 0) {
 
 
 
-$soulCount = (Get-ChildItem -LiteralPath $profilesDir -Directory | Where-Object {
+$soulCount = @($allowedProfiles | Where-Object {
 
-    Test-Path -LiteralPath (Join-Path $_.FullName 'SOUL.md')
+    Test-Path -LiteralPath (Join-Path $profilesDir "$_\SOUL.md")
 
 }).Count
 
-Write-Host "[OK] Runtime anatomy op $soulCount profiel(en)" -ForegroundColor Green
+Write-Host "[OK] Runtime anatomy op $soulCount domeinprofiel(en) (van $($allowedProfiles.Count) verwacht)" -ForegroundColor Green
 
 exit 0
 

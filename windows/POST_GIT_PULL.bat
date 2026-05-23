@@ -20,6 +20,12 @@ set "HERMES_SKIP_PAUSE=1"
 call "%~dp0SYNC_TRUST_RUNTIME.bat"
 set "HERMES_SKIP_PAUSE="
 echo.
+echo [INFO] SOUL domein-templates (13 profielen: repo -^> runtime)...
+set "HERMES_SKIP_PAUSE=1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_all_domain_souls_from_templates.ps1"
+set "HERMES_SKIP_PAUSE="
+echo [TIP] Nieuwe chat in Hermes: /new
+echo.
 echo [INFO] Domein-toolsets (platform_toolsets.cli)...
 set "HERMES_SKIP_PAUSE=1"
 call "%~dp0SYNC_DOMAIN_TOOLSETS.bat"

@@ -360,11 +360,25 @@ try {
             }
 
             if ($script:UpstreamExitCode -eq 0) {
+                $launchSoul = Join-Path $repo 'windows/scripts/launch_soul_anatomy_deploy.ps1'
+                if (Test-Path -LiteralPath $launchSoul) {
+                    Write-Step 'SOUL anatomy deploy (13 templates + snippets)...'
+                    $env:HERMES_SKIP_PAUSE = '1'
+                    & $launchSoul -RepoRoot $repo -Force -Quiet
+                    if ($LASTEXITCODE -ne 0) {
+                        Write-Warn 'launch_soul_anatomy_deploy.ps1 faalde — draai APPLY_SOUL_ANATOMY_RUNTIME.bat handmatig.'
+                    } else {
+                        Write-Ok 'SOUL anatomy deploy toegepast.'
+                    }
+                }
+            }
+
+            if ($script:UpstreamExitCode -eq 0) {
                 $instPs1 = Join-Path $repo 'windows/apply_institutional_runtime.ps1'
                 if (Test-Path -LiteralPath $instPs1) {
-                    Write-Step 'Institutioneel runtime (display + SOUL, geen E2E)...'
+                    Write-Step 'Institutioneel runtime (display + SOUL snippets indien nodig, geen E2E)...'
                     $env:HERMES_SKIP_PAUSE = '1'
-                    & $instPs1 -SkipE2E -NoPause
+                    & $instPs1 -SkipE2E -NoPause -SkipSoul
                     if ($LASTEXITCODE -ne 0) {
                         Write-Warn 'apply_institutional_runtime.ps1 faalde — draai APPLY_INSTITUTIONAL_RUNTIME.bat handmatig.'
                     } else {

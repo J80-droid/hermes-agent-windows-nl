@@ -187,7 +187,17 @@ if !errorLevel! neq 0 (
 
 :after_setup
 
-rem --- Institutioneel runtime (display alle profielen + SOUL; E2E alleen met flag) ---
+rem --- SOUL anatomy deploy (13 templates + snippets wanneer repo bron nieuwer dan stamp) ---
+if not defined HERMES_SKIP_SOUL_DEPLOY_ON_START (
+  set "HERMES_REPO_ROOT=!REPO_ROOT!"
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/scripts/launch_soul_anatomy_deploy.ps1" -RepoRoot "!REPO_ROOT!"
+  if !errorLevel! neq 0 (
+    echo %GOUD%[WARN] SOUL anatomy deploy mislukt ^(exit !errorLevel!^) — start gaat door.%RESET%
+    echo [%DATE% %TIME%] WARN: soul anatomy deploy exit !errorLevel! >> "%LAUNCH_LOG%"
+  )
+)
+
+rem --- Institutioneel runtime (display alle profielen + SOUL snippets indien nodig; E2E alleen met flag) ---
 if not defined HERMES_SKIP_INSTITUTIONAL_RUNTIME (
   set "HERMES_REPO_ROOT=!REPO_ROOT!"
   set "INST_PS_ARGS="

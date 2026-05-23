@@ -23,7 +23,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 
 | Taak | Script |
 | ---- | ------ |
-| Hermes starten | `launch_hermes.bat` / `run_hermes.ps1` (lichte bootstrap; geen volledige SETUP) |
+| Hermes starten | `launch_hermes.bat` / `run_hermes.ps1` (bootstrap + SOUL anatomy stamp + display) |
 | Volledige setup | `SETUP_HERMES.bat` of `launch_hermes.bat --setup` |
 | RAG-index bijwerken | `scripts/update_knowledge.bat` |
 | Doctor / fixes | `DOCTOR_FIX.bat` |
@@ -34,7 +34,8 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | Toolsets per profiel | `hermes -p <naam> tools` of `SYNC_DOMAIN_TOOLSETS.bat` |
 | HERMES_HOME controleren | `scripts\verify_hermes_home.ps1` |
 | Profielwissel E2E-audit | `audits\RUN_PROFILE_SWITCH_E2E.bat` |
-| SOUL anatomy (shared snippets, 7 blokken) | `SYNC_SOUL_SNIPPETS.bat` → `scripts\sync_soul_anatomy_snippets.ps1` — zie `docs\SOUL_ANATOMY_SPEC.md` |
+| SOUL anatomy bij start (stamp) | `launch_soul_anatomy_deploy.ps1` via `launch_hermes.bat` — 13 templates + snippets indien repo gewijzigd |
+| SOUL anatomy (handmatig) | `APPLY_SOUL_ANATOMY_RUNTIME.bat` of `SYNC_SOUL_SNIPPETS.bat` — zie `docs\SOUL_ANATOMY_SPEC.md` |
 | SOUL anatomy runtime (templates + snippets + E2E) | `APPLY_SOUL_ANATOMY_RUNTIME.bat` |
 | SOUL legacy → anatomy | `MIGRATE_SOUL_ANATOMY.bat` |
 | Trust & Forensic (legal + SOUL + memory + J.) | `SYNC_TRUST_RUNTIME.bat` (dagelijks) / `APPLY_TRUST_PROTOCOL.bat` (incl. scrub) — `docs\TRUST_FORENSIC_PROTOCOL.md` |

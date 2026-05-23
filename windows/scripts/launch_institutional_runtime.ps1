@@ -1,4 +1,5 @@
-# Institutioneel runtime vóór Hermes-chat: display (alle profielen) + SOUL-sync.
+# Institutioneel runtime vóór Hermes-chat: display (alle profielen) + SOUL-snippet-sync indien nodig.
+# Volledige SOUL anatomy (13 templates) gebeurt in launch_soul_anatomy_deploy.ps1.
 # E2E alleen met -RunE2E of HERMES_INSTITUTIONAL_E2E_ON_START=1 (traag; niet standaard).
 param(
     [string]$RepoRoot = '',
@@ -7,6 +8,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+Import-Module (Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1') -Force
+
 if (-not $RepoRoot -and $env:HERMES_REPO_ROOT) {
     $RepoRoot = $env:HERMES_REPO_ROOT
 }
@@ -28,19 +31,12 @@ if ($env:HERMES_SKIP_INSTITUTIONAL_RUNTIME -eq '1') {
 }
 
 $runE2e = $RunE2E.IsPresent -or $env:HERMES_INSTITUTIONAL_E2E_ON_START -eq '1'
-$stampDir = Join-Path $env:LOCALAPPDATA 'hermes'
-if (-not (Test-Path -LiteralPath $stampDir)) {
-    $stampDir = Join-Path $env:USERPROFILE '.hermes'
-}
+$stampDir = Get-HermesRoot
 $stampFile = Join-Path $stampDir 'launch_institutional_runtime.stamp'
 
 $watchFiles = @(
     (Join-Path $RepoRoot 'windows/team_display.defaults'),
     (Join-Path $RepoRoot 'windows/scripts/apply_team_display_profiles.py'),
-    (Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_INTERACTION.md'),
-    (Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md'),
-    (Join-Path $RepoRoot 'windows/scripts/sync_soul_interaction_snippet.ps1'),
-    (Join-Path $RepoRoot 'windows/scripts/sync_soul_output_format_snippet.ps1'),
     (Join-Path $RepoRoot 'windows/apply_institutional_runtime.ps1')
 ) | Where-Object { Test-Path -LiteralPath $_ }
 
@@ -64,7 +60,12 @@ if (-not $needRun) {
 
 $runtimePs1 = Join-Path $RepoRoot 'windows/apply_institutional_runtime.ps1'
 $runtimeArgs = @{ SkipE2E = (-not $runE2e); NoPause = $true }
-Write-Host '[INFO] Institutioneel runtime (display + SOUL' -NoNewline -ForegroundColor Cyan
+if (Test-SoulAnatomyDeployJustRan) {
+    $runtimeArgs['SkipSoul'] = $true
+}
+
+Write-Host '[INFO] Institutioneel runtime (display' -NoNewline -ForegroundColor Cyan
+if (-not $runtimeArgs['SkipSoul']) { Write-Host ' + SOUL snippets' -NoNewline -ForegroundColor Cyan }
 if ($runE2e) { Write-Host ' + E2E' -NoNewline -ForegroundColor Cyan }
 Write-Host ')...' -ForegroundColor Cyan
 
@@ -74,7 +75,8 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 if (-not (Test-Path -LiteralPath $stampDir)) {
     New-Item -ItemType Directory -Path $stampDir -Force | Out-Null
 }
-Set-Content -LiteralPath $stampFile -Value (Get-Date -Format 'o') -Encoding utf8
+$utf8 = [System.Text.UTF8Encoding]::new($false)
+[System.IO.File]::WriteAllText($stampFile, (Get-Date -Format 'o'), $utf8)
 Write-Host '[OK] Institutioneel runtime toegepast.' -ForegroundColor Green
 
 $noticeFile = Join-Path $stampDir 'institutional_new_chat_required.json'

@@ -103,6 +103,7 @@ function Get-HermesWindowsLocalAssetsManifest {
                 'ensure_hermes_python.ps1',
                 'launch_bootstrap.ps1',
                 'launch_institutional_runtime.ps1',
+                'launch_soul_anatomy_deploy.ps1',
                 'rag_python_resolve.ps1',
                 'institutional_p0_p1.bat',
                 'verify_hermes_home.ps1'

@@ -31,12 +31,6 @@ if (-not $SkipDisplay) {
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
-$manifestDir = Join-Path $env:LOCALAPPDATA 'hermes\soul_manifests'
-if (-not (Test-Path -LiteralPath $manifestDir)) {
-    New-Item -ItemType Directory -Path $manifestDir -Force | Out-Null
-}
-$manifestStamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-
 if (-not $SkipSoul) {
     & (Join-Path $scriptRoot 'scripts\sync_soul_anatomy_snippets.ps1') -Force -RepoRoot $repoRoot
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

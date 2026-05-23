@@ -9,7 +9,7 @@ Canonieke operationele docs staan onder **`%USERPROFILE%\data\`** en in profiele
 | `%USERPROFILE%\data\STATUS.md` | Dagelijks overzicht, launchers, volgende stappen |
 | `%USERPROFILE%\data\RECOVERY.md` | Herstel, upstream update, taakbalk |
 | `%LOCALAPPDATA%\hermes\profiles\core\KANBAN_WORKFLOWS.md` | Kanban-orchestratie (profiel core) |
-| `%LOCALAPPDATA%\hermes\profiles\<naam>\SOUL.md` | Persona per profiel (9 profielen) |
+| `%LOCALAPPDATA%\hermes\profiles\<naam>\SOUL.md` | Persona per profiel (13 domeinen; deploy uit repo, niet in git) |
 
 Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTREAM_SYNC.md`: controleer of bovenstaande bestanden dezelfde paden tonen.
 
@@ -18,7 +18,8 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 | Taak | Commando |
 | ---- | -------- |
 | Upstream / fork update | `windows\UPDATE_HERMES.bat` (verify in keten via `.ps1`, geen pause — zie `windows\UPSTREAM_SYNC.md`) |
-| Na `git pull` (andere machine of na grote wijziging) | `windows\POST_GIT_PULL.bat` |
+| Na `git pull` (andere machine of na grote wijziging) | `windows\POST_GIT_PULL.bat` (trust + **SOUL templates 13 profielen** + toolsets) |
+| Hermes starten (stamp SOUL deploy) | `start_hermes.bat` → `launch_soul_anatomy_deploy.ps1` (automatisch indien repo bron gewijzigd) |
 | SOUL Interaction + Outputformaat naar alle profielen | `windows\SYNC_SOUL_SNIPPETS.bat` |
 | Runtime SOUL in backup | `windows\MANAGE_BACKUPS.bat` (stap `backup_soul_profiles`) |
 | Alleen persona's uit backup | `restore_from_backup.ps1 -RestoreRuntimePersonas` (SOUL + `LEGAL_ACTIVE_MATTERS.md`) |

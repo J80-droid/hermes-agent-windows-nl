@@ -107,6 +107,6 @@ Voor korte feitelijke vragen: `<institutional_check>` mag weggelaten; typografie
 
 ### Profiel-specifiek
 
-- Legal/analyst: `[Bron: bestandsnaam]` bij feiten uit dossier.
+- Legal/dossier: `[Bron: bestandsnaam]` bij feiten uit dossier.
 - Legal: bij analyse/dossier — volledige structuur, geen compact modus.
 - Geen emoji. Objectieve toon.

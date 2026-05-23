@@ -1,7 +1,8 @@
 # Migrate legacy SOUL.md headers naar anatomy-structuur (dry-run standaard).
 param(
     [string]$HermesRoot = '',
-    [string]$Profile = '',
+    [Alias('Profile')]
+    [string]$ProfileName = '',
     [switch]$Apply
 )
 
@@ -10,8 +11,8 @@ Import-Module (Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1') -Force
 
 $root = if ($HermesRoot) { (Resolve-Path -LiteralPath $HermesRoot).Path } else { Get-HermesRoot }
 $targets = Get-SoulTargets -HermesRoot $root
-if ($Profile) {
-    $targets = $targets | Where-Object { $_ -match "profiles\\$([regex]::Escape($Profile))\\SOUL\.md$" -or ($Profile -eq 'root' -and $_ -match '\\SOUL\.md$') }
+if ($ProfileName) {
+    $targets = $targets | Where-Object { $_ -match "profiles\\$([regex]::Escape($ProfileName))\\SOUL\.md$" }
 }
 
 $headerMap = [ordered]@{
@@ -30,7 +31,7 @@ $legacyPatterns = @(
     '^## Tone\s'
 )
 
-function Ensure-CommunicationStyleWrapper {
+function Repair-SoulCommunicationStyleHeader {
     param([string]$Content)
     if ($Content -match '(?ms)^## Communication Style\s') { return $Content }
     if ($Content -notmatch '(?ms)^### Tone\s') { return $Content }
@@ -39,12 +40,12 @@ function Ensure-CommunicationStyleWrapper {
 
 $changed = 0
 foreach ($path in $targets) {
-    $content = Get-Content -LiteralPath $path -Raw -Encoding UTF8
+    $content = Get-SoulFileContent -Path $path
     $newContent = $content
     foreach ($key in $headerMap.Keys) {
         $newContent = $newContent -replace $key, $headerMap[$key]
     }
-    $newContent = Ensure-CommunicationStyleWrapper $newContent
+    $newContent = Repair-SoulCommunicationStyleHeader -Content $newContent
 
     $remainingLegacy = @()
     foreach ($pat in $legacyPatterns) {
@@ -53,7 +54,6 @@ foreach ($path in $targets) {
 
     if ($newContent -ne $content) {
         $changed++
-        $label = Split-Path $path -Leaf
         Write-Host "[$(if ($Apply) { 'APPLY' } else { 'DRY' })] $path" -ForegroundColor $(if ($Apply) { 'Green' } else { 'Yellow' })
         if ($remainingLegacy.Count -gt 0) {
             Write-Host "  Legacy koppen over (los SYNC_SOUL_SNIPPETS.bat draaien): $($remainingLegacy -join ', ')" -ForegroundColor DarkYellow
@@ -61,7 +61,7 @@ foreach ($path in $targets) {
         if ($Apply) {
             $bak = "$path.backup-anatomy-$(Get-Date -Format 'yyyyMMddHHmmss')"
             Copy-Item -LiteralPath $path -Destination $bak -Force
-            Set-Content -LiteralPath $path -Value $newContent -Encoding UTF8 -NoNewline
+            Set-SoulFileContent -Path $path -Content $newContent
             Write-Host "  Backup: $bak" -ForegroundColor DarkGray
         }
     }

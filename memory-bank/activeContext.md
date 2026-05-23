@@ -14,7 +14,7 @@
 
 **ICT-team uitbreiding** (2026-05-23): 4 nieuwe profielen toegevoegd — `ict`, `security`, `dev`, `data`. Elk met eigen SOUL, lenzen, toolset, RAG-mappen en governance. Security = apart profiel (geen lens) met impact na J.-goedkeuring. E2E audit PASS met alle 13 profielen.
 
-**SOUL Anatomy** (2026-05-23, afgerond + gedocumenteerd): canonieke 10 secties (`docs/SOUL_ANATOMY_SPEC.md`), 14 runtime-profielen (13 domeinen + core + analyst-template), `sync_soul_anatomy_snippets.ps1`, `APPLY_SOUL_ANATOMY_RUNTIME.bat`, BOM-vrije I/O in `SyncSoulSnippet.psm1`, `Test-SoulAnatomyContent` + `RUN_SOUL_ANATOMY_E2E.ps1`, `validate_soul_anatomy.py --all-profiles`. Trust-keten: legal template → volledige snippet-sync. Seed: `hermes_cli/default_soul.py`. Na sync: `/new`.
+**SOUL Anatomy** (2026-05-23): 13 domeinprofielen (`domain_toolsets.yaml`); geen `analyst`-domein. Snippet-sync alleen `profiles/*/SOUL.md` (root SOUL legacy). `Get-DomainSoulProfileNames`, `APPLY_SOUL_ANATOMY_RUNTIME.bat`, BOM-vrije I/O. Na sync: `/new`.
 
 **P0+P1 afgerond**; Windows institutioneel: conda `hermes-env`, WT/skin, API-env sync. Open: bronnen in 7 lege `raw_source_files`-mappen (legal bronnen + submappen actief).
 

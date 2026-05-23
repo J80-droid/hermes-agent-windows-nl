@@ -25,12 +25,29 @@ function Get-HermesRoot {
     return $localRoot
 }
 
+function Get-DomainSoulProfileNames {
+    <#
+    .SYNOPSIS
+        Profielen met SOUL-domein-template (sync met docs/domain_toolsets.yaml).
+        Geen 'analyst' — dat is geen RAG-domein (upstream Kanban-rol / orphan wrapper).
+    #>
+    return @(
+        'core', 'legal', 'academics', 'operations', 'trading', 'gaming',
+        'philosophy', 'logistics', 'ventures', 'ict', 'security', 'dev', 'data'
+    )
+}
+
 function Get-SoulTargets {
-    param([string]$HermesRoot)
+    param(
+        [string]$HermesRoot,
+        [switch]$IncludeRootSoul
+    )
     $root = if ($HermesRoot) { (Resolve-Path -LiteralPath $HermesRoot).Path } else { Get-HermesRoot }
     $targets = @()
-    $rootSoul = Join-Path $root 'SOUL.md'
-    if (Test-Path -LiteralPath $rootSoul) { $targets += $rootSoul }
+    if ($IncludeRootSoul) {
+        $rootSoul = Join-Path $root 'SOUL.md'
+        if (Test-Path -LiteralPath $rootSoul) { $targets += $rootSoul }
+    }
     $profilesDir = Join-Path $root 'profiles'
     if (Test-Path -LiteralPath $profilesDir) {
         Get-ChildItem -LiteralPath $profilesDir -Directory | Sort-Object Name | ForEach-Object {
@@ -259,6 +276,79 @@ function Test-SoulAnatomyContent {
     return @($failures)
 }
 
+function Get-SoulAnatomyDeployStampPath {
+    $stampDir = Get-HermesRoot
+    return Join-Path $stampDir 'soul_anatomy_deploy.stamp'
+}
+
+function Get-SoulAnatomyWatchPaths {
+    param([Parameter(Mandatory)][string]$RepoRoot)
+    $root = (Resolve-Path -LiteralPath $RepoRoot).Path
+    $paths = [System.Collections.Generic.List[string]]::new()
+    $templatesDir = Join-Path $root 'docs\templates'
+    if (Test-Path -LiteralPath $templatesDir) {
+        Get-ChildItem -LiteralPath $templatesDir -File -ErrorAction SilentlyContinue | ForEach-Object {
+            if ($_.Name -like 'SOUL_*_DOMAIN.md' -or
+                $_.Name -eq 'SOUL_CORE_ORCHESTRATOR.md' -or
+                $_.Name -eq 'SOUL_ANATOMY_BASE.md' -or
+                $_.Name -like 'SOUL_SHARED_*.md') {
+                [void]$paths.Add($_.FullName)
+            }
+        }
+    }
+    $spec = Join-Path $root 'docs\SOUL_ANATOMY_SPEC.md'
+    if (Test-Path -LiteralPath $spec) { [void]$paths.Add($spec) }
+    foreach ($rel in @(
+            'windows\scripts\sync_soul_anatomy_snippets.ps1',
+            'windows\scripts\sync_all_domain_souls_from_templates.ps1',
+            'windows\scripts\SyncSoulSnippet.psm1',
+            'windows\scripts\sync_domain_soul_from_template.ps1'
+        )) {
+        $p = Join-Path $root $rel
+        if (Test-Path -LiteralPath $p) { [void]$paths.Add($p) }
+    }
+    return @($paths)
+}
+
+function Test-SoulAnatomyDeployNeeded {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [string]$StampPath = '',
+        [switch]$Force
+    )
+    if ($Force) { return $true }
+    $watchPaths = Get-SoulAnatomyWatchPaths -RepoRoot $RepoRoot
+    if ($watchPaths.Count -eq 0) { return $true }
+    $stamp = if ($StampPath) { $StampPath } else { Get-SoulAnatomyDeployStampPath }
+    if (-not (Test-Path -LiteralPath $stamp)) { return $true }
+    $stampTime = (Get-Item -LiteralPath $stamp).LastWriteTimeUtc
+    foreach ($f in $watchPaths) {
+        if ((Get-Item -LiteralPath $f).LastWriteTimeUtc -gt $stampTime) {
+            return $true
+        }
+    }
+    return $false
+}
+
+function Test-SoulAnatomyDeployJustRan {
+    param([int]$WithinSeconds = 120)
+    $stamp = Get-SoulAnatomyDeployStampPath
+    if (-not (Test-Path -LiteralPath $stamp)) { return $false }
+    $age = (Get-Date).ToUniversalTime() - (Get-Item -LiteralPath $stamp).LastWriteTimeUtc
+    return ($age.TotalSeconds -le $WithinSeconds)
+}
+
+function Set-SoulAnatomyDeployStamp {
+    param([string]$StampPath = '')
+    $stamp = if ($StampPath) { $StampPath } else { Get-SoulAnatomyDeployStampPath }
+    $dir = Split-Path -Parent $stamp
+    if ($dir -and -not (Test-Path -LiteralPath $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
+    $utf8 = [System.Text.UTF8Encoding]::new($false)
+    [System.IO.File]::WriteAllText($stamp, (Get-Date -Format 'o'), $utf8)
+}
+
 function Set-InstitutionalNewChatReminder {
     param(
         [string]$Reason = 'SOUL/presentatie gewijzigd',
@@ -281,4 +371,4 @@ function Set-InstitutionalNewChatReminder {
     Write-Host "  Rooktest: $SmokeTestPrompt" -ForegroundColor DarkYellow
 }
 
-Export-ModuleMember -Function Sync-SoulSnippet, Get-HermesRoot, Get-SoulTargets, Get-SoulFileContent, Set-SoulFileContent, Set-InstitutionalNewChatReminder, Get-SoulSectionEndPattern, Repair-SoulDuplicateOutputBlocks, Test-SoulAnatomyContent
+Export-ModuleMember -Function Sync-SoulSnippet, Get-HermesRoot, Get-SoulTargets, Get-DomainSoulProfileNames, Get-SoulFileContent, Set-SoulFileContent, Set-InstitutionalNewChatReminder, Get-SoulSectionEndPattern, Repair-SoulDuplicateOutputBlocks, Test-SoulAnatomyContent, Get-SoulAnatomyDeployStampPath, Get-SoulAnatomyWatchPaths, Test-SoulAnatomyDeployNeeded, Test-SoulAnatomyDeployJustRan, Set-SoulAnatomyDeployStamp
