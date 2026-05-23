@@ -113,10 +113,11 @@ def skin_markdown_theme() -> Theme:
 
 
 def _display_config() -> dict:
+    """Read display block from current config (not cached module-level CLI_CONFIG)."""
     try:
-        from hermes_cli.config import CLI_CONFIG
+        from hermes_cli.config import load_config_readonly
 
-        block = CLI_CONFIG.get("display")
+        block = load_config_readonly().get("display")
         if isinstance(block, dict):
             return block
     except Exception:
