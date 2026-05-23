@@ -45,7 +45,55 @@ def _parse_defaults(path: Path) -> dict[str, object]:
     return out
 
 
+def _display_drift_messages(root: Path, defaults: dict[str, object]) -> list[str]:
+    """Return human-readable drift lines when live YAML != team_display.defaults."""
+    messages: list[str] = []
+
+    def check_block(label: str, cfg_path: Path) -> None:
+        if not cfg_path.is_file():
+            messages.append(f"{label}: geen config.yaml")
+            return
+        data = yaml.safe_load(cfg_path.read_text(encoding="utf-8")) or {}
+        display = data.get("display")
+        block = display if isinstance(display, dict) else {}
+        for key, expected in defaults.items():
+            actual = block.get(key)
+            if actual != expected:
+                messages.append(
+                    f"{label}: display.{key}={actual!r} (verwacht {expected!r})"
+                )
+
+    check_block("root", root / "config.yaml")
+    profiles_dir = root / "profiles"
+    if profiles_dir.is_dir():
+        for prof_dir in sorted(profiles_dir.iterdir()):
+            if prof_dir.is_dir():
+                check_block(prof_dir.name, prof_dir / "config.yaml")
+    else:
+        messages.append("profiles: map ontbreekt")
+    return messages
+
+
+def check_display_drift() -> int:
+    repo = Path(__file__).resolve().parents[2]
+    defaults_path = repo / "windows" / "team_display.defaults"
+    if not defaults_path.is_file():
+        print(f"[ERROR] Ontbrekend: {defaults_path}", file=sys.stderr)
+        return 1
+    defaults = _parse_defaults(defaults_path)
+    messages = _display_drift_messages(_hermes_root(), defaults)
+    if not messages:
+        print("[OK] geen team display drift")
+        return 0
+    for line in messages:
+        print(f"[DRIFT] {line}", file=sys.stderr)
+    return 1
+
+
 def main() -> int:
+    if "--check-drift" in sys.argv:
+        return check_display_drift()
+
     repo = Path(__file__).resolve().parents[2]
     defaults_path = repo / "windows" / "team_display.defaults"
     if not defaults_path.is_file():

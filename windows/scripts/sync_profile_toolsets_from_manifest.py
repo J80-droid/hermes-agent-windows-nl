@@ -210,6 +210,34 @@ def _copy_soul_from_profile(hermes: Path, canon: str, clone_from: str) -> bool:
     return True
 
 
+def _apply_trust_memory_limits(repo: Path, *, dry_run: bool = False) -> bool:
+    """Idempotent: zet memory 4000/1800 op root + alle profielen."""
+    script = repo / "windows" / "scripts" / "apply_trust_memory_limits.ps1"
+    if not script.is_file():
+        print(f"[WARN] apply_trust_memory_limits ontbreekt: {script}")
+        return True
+    if dry_run:
+        print("[DRY] zou apply_trust_memory_limits.ps1 draaien")
+        return True
+    r = subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(script),
+        ],
+        cwd=str(repo),
+        check=False,
+    )
+    if r.returncode != 0:
+        print(f"[FAIL] apply_trust_memory_limits exit {r.returncode}")
+        return False
+    print("[OK] trust memory limits toegepast")
+    return True
+
+
 def _provision_profile(
     hermes: Path,
     repo: Path,
@@ -250,7 +278,8 @@ def _provision_profile(
         (profile_dir / subdir).mkdir(parents=True, exist_ok=True)
 
     cfg_path = profile_dir / "config.yaml"
-    if not cfg_path.is_file():
+    created_new_config = not cfg_path.is_file()
+    if created_new_config:
         _write_yaml(
             cfg_path,
             {"platform_toolsets": {"cli": []}},
@@ -281,6 +310,10 @@ def _provision_profile(
         strip_model_block_from_profile_config(profile_dir)
     except Exception:
         pass
+
+    if created_new_config:
+        if not _apply_trust_memory_limits(repo, dry_run=dry_run):
+            return False
 
     print(f"[OK] {name}: profiel aangemaakt ({profile_dir})")
     return True

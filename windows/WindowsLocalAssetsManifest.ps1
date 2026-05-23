@@ -3,6 +3,10 @@
 # RelPath = pad onder windows\ of repo-root (DestRoot = repo voor bv. scripts/windows/setup_hermes_windows.ps1).
 # Setup-PS1: canoniek scripts/windows/setup_hermes_windows.ps1; windows/setup_hermes_windows.ps1 = wrapper.
 
+$manifestHelperRoot = $PSScriptRoot
+. (Join-Path $manifestHelperRoot 'HermesAuditBundleFiles.ps1')
+. (Join-Path $manifestHelperRoot 'HermesCriticalWindowsRepoPaths.ps1')
+
 function Get-HermesWindowsLocalAssetsManifest {
     $winFiles = @(
         'start_hermes.bat',
@@ -67,6 +71,10 @@ function Get-HermesWindowsLocalAssetsManifest {
         'restore_local_assets.ps1',
         'sync_local_assets_to_backup.ps1',
         'WindowsLocalAssetsManifest.ps1',
+        'HermesAuditBundleFiles.ps1',
+        'HermesTrustForensicPatterns.ps1',
+        'HermesTrustForensicProfileChecks.ps1',
+        'HermesCriticalWindowsRepoPaths.ps1',
         'README.md',
         'DELEN_MET_VRIENDEN.md',
         'INSTITUTIONAL.md',
@@ -91,154 +99,66 @@ function Get-HermesWindowsLocalAssetsManifest {
         @{ RelPath = $_; DestRoot = 'repo' }
     }
 
-    $subBundles = @(
-        @{
-            Sub     = 'scripts'
-            Files   = @(
-                'update_knowledge.bat',
-                'update_knowledge.ps1',
-                'rag_ingest_perf_defaults.ps1',
-                'run_rag_ingest.ps1',
-                'check_rag_ingest_running.ps1',
-                'enable_console_ansi.ps1',
-                'install_rag_extras.ps1',
-                'ensure_hermes_python.ps1',
-                'launch_bootstrap.ps1',
-                'launch_institutional_runtime.ps1',
-                'launch_soul_anatomy_deploy.ps1',
-                'rag_python_resolve.ps1',
-                'institutional_p0_p1.bat',
-                'verify_hermes_home.ps1',
-                'HermesBackupCommon.ps1',
-                'apply_team_display_profiles.py'
-            )
-            RepoSub = 'scripts'
-        },
-        @{
-            Sub     = 'tests'
-            Files   = @('RUN_PYTEST.ps1', 'RUN_PSScriptAnalyzer.ps1', 'README.md', 'RUN_PYTEST.bat', 'RUN_PSScriptAnalyzer.bat')
-            RepoSub = 'tests'
-        },
-        @{
-            Sub     = 'audits'
-            Files   = @(
-                'README.md',
-                'RUN_AUDITS.ps1', 'RUN_AUDITS.bat',
-                'RUN_PROFILE_SWITCH_E2E.ps1', 'RUN_PROFILE_SWITCH_E2E.bat',
-                'RUN_INSTITUTIONAL_E2E.ps1', 'RUN_INSTITUTIONAL_E2E.bat',
-                'RUN_BACKUP_E2E.ps1', 'RUN_BACKUP_E2E.bat',
-                'RUN_LEGAL_DOMAIN_E2E.ps1', 'RUN_LEGAL_DOMAIN_E2E.bat',
-                'RUN_SOUL_DEPLOY_START_E2E.ps1', 'RUN_SOUL_DEPLOY_START_E2E.bat'
-            )
-            RepoSub = 'audits'
-        },
-        @{
-            Sub     = 'tools'
-            Files   = @('generate_colored_hermes_icons.py')
-            RepoSub = 'tools'
-        }
-    )
+    $auditBundleFiles = Get-HermesAuditBundleFileList
 
-    return @{
-        WindowsFiles = $winFiles
+    $scriptsFiles = @(
+        'update_knowledge.bat',
+        'update_knowledge.ps1',
+        'rag_ingest_perf_defaults.ps1',
+        'run_rag_ingest.ps1',
+        'check_rag_ingest_running.ps1',
+        'enable_console_ansi.ps1',
+        'install_rag_extras.ps1',
+        'ensure_hermes_python.ps1',
+        'launch_bootstrap.ps1',
+        'launch_institutional_runtime.ps1',
+        'launch_soul_anatomy_deploy.ps1',
+        'rag_python_resolve.ps1',
+        'institutional_p0_p1.bat',
+        'verify_hermes_home.ps1',
+        'HermesBackupCommon.ps1',
+        'apply_team_display_profiles.py'
+    )
+    $scriptsBundle = @{
+        Sub     = 'scripts'
+        Files   = $scriptsFiles
+        RepoSub = 'scripts'
+    }
+    $testsBundle = @{
+        Sub     = 'tests'
+        Files   = @('RUN_PYTEST.ps1', 'RUN_PSScriptAnalyzer.ps1', 'README.md', 'RUN_PYTEST.bat', 'RUN_PSScriptAnalyzer.bat')
+        RepoSub = 'tests'
+    }
+    $auditsBundle = @{
+        Sub     = 'audits'
+        Files   = $auditBundleFiles
+        RepoSub = 'audits'
+    }
+    $toolsBundle = @{
+        Sub     = 'tools'
+        Files   = @('generate_colored_hermes_icons.py')
+        RepoSub = 'tools'
+    }
+    $subBundles = @($scriptsBundle, $testsBundle, $auditsBundle, $toolsBundle)
+
+    $manifestResult = @{
+        WindowsFiles  = $winFiles
         RepoRootFiles = $repoRootFiles
         SubBundles    = $subBundles
         AssetFiles    = @('Hermes_logo.png', 'hermes_logo.png', 'banner.png')
     }
+    return $manifestResult
 }
 
 function Get-HermesCriticalWindowsRepoPath {
-    # Forward slashes in paden (IDE-vriendelijk; Join-Path normaliseert naar backslash).
-    return @(
-        'windows/backup_hermes.ps1',
-        'windows/backup_soul_profiles.ps1',
-        'windows/restore_from_backup.ps1',
-        'windows/scripts/HermesBackupCommon.ps1',
-        'windows/scripts/apply_team_display_profiles.py',
-        'scripts/verify_institutional_guard.py',
-        'docs/INSTITUTIONAL_PORTING_GUIDE.md',
-        'windows/SYNC_SOUL_SNIPPETS.bat',
-        'windows/SYNC_TRUST_RUNTIME.bat',
-        'windows/SYNC_TRUST_PROTOCOL.bat',
-        'windows/APPLY_TRUST_PROTOCOL.bat',
-        'windows/scripts/sync_soul_interaction_snippet.ps1',
-        'windows/scripts/sync_soul_output_format_snippet.ps1',
-        'windows/scripts/sync_soul_advisory_snippet.ps1',
-        'windows/scripts/sync_profile_memories.ps1',
-        'windows/scripts/log_trust_memory_user_snapshot.ps1',
-        'windows/scripts/sync_soul_tool_governance_snippet.ps1',
-        'windows/scripts/sync_profile_toolsets_from_manifest.ps1',
-        'windows/SYNC_DOMAIN_TOOLSETS.bat',
-        'docs/domain_toolsets.yaml',
-        'docs/DOMAIN_TOOLSET_AUDIT.md',
-        'docs/templates/SOUL_SHARED_TOOL_GOVERNANCE.md',
-        'windows/scripts/scrub_identity_to_J.ps1',
-        'windows/scripts/apply_trust_memory_limits.ps1',
-        'docs/TRUST_FORENSIC_PROTOCOL.md',
-        'docs/templates/SOUL_SHARED_ADVISORY.md',
-        'docs/templates/MEMORY_CANONICAL_SEED.md',
-        'docs/templates/MEMORY_ENV_VAULT.example',
-        'docs/MEMORY_ARCHITECTURE.md',
-        'windows/MANAGE_BACKUPS.bat',
-        'windows/RESTORE_FROM_BACKUP.bat',
-        'windows/launch_hermes.bat',
-        'windows/sync_local_assets_to_backup.ps1',
-        'windows/restore_local_assets.ps1',
-        'windows/scripts/rag_ingest_perf_defaults.ps1',
-        'windows/upstream_sync.ps1',
-        'windows/UPSTREAM_SYNC.md',
-        'windows/FIX_TASKBAR_ICONS.bat',
-        'windows/POST_GIT_PULL.bat',
-        'windows/fix_hermes_taskbar_pins.ps1',
-        'windows/HermesSetupScriptPolicy.ps1',
-        'windows/scripts/verify_taskbar_shortcut_icons.ps1',
-        'windows/SETUP_HERMES.bat',
-        'windows/SWITCH_PROFILE.bat',
-        'windows/SWITCH_PROFILE_AND_CHAT.bat',
-        'windows/scripts/verify_hermes_home.ps1',
-        'windows/audits/RUN_AUDITS.ps1',
-        'windows/audits/RUN_AUDITS.bat',
-        'windows/audits/RUN_PROFILE_SWITCH_E2E.ps1',
-        'windows/audits/RUN_PROFILE_SWITCH_E2E.bat',
-        'windows/audits/RUN_INSTITUTIONAL_E2E.ps1',
-        'windows/audits/RUN_INSTITUTIONAL_E2E.bat',
-        'windows/audits/RUN_MEMORY_ARCHITECTURE_E2E.ps1',
-        'windows/audits/RUN_MEMORY_ARCHITECTURE_E2E.bat',
-        'windows/audits/RUN_IDE_MAINTENANCE_E2E.ps1',
-        'windows/audits/RUN_IDE_MAINTENANCE_E2E.bat',
-        'windows/audits/RUN_BACKUP_E2E.ps1',
-        'windows/audits/RUN_BACKUP_E2E.bat',
-        'tests/windows/test_backup_runtime.ps1',
-        'windows/audits/RUN_LEGAL_DOMAIN_E2E.ps1',
-        'windows/audits/RUN_LEGAL_DOMAIN_E2E.bat',
-        'windows/audits/RUN_TOOLSET_DOMAIN_E2E.ps1',
-        'windows/audits/RUN_TOOLSET_DOMAIN_E2E.bat',
-        'windows/audits/RUN_SOUL_DEPLOY_START_E2E.ps1',
-        'windows/audits/RUN_SOUL_DEPLOY_START_E2E.bat',
-        'windows/scripts/migrate_legal_source_layout.ps1',
-        'windows/scripts/MIGRATE_LEGAL_LAYOUT.bat',
-        'docs/LEGAL_ROLLOUT_CHECKLIST.md',
-        'windows/scripts/sync_legal_soul_from_template.ps1',
-        'windows/scripts/SYNC_LEGAL_SOUL_FROM_TEMPLATE.bat',
-        'docs/LEGAL_TAXONOMY.md',
-        'docs/LEGAL_DOMAIN_ARCHITECTURE.md',
-        'docs/templates/SOUL_LEGAL_DOMAIN.md',
-        'docs/templates/SOUL_ICT_DOMAIN.md',
-        'docs/templates/SOUL_SECURITY_DOMAIN.md',
-        'docs/templates/SOUL_DEV_DOMAIN.md',
-        'docs/templates/SOUL_DATA_DOMAIN.md',
-        'scripts/windows/setup_hermes_windows.ps1',
-        'scripts/rag_pipeline/lancedb_maintenance.py',
-        'scripts/audit_skill_drift.py',
-        'pyproject.toml'
-    )
+    Get-HermesCriticalWindowsRepoPathList
 }
 
 function Resolve-HermesManifestSourcePath {
     param(
         [Parameter(Mandatory)][string]$RepoRoot,
         [Parameter(Mandatory)][string]$WindowsDir,
-        [Parameter(Mandatory)]$Entry
+        [Parameter(Mandatory)][object]$Entry
     )
     switch ($Entry.DestRoot) {
         'repo' { return Join-Path $RepoRoot $Entry.RelPath }
@@ -250,7 +170,7 @@ function Resolve-HermesManifestSourcePath {
 function Resolve-HermesManifestDestPath {
     param(
         [Parameter(Mandatory)][string]$AssetsDir,
-        [Parameter(Mandatory)]$Entry
+        [Parameter(Mandatory)][object]$Entry
     )
     if ($Entry.DestRoot -eq 'repo') {
         return Join-Path $AssetsDir $Entry.RelPath
@@ -261,7 +181,7 @@ function Resolve-HermesManifestDestPath {
 function Resolve-HermesSubBundleSource {
     param(
         [Parameter(Mandatory)][string]$WindowsDir,
-        [Parameter(Mandatory)]$Bundle,
+        [Parameter(Mandatory)][object]$Bundle,
         [Parameter(Mandatory)][string]$FileName
     )
     Join-Path $WindowsDir (Join-Path $Bundle.RepoSub $FileName)

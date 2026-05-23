@@ -753,7 +753,10 @@ class TurnController {
       this.streamTimer = null
       const raw = this.bufRef.trimStart()
       const visible = hasReasoningTag(raw) ? splitReasoning(raw).text : raw
-      patchTurnState({ streaming: boundedLiveRenderText(visible) })
+      patchTurnState({
+        streamOutputTokens: estimateTokensRough(raw),
+        streaming: boundedLiveRenderText(visible)
+      })
     }, this.streamDelay)
   }
 
@@ -768,7 +771,7 @@ class TurnController {
     this.interrupted = false
     this.persistedToolLabels.clear()
     patchUiState({ busy: true })
-    patchTurnState({ activity: [], outcome: '', subagents: [], toolTokens: 0, tools: [], turnTrail: [] })
+    patchTurnState({ activity: [], outcome: '', streamOutputTokens: 0, subagents: [], toolTokens: 0, tools: [], turnTrail: [] })
   }
 
   upsertSubagent(

@@ -34,6 +34,8 @@
 - [x] IDE conda: `.vscode/settings.json` + `.cursor/rules/python-conda.mdc` + `docs/IDE_VSCODE_SETTINGS.example.json`
 - [x] IDE-onderhoud baseline/audit: `windows/audits/IDE_MAINTENANCE_BASELINE_2026-05-23.md`, `LANCEDB_SCHEMA_AUDIT_*.md`
 - [x] IDE-onderhoud E2E: `RUN_IDE_MAINTENANCE_E2E.ps1` + `.bat` (15 stappen landkaart, rapport `IDE_MAINTENANCE_E2E_REPORT_*.md`); `RUN_AUDITS -IncludeIdeMaintenanceE2E`
+- [x] Memory productie-poort: `RUN_MEMORY_PRODUCTION_GATE.ps1` + `.bat`; trust limits 4000/1800 alle profielen; `MemoryAuditCommon.ps1`, `audit_profile_memories.ps1`
+- [x] Trust E2E PSES-refactor: launcher + `TrustForensicE2E.core.ps1`; manifest-paden in `HermesCriticalWindowsRepoPaths.ps1`; `VALIDATE_AUDIT_PS1_SYNTAX.bat`
 - [x] TUI statusbalk-kosten (rich): `usage_snapshot.py`, `usageCostBar.ts`, breakdown pct/USD, turn-delta + tools client-side, `cost_bar_mode`, `/usage` uitbreiding; verify + E2E `RUN_STATUS_BAR_COST_E2E`
 - [x] Taakbalk `windows\*.lnk`: `cmd.exe /c` (+ RAG: `/k`) + gekleurd `.ico` (7 lagen 16–256 px); `FIX_TASKBAR_ICONS.bat`; `POST_GIT_PULL.bat`
 - [x] Icoon-generator: PNG uit `assets/Hermes_logo.png` of `%USERPROFILE%\.hermes\_local_assets\assets\`; geen synthetische H-stub

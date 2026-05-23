@@ -8,11 +8,28 @@ def test_trust_protocol_doc_exists():
     assert (REPO / "docs/TRUST_FORENSIC_PROTOCOL.md").is_file()
 
 
-def test_shared_advisory_template():
-    text = (REPO / "docs/templates/SOUL_SHARED_ADVISORY.md").read_text(encoding="utf-8")
-    assert "Advisory & trust" in text
+def test_shared_advisory_template_deprecated_smoke():
+    """Legacy template; sync-compat only — governance lives in VALUES + TRUST_VERIFICATION."""
+    path = REPO / "docs/templates/SOUL_SHARED_ADVISORY.md"
+    assert path.is_file()
+    text = path.read_text(encoding="utf-8")
+    assert "Advisory" in text or "trust" in text.lower()
+
+
+def test_shared_values_template():
+    text = (REPO / "docs/templates/SOUL_SHARED_VALUES.md").read_text(encoding="utf-8")
+    assert "Values" in text
     assert "pleaser" in text.lower()
-    assert "eigen redenering" in text
+    assert "eigen redenering" in text.lower() or "Ontbrekende informatie" in text
+
+
+def test_shared_trust_verification_template():
+    text = (REPO / "docs/templates/SOUL_SHARED_TRUST_VERIFICATION.md").read_text(
+        encoding="utf-8"
+    )
+    assert "Trust & verification" in text
+    assert "search_knowledge" in text or "RAG" in text
+    assert "deel 1" in text.lower() or "1/N" in text
 
 
 def test_legal_forensic_block():

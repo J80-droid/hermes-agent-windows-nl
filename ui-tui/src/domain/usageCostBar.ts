@@ -1,5 +1,6 @@
 import type { Usage } from '../types.js'
 
+import { formatTurnCostUsd } from './liveTurnCost.js'
 import { formatStatusBarCost } from './usage.js'
 
 export type CostBarMode = 'minimal' | 'rich'
@@ -8,7 +9,13 @@ export type CostBreakdownPct = NonNullable<Usage['cost_breakdown_pct']>
 
 export type StatusBarCostUsage = Pick<
   Usage,
-  'calls' | 'cost_breakdown_pct' | 'cost_status' | 'cost_usd' | 'session_tools_executed' | 'turn_cost_usd'
+  | 'calls'
+  | 'cost_breakdown_pct'
+  | 'cost_status'
+  | 'cost_usd'
+  | 'session_tools_executed'
+  | 'turn_cost_estimated'
+  | 'turn_cost_usd'
 >
 
 const FULL_MIN_WIDTH = 96
@@ -74,7 +81,9 @@ export function formatStatusBarCostRich(
 
   const session = formatUsdCompact(usage.cost_usd)
   const turn =
-    typeof usage.turn_cost_usd === 'number' ? formatUsdCompact(usage.turn_cost_usd) : null
+    typeof usage.turn_cost_usd === 'number'
+      ? formatTurnCostUsd(usage.turn_cost_usd, Boolean(usage.turn_cost_estimated))
+      : null
   const tier = resolveCostBarTier(width, mode)
 
   if (tier === 'session') {

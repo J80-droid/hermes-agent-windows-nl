@@ -35,7 +35,43 @@ Na wijziging in `~/.hermes\.env`: sync uitvoeren, dan nieuwe Hermes-sessie (`/ne
 
 ```bat
 windows\audits\RUN_MEMORY_ARCHITECTURE_E2E.bat
+windows\audits\RUN_MEMORY_PRODUCTION_GATE.bat
 ```
+
+## Productie-checklist
+
+| Stap | Actie | Succes |
+|------|--------|--------|
+| 1 | `apply_trust_memory_limits.ps1` | `[OK]` root + 13 profielen |
+| 2 | `SYNC_HERMES_API_ENV.bat` | vault-paden op alle `.env` |
+| 3 | `scripts\audit_profile_memories.ps1` | geen OVER, geen `Â§`, geen identiteitslek |
+| 4 | `audits\RUN_MEMORY_PRODUCTION_GATE.bat` | PASS |
+| 5 | Hermes **`/new`** | nieuwe sessie laadt config + memory-snapshot |
+
+### Profiel-lek (waarom elk profiel eigen `memory:` nodig heeft)
+
+```mermaid
+flowchart LR
+  root[root config.yaml 4000/1800]
+  prof[profiles/core/config.yaml]
+  load[load_config HERMES_HOME=profiel]
+  root -.->|niet overgeërfd| load
+  prof -->|wint| load
+```
+
+`profile_model_inheritance` past alleen `model` toe; zonder profiel-blok valt runtime terug op default **2200/1375**.
+
+### Frozen snapshot
+
+Memory wordt bij sessiestart ingefroren. Na sync van config, SOUL of MEMORY/USER: altijd **`/new`** — anders draait de agent op oude limieten of oude L1-tekst.
+
+### Gedeelde audit-modules
+
+| Module | Pad |
+|--------|-----|
+| E2E + gate helpers | `windows\scripts\MemoryAuditCommon.ps1` |
+| Profiel-rapport | `windows\scripts\audit_profile_memories.ps1` |
+| Manifest / backup-paden | `windows\HermesAuditBundleFiles.ps1`, `windows\HermesCriticalWindowsRepoPaths.ps1` |
 
 ## Gerelateerd
 

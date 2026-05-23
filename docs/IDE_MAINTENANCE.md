@@ -12,6 +12,11 @@ windows\LANCEDB_MAINTENANCE.bat --list
 windows\LANCEDB_MAINTENANCE.bat --inspect
 windows\LANCEDB_MAINTENANCE.bat --init-missing
 windows\audits\RUN_IDE_MAINTENANCE_E2E.bat -ApplyDisplayFix -SkipMergePreview
+windows\audits\RUN_STATUS_BAR_COST_E2E.bat
+windows\audits\RUN_STATUS_BAR_COST_E2E.bat -ApplyDisplayFix
+windows\audits\RUN_AUDITS.bat -IncludeStatusBarCostE2E
+windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat
+windows\audits\RUN_MEMORY_PRODUCTION_GATE.bat
 ```
 
 | Commando | Doel |
@@ -21,8 +26,14 @@ windows\audits\RUN_IDE_MAINTENANCE_E2E.bat -ApplyDisplayFix -SkipMergePreview
 | `--init-missing` | Lege `knowledge_base` voor domeinen zonder LanceDB-pad (na nieuw domein in `domains.yaml`) |
 | `RUN_IDE_MAINTENANCE_E2E.bat …` | Volledige landkaart-poort (15 stappen); rapport `IDE_MAINTENANCE_E2E_REPORT_*.md` |
 | `RUN_STATUS_BAR_COST_E2E.bat` | TUI statusbalk (rich): `show_cost`, `cost_bar_mode`, breakdown, turn-delta; 10 stappen; rapport `STATUS_BAR_COST_E2E_REPORT_2026-05-23.md` |
+| `RUN_STATUS_BAR_COST_E2E.bat -ApplyDisplayFix` | Zelfde audit + `apply_team_display.ps1` vóóraf (bij display-drift) |
+| `RUN_AUDITS.bat -IncludeStatusBarCostE2E` | Statusbalk E2E in gecombineerde kwaliteitspoort |
+| `VALIDATE_AUDIT_PS1_SYNTAX.bat` | Parser + PSSA op kern-audit-PS1 (bij IDE false positives) |
+| `RUN_MEMORY_PRODUCTION_GATE.bat` | Memory/trust limits + memory E2E + trust E2E + pytest |
 
-**E2E-vlaggen:** `-ApplyDisplayFix` = root + profiel display; `-SkipMergePreview` = geen `git fetch` / merge-tree (sneller).
+**E2E-vlaggen statusbalk:** `-ApplyDisplayFix` = root + alle profielen syncen; `-SkipRuntime` = geen Hermes-home check; `-SkipVitest` = geen npm test.
+
+**E2E-vlaggen IDE:** `-ApplyDisplayFix` = root + profiel display; `-SkipMergePreview` = geen `git fetch` / merge-tree (sneller).
 
 ## Periodiek (handmatig, breder)
 

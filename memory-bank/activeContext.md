@@ -8,13 +8,13 @@
 
 **Institutioneel 10/10 (2026-05-23, afgerond + guardrails):** palet, NFR, normalizer-pariteit, score 10/10, labels verticaal, Web live palette. **Herstel na IDE-drift:** `APPLY_INSTITUTIONAL_RUNTIME.bat` (config + SOUL + E2E 11/11). **Preventie:** `scripts/verify_institutional_guard.py`, drift in `diagnose_renderer.py --verify`, `.cursor/rules/institutional-presentatie.mdc`, `docs/INSTITUTIONAL_PORTING_GUIDE.md`. **Na pull/update/IDE:** `/new` + rooktest.
 
-**TUI statusbalk-kosten (2026-05-23, PASS → rich bar):** `display.show_cost: true` + `cost_bar_mode: rich` team-default; statusbalk `$turn / $session │ cw/out/in/cr │ calls │ tools`; fork-module `hermes_cli/usage_snapshot.py`; `formatStatusBarCostRich` responsive tiers; turn-delta + tool-teller client-side; `/usage` breakdown; verify `scripts/verify_usage_cost_bar.py`; E2E `RUN_STATUS_BAR_COST_E2E.bat`. Na UPDATE/APPLY_TEAM_DISPLAY: Hermes `/new`.
+**TUI statusbalk-kosten (2026-05-23, PASS → rich bar):** `display.show_cost: true` + `cost_bar_mode: rich` team-default; statusbalk `$turn / $session │ cw/out/in/cr │ calls │ tools`; fork-module `hermes_cli/usage_snapshot.py`; sync automatisch via `launch_institutional_runtime.ps1` (drift-check) + `UPDATE_HERMES.bat`; handmatig alleen bij `HERMES_SKIP_INSTITUTIONAL_RUNTIME=1`. E2E `RUN_STATUS_BAR_COST_E2E.bat`. Na wijziging: Hermes `/new`.
 
 **Backup schema v3 (2026-05-23):** `backup_hermes.ps1` backupt `%LOCALAPPDATA%\hermes` → `runtime_hermes/`; legacy `~/.hermes` → `legacy_hermes/`; persona-subset → `localappdata_hermes/` (SOUL + `config.yaml`). Blokkeert als Hermes draait. Restore: `-RestoreRuntimeFull`, `-RestoreRuntimePersonas`, `-RestoreLegacyProfile`. Module: `windows/scripts/HermesBackupCommon.ps1`. Test: `windows/audits/RUN_BACKUP_E2E.bat`.
 
 **Legal domein herstructurering** (2026-05): één RAG-bucket `legal`, rechtsgebied-**lenzen**, generieke `profiles\legal\SOUL.md`, zaak GCR in `LEGAL_ACTIVE_MATTERS.md`. Audit: `RUN_LEGAL_DOMAIN_E2E.bat`.
 
-**Memory L1–L4 productieniveau (2026-05-23):** vault = `Documents/Hermes Knowledge`; geen L3. Trust limits **4000/1800** op root + alle 13 profielen (`apply_trust_memory_limits.ps1`; hook bij `--create-missing`). Productie-poort: `RUN_MEMORY_PRODUCTION_GATE.bat` (memory E2E 13 stappen + trust E2E + pytest). Curatie: `audit_profile_memories.ps1`; identiteits-E2E whitelist voor `miniconda3\...\python.exe`. Na sync: **`/new`**. Docs: `docs/MEMORY_ARCHITECTURE.md` (checklist), `docs/TRUST_FORENSIC_PROTOCOL.md` (profiel-limits + whitelist).
+**Memory L1–L4 productieniveau (2026-05-23):** vault = `Documents/Hermes Knowledge`; geen L3. Trust limits **4000/1800** op root + alle 13 profielen (`apply_trust_memory_limits.ps1`; hook bij `--create-missing`). Productie-poort: `RUN_MEMORY_PRODUCTION_GATE.bat` (memory E2E 13 stappen + trust E2E + pytest). Curatie: `audit_profile_memories.ps1`; gedeelde helpers: `MemoryAuditCommon.ps1`. Trust E2E: launcher `RUN_TRUST_FORENSIC_E2E.ps1` → `TrustForensicE2E.core.ps1` + `HermesTrustForensicPatterns.ps1` / `HermesTrustForensicProfileChecks.ps1` (PSES-safe). Syntax-poort: `VALIDATE_AUDIT_PS1_SYNTAX.bat`. Na sync: **`/new`**. Docs: `docs/MEMORY_ARCHITECTURE.md`, `docs/TRUST_FORENSIC_PROTOCOL.md`.
 
 **Trust & Forensic protocol** (2026-05-22): SOUL advisory + legal forensic-blok, memory-seed in **alle** profielen, identiteit **J.** (scrub excl. `lancedb/`). Dagelijks/na pull: `SYNC_TRUST_RUNTIME.bat` (incl. vault-env sync); volledig+scrub: `APPLY_TRUST_PROTOCOL.bat`. `POST_GIT_PULL.bat` en `UPDATE_HERMES` post-merge roepen trust runtime aan. Audits: `RUN_TRUST_FORENSIC_E2E.ps1`, `RUN_LEGAL_DOMAIN_E2E.ps1`. Na sync: **nieuwe chat** in profiel `legal`.
 
@@ -54,7 +54,7 @@
 | Trust & Forensic | `docs/TRUST_FORENSIC_PROTOCOL.md` |
 | Memory L1–L4 (vault, geen L3) | `docs/MEMORY_ARCHITECTURE.md`, `docs/templates/MEMORY_ENV_VAULT.example` |
 | E2E memory-architectuur | `windows/audits/RUN_MEMORY_ARCHITECTURE_E2E.bat` |
-| E2E statusbalk-kosten | `windows/audits/RUN_STATUS_BAR_COST_E2E.bat` |
+| E2E statusbalk-kosten | `windows/audits/RUN_STATUS_BAR_COST_E2E.bat` · `-ApplyDisplayFix` · `RUN_AUDITS.bat -IncludeStatusBarCostE2E` |
 | E2E institutioneel | `windows/audits/RUN_INSTITUTIONAL_E2E.bat` |
 | Hermes start (bat) | `../../HERMES_START.md` |
 | Windows | `windows/README.md` |
@@ -64,7 +64,7 @@
 
 ## Periodiek IDE-onderhoud (handmatig)
 
-**Alle commando's (één doc):** `docs/IDE_MAINTENANCE.md` — snel: list, inspect, init-missing, `RUN_IDE_MAINTENANCE_E2E -ApplyDisplayFix -SkipMergePreview`; periodiek: verify, merge preview, skill drift, institutioneel E2E.
+**Alle commando's (één doc):** `docs/IDE_MAINTENANCE.md` — snel: list, inspect, init-missing, `RUN_IDE_MAINTENANCE_E2E -ApplyDisplayFix -SkipMergePreview`, statusbalk: `RUN_STATUS_BAR_COST_E2E.bat` / `-ApplyDisplayFix` / `RUN_AUDITS -IncludeStatusBarCostE2E`; periodiek: verify, merge preview, skill drift, institutioneel E2E.
 
 **Kernbestanden:** `windows/merge_upstream_fork.ps1` (merge + git-diff snippets), `windows/WindowsLocalAssetsManifest.ps1` (manifest sync/verify-keten).
 

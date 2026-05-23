@@ -13,6 +13,7 @@ const buildTurnState = (): TurnState => ({
   reasoningTokens: 0,
   streamPendingTools: [],
   streamSegments: [],
+  streamOutputTokens: 0,
   streaming: '',
   subagents: [],
   todoCollapsed: false,
@@ -75,6 +76,7 @@ export interface TurnState {
   reasoningTokens: number
   streamPendingTools: string[]
   streamSegments: Msg[]
+  streamOutputTokens: number
   streaming: string
   subagents: SubagentProgress[]
   todoCollapsed: boolean

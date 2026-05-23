@@ -38,7 +38,7 @@ Standaard skin is **`default`** (goud/kawaii). Als je **blauw/cyaan** ziet, staa
 ```bat
 windows\APPLY_TEAM_DISPLAY.bat
 
-Bij **start** (`start_hermes.bat`): automatisch display + SOUL via `scripts\launch_institutional_runtime.ps1` (geen E2E tenzij `--institutional-e2e`). Handmatig alles: `APPLY_INSTITUTIONAL_RUNTIME.bat`.
+Bij **start** (`start_hermes.bat` → `launch_hermes.bat`): automatisch display + SOUL via `scripts\launch_institutional_runtime.ps1`. Die roept `apply_team_display.ps1` aan (alle keys uit `team_display.defaults`, incl. `show_cost` en `cost_bar_mode`) wanneer de repo-defaults nieuwer zijn dan de stamp **of** runtime drift detecteert. Geen E2E tenzij `--institutional-e2e`. Handmatig: `APPLY_TEAM_DISPLAY.bat` alleen nodig bij `HERMES_SKIP_INSTITUTIONAL_RUNTIME=1` of directe `cli.py`-start zonder launcher.
 ```
 
 of: `hermes config set display.skin default` — daarna Hermes opnieuw starten.
@@ -74,10 +74,13 @@ Kopieert `GOOGLE_API_KEY` naar root `.env`, werkt alle `profiles\*\.env` bij, en
 
 | Script | Doel |
 | ------ | ---- |
-| `APPLY_TEAM_DISPLAY.bat` | display op **alle profielen**; bij start via `launch_institutional_runtime.ps1` |
+| `APPLY_TEAM_DISPLAY.bat` | Handmatig display op **alle profielen**; normaal automatisch via start/update |
 | `APPLY_INSTITUTIONAL_RUNTIME.bat` | display + SOUL + E2E (handmatig of `-NoE2E`) |
 | `SYNC_HERMES_API_ENV.bat` | API-keys + `OBSIDIAN_VAULT_PATH`/`WIKI_PATH` naar alle profiel-`.env` + Gemini pool |
 | `FIX_GEMINI_CREDENTIAL_POOL.bat` | Alleen pool in `auth.json` (root + profielen) herstellen |
+| `audits\RUN_STATUS_BAR_COST_E2E.bat` | Statusbalk-kosten E2E (rich, 10 stappen) |
+| `audits\RUN_STATUS_BAR_COST_E2E.bat -ApplyDisplayFix` | Zelfde + display sync vóór audit |
+| `audits\RUN_AUDITS.bat -IncludeStatusBarCostE2E` | Statusbalk E2E in gecombineerde poort |
 | `SWITCH_PROFILE.bat <naam>` | Sticky profiel + API-sync + `HERMES_HOME`-fix + gateway (indien actief) |
 | `SWITCH_PROFILE_AND_CHAT.bat <naam>` | Zelfde + direct `hermes chat -p <naam>` |
 | `audits\RUN_PROFILE_SWITCH_E2E.bat` | E2E-audit profielwissel (pytest + scripts) |

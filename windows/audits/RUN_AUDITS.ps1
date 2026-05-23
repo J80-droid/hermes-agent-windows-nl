@@ -12,6 +12,7 @@ param(
     [switch]$IncludeSoulDeployStartE2E,
     [switch]$IncludeIdeMaintenanceE2E,
     [switch]$IncludeMemoryArchitectureE2E,
+    [switch]$IncludeMemoryProductionGate,
     [switch]$IncludeStatusBarCostE2E,
     [switch]$SkipPytest,
     [switch]$SkipFootguns,
@@ -213,6 +214,14 @@ if ($IncludeMemoryArchitectureE2E -or $IncludeAllE2E) {
     $memE2e = Join-Path $scriptRoot 'RUN_MEMORY_ARCHITECTURE_E2E.ps1'
     Invoke-Step 'memory-architecture-e2e' {
         & $memE2e -RepoRoot $repoRoot
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeMemoryProductionGate -or $IncludeAllE2E) {
+    $memGate = Join-Path $scriptRoot 'RUN_MEMORY_PRODUCTION_GATE.ps1'
+    Invoke-Step 'memory-production-gate' {
+        & $memGate -RepoRoot $repoRoot
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

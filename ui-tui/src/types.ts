@@ -187,6 +187,7 @@ export interface Usage {
   reasoning?: number
   session_tools_executed?: number
   total: number
+  turn_cost_estimated?: boolean
   turn_cost_usd?: number
 }
 

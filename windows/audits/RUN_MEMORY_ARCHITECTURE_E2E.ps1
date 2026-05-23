@@ -5,6 +5,7 @@ param(
 )
 
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
+. (Join-Path $PSScriptRoot '..\scripts\MemoryAuditCommon.ps1')
 
 $ErrorActionPreference = 'Stop'
 $scriptRoot = $PSScriptRoot
@@ -59,7 +60,7 @@ function Test-VaultPathValue {
 
 Write-Host '=== Memory Architecture E2E ===' -ForegroundColor Cyan
 $hermesRoot = Get-HermesRoot
-$reportStamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'
+$reportStamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'  # used in MEMORY_ARCHITECTURE_E2E_REPORT below
 
 # --- 1 Repo docs ---
 $repoChecks = @(
@@ -97,7 +98,8 @@ Add-StepResult -Name '3/10 env-voorbeeld in repo' -Ok $exampleOk -Detail 'docs/t
 # --- 3 Sync script ---
 if (-not $SkipSyncRun) {
     $syncPs1 = Join-Path $RepoRoot 'windows/sync_hermes_api_env.ps1'
-    & $syncPs1
+    $syncScript = $syncPs1
+    & $syncScript
     $syncOk = -not (Test-NativeCommandFailed)
     Add-StepResult -Name '4/10 sync_hermes_api_env.ps1' -Ok $syncOk
 } else {
@@ -113,21 +115,22 @@ foreach ($k in $VaultKeys) {
 }
 Add-StepResult -Name '5/10 root .env' -Ok $rootOk -Detail $rootEnv
 
-# --- 5 Alle profielen ---
-$profilesDir = Join-Path $hermesRoot 'profiles'
-$script:profVaultOk = $true
-$profCount = 0
-if (Test-Path -LiteralPath $profilesDir) {
-    Get-ChildItem -LiteralPath $profilesDir -Directory | ForEach-Object {
-        $profCount++
-        $profEnv = Join-Path $_.FullName '.env'
-        $vaultVal = Read-EnvVar -Path $profEnv -Key 'OBSIDIAN_VAULT_PATH'
-        if (-not (Test-VaultPathValue -Value $vaultVal)) { $script:profVaultOk = $false }
-    }
+# --- 5 Alle profielen: vault-.env per profielmap ---
+$hermesProfilesPath = Join-Path $hermesRoot 'profiles'
+$profileEnvCount = 0
+$allProfileVaultsOk = $false
+if (Test-Path -LiteralPath $hermesProfilesPath) {
+    $dirs = @(Get-ChildItem -LiteralPath $hermesProfilesPath -Directory)
+    $profileEnvCount = $dirs.Count
+    $badVault = @($dirs | Where-Object {
+            $envPath = Join-Path $_.FullName '.env'
+            -not (Test-VaultPathValue -Value (Read-EnvVar -Path $envPath -Key 'OBSIDIAN_VAULT_PATH'))
+        })
+    $allProfileVaultsOk = ($badVault.Count -eq 0)
 } else {
-    $script:profVaultOk = $false
+    $allProfileVaultsOk = $false
 }
-Add-StepResult -Name '6/10 profiel-.env OBSIDIAN' -Ok $script:profVaultOk -Detail ("$profCount profielen")
+Add-StepResult -Name '6/10 profiel-.env OBSIDIAN' -Ok $allProfileVaultsOk -Detail ("$profileEnvCount profielen")
 
 # --- 6 Vault filesystem ---
 $vaultPath = $CanonicalVault
@@ -193,10 +196,44 @@ if (Test-Path -LiteralPath $skillPath) {
     $skillText = Get-Content -LiteralPath $skillPath -Raw -Encoding UTF8
     $skillOk = ($skillText -match 'Hermes Knowledge')
 }
-Add-StepResult -Name '10/10 obsidian skill fallback' -Ok $skillOk -Detail 'fork default in SKILL.md'
+Add-StepResult -Name '10/13 obsidian skill fallback' -Ok $skillOk -Detail 'fork default in SKILL.md'
 
-# --- Rapport ---
-$reportPath = Join-Path $scriptRoot ("MEMORY_ARCHITECTURE_E2E_REPORT_$reportStamp.md")
+# --- 11 Alle profiel-configs memory 4000/1800 ---
+$configFails = Test-AllProfileMemoryConfigLimits -HermesRoot $hermesRoot
+$step11Ok = ($configFails.Count -eq 0)
+$step11Detail = if ($step11Ok) { 'root + 13 profielen' } else { ($configFails -join '; ') }
+Add-StepResult -Name '11/13 profiel memory limits' -Ok $step11Ok -Detail $step11Detail
+
+# --- 12 core MEMORY.md lengte vs limit ---
+$coreCfg = Join-Path $hermesRoot 'profiles/core/config.yaml'
+$coreMemPath = Join-Path $hermesRoot 'profiles/core/memories/MEMORY.md'
+$lim = Get-MemoryLimitsFromConfig -ConfigPath $coreCfg
+$memLimit = if ($lim.MemoryCharLimit -gt 0) { $lim.MemoryCharLimit } else { 4000 }
+$step12Ok = $false
+$step12Detail = 'MEMORY.md ontbreekt'
+if (Test-Path -LiteralPath $coreMemPath) {
+    $memLen = (Get-Content -LiteralPath $coreMemPath -Raw -Encoding UTF8).Length
+    $step12Ok = ($memLen -le $memLimit)
+    $step12Detail = "$memLen / $memLimit tekens"
+}
+Add-StepResult -Name '12/13 core MEMORY grootte' -Ok $step12Ok -Detail $step12Detail
+
+# --- 13 core USER/MEMORY UTF-8 encoding ---
+$encOk = $true
+$encDetail = @()
+foreach ($rel in @('USER.md', 'MEMORY.md')) {
+    $p = Join-Path $hermesRoot "profiles/core/memories/$rel"
+    if (Test-Path -LiteralPath $p) {
+        $t = Get-Content -LiteralPath $p -Raw -Encoding UTF8
+        if (Test-MemoryDoubleEncoding -Text $t) {
+            $encOk = $false
+            $encDetail += $rel
+        }
+    }
+}
+Add-StepResult -Name '13/13 core UTF-8 encoding' -Ok $encOk -Detail $(if ($encDetail.Count) { 'double-encoding in: ' + ($encDetail -join ', ') } else { 'geen double-encoding' })
+$reportFileName = 'MEMORY_ARCHITECTURE_E2E_REPORT_' + $reportStamp + '.md'
+$reportPath = Join-Path $scriptRoot $reportFileName
 $status = if ($failures -eq 0) { 'PASS' } else { 'FAIL' }
 $sb = [System.Text.StringBuilder]::new()
 [void]$sb.AppendLine("# Memory Architecture E2E - $status")

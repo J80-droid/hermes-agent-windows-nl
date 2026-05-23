@@ -560,7 +560,7 @@ export const sessionCommands: SlashCommand[] = [
           rows.push(['Session cost', sessionCost])
         }
 
-        const turnCost = fmtCost(r.turn_cost_usd, r.cost_status)
+        const turnCost = fmtCost(r.turn_cost_usd, r.turn_cost_estimated ? 'estimated' : r.cost_status)
         if (turnCost) {
           rows.push(['Turn cost', turnCost])
         }

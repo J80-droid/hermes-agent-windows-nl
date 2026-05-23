@@ -54,6 +54,35 @@ if (-not $needRun -and (Test-Path -LiteralPath $stampFile) -and $watchFiles.Coun
 }
 
 if (-not $needRun) {
+    $driftScript = Join-Path $RepoRoot 'windows/scripts/apply_team_display_profiles.py'
+    if (Test-Path -LiteralPath $driftScript) {
+        $env:HERMES_ROOT = $stampDir
+        $env:PYTHONPATH = $RepoRoot
+        $driftPy = $null
+        foreach ($candidate in @(
+                (Join-Path $env:USERPROFILE 'miniconda3\envs\hermes-env\python.exe'),
+                (Join-Path $env:USERPROFILE 'AppData\Local\Programs\Python\Python312\python.exe'),
+                'python'
+            )) {
+            if ($candidate -eq 'python' -or (Test-Path -LiteralPath $candidate)) {
+                $driftPy = $candidate
+                break
+            }
+        }
+        if ($driftPy) {
+            $prevEap = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            & $driftPy $driftScript --check-drift 2>&1 | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                $needRun = $true
+                Write-Host '[INFO] Team display drift gedetecteerd — apply opnieuw gepland.' -ForegroundColor Yellow
+            }
+            $ErrorActionPreference = $prevEap
+        }
+    }
+}
+
+if (-not $needRun) {
     Write-Host '[INFO] Institutioneel runtime up-to-date (stamp OK).' -ForegroundColor DarkGray
     exit 0
 }

@@ -30,7 +30,7 @@ Operationele handleiding voor J.'s Hermes Windows NL fork: verifieerbaar gedrag 
 
 ## Geheugenlimieten (runtime)
 
-In `%LOCALAPPDATA%\hermes\config.yaml`:
+**Root én alle 13 profielen** (`profiles/*/config.yaml`) moeten hetzelfde blok hebben — upstream erft `memory` niet automatisch van root.
 
 ```yaml
 memory:
@@ -38,7 +38,33 @@ memory:
   user_char_limit: 1800
 ```
 
-Toepassen: `windows\scripts\apply_trust_memory_limits.ps1`
+Toepassen: `windows\scripts\apply_trust_memory_limits.ps1` (idempotent). Na nieuw profiel (`sync_profile_toolsets_from_manifest.py --create-missing`): automatisch via provision-hook, anders `SYNC_TRUST_RUNTIME.bat`.
+
+**Productie-poort:** `windows\audits\RUN_MEMORY_PRODUCTION_GATE.bat` (limits + memory E2E + trust E2E + pytest).
+
+## Audit-scripts (structuur)
+
+| Bestand | Rol |
+|---------|-----|
+| `windows\audits\RUN_TRUST_FORENSIC_E2E.ps1` | Dunne launcher (`& TrustForensicE2E.core.ps1`) — stabiel in Cursor/PSES |
+| `windows\audits\TrustForensicE2E.core.ps1` | Implementatie: repo-docs, profielen, config-limits, pytest |
+| `windows\HermesTrustForensicPatterns.ps1` | SOUL/trust-checkfuncties (geen inline wildcards in E2E) |
+| `windows\HermesTrustForensicProfileChecks.ps1` | Profiel-loop MEMORY/USER/SOUL |
+| `windows\scripts\MemoryAuditCommon.ps1` | Gedeeld: identiteitslek per regel, §-encoding, config-limits |
+| `windows\scripts\audit_profile_memories.ps1` | Rapport + optioneel `-FixEncoding` |
+
+**IDE:** rode strepen op audit-`.ps1` → `windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat`, daarna PowerShell-sessie herstarten en venster reloaden. Zie `windows\audits\README.md`.
+
+## E2E identiteits-whitelist (MEMORY/USER)
+
+`TrustForensicE2E.core.ps1` scant **per regel** op `Jamel el Mourif`, losse `Jamel` en `el Mourif`. Toegestaan in paden:
+
+- `miniconda3\envs\hermes-env\python.exe`
+- `Documents\Hermes Knowledge` / legacy `Documents/Obsidian Vault`
+- `AppData\Local\hermes`
+- `data\lancedb\`
+
+Fail op `Â§` (double-encoding) in MEMORY/USER — herstel: `audit_profile_memories.ps1 -FixEncoding`.
 
 ## Identiteit (J.)
 

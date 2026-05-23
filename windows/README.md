@@ -83,6 +83,10 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 | Backups (schema v3) | `MANAGE_BACKUPS.bat` — Hermes moet gestopt zijn; `%LOCALAPPDATA%\hermes` → `backups\backup_*` |
 | Restore repo / runtime | `RESTORE_FROM_BACKUP.bat` — repo: altijd; runtime: `-RestoreRuntimeFull`; persona’s: `-RestoreRuntimePersonas`; legacy: `-RestoreLegacyProfile` |
 | Backup audit (lightweight) | `audits\RUN_BACKUP_E2E.bat` |
+| Statusbalk-kosten E2E (rich) | `audits\RUN_STATUS_BAR_COST_E2E.bat` · `-ApplyDisplayFix` · `RUN_AUDITS.bat -IncludeStatusBarCostE2E` |
+| Memory productie-poort | `audits\RUN_MEMORY_PRODUCTION_GATE.bat` (limits + memory + trust E2E + pytest) |
+| Trust forensic E2E | `audits\RUN_TRUST_FORENSIC_E2E.bat` (launcher → `TrustForensicE2E.core.ps1`) |
+| Audit PS1 syntax (IDE) | `audits\VALIDATE_AUDIT_PS1_SYNTAX.bat` |
 | Taakbalk-snelkoppelingen vernieuwen | `REFRESH_TASKBAR_SHORTCUTS.bat` (`windows\*.lnk` = `cmd /c` + gekleurd `.ico`) |
 | Taakbalk-icoon herstellen | `FIX_TASKBAR_ICONS.bat` |
 | Nous upstream-merge (uitleg) | `UPSTREAM_SYNC.md` |

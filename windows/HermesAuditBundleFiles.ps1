@@ -1,0 +1,25 @@
+# Audit E2E-bestanden voor local-assets manifest (apart bestand: stabieler voor IDE-parser).
+function Get-HermesAuditBundleFileList {
+    @(
+        'README.md',
+        'RUN_AUDITS.ps1',
+        'RUN_AUDITS.bat',
+        'RUN_PROFILE_SWITCH_E2E.ps1',
+        'RUN_PROFILE_SWITCH_E2E.bat',
+        'RUN_INSTITUTIONAL_E2E.ps1',
+        'RUN_INSTITUTIONAL_E2E.bat',
+        'RUN_MEMORY_ARCHITECTURE_E2E.ps1',
+        'RUN_MEMORY_ARCHITECTURE_E2E.bat',
+        'RUN_MEMORY_PRODUCTION_GATE.ps1',
+        'RUN_MEMORY_PRODUCTION_GATE.bat',
+        'RUN_TRUST_FORENSIC_E2E.ps1',
+        'TrustForensicE2E.core.ps1',
+        'RUN_TRUST_FORENSIC_E2E.bat',
+        'RUN_BACKUP_E2E.ps1',
+        'RUN_BACKUP_E2E.bat',
+        'RUN_LEGAL_DOMAIN_E2E.ps1',
+        'RUN_LEGAL_DOMAIN_E2E.bat',
+        'RUN_SOUL_DEPLOY_START_E2E.ps1',
+        'RUN_SOUL_DEPLOY_START_E2E.bat'
+    )
+}

@@ -1,4 +1,5 @@
 # Rich status-bar cost E2E (show_cost + cost_bar_mode + breakdown + TUI wiring).
+# Syntax-check: windows/tests/Validate-AuditPs1Syntax.ps1
 param(
     [string]$RepoRoot = '',
     [switch]$SkipVitest,
@@ -52,10 +53,10 @@ function Get-HermesAuditPython {
 function Get-PytestNodePath {
     param(
         [string]$RelativeFile,
-        [string]$NodeId
+        [string]$NodeName
     )
     $filePath = Join-Path $RepoRoot ($RelativeFile -replace '/', '\')
-    return $filePath + $NodeId
+    return ($filePath + '::' + $NodeName)
 }
 
 function Add-StepResult {
@@ -138,7 +139,7 @@ if (-not $SkipVitest) {
     try {
         $prevEap = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
-        npm test -- statusBarCost usageCostBar createGatewayEventHandler --run 2>&1 | Out-Host
+        & npx vitest run statusBarCost usageCostBar createGatewayEventHandler 2>&1 | Out-Host
         $vitestOk = ($LASTEXITCODE -eq 0)
         $ErrorActionPreference = $prevEap
     } finally {
@@ -156,11 +157,11 @@ $pytestArgs = @(
     (Join-Path $RepoRoot 'tests/windows/test_status_bar_cost_e2e.py'),
     (Join-Path $RepoRoot 'tests/windows/test_team_display_defaults.py'),
     (Join-Path $RepoRoot 'tests/windows/test_apply_team_display_root.py'),
-    (Get-PytestNodePath 'tests/test_tui_gateway_server.py' '::test_config_get_cost_survives_non_dict_display'),
-    (Get-PytestNodePath 'tests/test_tui_gateway_server.py' '::test_config_set_cost_survives_non_dict_display'),
-    (Get-PytestNodePath 'tests/test_tui_gateway_server.py' '::test_config_set_cost_toggle_empty_value'),
-    (Get-PytestNodePath 'tests/test_tui_gateway_server.py' '::test_config_set_cost_bar_mode_rich_and_minimal'),
-    (Get-PytestNodePath 'tests/test_tui_gateway_server.py' '::test_config_get_cost_bar_mode_defaults_rich'),
+    (Get-PytestNodePath 'tests/test_tui_gateway_server.py' 'test_config_get_cost_survives_non_dict_display'),
+    (Get-PytestNodePath 'tests/test_tui_gateway_server.py' 'test_config_set_cost_survives_non_dict_display'),
+    (Get-PytestNodePath 'tests/test_tui_gateway_server.py' 'test_config_set_cost_toggle_empty_value'),
+    (Get-PytestNodePath 'tests/test_tui_gateway_server.py' 'test_config_set_cost_bar_mode_rich_and_minimal'),
+    (Get-PytestNodePath 'tests/test_tui_gateway_server.py' 'test_config_get_cost_bar_mode_defaults_rich'),
     '-q',
     '-o', 'addopts='
 )
@@ -227,19 +228,20 @@ $upstreamOk = ($upstreamMd -match 'usage_snapshot.py') -and ($upstreamMd -match 
 Add-StepResult -Name '9/10 UPSTREAM_SYNC cost-bar tabel' -Ok $upstreamOk
 
 # --- 10 Documentatie ---
-$readme = Join-Path $RepoRoot 'ui-tui/README.md'
+$readme = Join-Path (Join-Path $RepoRoot 'ui-tui') 'README.md'
 $readmeOk = $false
 if (Test-Path -LiteralPath $readme) {
     $readmeText = Get-Content -LiteralPath $readme -Raw -Encoding UTF8
-    $readmeOk = ($readmeText -match '/cost') -and ($readmeText -match 'cost_bar_mode')
+    $readmeOk = ($readmeText -match 'cost_bar_mode') -and ($readmeText -like '*cost*')
 }
 Add-StepResult -Name '10/10 ui-tui README cost docs' -Ok $readmeOk
 
 # --- Rapport ---
-$reportPath = Join-Path $scriptRoot ("STATUS_BAR_COST_E2E_REPORT_$reportStamp.md")
+$reportFileName = 'STATUS_BAR_COST_E2E_REPORT_' + $reportStamp + '.md'
+$reportPath = Join-Path $scriptRoot $reportFileName
 $status = if ($failures -eq 0) { 'PASS' } else { 'FAIL' }
 $sb = [System.Text.StringBuilder]::new()
-[void]$sb.AppendLine("# Status Bar Cost E2E (rich) - $status")
+[void]$sb.AppendLine("# Status Bar Cost E2E - $status")
 [void]$sb.AppendLine('')
 [void]$sb.AppendLine("Datum: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
 [void]$sb.AppendLine("Hermes root: ``$hermesRoot``")
@@ -254,9 +256,9 @@ foreach ($s in $steps) {
 }
 [void]$sb.AppendLine('')
 if ($failures -gt 0) {
-    [void]$sb.AppendLine("**$failures** stap(pen) gefaald. Herstel: ``windows\APPLY_TEAM_DISPLAY.bat`` of audit met ``-ApplyDisplayFix``.")
+    [void]$sb.AppendLine("**$failures** stap(pen) gefaald. Herstel: ``windows\APPLY_TEAM_DISPLAY.bat``, audit met ApplyDisplayFix.")
 } else {
-    [void]$sb.AppendLine('Alle stappen geslaagd. Start Hermes opnieuw of `/new` voor rijke statusbalk-kosten.')
+    [void]$sb.AppendLine('Alle stappen geslaagd. Na wijziging env: /new in Hermes.')
 }
 $sb.ToString() | Set-Content -LiteralPath $reportPath -Encoding UTF8
 Write-Host ''

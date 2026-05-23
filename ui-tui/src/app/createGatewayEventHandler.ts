@@ -2,6 +2,7 @@ import { STARTUP_IMAGE, STARTUP_QUERY } from '../config/env.js'
 import { STREAM_BATCH_MS } from '../config/timing.js'
 import { buildSetupRequiredSections, SETUP_REQUIRED_TITLE } from '../content/setup.js'
 import { mergeUsage } from '../domain/usage.js'
+import { estimateLiveTurnCostUsd } from '../domain/liveTurnCost.js'
 import type {
   CommandsCatalogResponse,
   ConfigFullResponse,
@@ -20,6 +21,7 @@ import { applyDelegationStatus, getDelegationState } from './delegationStore.js'
 import type { GatewayEventHandlerContext } from './interfaces.js'
 import { patchOverlayState } from './overlayStore.js'
 import { turnController } from './turnController.js'
+import { getTurnState } from './turnStore.js'
 import { getUiState, patchUiState } from './uiStore.js'
 
 const NO_PROVIDER_RE = /\bNo (?:LLM|inference) provider configured\b/i
@@ -280,6 +282,48 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
   }
 
   let usageCostAtTurnStart = 0
+  let usageToolsAtTurnStart = 0
+  let liveTurnCostTimer: null | ReturnType<typeof setTimeout> = null
+
+  const scheduleLiveTurnCost = () => {
+    if (!getUiState().busy) {
+      return
+    }
+
+    if (liveTurnCostTimer) {
+      return
+    }
+
+    liveTurnCostTimer = setTimeout(() => {
+      liveTurnCostTimer = null
+
+      if (!getUiState().busy) {
+        return
+      }
+
+      const usage = getUiState().usage
+      const turn = getTurnState()
+      const toolsDelta = Math.max(0, (usage.session_tools_executed ?? 0) - usageToolsAtTurnStart)
+      const estimate = estimateLiveTurnCostUsd(usage, {
+        reasoningTokens: turn.reasoningTokens,
+        streamOutputTokens: turn.streamOutputTokens,
+        toolTokens: turn.toolTokens,
+        toolsExecutedDelta: toolsDelta
+      })
+
+      if (estimate == null) {
+        return
+      }
+
+      patchUiState(state => ({
+        ...state,
+        usage: mergeUsage(state.usage, {
+          turn_cost_estimated: true,
+          turn_cost_usd: estimate
+        })
+      }))
+    }, STREAM_BATCH_MS)
+  }
 
   return (ev: GatewayEvent) => {
     const sid = getUiState().sid
@@ -332,6 +376,7 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
 
           if (value) {
             turnController.recordReasoningDelta(value)
+            scheduleLiveTurnCost()
           }
         }
 
@@ -340,9 +385,10 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
 
       case 'message.start':
         usageCostAtTurnStart = getUiState().usage.cost_usd ?? 0
+        usageToolsAtTurnStart = getUiState().usage.session_tools_executed ?? 0
         patchUiState(state => ({
           ...state,
-          usage: mergeUsage(state.usage, { turn_cost_usd: 0 })
+          usage: mergeUsage(state.usage, { turn_cost_estimated: false, turn_cost_usd: 0 })
         }))
         turnController.startMessage()
 
@@ -512,6 +558,7 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
       case 'reasoning.delta':
         if (ev.payload?.text) {
           turnController.recordReasoningDelta(ev.payload.text, Boolean(ev.payload.verbose))
+          scheduleLiveTurnCost()
         }
 
         return
@@ -543,6 +590,7 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
           ev.payload.context ?? '',
           ev.payload.args_text ? stripAnsi(String(ev.payload.args_text)) : undefined
         )
+        scheduleLiveTurnCost()
 
         return
       case 'tool.complete': {
@@ -578,6 +626,7 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
             session_tools_executed: (state.usage.session_tools_executed ?? 0) + 1
           })
         }))
+        scheduleLiveTurnCost()
 
         return
       }
@@ -724,6 +773,7 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
 
       case 'message.delta':
         turnController.recordMessageDelta(ev.payload ?? {})
+        scheduleLiveTurnCost()
 
         return
       case 'message.complete': {
@@ -751,7 +801,10 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
 
             return {
               ...state,
-              usage: mergeUsage(merged, { turn_cost_usd: turnCost })
+              usage: mergeUsage(merged, {
+                turn_cost_estimated: false,
+                turn_cost_usd: turnCost
+              })
             }
           })
         }

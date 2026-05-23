@@ -1,5 +1,6 @@
 # Team Hermes CLI display — key=value (één per regel). Lege regels en # worden overgeslagen.
-# Pas aan naar jullie afspraak; daarna APPLY_TEAM_DISPLAY.bat of (optioneel) na UPDATE_HERMES.bat.
+# Pas aan naar jullie afspraak; sync gebeurt automatisch bij start (launch_institutional_runtime.ps1),
+# na UPDATE_HERMES.bat, of handmatig via APPLY_TEAM_DISPLAY.bat.
 # Geen geheimen hier — alleen display.* waarden.
 #
 # streaming=false: bij final_response_markdown=render streamt streaming=true ruwe markdown
