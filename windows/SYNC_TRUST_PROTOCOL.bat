@@ -15,5 +15,4 @@ if errorlevel 1 exit /b 1
 
 echo.
 echo [OK] Trust protocol volledig. Bij bronwijzigingen: RAG_KNOWLEDGE_UPDATE.bat legal
-if not "%HERMES_SKIP_PAUSE%"=="1" pause
 exit /b 0

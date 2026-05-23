@@ -20,9 +20,13 @@ call "%~dp0SYNC_HERMES_API_ENV.bat"
 set "HERMES_SKIP_PAUSE="
 if errorlevel 1 exit /b 1
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\log_trust_memory_user_snapshot.ps1" %*
-if errorlevel 1 exit /b 1
+if errorlevel 1 (
+  echo.
+  echo [FAIL] Trust memory snapshot mislukt.
+  if not "%HERMES_SKIP_PAUSE%"=="1" pause
+  exit /b 1
+)
 
 echo.
 echo [OK] Trust runtime gesynchroniseerd (geen scrub). Nieuwe chat starten (/new).
-if not "%HERMES_SKIP_PAUSE%"=="1" pause
 exit /b 0

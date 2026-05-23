@@ -16,7 +16,7 @@ if (-not $RepoRoot) {
 $failures = 0
 Write-Host '=== Memory Production Gate ===' -ForegroundColor Cyan
 
-$limitsScript = Join-Path $RepoRoot 'windows\scripts\apply_trust_memory_limits.ps1'
+$limitsScript = Join-Path $RepoRoot 'windows/scripts/apply_trust_memory_limits.ps1'
 if (Test-Path -LiteralPath $limitsScript) {
     Write-Host '--- apply_trust_memory_limits ---' -ForegroundColor Cyan
     & $limitsScript
@@ -38,8 +38,8 @@ if (Test-NativeCommandFailed) { $failures++ }
 
 $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
 $pytestTargets = @(
-    (Join-Path $RepoRoot 'tests\windows\test_trust_forensic_docs.py'),
-    (Join-Path $RepoRoot 'tests\tools\test_memory_tool.py')
+    (Join-Path $RepoRoot 'tests/windows/test_trust_forensic_docs.py'),
+    (Join-Path $RepoRoot 'tests/tools/test_memory_tool.py')
 )
 Write-Host '--- pytest memory/trust ---' -ForegroundColor Cyan
 if (Test-Path -LiteralPath $conda) {

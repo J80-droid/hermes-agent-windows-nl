@@ -75,6 +75,6 @@ if ($failures -gt 0) {
 }
 
 if (-not $Quiet) {
-    Write-Host '[OK] Trust memory USER snapshot — alle profielen' -ForegroundColor Green
+    Write-Host '[OK] Trust memory USER snapshot - alle profielen' -ForegroundColor Green
 }
 exit 0

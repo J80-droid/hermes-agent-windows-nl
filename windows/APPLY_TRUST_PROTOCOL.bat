@@ -7,6 +7,7 @@ title Hermes - Trust and Forensic protocol (volledige keten)
 echo === Trust & Forensic protocol ===
 echo.
 
+set "HERMES_SKIP_PAUSE=1"
 call "%~dp0SYNC_TRUST_PROTOCOL.bat"
 if errorlevel 1 exit /b 1
 
@@ -20,6 +21,7 @@ if "%ERR%"=="0" (
   echo [OK] Trust protocol + audit voltooid.
 ) else (
   echo [WARN] Sync OK maar audit exit %ERR%
+  if not "%HERMES_SKIP_PAUSE%"=="1" pause
+  exit /b %ERR%
 )
-if not "%HERMES_SKIP_PAUSE%"=="1" pause
-exit /b %ERR%
+exit /b 0
