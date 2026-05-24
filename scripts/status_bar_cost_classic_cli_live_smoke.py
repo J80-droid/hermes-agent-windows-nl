@@ -106,6 +106,57 @@ def smoke_post_turn_cost_toggle_hides_bar() -> None:
     assert "$" in cli._build_status_bar_text(width=120)
 
 
+def smoke_gemini_35_flash_cache_cost_not_na() -> None:
+    """Regression: gemini-3.5-flash + cache hits must show $ estimate, not n/a."""
+    from cli import HermesCLI
+
+    cli = HermesCLI.__new__(HermesCLI)
+    cli.model = "gemini-3.5-flash"
+    cli.session_start = datetime.now() - timedelta(minutes=3)
+    cli.conversation_history = [
+        {"role": "user", "content": "audit memory"},
+        {"role": "assistant", "content": "ok"},
+    ]
+    cli._show_cost = True
+    cli._cost_bar_mode = "rich"
+    cli._status_bar_visible = True
+    cli._invalidate = lambda *args, **kwargs: None
+    cli.agent = SimpleNamespace(
+        model="gemini-3.5-flash",
+        provider="gemini",
+        base_url="https://generativelanguage.googleapis.com/v1beta",
+        session_input_tokens=5_000,
+        session_output_tokens=500,
+        session_cache_read_tokens=16_000,
+        session_cache_write_tokens=0,
+        session_prompt_tokens=21_000,
+        session_completion_tokens=500,
+        session_total_tokens=21_500,
+        session_api_calls=11,
+        session_estimated_cost_usd=0.0144,
+        session_cost_status="estimated",
+        get_rate_limit_state=lambda: None,
+        context_compressor=SimpleNamespace(
+            last_prompt_tokens=31_500,
+            context_length=1_000_000,
+            compression_count=0,
+        ),
+    )
+
+    snapshot = cli._get_status_bar_snapshot()
+    usage = snapshot.get("usage") or {}
+    assert usage.get("cost_status") == "estimated", usage
+    assert usage.get("cost_usd") is not None, usage
+
+    text = cli._build_status_bar_text(width=120)
+    frag_text = _status_bar_fragments_text(cli, width=120)
+    assert "gemini-3.5-flash" in text, text
+    assert "$" in text, text
+    assert "n/a" not in text, text
+    assert "$" in frag_text, frag_text
+    assert "n/a" not in frag_text, frag_text
+
+
 def smoke_subprocess_isolated_import() -> None:
     repo = _repo_root()
     env = os.environ.copy()
@@ -136,6 +187,7 @@ def run_in_process_smokes() -> None:
     smoke_post_turn_snapshot_has_usage()
     smoke_post_turn_status_bar_shows_cost_after_model()
     smoke_post_turn_cost_toggle_hides_bar()
+    smoke_gemini_35_flash_cache_cost_not_na()
 
 
 def main() -> None:

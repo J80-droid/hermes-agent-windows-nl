@@ -99,7 +99,7 @@ Laatste rapport: `INSTITUTIONAL_E2E_REPORT_2026-05-22.md` (log `INSTITUTIONAL_E2
 Upstream + UPDATE audit: `UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md`.  
 Memory L1–L4 audit: `MEMORY_ARCHITECTURE_E2E_REPORT_2026-05-23.md` (**16 stappen** sinds 2026-05-24; tijdelijke logs `MEMORY_ARCHITECTURE_E2E_REPORT_*_*.md` gitignored).  
 Statusbalk-kosten audit: `STATUS_BAR_COST_E2E_REPORT_*.md` (10 stappen; `RUN_STATUS_BAR_COST_E2E.bat`).  
-Klassieke CLI statusbalk-kosten: `CLASSIC_CLI_STATUS_BAR_COST_E2E_REPORT_*.md` (11 stappen; `RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`).
+Klassieke CLI statusbalk-kosten: `CLASSIC_CLI_STATUS_BAR_COST_E2E_REPORT_*.md` (12 stappen incl. Gemini cache pricing; `RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`).
 
 ## Memory-architectuur E2E (L1–L4)
 
@@ -158,17 +158,18 @@ Optioneel: `-SkipPytest` (alleen repo/smoke/verify).
 
 | Stap | Controle |
 | ---- | -------- |
-| 1/11 | Repo: `status_bar_cost.py`, `cli.py`, tests, smoke + live smoke scripts |
-| 2/11 | `cli.py` hooks + formatter functies |
-| 3/11 | `CommandDef("cost")` + `merge_upstream_fork.ps1` keepOurs |
-| 4/11 | `UPSTREAM_SYNC.md` Classic CLI parity sectie |
-| 5/11 | Pytest: `test_status_bar_cost.py` |
-| 6/11 | Pytest: `test_cli_status_bar.py` (incl. `/cost`) |
-| 7/11 | Pytest: `test_status_bar_cost_e2e.py` |
-| 8/11 | Smoke: `status_bar_cost_classic_cli_smoke.py` |
-| 9/11 | **Live post-turn:** `status_bar_cost_classic_cli_live_smoke.py` (snapshot + fragments na 1 turn, `/cost` toggle, subprocess-isolatie) |
-| 10/11 | `verify_usage_cost_bar.py --verify` |
-| 11/11 | Docs: `cli.md`, `TERMINAL_WINDOWS.md`, `configuration.md`, `config.py` |
+| 1/12 | Repo: `status_bar_cost.py`, `usage_snapshot.py`, `usage_pricing.py`, `cli.py`, tests, smoke + live smoke scripts |
+| 2/12 | `cli.py` hooks + formatter functies |
+| 3/12 | `CommandDef("cost")` + `merge_upstream_fork.ps1` keepOurs |
+| 4/12 | `UPSTREAM_SYNC.md` Classic CLI parity sectie |
+| 5/12 | Pytest: `test_status_bar_cost.py` |
+| 6/12 | Pytest: `test_cli_status_bar.py` (incl. `/cost`) |
+| 7/12 | Pytest: `test_status_bar_cost_e2e.py` |
+| 8/12 | Smoke: `status_bar_cost_classic_cli_smoke.py` |
+| 9/12 | **Live post-turn:** `status_bar_cost_classic_cli_live_smoke.py` (snapshot + fragments, `/cost`, **gemini-3.5-flash cache ≠ n/a**, subprocess-isolatie) |
+| 10/12 | `verify_usage_cost_bar.py --verify` (incl. Google cache catalog) |
+| 11/12 | Docs: `cli.md`, `TERMINAL_WINDOWS.md`, `configuration.md`, `config.py` |
+| 12/12 | **Gemini cache pricing:** `_GOOGLE_GEMINI_PRICING`, `_seed_agent_session_cost`, pytest `test_usage_pricing` + `test_usage_snapshot` (gemini cache) |
 
 Optioneel: `-SkipPytest` voor alleen repo/smoke/verify/docs.
 

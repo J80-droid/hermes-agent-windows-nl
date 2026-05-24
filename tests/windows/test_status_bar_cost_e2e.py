@@ -25,6 +25,15 @@ def test_repo_usage_snapshot_module_exists():
     text = path.read_text(encoding="utf-8")
     assert "def build_session_usage_snapshot" in text
     assert "cost_breakdown_pct" in text
+    assert "_seed_agent_session_cost" in text
+
+
+def test_repo_google_gemini_cache_pricing_catalog():
+    text = (REPO / "agent" / "usage_pricing.py").read_text(encoding="utf-8")
+    assert "_GOOGLE_GEMINI_PRICING" in text
+    assert '"gemini-3.5-flash"' in text
+    assert "cache_read_cost_per_million" in text
+    assert "google-gemini-cli" in text
 
 
 def test_repo_usage_cost_bar_formatter_exists():
@@ -68,6 +77,7 @@ def test_repo_classic_cli_live_smoke_script_exists():
     text = path.read_text(encoding="utf-8")
     assert "classic cli live status bar cost smoke ok" in text
     assert "post-turn" in text.lower() or "post_turn" in text
+    assert "smoke_gemini_35_flash_cache_cost_not_na" in text
 
 
 def test_repo_gateway_delegates_to_usage_snapshot():

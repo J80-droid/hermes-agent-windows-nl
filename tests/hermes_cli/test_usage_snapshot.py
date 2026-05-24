@@ -104,3 +104,35 @@ def test_build_session_usage_snapshot_preserves_upstream_breakdown():
     assert usage["cost_breakdown_usd"]["output"] == 2.0
     assert usage["cost_breakdown_pct"]["out"] == 50
     assert usage["session_tools_executed"] == 12
+
+
+def test_build_session_usage_snapshot_gemini_35_flash_cache_no_unknown():
+    """Integration: real Google catalog, no mocks — cache hits must not yield n/a."""
+    agent = _agent(
+        model="gemini-3.5-flash",
+        provider="gemini",
+        base_url="https://generativelanguage.googleapis.com/v1beta",
+        session_input_tokens=5000,
+        session_output_tokens=500,
+        session_cache_read_tokens=16000,
+        session_cache_write_tokens=0,
+        session_prompt_tokens=21000,
+        session_completion_tokens=500,
+        session_total_tokens=21500,
+        session_api_calls=11,
+    )
+    usage = build_session_usage_snapshot(agent)
+    assert usage["cost_status"] == "estimated"
+    assert usage["cost_usd"] == pytest.approx(0.0144, abs=1e-6)
+    assert "cost_breakdown_usd" in usage
+    assert usage["cost_breakdown_usd"]["cache_read"] > 0
+
+
+def test_build_session_usage_snapshot_prefers_agent_session_cost():
+    agent = _agent(
+        session_estimated_cost_usd=0.42,
+        session_cost_status="estimated",
+    )
+    usage = build_session_usage_snapshot(agent)
+    assert usage["cost_usd"] == pytest.approx(0.42)
+    assert usage["cost_status"] == "estimated"

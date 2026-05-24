@@ -79,6 +79,18 @@ def main() -> int:
     if not classic_e2e.is_file():
         errors.append("windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.ps1 ontbreekt")
 
+    usage_pricing = repo / "agent" / "usage_pricing.py"
+    if usage_pricing.is_file():
+        up_text = usage_pricing.read_text(encoding="utf-8")
+        for needle in (
+            "_GOOGLE_GEMINI_PRICING",
+            '"gemini-3.5-flash"',
+            "cache_read_cost_per_million",
+            "google-gemini-cli",
+        ):
+            if needle not in up_text:
+                errors.append(f"agent/usage_pricing.py mist Google cache catalog: {needle}")
+
     cost_bar = repo / "ui-tui" / "src" / "domain" / "usageCostBar.ts"
     if not cost_bar.is_file():
         errors.append("ui-tui/src/domain/usageCostBar.ts ontbreekt")

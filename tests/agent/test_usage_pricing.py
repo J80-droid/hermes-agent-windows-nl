@@ -109,7 +109,9 @@ def test_normalize_usage_openai_prefers_prompt_tokens_details_over_top_level():
 def test_google_gemini_3_flash_preview_uses_flash_tier_pricing():
     entry = get_pricing_entry("gemini-3-flash-preview", provider="google")
     assert entry is not None
-    assert entry.output_cost_per_million is not None
+    assert float(entry.input_cost_per_million) == 1.50
+    assert float(entry.output_cost_per_million) == 9.00
+    assert float(entry.cache_read_cost_per_million) == 0.15
 
     cost = estimate_usage_cost(
         "gemini-3.5-flash",
@@ -118,6 +120,58 @@ def test_google_gemini_3_flash_preview_uses_flash_tier_pricing():
     )
     assert cost.amount_usd is not None
     assert cost.status == "estimated"
+
+
+def test_gemini_35_flash_with_cache_read_returns_estimated_cost():
+    """Regression: gemini-3.5-flash sessions with implicit cache hits showed n/a."""
+    result = estimate_usage_cost(
+        "gemini-3.5-flash",
+        CanonicalUsage(
+            input_tokens=5000,
+            output_tokens=500,
+            cache_read_tokens=16000,
+        ),
+        provider="gemini",
+    )
+
+    assert result.status == "estimated"
+    assert result.amount_usd is not None
+    # 5K input @ $1.50/M + 500 output @ $9/M + 16K cache @ $0.15/M
+    assert float(result.amount_usd) == 0.0144
+
+
+def test_gemini_35_flash_uses_own_standard_tier_not_25_flash():
+    entry = get_pricing_entry("gemini-3.5-flash", provider="gemini")
+    assert entry is not None
+    assert float(entry.input_cost_per_million) == 1.50
+    assert float(entry.output_cost_per_million) == 9.00
+    assert float(entry.input_cost_per_million) != 0.30
+
+
+def test_gemini_25_flash_cache_read_pricing_entry():
+    entry = get_pricing_entry("gemini-2.5-flash", provider="google")
+    assert entry is not None
+    assert float(entry.cache_read_cost_per_million) == 0.03
+    assert float(entry.cache_write_cost_per_million) == 0.30
+
+
+def test_google_gemini_cli_routes_to_google_pricing():
+    entry = get_pricing_entry("gemini-3.5-flash", provider="google-gemini-cli")
+    assert entry is not None
+    assert float(entry.cache_read_cost_per_million) == 0.15
+
+
+def test_gemini_31_flash_lite_preview_uses_lite_tier():
+    entry = get_pricing_entry("gemini-3.1-flash-lite-preview", provider="google")
+    assert entry is not None
+    assert float(entry.input_cost_per_million) == 0.25
+    assert float(entry.cache_read_cost_per_million) == 0.025
+
+
+def test_gemini_25_flash_lite_has_cache_pricing():
+    entry = get_pricing_entry("gemini-2.5-flash-lite", provider="gemini")
+    assert entry is not None
+    assert float(entry.cache_read_cost_per_million) == 0.01
 
 
 def test_openrouter_models_api_pricing_is_converted_from_per_token_to_per_million(monkeypatch):

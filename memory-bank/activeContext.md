@@ -10,7 +10,7 @@
 
 **TUI statusbalk-kosten (2026-05-24, rich bar + layout-fix):** Framework-default **`show_cost: true`** + **`cost_bar_mode: rich`**; altijd zichtbaar (`n/a`/`included`/`~NK tok`); `statusRuleColumns` (composer `paddingX` −2) + `resolveStatusRuleLayout`; live turn-kosten; Gemini 3.x → geschatte USD via `usage_pricing`; **`REBUILD_TUI.bat`** + volledige Hermes-herstart na TUI-pull (dist niet hot-reload). E2E `RUN_STATUS_BAR_COST_E2E.bat`.
 
-**Klassieke CLI statusbalk-kosten (2026-05-24):** Pariteit met TUI — `hermes_cli/status_bar_cost.py` + dunne hooks in `cli.py` (`_append_status_bar_cost_fragments`, `/cost`); zelfde defaults en responsive tiers (≥52 cols session, ≥76 rich breakdown); data via `build_session_usage_snapshot`. E2E **`RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`** (10/10 PASS).
+**Klassieke CLI statusbalk-kosten (2026-05-24):** Pariteit met TUI — `hermes_cli/status_bar_cost.py` + dunne hooks in `cli.py` (`_append_status_bar_cost_fragments`, `/cost`); zelfde defaults en responsive tiers (≥52 cols session, ≥76 rich breakdown); data via `build_session_usage_snapshot` + `_seed_agent_session_cost`. **Gemini cache pricing:** `agent/usage_pricing.py` (`_GOOGLE_GEMINI_PRICING`, incl. `gemini-3.5-flash` cache-read; route `google-gemini-cli`); geen `n/a` bij cache-hits. E2E **`RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`** (12/12 PASS).
 
 **OpenRouter Pareto Code router (2026-05-24, PASS):** model-gated `min_coding_score` → `pareto-router` plugin op `openrouter/pareto-code`; verify `scripts/verify_pareto_router.py`; E2E `windows/audits/RUN_PARETO_E2E.bat` (8/8); `-IncludeParetoE2E` in `RUN_AUDITS.bat`. Geen live API-call in E2E.
 

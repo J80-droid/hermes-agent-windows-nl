@@ -155,6 +155,10 @@ class TestHasKnownPricing:
         assert _has_known_pricing("some-opus-model") is False
         assert _has_known_pricing("future-sonnet-v2") is False
 
+    def test_gemini_35_flash_is_known(self):
+        assert _has_known_pricing("gemini-3.5-flash", provider="gemini") is True
+        assert _has_known_pricing("gemini-3.5-flash", provider="google-gemini-cli") is True
+
 
 class TestEstimateCost:
     def test_basic_cost(self):

@@ -117,6 +117,21 @@ def _compute_cost_breakdown_pct(breakdown_usd: dict[str, float]) -> Optional[dic
     return pct
 
 
+def _seed_agent_session_cost(agent: Any, usage: dict[str, Any]) -> None:
+    """Prefer per-call accumulated session cost when the agent already tracked it."""
+    status = getattr(agent, "session_cost_status", None)
+    if status not in {"estimated", "actual", "included"}:
+        return
+    cost = getattr(agent, "session_estimated_cost_usd", None)
+    if cost is None:
+        return
+    try:
+        usage["cost_usd"] = float(cost)
+    except (TypeError, ValueError):
+        return
+    usage["cost_status"] = status
+
+
 def _attach_cost_fields(agent: Any, usage: dict[str, Any]) -> None:
     """Add cost_usd, cost_status, and optional breakdown fields."""
     if (
@@ -190,5 +205,6 @@ def build_session_usage_snapshot(agent: Any) -> dict[str, Any]:
         except (TypeError, ValueError):
             pass
 
+    _seed_agent_session_cost(agent, usage)
     _attach_cost_fields(agent, usage)
     return usage

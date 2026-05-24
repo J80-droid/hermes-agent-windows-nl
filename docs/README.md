@@ -11,7 +11,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Memory L1–L4 (vault, geen L3) | [MEMORY_ARCHITECTURE.md](MEMORY_ARCHITECTURE.md) — E2E **18/18**: `RUN_MEMORY_ARCHITECTURE_E2E.bat` · productie: `RUN_MEMORY_PRODUCTION_GATE.bat` |
 | Obsidian vault openen (L4) | `windows/OPEN_OBSIDIAN_VAULT.bat` — taakbalk: `Hermes - Obsidian vault - naar taakbalk slepen.lnk` |
 | TUI statusbalk-kosten (rich: turn/sessie, breakdown, tools) | `windows/audits/RUN_STATUS_BAR_COST_E2E.bat` · `-ApplyDisplayFix` · `RUN_AUDITS.bat -IncludeStatusBarCostE2E` — rapport `windows/audits/STATUS_BAR_COST_E2E_REPORT_2026-05-23.md` |
-| Klassieke CLI statusbalk-kosten | `windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` · `RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E` — rapport `windows/audits/CLASSIC_CLI_STATUS_BAR_COST_E2E_REPORT_2026-05-24.md` |
+| Klassieke CLI statusbalk-kosten (Gemini cache, 12-stappen E2E) | `windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` · `RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E` — rapport `windows/audits/CLASSIC_CLI_STATUS_BAR_COST_E2E_REPORT_2026-05-24.md` |
 | OpenRouter Pareto Code router | `windows/audits/RUN_PARETO_E2E.bat` · `RUN_AUDITS.bat -IncludeParetoE2E` — rapport lokaal: `PARETO_E2E_REPORT_*.md` (gitignored) |
 | Toolsets per domein (minimaal + opt-in) | [DOMAIN_TOOLSET_AUDIT.md](DOMAIN_TOOLSET_AUDIT.md) — sync: `windows/SYNC_DOMAIN_TOOLSETS.bat` |
 | Model/provider voor **alle** profielen instellen | [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md) |
