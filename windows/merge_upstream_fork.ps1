@@ -100,6 +100,7 @@ function Get-MergeConflictResolution {
         'hermes_cli/markdown_output_normalize.py',
         'hermes_cli/display_markdown.py',
         'hermes_cli/usage_snapshot.py',
+        'hermes_cli/status_bar_cost.py',
         'web/src/components/Markdown.tsx',
         'web/src/lib/institutionalMarkdown.ts',
         'web/src/lib/institutionalWebPalette.ts',
@@ -127,13 +128,17 @@ function Get-MergeConflictResolution {
         'tests/cli/test_institutional_profile_chat_ux.py',
         'tests/hermes_cli/test_normalizer_ts_parity.py',
         'tests/hermes_cli/test_usage_snapshot.py',
+        'tests/hermes_cli/test_status_bar_cost.py',
         'ui-tui/src/domain/usageCostBar.ts',
         'ui-tui/src/__tests__/usageCostBar.test.ts',
         'scripts/verify_usage_cost_bar.py',
         'scripts/status_bar_cost_gateway_smoke.py',
         'windows/audits/RUN_STATUS_BAR_COST_E2E.ps1',
         'windows/audits/RUN_STATUS_BAR_COST_E2E.bat',
-        'tests/windows/test_status_bar_cost_e2e.py'
+        'tests/windows/test_status_bar_cost_e2e.py',
+        'windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.ps1',
+        'windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat',
+        'scripts/status_bar_cost_classic_cli_smoke.py'
     )
 
     $takeTheirs = @(

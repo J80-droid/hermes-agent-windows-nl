@@ -164,8 +164,8 @@ export function resolveStatusRuleLayout(opts: {
   const costLabel = shouldShowStatusBarCostRich(opts.showCost)
     ? formatStatusBarCostRich(opts.usage, { mode: opts.costBarMode, width: costAvailableWidth })
     : null
-  const costReserve = costLabel ? costLabel.length + 3 : 0
-  const leftWidth = Math.max(STATUS_RULE_MIN_LEFT_WIDTH, cols - cwdReserve - costReserve)
+  // Cost is rendered inside the left segment (after model), not a flex sibling.
+  const leftWidth = Math.max(STATUS_RULE_MIN_LEFT_WIDTH, cols - cwdReserve)
 
   return { costLabel, leftWidth }
 }

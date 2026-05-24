@@ -320,6 +320,12 @@ export function StatusRule({
             <Text color={statusColor}>{status}</Text>
           )}
           <Text color={t.color.muted}> │ {modelLabel(model, modelReasoningEffort, modelFast)}</Text>
+          {costLabel ? (
+            <Text color={t.color.accent}>
+              {' │ '}
+              {costLabel}
+            </Text>
+          ) : null}
           {ctxLabel ? <Text color={t.color.muted}> │ {ctxLabel}</Text> : null}
           {bar ? (
             <Text color={t.color.muted}>
@@ -355,15 +361,6 @@ export function StatusRule({
           {bgCount > 0 ? <Text color={t.color.muted}> │ {bgCount} bg</Text> : null}
         </Text>
       </Box>
-
-      {costLabel ? (
-        <Box flexShrink={0}>
-          <Text color={t.color.accent}>
-            {' │ '}
-            {costLabel}
-          </Text>
-        </Box>
-      ) : null}
 
       <Text color={t.color.border}> ─ </Text>
       <Text color={t.color.label} wrap="truncate-end">

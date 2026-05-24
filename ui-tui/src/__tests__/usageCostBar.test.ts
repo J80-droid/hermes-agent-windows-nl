@@ -112,6 +112,6 @@ describe('usageCostBar', () => {
     })
 
     expect(layout.costLabel).toBe(costLabel)
-    expect(layout.leftWidth).toBe(effectiveCols - 'D:\\project'.length - 3 - costLabel.length - 3)
+    expect(layout.leftWidth).toBe(effectiveCols - 'D:\\project'.length - 3)
   })
 })

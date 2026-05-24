@@ -42,9 +42,11 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | **`RUN_MEMORY_PRODUCTION_GATE.bat`** | Gecombineerd: trust limits + memory E2E (18/18) + trust forensic E2E + pytest memory/trust |
 | **`RUN_AUDITS.bat -IncludeMemoryProductionGate`** | Alleen memory productie-poort (ook in `-IncludeAllE2E`) |
 | **`RUN_STATUS_BAR_COST_E2E.bat`** | TUI statusbalk (rich): `show_cost`, `cost_bar_mode`, breakdown, turn-delta, live `~$turn`, gateway smoke |
+| **`RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`** | Klassieke CLI (`hermes chat`): `status_bar_cost.py`, `cli.py` hooks, `/cost`, smoke + pytest |
 | **`RUN_PARETO_E2E.bat`** | OpenRouter Pareto Code router: model-gate, transport/summary parity, pytest, verify script |
 | **`RUN_AUDITS.bat -IncludeMemoryArchitectureE2E`** | Bovenstaande memory E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeStatusBarCostE2E`** | Bovenstaande statusbalk-kosten E2E in gecombineerde poort |
+| **`RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E`** | Klassieke CLI statusbalk-kosten E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeParetoE2E`** | Bovenstaande Pareto router E2E in gecombineerde poort |
 | **`windows\tests\RUN_PYTEST.bat`** | Brede pytest (excl. integration) |
 | **`windows\VERIFY_WINDOWS_CHAIN.bat`** | Script-keten backup/RAG (handmatig, pause) |
@@ -94,7 +96,8 @@ Presentatie: zie `docs/INSTITUTIONAL_PRESENTATION.md`. **Eén commando:** `windo
 Laatste rapport: `INSTITUTIONAL_E2E_REPORT_2026-05-22.md` (log `INSTITUTIONAL_E2E_LAST_RUN.log` is gitignored).  
 Upstream + UPDATE audit: `UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md`.  
 Memory L1–L4 audit: `MEMORY_ARCHITECTURE_E2E_REPORT_2026-05-23.md` (**16 stappen** sinds 2026-05-24; tijdelijke logs `MEMORY_ARCHITECTURE_E2E_REPORT_*_*.md` gitignored).  
-Statusbalk-kosten audit: `STATUS_BAR_COST_E2E_REPORT_*.md` (10 stappen; `RUN_STATUS_BAR_COST_E2E.bat`).
+Statusbalk-kosten audit: `STATUS_BAR_COST_E2E_REPORT_*.md` (10 stappen; `RUN_STATUS_BAR_COST_E2E.bat`).  
+Klassieke CLI statusbalk-kosten: `CLASSIC_CLI_STATUS_BAR_COST_E2E_REPORT_*.md` (10 stappen; `RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`).
 
 ## Memory-architectuur E2E (L1–L4)
 
@@ -142,6 +145,29 @@ Optioneel: `-ApplyDisplayFix` (display drift), `-SkipRuntime` (geen Hermes home)
 | 10/10 | `ui-tui/README.md` documenteert `/cost`, `config.set cost_bar_mode`, live `~$turn` |
 
 **Niet in deze E2E:** live Ink-TUI pixel-render (handmatig: statusbalk tijdens stream). Onbekende modelprijs (`cost_usd` ontbreekt) toont in de TUI `n/a`/`included` plus live `~NK tok` tijdens stream — gedekt via vitest (`liveTurnCost`, `usageCostBar`, `createGatewayEventHandler`).
+
+## Klassieke CLI statusbalk-kosten E2E
+
+```text
+windows\audits\RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat
+```
+
+Optioneel: `-SkipPytest` (alleen repo/smoke/verify).
+
+| Stap | Controle |
+| ---- | -------- |
+| 1/10 | Repo: `status_bar_cost.py`, `cli.py`, tests, smoke script |
+| 2/10 | `cli.py` hooks + formatter functies |
+| 3/10 | `CommandDef("cost")` + `merge_upstream_fork.ps1` keepOurs |
+| 4/10 | `UPSTREAM_SYNC.md` Classic CLI parity sectie |
+| 5/10 | Pytest: `test_status_bar_cost.py` |
+| 6/10 | Pytest: `test_cli_status_bar.py` (incl. `/cost`) |
+| 7/10 | Pytest: `test_status_bar_cost_e2e.py` |
+| 8/10 | Smoke: `status_bar_cost_classic_cli_smoke.py` (render + toggle) |
+| 9/10 | `verify_usage_cost_bar.py --verify` |
+| 10/10 | Docs: `cli.md`, `TERMINAL_WINDOWS.md`, `configuration.md`, `config.py` |
+
+**Niet in deze E2E:** live `hermes chat` terminal (handmatig: statusbalk na één turn; `/cost off`).
 
 ## Pareto Code router E2E
 

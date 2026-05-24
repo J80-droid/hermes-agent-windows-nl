@@ -14,6 +14,7 @@ param(
     [switch]$IncludeMemoryArchitectureE2E,
     [switch]$IncludeMemoryProductionGate,
     [switch]$IncludeStatusBarCostE2E,
+    [switch]$IncludeClassicCliStatusBarCostE2E,
     [switch]$IncludeParetoE2E,
     [switch]$SkipPytest,
     [switch]$SkipFootguns,
@@ -231,6 +232,14 @@ if ($IncludeStatusBarCostE2E -or $IncludeAllE2E) {
     $costE2e = Join-Path $scriptRoot 'RUN_STATUS_BAR_COST_E2E.ps1'
     Invoke-Step 'status-bar-cost-e2e' {
         & $costE2e -RepoRoot $repoRoot
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeClassicCliStatusBarCostE2E -or $IncludeAllE2E) {
+    $classicCostE2e = Join-Path $scriptRoot 'RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.ps1'
+    Invoke-Step 'classic-cli-status-bar-cost-e2e' {
+        & $classicCostE2e -RepoRoot $repoRoot
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

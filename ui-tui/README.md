@@ -228,7 +228,7 @@ Notes:
   - **minimal** — legacy single-line `~$0.0042` (session only, four decimals); same fallbacks when USD is unavailable.
 - Change format without a dedicated slash command: `config.set cost_bar_mode rich|minimal|toggle|status` (persisted to `config.yaml`; picked up by config sync). There is no `/costbar` slash alias — only `/cost` for on/off.
 - **Live turn cost during stream:** while a turn is in progress, the TUI estimates `$turn` client-side from token deltas (output/reasoning/tool text) and session `cost_breakdown_usd` rates (or breakdown totals when `cost_usd` is missing). Shown as `~$0.05 / $5.74` until `message.complete` replaces it with the exact session-cost delta. When USD rates are unavailable, the turn slot shows live tokens instead (`~1.2K tok / n/a`). Module: `src/domain/liveTurnCost.ts`; wiring: `createGatewayEventHandler.ts` + `turnStore.streamOutputTokens`.
-- **Layout:** `ComposerPane` uses `paddingX={1}`; `statusRuleColumns()` subtracts 2 cols before `resolveStatusRuleLayout` so the cost segment (accent color, non-truncated) and cwd stay visible instead of being dropped while empty space remains on the right.
+- **Layout:** `ComposerPane` uses `paddingX={1}`; `statusRuleColumns()` subtracts 2 cols. Cost renders **inline after the model** inside the truncated left segment (accent color), so it stays visible even when a separate flex sibling would be dropped by Ink.
 
 Anything else falls through to:
 

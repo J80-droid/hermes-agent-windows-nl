@@ -218,6 +218,15 @@ Bij merge van Nous in jouw fork botsen vaak **jouw fork-only** paden met upstrea
 | `agent/usage_pricing.py` | **Geen fork-wijzigingen** — snapshot volgt upstream API |
 | `windows/team_display.defaults` | `show_cost=true`, `cost_bar_mode=rich` |
 
+### Classic CLI parity (statusbalk kosten)
+
+| Pad | Actie na merge |
+| --- | -------------- |
+| `hermes_cli/status_bar_cost.py` | **Behoud fork** — Python formatter (mirror `usageCostBar.ts`) |
+| `tests/hermes_cli/test_status_bar_cost.py` | **Behoud fork** — unit tests formatter |
+| `cli.py` | **Behoud fork** (al in keepOurs) — dunne hooks: `_show_cost`, `_append_status_bar_cost_fragments`, `/cost` |
+| `hermes_cli/commands.py` | `CommandDef("cost", …)` na merge handmatig behouden indien upstream ontbreekt |
+
 ### Meestal upstream overnemen (tenzij bewust aangepast)
 
 | Pad | Richtlijn |

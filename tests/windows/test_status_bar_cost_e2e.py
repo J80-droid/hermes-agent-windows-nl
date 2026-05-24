@@ -35,6 +35,33 @@ def test_repo_usage_cost_bar_formatter_exists():
     assert "formatUsdCompact" in text
 
 
+def test_repo_classic_cli_status_bar_cost_module():
+    path = REPO / "hermes_cli" / "status_bar_cost.py"
+    assert path.is_file()
+    text = path.read_text(encoding="utf-8")
+    assert "def format_status_bar_cost_rich" in text
+    assert "def resolve_status_bar_cost_label" in text
+
+
+def test_repo_classic_cli_cost_hooks():
+    cli = (REPO / "cli.py").read_text(encoding="utf-8")
+    assert "_handle_cost_command" in cli
+    assert "_append_status_bar_cost_fragments" in cli
+    assert 'canonical == "cost"' in cli
+
+
+def test_repo_cost_command_registered():
+    commands = (REPO / "hermes_cli" / "commands.py").read_text(encoding="utf-8")
+    assert 'CommandDef("cost"' in commands
+
+
+def test_repo_classic_cli_smoke_script_exists():
+    path = REPO / "scripts" / "status_bar_cost_classic_cli_smoke.py"
+    assert path.is_file()
+    text = path.read_text(encoding="utf-8")
+    assert "classic cli status bar cost smoke ok" in text
+
+
 def test_repo_gateway_delegates_to_usage_snapshot():
     gateway = (REPO / "tui_gateway" / "server.py").read_text(encoding="utf-8")
     assert "build_session_usage_snapshot" in gateway

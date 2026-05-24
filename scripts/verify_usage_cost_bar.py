@@ -36,6 +36,45 @@ def main() -> int:
     if not snapshot.is_file():
         errors.append("hermes_cli/usage_snapshot.py ontbreekt")
 
+    status_bar_cost = repo / "hermes_cli" / "status_bar_cost.py"
+    if not status_bar_cost.is_file():
+        errors.append("hermes_cli/status_bar_cost.py ontbreekt")
+    else:
+        sbc = status_bar_cost.read_text(encoding="utf-8")
+        for needle in (
+            "format_session_cost_label",
+            "format_status_bar_cost_rich",
+            "resolve_status_bar_cost_label",
+        ):
+            if needle not in sbc:
+                errors.append(f"status_bar_cost.py mist {needle}")
+
+    classic_cli = (repo / "cli.py").read_text(encoding="utf-8")
+    for needle in (
+        "_append_status_bar_cost_fragments",
+        "_resolve_status_bar_cost_label",
+        "_handle_cost_command",
+        'canonical == "cost"',
+    ):
+        if needle not in classic_cli:
+            errors.append(f"cli.py mist classic CLI cost hook: {needle}")
+
+    commands_py = (repo / "hermes_cli" / "commands.py").read_text(encoding="utf-8")
+    if 'CommandDef("cost"' not in commands_py:
+        errors.append('hermes_cli/commands.py mist CommandDef("cost")')
+
+    cost_tests = repo / "tests" / "hermes_cli" / "test_status_bar_cost.py"
+    if not cost_tests.is_file():
+        errors.append("tests/hermes_cli/test_status_bar_cost.py ontbreekt")
+
+    classic_smoke = repo / "scripts" / "status_bar_cost_classic_cli_smoke.py"
+    if not classic_smoke.is_file():
+        errors.append("scripts/status_bar_cost_classic_cli_smoke.py ontbreekt")
+
+    classic_e2e = repo / "windows" / "audits" / "RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.ps1"
+    if not classic_e2e.is_file():
+        errors.append("windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.ps1 ontbreekt")
+
     cost_bar = repo / "ui-tui" / "src" / "domain" / "usageCostBar.ts"
     if not cost_bar.is_file():
         errors.append("ui-tui/src/domain/usageCostBar.ts ontbreekt")

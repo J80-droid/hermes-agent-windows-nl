@@ -2885,6 +2885,10 @@ class HermesCLI:
         self.streaming_enabled = CLI_CONFIG["display"].get("streaming", False)
         # show_timestamps: prefix user and assistant labels with [HH:MM]
         self.show_timestamps = CLI_CONFIG["display"].get("timestamps", False)
+        _display = CLI_CONFIG.get("display") or {}
+        self._show_cost = _display.get("show_cost", True) is not False
+        _cost_mode = str(_display.get("cost_bar_mode") or "rich").strip().lower()
+        self._cost_bar_mode = _cost_mode if _cost_mode in {"rich", "minimal"} else "rich"
         self.final_response_markdown = str(
             CLI_CONFIG["display"].get("final_response_markdown", "strip")
         ).strip().lower() or "strip"
@@ -3001,8 +3005,15 @@ class HermesCLI:
             # Validate each toolset — MCP server names are resolved via
             # live registry aliases (registered during discover_mcp_tools),
             # but discovery hasn't run yet at this point, so exclude them.
+            # "mcp" / "no_mcp" are platform_toolsets passthrough sentinels (see
+            # tools_config.get_enabled_toolsets), not built-in toolset names.
             mcp_names = set((CLI_CONFIG.get("mcp_servers") or {}).keys())
-            invalid = [t for t in toolsets if not validate_toolset(t) and t not in mcp_names]
+            passthrough = frozenset({"mcp", "no_mcp"})
+            invalid = [
+                t
+                for t in toolsets
+                if not validate_toolset(t) and t not in mcp_names and t not in passthrough
+            ]
             if invalid:
                 self._console_print(f"[bold red]Warning: Unknown toolsets: {', '.join(invalid)}[/]")
         
@@ -3444,6 +3455,7 @@ class HermesCLI:
             pass
 
         if not agent:
+            snapshot["usage"] = {"calls": 0}
             return snapshot
 
         snapshot["session_input_tokens"] = getattr(agent, "session_input_tokens", 0) or 0
@@ -3465,7 +3477,61 @@ class HermesCLI:
             if context_length:
                 snapshot["context_percent"] = max(0, min(100, round((context_tokens / context_length) * 100)))
 
+        try:
+            from hermes_cli.usage_snapshot import build_session_usage_snapshot
+
+            snapshot["usage"] = build_session_usage_snapshot(agent) if agent else {"calls": 0}
+        except Exception:
+            snapshot["usage"] = {"calls": snapshot.get("session_api_calls", 0) or 0}
+
         return snapshot
+
+    def _status_bar_cost_format_width(self, terminal_width: int) -> int:
+        if terminal_width < 76:
+            return 40
+        return max(40, terminal_width - 32)
+
+    def _resolve_status_bar_cost_label(self, snapshot: Dict[str, Any], terminal_width: int) -> Optional[str]:
+        if terminal_width < 52 or not getattr(self, "_show_cost", True):
+            return None
+        try:
+            from hermes_cli.status_bar_cost import resolve_status_bar_cost_label
+
+            usage = snapshot.get("usage") or {"calls": 0}
+            return resolve_status_bar_cost_label(
+                usage,
+                show_cost=True,
+                cost_bar_mode=getattr(self, "_cost_bar_mode", "rich"),
+                width=self._status_bar_cost_format_width(terminal_width),
+            )
+        except Exception:
+            return None
+
+    def _append_status_bar_cost_fragments(
+        self,
+        frags: list,
+        snapshot: Dict[str, Any],
+        terminal_width: int,
+        *,
+        separator: str = " │ ",
+    ) -> None:
+        label = self._resolve_status_bar_cost_label(snapshot, terminal_width)
+        if not label:
+            return
+        frags.extend([
+            ("class:status-bar-dim", separator),
+            ("class:status-bar-strong", label),
+        ])
+
+    def _append_status_bar_cost_text_part(
+        self,
+        parts: list,
+        snapshot: Dict[str, Any],
+        terminal_width: int,
+    ) -> None:
+        label = self._resolve_status_bar_cost_label(snapshot, terminal_width)
+        if label:
+            parts.append(label)
 
     @staticmethod
     def _status_bar_display_width(text: str) -> int:
@@ -3674,7 +3740,9 @@ class HermesCLI:
                     text += " · ⚠ YOLO"
                 return self._trim_status_bar_text(text, width)
             if width < 76:
-                parts = [f"⚕ {snapshot['model_short']}", percent_label]
+                parts = [f"⚕ {snapshot['model_short']}"]
+                self._append_status_bar_cost_text_part(parts, snapshot, width)
+                parts.append(percent_label)
                 compressions = snapshot.get("compressions", 0)
                 if compressions:
                     parts.append(f"🗜️ {compressions}")
@@ -3694,7 +3762,9 @@ class HermesCLI:
                 context_label = "ctx --"
 
             compressions = snapshot.get("compressions", 0)
-            parts = [f"⚕ {snapshot['model_short']}", context_label, percent_label]
+            parts = [f"⚕ {snapshot['model_short']}"]
+            self._append_status_bar_cost_text_part(parts, snapshot, width)
+            parts.extend([context_label, percent_label])
             if compressions:
                 parts.append(f"🗜️ {compressions}")
             bg_count = snapshot.get("active_background_tasks", 0)
@@ -3744,9 +3814,14 @@ class HermesCLI:
                     frags = [
                         ("class:status-bar", " ⚕ "),
                         ("class:status-bar-strong", snapshot["model_short"]),
+                    ]
+                    self._append_status_bar_cost_fragments(
+                        frags, snapshot, width, separator=" · "
+                    )
+                    frags.extend([
                         ("class:status-bar-dim", " · "),
                         (self._status_bar_context_style(percent), percent_label),
-                    ]
+                    ])
                     if compressions:
                         frags.append(("class:status-bar-dim", " · "))
                         frags.append((self._compression_count_style(compressions), f"🗜️ {compressions}"))
@@ -3775,13 +3850,16 @@ class HermesCLI:
                     frags = [
                         ("class:status-bar", " ⚕ "),
                         ("class:status-bar-strong", snapshot["model_short"]),
+                    ]
+                    self._append_status_bar_cost_fragments(frags, snapshot, width)
+                    frags.extend([
                         ("class:status-bar-dim", " │ "),
                         ("class:status-bar-dim", context_label),
                         ("class:status-bar-dim", " │ "),
                         (bar_style, self._build_context_bar(percent)),
                         ("class:status-bar-dim", " "),
                         (bar_style, percent_label),
-                    ]
+                    ])
                     if compressions:
                         frags.append(("class:status-bar-dim", " │ "))
                         frags.append((self._compression_count_style(compressions), f"🗜️ {compressions}"))
@@ -8408,6 +8486,8 @@ class HermesCLI:
             self._status_bar_visible = not self._status_bar_visible
             state = "visible" if self._status_bar_visible else "hidden"
             self._console_print(f"  Status bar {state}")
+        elif canonical == "cost":
+            self._handle_cost_command(cmd_original)
         elif canonical == "verbose":
             self._toggle_verbose()
         elif canonical == "footer":
@@ -9409,6 +9489,56 @@ class HermesCLI:
         print("  Note: banner colors will update on next session start.")
         if self._apply_tui_skin_style():
             print("  Prompt + TUI colors updated.")
+
+    def _handle_cost_command(self, cmd_original: str) -> None:
+        """Toggle or inspect ``display.show_cost`` for the status bar.
+
+        Usage:
+            /cost           → toggle
+            /cost on|off    → explicit
+            /cost status    → show current state
+        """
+        from hermes_cli.colors import Colors as _Colors
+
+        arg = ""
+        try:
+            parts = (cmd_original or "").strip().split(None, 1)
+            if len(parts) > 1:
+                arg = parts[1].strip().lower()
+        except Exception:
+            arg = ""
+
+        current = getattr(self, "_show_cost", True)
+
+        if arg in {"status", "?"}:
+            state = "ON" if current else "OFF"
+            mode = getattr(self, "_cost_bar_mode", "rich")
+            _cprint(
+                f"  {_Colors.BOLD}Status bar cost:{_Colors.RESET} {state}\n"
+                f"  Mode: {mode} (display.cost_bar_mode)"
+            )
+            return
+
+        if arg in {"on", "enable", "true", "1"}:
+            new_state = True
+        elif arg in {"off", "disable", "false", "0"}:
+            new_state = False
+        elif arg in {"toggle", ""}:
+            new_state = not current
+        else:
+            _cprint("  Usage: /cost [on|off|toggle|status]")
+            return
+
+        self._show_cost = new_state
+        if save_config_value("display.show_cost", new_state):
+            state = (
+                f"{_Colors.GREEN}ON{_Colors.RESET}" if new_state
+                else f"{_Colors.DIM}OFF{_Colors.RESET}"
+            )
+            _cprint(f"  Status bar cost: {state}")
+        else:
+            _cprint("  Failed to save display.show_cost to config.yaml")
+        self._invalidate()
 
     def _handle_footer_command(self, cmd_original: str) -> None:
         """Toggle or inspect ``display.runtime_footer.enabled`` from the CLI.

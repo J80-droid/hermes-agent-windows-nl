@@ -12,6 +12,8 @@ def _make_cli(model: str = "anthropic/claude-sonnet-4-20250514"):
     cli_obj.session_start = datetime.now() - timedelta(minutes=14, seconds=32)
     cli_obj.conversation_history = [{"role": "user", "content": "hi"}]
     cli_obj.agent = None
+    cli_obj._show_cost = True
+    cli_obj._cost_bar_mode = "rich"
     return cli_obj
 
 
@@ -78,8 +80,109 @@ class TestCLIStatusBar:
         assert "claude-sonnet-4-20250514" in text
         assert "12.4K/200K" in text
         assert "6%" in text
-        assert "$0.06" not in text  # cost hidden by default
+        assert "$" in text
         assert "15m" in text
+
+    def test_build_status_bar_text_hides_cost_when_show_cost_off(self):
+        cli_obj = _attach_agent(
+            _make_cli(),
+            prompt_tokens=10000,
+            completion_tokens=5000,
+            total_tokens=15000,
+            api_calls=7,
+            context_tokens=50000,
+            context_length=200_000,
+        )
+        cli_obj._show_cost = False
+
+        text = cli_obj._build_status_bar_text(width=120)
+        assert "$" not in text
+
+    def test_build_status_bar_text_shows_rich_cost_breakdown(self):
+        cli_obj = _attach_agent(
+            _make_cli(),
+            prompt_tokens=10_230,
+            completion_tokens=2_220,
+            total_tokens=12_450,
+            api_calls=7,
+            context_tokens=12_450,
+            context_length=200_000,
+        )
+        usage = {
+            "calls": 7,
+            "cost_breakdown_pct": {"cw": 43, "out": 40, "in": 16, "cr": 1},
+            "cost_status": "estimated",
+            "cost_usd": 5.74,
+            "session_tools_executed": 12,
+            "turn_cost_usd": 0.23,
+        }
+        with patch(
+            "hermes_cli.usage_snapshot.build_session_usage_snapshot",
+            return_value=usage,
+        ):
+            text = cli_obj._build_status_bar_text(width=120)
+
+        assert "$0.23 / $5.74" in text
+        assert "cw 43%" in text
+        assert "7 calls" in text
+
+    def test_build_status_bar_text_no_cost_below_52_columns(self):
+        cli_obj = _attach_agent(
+            _make_cli(),
+            prompt_tokens=10000,
+            completion_tokens=5000,
+            total_tokens=15000,
+            api_calls=7,
+            context_tokens=50000,
+            context_length=200_000,
+        )
+
+        text = cli_obj._build_status_bar_text(width=50)
+        assert "$" not in text
+
+    def test_build_status_bar_text_minimal_cost_bar_mode(self):
+        cli_obj = _attach_agent(
+            _make_cli(),
+            prompt_tokens=10_230,
+            completion_tokens=2_220,
+            total_tokens=12_450,
+            api_calls=7,
+            context_tokens=12_450,
+            context_length=200_000,
+        )
+        cli_obj._cost_bar_mode = "minimal"
+        usage = {
+            "calls": 7,
+            "cost_status": "estimated",
+            "cost_usd": 0.064,
+        }
+        with patch(
+            "hermes_cli.usage_snapshot.build_session_usage_snapshot",
+            return_value=usage,
+        ):
+            text = cli_obj._build_status_bar_text(width=120)
+
+        assert "~$0.0640" in text
+
+    def test_fragments_show_cost_label_at_medium_width(self):
+        cli_obj = _attach_agent(
+            _make_cli(),
+            prompt_tokens=10_000,
+            completion_tokens=2_400,
+            total_tokens=12_400,
+            api_calls=7,
+            context_tokens=12_400,
+            context_length=200_000,
+        )
+        cli_obj._status_bar_visible = True
+
+        mock_app = MagicMock()
+        mock_app.output.get_size.return_value = MagicMock(columns=60)
+        with patch("prompt_toolkit.application.get_app", return_value=mock_app):
+            frags = cli_obj._get_status_bar_fragments()
+
+        joined = "".join(text for _, text in frags)
+        assert "$" in joined
 
     def test_input_height_counts_wide_characters_using_cell_width(self):
         cli_obj = _make_cli()
@@ -167,20 +270,6 @@ class TestCLIStatusBar:
             assert _input_height() == 2
         mock_shutil.assert_not_called()
 
-    def test_build_status_bar_text_no_cost_in_status_bar(self):
-        cli_obj = _attach_agent(
-            _make_cli(),
-            prompt_tokens=10000,
-            completion_tokens=5000,
-            total_tokens=15000,
-            api_calls=7,
-            context_tokens=50000,
-            context_length=200_000,
-        )
-
-        text = cli_obj._build_status_bar_text(width=120)
-        assert "$" not in text  # cost is never shown in status bar
-
     def test_build_status_bar_text_collapses_for_narrow_terminal(self):
         cli_obj = _attach_agent(
             _make_cli(),
@@ -195,7 +284,7 @@ class TestCLIStatusBar:
         text = cli_obj._build_status_bar_text(width=60)
 
         assert "⚕" in text
-        assert "$0.06" not in text  # cost hidden by default
+        assert "$" in text
         assert "15m" in text
         assert "200K" not in text
 
@@ -206,6 +295,7 @@ class TestCLIStatusBar:
 
         assert "⚕" in text
         assert "claude-sonnet-4-20250514" in text
+        assert "$0.00" in text
 
     def test_compression_count_shown_in_wide_status_bar(self):
         cli_obj = _attach_agent(
@@ -294,7 +384,10 @@ class TestCLIStatusBar:
         )
         cli_obj._status_bar_visible = True
 
-        frags = cli_obj._get_status_bar_fragments()
+        mock_app = MagicMock()
+        mock_app.output.get_size.return_value = MagicMock(columns=120)
+        with patch("prompt_toolkit.application.get_app", return_value=mock_app):
+            frags = cli_obj._get_status_bar_fragments()
         frag_texts = [text for _, text in frags]
 
         assert "🗜️ 7" in frag_texts
@@ -497,6 +590,49 @@ class TestCLIStatusBar:
         compact = cli_obj._get_voice_status_fragments(width=50)
 
         assert compact == [("class:voice-status", " 🎤 Ctrl+B ")]
+
+
+class TestHandleCostCommand:
+    def test_cost_status_shows_current_state(self, capsys):
+        cli_obj = _make_cli()
+        cli_obj._show_cost = True
+        cli_obj._cost_bar_mode = "rich"
+        cli_obj._invalidate = MagicMock()
+
+        HermesCLI._handle_cost_command(cli_obj, "/cost status")
+        output = capsys.readouterr().out
+
+        assert "Status bar cost:" in output
+        assert "ON" in output
+        assert "rich" in output
+
+    def test_cost_off_persists_and_updates_runtime(self, capsys):
+        cli_obj = _make_cli()
+        cli_obj._invalidate = MagicMock()
+
+        with patch("cli.save_config_value", return_value=True) as mock_save:
+            HermesCLI._handle_cost_command(cli_obj, "/cost off")
+
+        mock_save.assert_called_once_with("display.show_cost", False)
+        assert cli_obj._show_cost is False
+        cli_obj._invalidate.assert_called_once()
+
+    def test_cost_toggle_flips_state(self, capsys):
+        cli_obj = _make_cli()
+        cli_obj._show_cost = True
+        cli_obj._invalidate = MagicMock()
+
+        with patch("cli.save_config_value", return_value=True):
+            HermesCLI._handle_cost_command(cli_obj, "/cost")
+
+        assert cli_obj._show_cost is False
+
+    def test_cost_command_registered(self):
+        from hermes_cli.commands import resolve_command
+
+        cmd = resolve_command("cost")
+        assert cmd is not None
+        assert cmd.name == "cost"
 
 
 class TestCLIUsageReport:
