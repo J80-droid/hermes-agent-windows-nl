@@ -120,11 +120,13 @@ class TestCLIStatusBar:
             "hermes_cli.usage_snapshot.build_session_usage_snapshot",
             return_value=usage,
         ):
-            text = cli_obj._build_status_bar_text(width=120)
+            text = cli_obj._build_status_bar_text(width=160)
 
         assert "$0.23 / $5.74" in text
         assert "cw 43%" in text
         assert "7 calls" in text
+        assert "12 tools" in text
+        assert text.find("$") > text.find("%"), text
 
     def test_build_status_bar_text_no_cost_below_52_columns(self):
         cli_obj = _attach_agent(
@@ -385,14 +387,16 @@ class TestCLIStatusBar:
         cli_obj._status_bar_visible = True
 
         mock_app = MagicMock()
-        mock_app.output.get_size.return_value = MagicMock(columns=120)
+        mock_app.output.get_size.return_value = MagicMock(columns=160)
         with patch("prompt_toolkit.application.get_app", return_value=mock_app):
             frags = cli_obj._get_status_bar_fragments()
         frag_texts = [text for _, text in frags]
 
-        assert "🗜️ 7" in frag_texts
-        frag_styles = {text: style for style, text in frags}
-        assert frag_styles["🗜️ 7"] == "class:status-bar-warn"
+        assert any("🗜️ 7" in t for t in frag_texts)
+        compression_styles = [
+            style for style, text in frags if "🗜️ 7" in text
+        ]
+        assert compression_styles == ["class:status-bar-warn"]
 
     def test_compression_count_absent_from_fragments_when_zero(self):
         cli_obj = _attach_agent(

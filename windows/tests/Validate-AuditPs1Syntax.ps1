@@ -4,17 +4,19 @@ $repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 Set-Location $repo
 
 $files = @(
-    'windows\audits\RUN_STATUS_BAR_COST_E2E.ps1',
-    'windows\audits\RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.ps1',
-    'windows\audits\ClassicCliStatusBarCostE2E.core.ps1',
-    'windows\audits\RUN_PARETO_E2E.ps1',
-    'windows\audits\RUN_TRUST_FORENSIC_E2E.ps1',
-    'windows\audits\TrustForensicE2E.core.ps1',
-    'windows\audits\RUN_MEMORY_ARCHITECTURE_E2E.ps1',
-    'windows\audits\MemoryArchitectureE2E.core.ps1',
-    'windows\scripts\MemoryAuditCommon.ps1',
-    'windows\scripts\HermesMemoryMergeCommon.ps1',
-    'windows\WindowsLocalAssetsManifest.ps1'
+    'windows/audits/RUN_STATUS_BAR_COST_E2E.ps1',
+    'windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.ps1',
+    'windows/audits/ClassicCliStatusBarCostE2E.core.ps1',
+    'windows/audits/RUN_PARETO_E2E.ps1',
+    'windows/audits/RUN_CODEBASE_SMOKE_AUDIT.ps1',
+    'windows/audits/RUN_CODEBASE_SMOKE_E2E.ps1',
+    'windows/audits/RUN_TRUST_FORENSIC_E2E.ps1',
+    'windows/audits/TrustForensicE2E.core.ps1',
+    'windows/audits/RUN_MEMORY_ARCHITECTURE_E2E.ps1',
+    'windows/audits/MemoryArchitectureE2E.core.ps1',
+    'windows/scripts/MemoryAuditCommon.ps1',
+    'windows/scripts/HermesMemoryMergeCommon.ps1',
+    'windows/WindowsLocalAssetsManifest.ps1'
 )
 
 $failed = 0
@@ -33,7 +35,7 @@ foreach ($rel in $files) {
 
 if (Get-Module -ListAvailable PSScriptAnalyzer) {
     Import-Module PSScriptAnalyzer -Force
-    $settings = Join-Path $repo 'windows\PSScriptAnalyzerSettings.psd1'
+    $settings = Join-Path $repo 'windows/PSScriptAnalyzerSettings.psd1'
     foreach ($rel in $files) {
         $path = Join-Path $repo $rel
         $issues = Invoke-ScriptAnalyzer -Path $path -Settings $settings -Severity Error

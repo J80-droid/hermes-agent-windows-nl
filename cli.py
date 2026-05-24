@@ -3520,7 +3520,7 @@ class HermesCLI:
             return
         frags.extend([
             ("class:status-bar-dim", separator),
-            ("class:status-bar-strong", label),
+            ("class:status-bar-cost", label),
         ])
 
     def _append_status_bar_cost_text_part(
@@ -3741,7 +3741,6 @@ class HermesCLI:
                 return self._trim_status_bar_text(text, width)
             if width < 76:
                 parts = [f"⚕ {snapshot['model_short']}"]
-                self._append_status_bar_cost_text_part(parts, snapshot, width)
                 parts.append(percent_label)
                 compressions = snapshot.get("compressions", 0)
                 if compressions:
@@ -3750,6 +3749,7 @@ class HermesCLI:
                 if bg_count:
                     parts.append(f"▶ {bg_count}")
                 parts.append(duration_label)
+                self._append_status_bar_cost_text_part(parts, snapshot, width)
                 if yolo_active:
                     parts.append("⚠ YOLO")
                 return self._trim_status_bar_text(" · ".join(parts), width)
@@ -3763,7 +3763,6 @@ class HermesCLI:
 
             compressions = snapshot.get("compressions", 0)
             parts = [f"⚕ {snapshot['model_short']}"]
-            self._append_status_bar_cost_text_part(parts, snapshot, width)
             parts.extend([context_label, percent_label])
             if compressions:
                 parts.append(f"🗜️ {compressions}")
@@ -3774,6 +3773,7 @@ class HermesCLI:
             prompt_elapsed = snapshot.get("prompt_elapsed")
             if prompt_elapsed:
                 parts.append(prompt_elapsed)
+            self._append_status_bar_cost_text_part(parts, snapshot, width)
             if yolo_active:
                 parts.append("⚠ YOLO")
             return self._trim_status_bar_text(" │ ".join(parts), width)
@@ -3814,14 +3814,9 @@ class HermesCLI:
                     frags = [
                         ("class:status-bar", " ⚕ "),
                         ("class:status-bar-strong", snapshot["model_short"]),
-                    ]
-                    self._append_status_bar_cost_fragments(
-                        frags, snapshot, width, separator=" · "
-                    )
-                    frags.extend([
                         ("class:status-bar-dim", " · "),
                         (self._status_bar_context_style(percent), percent_label),
-                    ])
+                    ]
                     if compressions:
                         frags.append(("class:status-bar-dim", " · "))
                         frags.append((self._compression_count_style(compressions), f"🗜️ {compressions}"))
@@ -3832,6 +3827,9 @@ class HermesCLI:
                         ("class:status-bar-dim", " · "),
                         ("class:status-bar-dim", duration_label),
                     ])
+                    self._append_status_bar_cost_fragments(
+                        frags, snapshot, width, separator=" · "
+                    )
                     if yolo_active:
                         frags.append(("class:status-bar-dim", " · "))
                         frags.append(("class:status-bar-yolo", "⚠ YOLO"))
@@ -3850,16 +3848,13 @@ class HermesCLI:
                     frags = [
                         ("class:status-bar", " ⚕ "),
                         ("class:status-bar-strong", snapshot["model_short"]),
-                    ]
-                    self._append_status_bar_cost_fragments(frags, snapshot, width)
-                    frags.extend([
                         ("class:status-bar-dim", " │ "),
                         ("class:status-bar-dim", context_label),
                         ("class:status-bar-dim", " │ "),
                         (bar_style, self._build_context_bar(percent)),
                         ("class:status-bar-dim", " "),
                         (bar_style, percent_label),
-                    ])
+                    ]
                     if compressions:
                         frags.append(("class:status-bar-dim", " │ "))
                         frags.append((self._compression_count_style(compressions), f"🗜️ {compressions}"))
@@ -3870,11 +3865,12 @@ class HermesCLI:
                         ("class:status-bar-dim", " │ "),
                         ("class:status-bar-dim", duration_label),
                     ])
-                    # Position 7: per-prompt elapsed timer (live or frozen)
+                    # Per-prompt elapsed timer (live or frozen) before cost segment
                     prompt_elapsed = snapshot.get("prompt_elapsed")
                     if prompt_elapsed:
                         frags.append(("class:status-bar-dim", " │ "))
                         frags.append(("class:status-bar-dim", prompt_elapsed))
+                    self._append_status_bar_cost_fragments(frags, snapshot, width)
                     if yolo_active:
                         frags.append(("class:status-bar-dim", " │ "))
                         frags.append(("class:status-bar-yolo", "⚠ YOLO"))
@@ -14120,6 +14116,7 @@ class HermesCLI:
             'status-bar': 'bg:#1a1a2e #C0C0C0',
             'status-bar-strong': 'bg:#1a1a2e #FFD700 bold',
             'status-bar-dim': 'bg:#1a1a2e #8B8682',
+            'status-bar-cost': 'bg:#1a1a2e #6B8CAE',
             'status-bar-good': 'bg:#1a1a2e #8FBC8F bold',
             'status-bar-warn': 'bg:#1a1a2e #FFD700 bold',
             'status-bar-bad': 'bg:#1a1a2e #FF8C00 bold',

@@ -104,7 +104,7 @@ def format_status_bar_cost_rich(
     calls = usage.get("calls") or 0
     tools = usage.get("session_tools_executed") or 0
     call_label = f"{calls} calls" if calls else None
-    tools_label = f"{tools} tools" if tools else None
+    tools_label = f"{tools} tools" if tier == "full" else (f"{tools} tools" if tools else None)
 
     if tier == "costs":
         tail = " │ ".join(part for part in (call_label, tools_label) if part)

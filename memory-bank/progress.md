@@ -40,8 +40,9 @@
 - [x] Obsidian L4-automatisering: `OPEN_OBSIDIAN_VAULT.bat`, `open_obsidian_vault.ps1`, `ensure_hermes_knowledge_vault.ps1`, scaffold-template, taakbalk-rol `Obsidian`, sync in `sync_hermes_api_env.ps1`
 - [x] Memory-consolidatie institutioneel: `HermesMemoryMergeCommon.ps1`, `CONSOLIDATE_ROOT_MEMORIES.bat`, rebalance Hermes-config → core; `deduplicate_memories.py` (+ legacy root); core/legal domein-scheiding; audit PASS alle 13 profielen + legacy root; production gate PASS
 - [x] TUI statusbalk-kosten (rich): defaults `show_cost`/`cost_bar_mode`; `statusRuleColumns` (composer-padding); altijd zichtbaar + gereserveerd segment; live `~$turn`/`~NK tok`; breakdown-tier ≥72 cols; E2E `RUN_STATUS_BAR_COST_E2E`
-- [x] Klassieke CLI statusbalk-kosten: `hermes_cli/status_bar_cost.py`, hooks in `cli.py`, `/cost` slash; Gemini cache catalog in `agent/usage_pricing.py` + `_seed_agent_session_cost`; pytest + verify drift-guard; E2E `RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` (**12/12**, incl. gemini-3.5-flash cache ≠ n/a)
+- [x] Klassieke CLI statusbalk-kosten: layout reorder (kosten na ctx/duur/timer), `status-bar-cost` (gedimd blauw), `session_tool_executions`; Gemini cache catalog + `_seed_agent_session_cost`; E2E **12/12**
 - [x] OpenRouter Pareto Code router E2E: `RUN_PARETO_E2E.bat` (8 stappen), `verify_pareto_router.py`, `test_pareto_e2e.py`
+- [x] Codebase-audit smoke vs release: `CODEBASE_AUDIT_EVIDENCE.md`, templates, `RUN_CODEBASE_SMOKE_AUDIT.ps1/.bat`, `emit_codebase_smoke_report.py`, `RUN_AUDITS -IncludeCodebaseSmoke`, `SOUL_SHARED_CODEBASE_AUDIT` + sync, `validate_soul_anatomy --check-codebase-audit-claims`
 - [x] Taakbalk `windows\*.lnk`: `cmd.exe /c` (+ RAG: `/k`) + gekleurd `.ico` (7 lagen 16–256 px); `FIX_TASKBAR_ICONS.bat`; `POST_GIT_PULL.bat`
 - [x] Icoon-generator: PNG uit `assets/Hermes_logo.png` of `%USERPROFILE%\.hermes\_local_assets\assets\`; geen synthetische H-stub
 - [x] `SETUP_HERMES.bat` → standaard `--full-setup` + `OPEN_SETUP.bat`; `--files-only` voor alleen bestanden

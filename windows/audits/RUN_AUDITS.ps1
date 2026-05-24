@@ -16,6 +16,8 @@ param(
     [switch]$IncludeStatusBarCostE2E,
     [switch]$IncludeClassicCliStatusBarCostE2E,
     [switch]$IncludeParetoE2E,
+    [switch]$IncludeCodebaseSmoke,
+    [switch]$IncludeCodebaseSmokeE2E,
     [switch]$SkipPytest,
     [switch]$SkipFootguns,
     [switch]$SkipRuff,
@@ -126,6 +128,20 @@ if (-not $SkipRuff) {
             tests/hermes_cli/test_profile_switch.py `
             tests/hermes_cli/test_apply_profile_override.py `
             tests/hermes_cli/test_relaunch.py
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeCodebaseSmokeE2E -or $IncludeAllE2E) {
+    $codebaseE2e = Join-Path $scriptRoot 'RUN_CODEBASE_SMOKE_E2E.ps1'
+    Invoke-Step 'codebase-smoke-e2e' {
+        & $codebaseE2e -RepoRoot $repoRoot
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+} elseif ($IncludeCodebaseSmoke) {
+    $smoke = Join-Path $scriptRoot 'RUN_CODEBASE_SMOKE_AUDIT.ps1'
+    Invoke-Step 'codebase-smoke-audit' {
+        & $smoke -RepoRoot $repoRoot
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

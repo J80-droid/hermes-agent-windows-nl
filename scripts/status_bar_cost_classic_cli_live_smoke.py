@@ -74,17 +74,23 @@ def smoke_post_turn_snapshot_has_usage() -> None:
     assert snapshot.get("session_api_calls") == 1
 
 
-def smoke_post_turn_status_bar_shows_cost_after_model() -> None:
+def smoke_post_turn_status_bar_shows_cost_after_session_metrics() -> None:
     cli = _make_post_turn_cli()
     text = cli._build_status_bar_text(width=120)
     assert "$" in text, text
-    model_idx = text.find("claude-sonnet")
+    pct_idx = text.find("%")
     cost_idx = text.find("$")
-    assert model_idx >= 0 and cost_idx > model_idx, text
+    assert pct_idx >= 0 and cost_idx > pct_idx, text
 
-    frag_text = _status_bar_fragments_text(cli, width=120)
+    mock_app = MagicMock()
+    mock_app.output.get_size.return_value = MagicMock(columns=120)
+    with patch("prompt_toolkit.application.get_app", return_value=mock_app):
+        frags = cli._get_status_bar_fragments()
+    frag_text = "".join(value for _, value in frags)
     assert "$" in frag_text, frag_text
     assert "claude-sonnet" in frag_text
+    cost_styles = [style for style, value in frags if "$" in value]
+    assert cost_styles and cost_styles[0] == "class:status-bar-cost", frags
 
 
 def smoke_post_turn_cost_toggle_hides_bar() -> None:
@@ -185,7 +191,7 @@ def smoke_subprocess_isolated_import() -> None:
 
 def run_in_process_smokes() -> None:
     smoke_post_turn_snapshot_has_usage()
-    smoke_post_turn_status_bar_shows_cost_after_model()
+    smoke_post_turn_status_bar_shows_cost_after_session_metrics()
     smoke_post_turn_cost_toggle_hides_bar()
     smoke_gemini_35_flash_cache_cost_not_na()
 

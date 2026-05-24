@@ -31,6 +31,15 @@ def test_format_cost_breakdown_pct_orders_cw_out_in_cr():
     )
 
 
+def test_format_status_bar_cost_rich_full_tier_shows_zero_tools():
+    text = format_status_bar_cost_rich(
+        {**USAGE, "session_tools_executed": 0},
+        mode="rich",
+        width=120,
+    )
+    assert "0 tools" in text
+
+
 def test_format_status_bar_cost_rich_full_tier():
     text = format_status_bar_cost_rich(USAGE, mode="rich", width=120)
     assert "$0.23 / $5.74" in text

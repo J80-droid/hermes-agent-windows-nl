@@ -10,9 +10,11 @@
 
 **TUI statusbalk-kosten (2026-05-24, rich bar + layout-fix):** Framework-default **`show_cost: true`** + **`cost_bar_mode: rich`**; altijd zichtbaar (`n/a`/`included`/`~NK tok`); `statusRuleColumns` (composer `paddingX` −2) + `resolveStatusRuleLayout`; live turn-kosten; Gemini 3.x → geschatte USD via `usage_pricing`; **`REBUILD_TUI.bat`** + volledige Hermes-herstart na TUI-pull (dist niet hot-reload). E2E `RUN_STATUS_BAR_COST_E2E.bat`.
 
-**Klassieke CLI statusbalk-kosten (2026-05-24):** Pariteit met TUI — `hermes_cli/status_bar_cost.py` + dunne hooks in `cli.py` (`_append_status_bar_cost_fragments`, `/cost`); zelfde defaults en responsive tiers (≥52 cols session, ≥76 rich breakdown); data via `build_session_usage_snapshot` + `_seed_agent_session_cost`. **Gemini cache pricing:** `agent/usage_pricing.py` (`_GOOGLE_GEMINI_PRICING`, incl. `gemini-3.5-flash` cache-read; route `google-gemini-cli`); geen `n/a` bij cache-hits. E2E **`RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`** (12/12 PASS).
+**Klassieke CLI statusbalk-kosten (2026-05-24):** Pariteit met TUI — `hermes_cli/status_bar_cost.py` + dunne hooks in `cli.py` (`_append_status_bar_cost_fragments`, `/cost`); zelfde defaults en responsive tiers (≥52 cols session, ≥76 rich breakdown); data via `build_session_usage_snapshot` + `_seed_agent_session_cost`. **Layout (breed):** model → ctx → bar/% → duur → ⏲ → kosten (gedimd blauw `status-bar-cost`) → breakdown → calls → tools (`0 tools` in full tier). **Tool-teller:** `agent.session_tool_executions` in `tool_executor.py`. **Gemini cache pricing:** `agent/usage_pricing.py` (`_GOOGLE_GEMINI_PRICING`, Standard tier; geen storage/Batch/Flex); geen `n/a` bij cache-hits op `provider=gemini`. E2E **`RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`** (12/12 PASS).
 
 **OpenRouter Pareto Code router (2026-05-24, PASS):** model-gated `min_coding_score` → `pareto-router` plugin op `openrouter/pareto-code`; verify `scripts/verify_pareto_router.py`; E2E `windows/audits/RUN_PARETO_E2E.bat` (8/8); `-IncludeParetoE2E` in `RUN_AUDITS.bat`. Geen live API-call in E2E.
+
+**Codebase-audit smoke vs release (2026-05-24):** evidence-tiers E0–E3 in `docs/CODEBASE_AUDIT_EVIDENCE.md`; smoke-runner `RUN_CODEBASE_SMOKE_AUDIT.bat` + `emit_codebase_smoke_report.py`; `RUN_AUDITS -IncludeCodebaseSmoke`. SOUL-snippet `SOUL_SHARED_CODEBASE_AUDIT.md` (sync via anatomy). Niet in POST_GIT_PULL default.
 
 **Backup schema v3 (2026-05-23):** `backup_hermes.ps1` backupt `%LOCALAPPDATA%\hermes` → `runtime_hermes/`; legacy `~/.hermes` → `legacy_hermes/`; persona-subset → `localappdata_hermes/` (SOUL + `config.yaml`). Blokkeert als Hermes draait. Restore: `-RestoreRuntimeFull`, `-RestoreRuntimePersonas`, `-RestoreLegacyProfile`. Module: `windows/scripts/HermesBackupCommon.ps1`. Test: `windows/audits/RUN_BACKUP_E2E.bat`.
 
@@ -60,6 +62,7 @@
 | E2E memory-architectuur | `windows/audits/RUN_MEMORY_ARCHITECTURE_E2E.bat` |
 | E2E statusbalk-kosten (TUI) | `windows/audits/RUN_STATUS_BAR_COST_E2E.bat` · `-ApplyDisplayFix` · `RUN_AUDITS.bat -IncludeStatusBarCostE2E` |
 | E2E statusbalk-kosten (klassieke CLI) | `windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` · `RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E` |
+| Codebase-audit smoke (E1/E2) | `RUN_CODEBASE_SMOKE_E2E.bat` (E2E) · `RUN_CODEBASE_SMOKE_AUDIT.bat` (snel) · `RUN_AUDITS -IncludeCodebaseSmokeE2E` / `-IncludeAllE2E` · [CODEBASE_AUDIT_EVIDENCE.md](docs/CODEBASE_AUDIT_EVIDENCE.md) |
 | E2E institutioneel | `windows/audits/RUN_INSTITUTIONAL_E2E.bat` |
 | Hermes start (bat) | `../../HERMES_START.md` |
 | Windows | `windows/README.md` |

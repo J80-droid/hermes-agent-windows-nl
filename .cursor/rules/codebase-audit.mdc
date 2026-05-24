@@ -1,0 +1,12 @@
+---
+description: Codebase-audit smoke (E1/E2) vs release-gate (E3)
+globs: hermes-agent/docs/CODEBASE_AUDIT*.md,hermes-agent/docs/templates/CODEBASE_AUDIT*.md,hermes-agent/windows/audits/RUN_CODEBASE_SMOKE*
+alwaysApply: false
+---
+
+# Codebase-audit
+
+- Evidence-tiers: `docs/CODEBASE_AUDIT_EVIDENCE.md`
+- Snelle smoke: `windows/audits/RUN_CODEBASE_SMOKE_AUDIT.bat` (conda `hermes-env`)
+- Geen "release-ready" zonder E3 (`RUN_PYTEST.ps1` / `RUN_AUDITS -IncludeAllE2E`)
+- Niet standaard in `POST_GIT_PULL.bat`

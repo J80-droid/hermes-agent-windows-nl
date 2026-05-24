@@ -36,6 +36,7 @@ Robuustheid — Geen crash — Fuzz-test
 <institutional_check>
 - Controle hyperbolen: [Uitgevoerd]
 - Controle stelligheden: [Uitgevoerd]
+- Controle evidence-tiers (E0-E3, geen valse 100%): [Uitgevoerd]
 </institutional_check>
 
 ## Projectoverzicht
@@ -86,6 +87,7 @@ Gereed voor controle.
 - Controle stelligheden: [Uitgevoerd]
 - Controle conclusies: [Uitgevoerd]
 - Controle pleaser-taal / onbewezen audit-claims: [Uitgevoerd]
+- Controle evidence-tiers (E0-E3, geen valse 100%): [Uitgevoerd]
 </institutional_check>
 
 ## Geobjectiveerde analyse

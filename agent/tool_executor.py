@@ -62,6 +62,16 @@ def _ra():
     return run_agent
 
 
+def _count_session_tool_execution(agent, *, blocked: bool = False) -> None:
+    """Track completed tool runs for status-bar usage snapshots."""
+    if blocked:
+        return
+    try:
+        agent.session_tool_executions = int(getattr(agent, "session_tool_executions", 0) or 0) + 1
+    except (TypeError, ValueError, AttributeError):
+        agent.session_tool_executions = 1
+
+
 def execute_tool_calls_concurrent(agent, assistant_message, messages: list, effective_task_id: str, api_call_count: int = 0) -> None:
     """Execute multiple tool calls concurrently using a thread pool.
 
@@ -391,6 +401,9 @@ def execute_tool_calls_concurrent(agent, assistant_message, messages: list, effe
                     )
                 except Exception as cb_err:
                     logging.debug(f"Tool progress callback error: {cb_err}")
+
+            if not blocked:
+                _count_session_tool_execution(agent)
 
             if agent.verbose_logging:
                 logging.debug(f"Tool {function_name} completed in {tool_duration:.2f}s")
@@ -828,6 +841,9 @@ def execute_tool_calls_sequential(agent, assistant_message, messages: list, effe
 
         agent._current_tool = None
         agent._touch_activity(f"tool completed: {function_name} ({tool_duration:.1f}s)")
+
+        if not _execution_blocked:
+            _count_session_tool_execution(agent)
 
         if agent.verbose_logging:
             logging.debug(f"Tool {function_name} completed in {tool_duration:.2f}s")

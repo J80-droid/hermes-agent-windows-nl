@@ -22,6 +22,12 @@ $requiredTemplates = @(
 
     'docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md',
 
+    'docs/templates/SOUL_SHARED_CODEBASE_AUDIT.md',
+
+    'docs/templates/CODEBASE_AUDIT_REPORT.md',
+
+    'docs/CODEBASE_AUDIT_EVIDENCE.md',
+
     'docs/templates/SOUL_SHARED_WORKFLOW.md',
 
     'docs/templates/SOUL_SHARED_MEMORY_POLICY.md',
@@ -172,7 +178,22 @@ if ($pyOk) {
 
 }
 
-
+$reportTpl = Join-Path $repoRoot 'docs/templates/CODEBASE_AUDIT_REPORT.md'
+if ((Test-Path -LiteralPath $validateScript) -and (Test-Path -LiteralPath $reportTpl)) {
+  $caOk = $false
+  try {
+    $null = & py -3 $validateScript $reportTpl --check-codebase-audit-claims --strict-codebase-audit-claims 2>&1
+    if ($LASTEXITCODE -eq 0) { $caOk = $true }
+  } catch {
+    Write-Verbose 'py -3 ontbreekt voor codebase-audit template check.'
+  }
+  if ($caOk) {
+    Write-Host '[OK] CODEBASE_AUDIT_REPORT template (strict denylist)' -ForegroundColor Green
+  } else {
+    Write-Host '[FAIL] CODEBASE_AUDIT_REPORT.md: codebase-audit denylist' -ForegroundColor Red
+    exit 1
+  }
+}
 
 Import-Module (Join-Path $repoRoot 'windows/scripts/SyncSoulSnippet.psm1') -Force
 

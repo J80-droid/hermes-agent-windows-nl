@@ -20,6 +20,11 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 
 | Runner | Doel |
 | ------ | ---- |
+| **`RUN_CODEBASE_SMOKE_AUDIT.bat`** | Snelle smoke (E1/E2): pytest/verify-subset; rapport `CODEBASE_SMOKE_AUDIT_REPORT_*.md`. **Geen E3.** |
+| **`RUN_CODEBASE_SMOKE_E2E.bat`** | E2E-poort (5 stappen): repo files + strict template + pytest wiring + smoke audit + rapport-check; `CODEBASE_SMOKE_E2E_REPORT_*.md` (gitignored) |
+| **`RUN_AUDITS.bat -IncludeCodebaseSmoke`** | Alleen smoke-runner (sneller) |
+| **`RUN_AUDITS.bat -IncludeCodebaseSmokeE2E`** | Volledige codebase-smoke E2E |
+| **`RUN_AUDITS.bat -IncludeAllE2E`** | Inclusief codebase-smoke E2E (~30s extra) |
 | **`RUN_AUDITS.bat`** | Gecombineerd: `verify_hermes_home`, PSScriptAnalyzer (SKIP indien ontbreekt), `check-windows-footguns.py`, ruff (SKIP), pytest profiel-subset |
 | **`RUN_AUDITS.bat -IncludeProfileE2E`** | Bovenstaande + profielwissel E2E |
 | **`RUN_AUDITS.bat -IncludeInstitutionalE2E`** | Bovenstaande + landkaart/SOUL-backup/templates E2E |
@@ -195,6 +200,16 @@ Optioneel: `-SkipPytest` (alleen repo/verify/docs).
 **Niet in deze E2E:** live OpenRouter API-call (router kiest daadwerkelijk model); handmatig met `model: openrouter/pareto-code` + `openrouter.min_coding_score`.
 
 Rapport: `PARETO_E2E_REPORT_<timestamp>.md` in deze map — **gitignored** (zelfde patroon als `*_E2E_REPORT_*_*.md`).
+
+## Codebase smoke audit
+
+```text
+windows\audits\RUN_CODEBASE_SMOKE_AUDIT.bat
+windows\audits\RUN_CODEBASE_SMOKE_AUDIT.bat -IncludePygount
+windows\audits\RUN_AUDITS.bat -IncludeCodebaseSmoke
+```
+
+Rapport: `CODEBASE_SMOKE_AUDIT_REPORT_<timestamp>.md` + staplog `CODEBASE_SMOKE_STEPLOG_<timestamp>.json` — **gitignored**. Zie [CODEBASE_AUDIT_EVIDENCE.md](../../docs/CODEBASE_AUDIT_EVIDENCE.md).
 
 ## IDE-onderhoud E2E (volledige landkaart)
 

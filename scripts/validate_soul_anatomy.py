@@ -49,6 +49,24 @@ LEGACY_GOVERNANCE_FORBIDDEN = [
     (r"voortzetting in volgende turn", "automatische 1/N-voortzetting"),
 ]
 
+CODEBASE_AUDIT_SECTION_HEADERS = (
+    r"^##\s+Geobjectiveerde analyse\s",
+    r"^###\s+Geverifieerde componenten",
+    r"^###\s+Architectuur\s",
+    r"^##\s+Beoordeling van",
+)
+
+CODEBASE_AUDIT_DENY_PATTERNS: list[tuple[str, str]] = [
+    (r"100%\s+(codebase|suite|getest)", "valse 100% codebase/suite claim"),
+    (r"zonder\s+syntax.*test_critical_windows", "PS1-syntax claim op critical-windows pytest alleen"),
+    (r"routeert\s+betrouwbaar.*pareto", "runtime pareto-routing op static verify"),
+]
+
+CODEBASE_AUDIT_DENY_EXCEPTION = re.compile(
+    r"(verboden|niet|geen|denylist|incorrect|juiste bron|max:|alleen op basis)",
+    re.IGNORECASE,
+)
+
 
 def hermes_home() -> Path:
     local = Path(os.environ.get("LOCALAPPDATA", "")) / "hermes"
@@ -90,6 +108,54 @@ def _section_order_issues(text: str) -> list[str]:
     return issues
 
 
+def _codebase_audit_sections(text: str) -> list[str]:
+    lines = text.splitlines()
+    sections: list[str] = []
+    in_section = False
+    buf: list[str] = []
+    for line in lines:
+        if any(re.match(pat, line) for pat in CODEBASE_AUDIT_SECTION_HEADERS):
+            if buf:
+                sections.append("\n".join(buf))
+            buf = [line]
+            in_section = True
+            continue
+        if in_section:
+            if re.match(r"^##\s+", line) and buf and not any(
+                re.match(pat, line) for pat in CODEBASE_AUDIT_SECTION_HEADERS
+            ):
+                sections.append("\n".join(buf))
+                buf = []
+                in_section = False
+            elif in_section:
+                buf.append(line)
+    if buf:
+        sections.append("\n".join(buf))
+    return sections if sections else [text]
+
+
+def _codebase_audit_claim_issues(text: str, *, strict_tiers: bool = False) -> list[str]:
+    issues: list[str] = []
+    for block in _codebase_audit_sections(text):
+        for pat, label in CODEBASE_AUDIT_DENY_PATTERNS:
+            for match in re.finditer(pat, block, re.IGNORECASE):
+                line_start = block.rfind("\n", 0, match.start()) + 1
+                line_end = block.find("\n", match.start())
+                line = block[line_start : line_end if line_end != -1 else len(block)]
+                if line.strip().startswith("|"):
+                    continue  # claim-woordenboek / tabellen: voorbeeld van verboden claim
+                if CODEBASE_AUDIT_DENY_EXCEPTION.search(line):
+                    continue  # documenteert denylist (zelfde regel)
+                start = max(0, match.start() - 80)
+                context = block[start : match.start()]
+                if CODEBASE_AUDIT_DENY_EXCEPTION.search(context):
+                    continue
+                issues.append(f"codebase_audit_deny:{label}")
+        if strict_tiers and not re.search(r"\[E[0-3]\]", block):
+            issues.append("codebase_audit_missing:geen [E0]-[E3] tier in audit-sectie")
+    return issues
+
+
 def _governance_issues(text: str) -> list[str]:
     issues: list[str] = []
     for pat, label in LEGACY_GOVERNANCE_FORBIDDEN:
@@ -121,6 +187,16 @@ def main() -> int:
         action="store_true",
         help="Require trust/values governance markers; fail on legacy twijfel/1/N wording",
     )
+    parser.add_argument(
+        "--check-codebase-audit-claims",
+        action="store_true",
+        help="Warn on forbidden codebase-audit phrasing in audit sections (exit 0 unless --strict)",
+    )
+    parser.add_argument(
+        "--strict-codebase-audit-claims",
+        action="store_true",
+        help="Exit 1 on codebase-audit denylist matches (use with --check-codebase-audit-claims)",
+    )
     args = parser.parse_args()
 
     paths: list[Path] = []
@@ -140,11 +216,40 @@ def main() -> int:
         print("[WARN] Geen SOUL.md bestanden gevonden.", file=sys.stderr)
         return 0
 
+    codebase_only = args.check_codebase_audit_claims and not (
+        args.check_governance or args.all_profiles or args.repo_templates
+    )
+    if args.strict_codebase_audit_claims and not args.check_codebase_audit_claims:
+        args.check_codebase_audit_claims = True
+
     failed = 0
+    warned = 0
     for p in paths:
         if not p.exists():
             print(f"[SKIP] {p} (ontbreekt)")
             continue
+
+        if codebase_only or (args.check_codebase_audit_claims and p.suffix.lower() in {".md", ".txt"}):
+            text = p.read_text(encoding="utf-8-sig")
+            ca_issues = _codebase_audit_claim_issues(
+                text, strict_tiers=args.strict_codebase_audit_claims
+            )
+            if ca_issues:
+                if args.strict_codebase_audit_claims:
+                    failed += 1
+                    print(f"[FAIL] {p}")
+                    for i in ca_issues:
+                        print(f"  codebase_audit: {i}")
+                else:
+                    warned += 1
+                    print(f"[WARN] {p}")
+                    for i in ca_issues:
+                        print(f"  codebase_audit: {i}")
+            else:
+                print(f"[OK] {p}")
+            if codebase_only:
+                continue
+
         missing, issues = validate_file(p, check_governance=args.check_governance)
         if missing or [i for i in issues if not i.startswith("warn:")]:
             failed += 1
@@ -161,6 +266,23 @@ def main() -> int:
                 if w.startswith("warn:"):
                     print(f"  {w} (draai migrate + SYNC_SOUL_SNIPPETS)")
 
+        if args.check_codebase_audit_claims and not codebase_only:
+            text = p.read_text(encoding="utf-8-sig")
+            ca_issues = _codebase_audit_claim_issues(
+                text, strict_tiers=args.strict_codebase_audit_claims
+            )
+            for i in ca_issues:
+                if args.strict_codebase_audit_claims:
+                    if failed == 0:
+                        failed += 1
+                        print(f"[FAIL] {p} (codebase-audit)")
+                    print(f"  codebase_audit: {i}")
+                else:
+                    print(f"[WARN] {p} codebase_audit: {i}")
+                    warned += 1
+
+    if warned and not failed:
+        print(f"[OK] {warned} waarschuwing(en), geen harde failures.")
     return 1 if failed else 0
 
 

@@ -18,6 +18,8 @@ windows\audits\RUN_STATUS_BAR_COST_E2E.bat -ApplyDisplayFix
 windows\audits\RUN_AUDITS.bat -IncludeStatusBarCostE2E
 windows\audits\RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E
 windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat
+windows\audits\RUN_CODEBASE_SMOKE_E2E.bat
+windows\audits\RUN_CODEBASE_SMOKE_AUDIT.bat
 windows\audits\RUN_MEMORY_PRODUCTION_GATE.bat
 ```
 
@@ -26,6 +28,10 @@ windows\audits\RUN_MEMORY_PRODUCTION_GATE.bat
 | `--list` | Domeinen + paden + rijen/grootte |
 | `--inspect` | Schema-audit (`id`-kolom); rapport `windows\audits\LANCEDB_SCHEMA_AUDIT_*.md` |
 | `--init-missing` | Lege `knowledge_base` voor domeinen zonder LanceDB-pad (na nieuw domein in `domains.yaml`) |
+| `RUN_CODEBASE_SMOKE_E2E.bat` | Aanbevolen E2E-poort (5 stappen + smoke); `CODEBASE_SMOKE_E2E_REPORT_*.md` |
+| `RUN_CODEBASE_SMOKE_AUDIT.bat` | Alleen smoke (sneller); `CODEBASE_SMOKE_AUDIT_REPORT_*.md` |
+| `RUN_AUDITS.bat -IncludeCodebaseSmokeE2E` | E2E in gecombineerde poort |
+| `RUN_AUDITS.bat -IncludeCodebaseSmoke` | Alleen smoke-runner |
 | `RUN_IDE_MAINTENANCE_E2E.bat …` | Volledige landkaart-poort (15 stappen); rapport `IDE_MAINTENANCE_E2E_REPORT_*.md` |
 | `RUN_STATUS_BAR_COST_E2E.bat` | TUI statusbalk (rich): defaults `show_cost`/`cost_bar_mode`, altijd zichtbaar, gereserveerd segment, breakdown, live `~$turn`/`~NK tok` (vitest); 10 stappen |
 | `RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` | Klassieke CLI statusbalk: formatter, `cli.py` hooks, `/cost`, smoke + live post-turn + Gemini cache pricing; 12 stappen |

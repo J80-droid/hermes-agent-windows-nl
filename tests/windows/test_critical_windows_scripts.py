@@ -79,6 +79,9 @@ def test_orchestrator_routing_doc_exists():
     assert (REPO / "docs/templates/SOUL_CORE_ORCHESTRATOR.md").is_file()
     assert (REPO / "docs/LEGAL_TAXONOMY.md").is_file()
     assert (REPO / "docs/LEGAL_DOMAIN_ARCHITECTURE.md").is_file()
+    assert (REPO / "docs/CODEBASE_AUDIT_EVIDENCE.md").is_file()
+    assert (REPO / "windows/audits/RUN_CODEBASE_SMOKE_AUDIT.ps1").is_file()
+    assert (REPO / "scripts/emit_codebase_smoke_report.py").is_file()
 
 
 def test_landkaart_skill_exists():

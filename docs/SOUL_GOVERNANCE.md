@@ -25,6 +25,7 @@ Na deploy: **`/new`** in Hermes.
 | **1/N dossier** | Deel 1 leveren en stoppen; deel 2+ pas na **"ga door"** van J. |
 | **Landkaart** | Volledige lijst 1…N in **één** antwoord |
 | **Verduidelijking** | Max. 3 opties + "anders", **elk max. 1 zin** |
+| **Codebase-audit** | Smoke (E1/E2 subset) ≠ release-gate (E3). Zie [CODEBASE_AUDIT_EVIDENCE.md](CODEBASE_AUDIT_EVIDENCE.md); template [templates/CODEBASE_AUDIT_REPORT.md](templates/CODEBASE_AUDIT_REPORT.md). Nooit "release-ready" zonder E3-run. |
 
 ## Validatie
 
@@ -35,6 +36,15 @@ windows\audits\RUN_SOUL_ANATOMY_E2E.ps1
 ```
 
 `--check-governance` faalt op o.a. `bij twijfel: zeg het`, `voortzetting in volgende turn`, ontbrekende markers.
+
+**Codebase-audit claims (optioneel):**
+
+```powershell
+python scripts/validate_soul_anatomy.py docs/templates/CODEBASE_AUDIT_REPORT.md --check-codebase-audit-claims
+python scripts/validate_soul_anatomy.py docs/templates/CODEBASE_AUDIT_REPORT.md --check-codebase-audit-claims --strict-codebase-audit-claims
+```
+
+Standaard: `[WARN]` + exit 0. `--strict-codebase-audit-claims`: exit 1 (E2E/release).
 
 ## Root SOUL (legacy)
 

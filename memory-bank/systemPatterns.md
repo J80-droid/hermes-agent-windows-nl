@@ -91,6 +91,15 @@ Defaults: `windows/team_display.defaults`; toepassen: `APPLY_INSTITUTIONAL_RUNTI
 - Sync volgorde: manifest → `SYNC_DOMAIN_TOOLSETS.bat --create-missing` (ontbrekend profiel) → `sync_profile_mcp_from_domains.py` → `SYNC_SOUL_SNIPPETS.bat` → E2E audit (`RUN_TOOLSET_DOMAIN_E2E`, `RUN_PROVISION_DOMAIN_E2E`).
 - Provision blijft in fork-script (`windows/scripts/sync_profile_toolsets_from_manifest.py`); importeert alleen `_PROFILE_DIRS` / validatie uit upstream — geen wijziging `create_profile()`-logica.
 
+## Codebase-audit (smoke vs release-gate)
+
+- **Evidence E0–E3:** `docs/CODEBASE_AUDIT_EVIDENCE.md`; rapport-template `docs/templates/CODEBASE_AUDIT_REPORT.md`.
+- **Smoke (E1/E2 subset):** `windows/audits/RUN_CODEBASE_SMOKE_AUDIT.bat` → `CODEBASE_SMOKE_AUDIT_REPORT_*.md` — **geen** release-ready.
+- **Release (E3):** `windows/tests/RUN_PYTEST.ps1` / `scripts/run_tests.sh` of `RUN_AUDITS.bat -IncludeAllE2E`.
+- **Gecombineerd:** `RUN_AUDITS.bat -IncludeCodebaseSmoke`. **Niet** standaard in `POST_GIT_PULL.bat`.
+- **SOUL:** `SOUL_SHARED_CODEBASE_AUDIT.md` via `sync_soul_codebase_audit_snippet.ps1` (anatomy-keten); na sync `/new`.
+- **Validatie claims:** `validate_soul_anatomy.py --check-codebase-audit-claims` (warn); `--strict-codebase-audit-claims` (exit 1).
+
 ## Veiligheid
 
 - Geen ingest + zware Kanban-werk op dezelfde LanceDB tegelijk (lock-risico).

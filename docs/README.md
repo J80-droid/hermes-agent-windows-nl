@@ -18,6 +18,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Profiel wisselen (chat, CLI, audit) | [PROFILE_SWITCH.md](PROFILE_SWITCH.md) |
 | SOUL.md per domeinprofiel (waar, bewerken) | [PROFILE_SOUL.md](PROFILE_SOUL.md) |
 | SOUL governance (zekerheid %, 1/N, tools) | [SOUL_GOVERNANCE.md](SOUL_GOVERNANCE.md) |
+| Codebase-audit (smoke vs release) | [CODEBASE_AUDIT_EVIDENCE.md](CODEBASE_AUDIT_EVIDENCE.md) · E2E: `windows/audits/RUN_CODEBASE_SMOKE_E2E.bat` · smoke: `RUN_CODEBASE_SMOKE_AUDIT.bat` |
 | SOUL anatomy (10 secties, sync, migratie) | [SOUL_ANATOMY_SPEC.md](SOUL_ANATOMY_SPEC.md) |
 | ICT domein (infra, devops, support, sysadmin) | `docs/09_ICT/`, `docs/templates/SOUL_ICT_DOMAIN.md` |
 | Security domein (pentest, compliance, incident, forensics) | `docs/10_Security/`, `docs/templates/SOUL_SECURITY_DOMAIN.md` |
