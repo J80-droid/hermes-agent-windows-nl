@@ -120,6 +120,6 @@ Profiel-persona: `%LOCALAPPDATA%\hermes\profiles\<naam>\SOUL.md` — zie `docs/P
 
 **Tests (Windows):** `pyproject.toml` gebruikt `pytest --timeout-method=thread` (geen `SIGALRM`). Enkele test: `pytest tests/hermes_cli/test_profile_orphan_wrappers.py -q` met `PYTEST_ADDOPTS=-n0`.
 
-**Periodieke rooktest (aanbevolen):** `windows\audits\RUN_AUDITS.bat -IncludeAllE2E` (wekelijks of vóór grote wijzigingen). Presentatie alleen: `RUN_INSTITUTIONAL_E2E.bat` — rapport `windows\audits\INSTITUTIONAL_E2E_REPORT_2026-05-22.md`.
+**Periodieke rooktest (aanbevolen):** `windows\audits\RUN_AUDITS.bat -IncludeAllE2E` (wekelijks of vóór grote wijzigingen). Presentatie alleen: `RUN_INSTITUTIONAL_E2E.bat` — rapport `windows\audits\INSTITUTIONAL_E2E_REPORT_2026-05-22.md`. **Pseudo-tabel normalizer:** `RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat` (10/10, ~36s).
 
 **Legal domein:** na SOUL/taxonomie-wijziging → `RUN_LEGAL_DOMAIN_E2E.bat`; bronlayout → `windows\scripts\MIGRATE_LEGAL_LAYOUT.bat -Apply` → `update_knowledge.bat legal`. Zie `docs\LEGAL_DOMAIN_ARCHITECTURE.md`.

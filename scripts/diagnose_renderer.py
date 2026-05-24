@@ -186,6 +186,14 @@ _NFR_NORMALIZER_PROBE = (
     "Robuustheid — Stabiel — Test\n"
 )
 
+_PSEUDO_TABLE_PROBE = (
+    "### Vergelijking: Ollama versus LM Studio\n"
+    "**Interface**\n"
+    "Ollama: CLI _____ LM Studio: GUI\n"
+    "**API Poort**\n"
+    "Ollama: 11434 _____ LM Studio: 1234\n"
+)
+
 
 def _nfr_normalizer_self_test_ok() -> tuple[bool, str | None]:
     """Return (ok, failure_reason). Probes prose→table via normalize_assistant_markdown."""
@@ -202,6 +210,45 @@ def _nfr_normalizer_self_test_ok() -> tuple[bool, str | None]:
         return False, f"NFR normalizer-check mislukt: {exc}"
 
 
+def _pseudo_table_warning(md: str) -> str | None:
+    """Warn when a versus/comparison section still has pseudo-layout after normalize."""
+    for m in re.finditer(
+        r"^#{1,6}\s+.*(?:versus|vs\.?|vergelijk|comparison).*$",
+        md,
+        re.MULTILINE | re.IGNORECASE,
+    ):
+        tail = md[m.end() :]
+        next_h = re.search(r"^#{1,6}\s+", tail, re.MULTILINE)
+        body = tail[: next_h.start()] if next_h else tail
+        if not body.strip():
+            continue
+        if re.search(r"_{6,}", body):
+            return "Vergelijkings-sectie met underscore-layout (pseudo-tabel)"
+        if "|" in body and not re.search(r"^\|\s*[-:]+\s*\|", body, re.MULTILINE):
+            if re.search(r"^\|[^|\n]+\|", body, re.MULTILINE):
+                return "Vergelijkings-sectie met pipe-rijen zonder |---| divider"
+    return None
+
+
+def _pseudo_table_normalizer_self_test_ok() -> tuple[bool, str | None]:
+    """Return (ok, failure_reason). Probes pseudo→markdown table via normalize."""
+    if _pseudo_table_warning(_PSEUDO_TABLE_PROBE) is None:
+        return True, None
+    try:
+        from hermes_cli.markdown_output_normalize import normalize_assistant_markdown
+
+        normalized = normalize_assistant_markdown(_PSEUDO_TABLE_PROBE)
+        if _pseudo_table_warning(normalized) is None and re.search(
+            r"^\|\s*[-:]+\s*\|", normalized, re.MULTILINE
+        ):
+            return True, None
+        return False, (
+            "Pseudo-tabel normalizer herstelt vergelijking niet (geen |---| na normalize)"
+        )
+    except Exception as exc:
+        return False, f"Pseudo-tabel normalizer-check mislukt: {exc}"
+
+
 def _print_nfr_normalizer_status() -> None:
     """Report NFR normalizer health; warn only when the pipeline fails."""
     ok, reason = _nfr_normalizer_self_test_ok()
@@ -210,6 +257,15 @@ def _print_nfr_normalizer_status() -> None:
     else:
         print(f"\n  [WARN] {reason}")
         print("  -> Controleer markdown_output_normalize.py en SOUL Outputformaat-sync")
+
+
+def _print_pseudo_table_normalizer_status() -> None:
+    ok, reason = _pseudo_table_normalizer_self_test_ok()
+    if ok:
+        print("\n  [OK] Pseudo-tabel normalizer: underscore/vs → markdown-tabel")
+    else:
+        print(f"\n  [WARN] {reason}")
+        print("  -> Controleer normalize_pseudo_tables_to_markdown en SOUL-sync")
 
 
 def _print_color_legend(palette: str) -> None:
@@ -264,6 +320,7 @@ def _print_report() -> None:
             print(f"    - {w}")
 
     _print_nfr_normalizer_status()
+    _print_pseudo_table_normalizer_status()
 
     print(f"\n  Config display block:")
     for key in sorted(display.keys()):
@@ -368,6 +425,10 @@ def main() -> int:
         nfr_ok, nfr_reason = _nfr_normalizer_self_test_ok()
         if not nfr_ok:
             print(f"\n[VERIFY FAIL] {nfr_reason}")
+            return 1
+        pseudo_ok, pseudo_reason = _pseudo_table_normalizer_self_test_ok()
+        if not pseudo_ok:
+            print(f"\n[VERIFY FAIL] {pseudo_reason}")
             return 1
         print("\n[VERIFY OK] institutional_rich + demo palette active (geen team display drift)")
 

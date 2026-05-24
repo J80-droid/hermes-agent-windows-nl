@@ -43,6 +43,28 @@ PARITY_FIXTURES: list[tuple[str, str]] = [
         "numbered_step",
         "1 Stap 1: Analyse\nBody.",
     ),
+    (
+        "ollama_vs_lm_studio_underscore",
+        "### Vergelijking: Ollama versus LM Studio\n\n"
+        "**Interface**\n"
+        "Ollama: CLI-first _____ LM Studio: GUI met knoppen\n"
+        "**Modelbeheer**\n"
+        "Ollama: pull/list _____ LM Studio: browse catalog\n",
+    ),
+    (
+        "auxiliary_tasks_pseudo",
+        "### Hulp taken\n\n"
+        "**Vision**\n"
+        "Cloud: Gemini _____ Lokaal: LLaVA\n"
+        "**Web**\n"
+        "Cloud: DeepSeek _____ Lokaal: Ollama\n",
+    ),
+    (
+        "pipe_rows_missing_divider",
+        "| Task | Cloud |\n"
+        "| Vision | Gemini |\n"
+        "| Web | DeepSeek |\n",
+    ),
 ]
 
 
@@ -116,6 +138,7 @@ def test_ink_ts_normalizer_matches_python(name: str, text: str):
     )
 
 
+@pytest.mark.timeout(180)
 def test_web_and_ink_ts_normalizers_match_on_fixtures():
     web_runner = REPO / "scripts" / "normalize_assistant_markdown_ts_runner.ts"
     ink_runner = REPO / "scripts" / "normalize_assistant_markdown_ink_runner.ts"

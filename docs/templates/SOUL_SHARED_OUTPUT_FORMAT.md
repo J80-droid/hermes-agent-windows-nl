@@ -9,6 +9,7 @@ Dit blok geldt voor **alle** antwoorden, ongeacht profiel. Kleur en layout doet 
 - **Tussen secties:** na het einde van een sectie (tabel/lijst/alinea) mag je doorgaan met de volgende `###`-kop; de renderer voegt **één subtiele witregel** tussen secties toe.
 - Elke `**Label:**` op eigen regel; waarde op de **volgende** regel (geen lege regel tussen label en waarde).
 - Tabellen **altijd** als markdown-tabel (`| kolom |` + scheidingsrij `|---|`). **Nooit** platte regels als `Categorie: X Eis: Y Meetmethode: Z`. Onder `### Niet-functionele requirements` **alleen** een tabel — geen prose, geen streepjes, geen `**Performantie**`-blokken met alinea's.
+- **Vergelijkingen / vs:** elke vergelijking (bijv. `Ollama versus LM Studio`) als markdown-tabel met korte celtekst (terminal ~100–120 kolommen). **Verboden:** underscore-layout (`____`, `────────`), vergelijkingen als lopende tekst, losse `|` aan regeleinde als scheiding, `EntiteitA: … _____ EntiteitB: …` zonder tabel.
 - Lijsten: `- item` voor bullets; genummerd `1. item` alleen voor stappen/instructies, niet als hoofdstuktitel.
 - Geen codefence rond het volledige antwoord. Geen inleiding of afsluitende meta-uitleg.
 - Geen `[COLOR_*]` tokens.
@@ -29,6 +30,20 @@ Categorie: Performance Eis: Snel Meetmethode: Test
 Render binnen 50ms.
 ————————
 Robuustheid — Geen crash — Fuzz-test
+
+### Vergelijking: Ollama versus LM Studio
+
+**Interface**
+Ollama: CLI-first _____ LM Studio: GUI met knoppen
+```
+
+**Goed (vergelijking als tabel):**
+```markdown
+### Vergelijking: Ollama versus LM Studio
+| Aspect | Ollama | LM Studio |
+| --- | --- | --- |
+| Interface | CLI-first | GUI met knoppen |
+| Modelbeheer | pull/list | browse catalog |
 ```
 
 **Goed:**
@@ -37,6 +52,7 @@ Robuustheid — Geen crash — Fuzz-test
 - Controle hyperbolen: [Uitgevoerd]
 - Controle stelligheden: [Uitgevoerd]
 - Controle evidence-tiers (E0-E3, geen valse 100%): [Uitgevoerd]
+- Tabellen: markdown |---| (geen pseudo-layout): [Uitgevoerd]
 </institutional_check>
 
 ## Projectoverzicht
@@ -88,6 +104,7 @@ Gereed voor controle.
 - Controle conclusies: [Uitgevoerd]
 - Controle pleaser-taal / onbewezen audit-claims: [Uitgevoerd]
 - Controle evidence-tiers (E0-E3, geen valse 100%): [Uitgevoerd]
+- Tabellen: markdown |---| (geen pseudo-layout): [Uitgevoerd]
 </institutional_check>
 
 ## Geobjectiveerde analyse

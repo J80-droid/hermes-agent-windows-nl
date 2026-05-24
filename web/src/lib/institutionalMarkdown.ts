@@ -268,10 +268,357 @@ function compactInstitutionalCheck(text: string): string {
   )
 }
 
+const TABLE_DIVIDER_CELL_RE = /^\s*:?-{3,}:?\s*$/
+const PSEUDO_SEPARATOR_LINE_RE = /^[\s_\-—─]{6,}\s*$/
+const ORPHAN_TRAILING_PIPE_RE = /\|\s*$/
+const HEADING_LINE_RE = /^\s{0,3}#{1,6}\s+.+$/
+const VERSUS_IN_HEADING_RE = /(.+?)\s+(?:versus|vs\.?|tegen)\s+(.+)/i
+const INLINE_DUAL_SPLIT_RE = /_{4,}|─{4,}|\s+[—–-]{2,}\s+/
+const BOLD_CATEGORY_LINE_RE = /^\*\*(?<label>[^*\n]+)\*\*\s*$/
+const BOLD_CATEGORY_INLINE_RE = /^\*\*(?<label>[^*\n]+)\*\*\s+(?<rest>.+)$/
+const MAX_COMPARISON_COLUMNS = 6
+
+function splitMarkdownTableRow(row: string): string[] {
+  let s = row.trim()
+  if (s.startsWith('|')) s = s.slice(1)
+  if (s.endsWith('|')) s = s.slice(0, -1)
+  return s.split('|').map((c) => c.trim())
+}
+
+function isMarkdownTableDividerLine(row: string): boolean {
+  const cells = splitMarkdownTableRow(row)
+  return cells.length > 1 && cells.every((c) => TABLE_DIVIDER_CELL_RE.test(c))
+}
+
+function looksLikeMarkdownTableRow(row: string): boolean {
+  if (!row.includes('|')) return false
+  const stripped = row.trim()
+  if (!stripped) return false
+  if (stripped.startsWith('|')) return true
+  return (stripped.match(/\|/g) || []).length >= 2
+}
+
+function sectionHasMarkdownTable(bodyLines: string[]): boolean {
+  return bodyLines.some((line) => isMarkdownTableDividerLine(line))
+}
+
+function stripOrphanTrailingPipe(line: string): string {
+  return line.replace(ORPHAN_TRAILING_PIPE_RE, '').trimEnd()
+}
+
+function sanitizeTableCell(text: string): string {
+  let cell = (text || '').trim().replace(/\s+/g, ' ')
+  cell = cell.replace(/_{2,}/g, ' ').trim()
+  return cell
+}
+
+function renderMarkdownTable(headers: string[], rows: string[][]): string[] {
+  const ncols = headers.length
+  if (ncols < 2 || !rows.length) return []
+  const out = [
+    `| ${headers.join(' | ')} |`,
+    `| ${Array(ncols).fill('---').join(' | ')} |`,
+  ]
+  for (const row of rows) {
+    const cells = row.slice(0, ncols).map(sanitizeTableCell)
+    while (cells.length < ncols) cells.push('')
+    out.push(`| ${cells.join(' | ')} |`)
+  }
+  return out
+}
+
+function inferColumnsFromHeading(headingLine: string): string[] | null {
+  let title = headingLine.replace(/^\s{0,3}#{1,6}\s+/, '').trim()
+  title = title.replace(/^(?:vergelijking|comparison)\s*:\s*/i, '')
+  const match = title.match(VERSUS_IN_HEADING_RE)
+  if (match) {
+    const a = match[1]!.trim().replace(/:$/, '')
+    const b = match[2]!.trim()
+    if (a && b) return ['Aspect', a, b]
+  }
+  return null
+}
+
+function countPseudoTableSignals(bodyLines: string[]): number {
+  let signals = 0
+  for (const line of bodyLines) {
+    const stripped = stripOrphanTrailingPipe(line.trim())
+    if (!stripped) continue
+    if (PSEUDO_SEPARATOR_LINE_RE.test(stripped)) {
+      signals++
+      continue
+    }
+    if (ORPHAN_TRAILING_PIPE_RE.test(line)) signals++
+    if (BOLD_CATEGORY_INLINE_RE.test(stripped) && INLINE_DUAL_SPLIT_RE.test(stripped)) signals++
+    if (INLINE_DUAL_SPLIT_RE.test(stripped) && !stripped.startsWith('|')) signals++
+  }
+  return signals
+}
+
+const ENTITY_PREFIX_RE = /^[A-Za-z0-9 .+\-]+:\s*/
+
+function splitLabeledEntityValue(text: string): [string | null, string] {
+  const match = text.trim().match(/^([^:|]{1,40}):\s*(.+)$/)
+  if (match) return [match[1]!.trim(), match[2]!.trim()]
+  return [null, text.trim()]
+}
+
+function appendDualEntityRow(
+  rows: string[][],
+  entityHeaders: string[] | null,
+  label: string,
+  partA: string,
+  partB: string,
+): string[] | null {
+  const [entityA, valueAraw] = splitLabeledEntityValue(partA)
+  const [entityB, valueBraw] = splitLabeledEntityValue(partB)
+  let nextHeaders = entityHeaders
+  let valueA = valueAraw
+  let valueB = valueBraw
+  if (entityA && entityB) {
+    const pair = [entityA, entityB]
+    if (nextHeaders === null) nextHeaders = pair
+    else if (nextHeaders[0] !== pair[0] || nextHeaders[1] !== pair[1]) nextHeaders = null
+  } else {
+    valueA = partA.replace(ENTITY_PREFIX_RE, '').trim()
+    valueB = partB.replace(ENTITY_PREFIX_RE, '').trim()
+  }
+  rows.push([label, valueA, valueB])
+  return nextHeaders
+}
+
+function parseComparisonBodyToRows(
+  bodyLines: string[],
+  defaultHeaders: string[] | null,
+): { headers: string[]; rows: string[][] } | null {
+  const rows: string[][] = []
+  let pendingLabel: string | null = null
+  let entityHeaders: string[] | null = null
+
+  for (const line of bodyLines) {
+    const stripped = stripOrphanTrailingPipe(line.trim())
+    if (!stripped) continue
+    if (PSEUDO_SEPARATOR_LINE_RE.test(stripped)) {
+      pendingLabel = null
+      continue
+    }
+    if (stripped.startsWith('|')) return null
+
+    const boldOnly = stripped.match(BOLD_CATEGORY_LINE_RE)
+    if (boldOnly?.groups?.label) {
+      pendingLabel = boldOnly.groups.label.trim()
+      continue
+    }
+
+    const boldInline = stripped.match(BOLD_CATEGORY_INLINE_RE)
+    if (boldInline?.groups) {
+      const label = boldInline.groups.label!.trim()
+      const parts = boldInline.groups.rest!
+        .trim()
+        .split(INLINE_DUAL_SPLIT_RE)
+        .map((p) => p.trim())
+        .filter(Boolean)
+      if (parts.length >= 2) rows.push([label, parts[0]!, parts[1]!])
+      pendingLabel = null
+      continue
+    }
+
+    if (pendingLabel) {
+      const parts = stripped
+        .split(INLINE_DUAL_SPLIT_RE)
+        .map((p) => p.trim())
+        .filter(Boolean)
+      if (parts.length >= 2) {
+        entityHeaders = appendDualEntityRow(
+          rows,
+          entityHeaders,
+          pendingLabel,
+          parts[0]!,
+          parts[1]!,
+        )
+        pendingLabel = null
+        continue
+      }
+    }
+
+    const dash = stripped.match(NFR_CATEGORY_DASH_RE)
+    if (dash && !INLINE_DUAL_SPLIT_RE.test(stripped)) {
+      rows.push([
+        stripMdBold(dash[1]!),
+        dash[2]!.trim(),
+        (dash[3] || '-').trim() || '-',
+      ])
+      pendingLabel = null
+      continue
+    }
+
+    const labelColon = stripped.match(/^([^:|]{2,40}):\s*(.+)$/)
+    if (labelColon && !pendingLabel) {
+      const label = labelColon[1]!.trim()
+      const rest = labelColon[2]!.trim()
+      const parts = rest
+        .split(INLINE_DUAL_SPLIT_RE)
+        .map((p) => p.trim())
+        .filter(Boolean)
+      if (parts.length >= 2) {
+        entityHeaders = appendDualEntityRow(rows, entityHeaders, label, parts[0]!, parts[1]!)
+        continue
+      }
+    }
+  }
+
+  if (rows.length < 2) return null
+
+  const maxCols = Math.min(
+    MAX_COMPARISON_COLUMNS,
+    Math.max(...rows.map((r) => r.length)),
+  )
+  if (maxCols < 2) return null
+
+  let headers: string[]
+  if (defaultHeaders && defaultHeaders.length === maxCols) {
+    headers = defaultHeaders
+  } else if (maxCols === 3 && entityHeaders && entityHeaders.length === 2) {
+    headers = ['Aspect', entityHeaders[0]!, entityHeaders[1]!]
+  } else if (maxCols === 2) {
+    headers = ['Aspect', 'Optie A', 'Optie B']
+  } else if (maxCols === 3 && defaultHeaders && defaultHeaders.length >= 3) {
+    headers = defaultHeaders.slice(0, 3)
+  } else {
+    headers = ['Aspect', ...Array.from({ length: maxCols - 1 }, (_, i) => `Kolom ${i + 1}`)]
+  }
+
+  const normalizedRows = rows.map((row) => {
+    const cells = row.slice(0, maxCols)
+    while (cells.length < maxCols) cells.push('')
+    return cells
+  })
+
+  return { headers, rows: normalizedRows }
+}
+
+function ensureMarkdownTableDividers(text: string): string {
+  if (!text?.trim() || !text.includes('|')) return text || ''
+
+  const lines = text.split('\n')
+  const out: string[] = []
+  let i = 0
+
+  while (i < lines.length) {
+    const line = lines[i]!
+    if (looksLikeMarkdownTableRow(line) && !isMarkdownTableDividerLine(line)) {
+      if (i + 1 < lines.length && isMarkdownTableDividerLine(lines[i + 1]!)) {
+        out.push(line)
+        i++
+        while (i < lines.length && looksLikeMarkdownTableRow(lines[i]!)) {
+          out.push(lines[i]!)
+          i++
+        }
+        continue
+      }
+      if (
+        i + 1 < lines.length &&
+        looksLikeMarkdownTableRow(lines[i + 1]!) &&
+        !isMarkdownTableDividerLine(lines[i + 1]!)
+      ) {
+        const headerCells = splitMarkdownTableRow(line)
+        if (headerCells.length > 1 && headerCells.some((c) => c.trim())) {
+          out.push(line)
+          out.push(`| ${headerCells.map(() => '---').join(' | ')} |`)
+          i++
+          while (i < lines.length && looksLikeMarkdownTableRow(lines[i]!)) {
+            if (isMarkdownTableDividerLine(lines[i]!)) {
+              i++
+              continue
+            }
+            out.push(lines[i]!)
+            i++
+          }
+          continue
+        }
+      }
+    }
+    out.push(line)
+    i++
+  }
+
+  return out.join('\n')
+}
+
+function normalizePseudoTablesToMarkdown(text: string): string {
+  if (!text?.trim()) return text || ''
+  if (
+    !(
+      text.includes('|') ||
+      /_{4,}/.test(text) ||
+      /^\*\*[^*]+\*\*/m.test(text) ||
+      /\b(versus|vs\.?|vergelijk|comparison)\b/i.test(text)
+    )
+  ) {
+    return text
+  }
+
+  const lines = text.split('\n')
+  const out: string[] = []
+  let i = 0
+
+  while (i < lines.length) {
+    const line = lines[i]!
+    if (!HEADING_LINE_RE.test(line)) {
+      out.push(line)
+      i++
+      continue
+    }
+
+    const heading = line
+    i++
+    const bodyLines: string[] = []
+    while (i < lines.length && !HEADING_LINE_RE.test(lines[i]!)) {
+      bodyLines.push(lines[i]!)
+      i++
+    }
+
+    if (!bodyLines.length) {
+      out.push(heading)
+      continue
+    }
+
+    if (sectionHasMarkdownTable(bodyLines)) {
+      out.push(heading)
+      out.push(...bodyLines)
+      continue
+    }
+
+    const defaultHeaders = inferColumnsFromHeading(heading)
+    const isComparisonHeading =
+      defaultHeaders !== null ||
+      /\b(vergelijk|versus|vs\.?|comparison|tabel)\b/i.test(heading)
+    const signals = countPseudoTableSignals(bodyLines)
+
+    if (!isComparisonHeading && signals < 2) {
+      out.push(heading)
+      out.push(...bodyLines)
+      continue
+    }
+
+    const parsed = parseComparisonBodyToRows(bodyLines, defaultHeaders)
+    if (parsed) {
+      out.push(heading)
+      out.push(...renderMarkdownTable(parsed.headers, parsed.rows))
+      continue
+    }
+
+    out.push(heading)
+    out.push(...bodyLines)
+  }
+
+  return out.join('\n')
+}
+
 export function normalizeAssistantMarkdown(text: string): string {
   if (!text?.trim()) return text || ''
 
-  let out = text
+  let out = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
 
   out = ensureInstitutionalCheckBlock(out)
   out = ensureInstitutionalCheckSpacing(out)
@@ -290,6 +637,9 @@ export function normalizeAssistantMarkdown(text: string): string {
 
   out = out.replace(SECTION_BREAK_BEFORE_HEADING_RE, '\n\n$1')
   out = out.replace(/(?<!\n\n)(\n)(#{1,6}\s)/g, '\n\n$2')
+
+  out = ensureMarkdownTableDividers(out)
+  out = normalizePseudoTablesToMarkdown(out)
 
   out = out.replace(HEADING_TIGHT_BEFORE_TABLE_RE, '$<h>\n')
   out = out.replace(HEADING_TIGHT_TO_BODY_RE, '$<h>\n')

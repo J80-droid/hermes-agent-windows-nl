@@ -76,9 +76,9 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 
 ### Normalizer + pariteit
 
-- **Python (canonical):** `hermes_cli/markdown_output_normalize.py` — outline, institutional_check, tighten kop–tabel, NFR prose→tabel
+- **Python (canonical):** `hermes_cli/markdown_output_normalize.py` — outline, institutional_check, tighten kop–tabel, NFR prose→tabel, **pseudo-tabel/underscore vs→markdown** (`ensure_markdown_table_dividers`, `normalize_pseudo_tables_to_markdown`)
 - **Web:** `web/src/lib/institutionalMarkdown.ts` + `Markdown.tsx` (`toRenderUnits` = TightHeadingBody-equivalent)
-- **Ink:** `ui-tui/src/lib/institutionalMarkdownNormalize.ts` + compacte Controle-regel in `markdown.tsx`
+- **Ink:** re-export Web normalizer (`ui-tui/src/lib/institutionalMarkdownNormalize.ts`) + compacte Controle-regel in `markdown.tsx`
 
 Defaults: `windows/team_display.defaults`; toepassen: `APPLY_INSTITUTIONAL_RUNTIME.bat`. Audit: `RUN_INSTITUTIONAL_E2E.ps1` (11 stappen + 2f + 2g).
 

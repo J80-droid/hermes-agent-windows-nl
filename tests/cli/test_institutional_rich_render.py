@@ -191,6 +191,68 @@ def test_heading_list_and_prose_tight():
     assert any(isinstance(p, TightHeadingBody) for p in renderable._renderables)
 
 
+def test_pseudo_comparison_normalizes_and_renders_colored_table():
+    """Normalized underscore vs-block must render as table (not a prose wall)."""
+    raw = (
+        "### Vergelijking: Ollama versus LM Studio\n\n"
+        "**Interface**\n"
+        "Ollama: CLI _____ LM Studio: GUI\n"
+        "**API Poort**\n"
+        "Ollama: 11434 _____ LM Studio: 1234\n"
+    )
+    normalized = normalize_assistant_markdown(raw)
+    assert "| --- |" in normalized
+    assert "____" not in normalized
+    out = format_response_ansi(normalized, cols=100) or ""
+    assert "Interface" in out
+    codes = set(re.findall(r"\x1b\[[0-9;]*m", out))
+    assert len(codes) >= 2
+
+
+def _collect_institutional_markdown_sources(renderable) -> list[str]:
+    from rich.console import Group
+
+    from hermes_cli.institutional_render import InstitutionalMarkdown, TightHeadingBody
+
+    sources: list[str] = []
+
+    def walk(obj) -> None:
+        if isinstance(obj, InstitutionalMarkdown):
+            sources.append(obj.markup)
+            return
+        if isinstance(obj, TightHeadingBody):
+            walk(obj.body)
+            return
+        if isinstance(obj, Group):
+            for part in obj._renderables:
+                walk(part)
+            return
+        if isinstance(obj, list):
+            for part in obj:
+                walk(part)
+
+    walk(renderable)
+    return sources
+
+
+def test_pseudo_comparison_renders_institutional_table_markdown():
+    from hermes_cli.institutional_render import InstitutionalTableElement, render_institutional_assistant
+
+    raw = (
+        "### Vergelijking: Ollama versus LM Studio\n\n"
+        "**Interface**\n"
+        "Ollama: CLI _____ LM Studio: GUI\n"
+        "**API Poort**\n"
+        "Ollama: 11434 _____ LM Studio: 1234\n"
+    )
+    normalized = normalize_assistant_markdown(raw)
+    renderable = render_institutional_assistant(normalized, already_normalized=True)
+    table_md = _collect_institutional_markdown_sources(renderable)
+    assert table_md, "verwacht InstitutionalMarkdown met tabel"
+    assert any("|---|" in src or "| ---" in src for src in table_md)
+    assert InstitutionalTableElement is not None
+
+
 def test_institutional_check_renders_compact_without_xml_tags():
     md = (
         "<institutional_check>\n"

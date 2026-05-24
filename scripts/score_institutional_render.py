@@ -57,6 +57,28 @@ def _score_heading_table_tight(md: str) -> tuple[int, str]:
     return 10, "Kop direct op tabel/lijst"
 
 
+def _score_vergelijking_tabel(md: str) -> tuple[int, str]:
+    """After normalize: versus/comparison sections must not keep pseudo underscores."""
+    for m in re.finditer(
+        r"^#{1,6}\s+.*(?:versus|vs\.?|vergelijk|comparison).*$",
+        md,
+        re.MULTILINE | re.IGNORECASE,
+    ):
+        tail = md[m.end() :]
+        next_h = re.search(r"^#{1,6}\s+", tail, re.MULTILINE)
+        body = tail[: next_h.start()] if next_h else tail
+        if not body.strip():
+            continue
+        if re.search(r"_{6,}", body):
+            return 4, "Vergelijking met underscore-layout (pseudo-tabel)"
+        if "|" in body and not re.search(r"^\|\s*[-:]+\s*\|", body, re.MULTILINE):
+            if re.search(r"^\|[^|\n]+\|", body, re.MULTILINE):
+                return 5, "Pipe-rijen zonder |---| in vergelijkings-sectie"
+        if not re.search(r"^\|[^|\n]+\|", body, re.MULTILINE):
+            return 5, "Vergelijking zonder markdown-tabel"
+    return 10, "Vergelijkingen als markdown-tabel (of n.v.t.)"
+
+
 def _score_nfr_table(md: str) -> tuple[int, str]:
     m = re.search(
         r"^#{1,6}\s+Niet-functionele\s+requirements\s*$",
@@ -117,6 +139,7 @@ def score_markdown(md: str) -> dict[str, tuple[int, str]]:
         "sectie_spacing": _score_section_spacing(normalized),
         "labels": _score_labels(normalized),
         "nfr_tabel": _score_nfr_table(normalized),
+        "vergelijking_tabel": _score_vergelijking_tabel(normalized),
         "kleur_h2_kolom0": _score_heading_vs_table_color(),
         "render_pipeline": _score_render_pipeline(normalized),
     }

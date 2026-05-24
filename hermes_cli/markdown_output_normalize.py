@@ -444,6 +444,341 @@ def normalize_nfr_prose_section_to_table(text: str) -> str:
     return "\n".join(out)
 
 
+_TABLE_DIVIDER_CELL_RE = re.compile(r"^\s*:?-{3,}:?\s*$")
+_PSEUDO_SEPARATOR_LINE_RE = re.compile(r"^[\s_\-—─]{6,}\s*$")
+_ORPHAN_TRAILING_PIPE_RE = re.compile(r"\|\s*$")
+_HEADING_LINE_RE = re.compile(r"^\s{0,3}#{1,6}\s+.+$")
+_VERSUS_IN_HEADING_RE = re.compile(
+    r"(?P<a>.+?)\s+(?:versus|vs\.?|tegen)\s+(?P<b>.+)",
+    re.IGNORECASE,
+)
+_INLINE_DUAL_SPLIT_RE = re.compile(r"_{4,}|─{4,}|\s+[—–-]{2,}\s+")
+_BOLD_CATEGORY_LINE_RE = re.compile(r"^\*\*(?P<label>[^*\n]+)\*\*\s*$")
+_BOLD_CATEGORY_INLINE_RE = re.compile(
+    r"^\*\*(?P<label>[^*\n]+)\*\*\s+(?P<rest>.+)$"
+)
+_MAX_COMPARISON_COLUMNS = 6
+
+
+def _split_markdown_table_row(row: str) -> list[str]:
+    s = row.strip()
+    if s.startswith("|"):
+        s = s[1:]
+    if s.endswith("|"):
+        s = s[:-1]
+    return [c.strip() for c in s.split("|")]
+
+
+def _is_markdown_table_divider_line(row: str) -> bool:
+    cells = _split_markdown_table_row(row)
+    return len(cells) > 1 and all(_TABLE_DIVIDER_CELL_RE.match(c) for c in cells)
+
+
+def _looks_like_markdown_table_row(row: str) -> bool:
+    if "|" not in row:
+        return False
+    stripped = row.strip()
+    if not stripped:
+        return False
+    if stripped.startswith("|"):
+        return True
+    return stripped.count("|") >= 2
+
+
+def _section_has_markdown_table(body_lines: list[str]) -> bool:
+    for line in body_lines:
+        if _is_markdown_table_divider_line(line):
+            return True
+    return False
+
+
+def _strip_orphan_trailing_pipe(line: str) -> str:
+    return _ORPHAN_TRAILING_PIPE_RE.sub("", line).rstrip()
+
+
+def _sanitize_table_cell(text: str) -> str:
+    cell = re.sub(r"\s+", " ", (text or "").strip())
+    cell = re.sub(r"_{2,}", " ", cell)
+    return cell.strip()
+
+
+def _render_markdown_table(headers: list[str], rows: list[list[str]]) -> list[str]:
+    ncols = len(headers)
+    if ncols < 2 or not rows:
+        return []
+    out = [
+        "| " + " | ".join(headers) + " |",
+        "| " + " | ".join("---" for _ in range(ncols)) + " |",
+    ]
+    for row in rows:
+        cells = [_sanitize_table_cell(c) for c in row[:ncols]]
+        while len(cells) < ncols:
+            cells.append("")
+        out.append("| " + " | ".join(cells) + " |")
+    return out
+
+
+def _infer_columns_from_heading(heading_line: str) -> list[str] | None:
+    title = re.sub(r"^\s{0,3}#{1,6}\s+", "", heading_line).strip()
+    title = re.sub(r"^(?:vergelijking|comparison)\s*:\s*", "", title, flags=re.IGNORECASE)
+    match = _VERSUS_IN_HEADING_RE.search(title)
+    if match:
+        a = match.group("a").strip().rstrip(":")
+        b = match.group("b").strip()
+        if a and b:
+            return ["Aspect", a, b]
+    return None
+
+
+def _count_pseudo_table_signals(body_lines: list[str]) -> int:
+    signals = 0
+    for line in body_lines:
+        stripped = _strip_orphan_trailing_pipe(line.strip())
+        if not stripped:
+            continue
+        if _PSEUDO_SEPARATOR_LINE_RE.match(stripped):
+            signals += 1
+            continue
+        if _ORPHAN_TRAILING_PIPE_RE.search(line):
+            signals += 1
+        if _BOLD_CATEGORY_INLINE_RE.match(stripped) and _INLINE_DUAL_SPLIT_RE.search(stripped):
+            signals += 1
+        if _INLINE_DUAL_SPLIT_RE.search(stripped) and not stripped.startswith("|"):
+            signals += 1
+    return signals
+
+
+def _split_labeled_entity_value(text: str) -> tuple[str | None, str]:
+    match = re.match(r"^([^:|]{1,40}):\s*(.+)$", (text or "").strip())
+    if match:
+        return match.group(1).strip(), match.group(2).strip()
+    return None, (text or "").strip()
+
+
+def _append_dual_entity_row(
+    rows: list[list[str]],
+    entity_headers: list[str] | None,
+    label: str,
+    part_a: str,
+    part_b: str,
+) -> list[str] | None:
+    entity_a, value_a = _split_labeled_entity_value(part_a)
+    entity_b, value_b = _split_labeled_entity_value(part_b)
+    if entity_a and entity_b:
+        pair = [entity_a, entity_b]
+        if entity_headers is None:
+            entity_headers = pair
+        elif entity_headers != pair:
+            entity_headers = None
+    else:
+        value_a = re.sub(r"^[A-Za-z0-9 .+\-]+:\s*", "", part_a).strip()
+        value_b = re.sub(r"^[A-Za-z0-9 .+\-]+:\s*", "", part_b).strip()
+    rows.append([label, value_a, value_b])
+    return entity_headers
+
+
+def _parse_comparison_body_to_rows(
+    body_lines: list[str],
+    default_headers: list[str] | None,
+) -> tuple[list[str], list[list[str]]] | None:
+    """Parse pseudo-comparison prose into (headers, rows)."""
+    rows: list[list[str]] = []
+    pending_label: str | None = None
+    entity_headers: list[str] | None = None
+
+    for line in body_lines:
+        stripped = _strip_orphan_trailing_pipe(line.strip())
+        if not stripped:
+            continue
+        if _PSEUDO_SEPARATOR_LINE_RE.match(stripped):
+            pending_label = None
+            continue
+        if stripped.startswith("|"):
+            return None
+
+        bold_only = _BOLD_CATEGORY_LINE_RE.match(stripped)
+        if bold_only:
+            pending_label = bold_only.group("label").strip()
+            continue
+
+        bold_inline = _BOLD_CATEGORY_INLINE_RE.match(stripped)
+        if bold_inline:
+            label = bold_inline.group("label").strip()
+            parts = _INLINE_DUAL_SPLIT_RE.split(bold_inline.group("rest").strip())
+            parts = [p.strip() for p in parts if p.strip()]
+            if len(parts) >= 2:
+                rows.append([label, parts[0], parts[1]])
+            pending_label = None
+            continue
+
+        if pending_label:
+            parts = _INLINE_DUAL_SPLIT_RE.split(stripped)
+            parts = [p.strip() for p in parts if p.strip()]
+            if len(parts) >= 2:
+                entity_headers = _append_dual_entity_row(
+                    rows, entity_headers, pending_label, parts[0], parts[1]
+                )
+                pending_label = None
+                continue
+
+        dash = _NFR_CATEGORY_DASH_RE.match(stripped)
+        if dash and not _INLINE_DUAL_SPLIT_RE.search(stripped):
+            cat = _strip_md_bold(dash.group("cat"))
+            eis = dash.group("eis").strip()
+            met = (dash.group("met") or "-").strip()
+            rows.append([cat, eis, met or "-"])
+            pending_label = None
+            continue
+
+        label_colon = re.match(r"^([^:|]{2,40}):\s*(.+)$", stripped)
+        if label_colon and not pending_label:
+            label = label_colon.group(1).strip()
+            rest = label_colon.group(2).strip()
+            parts = _INLINE_DUAL_SPLIT_RE.split(rest)
+            parts = [p.strip() for p in parts if p.strip()]
+            if len(parts) >= 2:
+                entity_headers = _append_dual_entity_row(
+                    rows, entity_headers, label, parts[0], parts[1]
+                )
+                continue
+
+    if len(rows) < 2:
+        return None
+
+    max_cols = min(_MAX_COMPARISON_COLUMNS, max(len(r) for r in rows))
+    if max_cols < 2:
+        return None
+
+    if default_headers and len(default_headers) == max_cols:
+        headers = default_headers
+    elif max_cols == 3 and entity_headers and len(entity_headers) == 2:
+        headers = ["Aspect", entity_headers[0], entity_headers[1]]
+    elif max_cols == 2:
+        headers = ["Aspect", "Optie A", "Optie B"]
+    elif max_cols == 3 and default_headers and len(default_headers) >= 3:
+        headers = default_headers[:3]
+    else:
+        headers = ["Aspect"] + [f"Kolom {i}" for i in range(1, max_cols)]
+
+    normalized_rows: list[list[str]] = []
+    for row in rows:
+        cells = row[:max_cols]
+        while len(cells) < max_cols:
+            cells.append("")
+        normalized_rows.append(cells)
+
+    return headers, normalized_rows
+
+
+def ensure_markdown_table_dividers(text: str) -> str:
+    """Insert ``|---|`` when consecutive pipe rows omit the divider line."""
+    if not text or "|" not in text:
+        return text or ""
+
+    lines = text.splitlines()
+    out: list[str] = []
+    i = 0
+    n = len(lines)
+
+    while i < n:
+        line = lines[i]
+        if _looks_like_markdown_table_row(line) and not _is_markdown_table_divider_line(line):
+            if i + 1 < n and _is_markdown_table_divider_line(lines[i + 1]):
+                out.append(line)
+                i += 1
+                while i < n and _looks_like_markdown_table_row(lines[i]):
+                    out.append(lines[i])
+                    i += 1
+                continue
+            if (
+                i + 1 < n
+                and _looks_like_markdown_table_row(lines[i + 1])
+                and not _is_markdown_table_divider_line(lines[i + 1])
+            ):
+                header_cells = _split_markdown_table_row(line)
+                if len(header_cells) > 1 and any(c.strip() for c in header_cells):
+                    out.append(line)
+                    divider = "| " + " | ".join("---" for _ in header_cells) + " |"
+                    out.append(divider)
+                    i += 1
+                    while i < n and _looks_like_markdown_table_row(lines[i]):
+                        if _is_markdown_table_divider_line(lines[i]):
+                            i += 1
+                            continue
+                        out.append(lines[i])
+                        i += 1
+                    continue
+        out.append(line)
+        i += 1
+
+    return "\n".join(out)
+
+
+def normalize_pseudo_tables_to_markdown(text: str) -> str:
+    """Convert underscore/pipe pseudo-comparison blocks into markdown tables."""
+    if not text or not text.strip():
+        return text or ""
+    if not (
+        "|" in text
+        or re.search(r"_{4,}", text)
+        or re.search(r"^\*\*[^*]+\*\*", text, re.MULTILINE)
+        or re.search(r"(?i)\b(versus|vs\.?|vergelijk|comparison)\b", text)
+    ):
+        return text
+
+    lines = text.splitlines()
+    out: list[str] = []
+    i = 0
+    n = len(lines)
+
+    while i < n:
+        line = lines[i]
+        if not _HEADING_LINE_RE.match(line):
+            out.append(line)
+            i += 1
+            continue
+
+        heading = line
+        i += 1
+        body_lines: list[str] = []
+        while i < n and not _HEADING_LINE_RE.match(lines[i]):
+            body_lines.append(lines[i])
+            i += 1
+
+        if not body_lines:
+            out.append(heading)
+            continue
+
+        if _section_has_markdown_table(body_lines):
+            out.append(heading)
+            out.extend(body_lines)
+            continue
+
+        default_headers = _infer_columns_from_heading(heading)
+        is_comparison_heading = default_headers is not None or re.search(
+            r"(?i)\b(vergelijk|versus|vs\.?|comparison|tabel)\b",
+            heading,
+        )
+        signals = _count_pseudo_table_signals(body_lines)
+
+        if not is_comparison_heading and signals < 2:
+            out.append(heading)
+            out.extend(body_lines)
+            continue
+
+        parsed = _parse_comparison_body_to_rows(body_lines, default_headers)
+        if parsed:
+            headers, rows = parsed
+            out.append(heading)
+            out.extend(_render_markdown_table(headers, rows))
+            continue
+
+        out.append(heading)
+        out.extend(body_lines)
+
+    return "\n".join(out)
+
+
 def collapse_extra_blank_lines(text: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", text or "")
 
@@ -455,7 +790,7 @@ def normalize_assistant_markdown(
     normalize_plain_outline_headings_flag: bool = True,
 ) -> str:
     """Apply institutional typography normalizers before Rich/Ink render."""
-    out = text or ""
+    out = (text or "").replace("\r\n", "\n").replace("\r", "\n")
     out = ensure_institutional_check_block(out)
     out = ensure_institutional_check_spacing(out)
     out = ensure_heading_line_breaks(out)
@@ -464,6 +799,8 @@ def normalize_assistant_markdown(
     if normalize_plain_outline_headings_flag:
         out = normalize_plain_outline_headings(out)
     out = ensure_section_breaks(out)
+    out = ensure_markdown_table_dividers(out)
+    out = normalize_pseudo_tables_to_markdown(out)
     out = tighten_heading_and_label_spacing(out)
     out = normalize_plain_nfr_rows_to_table(out)
     out = normalize_nfr_prose_section_to_table(out)

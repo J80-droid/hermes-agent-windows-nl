@@ -21,6 +21,7 @@ GUARD_GLOBS = (
     "hermes_cli/display_markdown.py",
     "web/src/components/Markdown.tsx",
     "web/src/lib/institutionalMarkdown.ts",
+    "ui-tui/src/lib/institutionalMarkdownNormalize.ts",
     "web/src/lib/institutionalWebPalette.ts",
     "web/src/lib/assistantDisplayEvents.ts",
     "web/src/contexts/AssistantDisplayProvider.tsx",
@@ -36,6 +37,7 @@ GUARD_GLOBS = (
     ".cursor/rules/institutional-presentatie.mdc",
     "tests/cli/test_institutional_rich_render.py",
     "tests/hermes_cli/test_normalizer_ts_parity.py",
+    "tests/hermes_cli/test_markdown_output_normalize.py",
 )
 
 
@@ -114,9 +116,18 @@ def _run_guard_tests(repo: Path) -> int:
                 "-m",
                 "pytest",
                 "tests/cli/test_institutional_rich_render.py",
+                "tests/hermes_cli/test_markdown_output_normalize.py",
                 "tests/hermes_cli/test_normalizer_ts_parity.py",
                 "-q",
             ],
+        ),
+        (
+            "diagnose_renderer --verify",
+            [sys.executable, "scripts/diagnose_renderer.py", "--verify"],
+        ),
+        (
+            "verify_pseudo_table_normalizer --verify",
+            [sys.executable, "scripts/verify_pseudo_table_normalizer.py", "--verify"],
         ),
         (
             "score_institutional_render --verify",

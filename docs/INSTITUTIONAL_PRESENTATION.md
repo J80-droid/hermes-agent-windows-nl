@@ -72,9 +72,13 @@ Code: [`hermes_cli/institutional_render.py`](../hermes_cli/institutional_render.
 
 **Kleuren:** sectiekoppen (h1–h4) = niveau-gebaseerd; tabelkolommen = apart palet (`header_palette` op alle YAML-paletten, **cyaan-first** zodat `##` groen ≠ kolom `ID` cyaan).
 
-**Score (7 checks):** checklist, kop-op-inhoud, sectie-spacing, labels, NFR-tabel, kleur h2≠kolom0, render-pipeline — `python scripts/score_institutional_render.py --verify` (E2E stap 2g, drempel ≥ 9.0).
+**Score (8 checks):** checklist, kop-op-inhoud, sectie-spacing, labels, NFR-tabel, **vergelijking_tabel** (pseudo-layout), kleur h2≠kolom0, render-pipeline — `python scripts/score_institutional_render.py --verify` (E2E stap 2g, drempel ≥ 9.0).
 
-**Normalizer (fallback):** zet platte outline om naar `##`/`###`; `N Stap N:` → `## Stap N:`; inline `**Label:** waarde` → label + waarde op aparte regels; platte `Categorie: … Eis: …` en **NFR-prose** (streepjes, `**Performantie**`-blokken) → markdown-tabel; `<institutional_check>` op eigen regels.
+**Normalizer (fallback):** zet platte outline om naar `##`/`###`; `N Stap N:` → `## Stap N:`; inline `**Label:** waarde` → label + waarde op aparte regels; platte `Categorie: … Eis: …` en **NFR-prose** (streepjes, `**Performantie**`-blokken) → markdown-tabel; **pseudo-tabellen** (`____`, `EntiteitA: … _____ EntiteitB: …`, pipe-rijen zonder `|---|`) → markdown-tabel vóór render (turn-onafhankelijk); `<institutional_check>` op eigen regels.
+
+**Verify (pseudo-tabel):** `python scripts/verify_pseudo_table_normalizer.py --verify` — Ollama-vs, auxiliary Cloud/Lokaal, pipe-divider probes.
+
+**E2E audit (pseudo-tabel):** `windows\audits\RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat` (10 stappen, pytest + TS parity + diagnose/score + verify). Gecombineerd: `RUN_AUDITS.bat -IncludePseudoTableNormalizerE2E` of `-IncludeAllE2E`.
 
 **Rooktest-prompt:** [`templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md`](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md) — plak in nieuwe chat na SOUL-sync; gebruik **dezelfde** prompt om runs te vergelijken.
 
@@ -113,6 +117,7 @@ Toont:
 - Actief profiel, renderer-stijl, palet, label-kolommen (config; layout altijd verticaal)
 - Kleurlegenda h2 vs tabelkolom 0
 - NFR normalizer self-test (prose→tabel; `[OK]` in diagnose, `[WARN]` alleen bij falende pipeline)
+- Pseudo-tabel normalizer self-test (underscore/vs → markdown-tabel)
 - Config cache state (live vs gecachet)
 - Visuele preview via de echte `format_response_ansi()` pipeline
 
@@ -186,9 +191,11 @@ Na wijzigingen via Cursor, upstream-merge of handmatige config-edits:
    set HERMES_HOME=%LOCALAPPDATA%\hermes\profiles\core
    python scripts\diagnose_renderer.py --verify
    python scripts\score_institutional_render.py --verify
+   python scripts\verify_pseudo_table_normalizer.py --verify
    ```
 5. Visuele rooktest: [`templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md`](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md)
-6. Optioneel vóór commit bij renderer-wijzigingen: `python scripts/verify_institutional_guard.py`
+6. Pseudo-tabel E2E (optioneel, ~36s): `windows\audits\RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat`
+7. Optioneel vóór commit bij renderer-wijzigingen: `python scripts/verify_institutional_guard.py`
 
 **Niet blind wijzigen:** renderer-bestanden (`institutional_render.py`, `Markdown.tsx`, …) — zie `.cursor/rules/institutional-presentatie.mdc`.
 
@@ -202,6 +209,7 @@ Na wijzigingen via Cursor, upstream-merge of handmatige config-edits:
 | Geen witregel tussen hoofdstukken | Model + geen normalizer | SOUL-sync; `markdown_output_normalize` |
 | Label en waarde op één regel | Inline markdown in heading-body (oud) | Pull/update fork; renderer pelt labels; normalizer splitst inline |
 | NFR prose i.p.v. tabel | Model negeert SOUL | Normalizer herstelt prose→tabel; `diagnose_renderer --verify` faalt als pipeline kapot; SOUL-sync + `/new` |
+| Pseudo-tabel / underscore-vergelijking | Model levert `____` of `A: … _____ B: …` i.p.v. `\|---\|` | `normalize_pseudo_tables_to_markdown` (turn-onafhankelijk); SOUL verbiedt pseudo-layout; `verify_pseudo_table_normalizer.py --verify`; `RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat` |
 | Magenta koppen (oude Rich) | `markdown_legacy` | `assistant_render_style: institutional_rich` |
 | Blauw i.p.v. goud (UI) | Legacy cmd of `skin: slate` | Windows Terminal + `skin: default` |
 | Geen institutioneel format | Geen SOUL-sync | `SYNC_SOUL_SNIPPETS.bat` + nieuwe sessie (`/new`) |

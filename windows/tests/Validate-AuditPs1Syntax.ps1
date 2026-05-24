@@ -8,6 +8,8 @@ $files = @(
     'windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.ps1',
     'windows/audits/ClassicCliStatusBarCostE2E.core.ps1',
     'windows/audits/RUN_PARETO_E2E.ps1',
+    'windows/audits/RUN_PSEUDO_TABLE_NORMALIZER_E2E.ps1',
+    'windows/audits/PseudoTableNormalizerE2E.core.ps1',
     'windows/audits/RUN_CODEBASE_SMOKE_AUDIT.ps1',
     'windows/audits/RUN_CODEBASE_SMOKE_E2E.ps1',
     'windows/audits/RUN_TRUST_FORENSIC_E2E.ps1',

@@ -87,8 +87,10 @@ Port `get_assistant_render_settings()` uit [`hermes_cli/display_markdown.py`](..
 
 | Bestand | Rol |
 |---------|-----|
-| `scripts/score_institutional_render.py` | 7-check score (≥ 9.0) |
-| `scripts/diagnose_renderer.py` | Debug + palet-preview + drift-warnings |
+| `scripts/score_institutional_render.py` | 8-check score (≥ 9.0, incl. `vergelijking_tabel`) |
+| `scripts/diagnose_renderer.py` | Debug + palet-preview + drift-warnings + NFR/pseudo self-test |
+| `scripts/verify_pseudo_table_normalizer.py` | Probe Ollama-vs, auxiliary, pipe-divider (`--verify`) |
+| `windows/audits/RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat` | 10-stappen E2E pseudo-tabel normalizer |
 | `tests/hermes_cli/test_normalizer_ts_parity.py` | Python ↔ TS drift |
 | `tests/cli/test_institutional_rich_render.py` | Renderer unit tests |
 
@@ -196,7 +198,7 @@ React: `AssistantDisplayProvider` fetch bij mount; `notifyAssistantDisplayChange
 
 ## 11. 10/10 visuele checklist
 
-Gebruik [INSTITUTIONAL_RENDERER_TEST_PROMPT.md](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md). Zie ook `python scripts/score_institutional_render.py --verify` (7 checks, drempel ≥ 9.0).
+Gebruik [INSTITUTIONAL_RENDERER_TEST_PROMPT.md](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md). Zie ook `python scripts/score_institutional_render.py --verify` (8 checks, drempel ≥ 9.0) en `windows\audits\RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat`.
 
 ---
 
@@ -261,6 +263,8 @@ Dagelijkse workflow in **deze** repo (niet porten):
 | Alleen display | `windows\APPLY_TEAM_DISPLAY.bat` |
 | Diagnose | `python scripts/diagnose_renderer.py --verify` |
 | Score | `python scripts/score_institutional_render.py --verify` |
+| Pseudo-tabel verify | `python scripts/verify_pseudo_table_normalizer.py --verify` |
+| Pseudo-tabel E2E | `windows\audits\RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat` |
 | Pre-commit guard | `python scripts/verify_institutional_guard.py` |
 | E2E audit | `windows\audits\RUN_INSTITUTIONAL_E2E.bat` |
 | Team defaults bron | `windows/team_display.defaults` |

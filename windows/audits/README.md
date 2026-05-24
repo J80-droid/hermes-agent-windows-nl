@@ -54,6 +54,8 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | **`RUN_STATUS_BAR_COST_E2E.bat`** | TUI statusbalk (rich): `show_cost`, `cost_bar_mode`, breakdown, turn-delta, live `~$turn`, gateway smoke |
 | **`RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`** | Klassieke CLI (`hermes chat`): `status_bar_cost.py`, `cli.py` hooks, `/cost`, smoke + pytest |
 | **`RUN_PARETO_E2E.bat`** | OpenRouter Pareto Code router: model-gate, transport/summary parity, pytest, verify script |
+| **`RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat`** | Pseudo-tabel normalizer: underscore/vs→markdown, pytest + TS parity + diagnose/score (10 stappen) |
+| **`RUN_AUDITS.bat -IncludePseudoTableNormalizerE2E`** | Bovenstaande pseudo-tabel E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeMemoryArchitectureE2E`** | Bovenstaande memory E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeStatusBarCostE2E`** | Bovenstaande statusbalk-kosten E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E`** | Klassieke CLI statusbalk-kosten E2E in gecombineerde poort |

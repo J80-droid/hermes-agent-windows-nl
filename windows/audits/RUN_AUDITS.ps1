@@ -16,6 +16,7 @@ param(
     [switch]$IncludeStatusBarCostE2E,
     [switch]$IncludeClassicCliStatusBarCostE2E,
     [switch]$IncludeParetoE2E,
+    [switch]$IncludePseudoTableNormalizerE2E,
     [switch]$IncludeCodebaseSmoke,
     [switch]$IncludeCodebaseSmokeE2E,
     [switch]$SkipPytest,
@@ -264,6 +265,14 @@ if ($IncludeParetoE2E -or $IncludeAllE2E) {
     $paretoE2e = Join-Path $scriptRoot 'RUN_PARETO_E2E.ps1'
     Invoke-Step 'pareto-e2e' {
         & $paretoE2e -RepoRoot $repoRoot
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludePseudoTableNormalizerE2E -or $IncludeAllE2E) {
+    $pseudoE2e = Join-Path $scriptRoot 'RUN_PSEUDO_TABLE_NORMALIZER_E2E.ps1'
+    Invoke-Step 'pseudo-table-normalizer-e2e' {
+        & $pseudoE2e -RepoRoot $repoRoot
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

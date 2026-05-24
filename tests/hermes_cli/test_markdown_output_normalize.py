@@ -1,16 +1,20 @@
 """Tests for institutional markdown layout normalization."""
 
+import re
+
 from hermes_cli.markdown_output_normalize import (
     coalesce_heading_content_chunks,
     ensure_heading_line_breaks,
     ensure_institutional_check_block,
     ensure_institutional_check_spacing,
+    ensure_markdown_table_dividers,
     ensure_section_breaks,
     normalize_assistant_markdown,
     normalize_numbered_headings,
     normalize_plain_nfr_rows_to_table,
     normalize_nfr_prose_section_to_table,
     normalize_plain_outline_headings,
+    normalize_pseudo_tables_to_markdown,
     tighten_heading_and_label_spacing,
 )
 
@@ -213,3 +217,118 @@ def test_normalize_assistant_markdown_converts_outline_and_check():
     assert "## Projectoverzicht" in out
     assert "### Team" in out
     assert "<institutional_check>\n" in out
+
+
+def test_ensure_markdown_table_dividers_inserts_separator():
+    raw = (
+        "| Task | Cloud |\n"
+        "| Vision | Gemini |\n"
+        "| Web | DeepSeek |\n"
+    )
+    out = ensure_markdown_table_dividers(raw)
+    lines = out.splitlines()
+    assert lines[1].strip().startswith("| ---")
+    assert "| Vision | Gemini |" in out
+
+
+def test_ensure_markdown_table_dividers_idempotent_on_valid_table():
+    raw = (
+        "| A | B |\n"
+        "| --- | --- |\n"
+        "| 1 | 2 |\n"
+    )
+    assert ensure_markdown_table_dividers(raw).strip() == raw.strip()
+
+
+def test_normalize_pseudo_ollama_vs_lm_studio():
+    raw = (
+        "### Vergelijking: Ollama versus LM Studio\n\n"
+        "**Interface**\n"
+        "Ollama: CLI-first _____ LM Studio: GUI met knoppen\n"
+        "**Modelbeheer**\n"
+        "Ollama: pull/list _____ LM Studio: browse catalog\n"
+    )
+    out = normalize_pseudo_tables_to_markdown(raw)
+    assert "| --- |" in out
+    assert "| Interface |" in out
+    assert "CLI-first" in out
+    assert "GUI met knoppen" in out
+    assert "____" not in out
+
+
+def test_normalize_pseudo_inline_bold_dual_values():
+    raw = (
+        "### Vergelijking: Foo versus Bar\n\n"
+        "**Speed** Foo fast _____ Bar slow\n"
+        "**Cost** Foo cheap _____ Bar pricey\n"
+    )
+    out = normalize_pseudo_tables_to_markdown(raw)
+    assert "| Speed |" in out
+    assert "| Cost |" in out
+    assert "____" not in out
+
+
+def test_normalize_assistant_markdown_ollama_vs_full_pipeline():
+    raw = (
+        "### Vergelijking: Ollama versus LM Studio\n\n"
+        "**Interface**\n"
+        "Ollama: CLI _____ LM Studio: GUI\n"
+        "**API Poort**\n"
+        "Ollama: 11434 _____ LM Studio: 1234\n"
+    )
+    out = normalize_assistant_markdown(raw)
+    assert "| --- |" in out
+    assert "| Interface | Ollama | LM Studio |" in out or "| Interface |" in out
+    assert "____" not in out
+
+
+def test_normalize_pseudo_skips_numbered_list_section():
+    raw = (
+        "### Stappen\n\n"
+        "1. Open het configuratiebestand\n"
+        "2. Sla de wijzigingen op\n"
+    )
+    out = normalize_pseudo_tables_to_markdown(raw)
+    assert "1. Open het configuratiebestand" in out
+    assert "| --- |" not in out
+
+
+def test_normalize_auxiliary_tasks_infers_cloud_lokaal_headers():
+    raw = (
+        "### Hulp taken\n\n"
+        "**Vision**\n"
+        "Cloud: Gemini _____ Lokaal: LLaVA\n"
+        "**Web**\n"
+        "Cloud: DeepSeek _____ Lokaal: Ollama\n"
+    )
+    out = normalize_assistant_markdown(raw)
+    assert "| Aspect | Cloud | Lokaal |" in out
+    assert "| Vision | Gemini | LLaVA |" in out
+
+
+def test_normalize_assistant_markdown_pipe_rows_missing_divider():
+    raw = (
+        "| Task | Cloud |\n"
+        "| Vision | Gemini |\n"
+        "| Web | DeepSeek |\n"
+    )
+    out = normalize_assistant_markdown(raw)
+    lines = out.splitlines()
+    assert lines[1].strip().startswith("| ---")
+
+
+def test_normalize_pseudo_idempotent_on_valid_comparison_table():
+    raw = (
+        "### Vergelijking: Foo versus Bar\n"
+        "| Aspect | Foo | Bar |\n"
+        "| --- | --- | --- |\n"
+        "| Speed | fast | slow |\n"
+    )
+    out = normalize_pseudo_tables_to_markdown(raw)
+    dividers = [
+        ln
+        for ln in out.splitlines()
+        if re.match(r"^\|\s*[-:]+\s*\|", ln.strip())
+    ]
+    assert len(dividers) == 1
+    assert "| Speed | fast | slow |" in out
