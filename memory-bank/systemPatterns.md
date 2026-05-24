@@ -28,6 +28,13 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 - Servernaam `lancedb-<domein>` in profiel-config.
 - `HERMES_LANCEDB_PATH` in MCP-env = zelfde pad als `lancedb_path` in `domains.yaml`.
 
+## Memory L1 consolidatie (Windows)
+
+- **Actief pad:** `%LOCALAPPDATA%\hermes\profiles\<naam>\memories\` — legacy `%LOCALAPPDATA%\hermes\memories\` is seed-only na `CONSOLIDATE_ROOT_MEMORIES.bat`.
+- **Merge:** `HermesMemoryMergeCommon.ps1` — §-split via U+00A7 (`Get-MemorySectionDelimiterChar`); seed wint; policy-buckets dedupeerd; Hermes-config (MCP YAML, multi-profile) alleen in `profiles/core`.
+- **Keten:** `sync_profile_memories.ps1` → rebalance → `restore_core_hermes_config_memory.ps1` → `invoke_deduplicate_memories.ps1` (profielen + legacy root).
+- **Audit:** `Test-MemoryConsolidationLayout` in `MemoryAuditCommon.ps1`; E2E stap 17/18 in `MemoryArchitectureE2E.core.ps1`.
+
 ## Windows setup (single source)
 
 - **Canoniek:** `scripts/windows/setup_hermes_windows.ps1` — alle setup-logica.

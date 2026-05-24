@@ -33,7 +33,7 @@ Na wijziging in `~/.hermes\.env`: sync uitvoeren; Hermes TUI start daarna automa
 
 **Obsidian openen:** `windows\OPEN_OBSIDIAN_VAULT.bat` — env-sync, scaffold, start Obsidian op `OBSIDIAN_VAULT_PATH`. Eerste keer in Obsidian: *Open map als kluis* als het welkomstscherm verschijnt. Taakbalk: `Hermes - Obsidian vault - naar taakbalk slepen.lnk` (na `REFRESH_TASKBAR_SHORTCUTS.bat` of `FIX_TASKBAR_ICONS.bat`).
 
-**E2E audit (16 stappen + productie-poort):**
+**E2E audit (18 stappen + productie-poort):**
 
 ```bat
 windows\audits\RUN_MEMORY_ARCHITECTURE_E2E.bat
@@ -44,8 +44,8 @@ windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat
 | Bestand | Rol |
 |---------|-----|
 | `RUN_MEMORY_ARCHITECTURE_E2E.bat` / `.ps1` | Entry; `.ps1` is dunne launcher (geen dot-source — stabiel in Cursor/PSES) |
-| `MemoryArchitectureE2E.core.ps1` | Implementatie: 16 stappen, dot-source `MemoryAuditCommon.ps1` |
-| `RUN_MEMORY_PRODUCTION_GATE.ps1` | Limits + memory E2E + trust E2E + 55 pytest |
+| `MemoryArchitectureE2E.core.ps1` | Implementatie: 18 stappen, dot-source `MemoryAuditCommon.ps1` |
+| `RUN_MEMORY_PRODUCTION_GATE.ps1` | Limits + memory E2E + trust E2E + pytest memory/trust (~62) |
 
 **IDE:** rode strepen op audit-`.ps1` → `VALIDATE_AUDIT_PS1_SYNTAX.bat`, daarna PowerShell-sessie herstarten en venster reloaden. Zie `windows\audits\README.md`.
 
@@ -67,7 +67,7 @@ windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat
 |------|--------|--------|
 | 1–3 | `SYNC_TRUST_RUNTIME.bat` | SOUL + memory-seed + dedup + limits + vault-env + snapshot |
 | 4 | (zelfde BAT) `audit_profile_memories.ps1` | geen OVER, geen `Â§`, geen identiteitslek |
-| 5 | (zelfde BAT) `RUN_MEMORY_PRODUCTION_GATE` | PASS (tenzij `HERMES_SKIP_MEMORY_PRODUCTION_GATE=1`; 55 pytest) |
+| 5 | (zelfde BAT) `RUN_MEMORY_PRODUCTION_GATE` | PASS (tenzij `HERMES_SKIP_MEMORY_PRODUCTION_GATE=1`; pytest memory/trust) |
 | 6 | (zelfde BAT) `/new`-reminder JSON | TUI: auto `/new` bij start + live tijdens sync; CLI: gele banner |
 
 Handmatig alleen bij incident: `audit_profile_memories.ps1 -FixEncoding`, of `python scripts\deduplicate_memories.py` zonder volledige trust-sync. Dedup verwijdert ook **preamble-duplicaten** vóór de eerste `§` en losse mojibake-regels (`Â`).
@@ -120,7 +120,10 @@ Memory wordt bij sessiestart ingefrozen. Na sync van config, SOUL of MEMORY/USER
 
 | Module | Pad |
 |--------|-----|
-| E2E + gate helpers | `windows\scripts\MemoryAuditCommon.ps1` |
+| E2E + gate helpers | `windows\scripts\MemoryAuditCommon.ps1` (`Test-MemoryConsolidationLayout`) |
+| §-merge + rebalance | `windows\scripts\HermesMemoryMergeCommon.ps1`, `sync_profile_memories.ps1` |
+| Legacy root migratie | `windows\CONSOLIDATE_ROOT_MEMORIES.bat`, `consolidate_root_hermes_memories.ps1` |
+| Core Hermes-config herstel | `windows\scripts\restore_core_hermes_config_memory.ps1` |
 | Profiel-rapport | `windows\scripts\audit_profile_memories.ps1` |
 | §-deduplicatie (runtime) | `scripts\deduplicate_memories.py` (`deduplicate_content`) |
 | Post-sync keten | `windows\scripts\Invoke-MemoryTrustPostSync.ps1` |

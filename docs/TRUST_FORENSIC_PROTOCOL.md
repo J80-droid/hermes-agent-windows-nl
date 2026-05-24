@@ -40,7 +40,7 @@ memory:
 
 Toepassen: `windows\scripts\apply_trust_memory_limits.ps1` (idempotent). Na nieuw profiel (`sync_profile_toolsets_from_manifest.py --create-missing`): automatisch via provision-hook, anders `SYNC_TRUST_RUNTIME.bat`.
 
-**Productie-poort:** `windows\audits\RUN_MEMORY_PRODUCTION_GATE.bat` (limits + memory E2E **16/16** + trust E2E + **55 pytest** memory/trust).
+**Productie-poort:** `windows\audits\RUN_MEMORY_PRODUCTION_GATE.bat` (limits + memory E2E **18/18** + trust E2E + pytest memory/trust).
 
 ## Audit-scripts (structuur)
 
@@ -54,7 +54,7 @@ Toepassen: `windows\scripts\apply_trust_memory_limits.ps1` (idempotent). Na nieu
 | `windows\scripts\MemoryAuditCommon.ps1` | Gedeeld: identiteitslek per regel, §-encoding, config-limits |
 | `windows\scripts\audit_profile_memories.ps1` | Rapport + optioneel `-FixEncoding` |
 | `windows\audits\RUN_MEMORY_ARCHITECTURE_E2E.ps1` | Dunne launcher (`& MemoryArchitectureE2E.core.ps1`) — stabiel in Cursor/PSES |
-| `windows\audits\MemoryArchitectureE2E.core.ps1` | Memory-architectuur E2E: vault, limits, alle profielen, dedup-keten, TUI auto `/new` (16/16) |
+| `windows\audits\MemoryArchitectureE2E.core.ps1` | Memory-architectuur E2E: vault, limits, legacy root, consolidatie-layout, §-delimiter U+00A7 (18/18) |
 | `windows\audits\RUN_MEMORY_PRODUCTION_GATE.ps1` | Gecombineerde productie-poort (memory + trust E2E + pytest) |
 | `windows\OPEN_OBSIDIAN_VAULT.bat` | L4-vault openen (na `SYNC_HERMES_API_ENV` of trust-sync); scaffold idempotent |
 | `windows\scripts\ensure_hermes_knowledge_vault.ps1` | Ontbrekende scaffold-bestanden kopiëren (ook vanuit `sync_hermes_api_env.ps1`) |
