@@ -33,7 +33,21 @@ const STATUSBAR_ALIAS: Record<string, StatusBarMode> = {
   top: 'top'
 }
 
-export const normalizeShowCost = (raw: unknown): boolean => raw !== false
+export const normalizeShowCost = (raw: unknown): boolean => {
+  if (raw === false || raw === 0) {
+    return false
+  }
+
+  if (typeof raw === 'string') {
+    const mode = raw.trim().toLowerCase()
+
+    if (mode === 'false' || mode === 'off' || mode === 'no' || mode === '0') {
+      return false
+    }
+  }
+
+  return true
+}
 
 export const normalizeCostBarMode = (raw: unknown): CostBarMode =>
   typeof raw === 'string' && raw.trim().toLowerCase() === 'minimal' ? 'minimal' : 'rich'

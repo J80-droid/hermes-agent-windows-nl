@@ -8,6 +8,7 @@ import {
   normalizeCostBarMode,
   normalizeIndicatorStyle,
   normalizeMouseTracking,
+  normalizeShowCost,
   normalizeStatusBar
 } from '../app/useConfigSync.js'
 import type { ParsedVoiceRecordKey } from '../lib/platform.js'
@@ -82,6 +83,15 @@ describe('applyDisplay', () => {
     expect(normalizeCostBarMode('rich')).toBe('rich')
     expect(normalizeCostBarMode(undefined)).toBe('rich')
     expect(normalizeCostBarMode('unknown')).toBe('rich')
+  })
+
+  it('normalizes show_cost string and numeric off values', () => {
+    expect(normalizeShowCost(true)).toBe(true)
+    expect(normalizeShowCost(false)).toBe(false)
+    expect(normalizeShowCost('off')).toBe(false)
+    expect(normalizeShowCost('false')).toBe(false)
+    expect(normalizeShowCost(0)).toBe(false)
+    expect(normalizeShowCost('on')).toBe(true)
   })
 
   it('uses documented mouse_tracking with legacy tui_mouse fallback', () => {

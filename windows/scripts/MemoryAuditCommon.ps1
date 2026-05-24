@@ -182,6 +182,31 @@ function Test-MemoryFileHasMojibakeLine {
 function Test-AllProfileMemoryFileSizes {
     param([string]$HermesRoot)
     $failures = [System.Collections.Generic.List[string]]::new()
+    $rootCfg = Join-Path $HermesRoot 'config.yaml'
+    if (Test-Path -LiteralPath $rootCfg) {
+        $limRoot = Get-MemoryLimitsFromConfig -ConfigPath $rootCfg
+        $memLimitRoot = if ($limRoot.MemoryCharLimit -gt 0) { $limRoot.MemoryCharLimit } else { 4000 }
+        $userLimitRoot = if ($limRoot.UserCharLimit -gt 0) { $limRoot.UserCharLimit } else { 1800 }
+        foreach ($file in @('MEMORY.md', 'USER.md')) {
+            $path = Join-Path $HermesRoot "memories\$file"
+            if (-not (Test-Path -LiteralPath $path)) { continue }
+            $raw = Get-Content -LiteralPath $path -Raw -Encoding UTF8
+            $cap = if ($file -eq 'MEMORY.md') { $memLimitRoot } else { $userLimitRoot }
+            if ($raw.Length -gt $cap) {
+                $failures.Add("legacy-root/$file OVER $($raw.Length)/$cap")
+            }
+            if (Test-MemoryDoubleEncoding -Text $raw) {
+                $failures.Add("legacy-root/$file double-encoding")
+            }
+            if (Test-MemoryFileHasMojibakeLine -Text $raw) {
+                $failures.Add("legacy-root/$file mojibake-regel")
+            }
+            $dups = Get-DuplicateMemorySections -FilePath $path
+            if ($dups.Count -gt 0) {
+                $failures.Add("legacy-root/$file dubbele-sectie($($dups.Count))")
+            }
+        }
+    }
     $profilesDir = Join-Path $HermesRoot 'profiles'
     if (-not (Test-Path -LiteralPath $profilesDir)) {
         return @('profiles map ontbreekt')
@@ -215,5 +240,78 @@ function Test-AllProfileMemoryFileSizes {
             }
         }
     }
+    return $failures
+}
+
+$mergeCommonPath = Join-Path $PSScriptRoot 'HermesMemoryMergeCommon.ps1'
+if (Test-Path -LiteralPath $mergeCommonPath) {
+    . $mergeCommonPath
+}
+
+function Get-MemoryMarkdownSectionsFromFile {
+    param([string]$FilePath)
+    if (-not (Test-Path -LiteralPath $FilePath)) { return @() }
+    $raw = Get-Content -LiteralPath $FilePath -Raw -Encoding UTF8
+    return @(Split-MemoryMarkdownSections -Raw $raw)
+}
+
+function Test-MemoryConsolidationLayout {
+    param([string]$HermesRoot)
+    $failures = [System.Collections.Generic.List[string]]::new()
+
+    $rootMemPath = Join-Path $HermesRoot 'memories/MEMORY.md'
+    $rootSections = Get-MemoryMarkdownSectionsFromFile -FilePath $rootMemPath
+    if ($rootSections.Count -gt 4) {
+        [void]$failures.Add("root: $($rootSections.Count) MEMORY-secties (verwacht seed-only ~3)")
+    }
+    foreach ($sec in $rootSections) {
+        $norm = Normalize-MemorySectionEntry -Text $sec
+        if (Get-MemoryPolicyBucket -Norm $norm) { continue }
+        if (Test-MemoryLegalDomainSection -Text $sec) {
+            [void]$failures.Add('root: legal-domein in legacy memories/')
+        }
+        if (Test-MemoryHermesConfigSection -Text $sec) {
+            [void]$failures.Add('root: Hermes-config in legacy memories/')
+        }
+    }
+
+    $coreMemPath = Join-Path $HermesRoot 'profiles/core/memories/MEMORY.md'
+    $coreHasHermes = $false
+    foreach ($sec in (Get-MemoryMarkdownSectionsFromFile -FilePath $coreMemPath)) {
+        if (Test-MemoryHermesConfigSection -Text $sec) { $coreHasHermes = $true }
+    }
+    if (-not $coreHasHermes) {
+        [void]$failures.Add('core: Hermes-config ontbreekt (MCP/multi-profile)')
+    }
+
+    $legalMemPath = Join-Path $HermesRoot 'profiles/legal/memories/MEMORY.md'
+    foreach ($sec in (Get-MemoryMarkdownSectionsFromFile -FilePath $legalMemPath)) {
+        $norm = Normalize-MemorySectionEntry -Text $sec
+        if (Get-MemoryPolicyBucket -Norm $norm) { continue }
+        if ((Test-MemoryHermesConfigSection -Text $sec) -and -not (Test-MemoryLegalDomainSection -Text $sec)) {
+            [void]$failures.Add('legal: misplaatste Hermes-config')
+            break
+        }
+    }
+
+    $profilesDir = Join-Path $HermesRoot 'profiles'
+    if (Test-Path -LiteralPath $profilesDir) {
+        Get-ChildItem -LiteralPath $profilesDir -Directory | Where-Object {
+            $_.Name -notin @('core', 'legal')
+        } | ForEach-Object {
+            $memPath = Join-Path $_.FullName 'memories/MEMORY.md'
+            foreach ($sec in (Get-MemoryMarkdownSectionsFromFile -FilePath $memPath)) {
+                $norm = Normalize-MemorySectionEntry -Text $sec
+                if (Get-MemoryPolicyBucket -Norm $norm) { continue }
+                if (Test-MemoryLegalDomainSection -Text $sec) {
+                    [void]$failures.Add("$($_.Name): legal-domein in niet-legal profiel")
+                }
+                if (Test-MemoryHermesConfigSection -Text $sec) {
+                    [void]$failures.Add("$($_.Name): Hermes-config buiten core")
+                }
+            }
+        }
+    }
+
     return $failures
 }

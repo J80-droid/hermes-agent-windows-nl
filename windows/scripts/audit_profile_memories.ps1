@@ -21,9 +21,69 @@ if (-not (Test-Path -LiteralPath $profilesDir)) {
     exit 1
 }
 
+function Test-AuditMemoryFile {
+    param(
+        [string]$Label,
+        [string]$Path,
+        [string]$File,
+        [int]$MemLimit,
+        [int]$UserLimit
+    )
+    if (-not (Test-Path -LiteralPath $Path)) {
+        Write-Host "  [WARN] $File ontbreekt" -ForegroundColor Yellow
+        return
+    }
+    $raw = Get-Content -LiteralPath $Path -Raw -Encoding UTF8
+    $len = $raw.Length
+    $cap = if ($File -eq 'MEMORY.md') { $MemLimit } else { $UserLimit }
+    $status = if ($len -le $cap) { 'OK' } else { 'OVER' }
+    $color = if ($len -le $cap) { 'Green' } else { 'Red' }
+    if ($len -gt $cap) { $script:issues++ }
+    Write-Host "  [$status] $File : $len / $cap" -ForegroundColor $color
+
+    if (Test-MemoryDoubleEncoding -Text $raw) {
+        Write-Host '  [FAIL] double-encoding section marker' -ForegroundColor Red
+        $script:issues++
+        if ($FixEncoding) {
+            $bad = Get-MemoryDoubleEncodedSectionMarker
+            $good = Get-MemorySectionMarker
+            $fixed = $raw.Replace($bad, $good)
+            $fixed | Set-Content -LiteralPath $Path -Encoding UTF8 -NoNewline
+            Write-Host '  [FIX] section marker encoding gecorrigeerd' -ForegroundColor Yellow
+        }
+    }
+
+    $leaks = $null
+    if (Test-MemoryFileIdentityLeaks -FilePath $Path -LeakLines ([ref]$leaks)) {
+        Write-Host "  [FAIL] identiteitslek ($($leaks.Count) regel(s))" -ForegroundColor Red
+        $script:issues++
+    }
+
+    if ($File -eq 'MEMORY.md') {
+        $dups = Get-DuplicateMemorySections -FilePath $Path
+        if ($dups.Count -gt 0) {
+            Write-Host "  [WARN] dubbele §-secties: $($dups.Count)" -ForegroundColor Yellow
+            foreach ($d in $dups | Select-Object -First 2) {
+                Write-Host "         $d" -ForegroundColor DarkYellow
+            }
+        }
+    }
+}
+
 Write-Host "=== Audit profile memories ===" -ForegroundColor Cyan
 Write-Host "Hermes root: $HermesRoot"
 Write-Host ''
+
+$rootCfg = Join-Path $HermesRoot 'config.yaml'
+if (Test-Path -LiteralPath $rootCfg) {
+    $limRoot = Get-MemoryLimitsFromConfig -ConfigPath $rootCfg
+    $memLimitRoot = if ($limRoot.MemoryCharLimit -gt 0) { $limRoot.MemoryCharLimit } else { 4000 }
+    $userLimitRoot = if ($limRoot.UserCharLimit -gt 0) { $limRoot.UserCharLimit } else { 1800 }
+    Write-Host '--- legacy root (memories/) ---' -ForegroundColor Cyan
+    Test-AuditMemoryFile -Label 'root' -Path (Join-Path $HermesRoot 'memories/MEMORY.md') -File 'MEMORY.md' -MemLimit $memLimitRoot -UserLimit $userLimitRoot
+    Test-AuditMemoryFile -Label 'root' -Path (Join-Path $HermesRoot 'memories/USER.md') -File 'USER.md' -MemLimit $memLimitRoot -UserLimit $userLimitRoot
+    Write-Host ''
+}
 
 Get-ChildItem -LiteralPath $profilesDir -Directory | Sort-Object Name | ForEach-Object {
     $name = $_.Name
@@ -35,45 +95,7 @@ Get-ChildItem -LiteralPath $profilesDir -Directory | Sort-Object Name | ForEach-
     Write-Host "--- $name ---" -ForegroundColor Cyan
     foreach ($file in @('MEMORY.md', 'USER.md')) {
         $path = Join-Path $_.FullName "memories\$file"
-        if (-not (Test-Path -LiteralPath $path)) {
-            Write-Host "  [WARN] $file ontbreekt" -ForegroundColor Yellow
-            continue
-        }
-        $raw = Get-Content -LiteralPath $path -Raw -Encoding UTF8
-        $len = $raw.Length
-        $cap = if ($file -eq 'MEMORY.md') { $memLimit } else { $userLimit }
-        $status = if ($len -le $cap) { 'OK' } else { 'OVER' }
-        $color = if ($len -le $cap) { 'Green' } else { 'Red' }
-        if ($len -gt $cap) { $script:issues++ }
-        Write-Host "  [$status] $file : $len / $cap" -ForegroundColor $color
-
-        if (Test-MemoryDoubleEncoding -Text $raw) {
-            Write-Host '  [FAIL] double-encoding section marker' -ForegroundColor Red
-            $script:issues++
-            if ($FixEncoding) {
-                $bad = Get-MemoryDoubleEncodedSectionMarker
-                $good = Get-MemorySectionMarker
-                $fixed = $raw.Replace($bad, $good)
-                $fixed | Set-Content -LiteralPath $path -Encoding UTF8 -NoNewline
-                Write-Host '  [FIX] section marker encoding gecorrigeerd' -ForegroundColor Yellow
-            }
-        }
-
-        $leaks = $null
-        if (Test-MemoryFileIdentityLeaks -FilePath $path -LeakLines ([ref]$leaks)) {
-            Write-Host "  [FAIL] identiteitslek ($($leaks.Count) regel(s))" -ForegroundColor Red
-            $script:issues++
-        }
-
-        if ($file -eq 'MEMORY.md') {
-            $dups = Get-DuplicateMemorySections -FilePath $path
-            if ($dups.Count -gt 0) {
-                Write-Host "  [WARN] dubbele §-secties: $($dups.Count)" -ForegroundColor Yellow
-                foreach ($d in $dups | Select-Object -First 2) {
-                    Write-Host "         $d" -ForegroundColor DarkYellow
-                }
-            }
-        }
+        Test-AuditMemoryFile -Label $name -Path $path -File $file -MemLimit $memLimit -UserLimit $userLimit
     }
     Write-Host ''
 }

@@ -6,6 +6,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'HermesMemoryMergeCommon.ps1')
 
 function Get-HermesRoot {
     param([string]$OverrideRoot = '')
@@ -24,7 +25,7 @@ function Get-FirstUserLine {
     if (-not (Test-Path -LiteralPath $UserPath)) { return $null }
     $raw = Get-Content -LiteralPath $UserPath -Raw -Encoding UTF8
     if (-not $raw.Trim()) { return '' }
-    $firstEntry = ($raw -split '(?m)^§\s*$' | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -First 1)
+    $firstEntry = ($raw -split (Get-MemorySectionSplitPattern) | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -First 1)
     if (-not $firstEntry) { return '' }
     return ($firstEntry -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -First 1)
 }

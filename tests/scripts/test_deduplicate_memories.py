@@ -48,6 +48,25 @@ def test_deduplicate_file_writes_deduplicated_content(tmp_path: Path):
     assert out.count(TRUST_BLOCK) == 1
 
 
+def test_deduplicate_preserves_seven_runtime_sections():
+  """Core-shaped MEMORY: seed x3 + 4 runtime sections stays 7 after dedup."""
+  seed = "Never compress, average out, or omit micro-details."
+  runtime = [
+      "Hermes Windows Native quirks: terminal.backend local.",
+      "canonical Python interpreter on this Windows host",
+      "OBSIDIAN_VAULT_PATH = Hermes Knowledge",
+      "Core profile: checkpoints.enabled=True",
+  ]
+  parts = [seed, "Rule for facts: NEVER guess.", "Trust protocol: GCR, BZ, VSO."]
+  parts.extend(runtime)
+  raw = "\n§\n".join(parts) + "\n"
+  out = deduplicate_content(raw)
+  assert out.count("Hermes Windows Native quirks") == 1
+  assert out.count("OBSIDIAN_VAULT_PATH") == 1
+  assert out.count("Never compress") == 1
+  assert out.count("§") == 6  # 7 sections => 6 delimiters
+
+
 def test_deduplicate_keeps_distinct_tool_failure_variants():
     short = "Rule for facts: NEVER guess when tools fail."
     long = (
@@ -58,3 +77,25 @@ def test_deduplicate_keeps_distinct_tool_failure_variants():
     out = deduplicate_content(raw)
     assert short in out
     assert long in out
+
+
+def test_main_deduplicates_legacy_root_memories(tmp_path: Path, monkeypatch):
+    """main() must process hermes/memories/ as well as profiles/*/memories/."""
+    import deduplicate_memories as dm
+
+    hermes = tmp_path / "hermes"
+    hermes.mkdir(parents=True)
+    (hermes / "config.yaml").write_text("profiles: {}\n", encoding="utf-8")
+    root_mem = hermes / "memories" / "MEMORY.md"
+    root_mem.parent.mkdir(parents=True)
+    dup = "Never compress, average out, or omit micro-details."
+    root_mem.write_text(f"§\n{dup}\n§\n{dup}\n", encoding="utf-8")
+
+    prof = hermes / "profiles" / "core" / "memories"
+    prof.mkdir(parents=True)
+    prof_file = prof / "MEMORY.md"
+    prof_file.write_text("§\nCore only once.\n", encoding="utf-8")
+
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    assert dm.main() == 0
+    assert root_mem.read_text(encoding="utf-8").count(dup) == 1

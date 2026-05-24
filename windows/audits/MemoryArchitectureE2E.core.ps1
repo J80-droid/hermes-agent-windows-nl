@@ -91,8 +91,14 @@ $reportStamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'
 $repoChecks = @(
     'docs/MEMORY_ARCHITECTURE.md',
     'docs/templates/SOUL_SHARED_MEMORY_POLICY.md',
+    'docs/templates/MEMORY_CANONICAL_SEED.md',
     'windows/sync_hermes_api_env.ps1',
-    'windows/SYNC_HERMES_API_ENV.bat'
+    'windows/SYNC_HERMES_API_ENV.bat',
+    'windows/scripts/HermesMemoryMergeCommon.ps1',
+    'windows/scripts/sync_profile_memories.ps1',
+    'windows/scripts/consolidate_root_hermes_memories.ps1',
+    'windows/CONSOLIDATE_ROOT_MEMORIES.bat',
+    'windows/scripts/restore_core_hermes_config_memory.ps1'
 )
 $repoOk = $true
 foreach ($rel in $repoChecks) {
@@ -104,13 +110,17 @@ foreach ($rel in $repoChecks) {
 $upstream = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/upstream_sync.ps1') -Raw -Encoding UTF8
 $postPull = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/POST_GIT_PULL.bat') -Raw -Encoding UTF8
 $trustBat = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/SYNC_TRUST_RUNTIME.bat') -Raw -Encoding UTF8
+$syncMemPs1 = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/scripts/sync_profile_memories.ps1') -Raw -Encoding UTF8
 if ($upstream -notmatch 'sync_hermes_api_env\.ps1') { $repoOk = $false }
 if ($postPull -notmatch 'SYNC_HERMES_API_ENV') { $repoOk = $false }
 if ($trustBat -notmatch 'SYNC_HERMES_API_ENV') { $repoOk = $false }
+if ($trustBat -notmatch 'sync_profile_memories') { $repoOk = $false }
 if ($trustBat -notmatch 'invoke_deduplicate_memories') { $repoOk = $false }
 if ($trustBat -notmatch 'Invoke-MemoryTrustPostSync') { $repoOk = $false }
 if ($postPull -notmatch 'SYNC_TRUST_RUNTIME') { $repoOk = $false }
-Add-StepResult -Name '1/16 repo + sync-ketens' -Ok $repoOk -Detail 'upstream, POST_GIT_PULL, SYNC_TRUST_RUNTIME+dedup+post-sync'
+if ($syncMemPs1 -notmatch 'HermesMemoryMergeCommon') { $repoOk = $false }
+if ($syncMemPs1 -notmatch 'Invoke-RebalanceHermesConfigToCore') { $repoOk = $false }
+Add-StepResult -Name '1/18 repo + sync-ketens' -Ok $repoOk -Detail 'trust-sync, merge-common, consolidate-root, rebalance'
 
 # --- 2 Legacy env bron ---
 $legacyOk = $true
@@ -120,17 +130,17 @@ foreach ($k in $VaultKeys) {
 }
 $examplePath = Join-Path $RepoRoot 'docs/templates/MEMORY_ENV_VAULT.example'
 $exampleOk = Test-Path -LiteralPath $examplePath
-Add-StepResult -Name '2/16 user .hermes env vault-paden' -Ok $legacyOk -Detail $LegacyEnv
-Add-StepResult -Name '3/16 env-voorbeeld in repo' -Ok $exampleOk -Detail 'docs/templates/MEMORY_ENV_VAULT.example'
+Add-StepResult -Name '2/18 user .hermes env vault-paden' -Ok $legacyOk -Detail $LegacyEnv
+Add-StepResult -Name '3/18 env-voorbeeld in repo' -Ok $exampleOk -Detail 'docs/templates/MEMORY_ENV_VAULT.example'
 
 # --- 3 Sync script ---
 if (-not $SkipSyncRun) {
     $syncPs1 = Join-Path $RepoRoot 'windows/sync_hermes_api_env.ps1'
     & $syncPs1
     $syncOk = -not (Test-NativeCommandFailed)
-    Add-StepResult -Name '4/16 sync_hermes_api_env.ps1' -Ok $syncOk
+    Add-StepResult -Name '4/18 sync_hermes_api_env.ps1' -Ok $syncOk
 } else {
-    Add-StepResult -Name '4/16 sync_hermes_api_env.ps1' -Ok $true -Detail 'overgeslagen (-SkipSyncRun)'
+    Add-StepResult -Name '4/18 sync_hermes_api_env.ps1' -Ok $true -Detail 'overgeslagen (-SkipSyncRun)'
 }
 
 # --- 4 Root runtime .env ---
@@ -140,12 +150,12 @@ foreach ($k in $VaultKeys) {
     $v = Read-EnvVar -Path $rootEnv -Key $k
     if (-not (Test-VaultPathValue -Value $v)) { $rootOk = $false }
 }
-Add-StepResult -Name '5/16 root .env' -Ok $rootOk -Detail $rootEnv
+Add-StepResult -Name '5/18 root .env' -Ok $rootOk -Detail $rootEnv
 
 # --- 5 Alle profielen: vault-.env per profielmap ---
 $hermesProfilesPath = Join-Path $hermesRoot 'profiles'
 $allProfileVaultsOk, $profileEnvCount = Test-AllProfileVaultEnvs -ProfilesPath $hermesProfilesPath
-Add-StepResult -Name '6/16 profiel-.env OBSIDIAN' -Ok $allProfileVaultsOk -Detail ("$profileEnvCount profielen")
+Add-StepResult -Name '6/18 profiel-.env OBSIDIAN' -Ok $allProfileVaultsOk -Detail ("$profileEnvCount profielen")
 
 # --- 6 Vault filesystem ---
 $vaultPath = $CanonicalVault
@@ -169,7 +179,7 @@ $vaultOk = $true
 foreach ($rel in $vaultFiles) {
     if (-not (Test-Path -LiteralPath (Join-Path $vaultPath $rel))) { $vaultOk = $false }
 }
-Add-StepResult -Name '7/16 vault structuur' -Ok $vaultOk -Detail $vaultPath
+Add-StepResult -Name '7/18 vault structuur' -Ok $vaultOk -Detail $vaultPath
 
 # --- 7 Layer 3 uit ---
 $configPath = Join-Path $hermesRoot 'config.yaml'
@@ -187,9 +197,9 @@ if (Test-Path -LiteralPath $configPath) {
     }
     $l3Ok = [string]::IsNullOrWhiteSpace($memProvider)
 }
-Add-StepResult -Name '8/16 geen externe memory provider' -Ok $l3Ok -Detail 'memory.provider niet actief'
+Add-StepResult -Name '8/18 geen externe memory provider' -Ok $l3Ok -Detail 'memory.provider niet actief'
 
-# --- 8 KANBAN + core MEMORY vault-regel ---
+# --- 8 KANBAN + core MEMORY (vault + Hermes-config) ---
 $kanban = Join-Path $hermesRoot 'profiles/core/KANBAN_WORKFLOWS.md'
 $coreMem = Join-Path $hermesRoot 'profiles/core/memories/MEMORY.md'
 $metaOk = $true
@@ -202,8 +212,9 @@ if (-not (Test-Path -LiteralPath $coreMem)) { $metaOk = $false }
 else {
     $mText = Get-Content -LiteralPath $coreMem -Raw -Encoding UTF8
     if ($mText -notmatch 'Hermes Knowledge') { $metaOk = $false }
+    if ($mText -notmatch 'multi-profile configuration|lancedb-knowledge') { $metaOk = $false }
 }
-Add-StepResult -Name '9/16 KANBAN + core MEMORY' -Ok $metaOk
+Add-StepResult -Name '9/18 KANBAN + core MEMORY' -Ok $metaOk -Detail 'vault + Hermes-config in core'
 
 $skillPath = Join-Path $RepoRoot 'skills/note-taking/obsidian/SKILL.md'
 $skillOk = $false
@@ -211,13 +222,13 @@ if (Test-Path -LiteralPath $skillPath) {
     $skillText = Get-Content -LiteralPath $skillPath -Raw -Encoding UTF8
     $skillOk = ($skillText -match 'Hermes Knowledge')
 }
-Add-StepResult -Name '10/16 obsidian skill fallback' -Ok $skillOk -Detail 'fork default in SKILL.md'
+Add-StepResult -Name '10/18 obsidian skill fallback' -Ok $skillOk -Detail 'fork default in SKILL.md'
 
 # --- 11 Alle profiel-configs memory 4000/1800 ---
 $configFails = Test-AllProfileMemoryConfigLimits -HermesRoot $hermesRoot
 $step11Ok = ($configFails.Count -eq 0)
 $step11Detail = if ($step11Ok) { 'root + 13 profielen' } else { ($configFails -join '; ') }
-Add-StepResult -Name '11/16 profiel memory limits' -Ok $step11Ok -Detail $step11Detail
+Add-StepResult -Name '11/18 profiel memory limits' -Ok $step11Ok -Detail $step11Detail
 
 # --- 12 core MEMORY.md lengte vs limit ---
 $coreCfg = Join-Path $hermesRoot 'profiles/core/config.yaml'
@@ -231,7 +242,7 @@ if (Test-Path -LiteralPath $coreMemPath) {
     $step12Ok = ($memLen -le $memLimit)
     $step12Detail = "$memLen / $memLimit tekens"
 }
-Add-StepResult -Name '12/16 core MEMORY grootte' -Ok $step12Ok -Detail $step12Detail
+Add-StepResult -Name '12/18 core MEMORY grootte' -Ok $step12Ok -Detail $step12Detail
 
 # --- 13 core USER/MEMORY UTF-8 encoding ---
 $encOk = $true
@@ -251,13 +262,13 @@ if ($encDetail.Count -gt 0) {
 } else {
     $step13Detail = 'geen double-encoding'
 }
-Add-StepResult -Name '13/16 core UTF-8 encoding' -Ok $encOk -Detail $step13Detail
+Add-StepResult -Name '13/18 core UTF-8 encoding' -Ok $encOk -Detail $step13Detail
 
-# --- 14 Alle profielen MEMORY/USER binnen limiet ---
+# --- 14 Alle profielen + legacy root MEMORY/USER binnen limiet ---
 $sizeFails = Test-AllProfileMemoryFileSizes -HermesRoot $hermesRoot
 $step14Ok = ($sizeFails.Count -eq 0)
-$step14Detail = if ($step14Ok) { 'alle profielen binnen limiet' } else { ($sizeFails | Select-Object -First 4) -join '; ' }
-Add-StepResult -Name '14/16 alle profiel MEMORY/USER' -Ok $step14Ok -Detail $step14Detail
+$step14Detail = if ($step14Ok) { 'profielen + legacy root' } else { ($sizeFails | Select-Object -First 4) -join '; ' }
+Add-StepResult -Name '14/18 alle profiel MEMORY/USER' -Ok $step14Ok -Detail $step14Detail
 
 # --- 15 deduplicate + post-sync scripts in repo ---
 $dedupPy = Join-Path $RepoRoot 'scripts/deduplicate_memories.py'
@@ -268,10 +279,11 @@ $step15Ok = (Test-Path -LiteralPath $dedupPy) -and (Test-Path -LiteralPath $dedu
 if ($step15Ok) {
     $dedupText = Get-Content -LiteralPath $dedupPy -Raw -Encoding UTF8
     if ($dedupText -notmatch 'deduplicate_content') { $step15Ok = $false }
+    if ($dedupText -notmatch 'Legacy root') { $step15Ok = $false }
     $postText = Get-Content -LiteralPath $postSync -Raw -Encoding UTF8
     if ($postText -notmatch 'Set-InstitutionalNewChatReminder') { $step15Ok = $false }
 }
-Add-StepResult -Name '15/16 dedup + post-sync keten' -Ok $step15Ok -Detail 'deduplicate_memories + Invoke-MemoryTrustPostSync'
+Add-StepResult -Name '15/18 dedup + post-sync keten' -Ok $step15Ok -Detail 'dedup incl. legacy root + post-sync'
 
 # --- 16 TUI auto /new na sync ---
 $tuiNotice = Join-Path $RepoRoot 'ui-tui/src/lib/newChatNotice.ts'
@@ -283,7 +295,30 @@ if ($step16Ok) {
     if ($handlerText -notmatch 'hasPendingNewChatNotice') { $step16Ok = $false }
     if ($handlerText -notmatch 'clearNewChatNotice') { $step16Ok = $false }
 }
-Add-StepResult -Name '16/16 TUI auto /new' -Ok $step16Ok -Detail 'newChatNotice + gateway.ready + fs.watch'
+Add-StepResult -Name '16/18 TUI auto /new' -Ok $step16Ok -Detail 'newChatNotice + gateway.ready + fs.watch'
+
+# --- 17 Memory consolidatie: domein-scheiding (root seed, core/legal layout) ---
+$layoutFails = Test-MemoryConsolidationLayout -HermesRoot $hermesRoot
+$step17Ok = ($layoutFails.Count -eq 0)
+$step17Detail = if ($step17Ok) { 'root seed-only; core Hermes-config; legal schoon' } else { ($layoutFails | Select-Object -First 4) -join '; ' }
+Add-StepResult -Name '17/18 memory consolidatie layout' -Ok $step17Ok -Detail $step17Detail
+
+# --- 18 §-split U+00A7 (merge-common) ---
+$mergeCommon = Join-Path $RepoRoot 'windows/scripts/HermesMemoryMergeCommon.ps1'
+$step18Ok = $false
+$step18Detail = 'HermesMemoryMergeCommon ontbreekt'
+if (Test-Path -LiteralPath $mergeCommon) {
+    $mcText = Get-Content -LiteralPath $mergeCommon -Raw -Encoding UTF8
+    $step18Ok = ($mcText -match 'Get-MemorySectionDelimiterChar') -and ($mcText -match '0x00A7')
+    if ($step18Ok -and (Test-Path -LiteralPath $coreMem)) {
+        $coreSections = Get-MemoryMarkdownSectionsFromFile -FilePath $coreMem
+        $step18Ok = ($coreSections.Count -ge 6)
+        $step18Detail = "core split OK ($($coreSections.Count) secties)"
+    } elseif (-not $step18Ok) {
+        $step18Detail = 'U+00A7 delimiter helpers ontbreken'
+    }
+}
+Add-StepResult -Name '18/18 §-delimiter + sectie-split' -Ok $step18Ok -Detail $step18Detail
 
 $reportFileName = 'MEMORY_ARCHITECTURE_E2E_REPORT_' + $reportStamp + '.md'
 $reportPath = Join-Path $scriptRoot $reportFileName

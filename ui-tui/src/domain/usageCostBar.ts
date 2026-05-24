@@ -143,6 +143,13 @@ export function shouldShowStatusBarCostRich(showCost: boolean): boolean {
 
 const STATUS_RULE_MIN_LEFT_WIDTH = 12
 
+/** ComposerPane uses ``paddingX={1}``; StatusRule must fit that inner width. */
+export const STATUS_RULE_HORIZONTAL_PADDING = 2
+
+export function statusRuleColumns(cols: number): number {
+  return Math.max(1, cols - STATUS_RULE_HORIZONTAL_PADDING)
+}
+
 /** Reserve a non-truncated cost segment before the cwd label on the status rule. */
 export function resolveStatusRuleLayout(opts: {
   cols: number
@@ -151,13 +158,14 @@ export function resolveStatusRuleLayout(opts: {
   showCost: boolean
   usage: StatusBarCostUsage
 }): { costLabel: string | null; leftWidth: number } {
+  const cols = statusRuleColumns(opts.cols)
   const cwdReserve = opts.cwdLabel.length + 3
-  const costAvailableWidth = Math.max(0, opts.cols - cwdReserve - STATUS_RULE_MIN_LEFT_WIDTH)
+  const costAvailableWidth = Math.max(0, cols - cwdReserve - STATUS_RULE_MIN_LEFT_WIDTH)
   const costLabel = shouldShowStatusBarCostRich(opts.showCost)
     ? formatStatusBarCostRich(opts.usage, { mode: opts.costBarMode, width: costAvailableWidth })
     : null
   const costReserve = costLabel ? costLabel.length + 3 : 0
-  const leftWidth = Math.max(STATUS_RULE_MIN_LEFT_WIDTH, opts.cols - cwdReserve - costReserve)
+  const leftWidth = Math.max(STATUS_RULE_MIN_LEFT_WIDTH, cols - cwdReserve - costReserve)
 
   return { costLabel, leftWidth }
 }

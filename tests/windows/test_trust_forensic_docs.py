@@ -46,6 +46,27 @@ def test_memory_canonical_seed():
     assert "J." in text
 
 
+def test_memory_architecture_consolidation_section():
+    text = (REPO / "docs/MEMORY_ARCHITECTURE.md").read_text(encoding="utf-8")
+    assert "Consolidatie bij OVER" in text
+    assert "CONSOLIDATE_ROOT_MEMORIES" in text
+    assert "sync_profile_memories" in text
+
+
+def test_memory_architecture_e2e_step_count():
+    core = (REPO / "windows/audits/MemoryArchitectureE2E.core.ps1").read_text(encoding="utf-8")
+    assert core.count("/18 ") >= 18
+    assert "Test-MemoryConsolidationLayout" in core
+    assert "Legacy root" in core or "legacy root" in core.lower()
+
+
+def test_memory_audit_common_consolidation_helpers():
+    text = (REPO / "windows/scripts/MemoryAuditCommon.ps1").read_text(encoding="utf-8")
+    assert "Test-MemoryConsolidationLayout" in text
+    assert "HermesMemoryMergeCommon.ps1" in text
+    assert "legacy-root" in text
+
+
 def test_output_format_pleaser_check():
     text = (REPO / "docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md").read_text(encoding="utf-8")
     assert "pleaser-taal" in text

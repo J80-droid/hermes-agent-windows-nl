@@ -37,7 +37,7 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | **`windows\tests\RUN_PSScriptAnalyzer.bat`** | Volledige `windows\` lint (instellingen: `PSScriptAnalyzerSettings.psd1`) — verwacht **0 Warning/Error** |
 | **`RUN_PROFILE_SWITCH_E2E.bat`** | Alleen profielwissel E2E |
 | **`RUN_MEMORY_ARCHITECTURE_E2E.bat`** | L4 vault-paden, sync, geen L3, profiel-limits 4000/1800, **alle profielen** MEMORY/USER, dedup-keten, TUI auto `/new` (**16 stappen**) |
-| **`RUN_MEMORY_PRODUCTION_GATE.bat`** | Gecombineerd: trust limits + memory E2E (16/16) + trust forensic E2E + **55 pytest** memory/trust |
+| **`RUN_MEMORY_PRODUCTION_GATE.bat`** | Gecombineerd: trust limits + memory E2E (18/18) + trust forensic E2E + pytest memory/trust |
 | **`RUN_AUDITS.bat -IncludeMemoryProductionGate`** | Alleen memory productie-poort (ook in `-IncludeAllE2E`) |
 | **`RUN_STATUS_BAR_COST_E2E.bat`** | TUI statusbalk (rich): `show_cost`, `cost_bar_mode`, breakdown, turn-delta, live `~$turn`, gateway smoke |
 | **`RUN_PARETO_E2E.bat`** | OpenRouter Pareto Code router: model-gate, transport/summary parity, pytest, verify script |
@@ -104,13 +104,13 @@ Optioneel: `-SkipSyncRun` (geen live `sync_hermes_api_env.ps1`).
 
 | Stap | Controle |
 | ---- | -------- |
-| 1/16 | Repo: upstream, `POST_GIT_PULL`, `SYNC_TRUST_RUNTIME` + dedup + post-sync |
+| 1/18 | Repo: trust-sync, merge-common, consolidate-root, rebalance |
 | 2–7 | Legacy/runtime vault-env, sync-script, profiel-.env, vault-structuur, geen L3 |
 | 8–10 | KANBAN + core MEMORY, obsidian skill, config-limits 4000/1800 |
 | 11–13 | core MEMORY-grootte, UTF-8 §-encoding |
 | 14/16 | **Alle 13 profielen:** MEMORY/USER binnen limiet, geen dubbele §, geen mojibake |
 | 15/16 | Repo: `deduplicate_memories.py`, `Invoke-MemoryTrustPostSync`, notice-module |
-| 16/16 | TUI auto `/new`: `newChatNotice.ts`, `useInstitutionalNewChatAutoReset`, `gateway.ready` |
+| 16–18 | TUI auto `/new`; consolidatie-layout; §-delimiter U+00A7 |
 
 **Productie-poort:** `RUN_MEMORY_PRODUCTION_GATE.bat` = bovenstaande + trust forensic E2E + pytest (`test_deduplicate_memories`, `test_institutional_new_chat_notice`, …).
 

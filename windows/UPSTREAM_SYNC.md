@@ -211,7 +211,7 @@ Bij merge van Nous in jouw fork botsen vaak **jouw fork-only** paden met upstrea
 | --- | -------------- |
 | `hermes_cli/usage_snapshot.py` | **Behoud fork** — breakdown + usage payload |
 | `tui_gateway/server.py` | `_get_usage` → delegatie naar `build_session_usage_snapshot` |
-| `ui-tui/src/domain/usageCostBar.ts` | **Behoud fork** — responsive formatter + `resolveStatusRuleLayout` |
+| `ui-tui/src/domain/usageCostBar.ts` | **Behoud fork** — responsive formatter + `statusRuleColumns` + `resolveStatusRuleLayout` |
 | `ui-tui/src/components/appChrome.tsx` | StatusRule: gereserveerd kostensegment vóór cwd |
 | `ui-tui/src/app/createGatewayEventHandler.ts` | turn/tool client-side hooks + live `~NK tok` fallback |
 | `hermes_cli/config.py` | **Behoud fork** — `show_cost: true`, `cost_bar_mode: rich` defaults |

@@ -7,7 +7,8 @@ import {
   formatUsdCompact,
   resolveCostBarTier,
   resolveStatusRuleLayout,
-  shouldShowStatusBarCostRich
+  shouldShowStatusBarCostRich,
+  statusRuleColumns
 } from '../domain/usageCostBar.js'
 
 describe('usageCostBar', () => {
@@ -94,8 +95,14 @@ describe('usageCostBar', () => {
     expect(shouldShowStatusBarCostRich(false)).toBe(false)
   })
 
+  it('statusRuleColumns subtracts composer horizontal padding', () => {
+    expect(statusRuleColumns(120)).toBe(118)
+    expect(statusRuleColumns(1)).toBe(1)
+  })
+
   it('resolveStatusRuleLayout reserves width for the full cost segment', () => {
-    const costLabel = formatStatusBarCostRich(usage, { mode: 'rich', width: 120 })
+    const effectiveCols = statusRuleColumns(140)
+    const costLabel = formatStatusBarCostRich(usage, { mode: 'rich', width: effectiveCols })
     const layout = resolveStatusRuleLayout({
       cols: 140,
       costBarMode: 'rich',
@@ -105,6 +112,6 @@ describe('usageCostBar', () => {
     })
 
     expect(layout.costLabel).toBe(costLabel)
-    expect(layout.leftWidth).toBe(140 - 'D:\\project'.length - 3 - costLabel.length - 3)
+    expect(layout.leftWidth).toBe(effectiveCols - 'D:\\project'.length - 3 - costLabel.length - 3)
   })
 })

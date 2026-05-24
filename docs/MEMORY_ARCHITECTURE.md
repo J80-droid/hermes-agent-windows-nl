@@ -51,13 +51,15 @@ windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat
 
 | Stap | Controle |
 |------|----------|
-| 1/16 | Repo: upstream, `POST_GIT_PULL`, `SYNC_TRUST_RUNTIME` + dedup + post-sync |
+| 1/18 | Repo: trust-sync, `HermesMemoryMergeCommon`, consolidate-root, rebalance |
 | 2–7 | Vault-env sync, profiel-.env, vault-structuur, geen L3, KANBAN + core MEMORY |
 | 8–10 | Obsidian skill, config-limits 4000/1800 (root + 13 profielen) |
 | 11–13 | core MEMORY-grootte, UTF-8 §-encoding |
-| 14/16 | **Alle profielen:** MEMORY/USER binnen limiet, geen dubbele §, geen mojibake-regel |
-| 15/16 | Repo: `deduplicate_memories.py`, `Invoke-MemoryTrustPostSync`, notice-module |
-| 16/16 | TUI auto `/new`: `newChatNotice.ts`, `useInstitutionalNewChatAutoReset`, `gateway.ready` |
+| 14/18 | **Alle profielen + legacy root:** MEMORY/USER binnen limiet, geen dubbele §, geen mojibake |
+| 15/18 | `deduplicate_memories.py` (incl. legacy `memories/`), post-sync, notice-module |
+| 16/18 | TUI auto `/new`: `newChatNotice.ts`, `useInstitutionalNewChatAutoReset`, `gateway.ready` |
+| 17/18 | Consolidatie-layout: root seed-only, Hermes-config in core, legal zonder MCP/multi-profile |
+| 18/18 | §-delimiter U+00A7 + runtime sectie-split (geen 1-blob merge) |
 
 ## Productie-checklist (automatisch via `SYNC_TRUST_RUNTIME.bat`)
 
@@ -84,6 +86,8 @@ Handmatig alleen bij incident: `audit_profile_memories.ps1 -FixEncoding`, of `py
 `sync_profile_memories.ps1` merge’t op **genormaliseerde §-secties** (seed wint; policy-buckets `yesman` / `toolfail` / `trust` / `usertrust` / `statusbar`); runtime- en user-preference-secties blijven behouden. `deduplicate_memories.py` verwijdert alleen **exacte** duplicaten — overlappende varianten horen in stap 2 of via seed-update.
 
 **SOUL vs MEMORY:** beleid staat ook in SOUL-snippers; voeg geen nieuwe policy-blokken toe via memory-tool als ze al in SOUL staan (dubbele token-lading).
+
+**Legacy root-pad:** `%LOCALAPPDATA%\hermes\memories\` (default HERMES_HOME) is niet het actieve profiel — runtime gebruikt `profiles\<naam>\memories\`. Bij oude inhoud in root: `windows\CONSOLIDATE_ROOT_MEMORIES.bat` (migreert legal/core-secties, reset root naar seed, rebalance Hermes-config naar `core`). `deduplicate_memories.py` scant ook `memories/` naast `profiles/*/memories`. Hermes-config (MCP YAML, multi-profile) hoort alleen in `profiles\core\memories\MEMORY.md` — `sync_profile_memories.ps1` rebalanceert misplaatste secties automatisch.
 
 ### Nieuwe sessie na sync (`/new`)
 

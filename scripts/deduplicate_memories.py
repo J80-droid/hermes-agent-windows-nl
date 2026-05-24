@@ -80,6 +80,13 @@ def main() -> int:
 
     print(f"Scanning profiles under: {profiles_dir}")
     failed = 0
+    root_memories = hermes_root / "memories"
+    if root_memories.is_dir():
+        print("\n--- Legacy root (memories/) ---")
+        for filename in ("MEMORY.md", "USER.md"):
+            filepath = root_memories / filename
+            if filepath.is_file() and not deduplicate_file(filepath):
+                failed += 1
     for profile_dir in sorted(profiles_dir.iterdir()):
         if not profile_dir.is_dir():
             continue

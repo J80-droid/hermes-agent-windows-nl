@@ -44,6 +44,7 @@ def main() -> int:
         for needle in (
             "formatStatusBarCostRich",
             "resolveStatusRuleLayout",
+            "statusRuleColumns",
             "formatSessionCostLabel",
             "shouldShowStatusBarCostRich",
         ):
@@ -53,6 +54,8 @@ def main() -> int:
     chrome = (repo / "ui-tui" / "src" / "components" / "appChrome.tsx").read_text(encoding="utf-8")
     if "resolveStatusRuleLayout" not in chrome:
         errors.append("appChrome.tsx gebruikt resolveStatusRuleLayout niet")
+    if "statusRuleColumns" not in chrome:
+        errors.append("appChrome.tsx gebruikt statusRuleColumns niet")
 
     rebuild = repo / "windows" / "scripts" / "rebuild_tui.ps1"
     if not rebuild.is_file():

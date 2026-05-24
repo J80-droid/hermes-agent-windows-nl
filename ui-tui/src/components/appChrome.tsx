@@ -10,7 +10,7 @@ import { $uiState } from '../app/uiStore.js'
 import { FACES } from '../content/faces.js'
 import { VERBS } from '../content/verbs.js'
 import { fmtDuration } from '../domain/messages.js'
-import { resolveStatusRuleLayout } from '../domain/usageCostBar.js'
+import { resolveStatusRuleLayout, statusRuleColumns } from '../domain/usageCostBar.js'
 import type { CostBarMode } from '../domain/usageCostBar.js'
 import { stickyPromptFromViewport } from '../domain/viewport.js'
 import { buildSubagentTree, treeTotals, widthByDepth } from '../lib/subagentTree.js'
@@ -300,6 +300,7 @@ export function StatusRule({
       : ''
 
   const bar = usage.context_max ? ctxBar(pct) : ''
+  const ruleCols = statusRuleColumns(cols)
   const { costLabel, leftWidth } = resolveStatusRuleLayout({
     cols,
     costBarMode,
@@ -309,7 +310,7 @@ export function StatusRule({
   })
 
   return (
-    <Box flexDirection="row" height={1} width={cols}>
+    <Box flexDirection="row" height={1} width={ruleCols}>
       <Box flexShrink={1} width={leftWidth}>
         <Text color={t.color.border} wrap="truncate-end">
           {'─ '}
@@ -357,7 +358,7 @@ export function StatusRule({
 
       {costLabel ? (
         <Box flexShrink={0}>
-          <Text color={t.color.muted}>
+          <Text color={t.color.accent}>
             {' │ '}
             {costLabel}
           </Text>
@@ -365,7 +366,9 @@ export function StatusRule({
       ) : null}
 
       <Text color={t.color.border}> ─ </Text>
-      <Text color={t.color.label}>{cwdLabel}</Text>
+      <Text color={t.color.label} wrap="truncate-end">
+        {cwdLabel}
+      </Text>
     </Box>
   )
 }
