@@ -50,9 +50,11 @@ def test_post_git_pull_and_update_optional_smoke_flags():
     assert "verify_windows_script_chain.ps1" in post
     assert "VERIFY_WINDOWS_CHAIN.bat" not in post
     upstream = (REPO / "windows/upstream_sync.ps1").read_text(encoding="utf-8")
+    post = (REPO / "windows/scripts/Invoke-UpstreamPostMerge.ps1").read_text(encoding="utf-8")
     assert "IncludeCodebaseSmokeE2E" in upstream
     assert "IncludeCodebaseSmoke" in upstream
-    assert "Invoke-PostSyncCodebaseSmoke.ps1" in upstream
+    assert "Invoke-UpstreamPostMerge.ps1" in upstream
+    assert "Invoke-PostSyncCodebaseSmoke.ps1" in post
     update = (REPO / "windows/UPDATE_HERMES.bat").read_text(encoding="utf-8")
     assert "-IncludeCodebaseSmokeE2E" in update
     assert "-IncludeCodebaseSmoke" in update

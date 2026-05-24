@@ -91,9 +91,11 @@ def test_landkaart_skill_exists():
 
 def test_upstream_sync_verify_uses_ps1_not_interactive_bat():
     """Regressie: VERIFY_WINDOWS_CHAIN.bat pause blokkeerde post-merge keten."""
-    text = (REPO / "windows/upstream_sync.ps1").read_text(encoding="utf-8")
-    assert "verify_windows_script_chain.ps1" in text
-    assert "VERIFY_WINDOWS_CHAIN.bat heeft pause" in text
+    post = (REPO / "windows/scripts/Invoke-UpstreamPostMerge.ps1").read_text(encoding="utf-8")
+    assert "verify_windows_script_chain.ps1" in post
+    assert "VERIFY_WINDOWS_CHAIN.bat" not in post
+    sync = (REPO / "windows/upstream_sync.ps1").read_text(encoding="utf-8")
+    assert "Invoke-UpstreamPostMerge.ps1" in sync
 
 
 def test_critical_windows_files_exist():

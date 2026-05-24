@@ -16,7 +16,10 @@ $files = @(
     'windows/audits/MemoryArchitectureE2E.core.ps1',
     'windows/scripts/MemoryAuditCommon.ps1',
     'windows/scripts/HermesMemoryMergeCommon.ps1',
-    'windows/WindowsLocalAssetsManifest.ps1'
+    'windows/WindowsLocalAssetsManifest.ps1',
+    'windows/upstream_sync.ps1',
+    'windows/scripts/Invoke-UpstreamPostMerge.ps1',
+    'windows/scripts/Invoke-PostSyncCodebaseSmoke.ps1'
 )
 
 $failed = 0

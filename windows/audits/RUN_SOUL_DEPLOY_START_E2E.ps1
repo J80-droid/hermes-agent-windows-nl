@@ -95,13 +95,24 @@ Assert-FileContains 'windows/POST_GIT_PULL.bat' @('launch_soul_anatomy_deploy.ps
 Assert-FileContains 'windows/APPLY_SOUL_ANATOMY_RUNTIME.bat' @('-UpdateDeployStamp')
 Assert-FileContains 'windows/scripts/sync_all_domain_souls_from_templates.ps1' @('UpdateDeployStamp', 'Set-SoulAnatomyDeployStamp')
 
+$postMerge = Join-Path $RepoRoot 'windows/scripts/Invoke-UpstreamPostMerge.ps1'
 $upstream = Join-Path $RepoRoot 'windows/upstream_sync.ps1'
+if (-not (Test-Path -LiteralPath $postMerge)) {
+    Step-Fail 'Invoke-UpstreamPostMerge.ps1' 'ontbreekt'
+} else {
+    $pm = Get-Content -LiteralPath $postMerge -Raw -Encoding UTF8
+    if ($pm -notmatch 'launch_soul_anatomy_deploy\.ps1' -or $pm -notmatch '\$soulDeployOk') {
+        Step-Fail 'Invoke-UpstreamPostMerge.ps1' 'mist soul deploy + soulDeployOk SkipSoul-guard'
+    } else {
+        Step-Ok 'Invoke-UpstreamPostMerge.ps1 soul + conditionele SkipSoul'
+    }
+}
 if (Test-Path -LiteralPath $upstream) {
     $ut = Get-Content -LiteralPath $upstream -Raw -Encoding UTF8
-    if ($ut -notmatch 'launch_soul_anatomy_deploy\.ps1' -or $ut -notmatch '\$soulDeployOk') {
-        Step-Fail 'upstream_sync.ps1' 'mist soul deploy + soulDeployOk SkipSoul-guard'
+    if ($ut -notmatch 'Invoke-UpstreamPostMerge\.ps1') {
+        Step-Fail 'upstream_sync.ps1' 'mist Invoke-UpstreamPostMerge-koppeling'
     } else {
-        Step-Ok 'upstream_sync.ps1 soul + conditionele SkipSoul'
+        Step-Ok 'upstream_sync.ps1 roept Invoke-UpstreamPostMerge aan'
     }
 }
 

@@ -66,7 +66,7 @@ Bij strategische of heuristische keuzes (SOUL) moet de zekerheid expliciet worde
 | Na `git pull` (E2E-poort) | `windows/POST_GIT_PULL.bat -IncludeCodebaseSmokeE2E` |
 | Na upstream-update | `windows/UPDATE_HERMES.bat -IncludeCodebaseSmoke` of `-IncludeCodebaseSmokeE2E` |
 
-Gedeelde runner: `windows/scripts/Invoke-PostSyncCodebaseSmoke.ps1`. Bij smoke-opties: geen eind-pause in `POST_GIT_PULL` (verify via `.ps1`, geen `VERIFY_WINDOWS_CHAIN.bat`-pause).
+Gedeelde runners: `Invoke-PostSyncCodebaseSmoke.ps1` (smoke), `Invoke-UpstreamPostMerge.ps1` (UPDATE post-merge). Bij smoke-opties: geen eind-pause in `POST_GIT_PULL` (verify via `.ps1`, geen `VERIFY_WINDOWS_CHAIN.bat`-pause).
 
 SOUL/snippets: deploy zit al in beide ketens; na wijziging **`/new`** in actieve chat (TUI leest `institutional_new_chat_required.json`).
 
