@@ -318,7 +318,7 @@ if (Test-Path -LiteralPath $mergeCommon) {
         $step18Detail = 'U+00A7 delimiter helpers ontbreken'
     }
 }
-Add-StepResult -Name '18/18 §-delimiter + sectie-split' -Ok $step18Ok -Detail $step18Detail
+Add-StepResult -Name '18/18 section-delimiter U+00A7' -Ok $step18Ok -Detail $step18Detail
 
 $reportFileName = 'MEMORY_ARCHITECTURE_E2E_REPORT_' + $reportStamp + '.md'
 $reportPath = Join-Path $scriptRoot $reportFileName
