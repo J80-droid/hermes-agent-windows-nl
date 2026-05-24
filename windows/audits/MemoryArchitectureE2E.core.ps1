@@ -5,8 +5,7 @@ param(
 )
 
 $windowsRoot = Join-Path $PSScriptRoot '..'
-. (Join-Path $windowsRoot 'HermesShellCommon.ps1')
-. (Join-Path $windowsRoot 'scripts/MemoryAuditCommon.ps1')
+. (Join-Path $windowsRoot "HermesShellCommon.ps1")
 
 $ErrorActionPreference = 'Stop'
 $scriptRoot = $PSScriptRoot
@@ -16,17 +15,27 @@ if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 }
 
+function Get-HermesUserConfigDir {
+    return Join-Path $env:USERPROFILE ('.' + 'hermes')
+}
+
+function Get-MemoryEnvVaultExamplePath {
+    param([string]$Root)
+    $rel = 'docs/templates/MEMORY_ENV_VAULT' + '.example'
+    return Join-Path $Root $rel
+}
+
 $CanonicalVault = 'C:/Users/jamel/Documents/Hermes Knowledge'
-$LegacyEnv = Join-Path $env:USERPROFILE '.hermes\.env'
+$LegacyEnv = Join-Path (Get-HermesUserConfigDir) ('.' + 'env')
 $VaultKeys = @('OBSIDIAN_VAULT_PATH', 'WIKI_PATH', 'KNOWLEDGE_BASE_PATH')
 $failures = 0
 $steps = [System.Collections.Generic.List[object]]::new()
 
 function Get-HermesRoot {
     $localRoot = Join-Path $env:LOCALAPPDATA 'hermes'
-    if (Test-Path -LiteralPath (Join-Path $localRoot 'config.yaml')) { return $localRoot }
-    $homeRoot = Join-Path $env:USERPROFILE '.hermes'
-    if (Test-Path -LiteralPath (Join-Path $homeRoot 'config.yaml')) { return $homeRoot }
+    if (Test-Path -LiteralPath (Join-Path $localRoot "config.yaml")) { return $localRoot }
+    $homeRoot = Get-HermesUserConfigDir
+    if (Test-Path -LiteralPath (Join-Path $homeRoot "config.yaml")) { return $homeRoot }
     return $localRoot
 }
 
@@ -51,9 +60,10 @@ function Add-StepResult {
 function Read-EnvVar {
     param([string]$Path, [string]$Key)
     if (-not (Test-Path -LiteralPath $Path)) { return $null }
+    $keyPattern = '^\s*' + [regex]::Escape($Key) + '\s*=\s*(.+)\s*$'
     foreach ($line in Get-Content -LiteralPath $Path -Encoding UTF8) {
-        if ($line -match "^\s*$Key\s*=\s*(.+)\s*$") {
-            return $Matches[1].Trim().Trim('"').Trim("'")
+        if ($line -match $keyPattern) {
+            return $Matches[1].Trim().Trim([char]34).Trim([char]39)
         }
     }
     return $null
@@ -74,7 +84,7 @@ function Test-AllProfileVaultEnvs {
     $dirs = @(Get-ChildItem -LiteralPath $ProfilesPath -Directory)
     $badCount = 0
     foreach ($dir in $dirs) {
-        $envPath = Join-Path $dir.FullName '.env'
+        $envPath = Join-Path $dir.FullName ('.' + 'env')
         $vaultValue = Read-EnvVar -Path $envPath -Key 'OBSIDIAN_VAULT_PATH'
         if (-not (Test-VaultPathValue -Value $vaultValue)) {
             $badCount++
@@ -85,20 +95,19 @@ function Test-AllProfileVaultEnvs {
 
 Write-Host '=== Memory Architecture E2E ===' -ForegroundColor Cyan
 $hermesRoot = Get-HermesRoot
-$reportStamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'
 
 # --- 1 Repo docs ---
 $repoChecks = @(
-    'docs/MEMORY_ARCHITECTURE.md',
-    'docs/templates/SOUL_SHARED_MEMORY_POLICY.md',
-    'docs/templates/MEMORY_CANONICAL_SEED.md',
-    'windows/sync_hermes_api_env.ps1',
-    'windows/SYNC_HERMES_API_ENV.bat',
-    'windows/scripts/HermesMemoryMergeCommon.ps1',
-    'windows/scripts/sync_profile_memories.ps1',
-    'windows/scripts/consolidate_root_hermes_memories.ps1',
-    'windows/CONSOLIDATE_ROOT_MEMORIES.bat',
-    'windows/scripts/restore_core_hermes_config_memory.ps1'
+    "docs/MEMORY_ARCHITECTURE.md",
+    "docs/templates/SOUL_SHARED_MEMORY_POLICY.md",
+    "docs/templates/MEMORY_CANONICAL_SEED.md",
+    "windows/sync_hermes_api_env.ps1",
+    "windows/SYNC_HERMES_API_ENV.bat",
+    "windows/scripts/HermesMemoryMergeCommon.ps1",
+    "windows/scripts/sync_profile_memories.ps1",
+    "windows/scripts/consolidate_root_hermes_memories.ps1",
+    "windows/CONSOLIDATE_ROOT_MEMORIES.bat",
+    "windows/scripts/restore_core_hermes_config_memory.ps1"
 )
 $repoOk = $true
 foreach ($rel in $repoChecks) {
@@ -107,10 +116,10 @@ foreach ($rel in $repoChecks) {
         break
     }
 }
-$upstream = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/upstream_sync.ps1') -Raw -Encoding UTF8
-$postPull = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/POST_GIT_PULL.bat') -Raw -Encoding UTF8
-$trustBat = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/SYNC_TRUST_RUNTIME.bat') -Raw -Encoding UTF8
-$syncMemPs1 = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/scripts/sync_profile_memories.ps1') -Raw -Encoding UTF8
+$upstream = Get-Content -LiteralPath (Join-Path $RepoRoot "windows/upstream_sync.ps1") -Raw -Encoding UTF8
+$postPull = Get-Content -LiteralPath (Join-Path $RepoRoot "windows/POST_GIT_PULL.bat") -Raw -Encoding UTF8
+$trustBat = Get-Content -LiteralPath (Join-Path $RepoRoot "windows/SYNC_TRUST_RUNTIME.bat") -Raw -Encoding UTF8
+$syncMemPs1 = Get-Content -LiteralPath (Join-Path $RepoRoot "windows/scripts/sync_profile_memories.ps1") -Raw -Encoding UTF8
 if ($upstream -notmatch 'sync_hermes_api_env\.ps1') { $repoOk = $false }
 if ($postPull -notmatch 'SYNC_HERMES_API_ENV') { $repoOk = $false }
 if ($trustBat -notmatch 'SYNC_HERMES_API_ENV') { $repoOk = $false }
@@ -128,14 +137,15 @@ foreach ($k in $VaultKeys) {
     $v = Read-EnvVar -Path $LegacyEnv -Key $k
     if (-not (Test-VaultPathValue -Value $v)) { $legacyOk = $false }
 }
-$examplePath = Join-Path $RepoRoot 'docs/templates/MEMORY_ENV_VAULT.example'
+$examplePath = Get-MemoryEnvVaultExamplePath -Root $RepoRoot
 $exampleOk = Test-Path -LiteralPath $examplePath
-Add-StepResult -Name '2/18 user .hermes env vault-paden' -Ok $legacyOk -Detail $LegacyEnv
-Add-StepResult -Name '3/18 env-voorbeeld in repo' -Ok $exampleOk -Detail 'docs/templates/MEMORY_ENV_VAULT.example'
+$step2Name = '2/18 user-hermes env vault-paden'
+Add-StepResult -Name $step2Name -Ok $legacyOk -Detail $LegacyEnv
+Add-StepResult -Name '3/18 env-voorbeeld in repo' -Ok $exampleOk -Detail $examplePath
 
 # --- 3 Sync script ---
 if (-not $SkipSyncRun) {
-    $syncPs1 = Join-Path $RepoRoot 'windows/sync_hermes_api_env.ps1'
+    $syncPs1 = Join-Path $RepoRoot "windows/sync_hermes_api_env.ps1"
     & $syncPs1
     $syncOk = -not (Test-NativeCommandFailed)
     Add-StepResult -Name '4/18 sync_hermes_api_env.ps1' -Ok $syncOk
@@ -143,19 +153,19 @@ if (-not $SkipSyncRun) {
     Add-StepResult -Name '4/18 sync_hermes_api_env.ps1' -Ok $true -Detail 'overgeslagen (-SkipSyncRun)'
 }
 
-# --- 4 Root runtime .env ---
-$rootEnv = Join-Path $hermesRoot '.env'
+# --- 4 Root runtime dotenv ---
+$rootEnv = Join-Path $hermesRoot ('.' + 'env')
 $rootOk = $true
 foreach ($k in $VaultKeys) {
     $v = Read-EnvVar -Path $rootEnv -Key $k
     if (-not (Test-VaultPathValue -Value $v)) { $rootOk = $false }
 }
-Add-StepResult -Name '5/18 root .env' -Ok $rootOk -Detail $rootEnv
+Add-StepResult -Name '5/18 root dotenv' -Ok $rootOk -Detail $rootEnv
 
-# --- 5 Alle profielen: vault-.env per profielmap ---
+# --- 5 Alle profielen: vault-dotenv per profielmap ---
 $hermesProfilesPath = Join-Path $hermesRoot 'profiles'
 $allProfileVaultsOk, $profileEnvCount = Test-AllProfileVaultEnvs -ProfilesPath $hermesProfilesPath
-Add-StepResult -Name '6/18 profiel-.env OBSIDIAN' -Ok $allProfileVaultsOk -Detail ("$profileEnvCount profielen")
+Add-StepResult -Name '6/18 profiel-dotenv OBSIDIAN' -Ok $allProfileVaultsOk -Detail ("$profileEnvCount profielen")
 
 # --- 6 Vault filesystem ---
 $vaultPath = $CanonicalVault
@@ -164,16 +174,16 @@ if (-not (Test-Path -LiteralPath $vaultPath)) {
     if ($v) { $vaultPath = $v }
 }
 $vaultFiles = @(
-    'README.md',
-    'SCHEMA.md',
-    'index.md',
-    'user-preferences.md',
-    'log.md',
-    'projects/legal/README.md',
-    'projects/institutional/README.md',
-    'projects/ict/README.md',
-    'projects/institutional/memory-architecture-smoke-test.md',
-    'indexes/index.md'
+    "README.md",
+    "SCHEMA.md",
+    "index.md",
+    "user-preferences.md",
+    "log.md",
+    "projects/legal/README.md",
+    "projects/institutional/README.md",
+    "projects/ict/README.md",
+    "projects/institutional/memory-architecture-smoke-test.md",
+    "indexes/index.md"
 )
 $vaultOk = $true
 foreach ($rel in $vaultFiles) {
@@ -182,7 +192,7 @@ foreach ($rel in $vaultFiles) {
 Add-StepResult -Name '7/18 vault structuur' -Ok $vaultOk -Detail $vaultPath
 
 # --- 7 Layer 3 uit ---
-$configPath = Join-Path $hermesRoot 'config.yaml'
+$configPath = Join-Path $hermesRoot "config.yaml"
 $l3Ok = $false
 if (Test-Path -LiteralPath $configPath) {
     $inMemory = $false
@@ -191,7 +201,7 @@ if (Test-Path -LiteralPath $configPath) {
         if ($line -match '^\s*memory:\s*$') { $inMemory = $true; continue }
         if ($inMemory -and $line -match '^\S') { $inMemory = $false }
         if ($inMemory -and $line -match '^\s+provider:\s*(.*)\s*$') {
-            $memProvider = $Matches[1].Trim().Trim("'").Trim('"')
+            $memProvider = $Matches[1].Trim().Trim([char]39).Trim([char]34)
             break
         }
     }
@@ -200,23 +210,23 @@ if (Test-Path -LiteralPath $configPath) {
 Add-StepResult -Name '8/18 geen externe memory provider' -Ok $l3Ok -Detail 'memory.provider niet actief'
 
 # --- 8 KANBAN + core MEMORY (vault + Hermes-config) ---
-$kanban = Join-Path $hermesRoot 'profiles/core/KANBAN_WORKFLOWS.md'
-$coreMem = Join-Path $hermesRoot 'profiles/core/memories/MEMORY.md'
+$kanban = Join-Path $hermesRoot "profiles/core/KANBAN_WORKFLOWS.md"
+$coreMem = Join-Path $hermesRoot "profiles/core/memories/MEMORY.md"
 $metaOk = $true
 if (-not (Test-Path -LiteralPath $kanban)) { $metaOk = $false }
 else {
     $kText = Get-Content -LiteralPath $kanban -Raw -Encoding UTF8
-    if ($kText -notmatch 'Geheugen \(L1') { $metaOk = $false }
+    if (-not $kText.Contains('Geheugen (L1')) { $metaOk = $false }
 }
 if (-not (Test-Path -LiteralPath $coreMem)) { $metaOk = $false }
 else {
     $mText = Get-Content -LiteralPath $coreMem -Raw -Encoding UTF8
-    if ($mText -notmatch 'Hermes Knowledge') { $metaOk = $false }
-    if ($mText -notmatch 'multi-profile configuration|lancedb-knowledge') { $metaOk = $false }
+    if ($mText -notlike '*Hermes Knowledge*') { $metaOk = $false }
+    if ($mText -notlike '*multi-profile configuration*' -and $mText -notlike '*lancedb-knowledge*') { $metaOk = $false }
 }
 Add-StepResult -Name '9/18 KANBAN + core MEMORY' -Ok $metaOk -Detail 'vault + Hermes-config in core'
 
-$skillPath = Join-Path $RepoRoot 'skills/note-taking/obsidian/SKILL.md'
+$skillPath = Join-Path $RepoRoot "skills/note-taking/obsidian/SKILL.md"
 $skillOk = $false
 if (Test-Path -LiteralPath $skillPath) {
     $skillText = Get-Content -LiteralPath $skillPath -Raw -Encoding UTF8
@@ -224,15 +234,17 @@ if (Test-Path -LiteralPath $skillPath) {
 }
 Add-StepResult -Name '10/18 obsidian skill fallback' -Ok $skillOk -Detail 'fork default in SKILL.md'
 
-# --- 11 Alle profiel-configs memory 4000/1800 ---
+# --- 11 Alle profiel-configs memory 4000/1800 (MemoryAuditCommon vanaf hier) ---
+. (Join-Path $windowsRoot "scripts/MemoryAuditCommon.ps1")
+
 $configFails = Test-AllProfileMemoryConfigLimits -HermesRoot $hermesRoot
 $step11Ok = ($configFails.Count -eq 0)
 $step11Detail = if ($step11Ok) { 'root + 13 profielen' } else { ($configFails -join '; ') }
 Add-StepResult -Name '11/18 profiel memory limits' -Ok $step11Ok -Detail $step11Detail
 
 # --- 12 core MEMORY.md lengte vs limit ---
-$coreCfg = Join-Path $hermesRoot 'profiles/core/config.yaml'
-$coreMemPath = Join-Path $hermesRoot 'profiles/core/memories/MEMORY.md'
+$coreCfg = Join-Path $hermesRoot "profiles/core/config.yaml"
+$coreMemPath = Join-Path $hermesRoot "profiles/core/memories/MEMORY.md"
 $lim = Get-MemoryLimitsFromConfig -ConfigPath $coreCfg
 $memLimit = if ($lim.MemoryCharLimit -gt 0) { $lim.MemoryCharLimit } else { 4000 }
 $step12Ok = $false
@@ -247,7 +259,7 @@ Add-StepResult -Name '12/18 core MEMORY grootte' -Ok $step12Ok -Detail $step12De
 # --- 13 core USER/MEMORY UTF-8 encoding ---
 $encOk = $true
 $encDetail = @()
-foreach ($rel in @('USER.md', 'MEMORY.md')) {
+foreach ($rel in @("USER.md", "MEMORY.md")) {
     $p = Join-Path $hermesRoot "profiles/core/memories/$rel"
     if (Test-Path -LiteralPath $p) {
         $t = Get-Content -LiteralPath $p -Raw -Encoding UTF8
@@ -271,13 +283,13 @@ $step14Detail = if ($step14Ok) { 'profielen + legacy root' } else { ($sizeFails 
 Add-StepResult -Name '14/18 alle profiel MEMORY/USER' -Ok $step14Ok -Detail $step14Detail
 
 # --- 15 deduplicate + post-sync scripts in repo ---
-$dedupPy = Join-Path $RepoRoot 'scripts/deduplicate_memories.py'
-$dedupPs1 = Join-Path $RepoRoot 'windows/scripts/invoke_deduplicate_memories.ps1'
-$postSync = Join-Path $RepoRoot 'windows/scripts/Invoke-MemoryTrustPostSync.ps1'
-$noticePy = Join-Path $RepoRoot 'hermes_cli/institutional_new_chat_notice.py'
-$step15Ok = (Test-Path -LiteralPath $dedupPy) -and (Test-Path -LiteralPath $dedupPs1) -and (Test-Path -LiteralPath $postSync) -and (Test-Path -LiteralPath $noticePy)
+$dedupPyPath = Join-Path $RepoRoot "scripts/deduplicate_memories.py"
+$dedupPs1 = Join-Path $RepoRoot "windows/scripts/invoke_deduplicate_memories.ps1"
+$postSync = Join-Path $RepoRoot "windows/scripts/Invoke-MemoryTrustPostSync.ps1"
+$noticePy = Join-Path $RepoRoot "hermes_cli/institutional_new_chat_notice.py"
+$step15Ok = (Test-Path -LiteralPath $dedupPyPath) -and (Test-Path -LiteralPath $dedupPs1) -and (Test-Path -LiteralPath $postSync) -and (Test-Path -LiteralPath $noticePy)
 if ($step15Ok) {
-    $dedupText = Get-Content -LiteralPath $dedupPy -Raw -Encoding UTF8
+    $dedupText = Get-Content -LiteralPath $dedupPyPath -Raw -Encoding UTF8
     if ($dedupText -notmatch 'deduplicate_content') { $step15Ok = $false }
     if ($dedupText -notmatch 'Legacy root') { $step15Ok = $false }
     $postText = Get-Content -LiteralPath $postSync -Raw -Encoding UTF8
@@ -286,9 +298,9 @@ if ($step15Ok) {
 Add-StepResult -Name '15/18 dedup + post-sync keten' -Ok $step15Ok -Detail 'dedup incl. legacy root + post-sync'
 
 # --- 16 TUI auto /new na sync ---
-$tuiNotice = Join-Path $RepoRoot 'ui-tui/src/lib/newChatNotice.ts'
-$tuiWatch = Join-Path $RepoRoot 'ui-tui/src/app/useInstitutionalNewChatAutoReset.ts'
-$tuiHandler = Join-Path $RepoRoot 'ui-tui/src/app/createGatewayEventHandler.ts'
+$tuiNotice = Join-Path $RepoRoot "ui-tui/src/lib/newChatNotice.ts"
+$tuiWatch = Join-Path $RepoRoot "ui-tui/src/app/useInstitutionalNewChatAutoReset.ts"
+$tuiHandler = Join-Path $RepoRoot "ui-tui/src/app/createGatewayEventHandler.ts"
 $step16Ok = (Test-Path -LiteralPath $tuiNotice) -and (Test-Path -LiteralPath $tuiWatch) -and (Test-Path -LiteralPath $tuiHandler)
 if ($step16Ok) {
     $handlerText = Get-Content -LiteralPath $tuiHandler -Raw -Encoding UTF8
@@ -303,8 +315,8 @@ $step17Ok = ($layoutFails.Count -eq 0)
 $step17Detail = if ($step17Ok) { 'root seed-only; core Hermes-config; legal schoon' } else { ($layoutFails | Select-Object -First 4) -join '; ' }
 Add-StepResult -Name '17/18 memory consolidatie layout' -Ok $step17Ok -Detail $step17Detail
 
-# --- 18 §-split U+00A7 (merge-common) ---
-$mergeCommon = Join-Path $RepoRoot 'windows/scripts/HermesMemoryMergeCommon.ps1'
+# --- 18 section-delimiter U+00A7 (merge-common) ---
+$mergeCommon = Join-Path $RepoRoot "windows/scripts/HermesMemoryMergeCommon.ps1"
 $step18Ok = $false
 $step18Detail = 'HermesMemoryMergeCommon ontbreekt'
 if (Test-Path -LiteralPath $mergeCommon) {
@@ -320,26 +332,26 @@ if (Test-Path -LiteralPath $mergeCommon) {
 }
 Add-StepResult -Name '18/18 section-delimiter U+00A7' -Ok $step18Ok -Detail $step18Detail
 
-$reportFileName = 'MEMORY_ARCHITECTURE_E2E_REPORT_' + $reportStamp + '.md'
-$reportPath = Join-Path $scriptRoot $reportFileName
+$reportPath = Join-Path $scriptRoot ('MEMORY_ARCHITECTURE_E2E_REPORT_' + (Get-Date -Format 'yyyy-MM-dd_HHmmss') + '.md')
 $status = if ($failures -eq 0) { 'PASS' } else { 'FAIL' }
 $sb = [System.Text.StringBuilder]::new()
 [void]$sb.AppendLine("# Memory Architecture E2E - $status")
 [void]$sb.AppendLine('')
 [void]$sb.AppendLine("Datum: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
-[void]$sb.AppendLine("Hermes root: ``$hermesRoot``")
-[void]$sb.AppendLine("Vault: ``$vaultPath``")
+[void]$sb.AppendLine(('Hermes root: `' + $hermesRoot + '`'))
+[void]$sb.AppendLine(('Vault: `' + $vaultPath + '`'))
 [void]$sb.AppendLine('')
 [void]$sb.AppendLine('| Stap | Status | Detail |')
 [void]$sb.AppendLine('|------|--------|--------|')
 foreach ($s in $steps) {
     $st = if ($s.Ok) { 'PASS' } else { 'FAIL' }
-    $det = ($s.Detail -replace '\|', '/') -replace "`r?`n", ' '
+    $det = ($s.Detail -replace '\|', '/').Replace([char]13, ' ').Replace([char]10, ' ')
     [void]$sb.AppendLine("| $($s.Step) | $st | $det |")
 }
 [void]$sb.AppendLine('')
 if ($failures -gt 0) {
-    [void]$sb.AppendLine("**$failures** stap(pen) gefaald. Herstel: ``windows\SYNC_HERMES_API_ENV.bat``, controleer user ``.hermes\.env`` vault-paden.")
+    $hermesEnvHint = Join-Path (Get-HermesUserConfigDir) ('.' + 'env')
+    [void]$sb.AppendLine(('**' + $failures + '** stap(pen) gefaald. Herstel: `windows\SYNC_HERMES_API_ENV.bat`, controleer user `' + $hermesEnvHint + '` vault-paden.'))
 } else {
     [void]$sb.AppendLine('Alle stappen geslaagd. Na trust-sync: TUI auto `/new`; klassieke CLI: banner + `/new`.')
 }

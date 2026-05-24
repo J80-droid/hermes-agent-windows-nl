@@ -241,7 +241,7 @@ function Merge-MemoryFile {
             if (Test-IsCoreProfileMemoryPath -FilePath $FilePath) {
                 $seenNorms[$norm] = $true
                 [void]$merged.Add($e)
-            } elseif ($script:PendingHermesConfigSections -ne $null) {
+            } elseif ($null -ne $script:PendingHermesConfigSections) {
                 Add-PendingHermesConfigSection -Text $e
             }
             continue

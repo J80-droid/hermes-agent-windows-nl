@@ -10,6 +10,8 @@ windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat
 
 Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Developer: Reload Window`.
 
+**PSES-valkuil:** in single-quoted strings faalt de IDE-parser soms op paden met extensie (bijv. `'README.md'` → `.md` buiten de string). Gebruik dubbele quotes (`"README.md"`) of concatenatie (`'README' + '.md'`). Runtime/AST is dan wél correct — vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
+
 **Trust E2E:** `RUN_TRUST_FORENSIC_E2E.ps1` is alleen een launcher; logica staat in `TrustForensicE2E.core.ps1` (dot-source naar `HermesTrustForensicPatterns.ps1`, `HermesTrustForensicProfileChecks.ps1`, `MemoryAuditCommon.ps1`). BAT en `RUN_AUDITS` blijven de launcher aanroepen.
 
 **Memory E2E:** `RUN_MEMORY_ARCHITECTURE_E2E.ps1` is alleen een launcher; logica staat in `MemoryArchitectureE2E.core.ps1` (dot-source naar `MemoryAuditCommon.ps1`). Geen dot-source in de launcher — stabiel in Cursor/PSES.
