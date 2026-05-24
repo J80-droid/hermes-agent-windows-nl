@@ -204,12 +204,22 @@ Rapport: `PARETO_E2E_REPORT_<timestamp>.md` in deze map — **gitignored** (zelf
 ## Codebase smoke audit
 
 ```text
+windows\audits\RUN_CODEBASE_SMOKE_E2E.bat
 windows\audits\RUN_CODEBASE_SMOKE_AUDIT.bat
 windows\audits\RUN_CODEBASE_SMOKE_AUDIT.bat -IncludePygount
+windows\audits\RUN_AUDITS.bat -IncludeCodebaseSmokeE2E
 windows\audits\RUN_AUDITS.bat -IncludeCodebaseSmoke
 ```
 
-Rapport: `CODEBASE_SMOKE_AUDIT_REPORT_<timestamp>.md` + staplog `CODEBASE_SMOKE_STEPLOG_<timestamp>.json` — **gitignored**. Zie [CODEBASE_AUDIT_EVIDENCE.md](../../docs/CODEBASE_AUDIT_EVIDENCE.md).
+| Stap (E2E) | Inhoud |
+| ---------- | ------ |
+| 1/5 | Repo-artefacten (`CODEBASE_AUDIT_*`, runners, tests) |
+| 2/5 | Strict denylist op `docs/templates/CODEBASE_AUDIT_REPORT.md` |
+| 3/5 | `pytest tests/windows/test_codebase_smoke_audit.py` |
+| 4/5 | `RUN_CODEBASE_SMOKE_AUDIT` (verify-keten, SessionDB, TUI collect-only, …) |
+| 5/5 | Institutioneel rapport (E-tiers, geen E3) |
+
+Rapporten: `CODEBASE_SMOKE_E2E_REPORT_<timestamp>.md` (gitignored via `*_E2E_REPORT_*_*.md`), `CODEBASE_SMOKE_AUDIT_REPORT_*.md`, `CODEBASE_SMOKE_STEPLOG_*.json`. Zie [CODEBASE_AUDIT_EVIDENCE.md](../../docs/CODEBASE_AUDIT_EVIDENCE.md).
 
 ## IDE-onderhoud E2E (volledige landkaart)
 

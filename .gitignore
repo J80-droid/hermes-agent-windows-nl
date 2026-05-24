@@ -94,6 +94,7 @@ windows/audits/INSTITUTIONAL_E2E_LAST_RUN.log
 windows/audits/*_E2E_REPORT_*_*.md
 windows/audits/CODEBASE_SMOKE_AUDIT_REPORT_*.md
 windows/audits/CODEBASE_SMOKE_STEPLOG_*.json
+windows/audits/SKILL_DRIFT_AUDIT_*.md
 windows/audits/TOOLSET_DOMAIN_E2E_LAST_RUN.log
 windows/audits/SOUL_DEPLOY_START_E2E_LAST_RUN.log
 windows/tests/last_pytest_run.log
