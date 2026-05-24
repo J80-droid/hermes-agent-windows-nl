@@ -62,6 +62,14 @@ def test_repo_classic_cli_smoke_script_exists():
     assert "classic cli status bar cost smoke ok" in text
 
 
+def test_repo_classic_cli_live_smoke_script_exists():
+    path = REPO / "scripts" / "status_bar_cost_classic_cli_live_smoke.py"
+    assert path.is_file()
+    text = path.read_text(encoding="utf-8")
+    assert "classic cli live status bar cost smoke ok" in text
+    assert "post-turn" in text.lower() or "post_turn" in text
+
+
 def test_repo_gateway_delegates_to_usage_snapshot():
     gateway = (REPO / "tui_gateway" / "server.py").read_text(encoding="utf-8")
     assert "build_session_usage_snapshot" in gateway

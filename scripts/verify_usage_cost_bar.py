@@ -71,6 +71,10 @@ def main() -> int:
     if not classic_smoke.is_file():
         errors.append("scripts/status_bar_cost_classic_cli_smoke.py ontbreekt")
 
+    classic_live = repo / "scripts" / "status_bar_cost_classic_cli_live_smoke.py"
+    if not classic_live.is_file():
+        errors.append("scripts/status_bar_cost_classic_cli_live_smoke.py ontbreekt")
+
     classic_e2e = repo / "windows" / "audits" / "RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.ps1"
     if not classic_e2e.is_file():
         errors.append("windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.ps1 ontbreekt")

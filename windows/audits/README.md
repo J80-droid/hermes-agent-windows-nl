@@ -14,6 +14,8 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 
 **Trust E2E:** `RUN_TRUST_FORENSIC_E2E.ps1` is alleen een launcher; logica staat in `TrustForensicE2E.core.ps1` (dot-source naar `HermesTrustForensicPatterns.ps1`, `HermesTrustForensicProfileChecks.ps1`, `MemoryAuditCommon.ps1`). BAT en `RUN_AUDITS` blijven de launcher aanroepen.
 
+**Classic CLI statusbalk E2E:** `RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.ps1` is alleen een launcher; logica staat in `ClassicCliStatusBarCostE2E.core.ps1` (geen dot-source — stabiel in IDE/PSES).
+
 **Memory E2E:** `RUN_MEMORY_ARCHITECTURE_E2E.ps1` is alleen een launcher; logica staat in `MemoryArchitectureE2E.core.ps1` (dot-source naar `MemoryAuditCommon.ps1`). Geen dot-source in de launcher — stabiel in Cursor/PSES.
 
 | Runner | Doel |
@@ -97,7 +99,7 @@ Laatste rapport: `INSTITUTIONAL_E2E_REPORT_2026-05-22.md` (log `INSTITUTIONAL_E2
 Upstream + UPDATE audit: `UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md`.  
 Memory L1–L4 audit: `MEMORY_ARCHITECTURE_E2E_REPORT_2026-05-23.md` (**16 stappen** sinds 2026-05-24; tijdelijke logs `MEMORY_ARCHITECTURE_E2E_REPORT_*_*.md` gitignored).  
 Statusbalk-kosten audit: `STATUS_BAR_COST_E2E_REPORT_*.md` (10 stappen; `RUN_STATUS_BAR_COST_E2E.bat`).  
-Klassieke CLI statusbalk-kosten: `CLASSIC_CLI_STATUS_BAR_COST_E2E_REPORT_*.md` (10 stappen; `RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`).
+Klassieke CLI statusbalk-kosten: `CLASSIC_CLI_STATUS_BAR_COST_E2E_REPORT_*.md` (11 stappen; `RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`).
 
 ## Memory-architectuur E2E (L1–L4)
 
@@ -156,18 +158,19 @@ Optioneel: `-SkipPytest` (alleen repo/smoke/verify).
 
 | Stap | Controle |
 | ---- | -------- |
-| 1/10 | Repo: `status_bar_cost.py`, `cli.py`, tests, smoke script |
-| 2/10 | `cli.py` hooks + formatter functies |
-| 3/10 | `CommandDef("cost")` + `merge_upstream_fork.ps1` keepOurs |
-| 4/10 | `UPSTREAM_SYNC.md` Classic CLI parity sectie |
-| 5/10 | Pytest: `test_status_bar_cost.py` |
-| 6/10 | Pytest: `test_cli_status_bar.py` (incl. `/cost`) |
-| 7/10 | Pytest: `test_status_bar_cost_e2e.py` |
-| 8/10 | Smoke: `status_bar_cost_classic_cli_smoke.py` (render + toggle) |
-| 9/10 | `verify_usage_cost_bar.py --verify` |
-| 10/10 | Docs: `cli.md`, `TERMINAL_WINDOWS.md`, `configuration.md`, `config.py` |
+| 1/11 | Repo: `status_bar_cost.py`, `cli.py`, tests, smoke + live smoke scripts |
+| 2/11 | `cli.py` hooks + formatter functies |
+| 3/11 | `CommandDef("cost")` + `merge_upstream_fork.ps1` keepOurs |
+| 4/11 | `UPSTREAM_SYNC.md` Classic CLI parity sectie |
+| 5/11 | Pytest: `test_status_bar_cost.py` |
+| 6/11 | Pytest: `test_cli_status_bar.py` (incl. `/cost`) |
+| 7/11 | Pytest: `test_status_bar_cost_e2e.py` |
+| 8/11 | Smoke: `status_bar_cost_classic_cli_smoke.py` |
+| 9/11 | **Live post-turn:** `status_bar_cost_classic_cli_live_smoke.py` (snapshot + fragments na 1 turn, `/cost` toggle, subprocess-isolatie) |
+| 10/11 | `verify_usage_cost_bar.py --verify` |
+| 11/11 | Docs: `cli.md`, `TERMINAL_WINDOWS.md`, `configuration.md`, `config.py` |
 
-**Niet in deze E2E:** live `hermes chat` terminal (handmatig: statusbalk na één turn; `/cost off`).
+Optioneel: `-SkipPytest` voor alleen repo/smoke/verify/docs.
 
 ## Pareto Code router E2E
 

@@ -138,7 +138,9 @@ function Get-MergeConflictResolution {
         'tests/windows/test_status_bar_cost_e2e.py',
         'windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.ps1',
         'windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat',
-        'scripts/status_bar_cost_classic_cli_smoke.py'
+        'windows/audits/ClassicCliStatusBarCostE2E.core.ps1',
+        'scripts/status_bar_cost_classic_cli_smoke.py',
+        'scripts/status_bar_cost_classic_cli_live_smoke.py'
     )
 
     $takeTheirs = @(

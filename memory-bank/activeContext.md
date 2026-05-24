@@ -58,7 +58,8 @@
 | Trust & Forensic | `docs/TRUST_FORENSIC_PROTOCOL.md` |
 | Memory L1–L4 (vault, geen L3) | `docs/MEMORY_ARCHITECTURE.md`, `docs/templates/MEMORY_ENV_VAULT.example` |
 | E2E memory-architectuur | `windows/audits/RUN_MEMORY_ARCHITECTURE_E2E.bat` |
-| E2E statusbalk-kosten | `windows/audits/RUN_STATUS_BAR_COST_E2E.bat` · `-ApplyDisplayFix` · `RUN_AUDITS.bat -IncludeStatusBarCostE2E` |
+| E2E statusbalk-kosten (TUI) | `windows/audits/RUN_STATUS_BAR_COST_E2E.bat` · `-ApplyDisplayFix` · `RUN_AUDITS.bat -IncludeStatusBarCostE2E` |
+| E2E statusbalk-kosten (klassieke CLI) | `windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` · `RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E` |
 | E2E institutioneel | `windows/audits/RUN_INSTITUTIONAL_E2E.bat` |
 | Hermes start (bat) | `../../HERMES_START.md` |
 | Windows | `windows/README.md` |
@@ -68,7 +69,7 @@
 
 ## Periodiek IDE-onderhoud (handmatig)
 
-**Alle commando's (één doc):** `docs/IDE_MAINTENANCE.md` — snel: list, inspect, init-missing, `RUN_IDE_MAINTENANCE_E2E -ApplyDisplayFix -SkipMergePreview`, statusbalk: `RUN_STATUS_BAR_COST_E2E.bat` / `-ApplyDisplayFix` / `RUN_AUDITS -IncludeStatusBarCostE2E`; periodiek: verify, merge preview, skill drift, institutioneel E2E.
+**Alle commando's (één doc):** `docs/IDE_MAINTENANCE.md` — snel: list, inspect, init-missing, `RUN_IDE_MAINTENANCE_E2E -ApplyDisplayFix -SkipMergePreview`; statusbalk TUI: `RUN_STATUS_BAR_COST_E2E.bat` / `-ApplyDisplayFix` / `RUN_AUDITS -IncludeStatusBarCostE2E`; statusbalk klassieke CLI: `RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` / `RUN_AUDITS -IncludeClassicCliStatusBarCostE2E`; periodiek: verify, merge preview, skill drift, institutioneel E2E.
 
 **Kernbestanden:** `windows/merge_upstream_fork.ps1` (merge + git-diff snippets), `windows/WindowsLocalAssetsManifest.ps1` (manifest sync/verify-keten).
 

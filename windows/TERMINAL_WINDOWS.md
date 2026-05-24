@@ -78,8 +78,9 @@ Kopieert `GOOGLE_API_KEY` naar root `.env`, werkt alle `profiles\*\.env` bij, en
 | `APPLY_INSTITUTIONAL_RUNTIME.bat` | display + SOUL + E2E (handmatig of `-NoE2E`) |
 | `SYNC_HERMES_API_ENV.bat` | API-keys + `OBSIDIAN_VAULT_PATH`/`WIKI_PATH` naar alle profiel-`.env` + Gemini pool |
 | `FIX_GEMINI_CREDENTIAL_POOL.bat` | Alleen pool in `auth.json` (root + profielen) herstellen |
-| `audits\RUN_STATUS_BAR_COST_E2E.bat` | Statusbalk-kosten E2E (rich, 10 stappen) |
+| `audits\RUN_STATUS_BAR_COST_E2E.bat` | TUI statusbalk-kosten E2E (rich, 10 stappen) |
 | `audits\RUN_STATUS_BAR_COST_E2E.bat -ApplyDisplayFix` | Zelfde + display sync vóór audit |
+| `audits\RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` | Klassieke CLI statusbalk-kosten E2E (11 stappen, incl. live post-turn smoke) |
 | `audits\RUN_AUDITS.bat -IncludeStatusBarCostE2E` | TUI statusbalk E2E in gecombineerde poort |
 | `audits\RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E` | Klassieke CLI statusbalk E2E in gecombineerde poort |
 | `SWITCH_PROFILE.bat <naam>` | Sticky profiel + API-sync + `HERMES_HOME`-fix + gateway (indien actief) |
