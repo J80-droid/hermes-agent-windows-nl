@@ -8,7 +8,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "scripts"))
 
-from deduplicate_memories import deduplicate_content  # noqa: E402
+from deduplicate_memories import deduplicate_content, deduplicate_file  # noqa: E402
 
 
 TRUST_BLOCK = (
@@ -37,3 +37,24 @@ def test_deduplicate_strips_mojibake_only_lines():
     out = deduplicate_content(raw)
     assert "Â" not in out
     assert "Tail note." in out
+
+
+def test_deduplicate_file_writes_deduplicated_content(tmp_path: Path):
+    path = tmp_path / "MEMORY.md"
+    raw = f"§\n{TRUST_BLOCK}\n§\n{TRUST_BLOCK}\n"
+    path.write_text(raw, encoding="utf-8")
+    assert deduplicate_file(path) is True
+    out = path.read_text(encoding="utf-8")
+    assert out.count(TRUST_BLOCK) == 1
+
+
+def test_deduplicate_keeps_distinct_tool_failure_variants():
+    short = "Rule for facts: NEVER guess when tools fail."
+    long = (
+        "Rule for facts & tool failures: NEVER guess, extrapolate, or use conceptual "
+        "blueprints when verification tools fail."
+    )
+    raw = f"§\n{short}\n§\n{long}\n"
+    out = deduplicate_content(raw)
+    assert short in out
+    assert long in out

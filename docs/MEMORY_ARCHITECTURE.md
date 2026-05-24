@@ -70,6 +70,21 @@ windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat
 
 Handmatig alleen bij incident: `audit_profile_memories.ps1 -FixEncoding`, of `python scripts\deduplicate_memories.py` zonder volledige trust-sync. Dedup verwijdert ook **preamble-duplicaten** vóór de eerste `§` en losse mojibake-regels (`Â`).
 
+### Consolidatie bij OVER / doublures
+
+**Niet** via ad-hoc `memory(action='replace')` in de chat — daarna altijd de trust-keten, anders stapelen seed en varianten opnieuw.
+
+| Stap | Actie |
+|------|--------|
+| 1 | Backup: `MANAGE_BACKUPS.bat` of kopie `%LOCALAPPDATA%\hermes\profiles` |
+| 2 | `core` handmatig: canonieke seed (`docs/templates/MEMORY_CANONICAL_SEED.md`) + runtime-secties (Windows/Python/Obsidian/MCP); USER: seed + voorkeuren (Monokai, kosten, skin, één statusbalk-regel) |
+| 3 | `windows\SYNC_TRUST_RUNTIME.bat` — seed-merge (genormaliseerd), dedup, audit, production gate |
+| 4 | `/new` — TUI vaak automatisch via notice-vlag |
+
+`sync_profile_memories.ps1` merge’t op **genormaliseerde §-secties** (seed wint; policy-buckets `yesman` / `toolfail` / `trust` / `usertrust` / `statusbar`); runtime- en user-preference-secties blijven behouden. `deduplicate_memories.py` verwijdert alleen **exacte** duplicaten — overlappende varianten horen in stap 2 of via seed-update.
+
+**SOUL vs MEMORY:** beleid staat ook in SOUL-snippers; voeg geen nieuwe policy-blokken toe via memory-tool als ze al in SOUL staan (dubbele token-lading).
+
 ### Nieuwe sessie na sync (`/new`)
 
 | Client | Gedrag |

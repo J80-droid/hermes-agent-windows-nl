@@ -38,6 +38,7 @@
 - [x] Trust E2E PSES-refactor: launcher + `TrustForensicE2E.core.ps1`; manifest-paden in `HermesCriticalWindowsRepoPaths.ps1`; `VALIDATE_AUDIT_PS1_SYNTAX.bat`
 - [x] Memory E2E PSES-refactor: launcher + `MemoryArchitectureE2E.core.ps1` (16/16); idem validate-lijst
 - [x] Obsidian L4-automatisering: `OPEN_OBSIDIAN_VAULT.bat`, `open_obsidian_vault.ps1`, `ensure_hermes_knowledge_vault.ps1`, scaffold-template, taakbalk-rol `Obsidian`, sync in `sync_hermes_api_env.ps1`
+- [x] Memory-consolidatie institutioneel: `deduplicate_memories.py` fix (`unique_sections`); genormaliseerde merge in `sync_profile_memories.ps1`; core runtime + USER-voorkeuren; audit PASS alle 13 profielen; production gate PASS (57 pytest)
 - [x] TUI statusbalk-kosten (rich): defaults `show_cost`/`cost_bar_mode`; altijd zichtbaar + gereserveerd segment; live `~$turn`/`~NK tok`; breakdown-tier ≥72 cols; E2E `RUN_STATUS_BAR_COST_E2E`
 - [x] OpenRouter Pareto Code router E2E: `RUN_PARETO_E2E.bat` (8 stappen), `verify_pareto_router.py`, `test_pareto_e2e.py`
 - [x] Taakbalk `windows\*.lnk`: `cmd.exe /c` (+ RAG: `/k`) + gekleurd `.ico` (7 lagen 16–256 px); `FIX_TASKBAR_ICONS.bat`; `POST_GIT_PULL.bat`

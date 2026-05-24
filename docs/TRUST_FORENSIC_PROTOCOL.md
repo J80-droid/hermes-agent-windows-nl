@@ -61,6 +61,15 @@ Toepassen: `windows\scripts\apply_trust_memory_limits.ps1` (idempotent). Na nieu
 
 **IDE:** rode strepen op audit-`.ps1` → `windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat`, daarna PowerShell-sessie herstarten en venster reloaden. Zie `windows\audits\README.md`.
 
+## Troubleshooting MEMORY/USER
+
+| Symptoom | Oorzaak | Oplossing |
+|----------|---------|-----------|
+| `[OVER]` op `MEMORY.md` / `USER.md` | Herhaalde trust-seed + chat-append + varianten | Zie [MEMORY_ARCHITECTURE.md](MEMORY_ARCHITECTURE.md) sectie *Consolidatie bij OVER*; daarna `SYNC_TRUST_RUNTIME.bat` |
+| `deduplicate_memories` crasht (`unique_sections`) | Oud script | Update repo; `scripts/deduplicate_memories.py` (fix 2026-05) |
+| Doublures na elke sync | Exacte merge op string | `sync_profile_memories.ps1` gebruikt genormaliseerde merge + policy-buckets |
+| Core mist Obsidian/Python-regels | Seed-only merge | Handmatig runtime-secties in `profiles\core\memories\MEMORY.md` herstellen; merge bewaart `Test-MemoryRuntimeSection` |
+
 ## E2E identiteits-whitelist (MEMORY/USER)
 
 `TrustForensicE2E.core.ps1` scant **per regel** op `Jamel el Mourif`, losse `Jamel` en `el Mourif`. Toegestaan in paden:

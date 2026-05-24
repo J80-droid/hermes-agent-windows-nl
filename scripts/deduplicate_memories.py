@@ -38,16 +38,28 @@ def deduplicate_content(content: str) -> str:
     return new_content.strip() + "\n"
 
 
+def _count_nonempty_sections(content: str) -> int:
+    return sum(
+        1
+        for sec in SECTION_RE.split(content)
+        if _MOJIBAKE_LINE_RE.sub("", sec).strip()
+    )
+
+
 def deduplicate_file(path: Path) -> bool:
     if not path.is_file():
         return False
     try:
         content = path.read_text(encoding='utf-8-sig')
-        sections = SECTION_RE.split(content)
+        before = _count_nonempty_sections(content)
         new_content = deduplicate_content(content)
+        after = _count_nonempty_sections(new_content)
+        if new_content == content:
+            print(f"[SKIP] {path}: already deduplicated ({after} sections, {len(content)} chars)")
+            return True
         path.write_text(new_content, encoding='utf-8')
         print(
-            f"[OK] Deduplicated {path}: {len(sections)} -> {len(unique_sections)} sections. "
+            f"[OK] Deduplicated {path}: {before} -> {after} sections. "
             f"New size: {len(new_content)} chars"
         )
         return True
