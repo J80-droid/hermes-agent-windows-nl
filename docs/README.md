@@ -81,7 +81,7 @@ flowchart TB
 - **Windows script-keten (handmatig):** `windows\VERIFY_WINDOWS_CHAIN.bat` — dubbelklik; controleert setup wrapper, `.bat`→`.ps1`, taakbalk-`.lnk` (eindigt met pause)
 - **IDE-onderhoud (alle commando's op één plek):** [IDE_MAINTENANCE.md](IDE_MAINTENANCE.md) — `LANCEDB_MAINTENANCE.bat` + `RUN_IDE_MAINTENANCE_E2E.bat`
 - **Skill/docs drift (fork):** `python scripts\audit_skill_drift.py` → `windows\audits\SKILL_DRIFT_AUDIT_*.md`
-- **Na `git pull`:** `windows/POST_GIT_PULL.bat` (verify + trust + **SOUL anatomy 13 profielen** + domein-toolsets + taakbalk-iconen)
+- **Na `git pull`:** `windows/POST_GIT_PULL.bat` (verify + trust + **SOUL anatomy 13 profielen** + domein-toolsets + taakbalk-iconen); optioneel `-IncludeCodebaseSmoke` (~32s) of `-IncludeCodebaseSmokeE2E` (~45s)
 - **Nous upstream-update:** `windows\UPDATE_HERMES.bat` — preflight + merge + trust + toolsets + RAG + verify (zie [UPSTREAM_SYNC.md](../windows/UPSTREAM_SYNC.md))
 - **Setup (dubbelklik):** `windows\SETUP_HERMES.bat` (standaard wizard); `OPEN_SETUP.bat` alleen wizard; `--files-only` zonder wizard
 - **Taakbalk-iconen:** `python windows/tools/generate_colored_hermes_icons.py` → `windows\FIX_TASKBAR_ICONS.bat` → F5; pin via `.lnk`, niet `.bat`

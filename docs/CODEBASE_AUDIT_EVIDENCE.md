@@ -58,7 +58,19 @@ Bij strategische of heuristische keuzes (SOUL) moet de zekerheid expliciet worde
 | Release (E3) | `windows/tests/RUN_PYTEST.ps1` of `scripts/run_tests.sh` | Volledige suite (~17k tests) |
 | Release (E3+E2E) | `RUN_AUDITS.bat -IncludeAllE2E` | Institutioneel + domein E2E's |
 
-**Niet standaard in** `POST_GIT_PULL.bat` (keten al zwaar). Smoke: handmatig na grote wijziging of via `-IncludeCodebaseSmoke`.
+**Optioneel geautomatiseerd** (standaard uit, ~45s extra):
+
+| Trigger | Commando |
+| --- | --- |
+| Na `git pull` (snel) | `windows/POST_GIT_PULL.bat -IncludeCodebaseSmoke` |
+| Na `git pull` (E2E-poort) | `windows/POST_GIT_PULL.bat -IncludeCodebaseSmokeE2E` |
+| Na upstream-update | `windows/UPDATE_HERMES.bat -IncludeCodebaseSmoke` of `-IncludeCodebaseSmokeE2E` |
+
+Gedeelde runner: `windows/scripts/Invoke-PostSyncCodebaseSmoke.ps1`. Bij smoke-opties: geen eind-pause in `POST_GIT_PULL` (verify via `.ps1`, geen `VERIFY_WINDOWS_CHAIN.bat`-pause).
+
+SOUL/snippets: deploy zit al in beide ketens; na wijziging **`/new`** in actieve chat (TUI leest `institutional_new_chat_required.json`).
+
+**Niet** in standaard `POST_GIT_PULL` / `UPDATE_HERMES` zonder vlag (keten al zwaar). Snel zonder E2E-guardrails: `RUN_AUDITS.bat -IncludeCodebaseSmoke`.
 
 **Git:** timestamped rapporten en staplogs onder `windows/audits/` zijn gitignored (`CODEBASE_SMOKE_AUDIT_REPORT_*.md`, `CODEBASE_SMOKE_STEPLOG_*.json`).
 

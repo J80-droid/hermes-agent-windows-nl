@@ -89,6 +89,7 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 | Pareto Code router E2E | `audits\RUN_PARETO_E2E.bat` · `RUN_AUDITS.bat -IncludeParetoE2E` |
 | Codebase smoke E2E (E1/E2) | `audits\RUN_CODEBASE_SMOKE_E2E.bat` · `RUN_AUDITS.bat -IncludeCodebaseSmokeE2E` · `-IncludeAllE2E` |
 | Codebase smoke (snel) | `audits\RUN_CODEBASE_SMOKE_AUDIT.bat` · `RUN_AUDITS.bat -IncludeCodebaseSmoke` |
+| Na pull/update (optioneel) | `POST_GIT_PULL.bat -IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E` · `UPDATE_HERMES.bat` (zelfde vlaggen) |
 | Memory productie-poort | `audits\RUN_MEMORY_PRODUCTION_GATE.bat` (limits + memory + trust E2E + pytest) |
 | Memory-architectuur E2E | `audits\RUN_MEMORY_ARCHITECTURE_E2E.bat` (launcher → `MemoryArchitectureE2E.core.ps1`, 18/18) |
 | Trust forensic E2E | `audits\RUN_TRUST_FORENSIC_E2E.bat` (launcher → `TrustForensicE2E.core.ps1`) |

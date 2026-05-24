@@ -42,7 +42,7 @@
 - [x] TUI statusbalk-kosten (rich): defaults `show_cost`/`cost_bar_mode`; `statusRuleColumns` (composer-padding); altijd zichtbaar + gereserveerd segment; live `~$turn`/`~NK tok`; breakdown-tier ≥72 cols; E2E `RUN_STATUS_BAR_COST_E2E`
 - [x] Klassieke CLI statusbalk-kosten: layout reorder (kosten na ctx/duur/timer), `status-bar-cost` (gedimd blauw), `session_tool_executions`; Gemini cache catalog + `_seed_agent_session_cost`; E2E **12/12**
 - [x] OpenRouter Pareto Code router E2E: `RUN_PARETO_E2E.bat` (8 stappen), `verify_pareto_router.py`, `test_pareto_e2e.py`
-- [x] Codebase-audit smoke vs release: `CODEBASE_AUDIT_EVIDENCE.md`, templates, `RUN_CODEBASE_SMOKE_AUDIT.ps1/.bat`, `emit_codebase_smoke_report.py`, `RUN_AUDITS -IncludeCodebaseSmoke`, `SOUL_SHARED_CODEBASE_AUDIT` + sync, `validate_soul_anatomy --check-codebase-audit-claims`
+- [x] Codebase-audit smoke vs release: `CODEBASE_AUDIT_EVIDENCE.md`, templates, `RUN_CODEBASE_SMOKE_AUDIT.ps1/.bat`, `RUN_CODEBASE_SMOKE_E2E`, `emit_codebase_smoke_report.py`, `RUN_AUDITS -IncludeCodebaseSmoke`; optioneel na pull/update: `POST_GIT_PULL`/`UPDATE_HERMES` + `Invoke-PostSyncCodebaseSmoke.ps1`; SOUL + `validate_soul_anatomy --check-codebase-audit-claims`
 - [x] Taakbalk `windows\*.lnk`: `cmd.exe /c` (+ RAG: `/k`) + gekleurd `.ico` (7 lagen 16–256 px); `FIX_TASKBAR_ICONS.bat`; `POST_GIT_PULL.bat`
 - [x] Icoon-generator: PNG uit `assets/Hermes_logo.png` of `%USERPROFILE%\.hermes\_local_assets\assets\`; geen synthetische H-stub
 - [x] `SETUP_HERMES.bat` → standaard `--full-setup` + `OPEN_SETUP.bat`; `--files-only` voor alleen bestanden

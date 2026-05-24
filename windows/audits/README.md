@@ -22,6 +22,9 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | ------ | ---- |
 | **`RUN_CODEBASE_SMOKE_AUDIT.bat`** | Snelle smoke (E1/E2): pytest/verify-subset; rapport `CODEBASE_SMOKE_AUDIT_REPORT_*.md`. **Geen E3.** |
 | **`RUN_CODEBASE_SMOKE_E2E.bat`** | E2E-poort (5 stappen): repo files + strict template + pytest wiring + smoke audit + rapport-check; `CODEBASE_SMOKE_E2E_REPORT_*.md` (gitignored) |
+| **`POST_GIT_PULL.bat -IncludeCodebaseSmoke`** | Snelle smoke na pull (~32s; optioneel) |
+| **`POST_GIT_PULL.bat -IncludeCodebaseSmokeE2E`** | E2E-poort na pull (~45s; optioneel) |
+| **`UPDATE_HERMES.bat -IncludeCodebaseSmoke`** / **`-IncludeCodebaseSmokeE2E`** | Zelfde na upstream post-merge via `Invoke-PostSyncCodebaseSmoke.ps1` |
 | **`RUN_AUDITS.bat -IncludeCodebaseSmoke`** | Alleen smoke-runner (sneller) |
 | **`RUN_AUDITS.bat -IncludeCodebaseSmokeE2E`** | Volledige codebase-smoke E2E |
 | **`RUN_AUDITS.bat -IncludeAllE2E`** | Inclusief codebase-smoke E2E (~30s extra) |

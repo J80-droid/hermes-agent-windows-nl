@@ -14,7 +14,7 @@
 
 **OpenRouter Pareto Code router (2026-05-24, PASS):** model-gated `min_coding_score` → `pareto-router` plugin op `openrouter/pareto-code`; verify `scripts/verify_pareto_router.py`; E2E `windows/audits/RUN_PARETO_E2E.bat` (8/8); `-IncludeParetoE2E` in `RUN_AUDITS.bat`. Geen live API-call in E2E.
 
-**Codebase-audit smoke vs release (2026-05-24):** evidence-tiers E0–E3 in `docs/CODEBASE_AUDIT_EVIDENCE.md`; smoke-runner `RUN_CODEBASE_SMOKE_AUDIT.bat` + `emit_codebase_smoke_report.py`; `RUN_AUDITS -IncludeCodebaseSmoke`. SOUL-snippet `SOUL_SHARED_CODEBASE_AUDIT.md` (sync via anatomy). Niet in POST_GIT_PULL default.
+**Codebase-audit smoke vs release (2026-05-24):** evidence-tiers E0–E3 in `docs/CODEBASE_AUDIT_EVIDENCE.md`; smoke-runner + E2E; `RUN_AUDITS -IncludeCodebaseSmoke`. Optioneel na pull/update: `-IncludeCodebaseSmoke` (~32s) of `-IncludeCodebaseSmokeE2E` via `Invoke-PostSyncCodebaseSmoke.ps1` (standaard uit). POST_GIT_PULL: verify via `.ps1` (geen pause). SOUL via anatomy; `/new` na SOUL-wijziging.
 
 **Backup schema v3 (2026-05-23):** `backup_hermes.ps1` backupt `%LOCALAPPDATA%\hermes` → `runtime_hermes/`; legacy `~/.hermes` → `legacy_hermes/`; persona-subset → `localappdata_hermes/` (SOUL + `config.yaml`). Blokkeert als Hermes draait. Restore: `-RestoreRuntimeFull`, `-RestoreRuntimePersonas`, `-RestoreLegacyProfile`. Module: `windows/scripts/HermesBackupCommon.ps1`. Test: `windows/audits/RUN_BACKUP_E2E.bat`.
 

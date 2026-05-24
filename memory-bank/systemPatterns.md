@@ -96,7 +96,8 @@ Defaults: `windows/team_display.defaults`; toepassen: `APPLY_INSTITUTIONAL_RUNTI
 - **Evidence E0–E3:** `docs/CODEBASE_AUDIT_EVIDENCE.md`; rapport-template `docs/templates/CODEBASE_AUDIT_REPORT.md`.
 - **Smoke (E1/E2 subset):** `windows/audits/RUN_CODEBASE_SMOKE_AUDIT.bat` → `CODEBASE_SMOKE_AUDIT_REPORT_*.md` — **geen** release-ready.
 - **Release (E3):** `windows/tests/RUN_PYTEST.ps1` / `scripts/run_tests.sh` of `RUN_AUDITS.bat -IncludeAllE2E`.
-- **Gecombineerd:** `RUN_AUDITS.bat -IncludeCodebaseSmoke`. **Niet** standaard in `POST_GIT_PULL.bat`.
+- **Gecombineerd:** `RUN_AUDITS.bat -IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E`.
+- **Optioneel na pull/update:** `POST_GIT_PULL.bat` / `UPDATE_HERMES.bat` met `-IncludeCodebaseSmoke` (~32s) of `-IncludeCodebaseSmokeE2E` (~45s); helper `Invoke-PostSyncCodebaseSmoke.ps1` (standaard uit).
 - **SOUL:** `SOUL_SHARED_CODEBASE_AUDIT.md` via `sync_soul_codebase_audit_snippet.ps1` (anatomy-keten); na sync `/new`.
 - **Validatie claims:** `validate_soul_anatomy.py --check-codebase-audit-claims` (warn); `--strict-codebase-audit-claims` (exit 1).
 

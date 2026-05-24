@@ -11,6 +11,8 @@ param(
     [switch]$McpTest,
     [switch]$Push,
     [switch]$SkipHermesUpdate,
+    [switch]$IncludeCodebaseSmoke,
+    [switch]$IncludeCodebaseSmokeE2E,
     [string]$RepoRoot = '',
     [Parameter(ValueFromRemainingArguments = $true)]
     [string[]]$HermesUpdateArgs
@@ -73,7 +75,7 @@ function Test-HermesUpstreamDirtyOnlyBranding {
     if ($PorcelainLines.Count -eq 0) { return $true }
     foreach ($line in $PorcelainLines) {
         if (-not $line.Trim()) { continue }
-        # Porcelain: XY<space>path — niet $line.Trim() vóór Substring(3); dat verslindt kolom 1 en breekt het pad.
+        # Porcelain: XY<space>path - niet $line.Trim() vóór Substring(3); dat verslindt kolom 1 en breekt het pad.
         $raw = $line.TrimEnd()
         if ($raw -match ' -> ') {
             $path = ($raw -split ' -> ', 2)[-1].Trim()
@@ -115,7 +117,7 @@ function Invoke-UpstreamPreflight {
 
     if ($ShowResetWarning) {
         Write-Uitleg @(
-            'Fase 1/3 — Preflight: controleert git en vergelijkt jouw fork met Nous (upstream).'
+            'Fase 1/3 - Preflight: controleert git en vergelijkt jouw fork met Nous (upstream).'
             'Geen code gewijzigd; alleen fetch + tellen hoeveel commits je voor/achter loopt.'
         )
     }
@@ -129,7 +131,7 @@ function Invoke-UpstreamPreflight {
     $dirtyLines = @(git status --porcelain 2>$null | Where-Object { $_.Trim() })
     if ($dirtyLines.Count -gt 0 -and -not $AllowDirty) {
         if (Test-HermesUpstreamDirtyOnlyBranding -PorcelainLines $dirtyLines) {
-            Write-Warn "Alleen branding/iconen (.png/.ico) gewijzigd — update gaat door. Commit later indien gewenst."
+            Write-Warn 'Alleen branding/iconen .png/.ico gewijzigd - update gaat door. Commit later indien gewenst.'
         } else {
             Write-Err "Werkmap niet schoon - commit of stash eerst (of alleen iconen: FIX_TASKBAR_ICONS na commit)."
             git status -sb 2>$null | Out-Host
@@ -160,8 +162,8 @@ function Invoke-UpstreamPreflight {
     Write-Host "  Fork-only commits (ahead):  $ahead"
     Write-Host "  Nous commits (behind):      $behind"
     Write-Uitleg @(
-        'ahead = commits alleen op jouw fork (NL/RAG/windows) — blijven behouden.'
-        'behind = nieuwe commits op NousResearch/hermes-agent — worden gemerged bij update.'
+        'ahead = commits alleen op jouw fork (NL/RAG/windows) - blijven behouden.'
+        'behind = nieuwe commits op NousResearch/hermes-agent - worden gemerged bij update.'
     )
 
     if ($behind -eq 0) {
@@ -176,7 +178,7 @@ function Invoke-UpstreamPreflight {
         if ($PromptOnLargeBehind) {
             Write-Uitleg @(
                 'Bij j: fase 2 merge Nous in main + Python/npm deps; fase 3 RAG + verify + taakbalk.'
-                'Bij N of Enter: update stopt — repo blijft ongewijzigd.'
+                'Bij N of Enter: update stopt - repo blijft ongewijzigd.'
                 'Bij conflicten: script stopt; los handmatig op (geen reset --hard).'
             )
             $ans = Read-Host 'Doorgaan met update? [j/N]'
@@ -184,7 +186,7 @@ function Invoke-UpstreamPreflight {
                 Write-Step 'Update geannuleerd door gebruiker (preflight).'
                 return 4
             }
-            Write-Warn "Doorgaan — merge van $behind Nous-commit(s) start nu."
+            Write-Warn ('Doorgaan - merge van {0} Nous-commits start nu.' -f $behind)
         } else {
             return 4
         }
@@ -238,12 +240,39 @@ function Invoke-HermesUpdate {
     }
 
     Write-Uitleg @(
-        'Fase 2/3 — hermes update: merge upstream/main, pip/uv, Node UI, skills sync.'
+        'Fase 2/3 - hermes update: merge upstream/main, pip/uv, Node UI, skills sync.'
         'Dit kan enkele minuten duren; output van Nous-cli volgt hieronder.'
     )
     Write-Step "hermes update - NousResearch upstream/main + dependencies"
     $updateArgs = @('run', '-n', 'hermes-env', '--no-capture-output', 'hermes', 'update', '-y') + $ExtraArgs
     return Invoke-HermesNativeCommand -FilePath $conda -ArgumentList $updateArgs -WorkingDirectory (Get-Location).Path
+}
+
+function Invoke-UpstreamPostMergeCodebaseSmoke {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Repo,
+        [switch]$WantSmoke,
+        [switch]$WantE2E
+    )
+    if (-not ($WantE2E -or $WantSmoke)) {
+        return 0
+    }
+    $helper = Join-Path $Repo 'windows/scripts/Invoke-PostSyncCodebaseSmoke.ps1'
+    if (-not (Test-Path -LiteralPath $helper)) {
+        Write-Warn "Ontbreekt: $helper"
+        return 0
+    }
+    $level = if ($WantE2E) { 'E2E' } else { 'Smoke' }
+    $levelLabel = if ($level -eq 'E2E') { 'E2E (~45s)' } else { 'smoke (~32s)' }
+    Write-Step ('Codebase {0} (E1/E2, geen E3)...' -f $levelLabel)
+    & $helper -RepoRoot $Repo -Level $level
+    if (Test-NativeCommandFailed) {
+        Write-Err ('Codebase smoke ({0}) gefaald - zie rapport in windows/audits/.' -f $level)
+        return 1
+    }
+    Write-Ok ('Codebase smoke ({0}) geslaagd.' -f $level)
+    return 0
 }
 
 $repo = if ($RepoRoot) { (Resolve-Path -LiteralPath $RepoRoot).Path } else { Get-HermesRepoRoot -Start (Join-Path $PSScriptRoot '..') }
@@ -263,7 +292,7 @@ if ($Phase -eq 'Full') {
     if (-not $PSBoundParameters.ContainsKey('InstallRag')) { $InstallRag = $true }
 }
 
-# exit in try/finally + trailing exit 0 overschrijft foutcodes in Windows PowerShell 5.1
+# Exit via TryFinally-keten; trailing exit 0 overschrijft anders foutcodes (Windows PS 5.1).
 $script:UpstreamExitCode = 0
 
 Push-Location $repo
@@ -294,8 +323,9 @@ try {
 
     if ($script:UpstreamExitCode -eq 0 -and $Phase -eq 'PostMerge') {
         Write-Uitleg @(
-            'Fase 3/3 — Post-merge: trust runtime, API/vault-env sync, toolsets, SOUL, RAG/MCP, verify, taakbalk.'
-            'Daarna sluit UPDATE_HERMES.bat af (eventueel team display + pause aan het einde).'
+            'Fase 3/3 - Post-merge: trust runtime, API/vault-env sync, toolsets, SOUL, RAG/MCP, verify, taakbalk.'
+            'Optioneel: codebase smoke na post-merge; zie docs/CODEBASE_AUDIT_EVIDENCE.md.'
+            'Daarna sluit UPDATE_HERMES.bat af; eventueel team display en pause aan het einde.'
         )
         if (Test-Path (Join-Path $repo '.git\MERGE_HEAD')) {
             Write-Err "Merge nog bezig of conflicten - los op voor post-merge."
@@ -340,7 +370,7 @@ try {
                     $env:HERMES_SKIP_PAUSE = '1'
                     & cmd /c "`"$trustBat`""
                     if (Test-NativeCommandFailed) {
-                        Write-Warn 'SYNC_TRUST_RUNTIME.bat faalde — draai handmatig na update.'
+                        Write-Warn 'SYNC_TRUST_RUNTIME.bat faalde - draai handmatig na update.'
                     } else {
                         Write-Ok 'Trust runtime gesynchroniseerd.'
                     }
@@ -354,7 +384,7 @@ try {
                     $env:HERMES_SKIP_PAUSE = '1'
                     & $apiEnvPs1
                     if (Test-NativeCommandFailed) {
-                        Write-Warn 'sync_hermes_api_env.ps1 faalde — draai SYNC_HERMES_API_ENV.bat handmatig.'
+                        Write-Warn 'sync_hermes_api_env.ps1 faalde - draai SYNC_HERMES_API_ENV.bat handmatig.'
                     } else {
                         Write-Ok 'API/vault .env gesynchroniseerd (~/.hermes -> LocalAppData + profiles).'
                     }
@@ -368,7 +398,7 @@ try {
                     $env:HERMES_SKIP_PAUSE = '1'
                     & cmd /c "`"$toolBat`""
                     if (Test-NativeCommandFailed) {
-                        Write-Warn 'SYNC_DOMAIN_TOOLSETS.bat faalde — draai handmatig na update.'
+                        Write-Warn 'SYNC_DOMAIN_TOOLSETS.bat faalde - draai handmatig na update.'
                     } else {
                         Write-Ok 'Domein-toolsets gesynchroniseerd.'
                     }
@@ -383,7 +413,7 @@ try {
                     $env:HERMES_SKIP_PAUSE = '1'
                     & $launchSoul -RepoRoot $repo -Force -Quiet
                     if (Test-NativeCommandFailed) {
-                        Write-Warn 'launch_soul_anatomy_deploy.ps1 faalde — draai APPLY_SOUL_ANATOMY_RUNTIME.bat handmatig.'
+                        Write-Warn 'launch_soul_anatomy_deploy.ps1 faalde - draai APPLY_SOUL_ANATOMY_RUNTIME.bat handmatig.'
                     } else {
                         $soulDeployOk = $true
                         Write-Ok 'SOUL anatomy deploy toegepast.'
@@ -400,7 +430,7 @@ try {
                     if ($soulDeployOk) { $instArgs['SkipSoul'] = $true }
                     & $instPs1 @instArgs
                     if (Test-NativeCommandFailed) {
-                        Write-Warn 'apply_institutional_runtime.ps1 faalde — draai APPLY_INSTITUTIONAL_RUNTIME.bat handmatig.'
+                        Write-Warn 'apply_institutional_runtime.ps1 faalde - draai APPLY_INSTITUTIONAL_RUNTIME.bat handmatig.'
                     } else {
                         Write-Ok 'Institutioneel runtime toegepast (display + SOUL).'
                     }
@@ -413,9 +443,9 @@ try {
                     Write-Step 'TUI bundel (ui-tui/dist) herbouwen...'
                     & powershell -NoProfile -ExecutionPolicy Bypass -File $rebuildTui -RepoRoot $repo
                     if (Test-NativeCommandFailed) {
-                        Write-Warn 'rebuild_tui.ps1 faalde — sluit Hermes af en start opnieuw (herbouwt TUI bij launch).'
+                        Write-Warn 'rebuild_tui.ps1 faalde - sluit Hermes af en start opnieuw (herbouwt TUI bij launch).'
                     } else {
-                        Write-Ok 'TUI dist bijgewerkt — herstart Hermes om wijzigingen te zien.'
+                        Write-Ok 'TUI dist bijgewerkt - herstart Hermes om wijzigingen te zien.'
                     }
                 }
             }
@@ -423,10 +453,10 @@ try {
             if ($script:UpstreamExitCode -eq 0) {
                 $fixPins = Join-Path $repo 'windows/fix_hermes_taskbar_pins.ps1'
                 if (Test-Path -LiteralPath $fixPins) {
-                    Write-Step 'Taakbalk-iconen (.lnk + icooncache vóór verify)...'
+                    Write-Step 'Taakbalk-iconen .lnk + icooncache voor verify...'
                     & powershell -NoProfile -ExecutionPolicy Bypass -File $fixPins -RepoRoot $repo -Quiet
                     if (Test-NativeCommandFailed) {
-                        Write-Warn 'fix_hermes_taskbar_pins.ps1 faalde — draai handmatig FIX_TASKBAR_ICONS.bat.'
+                        Write-Warn 'fix_hermes_taskbar_pins.ps1 faalde - draai handmatig FIX_TASKBAR_ICONS.bat.'
                     } else {
                         Write-Ok 'Taakbalk-snelkoppelingen bijgewerkt.'
                     }
@@ -434,19 +464,23 @@ try {
             }
 
             if ($script:UpstreamExitCode -eq 0) {
-                # .ps1 direct: VERIFY_WINDOWS_CHAIN.bat heeft pause — blokkeert anders de update-keten.
                 $verify = Join-Path $repo 'windows/verify_windows_script_chain.ps1'
                 if (Test-Path -LiteralPath $verify) {
-                    Write-Step 'Windows script-keten verify (geautomatiseerd, geen pause)...'
+                    Write-Step 'Windows script-keten verify - geautomatiseerd, geen pause'
                     & $verify
                     if (Test-NativeCommandFailed) { Write-Warn 'verify_windows_script_chain.ps1 faalde.' }
                 }
             }
 
+            if ($script:UpstreamExitCode -eq 0) {
+                $smokeRc = Invoke-UpstreamPostMergeCodebaseSmoke -Repo $repo -WantSmoke:$IncludeCodebaseSmoke.IsPresent -WantE2E:$IncludeCodebaseSmokeE2E.IsPresent
+                if ($smokeRc -ne 0) { $script:UpstreamExitCode = $smokeRc }
+            }
+
             if ($script:UpstreamExitCode -eq 0 -and $Push) {
-                $aheadOrigin = (git rev-list --count origin/main..HEAD 2>$null)
+                $aheadOrigin = git rev-list --count origin/main..HEAD 2>$null
                 if ($LASTEXITCODE -eq 0 -and [int]$aheadOrigin -gt 0) {
-                    Write-Step "git push origin main ($aheadOrigin commit(s))..."
+                    Write-Step ('git push origin main - {0} commit(s)...' -f $aheadOrigin)
                     git push origin main
                     if (Test-NativeCommandFailed) { $script:UpstreamExitCode = $LASTEXITCODE }
                     else { Write-Ok "Fork op GitHub bijgewerkt." }

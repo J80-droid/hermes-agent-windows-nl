@@ -60,6 +60,15 @@ Taakbalk-.lnk: update = `hermes_logo_update.ico` (wit/zilver). Gebruik **niet** 
 windows\UPDATE_HERMES.bat
 ```
 
+**Optioneel — codebase smoke na post-merge** (E1/E2, geen E3):
+
+```cmd
+windows\UPDATE_HERMES.bat -IncludeCodebaseSmoke
+windows\UPDATE_HERMES.bat -IncludeCodebaseSmokeE2E
+```
+
+Na gewone `git pull`: `windows\POST_GIT_PULL.bat -IncludeCodebaseSmoke` (~32s) of `-IncludeCodebaseSmokeE2E` (~45s, E2E-poort). Runner: `windows\scripts\Invoke-PostSyncCodebaseSmoke.ps1`. Zie `docs/CODEBASE_AUDIT_EVIDENCE.md`.
+
 ### Merge mislukt (conflicten)? Gebruik `MERGE_UPSTREAM.bat`
 
 `hermes update` doet **`git merge --abort`** bij conflicten — je ziet geen conflict-markers.

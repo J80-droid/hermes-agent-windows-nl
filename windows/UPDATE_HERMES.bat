@@ -13,6 +13,7 @@ echo [INFO] Keten in 3 fasen ^(windows\upstream_sync.ps1 -Phase Update^):
 echo        1. Preflight     — git vs Nous upstream ^(ahead/behind, optioneel j/N^)
 echo        2. hermes update — merge Nous + Python/npm + skills
 echo        3. Post-merge    — trust + API/vault-env sync, toolsets, institutional runtime, RAG, verify, taakbalk
+echo [INFO] Optioneel: -IncludeCodebaseSmoke ^(~32s^) of -IncludeCodebaseSmokeE2E ^(~45s E2E; geen E3^)
 echo.
 echo [INFO] Uitleg bij cijfers en vragen staat in het PowerShell-venster ^(grijs^).
 echo        Verify in de keten: .ps1 ^(geen pause^). Einde .bat: pause ^(overslaan: HERMES_SKIP_PAUSE_AFTER_UPDATE=1^).

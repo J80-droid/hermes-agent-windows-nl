@@ -79,6 +79,7 @@ $repoFiles = @(
     'scripts/emit_codebase_smoke_report.py',
     'windows/audits/RUN_CODEBASE_SMOKE_AUDIT.ps1',
     'windows/audits/RUN_CODEBASE_SMOKE_E2E.ps1',
+    'windows/scripts/Invoke-PostSyncCodebaseSmoke.ps1',
     'windows/scripts/sync_soul_codebase_audit_snippet.ps1',
     'tests/windows/test_codebase_smoke_audit.py'
 )

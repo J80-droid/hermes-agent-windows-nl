@@ -86,7 +86,7 @@ Preflight, merge, RAG-postinstall en script-keten-verify zitten in het script. V
 
 | Na actie | Script |
 | -------- | ------ |
-| `git pull` | `windows/POST_GIT_PULL.bat` (trust + SOUL anatomy stamp + toolsets) |
+| `git pull` | `windows/POST_GIT_PULL.bat` (trust + SOUL anatomy stamp + toolsets); optioneel `-IncludeCodebaseSmoke` of `-IncludeCodebaseSmokeE2E` |
 | Hermes starten | `start_hermes.bat` → bootstrap + SOUL stamp-deploy + display (zie [SOUL_ANATOMY_SPEC.md](SOUL_ANATOMY_SPEC.md)) |
 | SOUL audit (stamp-keten) | `windows/audits/RUN_SOUL_DEPLOY_START_E2E.bat` |
 | Keten controleren (handmatig) | `windows/VERIFY_WINDOWS_CHAIN.bat` |

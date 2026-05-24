@@ -85,6 +85,8 @@ Kopieert `GOOGLE_API_KEY` naar root `.env`, werkt alle `profiles\*\.env` bij, en
 | `audits\RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E` | Klassieke CLI statusbalk E2E in gecombineerde poort |
 | `audits\RUN_CODEBASE_SMOKE_E2E.bat` | Codebase smoke E2E (E1/E2, geen E3); zie `docs/CODEBASE_AUDIT_EVIDENCE.md` |
 | `audits\RUN_CODEBASE_SMOKE_AUDIT.bat` | Alleen smoke-runner (sneller) |
+| `POST_GIT_PULL.bat -IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E` | Optionele smoke na pull (~32s / ~45s) |
+| `UPDATE_HERMES.bat -IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E` | Optionele smoke na upstream post-merge |
 | `audits\RUN_AUDITS.bat -IncludeCodebaseSmokeE2E` | Codebase smoke E2E in gecombineerde poort |
 | `SWITCH_PROFILE.bat <naam>` | Sticky profiel + API-sync + `HERMES_HOME`-fix + gateway (indien actief) |
 | `SWITCH_PROFILE_AND_CHAT.bat <naam>` | Zelfde + direct `hermes chat -p <naam>` |

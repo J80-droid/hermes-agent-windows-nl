@@ -30,6 +30,9 @@ windows\audits\RUN_MEMORY_PRODUCTION_GATE.bat
 | `--init-missing` | Lege `knowledge_base` voor domeinen zonder LanceDB-pad (na nieuw domein in `domains.yaml`) |
 | `RUN_CODEBASE_SMOKE_E2E.bat` | Aanbevolen E2E-poort (5 stappen + smoke); `CODEBASE_SMOKE_E2E_REPORT_*.md` |
 | `RUN_CODEBASE_SMOKE_AUDIT.bat` | Alleen smoke (sneller); `CODEBASE_SMOKE_AUDIT_REPORT_*.md` |
+| `POST_GIT_PULL.bat -IncludeCodebaseSmoke` | Snelle smoke na pull (~32s; optioneel) |
+| `POST_GIT_PULL.bat -IncludeCodebaseSmokeE2E` | E2E-poort na pull (~45s; optioneel) |
+| `UPDATE_HERMES.bat -IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E` | Zelfde na upstream post-merge (`Invoke-PostSyncCodebaseSmoke.ps1`) |
 | `RUN_AUDITS.bat -IncludeCodebaseSmokeE2E` | E2E in gecombineerde poort |
 | `RUN_AUDITS.bat -IncludeCodebaseSmoke` | Alleen smoke-runner |
 | `RUN_IDE_MAINTENANCE_E2E.bat …` | Volledige landkaart-poort (15 stappen); rapport `IDE_MAINTENANCE_E2E_REPORT_*.md` |

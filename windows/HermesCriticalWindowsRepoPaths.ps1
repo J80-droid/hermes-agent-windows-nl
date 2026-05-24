@@ -89,6 +89,7 @@ function Get-HermesCriticalWindowsRepoPathList {
     'windows/audits/RUN_CODEBASE_SMOKE_AUDIT.bat',
     'windows/audits/RUN_CODEBASE_SMOKE_E2E.ps1',
     'windows/audits/RUN_CODEBASE_SMOKE_E2E.bat',
+    'windows/scripts/Invoke-PostSyncCodebaseSmoke.ps1',
     'scripts/verify_pareto_router.py',
     'scripts/emit_codebase_smoke_report.py',
     'docs/CODEBASE_AUDIT_EVIDENCE.md',

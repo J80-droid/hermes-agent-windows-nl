@@ -19,7 +19,7 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 | Taak | Commando |
 | ---- | -------- |
 | Upstream / fork update | `windows\UPDATE_HERMES.bat` (verify in keten via `.ps1`, geen pause — zie `windows\UPSTREAM_SYNC.md`) |
-| Na `git pull` (andere machine of na grote wijziging) | `windows\POST_GIT_PULL.bat` (trust + **SOUL templates 13 profielen** + toolsets) |
+| Na `git pull` (andere machine of na grote wijziging) | `windows\POST_GIT_PULL.bat` (trust + **SOUL templates 13 profielen** + toolsets); optioneel `-IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E` — zie `docs/CODEBASE_AUDIT_EVIDENCE.md` |
 | Hermes starten (stamp SOUL deploy) | `start_hermes.bat` → `launch_soul_anatomy_deploy.ps1` (automatisch indien repo bron gewijzigd); overslaan: `HERMES_SKIP_SOUL_DEPLOY_ON_START=1` |
 | SOUL startketen valideren | `windows\audits\RUN_SOUL_DEPLOY_START_E2E.bat` |
 | SOUL Interaction + Outputformaat naar alle profielen | `windows\SYNC_SOUL_SNIPPETS.bat` |

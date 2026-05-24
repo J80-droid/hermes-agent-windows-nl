@@ -1,17 +1,48 @@
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0\.."
 chcp 65001 >nul
+
+set "HERMES_CODEBASE_SMOKE_MODE=none"
+:parse_post_pull_args
+if /I "%~1"=="-IncludeCodebaseSmokeE2E" (
+  set "HERMES_CODEBASE_SMOKE_MODE=e2e"
+  shift
+  goto parse_post_pull_args
+)
+if /I "%~1"=="-IncludeCodebaseSmoke" (
+  if /I not "!HERMES_CODEBASE_SMOKE_MODE!"=="e2e" set "HERMES_CODEBASE_SMOKE_MODE=smoke"
+  shift
+  goto parse_post_pull_args
+)
+if not "%~1"=="" (
+  echo [WARN] Onbekende optie: %~1
+  shift
+  goto parse_post_pull_args
+)
+
 echo ====================================================
 echo  Hermes: na git pull (verify + taakbalk-iconen)
 echo ====================================================
 echo [INFO] Repo: %CD%
+if /I "!HERMES_CODEBASE_SMOKE_MODE!"=="e2e" (
+  echo [INFO] Optie: -IncludeCodebaseSmokeE2E ^(~45s, E2E-poort^)
+) else if /I "!HERMES_CODEBASE_SMOKE_MODE!"=="smoke" (
+  echo [INFO] Optie: -IncludeCodebaseSmoke ^(~32s, snelle smoke^)
+) else (
+  echo [INFO] Optioneel: -IncludeCodebaseSmoke ^(~32s^) of -IncludeCodebaseSmokeE2E ^(~45s^)
+)
 echo.
 
-if exist "%~dp0VERIFY_WINDOWS_CHAIN.bat" (
-  call "%~dp0VERIFY_WINDOWS_CHAIN.bat"
+set "POST_PULL_ERR=0"
+
+echo [INFO] Windows script-keten verify ^(geen pause^)...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0verify_windows_script_chain.ps1"
+if errorlevel 1 (
+  echo [ERROR] verify_windows_script_chain.ps1 gefaald
+  set "POST_PULL_ERR=1"
 ) else (
-  echo [WARN] VERIFY_WINDOWS_CHAIN.bat ontbreekt
+  echo [OK] Windows script-keten OK.
 )
 
 echo.
@@ -32,6 +63,7 @@ if errorlevel 1 (
   echo [WARN] SOUL anatomy deploy mislukt — probeer APPLY_SOUL_ANATOMY_RUNTIME.bat
 ) else (
   echo [OK] SOUL anatomy deploy + stamp bijgewerkt.
+  echo [INFO] SOUL/snippets gewijzigd? Nieuwe chat: /new in TUI ^(reminder: institutional_new_chat_required.json^).
 )
 set "HERMES_SKIP_PAUSE="
 echo.
@@ -58,11 +90,30 @@ if errorlevel 1 (
   echo [OK] Taakbalk-snelkoppelingen bijgewerkt.
 )
 
+if /I "!HERMES_CODEBASE_SMOKE_MODE!"=="e2e" (
+  echo.
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Invoke-PostSyncCodebaseSmoke.ps1" -RepoRoot "%CD%" -Level E2E
+  if errorlevel 1 set "POST_PULL_ERR=1"
+) else if /I "!HERMES_CODEBASE_SMOKE_MODE!"=="smoke" (
+  echo.
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Invoke-PostSyncCodebaseSmoke.ps1" -RepoRoot "%CD%" -Level Smoke
+  if errorlevel 1 set "POST_PULL_ERR=1"
+)
+
 echo.
 echo [INFO] Eenmalig bij oud zwart H op UPDATE:
 echo   1. Rechtsklik UPDATE-pin - Losmaken van de taakbalk
 echo   2. windows\Hermes - update - naar taakbalk slepen.lnk - Vastmaken aan taakbalk
 echo      (niet UPDATE_HERMES.bat direct slepen)
 echo.
+if not "!POST_PULL_ERR!"=="0" (
+  echo.
+  echo [ERROR] POST_GIT_PULL afgerond met fouten ^(code !POST_PULL_ERR!^).
+  pause
+  exit /b !POST_PULL_ERR!
+)
+if /I not "!HERMES_CODEBASE_SMOKE_MODE!"=="none" goto :eof_no_pause
+if "%HERMES_SKIP_PAUSE%"=="1" goto :eof_no_pause
 pause
+:eof_no_pause
 exit /b 0
