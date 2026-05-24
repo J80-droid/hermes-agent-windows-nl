@@ -743,7 +743,7 @@ Ctrl+Enter?" This is how the Ctrl+Enter = c-j fact was established.
 
 ### Config / Files
 
-**Split-home (Windows fork).** Do not edit `~/.hermes/config.yaml` on Windows — use `%LOCALAPPDATA%\hermes\config.yaml` via `hermes config set` / `hermes model`. If both files exist, run `DEPRECATE_LEGACY_CONFIG.bat`. Verify with `hermes config get auxiliary`.
+**Split-home (Windows fork).** Do not edit `~/.hermes/config.yaml` on Windows — use `%LOCALAPPDATA%\hermes\config.yaml` via `hermes config set` / `hermes model`. If both files exist, run `APPLY_HERMES_HOME_MIGRATION.bat` (or `DEPRECATE_LEGACY_CONFIG.bat`). Verify with `hermes config get auxiliary`.
 
 **HTTP 400 "No models provided" on first run.** `config.yaml` was saved
 with a UTF-8 BOM (common when Windows apps write it). Re-save as UTF-8

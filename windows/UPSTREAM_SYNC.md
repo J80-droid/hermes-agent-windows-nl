@@ -119,6 +119,7 @@ windows\MERGE_UPSTREAM.bat -AutoResolve
 | `hermes update` (merge upstream + deps) | Ja |
 | Trust runtime (`SYNC_TRUST_RUNTIME.bat`, geen scrub + USER-regel snapshot) | Ja (post-merge, `HERMES_SKIP_PAUSE=1`) |
 | API + vault-env (`sync_hermes_api_env.ps1` via trust/UPDATE/POST_GIT_PULL) | Ja (`OBSIDIAN_VAULT_PATH` naar alle profiel-`.env`) |
+| Hermes home + config drift (`verify_hermes_home`, `verify_hermes_config_drift`) | Ja (post-merge; bij FAIL: `APPLY_HERMES_HOME_MIGRATION.bat`) |
 | Domein-toolsets (`SYNC_DOMAIN_TOOLSETS.bat`) | Ja (post-merge, na trust runtime) |
 | SOUL anatomy deploy (`launch_soul_anatomy_deploy.ps1 -Force -Quiet`) | Ja (post-merge: 13 templates + stamp) |
 | Institutioneel runtime (`apply_institutional_runtime.ps1 -SkipE2E -NoPause -SkipSoul`) | Ja (post-merge: display; snippets overgeslagen na soul deploy) |
@@ -314,11 +315,12 @@ Geen verplichting; git history blijft de volledige changelog.
 4. `windows\scripts\install_rag_extras.ps1` (MCP + deps)
 5. `windows\scripts\which_hermes_repo.ps1` — `lancedb-knowledge: JA`
 6. `VERIFY_WINDOWS_CHAIN.bat` (of vertrouw op UPDATE-keten).
-7. Nieuwe Hermes-sessie; rooktest: `search_knowledge` (zie `scripts/rag_pipeline/ACTIVATION.md`)
-8. SOUL/display: **automatisch** in `UPDATE_HERMES.bat` post-merge (`launch_soul_anatomy_deploy -Force`, daarna `apply_institutional_runtime -SkipSoul`). Handmatig: `APPLY_SOUL_ANATOMY_RUNTIME.bat` of `APPLY_INSTITUTIONAL_RUNTIME.bat`
-9. SOUL startketen E2E: `windows\audits\RUN_SOUL_DEPLOY_START_E2E.bat`
-10. Institutioneel E2E: `windows\audits\RUN_INSTITUTIONAL_E2E.bat` (**11 stappen**)
-11. Rooktest presentatie: `pytest tests/cli/test_institutional_rich_render.py … -q`
+7. **Split-home drift:** `VERIFY_HERMES_CONFIG_DRIFT.bat` — bij FAIL eenmalig `APPLY_HERMES_HOME_MIGRATION.bat` (zie `docs/HERMES_HOME_WINDOWS.md`).
+8. Nieuwe Hermes-sessie; rooktest: `search_knowledge` (zie `scripts/rag_pipeline/ACTIVATION.md`)
+9. SOUL/display: **automatisch** in `UPDATE_HERMES.bat` post-merge (`launch_soul_anatomy_deploy -Force`, daarna `apply_institutional_runtime -SkipSoul`). Handmatig: `APPLY_SOUL_ANATOMY_RUNTIME.bat` of `APPLY_INSTITUTIONAL_RUNTIME.bat`
+10. SOUL startketen E2E: `windows\audits\RUN_SOUL_DEPLOY_START_E2E.bat`
+11. Institutioneel E2E: `windows\audits\RUN_INSTITUTIONAL_E2E.bat` (**11 stappen**)
+12. Rooktest presentatie: `pytest tests/cli/test_institutional_rich_render.py … -q`
 
 **Laatste volledige audit:** `windows/audits/UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md` (merge 58 commits + UPDATE + E2E PASS).
 

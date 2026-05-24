@@ -137,7 +137,7 @@ function Invoke-UpstreamPostMerge {
             Write-Step 'Hermes home + config drift verify...'
             & $verifyHome -StrictDrift
             if (Test-NativeCommandFailed) {
-                Write-Warn 'verify_hermes_home / config drift faalde - zie DEPRECATE_LEGACY_CONFIG.bat'
+                Write-Warn 'verify_hermes_home / config drift faalde - zie APPLY_HERMES_HOME_MIGRATION.bat'
                 $exitCode = $LASTEXITCODE
             } else {
                 Write-Ok 'Hermes home + config drift OK.'
@@ -151,7 +151,7 @@ function Invoke-UpstreamPostMerge {
             Write-Step 'verify_hermes_config_drift (strict)...'
             & $verifyDrift -Strict
             if (Test-NativeCommandFailed) {
-                Write-Warn 'verify_hermes_config_drift faalde - zie DEPRECATE_LEGACY_CONFIG.bat'
+                Write-Warn 'verify_hermes_config_drift faalde - zie APPLY_HERMES_HOME_MIGRATION.bat'
                 $exitCode = $LASTEXITCODE
             } else {
                 Write-Ok 'verify_hermes_config_drift OK.'

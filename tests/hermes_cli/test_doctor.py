@@ -54,7 +54,7 @@ class TestWindowsSplitHomeCheck:
 
         issues: list = []
         doctor._check_windows_split_home_config(issues)
-        assert any("DEPRECATE_LEGACY_CONFIG" in item for item in issues)
+        assert any("APPLY_HERMES_HOME_MIGRATION" in item for item in issues)
         captured = capsys.readouterr()
         assert "split-home" in captured.out.lower() or "Split-home" in captured.out
 

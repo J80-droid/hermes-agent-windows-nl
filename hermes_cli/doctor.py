@@ -367,9 +367,9 @@ def _check_windows_split_home_config(issues: list, *, should_fix: bool = False) 
     if runtime_cfg.is_file() and legacy_cfg.is_file():
         check_warn(
             "Windows split-home: legacy ~/.hermes/config.yaml exists alongside runtime config",
-            f"Canoniek: {runtime_cfg}. Run windows\\DEPRECATE_LEGACY_CONFIG.bat",
+            f"Canoniek: {runtime_cfg}. Run windows\\APPLY_HERMES_HOME_MIGRATION.bat or DEPRECATE_LEGACY_CONFIG.bat",
         )
-        issues.append("Deprecate legacy ~/.hermes/config.yaml (DEPRECATE_LEGACY_CONFIG.bat)")
+        issues.append("Deprecate legacy ~/.hermes/config.yaml (APPLY_HERMES_HOME_MIGRATION.bat)")
 
     legacy_env = legacy_root / ".env"
     runtime_env = runtime_root / ".env"

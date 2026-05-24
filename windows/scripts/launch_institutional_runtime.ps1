@@ -36,7 +36,7 @@ $runE2e = $RunE2E.IsPresent -or $env:HERMES_INSTITUTIONAL_E2E_ON_START -eq '1'
 if (-not $SkipConfigDrift) {
     if ($runE2e) {
         if (-not (Test-HermesConfigDrift -Strict)) {
-            Write-Host '[FAIL] Config split-home drift (E2E) — DEPRECATE_LEGACY_CONFIG.bat' -ForegroundColor Red
+            Write-Host '[FAIL] Config split-home drift (E2E) — APPLY_HERMES_HOME_MIGRATION.bat' -ForegroundColor Red
             exit 1
         }
     } else {
