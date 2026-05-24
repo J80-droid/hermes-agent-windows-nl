@@ -408,6 +408,19 @@ try {
             }
 
             if ($script:UpstreamExitCode -eq 0) {
+                $rebuildTui = Join-Path $repo 'windows/scripts/rebuild_tui.ps1'
+                if (Test-Path -LiteralPath $rebuildTui) {
+                    Write-Step 'TUI bundel (ui-tui/dist) herbouwen...'
+                    & powershell -NoProfile -ExecutionPolicy Bypass -File $rebuildTui -RepoRoot $repo
+                    if (Test-NativeCommandFailed) {
+                        Write-Warn 'rebuild_tui.ps1 faalde — sluit Hermes af en start opnieuw (herbouwt TUI bij launch).'
+                    } else {
+                        Write-Ok 'TUI dist bijgewerkt — herstart Hermes om wijzigingen te zien.'
+                    }
+                }
+            }
+
+            if ($script:UpstreamExitCode -eq 0) {
                 $fixPins = Join-Path $repo 'windows/fix_hermes_taskbar_pins.ps1'
                 if (Test-Path -LiteralPath $fixPins) {
                     Write-Step 'Taakbalk-iconen (.lnk + icooncache vóór verify)...'

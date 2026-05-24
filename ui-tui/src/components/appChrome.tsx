@@ -309,7 +309,7 @@ export function StatusRule({
   })
 
   return (
-    <Box height={1}>
+    <Box flexDirection="row" height={1} width={cols}>
       <Box flexShrink={1} width={leftWidth}>
         <Text color={t.color.border} wrap="truncate-end">
           {'─ '}
