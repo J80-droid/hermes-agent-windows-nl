@@ -546,6 +546,13 @@ def resolve_billing_route(
         return BillingRoute(provider="anthropic", model=model.split("/")[-1], base_url=base_url or "", billing_mode="official_docs_snapshot")
     if provider_name == "openai":
         return BillingRoute(provider="openai", model=model.split("/")[-1], base_url=base_url or "", billing_mode="official_docs_snapshot")
+    if provider_name in {"google", "gemini"}:
+        return BillingRoute(
+            provider="google",
+            model=model.split("/")[-1],
+            base_url=base_url or "",
+            billing_mode="official_docs_snapshot",
+        )
     if provider_name in {"minimax", "minimax-cn"}:
         return BillingRoute(provider=provider_name, model=model.split("/")[-1], base_url=base_url or "", billing_mode="official_docs_snapshot")
     if provider_name in {"custom", "local"} or (base and "localhost" in base):
@@ -570,6 +577,28 @@ def _normalize_anthropic_model_name(model: str) -> str:
     return name
 
 
+def _normalize_google_model_name(model: str) -> str:
+    """Map Gemini 3.x preview ids to the nearest priced catalog entry."""
+    name = model.lower().strip()
+    if name.startswith("google/"):
+        name = name.split("/", 1)[1]
+    aliases = {
+        "gemini-3-flash-preview": "gemini-2.5-flash",
+        "gemini-3-flash": "gemini-2.5-flash",
+        "gemini-3.5-flash": "gemini-2.5-flash",
+        "gemini-3-pro-preview": "gemini-2.5-pro",
+        "gemini-3.1-pro-preview": "gemini-2.5-pro",
+        "gemini-3.1-flash-lite-preview": "gemini-2.5-flash",
+    }
+    if name in aliases:
+        return aliases[name]
+    if name.startswith("gemini-3") and "flash" in name:
+        return "gemini-2.5-flash"
+    if name.startswith("gemini-3") and "pro" in name:
+        return "gemini-2.5-pro"
+    return name
+
+
 def _lookup_official_docs_pricing(route: BillingRoute) -> Optional[PricingEntry]:
     model = route.model.lower()
     # Direct lookup first
@@ -579,6 +608,12 @@ def _lookup_official_docs_pricing(route: BillingRoute) -> Optional[PricingEntry]
     # Try normalized name for Anthropic (handles dot-notation like opus-4.7)
     if route.provider == "anthropic":
         normalized = _normalize_anthropic_model_name(model)
+        if normalized != model:
+            entry = _OFFICIAL_DOCS_PRICING.get((route.provider, normalized))
+            if entry:
+                return entry
+    if route.provider == "google":
+        normalized = _normalize_google_model_name(model)
         if normalized != model:
             entry = _OFFICIAL_DOCS_PRICING.get((route.provider, normalized))
             if entry:

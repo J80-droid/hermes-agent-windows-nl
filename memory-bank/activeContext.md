@@ -8,7 +8,7 @@
 
 **Institutioneel 10/10 (2026-05-23, afgerond + guardrails):** palet, NFR, normalizer-pariteit, score 10/10, labels verticaal, Web live palette. **Herstel na IDE-drift:** `APPLY_INSTITUTIONAL_RUNTIME.bat` (config + SOUL + E2E 11/11). **Preventie:** `scripts/verify_institutional_guard.py`, drift in `diagnose_renderer.py --verify`, `.cursor/rules/institutional-presentatie.mdc`, `docs/INSTITUTIONAL_PORTING_GUIDE.md`. **Na pull/update/IDE:** `/new` + rooktest.
 
-**TUI statusbalk-kosten (2026-05-24, rich bar + defaults):** Framework-default **`show_cost: true`** + **`cost_bar_mode: rich`** (`config.py`, gateway, TUI); statusbalk altijd zichtbaar bij `/cost on` (fallback `n/a`/`included`/`~NK tok`); kostensegment **niet meer afgekapt** (`resolveStatusRuleLayout` in `appChrome.tsx`); live `~$turn` of `~NK tok` via `liveTurnCost.ts`; breakdown-tier vanaf **72** kolommen; team-sync via `apply_team_display.ps1`. E2E `RUN_STATUS_BAR_COST_E2E.bat`. Na wijziging: Hermes `/new`.
+**TUI statusbalk-kosten (2026-05-24, rich bar + defaults):** Framework-default **`show_cost: true`** + **`cost_bar_mode: rich`**; altijd zichtbaar (`n/a`/`included`/`~NK tok`); `resolveStatusRuleLayout`; live turn-kosten; Gemini 3.x → geschatte USD via `usage_pricing`; **`REBUILD_TUI.bat`** + volledige Hermes-herstart na TUI-pull (dist niet hot-reload). E2E `RUN_STATUS_BAR_COST_E2E.bat`.
 
 **OpenRouter Pareto Code router (2026-05-24, PASS):** model-gated `min_coding_score` → `pareto-router` plugin op `openrouter/pareto-code`; verify `scripts/verify_pareto_router.py`; E2E `windows/audits/RUN_PARETO_E2E.bat` (8/8); `-IncludeParetoE2E` in `RUN_AUDITS.bat`. Geen live API-call in E2E.
 

@@ -40,6 +40,14 @@ set "HERMES_SKIP_PAUSE=1"
 call "%~dp0SYNC_DOMAIN_TOOLSETS.bat"
 set "HERMES_SKIP_PAUSE="
 echo.
+echo [INFO] TUI bundel (ui-tui/dist) herbouwen indien bron nieuwer...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\rebuild_tui.ps1" -RepoRoot "%CD%"
+if errorlevel 1 (
+  echo [WARN] rebuild_tui.ps1 mislukt — sluit Hermes af en start opnieuw
+) else (
+  echo [OK] TUI dist gecontroleerd/herbouwd.
+)
+echo.
 echo [INFO] Nieuwe skills (bijv. landkaart): hermes update of nieuwe chat-sessie.
 echo.
 echo [INFO] Taakbalk-.lnk en icooncache vernieuwen...

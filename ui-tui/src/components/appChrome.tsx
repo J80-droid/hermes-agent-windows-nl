@@ -356,10 +356,12 @@ export function StatusRule({
       </Box>
 
       {costLabel ? (
-        <Text color={t.color.muted} flexShrink={0}>
-          {' │ '}
-          {costLabel}
-        </Text>
+        <Box flexShrink={0}>
+          <Text color={t.color.muted}>
+            {' │ '}
+            {costLabel}
+          </Text>
+        </Box>
       ) : null}
 
       <Text color={t.color.border}> ─ </Text>

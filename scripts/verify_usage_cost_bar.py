@@ -12,11 +12,6 @@ def _repo() -> Path:
     return Path(__file__).resolve().parents[1]
 
 
-def _fail(msg: str) -> int:
-    print(f"[FAIL] {msg}")
-    return 1
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Verify rich status-bar cost wiring")
     parser.add_argument("--verify", action="store_true", help="Exit 1 on drift")
@@ -34,6 +29,8 @@ def main() -> int:
     gateway = (repo / "tui_gateway" / "server.py").read_text(encoding="utf-8")
     if "build_session_usage_snapshot" not in gateway:
         errors.append("tui_gateway/server.py missing build_session_usage_snapshot delegatie")
+    if 'get("show_cost", True)' not in gateway:
+        errors.append("tui_gateway/server.py missing show_cost default true")
 
     snapshot = repo / "hermes_cli" / "usage_snapshot.py"
     if not snapshot.is_file():
@@ -44,12 +41,32 @@ def main() -> int:
         errors.append("ui-tui/src/domain/usageCostBar.ts ontbreekt")
     else:
         text = cost_bar.read_text(encoding="utf-8")
-        if "formatStatusBarCostRich" not in text:
-            errors.append("usageCostBar.ts mist formatStatusBarCostRich")
+        for needle in (
+            "formatStatusBarCostRich",
+            "resolveStatusRuleLayout",
+            "formatSessionCostLabel",
+            "shouldShowStatusBarCostRich",
+        ):
+            if needle not in text:
+                errors.append(f"usageCostBar.ts mist {needle}")
 
     chrome = (repo / "ui-tui" / "src" / "components" / "appChrome.tsx").read_text(encoding="utf-8")
-    if "formatStatusBarCostRich" not in chrome:
-        errors.append("appChrome.tsx gebruikt formatStatusBarCostRich niet")
+    if "resolveStatusRuleLayout" not in chrome:
+        errors.append("appChrome.tsx gebruikt resolveStatusRuleLayout niet")
+
+    rebuild = repo / "windows" / "scripts" / "rebuild_tui.ps1"
+    if not rebuild.is_file():
+        errors.append("windows/scripts/rebuild_tui.ps1 ontbreekt")
+
+    dist = repo / "ui-tui" / "dist" / "entry.js"
+    if dist.is_file():
+        dist_text = dist.read_text(encoding="utf-8", errors="ignore")
+        if "resolveStatusRuleLayout" not in dist_text:
+            errors.append(
+                "ui-tui/dist/entry.js is stale (mist resolveStatusRuleLayout) — draai windows/REBUILD_TUI.bat"
+            )
+    else:
+        errors.append("ui-tui/dist/entry.js ontbreekt — draai windows/REBUILD_TUI.bat")
 
     if errors:
         for err in errors:

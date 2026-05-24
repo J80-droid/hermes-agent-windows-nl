@@ -106,6 +106,20 @@ def test_normalize_usage_openai_prefers_prompt_tokens_details_over_top_level():
     assert normalized.cache_write_tokens == 150
 
 
+def test_google_gemini_3_flash_preview_uses_flash_tier_pricing():
+    entry = get_pricing_entry("gemini-3-flash-preview", provider="google")
+    assert entry is not None
+    assert entry.output_cost_per_million is not None
+
+    cost = estimate_usage_cost(
+        "gemini-3.5-flash",
+        CanonicalUsage(input_tokens=1000, output_tokens=500),
+        provider="google",
+    )
+    assert cost.amount_usd is not None
+    assert cost.status == "estimated"
+
+
 def test_openrouter_models_api_pricing_is_converted_from_per_token_to_per_million(monkeypatch):
     monkeypatch.setattr(
         "agent.usage_pricing.fetch_model_metadata",

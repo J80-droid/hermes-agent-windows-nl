@@ -56,8 +56,7 @@ def test_repo_status_rule_uses_cost_helpers():
     chrome = (REPO / "ui-tui" / "src" / "components" / "appChrome.tsx").read_text(
         encoding="utf-8"
     )
-    assert "formatStatusBarCostRich" in chrome
-    assert "shouldShowStatusBarCostRich" in chrome
+    assert "resolveStatusRuleLayout" in chrome
 
 
 def test_repo_gateway_and_slash_cost_toggle():
