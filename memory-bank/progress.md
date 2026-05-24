@@ -55,7 +55,7 @@
 - [x] PSScriptAnalyzer `windows\`: 0 Warning/Error (2026-05-23) — unused params/vars, ShouldProcess, catch-blokken, merge `-LockTheirs` wiring
 - [x] Python-policy institutioneel: `HermesPythonPolicy.ps1`, `REPAIR_PYTHON.bat`, `ensure_hermes_python.ps1`; kapotte `.venv` → `.venv.disabled-*` (gitignore); conda `hermes-env` canoniek; verify-keten + setup-hook
 - [x] TUI display: skin `default` (`team_display.defaults`), `apply_team_display.ps1` → `profiles\<active>\config.yaml` (conda `--env-vars`)
-- [x] E2E institutioneel: `RUN_INSTITUTIONAL_E2E.ps1` (**11 stappen + 2f diagnose + 2g score**, PASS 2026-05-23)
+- [x] E2E institutioneel: `RUN_INSTITUTIONAL_E2E.ps1` (**11 stappen + 2f diagnose + 2g score + 2h pseudo-tabel**, PASS 2026-05-23)
 - [x] Assistant Rich-renderer: `institutional_render.py` (`TightHeadingBody`, `SectionSpacer`, per-kolom tabellen, labels verticaal — peel uit heading-body)
 - [x] Markdown pipeline: `display_markdown.py` + `agent/rich_output.py` + `ChatConsole(get_assistant_console_theme())` in `cli.py`
 - [x] Pariteit Ink/Web: `institutionalMarkdown.ts`, `institutionalMarkdownNormalize.ts`, `institutionalColors.ts` (cyaan-first tabelpalet)

@@ -80,7 +80,7 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 - **Web:** `web/src/lib/institutionalMarkdown.ts` + `Markdown.tsx` (`toRenderUnits` = TightHeadingBody-equivalent)
 - **Ink:** re-export Web normalizer (`ui-tui/src/lib/institutionalMarkdownNormalize.ts`) + compacte Controle-regel in `markdown.tsx`
 
-Defaults: `windows/team_display.defaults`; toepassen: `APPLY_INSTITUTIONAL_RUNTIME.bat`. Audit: `RUN_INSTITUTIONAL_E2E.ps1` (11 stappen + 2f + 2g).
+Defaults: `windows/team_display.defaults`; toepassen: `APPLY_INSTITUTIONAL_RUNTIME.bat`. Audit: `RUN_INSTITUTIONAL_E2E.ps1` (11 stappen + 2f + 2g + **2h pseudo-tabel**).
 
 ## Profiel-uitbreiding (ICT-team)
 

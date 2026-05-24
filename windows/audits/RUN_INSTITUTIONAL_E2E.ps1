@@ -93,6 +93,7 @@ $requiredRepo = @(
     'scripts/diagnose_renderer.py',
     'scripts/score_institutional_render.py',
     'scripts/verify_institutional_guard.py',
+    'scripts/verify_pseudo_table_normalizer.py',
     'scripts/migrate_soul_tokens.py',
     'hermes_cli/markdown_output_normalize.py',
     'hermes_cli/institutional_render.py',
@@ -104,6 +105,7 @@ $requiredRepo = @(
     'tests/windows/test_team_display_defaults.py',
     'tests/cli/test_institutional_profile_chat_ux.py',
     'windows/scripts/launch_institutional_runtime.ps1',
+    'windows/audits/RUN_PSEUDO_TABLE_NORMALIZER_E2E.ps1',
     'windows/SWITCH_PROFILE.bat',
     'docs/PROFILE_SWITCH.md'
 )
@@ -164,6 +166,15 @@ if (Test-NativeCommandFailed) {
     exit 1
 }
 Write-Host '[OK] institutional render score >= 9.0' -ForegroundColor Green
+
+Write-Host '=== 2h/11 pseudo-tabel normalizer E2E ===' -ForegroundColor Cyan
+$pseudoE2e = Join-Path $scriptRoot 'RUN_PSEUDO_TABLE_NORMALIZER_E2E.ps1'
+& $pseudoE2e -RepoRoot $repoRoot
+if (Test-NativeCommandFailed) {
+    Write-Host '[FAIL] RUN_PSEUDO_TABLE_NORMALIZER_E2E faalde (underscore/vs → markdown)' -ForegroundColor Red
+    exit 1
+}
+Write-Host '[OK] pseudo-tabel normalizer E2E (10/10)' -ForegroundColor Green
 
 Write-Host '=== 2c/11 team_display.defaults inhoud ===' -ForegroundColor Cyan
 $td = Get-Content -LiteralPath (Join-Path $repoRoot 'windows/team_display.defaults') -Raw -Encoding UTF8

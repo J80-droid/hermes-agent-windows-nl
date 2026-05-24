@@ -78,7 +78,7 @@ Code: [`hermes_cli/institutional_render.py`](../hermes_cli/institutional_render.
 
 **Verify (pseudo-tabel):** `python scripts/verify_pseudo_table_normalizer.py --verify` — Ollama-vs, auxiliary Cloud/Lokaal, pipe-divider probes.
 
-**E2E audit (pseudo-tabel):** `windows\audits\RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat` (10 stappen, pytest + TS parity + diagnose/score + verify). Gecombineerd: `RUN_AUDITS.bat -IncludePseudoTableNormalizerE2E` of `-IncludeAllE2E`.
+**E2E audit (pseudo-tabel):** stap **2h** in `RUN_INSTITUTIONAL_E2E.ps1` (10/10; pytest + TS parity + verify). Los: `windows\audits\RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat`. Gecombineerd: `RUN_AUDITS.bat -IncludePseudoTableNormalizerE2E` of `-IncludeAllE2E`. **Runtime:** `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` voert SOUL-sync + volledige institutioneel E2E (incl. 2h) uit.
 
 **Rooktest-prompt:** [`templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md`](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md) — plak in nieuwe chat na SOUL-sync; gebruik **dezelfde** prompt om runs te vergelijken.
 
@@ -104,6 +104,7 @@ Defaults in repo: [`windows/team_display.defaults`](../windows/team_display.defa
 E2E pytest: stap **2e** (`test_institutional_rich_render.py`).
 E2E diagnose: stap **2f** (`scripts/diagnose_renderer.py --verify`).
 E2E score: stap **2g** (`scripts/score_institutional_render.py --verify`, drempel ≥ 9.0).
+E2E pseudo-tabel: stap **2h** (`RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat`, 10/10) — automatisch via `APPLY_INSTITUTIONAL_RUNTIME.bat`.
 
 ### Runtime verifiëren
 
@@ -194,7 +195,7 @@ Na wijzigingen via Cursor, upstream-merge of handmatige config-edits:
    python scripts\verify_pseudo_table_normalizer.py --verify
    ```
 5. Visuele rooktest: [`templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md`](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md)
-6. Pseudo-tabel E2E (optioneel, ~36s): `windows\audits\RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat`
+6. Pseudo-tabel E2E zit in `APPLY_INSTITUTIONAL_RUNTIME.bat` (stap 2h); los audit: `windows\audits\RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat`
 7. Optioneel vóór commit bij renderer-wijzigingen: `python scripts/verify_institutional_guard.py`
 
 **Niet blind wijzigen:** renderer-bestanden (`institutional_render.py`, `Markdown.tsx`, …) — zie `.cursor/rules/institutional-presentatie.mdc`.
