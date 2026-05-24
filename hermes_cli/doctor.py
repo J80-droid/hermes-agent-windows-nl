@@ -334,6 +334,68 @@ def _build_apikey_providers_list() -> list:
     return _static
 
 
+def _env_has_non_empty_key(env_path: Path, key: str) -> bool:
+    if not env_path.is_file():
+        return False
+    try:
+        for line in env_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#"):
+                continue
+            if stripped.startswith(f"{key}="):
+                val = stripped.split("=", 1)[1].strip().strip('"').strip("'")
+                return bool(val)
+    except OSError:
+        return False
+    return False
+
+
+def _check_windows_split_home_config(issues: list, *, should_fix: bool = False) -> None:
+    """Warn when legacy ~/.hermes/config.yaml coexists with Windows runtime config."""
+    if sys.platform != "win32":
+        return
+
+    localappdata = os.environ.get("LOCALAPPDATA", "")
+    if not localappdata:
+        return
+
+    runtime_root = Path(localappdata) / "hermes"
+    runtime_cfg = runtime_root / "config.yaml"
+    legacy_root = Path.home() / ".hermes"
+    legacy_cfg = legacy_root / "config.yaml"
+
+    if runtime_cfg.is_file() and legacy_cfg.is_file():
+        check_warn(
+            "Windows split-home: legacy ~/.hermes/config.yaml exists alongside runtime config",
+            f"Canoniek: {runtime_cfg}. Run windows\\DEPRECATE_LEGACY_CONFIG.bat",
+        )
+        issues.append("Deprecate legacy ~/.hermes/config.yaml (DEPRECATE_LEGACY_CONFIG.bat)")
+
+    legacy_env = legacy_root / ".env"
+    runtime_env = runtime_root / ".env"
+    if _env_has_non_empty_key(legacy_env, "GOOGLE_API_KEY") and not _env_has_non_empty_key(
+        runtime_env, "GOOGLE_API_KEY"
+    ):
+        check_warn(
+            "GOOGLE_API_KEY only in legacy ~/.hermes/.env",
+            "Run windows\\SYNC_HERMES_API_ENV.bat",
+        )
+        issues.append("Sync API keys (SYNC_HERMES_API_ENV.bat)")
+
+    if should_fix:
+        try:
+            from hermes_cli.profile_switch import normalize_user_hermes_home
+
+            normalized, msg = normalize_user_hermes_home(fix=True)
+            if msg:
+                if normalized:
+                    check_ok("HERMES_HOME normalized", msg)
+                else:
+                    check_warn("HERMES_HOME profile subdir", msg)
+        except Exception as exc:
+            check_warn("Could not normalize HERMES_HOME", str(exc))
+
+
 def run_doctor(args):
     """Run diagnostic checks."""
     should_fix = getattr(args, 'fix', False)
@@ -533,6 +595,11 @@ def run_doctor(args):
                 check_info("Run 'hermes setup' to create one")
                 issues.append("Run 'hermes setup' to create .env")
     
+    import sys
+
+    if sys.platform == "win32":
+        _check_windows_split_home_config(issues, should_fix=should_fix)
+
     # Check ~/.hermes/config.yaml (primary) or project cli-config.yaml (fallback)
     config_path = HERMES_HOME / 'config.yaml'
     if config_path.exists():

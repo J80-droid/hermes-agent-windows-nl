@@ -47,6 +47,8 @@ LEGACY_GOVERNANCE_FORBIDDEN = [
     (r"bij twijfel:\s*zeg het", "oude twijfel-formulering"),
     (r"bij zwakke strategie,\s*ontbrekende feiten", "oude gap-trigger alleen bij zwakke strategie"),
     (r"voortzetting in volgende turn", "automatische 1/N-voortzetting"),
+    (r"config succesvol overschreven", "onbewezen config-success claim"),
+    (r"100%\s*\[Feit uit bron\].*config", "valse 100% config claim"),
 ]
 
 CODEBASE_AUDIT_SECTION_HEADERS = (

@@ -77,11 +77,22 @@ if (-not $condaExe) {
     exit 1
 }
 
+$ensureEnv = Join-Path $repoRoot 'windows/scripts/ensure_hermes_launch_env.ps1'
+if (Test-Path -LiteralPath $ensureEnv) {
+    & $ensureEnv -FixUserEnv
+    if ($LASTEXITCODE -ne 0) {
+        Write-RunLog "ensure_hermes_launch_env failed (exit $LASTEXITCODE)" 'ERROR'
+        exit $LASTEXITCODE
+    }
+    Write-RunLog ("HERMES_HOME=" + $env:HERMES_HOME)
+}
+
 # 1. Check if Setup is needed
 $envFile = Join-Path $repoRoot '.env'
 $standardEnvFile = Join-Path $env:USERPROFILE '.hermes\.env'
+$localAppDataEnv = Join-Path $env:LOCALAPPDATA 'hermes\.env'
 $repoEnvExists = Test-Path -LiteralPath $envFile
-$userHermesEnvExists = Test-Path -LiteralPath $standardEnvFile
+$userHermesEnvExists = (Test-Path -LiteralPath $standardEnvFile) -or (Test-Path -LiteralPath $localAppDataEnv)
 
 if ((-not $repoEnvExists) -and (-not $userHermesEnvExists)) {
     Write-RunLog "First run detected: Launching Setup Wizard..."

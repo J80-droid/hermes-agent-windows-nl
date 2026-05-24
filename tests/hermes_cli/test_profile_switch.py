@@ -41,6 +41,11 @@ class TestNormalizeUserHermesHome:
             "hermes_constants.get_default_hermes_root", lambda: root
         )
         monkeypatch.setenv("HERMES_HOME", str(profile_dir))
+        monkeypatch.setattr(
+            ps,
+            "_set_user_hermes_home_windows",
+            lambda home: os.environ.__setitem__("HERMES_HOME", home),
+        )
 
         normalized, msg = ps.normalize_user_hermes_home(fix=True)
         assert normalized is True

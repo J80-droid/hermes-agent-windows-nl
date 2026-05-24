@@ -132,6 +132,34 @@ function Invoke-UpstreamPostMerge {
     }
 
     if ($exitCode -eq 0) {
+        $verifyHome = Join-Path $Repo 'windows/scripts/verify_hermes_home.ps1'
+        if (Test-Path -LiteralPath $verifyHome) {
+            Write-Step 'Hermes home + config drift verify...'
+            & $verifyHome -StrictDrift
+            if (Test-NativeCommandFailed) {
+                Write-Warn 'verify_hermes_home / config drift faalde - zie DEPRECATE_LEGACY_CONFIG.bat'
+                $exitCode = $LASTEXITCODE
+            } else {
+                Write-Ok 'Hermes home + config drift OK.'
+            }
+        }
+    }
+
+    if ($LASTEXITCODE -eq 0) {
+        $verifyDrift = Join-Path $Repo 'windows/scripts/verify_hermes_config_drift.ps1'
+        if (Test-Path -LiteralPath $verifyDrift) {
+            Write-Step 'verify_hermes_config_drift (strict)...'
+            & $verifyDrift -Strict
+            if (Test-NativeCommandFailed) {
+                Write-Warn 'verify_hermes_config_drift faalde - zie DEPRECATE_LEGACY_CONFIG.bat'
+                $exitCode = $LASTEXITCODE
+            } else {
+                Write-Ok 'verify_hermes_config_drift OK.'
+            }
+        }
+    }
+
+    if ($exitCode -eq 0) {
         $toolBat = Join-Path $Repo 'windows\SYNC_DOMAIN_TOOLSETS.bat'
         if (Test-Path -LiteralPath $toolBat) {
             Write-Step 'Domein-toolsets platform_toolsets.cli...'

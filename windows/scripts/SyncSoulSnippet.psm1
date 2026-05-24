@@ -2,6 +2,11 @@
 # Used by sync_soul_interaction_snippet.ps1, sync_soul_output_format_snippet.ps1, etc.
 
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
+. (Join-Path $PSScriptRoot 'HermesHomeCommon.ps1')
+
+function Get-HermesRoot {
+    return Get-HermesRuntimeRoot
+}
 
 function Get-SoulFileContent {
     param([Parameter(Mandatory)][string]$Path)
@@ -19,14 +24,6 @@ function Set-SoulFileContent {
     if (-not $PSCmdlet.ShouldProcess($Path, 'Write SOUL file')) { return }
     $utf8 = [System.Text.UTF8Encoding]::new($false)
     [System.IO.File]::WriteAllText($Path, $Content, $utf8)
-}
-
-function Get-HermesRoot {
-    $localRoot = Join-Path $env:LOCALAPPDATA 'hermes'
-    if (Test-Path -LiteralPath (Join-Path $localRoot 'config.yaml')) { return $localRoot }
-    $homeRoot = Join-Path $env:USERPROFILE '.hermes'
-    if (Test-Path -LiteralPath (Join-Path $homeRoot 'config.yaml')) { return $homeRoot }
-    return $localRoot
 }
 
 function Get-DomainSoulProfileNames {

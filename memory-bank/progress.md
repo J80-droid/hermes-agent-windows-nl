@@ -20,6 +20,7 @@
 - [x] SOUL Anatomy: `SOUL_ANATOMY_SPEC`, 13× `SOUL_*_DOMAIN` + core orchestrator, shared VALUES/WORKFLOW/MEMORY/TRUST, sync + `migrate_soul_anatomy.ps1`, `validate_soul_anatomy.py`, `RUN_SOUL_ANATOMY_E2E.ps1`, `RUN_SOUL_DEPLOY_START_E2E.ps1`; stamp-deploy `launch_soul_anatomy_deploy.ps1` (start + POST_GIT_PULL); runtime `APPLY_SOUL_ANATOMY_RUNTIME.bat`; output-sync insert + duplicate-repair (2026-05-23)
 - [x] SOUL snippet-sync robuustheid: `Test-NativeCommandFailed` in `SyncSoulSnippet.psm1` + orchestrator/deploy/institutional/sync_all; alle `sync_soul_*_snippet.ps1` met `exit 0`; verify-keten pad-literals `/`; IDE/PSES parser-hygiëne (2026-05-23)
 - [x] SOUL governance: zekerheid %, gaps/strategie, ga-door 1/N, tool 1× retry, geen compromis; `SOUL_ROOT_FALLBACK` + `sync_root_soul_fallback.ps1`; `validate_soul_anatomy.py --check-governance`; `docs/SOUL_GOVERNANCE.md` (2026-05-23)
+- [x] Windows split-home runtime: `HermesHomeCommon.ps1`, drift/migratie/E2E, doctor + `hermes config get`, `HERMES_WIN_PREFER_LOCALAPPDATA`, `docs/HERMES_HOME_WINDOWS.md` (2026-05-23; **machine + audits groen 2026-05-24**)
 - [x] `HermesShellCommon.ps1`: gedeelde `Test-NativeCommandFailed` + `Write-Hermes*`; hele `windows/**/*.ps1` IDE-safe `[TAG]`-logging + native-exit checks; repair-tools in `windows/tools/` (2026-05-23)
 - [x] Domein-toolsets: `docs/domain_toolsets.yaml`, `DOMAIN_TOOLSET_AUDIT.md`, `SYNC_DOMAIN_TOOLSETS.bat`, `SOUL_SHARED_TOOL_GOVERNANCE`, `RUN_TOOLSET_DOMAIN_E2E.ps1`
 - [x] Runtime provision: `--create-missing` in `sync_profile_toolsets_from_manifest.py` (+ `--clone-from`, `--provision-only`, `--sync-soul-snippets`); tests `test_provision_profile_from_manifest.py`; E2E `RUN_PROVISION_DOMAIN_E2E.bat`; skill `create_fork_domain`
@@ -110,6 +111,14 @@
 - [ ] **Bronnen plaatsen** in lege `raw_source_files`-mappen (nu 0 bestanden: `01_Academics_Beta` … `08_Ventures_Incubator`; legal onder `04_Legal_Corporate` = klaar), daarna `institutional_p0_p1.bat --ingest-remaining`
 - [x] Preflight: `scripts/rag_pipeline/ingest_preflight.py` (in `institutional_p0_p1.bat --ingest-remaining`)
 - [x] `--mcp-test` (2026-05-21): legal + core OK; 7 domeinen WARN = lege LanceDB (**geen brondata** in `raw_source_files`, geen pipeline-fout)
+
+### Split-home (Windows — 2026-05-24)
+
+- [x] Legacy `~/.hermes/config.yaml` gearchiveerd; `CONFIG_README.txt` aanwezig
+- [x] Auxiliary hybrid preset (Qwen local + Gemini vision)
+- [x] `APPLY_HERMES_HOME_MIGRATION.bat` — geautomatiseerde keten (backup + deprecate + preset + E2E)
+- [x] `RUN_HERMES_HOME_E2E.bat` PASS; drift-check groen
+- [x] User `HERMES_HOME` = `%LOCALAPPDATA%\hermes`; gateway aligned
 
 ### Config (buiten repo — correct)
 

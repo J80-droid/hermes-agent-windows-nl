@@ -20,6 +20,9 @@ function Get-HermesAuditBundleFileList {
         'RUN_LEGAL_DOMAIN_E2E.ps1',
         'RUN_LEGAL_DOMAIN_E2E.bat',
         'RUN_SOUL_DEPLOY_START_E2E.ps1',
-        'RUN_SOUL_DEPLOY_START_E2E.bat'
+        'RUN_SOUL_DEPLOY_START_E2E.bat',
+        'RUN_HERMES_HOME_E2E.ps1',
+        'HermesHomeE2E.core.ps1',
+        'RUN_HERMES_HOME_E2E.bat'
     )
 }

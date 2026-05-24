@@ -1,0 +1,51 @@
+# Reference fragment — apply via windows/scripts/apply_auxiliary_hybrid_preset.py
+# Text tasks: local Ollama Qwen 1.5B. Vision: direct Gemini API (GOOGLE_API_KEY).
+
+auxiliary:
+  compression:
+    provider: custom
+    model: qwen2.5-coder:1.5b-instruct-q8_0
+    base_url: http://localhost:11434/v1
+    api_key: ollama
+  web_extract:
+    provider: custom
+    model: qwen2.5-coder:1.5b-instruct-q8_0
+    base_url: http://localhost:11434/v1
+    api_key: ollama
+  mcp:
+    provider: custom
+    model: qwen2.5-coder:1.5b-instruct-q8_0
+    base_url: http://localhost:11434/v1
+    api_key: ollama
+  approval:
+    provider: custom
+    model: qwen2.5-coder:1.5b-instruct-q8_0
+    base_url: http://localhost:11434/v1
+    api_key: ollama
+  title_generation:
+    provider: custom
+    model: qwen2.5-coder:1.5b-instruct-q8_0
+    base_url: http://localhost:11434/v1
+    api_key: ollama
+  skills_hub:
+    provider: custom
+    model: qwen2.5-coder:1.5b-instruct-q8_0
+    base_url: http://localhost:11434/v1
+    api_key: ollama
+  triage_specifier:
+    provider: custom
+    model: qwen2.5-coder:1.5b-instruct-q8_0
+    base_url: http://localhost:11434/v1
+    api_key: ollama
+  curator:
+    provider: custom
+    model: qwen2.5-coder:1.5b-instruct-q8_0
+    base_url: http://localhost:11434/v1
+    api_key: ollama
+  vision:
+    provider: gemini
+    model: gemini-2.5-flash
+
+# Not in preset (stay auto / main unless you extend manually):
+#   kanban_decomposer, profile_describer, goal_judge
+# session_search: no auxiliary LLM in current Hermes (legacy yaml slot ignored)

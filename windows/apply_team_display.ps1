@@ -87,65 +87,24 @@ $hermesRoot = Get-HermesRootConfigDir -Override $HermesRoot
 
 Write-Host ('[INFO] ' + 'Hermes root: ' + $hermesRoot) -ForegroundColor Cyan
 
-
-
 if ($ActiveProfileOnly) {
-
-    $defaultsPath = Join-Path $scriptDir 'team_display.defaults'
-
     $activeProfile = 'core'
-
     $activeProfilePath = Join-Path $hermesRoot 'active_profile'
-
     if (Test-Path -LiteralPath $activeProfilePath) {
-
         $activeProfile = (Get-Content -LiteralPath $activeProfilePath -Raw -Encoding UTF8).Trim()
-
     }
-
     $profileHome = Join-Path $hermesRoot ('profiles\' + $activeProfile)
-
     if (-not (Test-Path -LiteralPath $profileHome)) {
-
         New-Item -ItemType Directory -Path $profileHome -Force | Out-Null
-
     }
-
-    $env:HERMES_HOME = $profileHome
-
-    Write-Host ('[INFO] ' + 'Profiel (legacy): ' + $activeProfile) -ForegroundColor Cyan
-
-    Get-Content -LiteralPath $defaultsPath | ForEach-Object {
-
-        $line = $_.Trim()
-
-        if (-not $line -or $line.StartsWith('#')) { return }
-
-        $eq = $line.IndexOf('=')
-
-        if ($eq -lt 1) { return }
-
-        $key = $line.Substring(0, $eq).Trim()
-
-        $val = $line.Substring($eq + 1).Trim()
-
-        if (-not $key) { return }
-
-        $configKey = "display.$key"
-
-        & $condaExe run -n hermes-env --no-capture-output hermes config set $configKey $val
-
-        if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
-
-    }
-
+    . (Join-Path $scriptDir 'scripts\HermesHomeCommon.ps1')
+    Ensure-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
+    Write-Host ('[INFO] ' + 'Profiel display patch: ' + $activeProfile + ' (HERMES_HOME blijft root)') -ForegroundColor Cyan
+    & $condaExe run -n hermes-env --no-capture-output python (Join-Path $repoRoot 'windows/scripts/apply_team_display_profiles.py') --profile $activeProfile
+    if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
     Write-Host '[OK] Team display op actief profiel.' -ForegroundColor Green
-
     exit 0
-
 }
-
-
 
 $env:HERMES_ROOT = $hermesRoot
 

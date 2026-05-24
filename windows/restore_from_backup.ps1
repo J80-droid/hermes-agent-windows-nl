@@ -167,4 +167,20 @@ Write-Host '[OK] Herstel voltooid. Controleer git diff; draai eventueel REFRESH_
 if ($RestoreRuntimeFull -or $RestoreRuntimePersonas) {
     Write-Host '[INFO] Bij display-drift: windows\APPLY_INSTITUTIONAL_RUNTIME.bat en /new in Hermes.' -ForegroundColor DarkYellow
 }
+
+if ($RestoreRuntimeFull -or $RestoreRuntimePersonas -or $RestoreLegacyProfile -or $RestoreUserProfile) {
+  . (Join-Path $PSScriptRoot 'scripts/HermesHomeCommon.ps1')
+  $postRoot = Ensure-UserHermesHomeRoot -FixUserEnv -Quiet
+  Write-Host ('[INFO] Post-restore HERMES_HOME = ' + $postRoot) -ForegroundColor Cyan
+  $syncBat = Join-Path $PSScriptRoot 'SYNC_HERMES_API_ENV.bat'
+  if (Test-Path -LiteralPath $syncBat) {
+    Write-Host '[INFO] Post-restore API-env sync...' -ForegroundColor Cyan
+    $env:HERMES_SKIP_PAUSE = '1'
+    & $syncBat
+    Remove-Item Env:HERMES_SKIP_PAUSE -ErrorAction SilentlyContinue
+  }
+  if (Test-Path -LiteralPath (Join-Path $env:USERPROFILE '.hermes/config.yaml')) {
+    Write-Host '[INFO] Legacy config.yaml teruggevonden — overweeg DEPRECATE_LEGACY_CONFIG.bat' -ForegroundColor Yellow
+  }
+}
 exit 0

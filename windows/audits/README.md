@@ -60,6 +60,9 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | **`RUN_AUDITS.bat -IncludeStatusBarCostE2E`** | Bovenstaande statusbalk-kosten E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E`** | Klassieke CLI statusbalk-kosten E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeParetoE2E`** | Bovenstaande Pareto router E2E in gecombineerde poort |
+| **`RUN_HERMES_HOME_E2E.bat`** | Split-home: repo-artefacten, pytest, drift, inventory, gateway, auxiliary vision (**11 stappen**) |
+| **`RUN_AUDITS.bat -IncludeHermesHomeE2E`** | Bovenstaande Hermes-home E2E in gecombineerde poort |
+| **`APPLY_HERMES_HOME_MIGRATION.bat`** | Eenmalig: backup → deprecate → preset → E2E (zelfde poort als handmatige keten) |
 | **`windows\tests\RUN_PYTEST.bat`** | Brede pytest (excl. integration) |
 | **`windows\VERIFY_WINDOWS_CHAIN.bat`** | Script-keten backup/RAG (handmatig, pause) |
 | **`RUN_BACKUP_E2E.bat`** | Lightweight backup schema v3 test (`tests/windows/test_backup_runtime.ps1`) |
@@ -275,6 +278,35 @@ windows\audits\RUN_AUDITS.bat -IncludeToolsetDomainE2E
 **Handmatig na PASS:** nieuwe chat met `hermes -p <domein>` — root zonder `-p` heeft bewust geen tools.
 
 Zie `docs/DOMAIN_TOOLSET_AUDIT.md`.
+
+## Hermes split-home E2E
+
+```text
+windows\audits\RUN_HERMES_HOME_E2E.bat
+windows\APPLY_HERMES_HOME_MIGRATION.bat
+```
+
+Optioneel: `-SkipPytest` op `RUN_HERMES_HOME_E2E.ps1`.
+
+| Stap | Controle |
+| ---- | -------- |
+| 1/11 | Repo-artefacten (HermesHomeCommon, migration bat, presets, docs) |
+| 2/11 | pytest: doctor split-home, constants, config get, profile override guard |
+| 3/11 | `Get-HermesRuntimeRoot` consistent across modules |
+| 4/11 | Geen actieve `~/.hermes/config.yaml` |
+| 5/11 | Legacy hub: `CONFIG_README.txt` of `config.yaml.deprecated-*` |
+| 6/11 | `inventory_hermes_home.ps1 -Quiet` |
+| 7–8/11 | `verify_hermes_home` + `verify_hermes_config_drift` |
+| 9/11 | `Ensure-UserHermesHomeRoot` proces-env |
+| 10/11 | User `HERMES_HOME` = runtime root (geen `profiles\*`) |
+| 11/11 | Gateway HERMES_HOME aligned |
+| + | `auxiliary.vision.provider=gemini` (hard check) |
+
+**Productie-poort:** `APPLY_HERMES_HOME_MIGRATION.bat` = backup → deprecate → preset → deze E2E.
+
+Rapport: `HERMES_HOME_E2E_REPORT_<timestamp>.md` (gitignored via `*_E2E_REPORT_*_*.md`).
+
+Zie `docs/HERMES_HOME_WINDOWS.md`.
 
 ## SOUL deploy bij start E2E
 

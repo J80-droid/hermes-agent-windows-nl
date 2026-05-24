@@ -31,6 +31,7 @@ $snippetSteps = @(
     , @('Workflow', 'sync_soul_workflow_snippet.ps1')
     , @('Tool Usage', 'sync_soul_tool_governance_snippet.ps1')
     , @('Memory Policy', 'sync_soul_memory_policy_snippet.ps1')
+    , @('Config governance', 'sync_soul_config_governance_snippet.ps1')
     , @('Codebase-audit', 'sync_soul_codebase_audit_snippet.ps1')
 )
 

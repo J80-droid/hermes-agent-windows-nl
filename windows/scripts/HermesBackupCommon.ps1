@@ -2,17 +2,7 @@
 # Parity exclude-regels: hermes_cli/backup.py (_EXCLUDED_DIRS, WAL/SHM, pid-files).
 # Dot-source: . (Join-Path $PSScriptRoot 'scripts/HermesBackupCommon.ps1')
 
-function Get-HermesRuntimeRoot {
-    $localRoot = Join-Path $env:LOCALAPPDATA 'hermes'
-    if (Test-Path -LiteralPath (Join-Path $localRoot 'config.yaml')) { return $localRoot }
-    $homeRoot = Join-Path $env:USERPROFILE '.hermes'
-    if (Test-Path -LiteralPath (Join-Path $homeRoot 'config.yaml')) { return $homeRoot }
-    return $localRoot
-}
-
-function Get-HermesLegacyRoot {
-    return Join-Path $env:USERPROFILE '.hermes'
-}
+. (Join-Path $PSScriptRoot 'HermesHomeCommon.ps1')
 
 function Get-HermesRobocopyExePath {
     $windir = if ($env:SystemRoot) { $env:SystemRoot } else { $env:WINDIR }

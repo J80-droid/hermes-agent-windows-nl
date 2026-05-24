@@ -5313,6 +5313,35 @@ def edit_config():
     subprocess.run([editor, str(config_path)])
 
 
+def get_config_value(key: str) -> None:
+    """Print a dotted config key (e.g. auxiliary.vision.provider)."""
+    cfg = load_config()
+    parts = [p for p in key.split(".") if p]
+    if not parts:
+        print("", end="")
+        return
+    cur: object = cfg
+    for part in parts:
+        if isinstance(cur, list):
+            try:
+                cur = cur[int(part)]
+            except (ValueError, IndexError):
+                print("", end="")
+                return
+        elif isinstance(cur, dict):
+            if part not in cur:
+                print("", end="")
+                return
+            cur = cur[part]
+        else:
+            print("", end="")
+            return
+    if isinstance(cur, (dict, list)):
+        print(yaml.safe_dump(cur, sort_keys=False, allow_unicode=True).rstrip())
+    else:
+        print(cur)
+
+
 def set_config_value(key: str, value: str):
     """Set a configuration value."""
     if is_managed():
@@ -5446,7 +5475,17 @@ def config_command(args):
     
     elif subcmd == "path":
         print(get_config_path())
-    
+
+    elif subcmd == "get":
+        key = getattr(args, "key", None)
+        if not key:
+            print("Usage: hermes config get <dotted.key>")
+            print("Examples:")
+            print("  hermes config get auxiliary")
+            print("  hermes config get auxiliary.vision.provider")
+            sys.exit(1)
+        get_config_value(key)
+
     elif subcmd == "env-path":
         print(get_env_path())
     
@@ -5551,6 +5590,7 @@ def config_command(args):
         print("  hermes config           Show current configuration")
         print("  hermes config edit      Open config in editor")
         print("  hermes config set <key> <value>   Set a config value")
+        print("  hermes config get <key>           Get a config value (dotted path)")
         print("  hermes config check     Check for missing/outdated config")
         print("  hermes config migrate   Update config with new options")
         print("  hermes config path      Show config file path")

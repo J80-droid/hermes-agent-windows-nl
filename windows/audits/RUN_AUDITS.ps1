@@ -17,6 +17,7 @@ param(
     [switch]$IncludeClassicCliStatusBarCostE2E,
     [switch]$IncludeParetoE2E,
     [switch]$IncludePseudoTableNormalizerE2E,
+    [switch]$IncludeHermesHomeE2E,
     [switch]$IncludeCodebaseSmoke,
     [switch]$IncludeCodebaseSmokeE2E,
     [switch]$SkipPytest,
@@ -80,6 +81,11 @@ function Invoke-Step {
 $verify = Join-Path $repoRoot 'windows/scripts/verify_hermes_home.ps1'
 if (Test-Path -LiteralPath $verify) {
     Invoke-Step 'verify_hermes_home' { & $verify }
+}
+
+$verifyDrift = Join-Path $repoRoot 'windows/scripts/verify_hermes_config_drift.ps1'
+if (Test-Path -LiteralPath $verifyDrift) {
+    Invoke-Step 'verify_hermes_config_drift' { & $verifyDrift }
 }
 
 if (-not $SkipVerifyChain) {
@@ -273,6 +279,14 @@ if ($IncludePseudoTableNormalizerE2E -or $IncludeAllE2E) {
     $pseudoE2e = Join-Path $scriptRoot 'RUN_PSEUDO_TABLE_NORMALIZER_E2E.ps1'
     Invoke-Step 'pseudo-table-normalizer-e2e' {
         & $pseudoE2e -RepoRoot $repoRoot
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeHermesHomeE2E -or $IncludeAllE2E) {
+    $homeE2e = Join-Path $scriptRoot 'RUN_HERMES_HOME_E2E.ps1'
+    Invoke-Step 'hermes-home-e2e' {
+        & $homeE2e -RepoRoot $repoRoot
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

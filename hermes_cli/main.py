@@ -2505,6 +2505,10 @@ def _clear_stale_openai_base_url():
 # context compression, web extraction, session search, etc.). Each task has
 # its own provider+model pair in config.yaml under `auxiliary.<task>`.
 #
+# Local Ollama (Windows fork): use provider `custom` + base_url
+# http://localhost:11434/v1 + api_key `ollama` — not `main` / not `auto`
+# when you want a pinned local Qwen preset. See APPLY_AUXILIARY_HYBRID_PRESET.bat.
+#
 # The UI lives behind "Configure auxiliary models..." at the bottom of the
 # `hermes model` provider picker. It does NOT re-run credential setup — it
 # only routes already-authenticated providers to specific aux tasks. Users
@@ -2626,6 +2630,8 @@ def _aux_config_menu() -> None:
         print("  Hermes only falls back to a lightweight backend (OpenRouter,")
         print("  Nous Portal) if the main model is unavailable.  Override a")
         print("  task below if you want it pinned to a specific provider/model.")
+        print("  Local Ollama: pick custom + base_url http://localhost:11434/v1")
+        print("  (not main/auto). Institutional preset: APPLY_AUXILIARY_HYBRID_PRESET.bat.")
         print()
 
         # Build the task menu with current settings inline
@@ -12408,6 +12414,10 @@ Examples:
 
     # config path
     config_subparsers.add_parser("path", help="Print config file path")
+
+    # config get (dotted key — institutional verify)
+    config_get = config_subparsers.add_parser("get", help="Get a configuration value by dotted key")
+    config_get.add_argument("key", help="Dotted key (e.g. auxiliary.vision.provider)")
 
     # config env-path
     config_subparsers.add_parser("env-path", help="Print .env file path")

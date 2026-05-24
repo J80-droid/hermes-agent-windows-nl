@@ -811,6 +811,24 @@ def build_environment_hints() -> str:
                 "above to construct paths under C:\\Users\\<user>\\, never the "
                 "hostname."
             )
+            try:
+                from hermes_cli.config import get_config_path
+
+                cfg_path = get_config_path()
+                localappdata = os.environ.get("LOCALAPPDATA", "")
+                if localappdata:
+                    runtime_home = os.path.join(localappdata, "hermes")
+                    host_lines.append(f"HERMES_RUNTIME_HOME={runtime_home}")
+                host_lines.append(f"HERMES_CONFIG={cfg_path}")
+                host_lines.append(
+                    "Config wijzigen: hermes config set / hermes model — niet write_file op yaml. "
+                    "Verify: hermes config get auxiliary.vision.provider"
+                )
+                host_lines.append(
+                    "Legacy secrets hub: %USERPROFILE%\\.hermes\\.env (niet config.yaml)."
+                )
+            except Exception:
+                pass
         hints.append("\n".join(host_lines))
 
         # Windows-local terminal runs bash, not PowerShell — the model must

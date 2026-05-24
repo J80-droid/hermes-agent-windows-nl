@@ -11,7 +11,12 @@ if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 }
 
-$stampDir = Join-Path $env:USERPROFILE '.hermes'
+$ensureEnv = Join-Path $RepoRoot 'windows/scripts/ensure_hermes_launch_env.ps1'
+if (Test-Path -LiteralPath $ensureEnv) {
+    & $ensureEnv -FixUserEnv -SkipVerify
+}
+
+$stampDir = Join-Path $env:LOCALAPPDATA 'hermes'
 $stampFile = Join-Path $stampDir 'launch_bootstrap.stamp'
 $pyproject = Join-Path $RepoRoot 'pyproject.toml'
 $needRag = $ForceRagCheck.IsPresent

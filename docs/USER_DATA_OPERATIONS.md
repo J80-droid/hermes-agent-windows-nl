@@ -37,6 +37,11 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 | Snelkoppelingen vernieuwen | `windows\REFRESH_TASKBAR_SHORTCUTS.bat` |
 | Obsidian vault (L4) openen | `windows\OPEN_OBSIDIAN_VAULT.bat` — env-sync, scaffold, start Obsidian; zie [MEMORY_ARCHITECTURE.md](MEMORY_ARCHITECTURE.md) |
 | Vault-env naar alle profielen | `windows\SYNC_HERMES_API_ENV.bat` (incl. scaffold; ook in trust-sync) |
+| **Split-home config drift** | `windows\VERIFY_HERMES_CONFIG_DRIFT.bat` — zie `docs\HERMES_HOME_WINDOWS.md` |
+| **Split-home migratie (eenmalig)** | `windows\APPLY_HERMES_HOME_MIGRATION.bat` (backup → deprecate → preset → E2E) |
+| Legacy config deprecaten | `windows\DEPRECATE_LEGACY_CONFIG.bat` (na backup) |
+| Auxiliary hybrid preset | `windows\APPLY_AUXILIARY_HYBRID_PRESET.bat` + `hermes config get auxiliary` |
+| Hermes home inventaris | `windows\INVENTORY_HERMES_HOME.bat` |
 | Setup (logica) | `scripts\windows\setup_hermes_windows.ps1` — **niet** volledig kopiëren naar `windows\` |
 | Setup (dubbelklik) | `windows\SETUP_HERMES.bat` — standaard wizard; `--files-only` = alleen bestanden |
 

@@ -56,6 +56,24 @@ set "HERMES_SKIP_PAUSE=1"
 call "%~dp0SYNC_HERMES_API_ENV.bat"
 set "HERMES_SKIP_PAUSE="
 echo.
+echo [INFO] Hermes home + config drift verify...
+set "HERMES_SKIP_PAUSE=1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\verify_hermes_home.ps1" -StrictDrift
+if errorlevel 1 (
+  echo [ERROR] verify_hermes_home / config drift gefaald
+  set "POST_PULL_ERR=1"
+) else (
+  echo [OK] Hermes home + config drift OK.
+)
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\verify_hermes_config_drift.ps1" -Strict
+if errorlevel 1 (
+  echo [ERROR] verify_hermes_config_drift gefaald
+  set "POST_PULL_ERR=1"
+) else (
+  echo [OK] verify_hermes_config_drift OK.
+)
+set "HERMES_SKIP_PAUSE="
+echo.
 echo [INFO] SOUL anatomy deploy (13 profielen + snippets, stamp bijwerken)...
 set "HERMES_SKIP_PAUSE=1"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\launch_soul_anatomy_deploy.ps1" -RepoRoot "%CD%" -Force -Quiet

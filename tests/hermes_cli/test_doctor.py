@@ -6,6 +6,7 @@ import types
 import io
 import contextlib
 from argparse import Namespace
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -31,6 +32,31 @@ class TestDoctorPlatformHints:
         assert doctor._is_termux() is False
         assert doctor._python_install_cmd() == "uv pip install"
         assert doctor._system_package_install_cmd("ripgrep") == "sudo apt install ripgrep"
+
+
+class TestWindowsSplitHomeCheck:
+    def test_skips_off_windows(self, monkeypatch):
+        monkeypatch.setattr(sys, "platform", "linux")
+        issues: list = []
+        doctor._check_windows_split_home_config(issues)
+        assert issues == []
+
+    def test_warns_when_both_configs_exist(self, monkeypatch, tmp_path, capsys):
+        monkeypatch.setattr(sys, "platform", "win32")
+        local = tmp_path / "AppData" / "Local" / "hermes"
+        local.mkdir(parents=True)
+        (local / "config.yaml").write_text("model: {}\n", encoding="utf-8")
+        legacy = tmp_path / ".hermes"
+        legacy.mkdir()
+        (legacy / "config.yaml").write_text("model: {}\n", encoding="utf-8")
+        monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "AppData" / "Local"))
+        monkeypatch.setattr(Path, "home", lambda: tmp_path)
+
+        issues: list = []
+        doctor._check_windows_split_home_config(issues)
+        assert any("DEPRECATE_LEGACY_CONFIG" in item for item in issues)
+        captured = capsys.readouterr()
+        assert "split-home" in captured.out.lower() or "Split-home" in captured.out
 
 
 class TestProviderEnvDetection:

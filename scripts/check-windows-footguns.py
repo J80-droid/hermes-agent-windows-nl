@@ -324,6 +324,65 @@ FOOTGUNS: list[Footgun] = [
             "    pass  # Windows asyncio doesn't support signal handlers"
         ),
     ),
+    Footgun(
+        name="Windows: ~/.hermes/config.yaml as active config target",
+        pattern=re.compile(r"~/.hermes/config\.yaml|['\"]\\.hermes[/\\]config\.yaml['\"]"),
+        message=(
+            "On the Windows fork, runtime config lives in "
+            "%LOCALAPPDATA%\\hermes\\config.yaml — not ~/.hermes/config.yaml. "
+            "Legacy path is secrets hub / deprecated stub only."
+        ),
+        fix=(
+            "Document %LOCALAPPDATA%\\hermes\\config.yaml or link docs/HERMES_HOME_WINDOWS.md; "
+            "use hermes config set / hermes model for changes."
+        ),
+        path_allowlist=(
+            "docs/HERMES_HOME_WINDOWS.md",
+            "docs/templates/SOUL_SHARED_CONFIG_GOVERNANCE.md",
+            "hermes_cli",
+            "cli.py",
+            "run_agent.py",
+            "agent",
+            "tests",
+            "scripts/deprecate",
+            "merge_legacy_auxiliary",
+            "windows/scripts/deprecate",
+            "windows/scripts/inventory",
+            "windows/scripts/verify_hermes",
+            "HermesHomeCommon",
+            "check-windows-footguns.py",
+        ),
+        post_filter=lambda m, line: (  # noqa: ARG005
+            "LOCALAPPDATA" not in line
+            and "HERMES_HOME_WINDOWS" not in line
+            and "deprecated" not in line.lower()
+            and "legacy" not in line.lower()
+            and "niet " not in line.lower()
+            and "not " not in line.lower()
+            and "geen " not in line.lower()
+        ),
+    ),
+    Footgun(
+        name="HERMES_HOME set to profiles subdir",
+        pattern=re.compile(
+            r"""(?:\$env:HERMES_HOME|\[Environment\]::SetEnvironmentVariable\(\s*['"]HERMES_HOME['"]|\bHERMES_HOME\s*=\s*).*profiles[/\\]"""
+        ),
+        message=(
+            "HERMES_HOME must point at the runtime root, not profiles\\<name>. "
+            "Use active_profile + profile-scoped paths instead."
+        ),
+        fix=(
+            "Ensure-UserHermesHomeRoot (HermesHomeCommon.psm1) or "
+            "apply_team_display_profiles.py --profile <name> without changing HERMES_HOME."
+        ),
+        path_allowlist=(
+            "verify_hermes_home.ps1",
+            "HermesHomeCommon.psm1",
+            "profile_switch.py",
+            "ensure_hermes_launch_env.ps1",
+            "tests/",
+        ),
+    ),
 ]
 
 

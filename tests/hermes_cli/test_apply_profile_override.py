@@ -39,6 +39,9 @@ def _run_apply_profile_override(
         (hermes_root / "profiles" / active_profile).mkdir(parents=True, exist_ok=True)
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    # Windows fork: zonder deze flag leest get_default_hermes_root() echte
+    # %LOCALAPPDATA%\hermes i.p.v. tmp_path/.hermes in tests.
+    monkeypatch.setenv("HERMES_WIN_PREFER_LOCALAPPDATA", "0")
     if hermes_home is not None:
         monkeypatch.setenv("HERMES_HOME", hermes_home)
     else:
@@ -124,6 +127,7 @@ class TestApplyProfileOverrideHermesHomeGuard:
         (hermes_root / "active_profile").write_text("coder")
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        monkeypatch.setenv("HERMES_WIN_PREFER_LOCALAPPDATA", "0")
         monkeypatch.setenv("HERMES_HOME", str(profile_dir))
         monkeypatch.setattr(sys, "argv", ["hermes", "gateway", "start"])
 
@@ -152,6 +156,7 @@ class TestApplyProfileOverrideHermesHomeGuard:
         hermes_root.mkdir(parents=True, exist_ok=True)
 
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        monkeypatch.setenv("HERMES_WIN_PREFER_LOCALAPPDATA", "0")
         monkeypatch.delenv("HERMES_HOME", raising=False)
         monkeypatch.setattr(sys, "argv", ["hermes", "gateway", "start"])
         (hermes_root / "active_profile").write_text("default")

@@ -94,6 +94,14 @@ def main() -> int:
     if "--check-drift" in sys.argv:
         return check_display_drift()
 
+    profile_only = None
+    if "--profile" in sys.argv:
+        idx = sys.argv.index("--profile")
+        if idx + 1 >= len(sys.argv):
+            print("[ERROR] --profile vereist een naam", file=sys.stderr)
+            return 1
+        profile_only = sys.argv[idx + 1].strip()
+
     repo = Path(__file__).resolve().parents[2]
     defaults_path = repo / "windows" / "team_display.defaults"
     if not defaults_path.is_file():
@@ -122,7 +130,13 @@ def main() -> int:
         print(f"  [OK] root -> {root_cfg}")
 
     names: list[str] = []
-    for prof_dir in sorted(profiles_dir.iterdir()):
+    prof_dirs = sorted(profiles_dir.iterdir())
+    if profile_only:
+        prof_dirs = [profiles_dir / profile_only]
+        if not prof_dirs[0].is_dir():
+            print(f"[ERROR] Onbekend profiel: {profile_only}", file=sys.stderr)
+            return 1
+    for prof_dir in prof_dirs:
         if not prof_dir.is_dir():
             continue
         cfg_path = prof_dir / "config.yaml"

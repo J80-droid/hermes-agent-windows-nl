@@ -8,9 +8,24 @@ import os
 import sysconfig
 from contextvars import ContextVar, Token
 from pathlib import Path
+import sys
+
+
+def _windows_runtime_home_candidate() -> Path | None:
+    """Prefer %LOCALAPPDATA%\\hermes when it holds config.yaml (Windows fork)."""
+    if sys.platform != "win32":
+        return None
+    flag = os.environ.get("HERMES_WIN_PREFER_LOCALAPPDATA", "1").strip().lower()
+    if flag in ("0", "false", "no", "off"):
+        return None
+    local = Path(os.environ.get("LOCALAPPDATA", "")) / "hermes"
+    if (local / "config.yaml").is_file():
+        return local
+    return None
 
 
 _profile_fallback_warned: bool = False
+_win_localappdata_warned: bool = False
 _UNSET = object()
 _HERMES_HOME_OVERRIDE: ContextVar[str | object] = ContextVar(
     "_HERMES_HOME_OVERRIDE", default=_UNSET
@@ -63,6 +78,18 @@ def get_hermes_home() -> Path:
     val = os.environ.get("HERMES_HOME", "").strip()
     if val:
         return Path(val)
+
+    candidate = _windows_runtime_home_candidate()
+    if candidate is not None:
+        global _win_localappdata_warned
+        if not _win_localappdata_warned:
+            _win_localappdata_warned = True
+            sys.stderr.write(
+                f"[HERMES_HOME] HERMES_HOME unset — using Windows runtime root "
+                f"{candidate} (HERMES_WIN_PREFER_LOCALAPPDATA=1). "
+                f"Set HERMES_HOME explicitly to silence.\n"
+            )
+        return candidate
 
     # Guard: if a non-default profile is sticky-active, warn once that
     # the fallback to the default profile is almost certainly wrong.
@@ -120,6 +147,9 @@ def get_default_hermes_root() -> Path:
     native_home = Path.home() / ".hermes"
     env_home = os.environ.get("HERMES_HOME", "")
     if not env_home:
+        candidate = _windows_runtime_home_candidate()
+        if candidate is not None:
+            return candidate
         return native_home
     env_path = Path(env_home)
     try:

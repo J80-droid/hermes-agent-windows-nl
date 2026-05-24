@@ -54,7 +54,7 @@ Documentatie: [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md)
 
 1. **Root-model controleren:** `hermes.bat doctor` (zonder `-p`) of `hermes.bat -p legal doctor` (toont inherited model).
 2. **Model instellen:** `hermes.bat model` — kies provider + model (één keer voor alle profielen).
-3. **API-key:** in `%LOCALAPPDATA%\hermes\.env` (of profiel-`.env` voor profiel-specifieke tokens).
+3. **API-key:** bron vaak `%USERPROFILE%\.hermes\.env` → sync naar runtime via `windows\SYNC_HERMES_API_ENV.bat`; runtime/profiel: `%LOCALAPPDATA%\hermes\.env`.
 4. **Verouderd profiel-blok:** als `profiles\legal\config.yaml` nog `model:` bevat → `hermes.bat doctor --fix`.
 
 **Niet meer doen:** handmatig `model: openrouter/...` in `profiles\legal\config.yaml` zetten — dat wordt genegeerd of veroorzaakt verwarring.

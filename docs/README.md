@@ -36,6 +36,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Backup & restore (schema v3, runtime) | [USER_DATA_OPERATIONS.md](USER_DATA_OPERATIONS.md) § Windows; `windows/INSTITUTIONAL.md` § Backup |
 | IDE PSScriptAnalyzer (VS Code/Cursor) | [IDE_VSCODE_SETTINGS.example.json](IDE_VSCODE_SETTINGS.example.json) |
 | Hermes starten zonder conda in PATH | [HERMES_START.md](HERMES_START.md) (kopie ook in workspace-root `HERMES_START.md`) |
+| **Windows split-home (config, drift, migratie)** | [HERMES_HOME_WINDOWS.md](HERMES_HOME_WINDOWS.md) · E2E: `windows/audits/RUN_HERMES_HOME_E2E.bat` · eenmalig: `windows/APPLY_HERMES_HOME_MIGRATION.bat` |
 | Blauwdruk: nieuw domein toevoegen | [DOMAIN_BLUEPRINT.md](DOMAIN_BLUEPRINT.md) |
 | Presentatie / Rich renderer (10/10) | [INSTITUTIONAL_PRESENTATION.md](INSTITUTIONAL_PRESENTATION.md), porting [INSTITUTIONAL_PORTING_GUIDE.md](INSTITUTIONAL_PORTING_GUIDE.md), rooktest [templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md) |
 | Voortgang / checklist | [../memory-bank/progress.md](../memory-bank/progress.md) |
@@ -96,7 +97,7 @@ flowchart TB
 - **Doctor:** `hermes doctor` of `windows\DOCTOR_FIX.bat`
 - **Profiel wisselen:** `windows\SWITCH_PROFILE.bat <naam>` of `/profile use <naam>` in chat; audit: `windows\audits\RUN_PROFILE_SWITCH_E2E.bat` — zie [PROFILE_SWITCH.md](PROFILE_SWITCH.md)
 - **Backup (schema v3):** `windows\MANAGE_BACKUPS.bat` — Hermes **volledig stoppen**; `%LOCALAPPDATA%\hermes` → `runtime_hermes/` + persona-subset `localappdata_hermes/`; restore: `-RestoreRuntimeFull`, `-RestoreRuntimePersonas`, `-RestoreLegacyProfile` via `RESTORE_FROM_BACKUP.bat`; audit: `windows\audits\RUN_BACKUP_E2E.bat`
-- **Kwaliteitspoort (periodiek):** `windows\audits\RUN_AUDITS.bat -IncludeProfileE2E` of `-IncludeInstitutionalE2E` / `-IncludeAllE2E` (incl. toolset E2E)
+- **Kwaliteitspoort (periodiek):** `windows\audits\RUN_AUDITS.bat -IncludeProfileE2E` of `-IncludeInstitutionalE2E` / `-IncludeHermesHomeE2E` / `-IncludeAllE2E` (incl. toolset E2E)
 - **Domein-toolsets:** [DOMAIN_TOOLSET_AUDIT.md](DOMAIN_TOOLSET_AUDIT.md) — `SYNC_DOMAIN_TOOLSETS.bat` (`--create-missing` voor nieuw profiel); audit `RUN_TOOLSET_DOMAIN_E2E.bat`
 - **Runtime provision (nieuw profiel):** `set HERMES_HOME=%LOCALAPPDATA%\hermes` → `windows\SYNC_DOMAIN_TOOLSETS.bat --create-missing` — zie [DOMAIN_BLUEPRINT.md](DOMAIN_BLUEPRINT.md) stap 9–10
 - **SOUL sync + presentatie (10/10):** `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` (display + SOUL + E2E); docs [INSTITUTIONAL_PRESENTATION.md](INSTITUTIONAL_PRESENTATION.md), porting [INSTITUTIONAL_PORTING_GUIDE.md](INSTITUTIONAL_PORTING_GUIDE.md); rooktest [templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md); verify: `python scripts/diagnose_renderer.py --verify`, `python scripts/score_institutional_render.py --verify`; guard vóór commit: `python scripts/verify_institutional_guard.py`; pariteit: `pytest tests/hermes_cli/test_normalizer_ts_parity.py`

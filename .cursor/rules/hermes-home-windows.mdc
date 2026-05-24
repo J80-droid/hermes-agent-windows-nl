@@ -1,0 +1,22 @@
+---
+description: Windows Hermes config-pad — nooit legacy ~/.hermes/config.yaml overschrijven
+globs: hermes-agent/**/*.{py,ps1,md,yaml,yml}
+alwaysApply: false
+---
+
+# Hermes home (Windows fork)
+
+## Canoniek runtime
+
+- **Config:** `%LOCALAPPDATA%\hermes\config.yaml` — niet `%USERPROFILE%\.hermes\config.yaml`
+- **Secrets hub:** `%USERPROFILE%\.hermes\.env` → sync via `windows\SYNC_HERMES_API_ENV.bat`
+- **HERMES_HOME:** runtime root (`%LOCALAPPDATA%\hermes`), **nooit** `profiles\<naam>`
+
+## Agent / IDE regels
+
+1. Config wijzigen via `hermes config set` / `hermes model` — niet `write_file` op yaml.
+2. Geen "100% succes" claimen zonder `hermes config get` output.
+3. Vision: check `GOOGLE_API_KEY` vóór OpenRouter; OpenRouter alleen als key in `.env`.
+4. Na config-wijziging: `VERIFY_HERMES_CONFIG_DRIFT.bat` of `hermes doctor`.
+
+Runbook: `docs/HERMES_HOME_WINDOWS.md`

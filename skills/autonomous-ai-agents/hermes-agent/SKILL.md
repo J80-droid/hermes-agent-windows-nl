@@ -332,9 +332,11 @@ The registry of record is `hermes_cli/commands.py` — every consumer
 
 ## Key Paths & Config
 
+**Windows fork:** runtime config is `%LOCALAPPDATA%\hermes\config.yaml` (not `~/.hermes/config.yaml`). API-key source often `%USERPROFILE%\.hermes\.env` → sync via `windows\SYNC_HERMES_API_ENV.bat`. Runbook: repo `docs/HERMES_HOME_WINDOWS.md`.
+
 ```
-~/.hermes/config.yaml       Main configuration
-~/.hermes/.env              API keys and secrets
+~/.hermes/config.yaml       Main configuration (Linux/macOS; Windows: use LOCALAPPDATA path above)
+~/.hermes/.env              API keys and secrets (Windows: sync hub → runtime)
 $HERMES_HOME/skills/        Installed skills
 ~/.hermes/sessions/         Gateway routing index, request dumps, *.jsonl transcripts (and optional per-session JSON snapshots when sessions.write_json_snapshots: true)
 ~/.hermes/state.db          Canonical session store (SQLite + FTS5)
@@ -343,7 +345,7 @@ $HERMES_HOME/skills/        Installed skills
 ~/.hermes/hermes-agent/     Source code (if git-installed)
 ```
 
-Profiles use `~/.hermes/profiles/<name>/` with the same layout.
+Profiles use `$HERMES_HOME/profiles/<name>/` with the same layout (Windows: under `%LOCALAPPDATA%\hermes\profiles\`).
 
 ### Config Sections
 
@@ -741,6 +743,8 @@ Ctrl+Enter?" This is how the Ctrl+Enter = c-j fact was established.
 
 ### Config / Files
 
+**Split-home (Windows fork).** Do not edit `~/.hermes/config.yaml` on Windows — use `%LOCALAPPDATA%\hermes\config.yaml` via `hermes config set` / `hermes model`. If both files exist, run `DEPRECATE_LEGACY_CONFIG.bat`. Verify with `hermes config get auxiliary`.
+
 **HTTP 400 "No models provided" on first run.** `config.yaml` was saved
 with a UTF-8 BOM (common when Windows apps write it). Re-save as UTF-8
 without BOM. `hermes config edit` writes without BOM; manual edits in
@@ -900,7 +904,7 @@ hermes-agent/
 └── website/              # Docusaurus docs site
 ```
 
-Config: `~/.hermes/config.yaml` (settings), `~/.hermes/.env` (API keys).
+Config: `~/.hermes/config.yaml` (settings), `~/.hermes/.env` (API keys). **Windows fork:** runtime config is `%LOCALAPPDATA%\hermes\config.yaml`; secrets source often `%USERPROFILE%\.hermes\.env` — see `docs/HERMES_HOME_WINDOWS.md`.
 
 ### Adding a Tool (3 files)
 

@@ -176,6 +176,15 @@ if (Test-NativeCommandFailed) {
 }
 Write-Host '[OK] pseudo-tabel normalizer E2E (10/10)' -ForegroundColor Green
 
+Write-Host '=== 2i/11 Hermes split-home E2E ===' -ForegroundColor Cyan
+$homeE2e = Join-Path $scriptRoot 'RUN_HERMES_HOME_E2E.ps1'
+& $homeE2e -RepoRoot $repoRoot
+if (Test-NativeCommandFailed) {
+    Write-Host '[FAIL] RUN_HERMES_HOME_E2E faalde (runtime root / drift / gateway)' -ForegroundColor Red
+    exit 1
+}
+Write-Host '[OK] Hermes split-home E2E' -ForegroundColor Green
+
 Write-Host '=== 2c/11 team_display.defaults inhoud ===' -ForegroundColor Cyan
 $td = Get-Content -LiteralPath (Join-Path $repoRoot 'windows/team_display.defaults') -Raw -Encoding UTF8
 foreach ($needle in @(

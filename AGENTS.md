@@ -7,7 +7,8 @@ Instructions for AI coding assistants and developers working on the hermes-agent
 - Index: `windows/scripts/update_knowledge.bat` → `scripts/rag_pipeline/ingest.py` (zie `scripts/rag_pipeline/ACTIVATION.md`).
 - RAG: `windows\scripts\update_knowledge.bat` (per-domein via `%USERPROFILE%\data\domains.yaml`).
 - MCP: per profiel `lancedb-<domein>` in profile `config.yaml` (niet globale `lancedb-knowledge`).
-- **Model/provider:** domeinprofielen **erven** van root `~/.hermes/config.yaml` — geen `model:` in `profiles/<naam>/config.yaml` (tenzij `model.inherit: false`). Code: `hermes_cli/profile_model_inheritance.py`; docs: `docs/PROFILE_MODEL_INHERITANCE.md`.
+- **Model/provider:** domeinprofielen **erven** van root `%LOCALAPPDATA%\hermes\config.yaml` — geen `model:` in `profiles/<naam>/config.yaml` (tenzij `model.inherit: false`). Code: `hermes_cli/profile_model_inheritance.py`; docs: `docs/PROFILE_MODEL_INHERITANCE.md`.
+- **Windows split-home (2026-05-23):** `HermesHomeCommon.psm1`, drift verify, deprecate legacy config, auxiliary hybrid preset, `HermesHomeE2E`, doctor + `HERMES_WIN_PREFER_LOCALAPPDATA`, runbook `docs/HERMES_HOME_WINDOWS.md`.
 - Citatieregels: `.cursorrules` + `LANCEDB_RAG_STRICT_CITATION_GUIDANCE` in `agent/prompt_builder.py` (actief wanneer tool `search_knowledge` geladen is).
 
 ## Development Environment
@@ -69,10 +70,8 @@ hermes-agent/
 └── tests/                # Pytest suite (~17k tests across ~900 files as of May 2026)
 ```
 
-**User config:** `~/.hermes/config.yaml` (settings), `~/.hermes/.env` (API keys only).
-**Logs:** `~/.hermes/logs/` — `agent.log` (INFO+), `errors.log` (WARNING+),
-`gateway.log` when running the gateway. Profile-aware via `get_hermes_home()`.
-Browse with `hermes logs [--follow] [--level ...] [--session ...]`.
+**User config (Windows fork):** `%LOCALAPPDATA%\hermes\config.yaml` (settings), synced `.env` under runtime/profiles; API-key **source** often `%USERPROFILE%\.hermes\.env` → `windows/SYNC_HERMES_API_ENV.bat`. On Linux/macOS: `~/.hermes/config.yaml` and `~/.hermes/.env`.
+**Logs:** under active `HERMES_HOME` (see `get_hermes_home()`) — `agent.log`, `errors.log`, `gateway.log`. Runbook: `docs/HERMES_HOME_WINDOWS.md`. Browse with `hermes logs [--follow] [--level ...] [--session ...]`.
 
 ## File Dependency Chain
 

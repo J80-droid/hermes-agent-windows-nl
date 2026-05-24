@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import sys
 
 import hermes_constants
 from hermes_constants import (
@@ -23,8 +24,22 @@ class TestGetDefaultHermesRoot:
         """When HERMES_HOME is not set, returns ~/.hermes."""
         monkeypatch.delenv("HERMES_HOME", raising=False)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        monkeypatch.setattr(hermes_constants, "_windows_runtime_home_candidate", lambda: None)
 
         assert get_default_hermes_root() == tmp_path / ".hermes"
+
+    def test_windows_prefers_localappdata_when_flag_on(self, tmp_path, monkeypatch):
+        """When runtime config exists under LOCALAPPDATA, prefer it on Windows."""
+        monkeypatch.delenv("HERMES_HOME", raising=False)
+        monkeypatch.setenv("HERMES_WIN_PREFER_LOCALAPPDATA", "1")
+        local_root = tmp_path / "AppData" / "Local" / "hermes"
+        local_root.mkdir(parents=True)
+        (local_root / "config.yaml").write_text("model: {}\n", encoding="utf-8")
+        monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "AppData" / "Local"))
+        monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        monkeypatch.setattr(sys, "platform", "win32")
+
+        assert get_default_hermes_root() == local_root
 
     def test_hermes_home_is_native(self, tmp_path, monkeypatch):
         """When HERMES_HOME = ~/.hermes, returns ~/.hermes."""

@@ -2,8 +2,8 @@
 
 ## Config-scheiding (drie bestanden)
 
-1. **Root** `~/.hermes/config.yaml` — globaal gedrag + **model/provider**.
-2. **Profiel** `~/.hermes/profiles/<naam>/config.yaml` — `platform_toolsets.cli`, MCP, agent; model erft van root.
+1. **Root** `%LOCALAPPDATA%\hermes\config.yaml` (Windows runtime) — globaal gedrag + **model/provider**. Legacy `%USERPROFILE%\.hermes\config.yaml` is **deprecated** (zie `docs/HERMES_HOME_WINDOWS.md`).
+2. **Profiel** `%LOCALAPPDATA%\hermes\profiles\<naam>\config.yaml` — `platform_toolsets.cli`, MCP, agent; model erft van root.
 3. **Toolset-manifest** `docs/domain_toolsets.yaml` — sync via `SYNC_DOMAIN_TOOLSETS.bat`; opt-in via SOUL Tool governance.
 4. **RAG** `~/data/domains.yaml` — batch-indexering; geen chat-sessie.
 
@@ -81,6 +81,15 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 - **Ink:** re-export Web normalizer (`ui-tui/src/lib/institutionalMarkdownNormalize.ts`) + compacte Controle-regel in `markdown.tsx`
 
 Defaults: `windows/team_display.defaults`; toepassen: `APPLY_INSTITUTIONAL_RUNTIME.bat`. Audit: `RUN_INSTITUTIONAL_E2E.ps1` (11 stappen + 2f + 2g + **2h pseudo-tabel**).
+
+## Windows split-home (config single-source)
+
+- **Runtime:** `%LOCALAPPDATA%\hermes\` — enige actieve `config.yaml`; `HERMES_HOME` = root (niet `profiles\*`).
+- **Legacy hub:** `%USERPROFILE%\.hermes\` — `.env` + `_local_assets`; geen actieve config (deprecate → `config.yaml.deprecated-*` + `CONFIG_README.txt`).
+- **Module:** `windows/scripts/HermesHomeCommon.ps1` (paden, drift, gateway, launch-env).
+- **Poorten:** `VERIFY_HERMES_CONFIG_DRIFT.bat` (dagelijks/post-pull); `APPLY_HERMES_HOME_MIGRATION.bat` (eenmalig); `RUN_HERMES_HOME_E2E.bat` / `RUN_AUDITS -IncludeHermesHomeE2E` (11 stappen + pytest).
+- **Integratie:** `POST_GIT_PULL`, `UPDATE_HERMES` (via `Invoke-UpstreamPostMerge`), `RUN_INSTITUTIONAL_E2E` stap 2i, `launch_institutional_runtime -CheckDrift`.
+- **Docs:** `docs/HERMES_HOME_WINDOWS.md`; SOUL snippet `SOUL_SHARED_CONFIG_GOVERNANCE.md`; footguns `check-windows-footguns.py`.
 
 ## Profiel-uitbreiding (ICT-team)
 

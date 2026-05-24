@@ -6,6 +6,8 @@
     Vault-keys: OBSIDIAN_VAULT_PATH, WIKI_PATH, KNOWLEDGE_BASE_PATH (zelfde map: Hermes Knowledge).
 #>
 $ErrorActionPreference = 'Stop'
+$scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+. (Join-Path $scriptDir 'scripts\HermesHomeCommon.ps1')
 
 function Get-EnvVarsFromFile {
     param(
@@ -55,24 +57,8 @@ function Set-EnvVarsInFile {
     $lines | Set-Content -LiteralPath $Path -Encoding UTF8
 }
 
-function Get-HermesRootDir {
-    # Altijd root (niet profiles\<naam>) — keys horen in root .env voor provider=gemini in root config.
-    $localRoot = Join-Path $env:LOCALAPPDATA 'hermes'
-    if (Test-Path -LiteralPath (Join-Path $localRoot 'config.yaml')) { return $localRoot }
-    $homeRoot = Join-Path $env:USERPROFILE '.hermes'
-    if (Test-Path -LiteralPath (Join-Path $homeRoot 'config.yaml')) { return $homeRoot }
-    if ($env:HERMES_HOME -and (Test-Path -LiteralPath $env:HERMES_HOME)) {
-        $h = (Resolve-Path -LiteralPath $env:HERMES_HOME).Path -replace '\\$', ''
-        if ($h -match '\\profiles\\[^\\]+$') {
-            return ($h -replace '\\profiles\\[^\\]+$', '')
-        }
-        return $h
-    }
-    return $localRoot
-}
-
-$legacyEnv = Join-Path $env:USERPROFILE '.hermes\.env'
-$targetRoot = Get-HermesRootDir
+$legacyEnv = Join-Path (Get-HermesLegacyRoot) '.env'
+$targetRoot = Get-HermesRuntimeRoot
 $targetEnv = Join-Path $targetRoot '.env'
 
 if (-not (Test-Path -LiteralPath $legacyEnv)) {

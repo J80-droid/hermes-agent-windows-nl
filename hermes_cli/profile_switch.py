@@ -253,7 +253,12 @@ def execute_profile_switch(
     switch_sticky_profile(canon)
     _apply_profile_env(canon)
     if verbose:
-        target = "default (~/.hermes)" if canon == "default" else canon
+        if canon == "default":
+            from hermes_constants import get_default_hermes_root
+
+            target = f"default ({get_default_hermes_root()})"
+        else:
+            target = canon
         result.messages.append(f"Sticky profiel: {target}")
 
     do_sync = sync_env if sync_env is not None else (sys.platform == "win32")
