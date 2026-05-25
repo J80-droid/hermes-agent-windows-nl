@@ -49,3 +49,26 @@ audits\RUN_MODEL_PROVIDER_HARDENING_E2E.bat
 Windows delegate: `windows\audits\RUN_MODEL_PROVIDER_HARDENING_E2E.bat`
 
 `RUN_AUDITS.bat -IncludeModelProviderHardeningE2E` (of `-IncludeAllE2E`).
+
+---
+
+# Collapsed record pseudo-table E2E
+
+Dedicated audit voor ingeklapte `Component`/`Keuze`/`Status`-regels met em-dash of multi-line (review hardening + eligibility guard).
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| E1 | Em-dash op één regel | `\| Component \| Keuze \| Status \|` + geen em-dash restant |
+| E2 | Multi-line zonder em-dash | Anchor-key split → ≥2 datarijen |
+| E3 | Kop Architectuursamenvatting | intent `overview` + `_parse_section_to_table` |
+| E4 | **Groep** + Provider/Model | Geen record-parser; 4-koloms auxiliary-tabel |
+| E5 | Pipe in celwaarde | `\|` → ` / ` in tabel |
+| E6 | Bestaande markdown-tabel | Idempotent (1 divider) |
+| E7 | `verify_pseudo_table_normalizer.py` | Architectuur-probe PASS |
+| E8 | discover + dedupe helpers | Keys + unieke rijen |
+| E9 | `normalize_assistant_markdown` | Volledige pipeline |
+| E10 | TS parity (Web runner) | Zelfde output als Python |
+
+```bat
+audits\RUN_COLLAPSED_RECORD_PSEUDO_TABLE_E2E.bat
+```
