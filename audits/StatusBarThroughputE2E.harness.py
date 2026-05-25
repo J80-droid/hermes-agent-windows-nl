@@ -54,6 +54,9 @@ def test_e1_repo_artefacts() -> None:
         "audits/StatusBarThroughputE2E.harness.py",
         "audits/StatusBarThroughputE2E.core.ps1",
         "audits/RUN_STATUS_BAR_THROUGHPUT_E2E.bat",
+        "hermes_cli/status_bar_prompt_elapsed.py",
+        "scripts/verify_fork_status_bar_display.py",
+        "tests/hermes_cli/test_status_bar_prompt_elapsed.py",
     ]
     ok = all((REPO_ROOT / p).is_file() for p in required)
     _step("repo-artefacten aanwezig", ok)
@@ -265,6 +268,49 @@ def test_e11_tui_npm_tests() -> None:
     _step("ui-tui npm throughput + layout tests", ok, tail.strip() if not ok else "")
 
 
+def test_e12_prompt_timer_module_and_config() -> None:
+    mod = _read("hermes_cli/status_bar_prompt_elapsed.py")
+    cfg = _read("hermes_cli/config.py")
+    cli = _read("cli.py")
+    ok = (
+        "format_prompt_elapsed_status_bar" in mod
+        and "show_prompt_timer_emoji" in cfg
+        and ("show_prompt_timer_emoji\": False" in cfg or "show_prompt_timer_emoji': False" in cfg)
+        and "status_bar_prompt_elapsed" in cli
+        and "_handle_timer_emoji_command" in cli
+        and 'canonical == "timer-emoji"' in cli
+    )
+    _step("prompt timer module + config default + cli hooks", ok)
+
+
+def test_e13_verify_fork_status_bar_display() -> None:
+    script = REPO_ROOT / "scripts/verify_fork_status_bar_display.py"
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(REPO_ROOT)
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(script)],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=60,
+            check=False,
+            env=env,
+        )
+    except Exception as exc:
+        _step("verify_fork_status_bar_display.py", False, str(exc))
+        return
+    tail = (proc.stdout or proc.stderr or "")[-300:]
+    ok = proc.returncode == 0 and "PASS" in (proc.stdout or "")
+    _step("verify_fork_status_bar_display.py", ok, tail.strip() if not ok else "")
+
+
+def test_e14_pytest_prompt_timer() -> None:
+    ok, tail = _run_pytest(["tests/hermes_cli/test_status_bar_prompt_elapsed.py"])
+    _step("pytest test_status_bar_prompt_elapsed.py", ok, tail)
+
+
 def main() -> int:
     print("=== Status Bar Throughput E2E ===")
     test_e1_repo_artefacts()
@@ -278,6 +324,9 @@ def main() -> int:
     test_e9_pytest_cli_status_bar_throughput()
     test_e10_classic_cli_smoke()
     test_e11_tui_npm_tests()
+    test_e12_prompt_timer_module_and_config()
+    test_e13_verify_fork_status_bar_display()
+    test_e14_pytest_prompt_timer()
     if FAILURES:
         print(f"=== HARNESS: FAIL ({FAILURES}) ===", file=sys.stderr)
         return 1

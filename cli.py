@@ -2982,6 +2982,10 @@ class HermesCLI:
         _display = CLI_CONFIG.get("display") or {}
         self._show_cost = _display.get("show_cost", True) is not False
         self._show_status_bar_tps = _display.get("show_status_bar_tps", True) is not False
+        self._show_prompt_timer_emoji = is_truthy_value(
+            _display.get("show_prompt_timer_emoji"),
+            default=False,
+        )
         _cost_mode = str(_display.get("cost_bar_mode") or "rich").strip().lower()
         self._cost_bar_mode = _cost_mode if _cost_mode in {"rich", "minimal"} else "rich"
         self.final_response_markdown = str(
@@ -3561,43 +3565,21 @@ class HermesCLI:
         filled = round((safe_percent / 100) * width)
         return f"[{('█' * filled) + ('░' * max(0, width - filled))}]"
 
-    @staticmethod
-    def _format_prompt_elapsed(prompt_start_time: Optional[float], prompt_duration: float, live: bool = False) -> str:
-        """Format per-prompt elapsed time for the status bar.
+    def _format_prompt_elapsed(
+        self,
+        prompt_start_time: Optional[float],
+        prompt_duration: float,
+        live: bool = False,
+    ) -> str:
+        """Format per-prompt elapsed for the status bar (fork module; emoji off by default)."""
+        from hermes_cli.status_bar_prompt_elapsed import format_prompt_elapsed_status_bar
 
-        Always returns a string — shows 0s on fresh start before first turn.
-        Keeps seconds visible at all scales so it increments smoothly:
-            59s → 1m → 1m 1s → ... → 1m 59s → 2m → 2m 1s → ...
-            59m 59s → 1h → 1h 0m 1s → ...
-            23h 59m 59s → 1d → 1d 0h 1m → ...
-
-        Emoji prefix: ⏱ when turn is live, ⏲ when frozen or fresh start.
-        Uses width-1 (no variation selector) glyphs so the status bar stays
-        aligned in monospace terminals.
-        """
-        if prompt_start_time is None and prompt_duration == 0.0:
-            return "⏲ 0s"
-        elapsed = time.time() - prompt_start_time if prompt_start_time is not None else prompt_duration
-        elapsed = max(0.0, elapsed)
-
-        days = int(elapsed // 86400)
-        remaining = elapsed % 86400
-        hours = int(remaining // 3600)
-        remaining = remaining % 3600
-        minutes = int(remaining // 60)
-        seconds = int(remaining % 60)
-
-        if days > 0:
-            time_str = f"{days}d {hours}h {minutes}m"
-        elif hours > 0:
-            time_str = f"{hours}h {minutes}m {seconds}s" if seconds else f"{hours}h {minutes}m"
-        elif minutes > 0:
-            time_str = f"{minutes}m {seconds}s" if seconds else f"{minutes}m"
-        else:
-            time_str = f"{int(elapsed)}s"
-
-        emoji = "⏱" if live else "⏲"
-        return f"{emoji} {time_str}"
+        return format_prompt_elapsed_status_bar(
+            prompt_start_time,
+            prompt_duration,
+            live=live,
+            show_emoji=getattr(self, "_show_prompt_timer_emoji", False),
+        )
 
     def _get_status_bar_snapshot(self) -> Dict[str, Any]:
         # Prefer the agent's model name — it updates on fallback.
@@ -8894,6 +8876,8 @@ class HermesCLI:
             self._handle_cost_command(cmd_original)
         elif canonical == "tps":
             self._handle_tps_command(cmd_original)
+        elif canonical == "timer-emoji":
+            self._handle_timer_emoji_command(cmd_original)
         elif canonical == "verbose":
             self._toggle_verbose()
         elif canonical == "footer":
@@ -9981,6 +9965,46 @@ class HermesCLI:
             _cprint(f"  Status bar throughput: {state}")
         else:
             _cprint("  Failed to save display.show_status_bar_tps to config.yaml")
+        self._invalidate()
+
+    def _handle_timer_emoji_command(self, cmd_original: str) -> None:
+        """Toggle or inspect ``display.show_prompt_timer_emoji`` for the status bar."""
+        from hermes_cli.colors import Colors as _Colors
+
+        arg = ""
+        try:
+            parts = (cmd_original or "").strip().split(None, 1)
+            if len(parts) > 1:
+                arg = parts[1].strip().lower()
+        except Exception:
+            arg = ""
+
+        current = getattr(self, "_show_prompt_timer_emoji", False)
+
+        if arg in {"status", "?"}:
+            state = "ON" if current else "OFF"
+            _cprint(f"  {_Colors.BOLD}Prompt timer emoji:{_Colors.RESET} {state}")
+            return
+
+        if arg in {"on", "enable", "true", "1"}:
+            new_state = True
+        elif arg in {"off", "disable", "false", "0"}:
+            new_state = False
+        elif arg in {"toggle", ""}:
+            new_state = not current
+        else:
+            _cprint("  Usage: /timer-emoji [on|off|toggle|status]")
+            return
+
+        self._show_prompt_timer_emoji = new_state
+        if save_config_value("display.show_prompt_timer_emoji", new_state):
+            state = (
+                f"{_Colors.GREEN}ON{_Colors.RESET}" if new_state
+                else f"{_Colors.DIM}OFF{_Colors.RESET}"
+            )
+            _cprint(f"  Prompt timer emoji: {state}")
+        else:
+            _cprint("  Failed to save display.show_prompt_timer_emoji to config.yaml")
         self._invalidate()
 
     def _handle_footer_command(self, cmd_original: str) -> None:

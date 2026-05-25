@@ -18,6 +18,8 @@ skin=default
 show_cost=true
 # rich = turn/sessie + cost-breakdown; minimal = legacy ~$0.0042 formaat
 cost_bar_mode=rich
+# Per-prompt timer in status bar without stopwatch emoji (fork default).
+show_prompt_timer_emoji=false
 
 # Beschikbare assistant_palette waarden (built-in + config/palettes.yaml):
 #   demo    - Monokai-inspired (cyaan/groen/magenta/geel)  [default]

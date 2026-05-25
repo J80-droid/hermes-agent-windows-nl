@@ -92,6 +92,8 @@ windows/scripts/rag_ingest_bulk.err.log
 windows/audits/INSTITUTIONAL_E2E_LAST_RUN.log
 # Timestamped E2E run-rapporten (lokaal; baselines zonder _HHMMSS mogen in repo)
 windows/audits/*_E2E_REPORT_*_*.md
+audits/*_E2E_REPORT_*_*.md
+audits/*_E2E_LOG_*_*.txt
 windows/audits/CODEBASE_SMOKE_AUDIT_REPORT_*.md
 # Gecombineerde productie-poorten (INSTITUTIONAL / PLATFORM_HARDENING)
 windows/audits/*_PRODUCTION_GATE_REPORT_*.md

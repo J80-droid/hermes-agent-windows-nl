@@ -14,6 +14,7 @@ def _make_cli(model: str = "anthropic/claude-sonnet-4-20250514"):
     cli_obj.agent = None
     cli_obj._show_cost = True
     cli_obj._show_status_bar_tps = True
+    cli_obj._show_prompt_timer_emoji = False
     cli_obj._cost_bar_mode = "rich"
     cli_obj._last_call_tps = None
     cli_obj._stream_tps_started_at = None
@@ -158,6 +159,23 @@ class TestCLIStatusBar:
         cost_idx = text.find("$")
         tps_idx = text.find("tok/s")
         assert cost_idx >= 0 and tps_idx > cost_idx
+
+    def test_prompt_elapsed_snapshot_has_no_emoji_by_default(self):
+        cli_obj = _make_cli()
+        cli_obj._show_prompt_timer_emoji = False
+        cli_obj._prompt_start_time = None
+        cli_obj._prompt_duration = 26.0
+        snap = cli_obj._get_status_bar_snapshot()
+        elapsed = snap.get("prompt_elapsed") or ""
+        assert "\u23f1" not in elapsed and "\u23f2" not in elapsed
+        assert "26s" in elapsed or "m" in elapsed
+
+    def test_prompt_elapsed_with_emoji_when_enabled(self):
+        cli_obj = _make_cli()
+        cli_obj._show_prompt_timer_emoji = True
+        cli_obj._prompt_duration = 12.0
+        text = cli_obj._format_prompt_elapsed(None, 12.0, live=False)
+        assert "\u23f2" in text
 
     def test_build_status_bar_text_hides_throughput_below_76_columns(self):
         cli_obj = _attach_agent(

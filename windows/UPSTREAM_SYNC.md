@@ -103,6 +103,25 @@ windows\MERGE_UPSTREAM.bat -FinalizeOnly
 | 2 | IDE-prompt met per-bestand richtlijn + conflict-snippet |
 | 3 | Cursor lost semantisch op (`pyproject.toml`, `prompt_builder.py`, …) |
 | 4 | `-FinalizeOnly` → merge-commit + `UPDATE_HERMES.bat` |
+| 5 (fork) | `python scripts/verify_fork_status_bar_display.py` — prompt-timer delegatie + default emoji uit |
+
+### Statusbalk: prompt-timer emoji (fork)
+
+Na elke upstream-merge (of na handmatige wijzigingen aan `cli.py` `_format_prompt_elapsed`):
+
+```cmd
+python scripts\verify_fork_status_bar_display.py
+```
+
+| Check | Verwachting |
+| ----- | ----------- |
+| Module | `hermes_cli/status_bar_prompt_elapsed.py` bestaat |
+| cli.py | `_format_prompt_elapsed` delegeert naar `format_prompt_elapsed_status_bar` (geen inline `return f"{emoji}`) |
+| Config | `display.show_prompt_timer_emoji` default **false** |
+
+**Conflict in `cli.py` bij `_format_prompt_elapsed`:** behoud de **delegatie** (import + `format_prompt_elapsed_status_bar(..., show_emoji=...)`). Port nieuwe tijdlogica van Nous naar `status_bar_prompt_elapsed.py`, niet terug naar inline emoji in `cli.py`.
+
+Runtime: `/timer-emoji [on|off|toggle|status]` of `display.show_prompt_timer_emoji` in config.
 
 **Power users (blind auto-resolve, oude gedrag):**
 

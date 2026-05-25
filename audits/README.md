@@ -1,3 +1,27 @@
+# Prompt timer display (geen emoji) E2E
+
+Geïsoleerde E2E voor `display.show_prompt_timer_emoji` (default **uit**), fork-module `status_bar_prompt_elapsed.py`, cli-delegatie en upstream-verify. Geen live API.
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| E1 | Repo-artefacten | module, verify-script, tests, audit runners, merge keepOurs |
+| E2 | Module | `26s` zonder emoji; NaN/future → `0s`; emoji aan = U+23F2 prefix |
+| E3 | Config + team defaults | `show_prompt_timer_emoji: false` overal |
+| E4 | cli.py | delegatie + `is_truthy_value` + `/timer-emoji` |
+| E5 | Verify-script | `verify_fork_status_bar_display.py` PASS |
+| E6 | Classic CLI | snapshot + `_build_status_bar_text` zonder ⏱/⏲ |
+| E7 | Slash + persist | `timer-emoji` in commands + `save_config_value` |
+| E8 | Upstream merge | `merge_upstream_fork.ps1` keepOurs |
+| E9–E10 | Unit gates | 72× module tests + 2× cli `prompt_elapsed` (pytest of inline fallback) |
+
+```bat
+audits\RUN_PROMPT_TIMER_DISPLAY_E2E.bat
+```
+
+Na upstream-merge: `python scripts/verify_fork_status_bar_display.py`.
+
+---
+
 # Status bar throughput (tok/s) E2E
 
 E2E voor `display.show_status_bar_tps`, classic CLI statusbalk en ui-tui parity. Geen live API.
@@ -20,6 +44,10 @@ audits\RUN_STATUS_BAR_THROUGHPUT_E2E.bat
 ```
 
 Unit tests: `pytest tests/hermes_cli/test_status_bar_throughput.py tests/cli/test_cli_status_bar.py -k "throughput or tok"`; classic smoke: `python scripts/status_bar_throughput_classic_cli_smoke.py`.
+
+| E12–E14 | Prompt-timer zonder emoji | `status_bar_prompt_elapsed.py`, config default, `verify_fork_status_bar_display.py`, pytest |
+
+Na upstream-merge: `python scripts/verify_fork_status_bar_display.py`.
 
 ---
 

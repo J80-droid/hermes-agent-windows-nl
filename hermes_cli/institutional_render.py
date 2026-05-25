@@ -382,6 +382,9 @@ def _render_body_with_embedded_labels(
                 if blob:
                     parts.append(InstitutionalMarkdown(blob, code_theme=code_theme))
                 prose = []
+            # Zichtbare witregel vóór label na voorafgaande content
+            if parts:
+                parts.append(SectionSpacer(lines=2))
             label = label_m.group("label").strip()
             idx += 1
             value_lines: list[str] = []

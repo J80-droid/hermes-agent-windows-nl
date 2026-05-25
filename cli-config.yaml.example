@@ -986,6 +986,10 @@ display:
   # Toggle at runtime with /tps. Independent of show_cost.
   # show_status_bar_tps: true
 
+  # Prefix per-prompt elapsed timer in the status bar with stopwatch emoji (⏲/⏱).
+  # Default false (fork): shows only "26s" / "1m 3s". Toggle at runtime with /timer-emoji.
+  # show_prompt_timer_emoji: false
+
   # Show [HH:MM] timestamps on user input and assistant response labels.
   # timestamps: false
 
