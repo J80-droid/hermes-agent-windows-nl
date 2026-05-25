@@ -57,13 +57,17 @@ Toepassen: `windows\scripts\apply_trust_memory_limits.ps1` (idempotent). Na nieu
 | `windows\scripts\audit_profile_memories.ps1` | Rapport + optioneel `-FixEncoding` |
 | `windows\scripts\repair_runtime_identity.ps1` | Handmatige pre-audit runtime scrub |
 | `windows\audits\RUN_MEMORY_IDENTITY_REPAIR_E2E.bat` | E2E-poort identity repair + post-sync |
+| `windows\audits\RUN_MEMORY_TRUST_INTEGRATION_E2E.bat` | Geïntegreerde poort (10/10): post-sync notice, pending trust, workspace IDE, AST, unit tests |
+| `windows\APPLY_WORKSPACE_IDE_SETTINGS.bat` | Parent `Hermes_agent_WS\.vscode` vanuit repo-template — zie `docs\WORKSPACE_IDE_SETUP.md` |
+| `windows\scripts\Invoke-MemoryTrustPostSync.ps1` | Pre-audit scrub + audit + gate + inline `/new`-notice (`institutional_new_chat_required.json`) |
+| `windows\scripts\TrustRuntimePending.psm1` | Stamp pending trust; `Register-PendingTrustRuntimeRequired` / `Clear-PendingTrustRuntime` |
 | `windows\audits\RUN_MEMORY_ARCHITECTURE_E2E.ps1` | Dunne launcher (`& MemoryArchitectureE2E.core.ps1`) — stabiel in Cursor/PSES |
 | `windows\audits\MemoryArchitectureE2E.core.ps1` | Memory-architectuur E2E: vault, limits, legacy root, consolidatie-layout, §-delimiter U+00A7 (18/18) |
 | `windows\audits\RUN_MEMORY_PRODUCTION_GATE.ps1` | Gecombineerde productie-poort (memory + trust E2E + pytest) |
 | `windows\OPEN_OBSIDIAN_VAULT.bat` | L4-vault openen (na `SYNC_HERMES_API_ENV` of trust-sync); scaffold idempotent |
 | `windows\scripts\ensure_hermes_knowledge_vault.ps1` | Ontbrekende scaffold-bestanden kopiëren (ook vanuit `sync_hermes_api_env.ps1`) |
 
-**IDE:** rode strepen op audit-`.ps1` → `windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat`, daarna PowerShell-sessie herstarten en venster reloaden. Zie `windows\audits\README.md`.
+**IDE:** `windows\APPLY_WORKSPACE_IDE_SETTINGS.bat` (parent workspace); Reload Window + Restart Session. Verificatie: `RUN_MEMORY_TRUST_INTEGRATION_E2E.bat`. Zie `docs\WORKSPACE_IDE_SETUP.md` en `windows\audits\README.md`.
 
 ## Troubleshooting MEMORY/USER
 

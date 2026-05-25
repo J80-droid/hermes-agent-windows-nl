@@ -47,7 +47,7 @@ windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat
 | `MemoryArchitectureE2E.core.ps1` | Implementatie: 18 stappen, dot-source `MemoryAuditCommon.ps1` |
 | `RUN_MEMORY_PRODUCTION_GATE.ps1` | Limits + memory E2E + trust E2E + pytest memory/trust (~62) |
 
-**IDE:** rode strepen op audit-`.ps1` → `VALIDATE_AUDIT_PS1_SYNTAX.bat`, daarna PowerShell-sessie herstarten en venster reloaden. Zie `windows\audits\README.md`.
+**IDE:** parent workspace `Hermes_agent_WS` → `windows\APPLY_WORKSPACE_IDE_SETTINGS.bat` (PSES analyse uit); daarna Reload Window + Restart Session. Runtime-check: `RUN_MEMORY_TRUST_INTEGRATION_E2E.bat` (10/10). AST: `VALIDATE_AUDIT_PS1_SYNTAX.bat` of `tests\Test-PsesTokenizer.ps1`. Zie `docs\WORKSPACE_IDE_SETUP.md` en `windows\audits\README.md`.
 
 | Stap | Controle |
 |------|----------|

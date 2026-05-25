@@ -7,7 +7,8 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Ik wil… | Document |
 |--------|----------|
 | Begrijpen: index vs. chat (twee fasen) | [RAG_TWEE_FASEN.md](RAG_TWEE_FASEN.md) |
-| Trust & Forensic (SOUL, memory, J.) | [TRUST_FORENSIC_PROTOCOL.md](TRUST_FORENSIC_PROTOCOL.md) — dagelijks: `windows/SYNC_TRUST_RUNTIME.bat` |
+| Trust & Forensic (SOUL, memory, J.) | [TRUST_FORENSIC_PROTOCOL.md](TRUST_FORENSIC_PROTOCOL.md) — dagelijks: `windows/SYNC_TRUST_RUNTIME.bat` · integratie-E2E: `windows/audits/RUN_MEMORY_TRUST_INTEGRATION_E2E.bat` |
+| IDE / PSES (parent workspace, geen valse rode fouten) | [WORKSPACE_IDE_SETUP.md](WORKSPACE_IDE_SETUP.md) — `windows/APPLY_WORKSPACE_IDE_SETTINGS.bat` |
 | Na update: trust mislukt → start Hermes (pending nazorg) | [HERMES_START.md](HERMES_START.md) § *Na update* — stamp `pending_trust_runtime.json`; E2E: `windows/audits/RUN_PENDING_TRUST_START_E2E.bat` |
 | Memory L1–L4 (vault, geen L3) | [MEMORY_ARCHITECTURE.md](MEMORY_ARCHITECTURE.md) — E2E **18/18**: `RUN_MEMORY_ARCHITECTURE_E2E.bat` · productie: `RUN_MEMORY_PRODUCTION_GATE.bat` |
 | Obsidian vault openen (L4) | `windows/OPEN_OBSIDIAN_VAULT.bat` — taakbalk: `Hermes - Obsidian vault - naar taakbalk slepen.lnk` |
@@ -36,7 +37,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Terminal, skin, markdown-kleuren, API-home | [../windows/TERMINAL_WINDOWS.md](../windows/TERMINAL_WINDOWS.md) |
 | User-data docs (STATUS/RECOVERY sync) | [USER_DATA_OPERATIONS.md](USER_DATA_OPERATIONS.md) |
 | Backup & restore (schema v3, runtime) | [USER_DATA_OPERATIONS.md](USER_DATA_OPERATIONS.md) § Windows; `windows/INSTITUTIONAL.md` § Backup |
-| IDE PSScriptAnalyzer (VS Code/Cursor) | [IDE_VSCODE_SETTINGS.example.json](IDE_VSCODE_SETTINGS.example.json) |
+| IDE / Cursor (PSES + conda) | [WORKSPACE_IDE_SETUP.md](WORKSPACE_IDE_SETUP.md) · parent template: `docs/templates/Hermes_agent_WS.vscode.settings.json` · repo-only: [IDE_VSCODE_SETTINGS.example.json](IDE_VSCODE_SETTINGS.example.json) |
 | Hermes starten zonder conda in PATH | [HERMES_START.md](HERMES_START.md) (kopie ook in workspace-root `HERMES_START.md`) |
 | **Windows split-home (config, drift, migratie)** | [HERMES_HOME_WINDOWS.md](HERMES_HOME_WINDOWS.md) · E2E: `windows/audits/RUN_HERMES_HOME_E2E.bat`, `RUN_ROOT_CONFIG_INHERITANCE_E2E.bat` · eenmalig: `windows/APPLY_HERMES_HOME_MIGRATION.bat` |
 | Blauwdruk: nieuw domein toevoegen | [DOMAIN_BLUEPRINT.md](DOMAIN_BLUEPRINT.md) |

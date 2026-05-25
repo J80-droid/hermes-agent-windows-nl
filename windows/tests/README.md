@@ -69,7 +69,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\tests\HermesShellC
 powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\tests\MemoryAuditCommon.Unit.Tests.ps1
 ```
 
-E2E-poorten: **`RUN_HERMES_SHELL_COMMON_E2E.bat`**, **`RUN_MEMORY_IDENTITY_REPAIR_E2E.bat`**, **`RUN_MEMORY_TRUST_INTEGRATION_E2E.bat`** (alleen de nieuwe audit draaien via de bijbehorende `RUN_*.bat`).
+E2E-poorten: **`RUN_HERMES_SHELL_COMMON_E2E.bat`**, **`RUN_MEMORY_IDENTITY_REPAIR_E2E.bat`**, **`RUN_MEMORY_TRUST_INTEGRATION_E2E.bat`** (10/10 — alleen deze audit via `RUN_*.bat`).
+
+**IDE parent workspace:** vóór vertrouwen op de Problems-lijst: **`APPLY_WORKSPACE_IDE_SETTINGS.bat`** + Reload Window — `docs/WORKSPACE_IDE_SETUP.md`.
 
 ## `RUN_PSScriptAnalyzer`
 

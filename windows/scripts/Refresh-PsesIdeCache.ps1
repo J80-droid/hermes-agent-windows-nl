@@ -1,5 +1,7 @@
 # Vernieuwt PSES/IDE-analyse: touch fork-kritieke scripts + AST-check.
-# Gebruik na PSES-fixes: powershell -File windows\scripts\Refresh-PsesIdeCache.ps1
+# Onderdeel van Apply-HermesWorkspaceIdeSettings.ps1; ook los:
+#   powershell -File windows\scripts\Refresh-PsesIdeCache.ps1
+# Parent workspace: windows\APPLY_WORKSPACE_IDE_SETTINGS.bat — zie docs\WORKSPACE_IDE_SETUP.md
 # Daarna in Cursor: PowerShell: Restart Session + Developer: Reload Window.
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path

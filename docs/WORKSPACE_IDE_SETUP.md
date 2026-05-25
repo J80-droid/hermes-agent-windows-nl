@@ -78,15 +78,27 @@ Daarna opnieuw **Reload Window** + **Restart Session**.
 
 ## Template en onderhoud
 
-- **Bron:** `hermes-agent/docs/templates/Hermes_agent_WS.vscode.settings.json`
+- **Parent (canoniek):** `hermes-agent/docs/templates/Hermes_agent_WS.vscode.settings.json`
+- **Repo-only referentie:** `docs/IDE_VSCODE_SETTINGS.example.json` (alleen bij openen van `hermes-agent` als workspace)
 - **Apply:** `windows/scripts/Apply-HermesWorkspaceIdeSettings.ps1`
 - **Cache-bust:** `windows/scripts/Refresh-PsesIdeCache.ps1`
 
 Wijzig het template bij nieuwe workspace-vereisten; commit in `hermes-agent` — het apply-script legt het opnieuw neer op elke machine.
 
+## Verificatie na setup (productie)
+
+```bat
+windows\audits\RUN_MEMORY_TRUST_INTEGRATION_E2E.bat
+```
+
+Verwacht: **10/10 PASS** (artefacten, template, parent settings, post-sync, pending trust, AST, unit tests, apply-script).
+
 ## Gerelateerde documentatie
 
 - `docs/HERMES_START.md` — Python/conda + start
-- `docs/INSTITUTIONAL_OPERATIONS.md` — runbook eerste machine
+- `docs/INSTITUTIONAL_OPERATIONS.md` — runbook eerste machine (stap 3: apply workspace IDE)
+- `docs/TRUST_FORENSIC_PROTOCOL.md` — trust/memory keten
+- `docs/MEMORY_ARCHITECTURE.md` — L1–L4 + IDE-sectie
 - `windows/audits/README.md` — PSES-regels voor audits
-- Parent quickstart: `Hermes_agent_WS/HERMES_START.md` (korte verwijzing)
+- `windows/README.md` — toolkit-overzicht
+- Parent quickstart: `Hermes_agent_WS/HERMES_START.md` (korte verwijzing; lokaal, niet in git)

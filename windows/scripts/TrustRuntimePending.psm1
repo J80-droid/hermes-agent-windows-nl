@@ -1,6 +1,8 @@
 # Pending trust-runtime na mislukte UPDATE/post-merge.
-# Stamp: %LOCALAPPDATA%\hermes\pending_trust_runtime.json (status=required).
-# Start-hook: launch_pending_trust_runtime.ps1 roept Invoke-TrustRuntimeLight.ps1 aan (licht, geen production gate).
+# Stamp: %LOCALAPPDATA%\hermes\pending_trust_runtime.json (status=required; lege status wordt genegeerd).
+# API: Register-PendingTrustRuntimeRequired, Clear-PendingTrustRuntime, Register-PendingTrustRuntimeAttempt.
+# Start-hook: launch_pending_trust_runtime.ps1 -> Invoke-TrustRuntimeLight.ps1 (geen production gate).
+# E2E: RUN_PENDING_TRUST_START_E2E.bat; unit: windows/tests/TrustRuntimePending.Unit.Tests.ps1
 $script:PendingTrustMaxAttempts = 3
 
 function Get-PendingTrustRuntimeAttempts {

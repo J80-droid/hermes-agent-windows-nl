@@ -9,6 +9,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | Canoniek | **conda `hermes-env`** — RAG, `launch_hermes.bat`, ingest, setup, IDE (`.vscode/settings.json`) |
 | Niet gebruiken | Workspace `(venv)`; repo `.venv` als runtime (lockt bootstrap, dubbele deps) |
 | Reparatie | `REPAIR_PYTHON.bat` — quarantaine `.venv`, sync IDE-interpreter, bevestig conda, RAG-check (non-interactive in CI) |
+| Parent workspace IDE (PSES) | `APPLY_WORKSPACE_IDE_SETTINGS.bat` — schrijft `Hermes_agent_WS\.vscode\settings.json`; daarna Reload Window + Restart Session — `docs\WORKSPACE_IDE_SETUP.md` |
 | Geavanceerd | `HERMES_ALLOW_UV_VENV=1` alleen bewust; niet productie-default |
 | Override | `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV` — zie `HermesPythonPolicy.ps1` |
 | RAG-manifest | `%LOCALAPPDATA%\Hermes\rag-deps.json` (`rag_extras_verified` fast-path) |
@@ -38,7 +39,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | Toolsets per profiel | `hermes -p <naam> tools` of `SYNC_DOMAIN_TOOLSETS.bat` |
 | HERMES_HOME controleren | `scripts\verify_hermes_home.ps1` |
 | PowerShell lint (PSScriptAnalyzer) | `tests\RUN_PSScriptAnalyzer.bat` — 0 Warning/Error op `windows\` |
-| PSES/AST + shell helpers | `tests\Test-PsesTokenizer.ps1`, `tests\HermesShellCommon.Unit.Tests.ps1`, `audits\RUN_HERMES_SHELL_COMMON_E2E.bat` |
+| PSES/AST + shell helpers | `tests\Test-PsesTokenizer.ps1`, `tests\HermesShellCommon.Unit.Tests.ps1`, `tests\TrustRuntimePending.Unit.Tests.ps1`, `tests\Invoke-MemoryTrustPostSync.Unit.Tests.ps1`, `audits\RUN_HERMES_SHELL_COMMON_E2E.bat` |
 | Profielwissel E2E-audit | `audits\RUN_PROFILE_SWITCH_E2E.bat` |
 | SOUL anatomy bij start (stamp) | `launch_soul_anatomy_deploy.ps1` via `launch_hermes.bat` — zie `docs\SOUL_ANATOMY_SPEC.md` |
 | SOUL anatomy (handmatig + E2E) | `APPLY_SOUL_ANATOMY_RUNTIME.bat`; alleen snippets: `SYNC_SOUL_SNIPPETS.bat` |
@@ -48,6 +49,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | Trust & Forensic (legal + SOUL + memory + J.) | `SYNC_TRUST_RUNTIME.bat` — sync + **pre-audit runtime scrub** + audit + gate + /new; `SYNC_TRUST_PROTOCOL.bat` / `APPLY_TRUST_PROTOCOL.bat` — + repo-scrub; `scripts\repair_runtime_identity.ps1` — handmatig; `docs\TRUST_FORENSIC_PROTOCOL.md` |
 | Pending trust na mislukte UPDATE | Automatisch bij `start_hermes.bat` via `scripts\launch_pending_trust_runtime.ps1` → `Invoke-TrustRuntimeLight.ps1` (geen pytest-gate); stamp `%LOCALAPPDATA%\hermes\pending_trust_runtime.json`; skip: `HERMES_SKIP_PENDING_TRUST_ON_START=1` |
 | Pending trust E2E | `audits\RUN_PENDING_TRUST_START_E2E.bat` of `RUN_AUDITS.bat -IncludePendingTrustStartE2E` |
+| Memory-trust integratie E2E | `audits\RUN_MEMORY_TRUST_INTEGRATION_E2E.bat` (10/10: post-sync, pending trust, workspace template, AST, unit tests) |
 | Domein-toolsets (minimaal + opt-in) | `SYNC_DOMAIN_TOOLSETS.bat` — `docs\domain_toolsets.yaml`, `docs\DOMAIN_TOOLSET_AUDIT.md` |
 | Nieuw profiel (runtime) | `set HERMES_HOME=%LOCALAPPDATA%\hermes` → `SYNC_DOMAIN_TOOLSETS.bat --create-missing` — zie `docs\DOMAIN_BLUEPRINT.md` |
 | Provision E2E (smoke) | `audits\RUN_PROVISION_DOMAIN_E2E.bat` |

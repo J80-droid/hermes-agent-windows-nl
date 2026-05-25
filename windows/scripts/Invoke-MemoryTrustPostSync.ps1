@@ -1,4 +1,6 @@
-# Na SYNC_TRUST_RUNTIME: audit, productie-poort, new-chat reminder (volledig geautomatiseerd).
+# Na SYNC_TRUST_RUNTIME: Repair-HermesRuntimeIdentity (tenzij HERMES_SKIP_RUNTIME_IDENTITY_SCRUB),
+# audit_profile_memories, optioneel RUN_MEMORY_PRODUCTION_GATE, inline institutional_new_chat_required.json.
+# Dot-source HermesShellCommon vóór MemoryAuditCommon. Zie docs/TRUST_FORENSIC_PROTOCOL.md.
 param(
     [string]$RepoRoot = '',
     [string]$HermesRuntimeRoot = '',
