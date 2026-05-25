@@ -1,15 +1,23 @@
 # Hermes starten (zonder conda in PATH)
 
-Je `(venv)` in deze map is **niet** `hermes-env`. Gebruik:
+## Python institutioneel (canoniek — future-proof)
 
-## Python / IDE (canoniek)
+**Eén interpreter voor Hermes én IDE:** conda **`hermes-env`**. Geen repo-`.venv` als primaire omgeving.
 
-| Doel | Pad / commando |
-|------|------------------|
-| Interpreter | `C:\Users\jamel\miniconda3\envs\hermes-env\python.exe` |
-| VS Code/Cursor | `hermes-agent/.vscode/settings.json` → `python.defaultInterpreterPath` |
-| Pytest | `hermes-agent\windows\tests\RUN_PYTEST.ps1` |
-| Kapotte `.venv` | `hermes-agent\windows\REPAIR_PYTHON.bat` |
+| Regel | Actie |
+|-------|--------|
+| IDE interpreter | Cursor/VS Code leest `hermes-agent/.vscode/settings.json` (portable `${env:USERPROFILE}/miniconda3/...`) |
+| Na clone / andere conda-locatie | `windows\REPAIR_PYTHON.bat` → sync IDE + quarantaine kapotte `.venv` |
+| Pytest / audits | `windows\tests\RUN_PYTEST.ps1` of audit-`.bat` — nooit bare `python` als conda ontbreekt |
+| Python-beleid E2E | `windows\audits\RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.bat` (8/8: policy, IDE sync, pytest) |
+| `.venv`-warn bij start | Normaal: negeren als conda OK; opruimen via `REPAIR_PYTHON.bat` (Hermes/Cursor eerst sluiten) |
+| Geavanceerd (uv naast conda) | Alleen met `HERMES_ALLOW_UV_VENV=1` — niet voor productie-default |
+
+**Niet doen:** `python -m venv .venv` in repo-root; Cursor workspace `(venv)` als Hermes-runtime; handmatig `.venv` laten staan “voor de IDE”.
+
+Override conda-pad: `HERMES_PYTHON` of `HERMES_CONDA_ROOT` (zie `HermesPythonPolicy.ps1`).
+
+Je ziet `(venv)` in de terminalprompt? Dat is **niet** `hermes-env` — wissel interpreter of draai `REPAIR_PYTHON.bat`.
 
 ## Snel (aanbevolen)
 

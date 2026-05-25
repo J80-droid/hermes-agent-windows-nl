@@ -64,6 +64,7 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | **`RUN_PLATFORM_HARDENING_REGRESSION_E2E.bat`** | Regressie: review-fixes, PS1 Join-HermesRepoPath, footguns PS1-regel (**10 stappen**) |
 | **`RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat`** | Gecombineerd: beide platform E2E's + pytest subset + `footguns --all` |
 | **`RUN_KNOWLEDGE_REPOSITORY_E2E.bat`** | KnowledgeRepository agent-API: edge cases, caller wiring, pytest (8 stappen) |
+| **`RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.bat`** | Institutioneel Python: conda hermes-env, IDE sync, venv-quarantaine, pytest (8 stappen) |
 | **`RUN_AUDITS.bat -IncludePseudoTableNormalizerE2E`** | Bovenstaande pseudo-tabel E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeMemoryArchitectureE2E`** | Bovenstaande memory E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeStatusBarCostE2E`** | Bovenstaande statusbalk-kosten E2E in gecombineerde poort |
@@ -227,6 +228,29 @@ Dedicated audit voor de RAG agent-API (`knowledge_repository.py`) en caller-migr
 Optioneel: `-SkipPytest` op `RUN_KNOWLEDGE_REPOSITORY_E2E.ps1`.
 
 Rapport: `KNOWLEDGE_REPOSITORY_E2E_REPORT_*.md` (gitignored). Zie `docs/WINDOWS_PLATFORM_HARDENING.md` § KnowledgeRepository.
+
+## Hermes Python institutional E2E
+
+```text
+windows\audits\RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.bat
+```
+
+Dedicated audit voor institutioneel Python-beleid: conda `hermes-env` als enige canonieke interpreter, IDE-sync, venv-quarantaine.
+
+| Stap | Controle |
+| ---- | -------- |
+| 1/8 | Repo-artefacten (HermesPythonPolicy, ensure/sync scripts, REPAIR, tests) |
+| 2/8 | Policy helpers + venv-quarantaine `try/catch` op `Rename-Item` |
+| 3/8 | REPAIR/ensure `-SyncIde` wiring |
+| 4/8 | `.vscode/settings.json` canonieke interpreter + `activateEnvironment: false` |
+| 5/8 | Isolated harness (`HermesPythonInstitutionalE2E.harness.ps1`, 8 scenario's) |
+| 6/8 | pytest `test_hermes_python_institutional.py` |
+| 7/8 | Runtime conda hermes-env + pip |
+| 8/8 | Docs (`HERMES_START.md`, `INSTITUTIONAL.md`) |
+
+Optioneel: `-SkipPytest` op `RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.ps1`.
+
+Rapport: `HERMES_PYTHON_INSTITUTIONAL_E2E_REPORT_*.md` (gitignored). Zie `docs/HERMES_START.md` § Python institutioneel.
 
 ## Memory-architectuur E2E (L1–L4)
 

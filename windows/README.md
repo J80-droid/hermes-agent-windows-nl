@@ -6,10 +6,11 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 
 | Regel | Detail |
 | ----- | ------ |
-| Canoniek | **conda `hermes-env`** — RAG, `launch_hermes.bat`, ingest, setup |
-| Niet gebruiken | Workspace-map `(venv)` of kapotte `repo\.venv` zonder pip |
-| Reparatie | `REPAIR_PYTHON.bat` — quarantaine kapotte `.venv`, bevestig conda |
-| Geavanceerd | `HERMES_ALLOW_UV_VENV=1` alleen als `.venv` bewust gezond is (uv/pip OK) |
+| Canoniek | **conda `hermes-env`** — RAG, `launch_hermes.bat`, ingest, setup, IDE (`.vscode/settings.json`) |
+| Niet gebruiken | Workspace `(venv)`; repo `.venv` als runtime (lockt bootstrap, dubbele deps) |
+| Reparatie | `REPAIR_PYTHON.bat` — quarantaine `.venv`, sync IDE-interpreter, bevestig conda |
+| Geavanceerd | `HERMES_ALLOW_UV_VENV=1` alleen bewust; niet productie-default |
+| Future-proof | Eén waarheid: Hermes scripts + Cursor interpreter =zelfde `hermes-env` |
 
 ## Eerste installatie
 

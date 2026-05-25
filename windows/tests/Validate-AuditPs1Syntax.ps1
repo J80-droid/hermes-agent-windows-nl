@@ -28,7 +28,10 @@ $files = @(
     'windows/audits/PendingTrustStartE2E.core.ps1',
     'windows/audits/RUN_PENDING_TRUST_START_E2E.ps1',
     'windows/audits/WindowsPlatformHardeningE2E.core.ps1',
-    'windows/audits/RUN_PLATFORM_HARDENING_PRODUCTION_GATE.ps1'
+    'windows/audits/RUN_PLATFORM_HARDENING_PRODUCTION_GATE.ps1',
+    'windows/audits/HermesPythonInstitutionalE2E.core.ps1',
+    'windows/audits/HermesPythonInstitutionalE2E.harness.ps1',
+    'windows/audits/RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.ps1'
 )
 
 $failed = 0

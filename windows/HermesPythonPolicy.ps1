@@ -144,3 +144,116 @@ function Get-HermesUvVenvPython {
     if ($py -and (Test-HermesPythonHasPip -PythonExe $py)) { return $py }
     return $null
 }
+
+function Get-HermesVscodeSettingsPath {
+    param([Parameter(Mandatory)][string]$RepoRoot)
+    return Join-Path $RepoRoot '.vscode\settings.json'
+}
+
+function Test-HermesRepoDotVenvPresent {
+    param([Parameter(Mandatory)][string]$RepoRoot)
+    return Test-Path -LiteralPath (Join-Path $RepoRoot '.venv')
+}
+
+function Update-HermesVscodeInterpreterPath {
+    <#
+    .SYNOPSIS
+        Zet python.defaultInterpreterPath in .vscode/settings.json (canoniek conda pad).
+    .OUTPUTS
+        Hashtable: Ok, Changed, PythonExe, SettingsPath, Message
+    #>
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [string]$PythonExe = '',
+        [switch]$Quiet
+    )
+
+    if (-not $PythonExe) {
+        $PythonExe = Get-HermesCondaPython
+    }
+    if (-not $PythonExe) {
+        return @{
+            Ok           = $false
+            Changed      = $false
+            PythonExe    = $null
+            SettingsPath = $null
+            Message      = 'Geen conda hermes-env gevonden'
+        }
+    }
+
+    $settingsPath = Get-HermesVscodeSettingsPath -RepoRoot $RepoRoot
+    if (-not (Test-Path -LiteralPath $settingsPath)) {
+        return @{
+            Ok           = $false
+            Changed      = $false
+            PythonExe    = $PythonExe
+            SettingsPath = $settingsPath
+            Message      = 'settings.json ontbreekt'
+        }
+    }
+
+    $raw = Get-Content -LiteralPath $settingsPath -Raw -Encoding UTF8
+    $pattern = '"python\.defaultInterpreterPath"\s*:\s*"[^"]*"'
+    if ($raw -notmatch $pattern) {
+        return @{
+            Ok           = $false
+            Changed      = $false
+            PythonExe    = $PythonExe
+            SettingsPath = $settingsPath
+            Message      = 'python.defaultInterpreterPath ontbreekt in settings.json'
+        }
+    }
+
+    $replacement = '"python.defaultInterpreterPath": "' + ($PythonExe -replace '\\', '\\') + '"'
+    $updated = [regex]::Replace($raw, $pattern, $replacement, 1)
+    $changed = ($updated -ne $raw)
+
+    if ($changed) {
+        Set-Content -LiteralPath $settingsPath -Value $updated -Encoding UTF8
+    }
+
+    if (-not $Quiet) {
+        if ($changed) {
+            Write-Host "[OK] IDE interpreter -> $PythonExe" -ForegroundColor Green
+        } else {
+            Write-Host "[OK] IDE interpreter al canoniek: $PythonExe" -ForegroundColor Green
+        }
+    }
+
+    return @{
+        Ok           = $true
+        Changed      = $changed
+        PythonExe    = $PythonExe
+        SettingsPath = $settingsPath
+        Message      = if ($changed) { 'updated' } else { 'unchanged' }
+    }
+}
+
+function Write-HermesPythonPolicyManifest {
+    param([Parameter(Mandatory)][string]$PythonExe)
+
+    $policyDir = Join-Path $env:LOCALAPPDATA 'Hermes'
+    New-Item -ItemType Directory -Force -Path $policyDir | Out-Null
+    $manifestPath = Join-Path $policyDir 'python-policy.json'
+    @{
+        preferred_python = $PythonExe
+        conda_env        = (Get-HermesCondaEnvName)
+        updated_utc      = (Get-Date).ToUniversalTime().ToString('o')
+    } | ConvertTo-Json | Set-Content -LiteralPath $manifestPath -Encoding UTF8
+    return $manifestPath
+}
+
+function Invoke-HermesSyncIdePython {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [switch]$Quiet
+    )
+    $result = Update-HermesVscodeInterpreterPath -RepoRoot $RepoRoot -Quiet:$Quiet
+    if (-not $result.Ok) {
+        if (-not $Quiet) {
+            Write-Host ('[WARN] IDE sync mislukt: ' + $result.Message) -ForegroundColor Yellow
+        }
+        return $false
+    }
+    return $true
+}

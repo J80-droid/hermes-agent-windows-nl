@@ -8,7 +8,7 @@ echo ====================================================
 echo [INFO] Kapotte .venv ^(geen pip^) gaat naar .venv.disabled-* 
 echo [INFO] RAG/CLI/setup gebruiken conda — niet workspace ^(venv^)
 echo.
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\ensure_hermes_python.ps1" -RepoRoot "%CD%"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\ensure_hermes_python.ps1" -RepoRoot "%CD%" -SyncIde
 set ERR=%ERRORLEVEL%
 if %ERR% neq 0 (
   echo [ERROR] Exit %ERR%

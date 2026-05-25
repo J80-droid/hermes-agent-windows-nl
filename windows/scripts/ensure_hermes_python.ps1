@@ -3,7 +3,8 @@
 param(
     [string]$RepoRoot = '',
     [switch]$Quiet,
-    [switch]$SkipQuarantine
+    [switch]$SkipQuarantine,
+    [switch]$SyncIde
 )
 
 $ErrorActionPreference = 'Stop'
@@ -36,16 +37,16 @@ if (-not (Test-HermesPythonHasPip -PythonExe $py)) {
     exit 1
 }
 
-$policyDir = Join-Path $env:LOCALAPPDATA 'Hermes'
-New-Item -ItemType Directory -Force -Path $policyDir | Out-Null
-@{
-    preferred_python = $py
-    conda_env        = (Get-HermesCondaEnvName)
-    updated_utc      = (Get-Date).ToUniversalTime().ToString('o')
-} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $policyDir 'python-policy.json') -Encoding UTF8
-
+Write-HermesPythonPolicyManifest -PythonExe $py | Out-Null
 Write-PolicyMsg "[OK] Canonieke Python: $py" 'Green'
-if (Test-Path -LiteralPath (Join-Path $RepoRoot '.venv')) {
-    Write-PolicyMsg '[WARN] .venv bestaat nog — draai REPAIR_PYTHON.bat of verwijder handmatig.' 'Yellow'
+
+if (Test-HermesRepoDotVenvPresent -RepoRoot $RepoRoot) {
+    Write-PolicyMsg '[WARN] repo\.venv bestaat nog — niet canoniek. Draai REPAIR_PYTHON.bat (Hermes/Cursor sluiten) of verwijder handmatig.' 'Yellow'
+    Write-PolicyMsg '  Productie-default: alleen conda hermes-env. Geen HERMES_ALLOW_UV_VENV tenzij bewust uv/venv naast conda.' 'DarkYellow'
 }
+
+if ($SyncIde) {
+    [void](Invoke-HermesSyncIdePython -RepoRoot $RepoRoot -Quiet:$Quiet)
+}
+
 exit 0

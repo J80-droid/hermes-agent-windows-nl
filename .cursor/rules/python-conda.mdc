@@ -1,25 +1,34 @@
 ---
-description: Canonieke Python-interpreter (conda hermes-env) voor Hermes
+description: Canonieke Python (conda hermes-env) — institutioneel, geen repo .venv
 globs: hermes-agent/**/*.py,hermes-agent/scripts/**/*
-alwaysApply: false
+alwaysApply: true
 ---
 
-# Python / conda (Hermes)
+# Python / conda (institutioneel)
 
-## Interpreter
+## Eén waarheid
 
-Gebruik voor tests, RAG-scripts en diagnose **altijd** conda `hermes-env`:
+| Rol | Interpreter |
+|-----|-------------|
+| Hermes runtime (RAG, CLI, ingest, audits) | **conda `hermes-env`** via `HermesPythonPolicy.ps1` |
+| IDE (Cursor/VS Code) | Zelfde env: `.vscode/settings.json` → `python.defaultInterpreterPath` |
+| Pytest | `windows\tests\RUN_PYTEST.ps1` (conda) |
 
-`C:\Users\jamel\miniconda3\envs\hermes-env\python.exe`
+**Niet gebruiken:** repo `.venv`, workspace `(venv)`, of `python` zonder pad (kan verkeerde env zijn).
 
-Niet de repo `.venv` tenzij `HERMES_ALLOW_UV_VENV=1` en pip werkt.
+**Niet standaard:** `HERMES_ALLOW_UV_VENV=1` — alleen bewuste uv/venv-experimenten naast conda.
 
-## Terminal
+## Setup & recovery
+
+1. Eerste keer / na pull met pyproject-wijziging: `start_hermes.bat` (bootstrap sync).
+2. Kapotte of lockende `.venv`: `windows\REPAIR_PYTHON.bat` (quarantaine → `.venv.disabled-*`, geen `rmdir /s`).
+3. Conda op niet-standaard pad: `set HERMES_PYTHON=C:\pad\naar\hermes-env\python.exe` of sync IDE:  
+   `powershell -File windows\scripts\sync_hermes_ide_python.ps1`
+
+## Terminal-commando's
 
 - Pytest: `windows\tests\RUN_PYTEST.ps1`
-- LanceDB onderhoud: `windows\LANCEDB_MAINTENANCE.bat --list`
-- Renderer: `python scripts\diagnose_renderer.py --verify`
+- LanceDB: `windows\LANCEDB_MAINTENANCE.bat --list`
+- Productie-poort platform: `windows\audits\RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat`
 
-## Recovery
-
-Kapotte `.venv`: `windows\REPAIR_PYTHON.bat` (quarantaine, geen handmatig rmdir).
+Zie `docs/HERMES_START.md` § Python institutioneel, `windows/INSTITUTIONAL.md` principe 5.
