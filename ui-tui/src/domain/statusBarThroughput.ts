@@ -1,4 +1,5 @@
-/** Status-bar throughput formatting (parity with hermes_cli/status_bar_throughput.py). */
+/** Status-bar throughput formatting (parity with hermes_cli/status_bar_throughput.py).
+ * Ink: use theme.color.statusTps (dimmed white), not muted (gold). */
 
 export const MIN_ELAPSED_SEC = 0.5
 export const MIN_TPS = 1

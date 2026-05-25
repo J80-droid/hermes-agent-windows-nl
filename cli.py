@@ -3777,7 +3777,7 @@ class HermesCLI:
             return
         frags.extend([
             ("class:status-bar-dim", separator),
-            ("class:status-bar-dim", label),
+            ("class:status-bar-tps", label),
         ])
 
     def _append_status_bar_throughput_text_part(
@@ -14645,6 +14645,7 @@ class HermesCLI:
             'status-bar': 'bg:#1a1a2e #C0C0C0',
             'status-bar-strong': 'bg:#1a1a2e #FFD700 bold',
             'status-bar-dim': 'bg:#1a1a2e #8B8682',
+            'status-bar-tps': 'bg:#1a1a2e #A8A8A8',
             'status-bar-cost': 'bg:#1a1a2e #6B8CAE',
             'status-bar-good': 'bg:#1a1a2e #8FBC8F bold',
             'status-bar-warn': 'bg:#1a1a2e #FFD700 bold',

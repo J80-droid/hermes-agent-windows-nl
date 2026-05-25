@@ -372,7 +372,7 @@ export function StatusRule({
               {costLabel}
             </Text>
           ) : null}
-          {throughputLabel ? <Text color={t.color.muted}> │ {throughputLabel}</Text> : null}
+          {throughputLabel ? <Text color={t.color.statusTps}> │ {throughputLabel}</Text> : null}
           {ctxLabel ? <Text color={t.color.muted}> │ {ctxLabel}</Text> : null}
           {bar ? (
             <Text color={t.color.muted}>

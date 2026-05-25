@@ -20,6 +20,8 @@ export interface ThemeColors {
 
   statusBg: string
   statusFg: string
+  /** Generation throughput (tok/s) — dimmed white, distinct from gold ``muted`` and blue cost accent. */
+  statusTps: string
   statusGood: string
   statusWarn: string
   statusBad: string
@@ -99,7 +101,12 @@ const ANSI_NORMALIZED_FOREGROUNDS: readonly (keyof ThemeColors)[] = [
   'shellDollar'
 ]
 
-const ANSI_MUTED_FOREGROUNDS: readonly (keyof ThemeColors)[] = ['muted', 'sessionLabel', 'sessionBorder']
+const ANSI_MUTED_FOREGROUNDS: readonly (keyof ThemeColors)[] = [
+  'muted',
+  'sessionLabel',
+  'sessionBorder',
+  'statusTps'
+]
 
 function xtermEightBitRgb(colorNumber: number): [number, number, number] {
   if (colorNumber >= 232) {
@@ -285,6 +292,7 @@ export const DARK_THEME: Theme = {
 
     statusBg: '#1a1a2e',
     statusFg: '#C0C0C0',
+    statusTps: '#A8A8A8',
     statusGood: '#8FBC8F',
     statusWarn: '#FFD700',
     statusBad: '#FF8C00',
@@ -330,6 +338,7 @@ export const LIGHT_THEME: Theme = {
 
     statusBg: '#F5F5F5',
     statusFg: '#333333',
+    statusTps: '#6E6E6E',
     statusGood: '#2E7D32',
     statusWarn: '#8B6914',
     statusBad: '#D84315',
@@ -560,6 +569,7 @@ export function fromSkin(
 
       statusBg: d.color.statusBg,
       statusFg: d.color.statusFg,
+      statusTps: c('status_tps') ?? c('status_bar_tps') ?? d.color.statusTps,
       statusGood: c('ui_ok') ?? d.color.statusGood,
       statusWarn: c('ui_warn') ?? d.color.statusWarn,
       statusBad: d.color.statusBad,

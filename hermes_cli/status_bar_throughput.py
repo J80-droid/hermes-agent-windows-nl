@@ -1,4 +1,8 @@
-"""Classic CLI + shared status-bar throughput formatting (parity with statusBarThroughput.ts)."""
+"""Classic CLI + shared status-bar throughput formatting (parity with statusBarThroughput.ts).
+
+Rendered after the cost segment with style ``status-bar-tps`` (dimmed white), not
+``status-bar-dim`` (taupe separators) or ``status-bar-cost`` (blue).
+"""
 
 from __future__ import annotations
 
