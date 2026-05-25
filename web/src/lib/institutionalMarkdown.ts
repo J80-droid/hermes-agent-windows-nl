@@ -277,6 +277,10 @@ const INLINE_DUAL_SPLIT_RE = /_{4,}|─{4,}|\s+[—–-]{2,}\s+/
 const BOLD_CATEGORY_LINE_RE = /^\*\*(?<label>[^*\n]+)\*\*\s*$/
 const BOLD_CATEGORY_INLINE_RE = /^\*\*(?<label>[^*\n]+)\*\*\s+(?<rest>.+)$/
 const MAX_COMPARISON_COLUMNS = 6
+const OVERVIEW_HEADING_HINT_RE =
+  /\b(overzicht|auxiliary|configuratie|stack)\b/i
+const OVERVIEW_FIELD_LINE_RE = /^([^:|]{1,48}):\s*(.+)$/i
+const CATEGORY_HEADER_NAMES = new Set(['category', 'categorie', 'taak', 'task', 'aspect'])
 
 function splitMarkdownTableRow(row: string): string[] {
   let s = row.trim()
@@ -351,8 +355,265 @@ function countPseudoTableSignals(bodyLines: string[]): number {
     if (ORPHAN_TRAILING_PIPE_RE.test(line)) signals++
     if (BOLD_CATEGORY_INLINE_RE.test(stripped) && INLINE_DUAL_SPLIT_RE.test(stripped)) signals++
     if (INLINE_DUAL_SPLIT_RE.test(stripped) && !stripped.startsWith('|')) signals++
+    if (OVERVIEW_FIELD_LINE_RE.test(stripped)) signals++
+    if (BOLD_CATEGORY_LINE_RE.test(stripped)) signals++
   }
   return signals
+}
+
+function normalizeFieldKey(key: string): string {
+  return (key || '').trim().replace(/\s+/g, ' ')
+}
+
+function fieldKeyMatches(header: string, key: string): boolean {
+  return normalizeFieldKey(header).toLowerCase() === normalizeFieldKey(key).toLowerCase()
+}
+
+function inferSectionIntent(headingLine: string, bodyLines: string[]): string {
+  if (inferColumnsFromHeading(headingLine)) return 'comparison'
+  if (OVERVIEW_HEADING_HINT_RE.test(headingLine)) return 'overview'
+  if (/\b(vergelijk|versus|vs\.?|comparison|tabel)\b/i.test(headingLine)) return 'comparison'
+  for (const line of bodyLines) {
+    const stripped = line.trim()
+    if (!stripped || PSEUDO_SEPARATOR_LINE_RE.test(stripped)) continue
+    if (looksLikeMarkdownTableRow(stripped) && !isMarkdownTableDividerLine(stripped)) {
+      return 'explicit_grid'
+    }
+    break
+  }
+  return 'generic'
+}
+
+function collectOverviewFieldKeys(bodyLines: string[]): string[] {
+  const keys: string[] = []
+  const seen = new Set<string>()
+  for (const line of bodyLines) {
+    const stripped = line.trim()
+    if (!stripped || PSEUDO_SEPARATOR_LINE_RE.test(stripped)) continue
+    if (BOLD_CATEGORY_LINE_RE.test(stripped)) continue
+    const match = stripped.match(OVERVIEW_FIELD_LINE_RE)
+    if (!match) continue
+    const key = normalizeFieldKey(match[1]!)
+    const low = key.toLowerCase()
+    if (key && !seen.has(low)) {
+      seen.add(low)
+      keys.push(key)
+    }
+  }
+  return keys
+}
+
+function overviewHeadersFromBody(bodyLines: string[]): string[] | null {
+  for (const line of bodyLines) {
+    const stripped = stripOrphanTrailingPipe(line.trim())
+    if (!stripped || PSEUDO_SEPARATOR_LINE_RE.test(stripped)) continue
+    if (looksLikeMarkdownTableRow(stripped) && !isMarkdownTableDividerLine(stripped)) {
+      const cells = splitMarkdownTableRow(stripped)
+        .map(sanitizeTableCell)
+        .filter((c) => c.trim())
+      if (cells.length >= 2 && cells.some(Boolean)) return cells.slice(0, MAX_COMPARISON_COLUMNS)
+    }
+    break
+  }
+  const fieldKeys = collectOverviewFieldKeys(bodyLines)
+  if (fieldKeys.length < 2) return null
+  if (CATEGORY_HEADER_NAMES.has(fieldKeys[0]!.toLowerCase())) {
+    return fieldKeys.slice(0, MAX_COMPARISON_COLUMNS)
+  }
+  return (['Categorie', ...fieldKeys]).slice(0, MAX_COMPARISON_COLUMNS)
+}
+
+function extractFieldValuesFromText(text: string, fieldKeys: string[]): Record<string, string> {
+  const values: Record<string, string> = {}
+  const keys = fieldKeys.slice(0, MAX_COMPARISON_COLUMNS)
+  for (const key of keys) {
+    const others = keys
+      .filter((k) => k.toLowerCase() !== key.toLowerCase())
+      .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('|')
+    const lookahead = others ? `(?=\\s+(?:${others})\\s*:|$)` : '$'
+    const pattern = new RegExp(
+      `${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:\\s*(.+?)${lookahead}`,
+      'i',
+    )
+    const match = text.match(pattern)
+    if (match?.[1]) values[key] = match[1].trim()
+  }
+  return values
+}
+
+function parseOverviewFieldRows(bodyLines: string[], headers: string[]): string[][] | null {
+  if (headers.length < 2) return null
+  const fieldKeys = CATEGORY_HEADER_NAMES.has(headers[0]!.toLowerCase())
+    ? headers.slice(1)
+    : headers
+  const categoryInHeaders = CATEGORY_HEADER_NAMES.has(headers[0]!.toLowerCase())
+  const rows: string[][] = []
+  let category = ''
+  let values: Record<string, string> = {}
+
+  const flush = () => {
+    if (!category && !Object.values(values).some((v) => v.trim() && v !== '-')) return
+    const row = categoryInHeaders
+      ? [category || '-', ...fieldKeys.map((key) => values[key] ?? '-')]
+      : headers.map((key) => values[key] ?? '-')
+    rows.push(row)
+    category = ''
+    values = {}
+  }
+
+  for (const line of bodyLines) {
+    const stripped = stripOrphanTrailingPipe(line.trim())
+    if (!stripped) continue
+    if (PSEUDO_SEPARATOR_LINE_RE.test(stripped)) {
+      flush()
+      continue
+    }
+    if (stripped.startsWith('|') && looksLikeMarkdownTableRow(stripped)) continue
+
+    const boldOnly = stripped.match(BOLD_CATEGORY_LINE_RE)
+    if (boldOnly?.groups?.label) {
+      flush()
+      category = boldOnly.groups.label.trim()
+      continue
+    }
+
+    const fieldMatch = stripped.match(OVERVIEW_FIELD_LINE_RE)
+    if (fieldMatch) {
+      const key = normalizeFieldKey(fieldMatch[1]!)
+      const val = fieldMatch[2]!.trim()
+      for (const hdr of fieldKeys) {
+        if (fieldKeyMatches(hdr, key)) {
+          values[hdr] = val
+          break
+        }
+      }
+      continue
+    }
+
+    const inlineVals = extractFieldValuesFromText(stripped, fieldKeys)
+    if (Object.keys(inlineVals).length) Object.assign(values, inlineVals)
+  }
+
+  flush()
+  return rows.length >= 2 ? rows : null
+}
+
+function parseCollapsedOverviewBody(
+  bodyLines: string[],
+): { headers: string[]; rows: string[][] } | null {
+  const chunks: string[] = []
+  for (const line of bodyLines) {
+    const stripped = stripOrphanTrailingPipe(line.trim())
+    if (!stripped || PSEUDO_SEPARATOR_LINE_RE.test(stripped)) continue
+    chunks.push(stripped)
+  }
+  if (!chunks.length) return null
+  const full = chunks.join(' ')
+
+  const headerMatch = full.match(
+    /^((?:[A-Za-z][A-Za-z0-9 /]{0,40}\s*\|\s*){1,}[A-Za-z][A-Za-z0-9 /]{0,40})/,
+  )
+  if (headerMatch) {
+    const headerPart = headerMatch[1]!
+    const headers = splitMarkdownTableRow(headerPart)
+      .map(sanitizeTableCell)
+      .filter((c) => c.trim())
+    if (headers.length >= 2) {
+      const remainder = full.slice(headerMatch[0].length).trim()
+      const fieldKeys = CATEGORY_HEADER_NAMES.has(headers[0]!.toLowerCase())
+        ? headers.slice(1)
+        : headers
+      const parts = remainder.split(/\*\*([^*]+)\*\*/)
+      const rows: string[][] = []
+      if (parts.length >= 3) {
+        for (let idx = 1; idx < parts.length; idx += 2) {
+          const label = parts[idx]!.trim()
+          const content = parts[idx + 1]?.trim() ?? ''
+          const vals = extractFieldValuesFromText(content, fieldKeys)
+          if (CATEGORY_HEADER_NAMES.has(headers[0]!.toLowerCase())) {
+            rows.push([label, ...fieldKeys.map((key) => vals[key] ?? '-')])
+          } else {
+            rows.push(headers.map((key) => vals[key] ?? '-'))
+          }
+        }
+      }
+      if (rows.length >= 2) {
+        return { headers: headers.slice(0, MAX_COMPARISON_COLUMNS), rows }
+      }
+    }
+  }
+
+  const headers = overviewHeadersFromBody(bodyLines)
+  if (!headers) return null
+  const rows = parseOverviewFieldRows(bodyLines, headers)
+  return rows ? { headers, rows } : null
+}
+
+function parseExplicitHeaderGrid(
+  bodyLines: string[],
+): { headers: string[]; rows: string[][] } | null {
+  const substantive = bodyLines
+    .map((ln) => ln.trim())
+    .filter((ln) => ln && !PSEUDO_SEPARATOR_LINE_RE.test(ln))
+  if (substantive.length < 2) return null
+  if (!substantive.every((ln) => looksLikeMarkdownTableRow(ln))) return null
+  const headers = splitMarkdownTableRow(substantive[0]!)
+    .map(sanitizeTableCell)
+    .slice(0, MAX_COMPARISON_COLUMNS)
+  if (headers.filter((c) => c.trim()).length < 2) return null
+  const rows: string[][] = []
+  for (const line of substantive.slice(1)) {
+    if (isMarkdownTableDividerLine(line)) continue
+    const cells = splitMarkdownTableRow(line).map(sanitizeTableCell)
+    while (cells.length < headers.length) cells.push('')
+    rows.push(cells.slice(0, headers.length))
+  }
+  return rows.length >= 2 ? { headers, rows } : null
+}
+
+function parseOverviewBodyToRows(
+  bodyLines: string[],
+): { headers: string[]; rows: string[][] } | null {
+  const headers = overviewHeadersFromBody(bodyLines)
+  if (headers) {
+    const rows = parseOverviewFieldRows(bodyLines, headers)
+    if (rows) return { headers, rows }
+  }
+  return parseCollapsedOverviewBody(bodyLines)
+}
+
+function parseSectionToTable(
+  headingLine: string,
+  bodyLines: string[],
+  intent?: string,
+): { headers: string[]; rows: string[][] } | null {
+  const resolvedIntent = intent ?? inferSectionIntent(headingLine, bodyLines)
+  if (resolvedIntent === 'explicit_grid') return parseExplicitHeaderGrid(bodyLines)
+  if (resolvedIntent === 'comparison') {
+    return parseComparisonBodyToRows(bodyLines, inferColumnsFromHeading(headingLine))
+  }
+  if (resolvedIntent === 'overview') {
+    const overview = parseOverviewBodyToRows(bodyLines)
+    if (overview) return overview
+    return parseComparisonBodyToRows(bodyLines, inferColumnsFromHeading(headingLine))
+  }
+  const comparison = parseComparisonBodyToRows(bodyLines, inferColumnsFromHeading(headingLine))
+  if (comparison) return comparison
+  return parseOverviewBodyToRows(bodyLines)
+}
+
+function shouldAttemptPseudoNormalize(
+  headingLine: string,
+  bodyLines: string[],
+  intent: string,
+): boolean {
+  if (intent === 'comparison') return true
+  if (intent === 'overview') {
+    return countPseudoTableSignals(bodyLines) >= 1 || overviewHeadersFromBody(bodyLines) !== null
+  }
+  if (intent === 'explicit_grid') return true
+  return countPseudoTableSignals(bodyLines) >= 2
 }
 
 const ENTITY_PREFIX_RE = /^[A-Za-z0-9 .+\-]+:\s*/
@@ -552,7 +813,7 @@ function normalizePseudoTablesToMarkdown(text: string): string {
       text.includes('|') ||
       /_{4,}/.test(text) ||
       /^\*\*[^*]+\*\*/m.test(text) ||
-      /\b(versus|vs\.?|vergelijk|comparison)\b/i.test(text)
+      /\b(versus|vs\.?|vergelijk|comparison|overzicht|auxiliary)\b/i.test(text)
     )
   ) {
     return text
@@ -589,19 +850,14 @@ function normalizePseudoTablesToMarkdown(text: string): string {
       continue
     }
 
-    const defaultHeaders = inferColumnsFromHeading(heading)
-    const isComparisonHeading =
-      defaultHeaders !== null ||
-      /\b(vergelijk|versus|vs\.?|comparison|tabel)\b/i.test(heading)
-    const signals = countPseudoTableSignals(bodyLines)
-
-    if (!isComparisonHeading && signals < 2) {
+    const intent = inferSectionIntent(heading, bodyLines)
+    if (!shouldAttemptPseudoNormalize(heading, bodyLines, intent)) {
       out.push(heading)
       out.push(...bodyLines)
       continue
     }
 
-    const parsed = parseComparisonBodyToRows(bodyLines, defaultHeaders)
+    const parsed = parseSectionToTable(heading, bodyLines, intent)
     if (parsed) {
       out.push(heading)
       out.push(...renderMarkdownTable(parsed.headers, parsed.rows))

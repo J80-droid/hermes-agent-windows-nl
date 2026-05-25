@@ -211,22 +211,28 @@ def _nfr_normalizer_self_test_ok() -> tuple[bool, str | None]:
 
 
 def _pseudo_table_warning(md: str) -> str | None:
-    """Warn when a versus/comparison section still has pseudo-layout after normalize."""
-    for m in re.finditer(
+    """Warn when a versus/comparison or overview section still has pseudo-layout."""
+    section_patterns = [
         r"^#{1,6}\s+.*(?:versus|vs\.?|vergelijk|comparison).*$",
-        md,
-        re.MULTILINE | re.IGNORECASE,
-    ):
-        tail = md[m.end() :]
-        next_h = re.search(r"^#{1,6}\s+", tail, re.MULTILINE)
-        body = tail[: next_h.start()] if next_h else tail
-        if not body.strip():
-            continue
-        if re.search(r"_{6,}", body):
-            return "Vergelijkings-sectie met underscore-layout (pseudo-tabel)"
-        if "|" in body and not re.search(r"^\|\s*[-:]+\s*\|", body, re.MULTILINE):
-            if re.search(r"^\|[^|\n]+\|", body, re.MULTILINE):
-                return "Vergelijkings-sectie met pipe-rijen zonder |---| divider"
+        r"^#{1,6}\s+.*(?:overzicht|auxiliary).*$",
+    ]
+    for pattern in section_patterns:
+        for m in re.finditer(pattern, md, re.MULTILINE | re.IGNORECASE):
+            tail = md[m.end() :]
+            next_h = re.search(r"^#{1,6}\s+", tail, re.MULTILINE)
+            body = tail[: next_h.start()] if next_h else tail
+            if not body.strip():
+                continue
+            if re.search(r"_{6,}", body):
+                return "Sectie met underscore-layout (pseudo-tabel)"
+            if "|" in body and not re.search(r"^\|\s*[-:]+\s*\|", body, re.MULTILINE):
+                if re.search(r"^\|[^|\n]+\|", body, re.MULTILINE):
+                    return "Sectie met pipe-rijen zonder |---| divider"
+            if re.search(
+                r"(?im)^(?:provider|model|base\s*url)\s*:",
+                body,
+            ) and not re.search(r"^\|\s*[-:]+\s*\|", body, re.MULTILINE):
+                return "Overzicht/auxiliary-sectie met Label:-regels zonder markdown-tabel"
     return None
 
 

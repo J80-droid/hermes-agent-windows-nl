@@ -10,6 +10,7 @@ Dit blok geldt voor **alle** antwoorden, ongeacht profiel. Kleur en layout doet 
 - Elke `**Label:**` op eigen regel; waarde op de **volgende** regel (geen lege regel tussen label en waarde).
 - Tabellen **altijd** als markdown-tabel (`| kolom |` + scheidingsrij `|---|`). **Nooit** platte regels als `Categorie: X Eis: Y Meetmethode: Z`. Onder `### Niet-functionele requirements` **alleen** een tabel — geen prose, geen streepjes, geen `**Performantie**`-blokken met alinea's.
 - **Vergelijkingen / vs:** elke vergelijking (bijv. `Ollama versus LM Studio`) als markdown-tabel met korte celtekst (terminal ~100–120 kolommen). **Verboden:** underscore-layout (`____`, `────────`), vergelijkingen als lopende tekst, losse `|` aan regeleinde als scheiding, `EntiteitA: … _____ EntiteitB: …` zonder tabel.
+- **Overzichten / auxiliary / configuratie:** provider/model/URL-overzichten als markdown-tabel (2–6 kolommen, afhankelijk van inhoud). **Verboden:** `**Groep**` + losse `Provider:`/`Model:`/`Base URL:`-regels zonder tabel, of alles in één dichte regel met pipes.
 - Lijsten: `- item` voor bullets; genummerd `1. item` alleen voor stappen/instructies, niet als hoofdstuktitel.
 - Geen codefence rond het volledige antwoord. Geen inleiding of afsluitende meta-uitleg.
 - Geen `[COLOR_*]` tokens.
@@ -44,6 +45,15 @@ Ollama: CLI-first _____ LM Studio: GUI met knoppen
 | --- | --- | --- |
 | Interface | CLI-first | GUI met knoppen |
 | Modelbeheer | pull/list | browse catalog |
+```
+
+**Goed (auxiliary-overzicht, 4 kolommen):**
+```markdown
+### Overzicht per auxiliary taak
+| Categorie | Provider | Model | Base URL |
+| --- | --- | --- | --- |
+| Lokale achtergrondtaken (compression, web_extract) | custom (Ollama) | qwen2.5-coder:1.5b-instruct-q8_0 | http://localhost:11434/v1 |
+| Visuele taken (vision) | gemini | gemini-2.5-flash | (cloud) |
 ```
 
 **Goed:**

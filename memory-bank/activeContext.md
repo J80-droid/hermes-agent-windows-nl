@@ -8,7 +8,7 @@
 
 **IDE-onderhoud landkaart (2026-05-23):** `lancedb_maintenance.py` + `LANCEDB_MAINTENANCE.bat`; merge snippet-preview; `audit_skill_drift.py`; volledige E2E `windows/audits/RUN_IDE_MAINTENANCE_E2E.bat` (rapport `IDE_MAINTENANCE_E2E_REPORT_*.md`).
 
-**Institutioneel 10/10 (2026-05-23, afgerond + guardrails):** palet, NFR, normalizer-pariteit, score 10/10, labels verticaal, Web live palette. **Pseudo-tabel normalizer (2026-05-23):** … E2E 10/10 via `RUN_INSTITUTIONAL_E2E` stap **2h** (automatisch in `APPLY_INSTITUTIONAL_RUNTIME.bat`). **Herstel na IDE-drift:** `APPLY_INSTITUTIONAL_RUNTIME.bat` (config + SOUL + E2E 11/11). **Preventie:** `scripts/verify_institutional_guard.py`, drift in `diagnose_renderer.py --verify`, `.cursor/rules/institutional-presentatie.mdc`, `docs/INSTITUTIONAL_PORTING_GUIDE.md`. **Na pull/update/IDE:** `/new` + rooktest; na SOUL-wijziging: `SYNC_SOUL_SNIPPETS.bat`.
+**Institutioneel 10/10 (2026-05-23, afgerond + guardrails):** palet, NFR, normalizer-pariteit, score 10/10, labels verticaal, Web live palette. **Pseudo-tabel normalizer (2026-05-23):** … E2E 10/10 via `RUN_INSTITUTIONAL_E2E` stap **2h** (automatisch in `APPLY_INSTITUTIONAL_RUNTIME.bat`). **Context-aware pseudo-tabel (2026-05-25):** overview 2–6 kolommen (auxiliary grouped/collapsed), intent routing Python↔TS, CLI streaming eind-flush (`_prepare_stream_table_block`); E2E **12/12** via `RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat`. **Herstel na IDE-drift:** `APPLY_INSTITUTIONAL_RUNTIME.bat` (config + SOUL + E2E 11/11). **Preventie:** `scripts/verify_institutional_guard.py`, drift in `diagnose_renderer.py --verify`, `.cursor/rules/institutional-presentatie.mdc`, `docs/INSTITUTIONAL_PORTING_GUIDE.md`. **Na pull/update/IDE:** `/new` + rooktest; na SOUL-wijziging: `SYNC_SOUL_SNIPPETS.bat`.
 
 **TUI statusbalk-kosten (2026-05-24, rich bar + layout-fix):** Framework-default **`show_cost: true`** + **`cost_bar_mode: rich`**; altijd zichtbaar (`n/a`/`included`/`~NK tok`); `statusRuleColumns` (composer `paddingX` −2) + `resolveStatusRuleLayout`; live turn-kosten; Gemini 3.x → geschatte USD via `usage_pricing`; **`REBUILD_TUI.bat`** + volledige Hermes-herstart na TUI-pull (dist niet hot-reload). E2E `RUN_STATUS_BAR_COST_E2E.bat`.
 
@@ -66,6 +66,7 @@
 | E2E statusbalk-kosten (klassieke CLI) | `windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` · `RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E` |
 | Codebase-audit smoke (E1/E2) | `RUN_CODEBASE_SMOKE_E2E.bat` (E2E) · `RUN_CODEBASE_SMOKE_AUDIT.bat` (snel) · `RUN_AUDITS -IncludeCodebaseSmokeE2E` / `-IncludeAllE2E` · [CODEBASE_AUDIT_EVIDENCE.md](docs/CODEBASE_AUDIT_EVIDENCE.md) |
 | E2E institutioneel | `windows/audits/RUN_INSTITUTIONAL_E2E.bat` |
+| E2E context-aware pseudo-tabel | `windows/audits/RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat` |
 | Hermes start (bat) | `../../HERMES_START.md` |
 | E2E Hermes split-home | `windows/audits/RUN_HERMES_HOME_E2E.bat` |
 | E2E root inheritance | `windows/audits/RUN_ROOT_CONFIG_INHERITANCE_E2E.bat` |

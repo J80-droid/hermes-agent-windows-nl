@@ -65,6 +65,28 @@ PARITY_FIXTURES: list[tuple[str, str]] = [
         "| Vision | Gemini |\n"
         "| Web | DeepSeek |\n",
     ),
+    (
+        "auxiliary_overview_4col",
+        "### Overzicht per auxiliary taak\n\n"
+        "**Lokale achtergrondtaken (compression, web_extract, …)**\n"
+        "Provider: custom (Ollama)\n"
+        "Model: qwen2.5-coder:1.5b-instruct-q8_0\n"
+        "Base URL: http://localhost:11434/v1\n\n"
+        "**Visuele taken (vision)**\n"
+        "Provider: gemini\n"
+        "Model: gemini-2.5-flash\n"
+        "Base URL: (cloud)\n",
+    ),
+    (
+        "auxiliary_overview_2col",
+        "### Configuratie overzicht\n\n"
+        "**Database**\n"
+        "Host: localhost\n"
+        "Port: 5432\n\n"
+        "**Cache**\n"
+        "Host: redis\n"
+        "Port: 6379\n",
+    ),
 ]
 
 

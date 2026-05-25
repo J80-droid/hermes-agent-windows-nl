@@ -74,9 +74,9 @@ Code: [`hermes_cli/institutional_render.py`](../hermes_cli/institutional_render.
 
 **Score (8 checks):** checklist, kop-op-inhoud, sectie-spacing, labels, NFR-tabel, **vergelijking_tabel** (pseudo-layout), kleur h2≠kolom0, render-pipeline — `python scripts/score_institutional_render.py --verify` (E2E stap 2g, drempel ≥ 9.0).
 
-**Normalizer (fallback):** zet platte outline om naar `##`/`###`; `N Stap N:` → `## Stap N:`; inline `**Label:** waarde` → label + waarde op aparte regels; platte `Categorie: … Eis: …` en **NFR-prose** (streepjes, `**Performantie**`-blokken) → markdown-tabel; **pseudo-tabellen** (`____`, `EntiteitA: … _____ EntiteitB: …`, pipe-rijen zonder `|---|`) → markdown-tabel vóór render (turn-onafhankelijk); `<institutional_check>` op eigen regels.
+**Normalizer (fallback):** zet platte outline om naar `##`/`###`; `N Stap N:` → `## Stap N:`; inline `**Label:** waarde` → label + waarde op aparte regels; platte `Categorie: … Eis: …` en **NFR-prose** (streepjes, `**Performantie**`-blokken) → markdown-tabel; **pseudo-tabellen** (`____`, `EntiteitA: … _____ EntiteitB: …`, pipe-rijen zonder `|---|`, auxiliary-overzichten met `Provider:`/`Model:`) → markdown-tabel vóór render (turn-onafhankelijk, contextafhankelijk 2–6 kolommen); `<institutional_check>` op eigen regels.
 
-**Verify (pseudo-tabel):** `python scripts/verify_pseudo_table_normalizer.py --verify` — Ollama-vs, auxiliary Cloud/Lokaal, pipe-divider probes.
+**Verify (pseudo-tabel):** `python scripts/verify_pseudo_table_normalizer.py --verify` — Ollama-vs, auxiliary Cloud/Lokaal, pipe-divider, 4-koloms auxiliary-overzicht probes.
 
 **E2E audit (pseudo-tabel):** stap **2h** in `RUN_INSTITUTIONAL_E2E.ps1` (10/10; pytest + TS parity + verify). Los: `windows\audits\RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat`. Gecombineerd: `RUN_AUDITS.bat -IncludePseudoTableNormalizerE2E` of `-IncludeAllE2E`. **Runtime:** `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` voert SOUL-sync + volledige institutioneel E2E (incl. 2h) uit.
 
@@ -95,7 +95,7 @@ Hermes hoeft niet herstart te worden voor de banner — wel **nieuwe sessie** (T
 
 **Live config:** `get_assistant_render_settings()` leest de actieve profiel-config bij elke aanroep (niet gecachet). Dit garandeert dat na een profielwissel (`/profile use <naam>`) direct het juiste palet wordt gebruikt zonder Hermes te herstarten.
 
-**Streaming:** bij `display.streaming=true` streamt de klassieke CLI **ruwe markdown** (zichtbare `##`, `<institutional_check>`-tags) **tijdens** generatie; Rich-rendering komt pas op het **eindpaneel**. Bij `display.streaming=false` (team-default) is er **geen** token-stream — alleen het Rich-eindpaneel. Hermes dwingt `streaming=false` af wanneer `final_response_markdown=render` (zie `_normalize_display_markdown_streaming` in `config.py`). Ink/Web/TUI-gateway: zelfde normalizer + renderer via `rich_output.py`.
+**Streaming:** bij `display.streaming=true` streamt de klassieke CLI **ruwe markdown** (zichtbare `##`, `<institutional_check>`-tags) **tijdens** generatie; Rich-rendering komt pas op het **eindpaneel**. Bij `institutional_rich` + `final_response_markdown=render` normaliseert de stream-flush pseudo-tabellen vóór tabel-realign (eind-flush, geen per-token flicker). Bij `display.streaming=false` (team-default) is er **geen** token-stream — alleen het Rich-eindpaneel. Hermes dwingt `streaming=false` af wanneer `final_response_markdown=render` (zie `_normalize_display_markdown_streaming` in `config.py`). Ink/Web/TUI-gateway: zelfde normalizer + renderer via `rich_output.py`.
 
 Fallback: `assistant_render_style: markdown_legacy` + goud via `skin_markdown_theme()` (oude pad).
 
@@ -211,6 +211,7 @@ Na wijzigingen via Cursor, upstream-merge of handmatige config-edits:
 | Label en waarde op één regel | Inline markdown in heading-body (oud) | Pull/update fork; renderer pelt labels; normalizer splitst inline |
 | NFR prose i.p.v. tabel | Model negeert SOUL | Normalizer herstelt prose→tabel; `diagnose_renderer --verify` faalt als pipeline kapot; SOUL-sync + `/new` |
 | Pseudo-tabel / underscore-vergelijking | Model levert `____` of `A: … _____ B: …` i.p.v. `\|---\|` | `normalize_pseudo_tables_to_markdown` (turn-onafhankelijk); SOUL verbiedt pseudo-layout; `verify_pseudo_table_normalizer.py --verify`; `RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat` |
+| Dense blok onder "Overzicht per auxiliary taak" | Model levert `**Groep**` + `Provider:`/`Model:`/`Base URL:` zonder tabel | Normalizer (context 2–6 kolommen) + SOUL auxiliary-voorbeeld; `verify_pseudo_table_normalizer.py --verify`; bij streaming: eind-flush normaliseert vóór realign |
 | Magenta koppen (oude Rich) | `markdown_legacy` | `assistant_render_style: institutional_rich` |
 | Blauw i.p.v. goud (UI) | Legacy cmd of `skin: slate` | Windows Terminal + `skin: default` |
 | Geen institutioneel format | Geen SOUL-sync | `SYNC_SOUL_SNIPPETS.bat` + nieuwe sessie (`/new`) |

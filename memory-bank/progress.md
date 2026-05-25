@@ -62,11 +62,12 @@
 - [x] Pariteit Ink/Web: `institutionalMarkdown.ts`, `institutionalMarkdownNormalize.ts`, `institutionalColors.ts` (cyaan-first tabelpalet)
 - [x] Normalizer-pariteit pytest: `tests/hermes_cli/test_normalizer_ts_parity.py` + `scripts/normalize_assistant_markdown_*_runner.ts` (Python ↔ Web/Ink via `npx tsx`)
 - [x] Globaal outputformaat: `SOUL_SHARED_OUTPUT_FORMAT.md` + `SyncSoulSnippet.psm1` (NFR-tabel verplicht)
-- [x] Normalizer: outline, institutional_check, NFR prose→tabel, **pseudo-tabel/underscore vs→markdown** (`ensure_markdown_table_dividers`, `normalize_pseudo_tables_to_markdown`; max 6 kolommen contextafhankelijk)
+- [x] Normalizer: outline, institutional_check, NFR prose→tabel, **pseudo-tabel/underscore vs→markdown** (`ensure_markdown_table_dividers`, `normalize_pseudo_tables_to_markdown`; max 6 kolommen contextafhankelijk); **overview 2–6 kolommen** (auxiliary grouped/collapsed, intent routing, generic fallback)
+- [x] CLI streaming: `_prepare_stream_table_block` normaliseert pseudo-tabellen vóór realign bij `institutional_rich` + `final_response_markdown=render`
 - [x] Palet: h2 groen ≠ tabelkolom 0 cyaan (`header_palette` op **alle** YAML-paletten in `config/palettes.yaml`)
 - [x] Rooktest: `docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md` (10/10 checklist)
 - [x] Web: live `assistantPalette` via `GET /api/display/assistant` + `AssistantDisplayProvider` (commit `19239a6fd`)
-- [x] Score/diagnose: `score_institutional_render.py` (**8 checks** incl. `vergelijking_tabel`, 10.0/10 sample), `diagnose_renderer.py` (kleurlegenda + NFR + pseudo-tabel self-test); **E2E** `RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat` (10/10 PASS), `verify_pseudo_table_normalizer.py --verify`
+- [x] Score/diagnose: `score_institutional_render.py` (**8 checks** incl. `vergelijking_tabel`, 10.0/10 sample), `diagnose_renderer.py` (kleurlegenda + NFR + pseudo-tabel self-test + overview/auxiliary warning); **E2E** `RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat` (10/10 PASS), `RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat` (12/12 PASS), `verify_pseudo_table_normalizer.py --verify`
 - [x] Legal SOUL: NFR-tabel reminder in `docs/templates/SOUL_LEGAL_DOMAIN.md`
 - [x] Labels checklist #5: waarde onder label (CLI peel + Web `flex-col`); inline `**Label:** waarde` via normalizer + renderer (rooktest 10/10)
 - [x] Nieuwe-chat vlag na SOUL-sync: `institutional_new_chat_notice.py` + banner in `cli.py`

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify pseudo-table normalizer (underscore/vs → markdown table)."""
+"""Verify pseudo-table normalizer (vs, Cloud/Lokaal, pipe divider, 4-col overview)."""
 
 from __future__ import annotations
 
@@ -29,6 +29,18 @@ _PIPE_PROBE = (
     "| Web | DeepSeek |\n"
 )
 
+_OVERVIEW_4COL_PROBE = (
+    "### Overzicht per auxiliary taak\n\n"
+    "**Lokale achtergrondtaken (compression, web_extract, …)**\n"
+    "Provider: custom (Ollama)\n"
+    "Model: qwen2.5-coder:1.5b-instruct-q8_0\n"
+    "Base URL: http://localhost:11434/v1\n\n"
+    "**Visuele taken (vision)**\n"
+    "Provider: gemini\n"
+    "Model: gemini-2.5-flash\n"
+    "Base URL: (cloud)\n"
+)
+
 
 def _has_divider(text: str) -> bool:
     return bool(re.search(r"^\|\s*[-:]+\s*\|", text, re.MULTILINE))
@@ -56,6 +68,12 @@ def verify_pseudo_table_normalizer() -> tuple[bool, str | None]:
     if len(lines) < 2 or not _has_divider(pipe):
         return False, "Pipe-probe: divider niet ingevoegd"
 
+    overview = normalize_assistant_markdown(_OVERVIEW_4COL_PROBE)
+    if not _has_divider(overview):
+        return False, "Overview 4-koloms probe: geen |---| divider"
+    if "| Provider |" not in overview and "| Categorie | Provider |" not in overview:
+        return False, "Overview 4-koloms probe: Provider-kolom ontbreekt"
+
     return True, None
 
 
@@ -71,7 +89,7 @@ def main() -> int:
     ok, reason = verify_pseudo_table_normalizer()
     if ok:
         if args.verify:
-            print("[VERIFY OK] pseudo-table normalizer (Ollama vs, auxiliary, pipe divider)")
+            print("[VERIFY OK] pseudo-table normalizer (Ollama vs, auxiliary, pipe divider, overview 4col)")
         else:
             print("OK: pseudo-table normalizer probes passed")
         return 0

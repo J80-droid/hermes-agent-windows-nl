@@ -150,6 +150,14 @@ def realign_markdown_tables(*args, **kwargs):
     from agent.markdown_tables import realign_markdown_tables as _realign_markdown_tables
 
     return _realign_markdown_tables(*args, **kwargs)
+
+
+def normalize_assistant_markdown(*args, **kwargs):
+    from hermes_cli.markdown_output_normalize import (
+        normalize_assistant_markdown as _normalize_assistant_markdown,
+    )
+
+    return _normalize_assistant_markdown(*args, **kwargs)
 # NOTE: `from agent.account_usage import ...` is deliberately NOT at module
 # top — it transitively pulls the OpenAI SDK chain (~230 ms cold) and is only
 # needed when the user runs `/limits`. Lazy-imported inside the handler below.
@@ -2897,6 +2905,11 @@ class HermesCLI:
         ).strip().lower() or "strip"
         if self.final_response_markdown not in {"render", "strip", "raw"}:
             self.final_response_markdown = "strip"
+        self.assistant_render_style = str(
+            _display.get("assistant_render_style", "institutional_rich")
+        ).strip().lower() or "institutional_rich"
+        if self.assistant_render_style not in {"institutional_rich", "markdown_legacy"}:
+            self.assistant_render_style = "institutional_rich"
 
         # Inline diff previews for write actions (display.inline_diffs in config.yaml)
         self._inline_diffs_enabled = CLI_CONFIG["display"].get("inline_diffs", True)
@@ -4351,6 +4364,15 @@ class HermesCLI:
                 self._stream_prefilt = self._stream_prefilt[-max_tag_len:]
             return
 
+    def _prepare_stream_table_block(self, joined: str) -> str:
+        """Normalize institutional pseudo-layout then realign table columns for streaming."""
+        if (
+            self.final_response_markdown == "render"
+            and self.assistant_render_style == "institutional_rich"
+        ):
+            joined = normalize_assistant_markdown(joined)
+        return realign_markdown_tables(joined, _terminal_width_for_streaming())
+
     def _emit_stream_text(self, text: str) -> None:
         """Emit filtered text to the streaming display."""
         if not text:
@@ -4418,7 +4440,7 @@ class HermesCLI:
             joined = "\n".join(buf)
             if self.final_response_markdown == "strip":
                 joined = _strip_markdown_syntax(joined)
-            block = realign_markdown_tables(joined, _terminal_width_for_streaming())
+            block = self._prepare_stream_table_block(joined)
             for ln in block.split("\n"):
                 _emit_one(ln)
 
@@ -4482,7 +4504,7 @@ class HermesCLI:
             self._in_stream_table = False
             if self.final_response_markdown == "strip":
                 joined = _strip_markdown_syntax(joined)
-            block = realign_markdown_tables(joined, _terminal_width_for_streaming())
+            block = self._prepare_stream_table_block(joined)
             for ln in block.split("\n"):
                 _cprint(f"{_STREAM_PAD}{_tc}{ln}{_RST}" if _tc else f"{_STREAM_PAD}{ln}")
 

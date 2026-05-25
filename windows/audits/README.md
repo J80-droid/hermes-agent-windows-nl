@@ -55,6 +55,7 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | **`RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`** | Klassieke CLI (`hermes chat`): `status_bar_cost.py`, `cli.py` hooks, `/cost`, smoke + pytest |
 | **`RUN_PARETO_E2E.bat`** | OpenRouter Pareto Code router: model-gate, transport/summary parity, pytest, verify script |
 | **`RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat`** | Pseudo-tabel normalizer: underscore/vs→markdown, pytest + TS parity + diagnose/score (10 stappen) |
+| **`RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat`** | Context-aware overview (2-6 kolommen): grouped/collapsed auxiliary, intent routing, streaming flush, TS parity (12 stappen) |
 | **`RUN_AUDITS.bat -IncludePseudoTableNormalizerE2E`** | Bovenstaande pseudo-tabel E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeMemoryArchitectureE2E`** | Bovenstaande memory E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeStatusBarCostE2E`** | Bovenstaande statusbalk-kosten E2E in gecombineerde poort |
@@ -114,6 +115,24 @@ Upstream + UPDATE audit: `UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md`.
 Memory L1–L4 audit: `MEMORY_ARCHITECTURE_E2E_REPORT_2026-05-23.md` (**16 stappen** sinds 2026-05-24; tijdelijke logs `MEMORY_ARCHITECTURE_E2E_REPORT_*_*.md` gitignored).  
 Statusbalk-kosten audit: `STATUS_BAR_COST_E2E_REPORT_*.md` (10 stappen; `RUN_STATUS_BAR_COST_E2E.bat`).  
 Klassieke CLI statusbalk-kosten: `CLASSIC_CLI_STATUS_BAR_COST_E2E_REPORT_*.md` (12 stappen incl. Gemini cache pricing; `RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`).
+
+## Context-aware pseudo-tabel E2E (overview 2-6 kolommen)
+
+```text
+windows\audits\RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat
+```
+
+Dedicated audit naast `RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat` (basis vs/underscore). Dekt de **contextafhankelijke** normalizer: auxiliary-overzichten (4 kolommen grouped/collapsed), 2-koloms config, intent routing, scheiding tussen groepen, CLI streaming eind-flush, TS parity overview-fixtures.
+
+| Stap | Controle |
+| ---- | -------- |
+| 1–4 | Repo-artefacten, Python/TS overview parser + intent, CLI `_prepare_stream_table_block` |
+| 5 | Isolated harness (8 scenario's): `ContextAwarePseudoTableE2E.harness.py` |
+| 6–7 | pytest overview unit + TS parity `auxiliary_overview_4col` / `_2col` |
+| 8–10 | `verify_pseudo_table_normalizer --verify`, diagnose overview-warning, SOUL/docs |
+| 11–12 | `py_compile` + vs/Cloud-Lokaal regressie |
+
+Rapport: `CONTEXT_AWARE_PSEUDO_TABLE_E2E_REPORT_*.md`.
 
 ## Memory-architectuur E2E (L1–L4)
 

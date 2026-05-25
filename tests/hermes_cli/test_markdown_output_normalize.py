@@ -317,6 +317,89 @@ def test_normalize_assistant_markdown_pipe_rows_missing_divider():
     assert lines[1].strip().startswith("| ---")
 
 
+def test_normalize_auxiliary_overview_4col_grouped():
+    raw = (
+        "### Overzicht per auxiliary taak\n\n"
+        "**Lokale achtergrondtaken (compression, web_extract, …)**\n"
+        "Provider: custom (Ollama)\n"
+        "Model: qwen2.5-coder:1.5b-instruct-q8_0\n"
+        "Base URL: http://localhost:11434/v1\n\n"
+        "**Visuele taken (vision)**\n"
+        "Provider: gemini\n"
+        "Model: gemini-2.5-flash\n"
+        "Base URL: (cloud)\n"
+    )
+    out = normalize_pseudo_tables_to_markdown(raw)
+    assert "| --- |" in out
+    assert "| Categorie | Provider | Model | Base URL |" in out
+    assert "qwen2.5-coder" in out
+    assert "gemini-2.5-flash" in out
+    assert "**Lokale" not in out
+
+
+def test_normalize_auxiliary_overview_collapsed_inline():
+    raw = (
+        "### Overzicht per auxiliary taak\n\n"
+        "Category | Provider | Model | Base URL "
+        "**Lokale achtergrondtaken** Provider: custom Model: qwen "
+        "Base URL: http://localhost **Visuele taken** Provider: gemini "
+        "Model: flash Base URL: (cloud)\n"
+    )
+    out = normalize_pseudo_tables_to_markdown(raw)
+    assert "| Category | Provider | Model | Base URL |" in out
+    assert "| Lokale achtergrondtaken | custom | qwen | http://localhost |" in out
+    assert "| Visuele taken | gemini | flash | (cloud) |" in out
+
+
+def test_normalize_overview_2col_minimal():
+    raw = (
+        "### Configuratie overzicht\n\n"
+        "**Database**\n"
+        "Host: localhost\n"
+        "Port: 5432\n\n"
+        "**Cache**\n"
+        "Host: redis\n"
+        "Port: 6379\n"
+    )
+    out = normalize_pseudo_tables_to_markdown(raw)
+    assert "| Categorie | Host | Port |" in out
+    assert "| Database | localhost | 5432 |" in out
+    assert "| Cache | redis | 6379 |" in out
+
+
+def test_normalize_overview_idempotent_on_valid_4col_table():
+    raw = (
+        "### Overzicht per auxiliary taak\n"
+        "| Categorie | Provider | Model | Base URL |\n"
+        "| --- | --- | --- | --- |\n"
+        "| Lokale | Ollama | qwen | http://localhost |\n"
+        "| Vision | gemini | flash | (cloud) |\n"
+    )
+    out = normalize_pseudo_tables_to_markdown(raw)
+    dividers = [
+        ln for ln in out.splitlines() if re.match(r"^\|\s*[-:]+\s*\|", ln.strip())
+    ]
+    assert len(dividers) == 1
+
+
+def test_normalize_overview_separator_between_groups_no_duplicate_row():
+    raw = (
+        "### Overzicht per auxiliary taak\n\n"
+        "**Groep A**\n"
+        "Provider: alpha\n"
+        "Model: m1\n"
+        "______________\n"
+        "**Groep B**\n"
+        "Provider: beta\n"
+        "Model: m2\n"
+    )
+    out = normalize_pseudo_tables_to_markdown(raw)
+    rows = [ln for ln in out.splitlines() if ln.startswith("| ") and "---" not in ln]
+    assert len(rows) == 3  # header + 2 data rows
+    assert "| Groep A | alpha | m1 |" in out
+    assert "| Groep B | beta | m2 |" in out
+
+
 def test_normalize_pseudo_idempotent_on_valid_comparison_table():
     raw = (
         "### Vergelijking: Foo versus Bar\n"

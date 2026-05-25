@@ -458,6 +458,13 @@ _BOLD_CATEGORY_INLINE_RE = re.compile(
     r"^\*\*(?P<label>[^*\n]+)\*\*\s+(?P<rest>.+)$"
 )
 _MAX_COMPARISON_COLUMNS = 6
+# Overview intent: auxiliary/config tables (Provider/Model/Base URL, 2-6 columns).
+# Excludes bare "taken" to avoid false positives on "### Hulp taken" (Cloud/Lokaal).
+_OVERVIEW_HEADING_HINT_RE = re.compile(
+    r"(?i)\b(overzicht|auxiliary|configuratie|stack)\b",
+)
+_OVERVIEW_FIELD_LINE_RE = re.compile(r"^([^:|]{1,48}):\s*(.+)$", re.IGNORECASE)
+_CATEGORY_HEADER_NAMES = frozenset({"category", "categorie", "taak", "task", "aspect"})
 
 
 def _split_markdown_table_row(row: str) -> list[str]:
@@ -545,7 +552,293 @@ def _count_pseudo_table_signals(body_lines: list[str]) -> int:
             signals += 1
         if _INLINE_DUAL_SPLIT_RE.search(stripped) and not stripped.startswith("|"):
             signals += 1
+        if _OVERVIEW_FIELD_LINE_RE.match(stripped):
+            signals += 1
+        if _BOLD_CATEGORY_LINE_RE.match(stripped):
+            signals += 1
     return signals
+
+
+def _normalize_field_key(key: str) -> str:
+    return re.sub(r"\s+", " ", (key or "").strip())
+
+
+def _field_key_matches(header: str, key: str) -> bool:
+    return _normalize_field_key(header).lower() == _normalize_field_key(key).lower()
+
+
+def _infer_section_intent(heading_line: str, body_lines: list[str]) -> str:
+    """Return comparison | overview | explicit_grid | generic."""
+    if _infer_columns_from_heading(heading_line):
+        return "comparison"
+    if _OVERVIEW_HEADING_HINT_RE.search(heading_line):
+        return "overview"
+    if re.search(r"(?i)\b(vergelijk|versus|vs\.?|comparison|tabel)\b", heading_line):
+        return "comparison"
+    for line in body_lines:
+        stripped = line.strip()
+        if not stripped or _PSEUDO_SEPARATOR_LINE_RE.match(stripped):
+            continue
+        if _looks_like_markdown_table_row(stripped) and not _is_markdown_table_divider_line(stripped):
+            return "explicit_grid"
+        break
+    return "generic"
+
+
+def _collect_overview_field_keys(body_lines: list[str]) -> list[str]:
+    """Unique Label: keys in first-seen order."""
+    keys: list[str] = []
+    seen: set[str] = set()
+    for line in body_lines:
+        stripped = line.strip()
+        if not stripped or _PSEUDO_SEPARATOR_LINE_RE.match(stripped):
+            continue
+        if _BOLD_CATEGORY_LINE_RE.match(stripped):
+            continue
+        match = _OVERVIEW_FIELD_LINE_RE.match(stripped)
+        if not match:
+            continue
+        key = _normalize_field_key(match.group(1))
+        low = key.lower()
+        if key and low not in seen:
+            seen.add(low)
+            keys.append(key)
+    return keys
+
+
+def _overview_headers_from_body(body_lines: list[str]) -> list[str] | None:
+    """Infer headers from first pipe row or accumulated Label: keys."""
+    for line in body_lines:
+        stripped = _strip_orphan_trailing_pipe(line.strip())
+        if not stripped or _PSEUDO_SEPARATOR_LINE_RE.match(stripped):
+            continue
+        if _looks_like_markdown_table_row(stripped) and not _is_markdown_table_divider_line(stripped):
+            cells = [_sanitize_table_cell(c) for c in _split_markdown_table_row(stripped)]
+            if len(cells) >= 2 and any(cells):
+                return cells[:_MAX_COMPARISON_COLUMNS]
+        break
+    field_keys = _collect_overview_field_keys(body_lines)
+    if len(field_keys) < 2:
+        return None
+    if field_keys[0].lower() in _CATEGORY_HEADER_NAMES:
+        return field_keys[:_MAX_COMPARISON_COLUMNS]
+    return (["Categorie"] + field_keys)[:_MAX_COMPARISON_COLUMNS]
+
+
+def _extract_field_values_from_text(text: str, field_keys: list[str]) -> dict[str, str]:
+    """Pull Label: value pairs from a collapsed line."""
+    values: dict[str, str] = {}
+    keys = field_keys[:_MAX_COMPARISON_COLUMNS]
+    for key in keys:
+        others = tuple(k for k in keys if k.lower() != key.lower())
+        others_pat = "|".join(re.escape(k) for k in others)
+        lookahead = rf"(?=\s+(?:{others_pat})\s*:|$)" if others_pat else r"$"
+        match = re.search(rf"(?i){re.escape(key)}\s*:\s*(.+?){lookahead}", text)
+        if match:
+            values[key] = match.group(1).strip()
+    return values
+
+
+def _parse_overview_field_rows(
+    body_lines: list[str],
+    headers: list[str],
+) -> list[list[str]] | None:
+    """Parse grouped **Category** + Provider:/Model: blocks into table rows."""
+    if len(headers) < 2:
+        return None
+
+    field_keys = headers[1:] if headers[0].lower() in _CATEGORY_HEADER_NAMES else headers
+    category_in_headers = headers[0].lower() in _CATEGORY_HEADER_NAMES
+    rows: list[list[str]] = []
+    category = ""
+    values: dict[str, str] = {}
+
+    def flush() -> None:
+        nonlocal category, values
+        if not category and not any(v.strip() and v != "-" for v in values.values()):
+            return
+        if category_in_headers:
+            row = [category or "-"] + [values.get(key, "-") for key in field_keys]
+        else:
+            row = [values.get(key, "-") for key in headers]
+        rows.append(row)
+        category = ""
+        values = {}
+
+    for line in body_lines:
+        stripped = _strip_orphan_trailing_pipe(line.strip())
+        if not stripped:
+            continue
+        if _PSEUDO_SEPARATOR_LINE_RE.match(stripped):
+            flush()
+            continue
+        if stripped.startswith("|") and _looks_like_markdown_table_row(stripped):
+            continue
+
+        bold_only = _BOLD_CATEGORY_LINE_RE.match(stripped)
+        if bold_only:
+            flush()
+            category = bold_only.group("label").strip()
+            continue
+
+        field_match = _OVERVIEW_FIELD_LINE_RE.match(stripped)
+        if field_match:
+            key = _normalize_field_key(field_match.group(1))
+            val = field_match.group(2).strip()
+            for hdr in field_keys:
+                if _field_key_matches(hdr, key):
+                    values[hdr] = val
+                    break
+            continue
+
+        inline_vals = _extract_field_values_from_text(stripped, field_keys)
+        if inline_vals:
+            values.update(inline_vals)
+
+    flush()
+    return rows if len(rows) >= 2 else None
+
+
+def _parse_collapsed_overview_body(
+    body_lines: list[str],
+) -> tuple[list[str], list[list[str]]] | None:
+    """Single-paragraph pseudo with embedded pipe header + Label: tokens."""
+    chunks: list[str] = []
+    for line in body_lines:
+        stripped = _strip_orphan_trailing_pipe(line.strip())
+        if not stripped or _PSEUDO_SEPARATOR_LINE_RE.match(stripped):
+            continue
+        chunks.append(stripped)
+    if not chunks:
+        return None
+    full = " ".join(chunks)
+
+    header_match = re.match(
+        r"^((?:[A-Za-z][A-Za-z0-9 /]{0,40}\s*\|\s*){1,}[A-Za-z][A-Za-z0-9 /]{0,40})",
+        full,
+    )
+    if header_match:
+        header_part = header_match.group(1)
+        headers = [
+            _sanitize_table_cell(c)
+            for c in _split_markdown_table_row(header_part)
+            if c.strip()
+        ]
+        if len(headers) >= 2:
+            remainder = full[header_match.end() :].strip()
+            field_keys = headers[1:] if headers[0].lower() in _CATEGORY_HEADER_NAMES else headers
+            parts = re.split(r"\*\*([^*]+)\*\*", remainder)
+            rows: list[list[str]] = []
+            if len(parts) >= 3:
+                for idx in range(1, len(parts), 2):
+                    label = parts[idx].strip()
+                    content = parts[idx + 1].strip() if idx + 1 < len(parts) else ""
+                    vals = _extract_field_values_from_text(content, field_keys)
+                    if headers[0].lower() in _CATEGORY_HEADER_NAMES:
+                        rows.append([label] + [vals.get(key, "-") for key in field_keys])
+                    else:
+                        row = [vals.get(key, "-") for key in headers]
+                        rows.append(row)
+            if len(rows) >= 2:
+                return headers[:_MAX_COMPARISON_COLUMNS], rows
+
+    headers = _overview_headers_from_body(body_lines)
+    if not headers:
+        return None
+    rows = _parse_overview_field_rows(body_lines, headers)
+    if rows:
+        return headers, rows
+    return None
+
+
+def _parse_explicit_header_grid(
+    body_lines: list[str],
+) -> tuple[list[str], list[list[str]]] | None:
+    """Body is already pipe rows; first line is header."""
+    substantive = [
+        ln.strip()
+        for ln in body_lines
+        if ln.strip() and not _PSEUDO_SEPARATOR_LINE_RE.match(ln.strip())
+    ]
+    if len(substantive) < 2:
+        return None
+    if not all(_looks_like_markdown_table_row(ln) for ln in substantive):
+        return None
+    headers = [
+        _sanitize_table_cell(c) for c in _split_markdown_table_row(substantive[0])
+    ]
+    headers = headers[:_MAX_COMPARISON_COLUMNS]
+    if sum(1 for c in headers if c.strip()) < 2:
+        return None
+    rows: list[list[str]] = []
+    for line in substantive[1:]:
+        if _is_markdown_table_divider_line(line):
+            continue
+        cells = [
+            _sanitize_table_cell(c) for c in _split_markdown_table_row(line) if c.strip() or c == ""
+        ]
+        while len(cells) < len(headers):
+            cells.append("")
+        rows.append(cells[: len(headers)])
+    if len(rows) < 2:
+        return None
+    return headers, rows
+
+
+def _parse_overview_body_to_rows(
+    body_lines: list[str],
+) -> tuple[list[str], list[list[str]]] | None:
+    """Context-dependent overview/config tables (2-6 columns)."""
+    headers = _overview_headers_from_body(body_lines)
+    if headers:
+        rows = _parse_overview_field_rows(body_lines, headers)
+        if rows:
+            return headers, rows
+    return _parse_collapsed_overview_body(body_lines)
+
+
+def _parse_section_to_table(
+    heading_line: str,
+    body_lines: list[str],
+    intent: str | None = None,
+) -> tuple[list[str], list[list[str]]] | None:
+    """Route section body to the best parser for its intent."""
+    resolved_intent = intent or _infer_section_intent(heading_line, body_lines)
+    if resolved_intent == "explicit_grid":
+        return _parse_explicit_header_grid(body_lines)
+    if resolved_intent == "comparison":
+        return _parse_comparison_body_to_rows(
+            body_lines, _infer_columns_from_heading(heading_line)
+        )
+    if resolved_intent == "overview":
+        parsed = _parse_overview_body_to_rows(body_lines)
+        if parsed:
+            return parsed
+        return _parse_comparison_body_to_rows(
+            body_lines, _infer_columns_from_heading(heading_line)
+        )
+    default_headers = _infer_columns_from_heading(heading_line)
+    parsed = _parse_comparison_body_to_rows(body_lines, default_headers)
+    if parsed:
+        return parsed
+    return _parse_overview_body_to_rows(body_lines)
+
+
+def _should_attempt_pseudo_normalize(
+    heading_line: str,
+    body_lines: list[str],
+    intent: str,
+) -> bool:
+    if intent == "comparison":
+        return True
+    if intent == "overview":
+        return (
+            _count_pseudo_table_signals(body_lines) >= 1
+            or _overview_headers_from_body(body_lines) is not None
+        )
+    if intent == "explicit_grid":
+        return True
+    return _count_pseudo_table_signals(body_lines) >= 2
 
 
 def _split_labeled_entity_value(text: str) -> tuple[str | None, str]:
@@ -715,14 +1008,18 @@ def ensure_markdown_table_dividers(text: str) -> str:
 
 
 def normalize_pseudo_tables_to_markdown(text: str) -> str:
-    """Convert underscore/pipe pseudo-comparison blocks into markdown tables."""
+    """Convert pseudo-layout blocks into markdown tables (context-aware 2-6 columns).
+
+    Routing per heading section: explicit_grid (pipe rows) → comparison (vs/Cloud-Lokaal)
+    → overview (auxiliary/config) → generic fallback. See ``_parse_section_to_table``.
+    """
     if not text or not text.strip():
         return text or ""
     if not (
         "|" in text
         or re.search(r"_{4,}", text)
         or re.search(r"^\*\*[^*]+\*\*", text, re.MULTILINE)
-        or re.search(r"(?i)\b(versus|vs\.?|vergelijk|comparison)\b", text)
+        or re.search(r"(?i)\b(versus|vs\.?|vergelijk|comparison|overzicht|auxiliary)\b", text)
     ):
         return text
 
@@ -754,19 +1051,13 @@ def normalize_pseudo_tables_to_markdown(text: str) -> str:
             out.extend(body_lines)
             continue
 
-        default_headers = _infer_columns_from_heading(heading)
-        is_comparison_heading = default_headers is not None or re.search(
-            r"(?i)\b(vergelijk|versus|vs\.?|comparison|tabel)\b",
-            heading,
-        )
-        signals = _count_pseudo_table_signals(body_lines)
-
-        if not is_comparison_heading and signals < 2:
+        intent = _infer_section_intent(heading, body_lines)
+        if not _should_attempt_pseudo_normalize(heading, body_lines, intent):
             out.append(heading)
             out.extend(body_lines)
             continue
 
-        parsed = _parse_comparison_body_to_rows(body_lines, default_headers)
+        parsed = _parse_section_to_table(heading, body_lines, intent)
         if parsed:
             headers, rows = parsed
             out.append(heading)
