@@ -101,9 +101,20 @@ def _spec_from_entry(entry: dict, *, ingest_env: dict) -> DomainSpec:
     )
 
 
+def default_lancedb_path_for_domain(domain_name: str) -> Path:
+    """Recommended absolute LanceDB path for a domain (Windows: LOCALAPPDATA\\hermes\\VectorStore)."""
+    from lancedb_storage import resolve_lancedb_path
+
+    return Path(resolve_lancedb_path(domain=domain_name))
+
+
 def resolve_domain_paths(spec: DomainSpec, *, raw_root: Path | None = None) -> tuple[Path, Path, Path]:
     root = raw_root or default_raw_root()
-    ldb = _expand(spec.lancedb_path)
+    raw_path = str(spec.lancedb_path or "").strip()
+    if raw_path:
+        ldb = _expand(raw_path)
+    else:
+        ldb = default_lancedb_path_for_domain(spec.name)
     raw = root / spec.source_dir if spec.source_dir else root
     profile = Path(
         os.path.expandvars(

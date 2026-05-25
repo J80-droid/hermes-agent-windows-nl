@@ -1,5 +1,4 @@
 """Gedeeld LanceDB-schema en padconstanten voor ingest en MCP-server."""
-import os
 
 from rag_log_quiet import apply_torch_ingest_quiet
 
@@ -9,14 +8,9 @@ import lancedb
 from lancedb.embeddings import get_registry
 from lancedb.pydantic import LanceModel, Vector
 
+from lancedb_storage import resolve_lancedb_path
 
-def _optional_user_path(env_name: str, default: str) -> str:
-    """Pad uit optionele omgevingsvariabele, anders default (~ en %VAR% worden uitgebreid)."""
-    raw = (os.getenv(env_name) or "").strip()
-    return os.path.normpath(os.path.expanduser(os.path.expandvars(raw if raw else default)))
-
-
-DB_PATH = _optional_user_path("HERMES_LANCEDB_PATH", "~/data/my_lancedb")
+DB_PATH = resolve_lancedb_path()
 TABLE_NAME = "knowledge_base"
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 

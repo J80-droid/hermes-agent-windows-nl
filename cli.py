@@ -5068,6 +5068,15 @@ class HermesCLI:
         if os.environ.get("HERMES_DEFER_AGENT_STARTUP") != "1":
             self._show_tool_availability_warnings()
 
+        try:
+            hw_cfg = (self.config or {}).get("hardware", {}) or {}
+            if hw_cfg.get("log_backends_at_startup", True):
+                from hermes_cli.hardware_backend import log_local_inference_backends
+
+                log_local_inference_backends(self.console)
+        except Exception:
+            pass
+
         # Warn about very low context lengths (common with local servers)
         if ctx_len and ctx_len <= 8192:
             self._console_print()

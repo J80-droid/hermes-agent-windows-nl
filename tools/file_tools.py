@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""File Tools Module - LLM agent file manipulation tools."""
+"""File Tools Module - LLM agent file manipulation tools.
+
+Paths are validated against the workspace sandbox (``hermes_cli/filesystem_sandbox``)
+before read/write/patch/search when ``workspace.enforce_sandbox`` is enabled.
+Cross-profile and credential guards remain in ``agent/file_safety``.
+"""
 
 import errno
 import json
@@ -118,13 +123,29 @@ def _get_live_tracking_cwd(task_id: str = "default") -> str | None:
 
 def _resolve_path_for_task(filepath: str, task_id: str = "default") -> Path:
     """Resolve *filepath* against the task's live terminal cwd when possible."""
-    p = Path(filepath).expanduser()
-    if not p.is_absolute():
-        base = _get_live_tracking_cwd(task_id) or os.environ.get(
-            "TERMINAL_CWD", os.getcwd()
-        )
-        p = Path(base) / p
-    return p.resolve()
+    base = _get_live_tracking_cwd(task_id) or os.environ.get(
+        "TERMINAL_CWD", os.getcwd()
+    )
+    from hermes_cli.filesystem_sandbox import validate_agent_path_for_task
+
+    resolved, error = validate_agent_path_for_task(
+        filepath,
+        resolution_base=base,
+    )
+    if error:
+        raise PermissionError(error)
+    assert resolved is not None
+    return resolved
+
+
+def _check_filesystem_sandbox(filepath: str, task_id: str = "default") -> str | None:
+    """Return a sandbox violation message, or None when the path is allowed."""
+    base = _get_live_tracking_cwd(task_id) or os.environ.get(
+        "TERMINAL_CWD", os.getcwd()
+    )
+    from hermes_cli.filesystem_sandbox import check_filesystem_sandbox
+
+    return check_filesystem_sandbox(filepath, resolution_base=base)
 
 
 def _is_blocked_device(filepath: str) -> bool:
@@ -491,7 +512,10 @@ def read_file_tool(path: str, offset: int = 1, limit: int = 500, task_id: str = 
                 ),
             })
 
-        _resolved = _resolve_path_for_task(path, task_id)
+        try:
+            _resolved = _resolve_path_for_task(path, task_id)
+        except PermissionError as exc:
+            return json.dumps({"error": str(exc)})
 
         # ── Binary file guard ─────────────────────────────────────────
         # Block binary files by extension (no I/O).
@@ -836,6 +860,9 @@ def write_file_tool(path: str, content: str, task_id: str = "default",
     Pass ``True`` after explicit user direction — same shape as ``force``
     on the terminal tool.
     """
+    sandbox_err = _check_filesystem_sandbox(path, task_id)
+    if sandbox_err:
+        return tool_error(sandbox_err)
     sensitive_err = _check_sensitive_path(path, task_id)
     if sensitive_err:
         return tool_error(sensitive_err)
@@ -913,6 +940,9 @@ def patch_tool(mode: str = "replace", path: str = None, old_string: str = None,
         for _m in _re.finditer(r'^\*\*\*\s+(?:Update|Add|Delete)\s+File:\s*(.+)$', patch, _re.MULTILINE):
             _paths_to_check.append(_m.group(1).strip())
     for _p in _paths_to_check:
+        sandbox_err = _check_filesystem_sandbox(_p, task_id)
+        if sandbox_err:
+            return tool_error(sandbox_err)
         sensitive_err = _check_sensitive_path(_p, task_id)
         if sensitive_err:
             return tool_error(sensitive_err)
@@ -1007,6 +1037,10 @@ def search_tool(pattern: str, target: str = "content", path: str = ".",
     """Search for content or files."""
     try:
         offset, limit = normalize_search_pagination(offset, limit)
+
+        sandbox_err = _check_filesystem_sandbox(path, task_id)
+        if sandbox_err:
+            return json.dumps({"error": sandbox_err})
 
         # Track searches to detect *consecutive* repeated search loops.
         # Include pagination args so users can page through truncated

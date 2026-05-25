@@ -21,7 +21,8 @@ Scripts in deze map:
 - `audio_transcriber.py` — lokale audio/video via faster-whisper + ffmpeg.
 - `mcp_server.py` — stdio MCP-server met tool `search_knowledge`.
 - `kb_schema.py` — gedeeld `KnowledgeSchema` (velden **`id`**, `text`, `vector`, `source`), padconstanten en `list_all_table_names()` (LanceDB `list_tables()` API).
-- `lancedb_maintenance.py` — multi-domein onderhoud uit `domains.yaml`: `--list`, `--inspect`, `--compact`, `--benchmark` (Windows: `windows/LANCEDB_MAINTENANCE.bat`).
+- `lancedb_storage.py` — absolute VectorStore-paden (`%LOCALAPPDATA%\hermes\VectorStore`), stale `.lance-lock`/`.tmp` preflight, `lancedb_session()` + graceful shutdown (ingest/MCP/maintenance).
+- `lancedb_maintenance.py` — multi-domein onderhoud uit `domains.yaml`: `--list`, `--inspect`, `--compact`, `--benchmark` (Windows: `windows/LANCEDB_MAINTENANCE.bat`; gebruikt `lancedb_session`).
 
 **Idempotente upsert:** elke chunk krijgt een vaste **`id`** = SHA-256 van `(<relatief pad>\\0#<chunk-index>)`. **`merge_insert(..., on='id')`** werkt bestaande rijen bij. **Orphan cleanup** (standaard aan) verwijdert chunk-`id`s die niet meer in de nieuwste chunk-set van die bron zitten. **Incrementele ingest** (standaard aan) slaat ongewijzigde bronnen over via ingest-staat naast LanceDB.
 
@@ -76,7 +77,11 @@ Scripts in deze map:
 
 **Schema-upgrade:** bestond `knowledge_base` al **zonder** kolom `id`, dan stopt `ingest.py` met een foutmelding — eenmalig database wissen (**J** / `HERMES_RAG_FRESH=1`) of map handmatig verwijderen, daarna opnieuw indexeren.
 
-**Paden:** `~/data/...` wordt op Windows `%USERPROFILE%\data\...` (niet automatisch je repo-schijf). Optioneel (institutioneel): zet **`HERMES_RAG_RAW_SOURCE`** en **`HERMES_LANCEDB_PATH`** (absolute paden of `~` / `%VAR%`) — zelfde variabelen lezen `ingest.py` en `kb_schema.py`; `windows\scripts\update_knowledge.bat` zet `HERMES_LANCEDB_PATH` vóór `python` gelijk aan de map die bij **J** wordt gewist.
+**Paden:** `~/data/...` wordt op Windows `%USERPROFILE%\data\...` (niet automatisch je repo-schijf). Optioneel (institutioneel): zet **`HERMES_RAG_RAW_SOURCE`** en **`HERMES_LANCEDB_PATH`** (absolute paden of `~` / `%VAR%`) — zelfde variabelen lezen `ingest.py`, `kb_schema.py` en `lancedb_storage.resolve_lancedb_path()`; `windows\scripts\update_knowledge.bat` zet `HERMES_LANCEDB_PATH` vóór `python` gelijk aan de map die bij **J** wordt gewist.
+
+**Default VectorStore (zonder expliciet pad):** `%LOCALAPPDATA%\hermes\VectorStore\<domein>\` via `lancedb_storage.default_vector_store_root()`. Preflight verwijdert stale lock/tmp-artefacts (≥30s) vóór elke connect; MCP en ingest registreren connections voor graceful shutdown op Windows.
+
+Zie `docs/WINDOWS_PLATFORM_HARDENING.md` (LanceDB lifecycle + sandbox + hardware backend).
 
 **MCP-server:** start zonder crash ook als de database nog leeg is: ontbreekt `knowledge_base`, dan wordt een **lege** tabel met `KnowledgeSchema` aangemaakt. Voor echte antwoorden moet je daarna alsnog `ingest.py` draaien.
 
@@ -117,7 +122,7 @@ Zonder **A+B+C** is de keten nooit 100% operationeel — ook niet met perfecte c
 | Whisper/ffmpeg | `[rag]` bevat `faster-whisper`; **ffmpeg** moet op PATH (winget/choco) |
 | Oud schema zonder `id` | `python scripts/rag_pipeline/schema_migrate.py` (inspect / `--backup-and-reset`) |
 | Taakplanner wacht op J/N | `set HERMES_NONINTERACTIVE=1` of `HERMES_RAG_FRESH=0` vóór `update_knowledge.bat` |
-| LanceDB-lock bij wissen | Waarschuwing in batch; sluit Hermes + MCP |
+| LanceDB-lock bij wissen | Waarschuwing in batch; sluit Hermes + MCP. Stale locks na crash: `lancedb_storage.preflight_vector_store()` (automatisch bij connect) |
 | Dev-repo vs. install-clone | `install_rag_extras.ps1` toont beide paden; werk in de checkout die je start |
 | CI regressie | GitHub job `rag`: unit tests + `rag_integration` + `web/scripts/test-rag-citations.mjs` |
 | `uv lock` met `[all,rag]` | **Niet combineerbaar** — `[rag]` gebruikt `markitdown==0.1.5`; daarna apart `pip install "markitdown[all]"`. `uv lock` voor `[dev,rag]` werkt wel (zie `uv.lock`). |

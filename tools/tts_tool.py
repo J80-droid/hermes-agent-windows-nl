@@ -1548,7 +1548,14 @@ def _generate_neutts(text: str, output_path: str, tts_config: Dict[str, Any]) ->
     ref_audio = neutts_config.get("ref_audio", "") or _default_neutts_ref_audio()
     ref_text = neutts_config.get("ref_text", "") or _default_neutts_ref_text()
     model = neutts_config.get("model", "neuphonic/neutts-air-q4-gguf")
-    device = neutts_config.get("device", "cpu")
+    from hermes_cli.hardware_backend import select_torch_device
+
+    configured_device = str(neutts_config.get("device") or "auto")
+    device, backend = select_torch_device(configured_device)
+    record_detail = f"device={device}, model={model}"
+    from hermes_cli.hardware_backend import record_backend, BackendName
+
+    record_backend("neutts", backend, record_detail)
 
     # NeuTTS outputs WAV natively — use a .wav path for generation,
     # let the caller convert to the final format afterward.
@@ -1678,22 +1685,35 @@ def _generate_piper_tts(text: str, output_path: str, tts_config: Dict[str, Any])
     writes a WAV file. Caller is responsible for converting to MP3/Opus
     via ffmpeg when a different output format is required.
     """
-    PiperVoice = _import_piper()
     import wave
 
     piper_config = tts_config.get("piper", {}) if isinstance(tts_config, dict) else {}
     voice_name = piper_config.get("voice") or DEFAULT_PIPER_VOICE
     download_dir = Path(piper_config.get("voices_dir") or _get_piper_voices_dir()).expanduser()
     download_dir.mkdir(parents=True, exist_ok=True)
+    accelerator = str(piper_config.get("accelerator") or "auto").strip().lower()
     use_cuda = bool(piper_config.get("use_cuda", False))
+    if use_cuda:
+        prefer_cuda: bool | None = True
+    elif accelerator == "cpu":
+        prefer_cuda = False
+    elif accelerator == "cuda":
+        prefer_cuda = True
+    else:
+        prefer_cuda = None  # auto: CUDA -> DirectML -> CPU
 
     model_path = _resolve_piper_voice_path(voice_name, download_dir)
 
-    cache_key = f"{model_path}::cuda={use_cuda}"
+    cache_key = f"{model_path}::accel={accelerator}::cuda={use_cuda}"
     global _piper_voice_cache
     if cache_key not in _piper_voice_cache:
         logger.info("[Piper] Loading voice: %s", model_path)
-        _piper_voice_cache[cache_key] = PiperVoice.load(model_path, use_cuda=use_cuda)
+        from hermes_cli.hardware_backend import load_piper_voice_with_fallback
+
+        _piper_voice_cache[cache_key] = load_piper_voice_with_fallback(
+            model_path,
+            prefer_cuda=prefer_cuda,
+        )
         logger.info("[Piper] Voice loaded")
     voice = _piper_voice_cache[cache_key]
 

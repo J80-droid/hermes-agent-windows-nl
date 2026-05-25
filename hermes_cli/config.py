@@ -669,6 +669,15 @@ DEFAULT_CONFIG = {
         "persistent_shell": True,
     },
 
+    "workspace": {
+        # Agent file tools (read_file, write_file, patch, search_files) are
+        # confined to this directory tree.  Empty = TERMINAL_CWD when set,
+        # otherwise %LOCALAPPDATA%\\hermes\\workspace (Windows) or
+        # ~/.hermes/workspace.
+        "root": "",
+        "enforce_sandbox": True,
+    },
+
     "web": {
         "backend": "",           # shared fallback — applies to both search and extract
         "search_backend": "",    # per-capability override for web_search (e.g. "searxng")
@@ -1150,7 +1159,7 @@ DEFAULT_CONFIG = {
             "ref_audio": "",  # Path to reference voice audio (empty = bundled default)
             "ref_text": "",   # Path to reference voice transcript (empty = bundled default)
             "model": "neuphonic/neutts-air-q4-gguf",  # HuggingFace model repo
-            "device": "cpu",  # cpu, cuda, or mps
+            "device": "auto",  # auto, cpu, cuda, or mps
         },
         "piper": {
             # Voice name (e.g. "en_US-lessac-medium") downloaded on first
@@ -1158,13 +1167,19 @@ DEFAULT_CONFIG = {
             # Full voice list: https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/VOICES.md
             "voice": "en_US-lessac-medium",
             # "voices_dir": "",        # Override voice cache dir; default = ~/.hermes/cache/piper-voices/
-            # "use_cuda": False,       # Requires onnxruntime-gpu
+            # "accelerator": "auto",   # auto (CUDA -> DirectML -> CPU) | cuda | directml | cpu
+            # "use_cuda": False,       # Legacy: forces CUDA when True (prefer onnxruntime-gpu)
             # "length_scale": 1.0,     # 2.0 = twice as slow
             # "noise_scale": 0.667,
             # "noise_w_scale": 0.8,
             # "volume": 1.0,
             # "normalize_audio": True,
         },
+    },
+
+    "hardware": {
+        # Print probed/selected local inference backends in the CLI banner at startup.
+        "log_backends_at_startup": True,
     },
     
     "stt": {
@@ -1173,6 +1188,7 @@ DEFAULT_CONFIG = {
         "local": {
             "model": "base",  # tiny, base, small, medium, large-v3
             "language": "",  # auto-detect by default; set to "en", "es", "fr", etc. to force
+            "device": "auto",  # auto (CUDA -> CPU) | cuda | cpu — DirectML not supported by faster-whisper
         },
         "openai": {
             "model": "whisper-1",  # whisper-1, gpt-4o-mini-transcribe, gpt-4o-transcribe

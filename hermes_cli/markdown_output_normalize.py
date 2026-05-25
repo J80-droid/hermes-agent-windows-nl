@@ -1012,9 +1012,11 @@ def normalize_pseudo_tables_to_markdown(text: str) -> str:
 
     Routing per heading section: explicit_grid (pipe rows) → comparison (vs/Cloud-Lokaal)
     → overview (auxiliary/config) → generic fallback. See ``_parse_section_to_table``.
+    Uses ``str.splitlines()`` so CRLF inputs from Windows editors parse correctly.
     """
     if not text or not text.strip():
         return text or ""
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
     if not (
         "|" in text
         or re.search(r"_{4,}", text)
@@ -1080,7 +1082,11 @@ def normalize_assistant_markdown(
     normalize_numbered_headings_flag: bool = True,
     normalize_plain_outline_headings_flag: bool = True,
 ) -> str:
-    """Apply institutional typography normalizers before Rich/Ink render."""
+    """Apply institutional typography normalizers before Rich/Ink render.
+
+    Normalizes Windows CRLF and legacy Mac CR to LF before parsing so pseudo-table
+    detection behaves the same on all platforms.
+    """
     out = (text or "").replace("\r\n", "\n").replace("\r", "\n")
     out = ensure_institutional_check_block(out)
     out = ensure_institutional_check_spacing(out)

@@ -7,6 +7,15 @@ Deze fork gebruikt **twee bewuste locaties** — geen symlink, geen blind oversc
 | `%LOCALAPPDATA%\hermes\` | **Runtime / canoniek** — `config.yaml`, sessions, auth, SOUL, profielen |
 | `%USERPROFILE%\.hermes\` | **Legacy hub** — vooral `.env` (API-keys bron) + `_local_assets`; **geen actieve `config.yaml`** |
 
+**Submappen onder runtime (fork):**
+
+| Submap | Rol |
+| --- | --- |
+| `VectorStore\<domein>\` | Default LanceDB-pad wanneer `HERMES_LANCEDB_PATH` niet gezet is (`lancedb_storage.py`) |
+| `workspace\` | Default agent file-tool sandbox wanneer `workspace.root` leeg is |
+
+Zie [WINDOWS_PLATFORM_HARDENING.md](WINDOWS_PLATFORM_HARDENING.md).
+
 ## Productie-poorten (fork)
 
 | Poort | Commando | Wanneer |

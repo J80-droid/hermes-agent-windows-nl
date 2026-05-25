@@ -92,7 +92,7 @@ $repoFiles = @(
 )
 $repoOk = $true
 foreach ($rel in $repoFiles) {
-    if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot ($rel -replace '/', '\')))) {
+    if (-not (Test-Path -LiteralPath (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $rel))) {
         $repoOk = $false
         break
     }
@@ -100,7 +100,7 @@ foreach ($rel in $repoFiles) {
 Add-StepResult -Name '1/12 repo context-aware normalizer artefacten' -Ok $repoOk
 
 # --- 2 Python overview parser wiring ---
-$pyNorm = Get-Content -LiteralPath (Join-Path $RepoRoot 'hermes_cli/markdown_output_normalize.py') -Raw -Encoding UTF8
+$pyNorm = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/markdown_output_normalize.py')
 $pyOk = ($pyNorm -match 'def _parse_overview_body_to_rows') -and
     ($pyNorm -match 'def _infer_section_intent') -and
     ($pyNorm -match 'def _parse_section_to_table') -and
@@ -109,7 +109,7 @@ $pyOk = ($pyNorm -match 'def _parse_overview_body_to_rows') -and
 Add-StepResult -Name '2/12 python overview parser + intent routing' -Ok $pyOk
 
 # --- 3 TS parity overview wiring ---
-$tsNorm = Get-Content -LiteralPath (Join-Path $RepoRoot 'web/src/lib/institutionalMarkdown.ts') -Raw -Encoding UTF8
+$tsNorm = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'web/src/lib/institutionalMarkdown.ts')
 $tsOk = ($tsNorm -match 'function parseOverviewBodyToRows') -and
     ($tsNorm -match 'function inferSectionIntent') -and
     ($tsNorm -match 'function parseSectionToTable') -and
@@ -117,7 +117,7 @@ $tsOk = ($tsNorm -match 'function parseOverviewBodyToRows') -and
 Add-StepResult -Name '3/12 web TS overview parser + intent routing' -Ok $tsOk
 
 # --- 4 CLI streaming flush wiring ---
-$cliPy = Get-Content -LiteralPath (Join-Path $RepoRoot 'cli.py') -Raw -Encoding UTF8
+$cliPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'cli.py')
 $cliOk = ($cliPy -match 'def _prepare_stream_table_block') -and
     ($cliPy -match 'assistant_render_style') -and
     ($cliPy -match 'normalize_assistant_markdown\(joined\)') -and
@@ -127,7 +127,7 @@ Add-StepResult -Name '4/12 CLI streaming eind-flush normalisatie' -Ok $cliOk
 # --- 5 Isolated harness (8 scenario''s) ---
 $harness = Join-Path $scriptRoot 'ContextAwarePseudoTableE2E.harness.py'
 $harnessOk = Invoke-AuditCommand -Exe $python -ArgumentList @($harness)
-Add-StepResult -Name '5/12 isolated harness (8 scenario''s)' -Ok $harnessOk
+Add-StepResult -Name '5/12 isolated harness (9 scenario''s)' -Ok $harnessOk
 
 # --- 6 Pytest overview unit tests ---
 if ($SkipPytest) {
@@ -135,7 +135,7 @@ if ($SkipPytest) {
 } else {
     $overviewOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-Path $RepoRoot 'tests/hermes_cli/test_markdown_output_normalize.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_markdown_output_normalize.py'),
         '-k', 'overview or auxiliary_overview or separator_between_groups',
         '-q',
         '--tb=short',
@@ -151,7 +151,7 @@ if ($SkipPytest -or $SkipTsParity) {
 } else {
     $parityOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-Path $RepoRoot 'tests/hermes_cli/test_normalizer_ts_parity.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_normalizer_ts_parity.py'),
         '-k', 'auxiliary_overview_4col or auxiliary_overview_2col',
         '-q',
         '--tb=short',
@@ -161,19 +161,19 @@ if ($SkipPytest -or $SkipTsParity) {
 }
 
 # --- 8 verify_pseudo_table_normalizer (incl. 4-koloms probe) ---
-$verifyPy = Join-Path $RepoRoot 'scripts/verify_pseudo_table_normalizer.py'
+$verifyPy = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/verify_pseudo_table_normalizer.py'
 $verifyOk = Invoke-AuditCommand -Exe $python -ArgumentList @($verifyPy, '--verify')
 Add-StepResult -Name '8/12 verify_pseudo_table_normalizer --verify' -Ok $verifyOk
 
 # --- 9 diagnose_renderer overview pseudo warning ---
-$diagPy = Get-Content -LiteralPath (Join-Path $RepoRoot 'scripts/diagnose_renderer.py') -Raw -Encoding UTF8
+$diagPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/diagnose_renderer.py')
 $diagOk = ($diagPy -match 'overzicht\|auxiliary') -and
     ($diagPy -match 'Label:-regels zonder markdown-tabel')
 Add-StepResult -Name '9/12 diagnose_renderer overview pseudo warning' -Ok $diagOk
 
 # --- 10 SOUL + presentation docs ---
-$soulText = Get-Content -LiteralPath (Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md') -Raw -Encoding UTF8
-$presText = Get-Content -LiteralPath (Join-Path $RepoRoot 'docs/INSTITUTIONAL_PRESENTATION.md') -Raw -Encoding UTF8
+$soulText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md')
+$presText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'docs/INSTITUTIONAL_PRESENTATION.md')
 $docsOk = ($soulText -match 'Overzicht per auxiliary taak') -and
     ($soulText -match 'Provider \| Model \| Base URL') -and
     ($presText -match 'Overzicht per auxiliary taak') -and
@@ -189,7 +189,7 @@ $compileTargets = @(
 )
 $compileOk = $true
 foreach ($rel in $compileTargets) {
-    $target = Join-Path $RepoRoot ($rel -replace '/', '\')
+    $target = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $rel
     & $python -m py_compile $target 2>$null
     if ($LASTEXITCODE -ne 0) {
         $compileOk = $false
@@ -204,7 +204,7 @@ if ($SkipPytest) {
 } else {
     $regOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-Path $RepoRoot 'tests/hermes_cli/test_markdown_output_normalize.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_markdown_output_normalize.py'),
         '-k', 'ollama_vs or auxiliary_tasks or pseudo_idempotent_on_valid_comparison',
         '-q',
         '--tb=short',

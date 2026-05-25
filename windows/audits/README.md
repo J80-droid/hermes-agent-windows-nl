@@ -56,6 +56,7 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | **`RUN_PARETO_E2E.bat`** | OpenRouter Pareto Code router: model-gate, transport/summary parity, pytest, verify script |
 | **`RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat`** | Pseudo-tabel normalizer: underscore/vs→markdown, pytest + TS parity + diagnose/score (10 stappen) |
 | **`RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat`** | Context-aware overview (2-6 kolommen): grouped/collapsed auxiliary, intent routing, streaming flush, TS parity (12 stappen) |
+| **`RUN_WINDOWS_PLATFORM_HARDENING_E2E.bat`** | Platform hardening: filesystem sandbox, hardware backend (CUDA/DirectML/CPU), LanceDB storage lifecycle (10 stappen) |
 | **`RUN_AUDITS.bat -IncludePseudoTableNormalizerE2E`** | Bovenstaande pseudo-tabel E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeMemoryArchitectureE2E`** | Bovenstaande memory E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeStatusBarCostE2E`** | Bovenstaande statusbalk-kosten E2E in gecombineerde poort |
@@ -133,6 +134,29 @@ Dedicated audit naast `RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat` (basis vs/underscore
 | 11–12 | `py_compile` + vs/Cloud-Lokaal regressie |
 
 Rapport: `CONTEXT_AWARE_PSEUDO_TABLE_E2E_REPORT_*.md`.
+
+## Windows platform hardening E2E
+
+```text
+windows\audits\RUN_WINDOWS_PLATFORM_HARDENING_E2E.bat
+```
+
+Dedicated audit voor filesystem sandbox, hardware backend fallback en LanceDB storage lifecycle op Windows.
+
+| Stap | Controle |
+| ---- | -------- |
+| 1/10 | Repo-artefacten (`filesystem_sandbox.py`, `hardware_backend.py`, `lancedb_storage.py`, tests, runners) |
+| 2/10 | Filesystem sandbox wiring in `file_tools.py` |
+| 3/10 | Hardware backend + CLI startup logging (`log_local_inference_backends`) |
+| 4/10 | LanceDB lifecycle wiring (`mcp_server`, `ingest`, preflight, shutdown hooks) |
+| 5/10 | Config `workspace.enforce_sandbox` + `pyproject.toml` extra `voice-windows` |
+| 6/10 | Isolated harness (`WindowsPlatformHardeningE2E.harness.py`, 12 scenario's) |
+| 7–9/10 | pytest: `test_filesystem_sandbox`, `test_hardware_backend`, `test_lancedb_storage` |
+| 10/10 | `check-windows-footguns.py` op gewijzigde modules |
+
+Optioneel: `-SkipPytest` op `RUN_WINDOWS_PLATFORM_HARDENING_E2E.ps1`.
+
+Rapport: `WINDOWS_PLATFORM_HARDENING_E2E_REPORT_*.md`. Zie `docs/WINDOWS_PLATFORM_HARDENING.md`.
 
 ## Memory-architectuur E2E (L1–L4)
 

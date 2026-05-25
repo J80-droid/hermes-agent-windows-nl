@@ -1,6 +1,8 @@
 # Gedeelde helpers voor windows/*.ps1 — exitcode na child-scripts + IDE-safe logging.
 # Dot-source: . (Join-Path $PSScriptRoot 'HermesShellCommon.ps1')
 # Of vanaf scripts/audits: . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
+#
+# Pad-helpers: Join-HermesRepoPath (OS-native separators) + Read-HermesRepoText (UTF-8).
 
 function Test-NativeCommandFailed {
     # Na een puur PowerShell-script is $LASTEXITCODE vaak $null; $null -ne 0 is ten onrechte $true.
@@ -21,3 +23,28 @@ function Write-HermesOk { param([string]$Message) Write-HermesTag '[OK] ' $Messa
 function Write-HermesWarn { param([string]$Message) Write-HermesTag '[WARN] ' $Message Yellow }
 function Write-HermesFail { param([string]$Message) Write-HermesTag '[FAIL] ' $Message Red }
 function Write-HermesErr { param([string]$Message) Write-HermesTag '[ERROR] ' $Message Red }
+
+function Join-HermesRepoPath {
+    <#
+    .SYNOPSIS
+    Build an absolute path under a repo root using OS-native separators.
+    Accepts forward-slash relative paths from repo manifests (git-style).
+    #>
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$RelativePath
+    )
+    $normalized = $RelativePath -replace '/', [IO.Path]::DirectorySeparatorChar
+    return Join-Path -Path $RepoRoot -ChildPath $normalized
+}
+
+function Read-HermesRepoText {
+    <#
+    .SYNOPSIS
+    Read a UTF-8 text file; Get-Content -Raw preserves CRLF/LF as stored on disk.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$Path
+    )
+    return Get-Content -LiteralPath $Path -Raw -Encoding UTF8
+}

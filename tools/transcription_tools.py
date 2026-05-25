@@ -364,64 +364,22 @@ def _validate_audio_file(file_path: str) -> Optional[Dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 
-# Substrings that identify a missing/unloadable CUDA runtime library.  When
-# ctranslate2 (the backend for faster-whisper) cannot dlopen one of these, the
-# "auto" device picker has already committed to CUDA and the model can no
-# longer be used — we fall back to CPU and reload.
-#
-# Deliberately narrow: we match on library-name tokens and dlopen phrasing so
-# we DO NOT accidentally catch legitimate runtime failures like "CUDA out of
-# memory" — those should surface to the user, not silently fall back to CPU
-# (a 32GB audio clip on CPU at int8 isn't useful either).
-_CUDA_LIB_ERROR_MARKERS = (
-    "libcublas",
-    "libcudnn",
-    "libcudart",
-    "cannot be loaded",
-    "cannot open shared object",
-    "no kernel image is available",
-    "no CUDA-capable device",
-    "CUDA driver version is insufficient",
-)
+# CUDA library load failures are detected via hermes_cli.hardware_backend.
 
 
 def _looks_like_cuda_lib_error(exc: BaseException) -> bool:
-    """Heuristic: is this exception a missing/broken CUDA runtime library?
+    from hermes_cli.hardware_backend import looks_like_cuda_lib_error
 
-    ctranslate2 raises plain RuntimeError with messages like
-    ``Library libcublas.so.12 is not found or cannot be loaded``.  We want to
-    catch missing/unloadable shared libs and driver-mismatch errors, NOT
-    legitimate runtime failures ("CUDA out of memory", model bugs, etc.).
-    """
-    msg = str(exc)
-    return any(marker in msg for marker in _CUDA_LIB_ERROR_MARKERS)
+    return looks_like_cuda_lib_error(exc)
 
 
 def _load_local_whisper_model(model_name: str):
-    """Load faster-whisper with graceful CUDA → CPU fallback.
+    """Load faster-whisper with CUDA/auto -> CPU fallback (see hardware_backend)."""
+    from hermes_cli.hardware_backend import load_faster_whisper_model
 
-    faster-whisper's ``device="auto"`` picks CUDA when the ctranslate2 wheel
-    ships CUDA shared libs, even on hosts where the NVIDIA runtime
-    (``libcublas.so.12`` / ``libcudnn*``) isn't installed — common on WSL2
-    without CUDA-on-WSL, headless servers, and CPU-only developer machines.
-    On those hosts the load itself sometimes succeeds and the dlopen failure
-    only surfaces at first ``transcribe()`` call.
-
-    We try ``auto`` first (fast CUDA path when it works), and on any CUDA
-    library load failure fall back to CPU + int8.
-    """
-    from faster_whisper import WhisperModel
-    try:
-        return WhisperModel(model_name, device="auto", compute_type="auto")
-    except Exception as exc:
-        if not _looks_like_cuda_lib_error(exc):
-            raise
-        logger.warning(
-            "faster-whisper CUDA load failed (%s) — falling back to CPU (int8). "
-            "Install the NVIDIA CUDA runtime (libcublas/libcudnn) to use GPU.",
-            exc,
-        )
-        return WhisperModel(model_name, device="cpu", compute_type="int8")
+    stt_cfg = _load_stt_config().get("local", {})
+    preferred = str(stt_cfg.get("device") or "auto").strip().lower()
+    return load_faster_whisper_model(model_name, preferred_device=preferred)
 
 
 def _transcribe_local(file_path: str, model_name: str) -> Dict[str, Any]:
@@ -467,8 +425,9 @@ def _transcribe_local(file_path: str, model_name: str) -> Dict[str, Any]:
             )
             _local_model = None
             _local_model_name = None
-            from faster_whisper import WhisperModel
-            _local_model = WhisperModel(model_name, device="cpu", compute_type="int8")
+            from hermes_cli.hardware_backend import reload_faster_whisper_cpu
+
+            _local_model = reload_faster_whisper_cpu(model_name)
             _local_model_name = model_name
             segments, info = _local_model.transcribe(file_path, **transcribe_kwargs)
             transcript = " ".join(segment.text.strip() for segment in segments)

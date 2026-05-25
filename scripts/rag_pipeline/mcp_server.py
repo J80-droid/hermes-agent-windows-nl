@@ -4,6 +4,11 @@ import lancedb
 from mcp.server.fastmcp import FastMCP
 
 from kb_schema import DB_PATH, TABLE_NAME, KnowledgeSchema, list_all_table_names
+from lancedb_storage import (
+    close_lancedb_connection,
+    connect_lancedb,
+    register_lancedb_shutdown_hooks,
+)
 from rag_display import inline_citeer_sjabloon, source_basename
 
 mcp = FastMCP("LanceDB-Knowledge-Server")
@@ -15,7 +20,7 @@ _table = None
 def _get_db() -> lancedb.DBConnection:
     global _db
     if _db is None:
-        _db = lancedb.connect(DB_PATH)
+        _db = connect_lancedb(DB_PATH)
     return _db
 
 
@@ -38,11 +43,21 @@ def _get_knowledge_table():
     return _table
 
 
+def close_lancedb_mcp_connection() -> None:
+    """Graceful shutdown for MCP subprocess (Windows mmap release)."""
+    global _db, _table
+    _table = None
+    if _db is not None:
+        close_lancedb_connection(_db)
+        _db = None
+
+
 def reset_knowledge_table_cache() -> None:
     """Tests/integration: cache legen na wijziging HERMES_LANCEDB_PATH."""
-    global _db, _table
-    _db = None
-    _table = None
+    close_lancedb_mcp_connection()
+
+
+register_lancedb_shutdown_hooks(extra_cleanup=close_lancedb_mcp_connection)
 
 
 @mcp.tool()
@@ -51,8 +66,14 @@ def search_knowledge(query: str, limit: int = 5) -> str:
     Zoekt in de lokale LanceDB-database naar relevante passages uit geïndexeerde bronbestanden.
     Gebruik dit voor feiten, chronologie en juridische analyse; citeer met [Bron: bestandsnaam].
     """
+    if not str(query).strip():
+        return "Geen zoekterm opgegeven."
     try:
-        results = _get_knowledge_table().search(query).limit(limit).to_list()
+        safe_limit = max(1, min(int(limit), 50))
+    except (TypeError, ValueError):
+        safe_limit = 5
+    try:
+        results = _get_knowledge_table().search(query).limit(safe_limit).to_list()
 
         output = []
         for res in results:
@@ -73,4 +94,7 @@ def search_knowledge(query: str, limit: int = 5) -> str:
 
 
 if __name__ == "__main__":
-    mcp.run()
+    try:
+        mcp.run()
+    finally:
+        close_lancedb_mcp_connection()

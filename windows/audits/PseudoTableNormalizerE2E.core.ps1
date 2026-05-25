@@ -95,7 +95,7 @@ $repoFiles = @(
 )
 $repoOk = $true
 foreach ($rel in $repoFiles) {
-    if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot ($rel -replace '/', '\')))) {
+    if (-not (Test-Path -LiteralPath (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $rel))) {
         $repoOk = $false
         break
     }
@@ -103,7 +103,7 @@ foreach ($rel in $repoFiles) {
 Add-StepResult -Name '1/10 repo pseudo-tabel artefacten' -Ok $repoOk
 
 # --- 2 Python pipeline wiring ---
-$pyNorm = Get-Content -LiteralPath (Join-Path $RepoRoot 'hermes_cli/markdown_output_normalize.py') -Raw -Encoding UTF8
+$pyNorm = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/markdown_output_normalize.py')
 $pyOk = ($pyNorm -match 'def ensure_markdown_table_dividers') -and
     ($pyNorm -match 'def normalize_pseudo_tables_to_markdown') -and
     ($pyNorm -match 'ensure_markdown_table_dividers\(out\)') -and
@@ -112,8 +112,8 @@ $pyOk = ($pyNorm -match 'def ensure_markdown_table_dividers') -and
 Add-StepResult -Name '2/10 python normalizer pipeline' -Ok $pyOk
 
 # --- 3 Web/Ink parity wiring ---
-$tsNorm = Get-Content -LiteralPath (Join-Path $RepoRoot 'web/src/lib/institutionalMarkdown.ts') -Raw -Encoding UTF8
-$inkNorm = Get-Content -LiteralPath (Join-Path $RepoRoot 'ui-tui/src/lib/institutionalMarkdownNormalize.ts') -Raw -Encoding UTF8
+$tsNorm = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'web/src/lib/institutionalMarkdown.ts')
+$inkNorm = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'ui-tui/src/lib/institutionalMarkdownNormalize.ts')
 $tsOk = ($tsNorm -match 'function ensureMarkdownTableDividers') -and
     ($tsNorm -match 'function normalizePseudoTablesToMarkdown') -and
     ($tsNorm -match 'ensureMarkdownTableDividers\(out\)') -and
@@ -122,10 +122,10 @@ $tsOk = ($tsNorm -match 'function ensureMarkdownTableDividers') -and
 Add-StepResult -Name '3/10 web/ink parity wiring' -Ok $tsOk
 
 # --- 4 SOUL + troubleshooting docs ---
-$soulPath = Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md'
-$presPath = Join-Path $RepoRoot 'docs/INSTITUTIONAL_PRESENTATION.md'
-$soulText = Get-Content -LiteralPath $soulPath -Raw -Encoding UTF8
-$presText = Get-Content -LiteralPath $presPath -Raw -Encoding UTF8
+$soulPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md'
+$presPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'docs/INSTITUTIONAL_PRESENTATION.md'
+$soulText = Read-HermesRepoText -Path $soulPath
+$presText = Read-HermesRepoText -Path $presPath
 $docsOk = ($soulText -match 'pseudo-layout') -and
     ($soulText -match 'Tabellen: markdown \|---\|') -and
     ($soulText -match 'Ollama versus LM Studio') -and
@@ -138,7 +138,7 @@ if ($SkipPytest) {
 } else {
     $normOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-Path $RepoRoot 'tests/hermes_cli/test_markdown_output_normalize.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_markdown_output_normalize.py'),
         '-q',
         '--tb=short',
         '-o', 'addopts='
@@ -153,7 +153,7 @@ if ($SkipPytest -or $SkipTsParity) {
 } else {
     $parityOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-Path $RepoRoot 'tests/hermes_cli/test_normalizer_ts_parity.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_normalizer_ts_parity.py'),
         '-k', 'ollama_vs_lm_studio_underscore or auxiliary_tasks_pseudo or pipe_rows_missing_divider',
         '-q',
         '--tb=short',
@@ -168,7 +168,7 @@ if ($SkipPytest) {
 } else {
     $richOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-Path $RepoRoot 'tests/cli/test_institutional_rich_render.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/cli/test_institutional_rich_render.py'),
         '-k', 'pseudo_comparison',
         '-q',
         '--tb=short',
@@ -179,20 +179,20 @@ if ($SkipPytest) {
 
 # --- 8 diagnose_renderer --verify (incl. pseudo self-test) ---
 $diagOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
-    (Join-Path $RepoRoot 'scripts/diagnose_renderer.py'),
+    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/diagnose_renderer.py'),
     '--verify'
 )
 Add-StepResult -Name '8/10 diagnose_renderer --verify' -Ok $diagOk
 
 # --- 9 score_institutional_render --verify (vergelijking_tabel) ---
 $scoreOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
-    (Join-Path $RepoRoot 'scripts/score_institutional_render.py'),
+    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/score_institutional_render.py'),
     '--verify'
 )
 Add-StepResult -Name '9/10 score_institutional_render --verify' -Ok $scoreOk
 
 # --- 10 verify_pseudo_table_normalizer ---
-$verifyPy = Join-Path $RepoRoot 'scripts/verify_pseudo_table_normalizer.py'
+$verifyPy = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/verify_pseudo_table_normalizer.py'
 $verifyOk = Invoke-AuditCommand -Exe $python -ArgumentList @($verifyPy, '--verify')
 Add-StepResult -Name '10/10 verify_pseudo_table_normalizer' -Ok $verifyOk
 

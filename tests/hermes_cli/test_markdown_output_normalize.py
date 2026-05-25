@@ -382,6 +382,22 @@ def test_normalize_overview_idempotent_on_valid_4col_table():
     assert len(dividers) == 1
 
 
+def test_normalize_pseudo_tables_handles_crlf_input():
+    raw = (
+        "### Overzicht per auxiliary taak\r\n\r\n"
+        "**Groep A**\r\n"
+        "Provider: alpha\r\n"
+        "Model: m1\r\n\r\n"
+        "**Groep B**\r\n"
+        "Provider: beta\r\n"
+        "Model: m2\r\n"
+    )
+    out = normalize_pseudo_tables_to_markdown(raw)
+    assert "| --- |" in out
+    assert "| Groep A | alpha | m1 |" in out
+    assert "\r" not in out
+
+
 def test_normalize_overview_separator_between_groups_no_duplicate_row():
     raw = (
         "### Overzicht per auxiliary taak\n\n"

@@ -344,8 +344,17 @@ def semantic_chunk_document(text: str, max_words: int = DEFAULT_MAX_WORDS) -> li
 
 def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS):
     """Scant de bronmap, verwerkt bestanden en schrijft naar LanceDB met idempotente upsert op `id`."""
+    from lancedb_storage import close_lancedb_connection, connect_lancedb
+
     _ui_info(f"Initialiseren databaseverbinding op: {DB_PATH}")
-    db = lancedb.connect(DB_PATH)
+    db = connect_lancedb(DB_PATH)
+    try:
+        _process_and_ingest_with_db(db, source_directory, max_words)
+    finally:
+        close_lancedb_connection(db)
+
+
+def _process_and_ingest_with_db(db, source_directory: str, max_words: int = DEFAULT_MAX_WORDS):
 
     if TABLE_NAME in list_all_table_names(db):
         table = db.open_table(TABLE_NAME)

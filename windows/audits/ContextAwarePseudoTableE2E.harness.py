@@ -207,6 +207,23 @@ def test_generic_provider_model_fallback() -> None:
     step("Generic intent: Provider/Port overview fallback", ok)
 
 
+def test_crlf_windows_line_endings() -> None:
+    from hermes_cli.markdown_output_normalize import normalize_pseudo_tables_to_markdown
+
+    raw = (
+        "### Overzicht per auxiliary taak\r\n\r\n"
+        "**Groep A**\r\n"
+        "Provider: alpha\r\n"
+        "Model: m1\r\n\r\n"
+        "**Groep B**\r\n"
+        "Provider: beta\r\n"
+        "Model: m2\r\n"
+    )
+    out = normalize_pseudo_tables_to_markdown(raw)
+    ok = _has_divider(out) and "| Groep A | alpha | m1 |" in out and "\r" not in out
+    step("CRLF input (Windows) normaliseert naar markdown-tabel", ok)
+
+
 def main() -> int:
     print("=== Context-aware pseudo-tabel harness ===")
     test_4col_grouped_overview()
@@ -217,10 +234,11 @@ def main() -> int:
     test_separator_no_duplicate_rows()
     test_valid_4col_table_idempotent()
     test_generic_provider_model_fallback()
+    test_crlf_windows_line_endings()
     if FAILURES:
         print(f"=== HARNESS: FAIL ({FAILURES}) ===", file=sys.stderr)
         return 1
-    print("=== HARNESS: PASS (8/8) ===")
+    print("=== HARNESS: PASS (9/9) ===")
     return 0
 
 

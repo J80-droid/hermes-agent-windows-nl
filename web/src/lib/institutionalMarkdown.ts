@@ -808,6 +808,7 @@ function ensureMarkdownTableDividers(text: string): string {
 
 function normalizePseudoTablesToMarkdown(text: string): string {
   if (!text?.trim()) return text || ''
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
   if (
     !(
       text.includes('|') ||

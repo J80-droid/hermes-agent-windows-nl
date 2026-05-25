@@ -45,6 +45,12 @@ def fake_hermes(tmp_path, monkeypatch):
     monkeypatch.setattr(fs, "_hermes_home_path", lambda: sec_home)
     monkeypatch.setattr(fs, "_hermes_root_path", lambda: root)
 
+    # Cross-profile guard tests target Hermes profile paths outside the default
+    # agent workspace — disable the filesystem sandbox for this fixture only.
+    monkeypatch.setenv("HERMES_ENFORCE_FILE_SANDBOX", "0")
+    from hermes_cli import filesystem_sandbox as fss
+    fss.reset_workspace_cache()
+
     return {
         "root": root,
         "sec_home": sec_home,
@@ -94,8 +100,14 @@ class TestWriteFileCrossProfileGuard:
         assert not result.get("error"), f"cross_profile=True must succeed: {result}"
         assert target.read_text() == "user-directed override"
 
-    def test_non_hermes_path_unaffected(self, fake_hermes, tmp_path):
+    def test_non_hermes_path_unaffected(self, fake_hermes, tmp_path, monkeypatch):
+        from hermes_cli import filesystem_sandbox as fss
         from tools.file_tools import write_file_tool
+
+        monkeypatch.setenv("HERMES_WORKSPACE_ROOT", str(tmp_path))
+        monkeypatch.setenv("HERMES_ENFORCE_FILE_SANDBOX", "1")
+        fss.reset_workspace_cache()
+
         target = tmp_path / "outside" / "main.py"
         target.parent.mkdir()
         result_json = write_file_tool(str(target), "print('hello')")

@@ -88,6 +88,7 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 | Klassieke CLI statusbalk-kosten E2E | `audits\RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` · `RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E` |
 | Pareto Code router E2E | `audits\RUN_PARETO_E2E.bat` · `RUN_AUDITS.bat -IncludeParetoE2E` |
 | Pseudo-tabel normalizer E2E | `audits\RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat` · `RUN_AUDITS.bat -IncludePseudoTableNormalizerE2E` · `-IncludeAllE2E` |
+| Platform hardening E2E (sandbox, GPU, LanceDB) | `audits\RUN_WINDOWS_PLATFORM_HARDENING_E2E.bat` · zie `docs\WINDOWS_PLATFORM_HARDENING.md` |
 | Codebase smoke E2E (E1/E2) | `audits\RUN_CODEBASE_SMOKE_E2E.bat` · `RUN_AUDITS.bat -IncludeCodebaseSmokeE2E` · `-IncludeAllE2E` |
 | Codebase smoke (snel) | `audits\RUN_CODEBASE_SMOKE_AUDIT.bat` · `RUN_AUDITS.bat -IncludeCodebaseSmoke` |
 | Na pull/update (optioneel) | `POST_GIT_PULL.bat -IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E` · `UPDATE_HERMES.bat` (zelfde vlaggen) |

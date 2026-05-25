@@ -17,6 +17,7 @@ import pyarrow as pa
 
 from domains_config import DomainSpec, default_domains_yaml, load_domains, resolve_domain_paths
 from kb_schema import TABLE_NAME, KnowledgeSchema, list_all_table_names
+from lancedb_storage import lancedb_session
 
 RAG_DIR = Path(__file__).resolve().parent
 REPO_ROOT = RAG_DIR.parents[1]
@@ -93,20 +94,20 @@ def inspect_domain(spec: DomainSpec) -> DomainReport:
         return rep
 
     try:
-        db = lancedb.connect(str(ldb_path))
-        names = list_all_table_names(db)
-        if TABLE_NAME not in names:
-            rep.schema_note = f"geen tabel '{TABLE_NAME}'"
-            return rep
-        rep.has_table = True
-        table = db.open_table(TABLE_NAME)
-        rep.row_count = table.count_rows()
-        if _schema_has_id(table.schema):
-            rep.schema_ok = True
-            rep.schema_note = "id-kolom aanwezig (upsert-schema)"
-        else:
-            rep.schema_ok = False
-            rep.schema_note = "oud schema zonder id — schema_migrate.py of fresh ingest"
+        with lancedb_session(str(ldb_path)) as db:
+            names = list_all_table_names(db)
+            if TABLE_NAME not in names:
+                rep.schema_note = f"geen tabel '{TABLE_NAME}'"
+                return rep
+            rep.has_table = True
+            table = db.open_table(TABLE_NAME)
+            rep.row_count = table.count_rows()
+            if _schema_has_id(table.schema):
+                rep.schema_ok = True
+                rep.schema_note = "id-kolom aanwezig (upsert-schema)"
+            else:
+                rep.schema_ok = False
+                rep.schema_note = "oud schema zonder id — schema_migrate.py of fresh ingest"
     except Exception as exc:
         rep.schema_note = f"fout: {exc}"
     return rep
@@ -119,14 +120,14 @@ def compact_domain(spec: DomainSpec, *, dry_run: bool) -> str:
     if dry_run:
         return "dry-run: zou compact_files() aanroepen"
     try:
-        db = lancedb.connect(str(rep.lancedb_path))
-        table = db.open_table(TABLE_NAME)
-        table.compact_files()
-        try:
-            table.optimize()
-            return "compact_files + optimize OK"
-        except Exception as opt_exc:
-            return f"compact_files OK; optimize overgeslagen: {opt_exc}"
+        with lancedb_session(str(rep.lancedb_path)) as db:
+            table = db.open_table(TABLE_NAME)
+            table.compact_files()
+            try:
+                table.optimize()
+                return "compact_files + optimize OK"
+            except Exception as opt_exc:
+                return f"compact_files OK; optimize overgeslagen: {opt_exc}"
     except Exception as exc:
         return f"compact mislukt: {exc}"
 
@@ -136,18 +137,18 @@ def benchmark_domain(spec: DomainSpec, *, queries: int, query_text: str) -> tupl
     if not rep.has_table or not rep.row_count:
         return None, None, rep.schema_note or "lege of ontbrekende tabel"
     try:
-        db = lancedb.connect(str(rep.lancedb_path))
-        table = db.open_table(TABLE_NAME)
-        samples: list[float] = []
-        for _ in range(max(1, queries)):
-            t0 = time.perf_counter()
-            table.search(query_text).limit(5).to_list()
-            samples.append((time.perf_counter() - t0) * 1000.0)
-        if not samples:
-            return None, None, "geen samples"
-        p50 = statistics.median(samples)
-        p95 = sorted(samples)[min(len(samples) - 1, int(len(samples) * 0.95))]
-        return p50, p95, ""
+        with lancedb_session(str(rep.lancedb_path)) as db:
+            table = db.open_table(TABLE_NAME)
+            samples: list[float] = []
+            for _ in range(max(1, queries)):
+                t0 = time.perf_counter()
+                table.search(query_text).limit(5).to_list()
+                samples.append((time.perf_counter() - t0) * 1000.0)
+            if not samples:
+                return None, None, "geen samples"
+            p50 = statistics.median(samples)
+            p95 = sorted(samples)[min(len(samples) - 1, int(len(samples) * 0.95))]
+            return p50, p95, ""
     except Exception as exc:
         return None, None, str(exc)
 
@@ -177,26 +178,25 @@ def init_missing_domain(spec: DomainSpec, *, dry_run: bool) -> str:
     ldb_path, _raw, _profile = resolve_domain_paths(spec)
     if ldb_path.is_dir():
         try:
-            db = lancedb.connect(str(ldb_path))
-            if TABLE_NAME in list_all_table_names(db):
-                table = db.open_table(TABLE_NAME)
-                if _schema_has_id(table.schema):
-                    return "al aanwezig"
-                return "oud schema — schema_migrate.py of fresh ingest"
+            with lancedb_session(str(ldb_path)) as db:
+                if TABLE_NAME in list_all_table_names(db):
+                    table = db.open_table(TABLE_NAME)
+                    if _schema_has_id(table.schema):
+                        return "al aanwezig"
+                    return "oud schema — schema_migrate.py of fresh ingest"
         except Exception as exc:
             return f"fout bij openen: {exc}"
     if dry_run:
         return f"dry-run: zou {ldb_path} initialiseren"
-    ldb_path.mkdir(parents=True, exist_ok=True)
-    db = lancedb.connect(str(ldb_path))
-    names = list_all_table_names(db)
-    if TABLE_NAME in names:
-        table = db.open_table(TABLE_NAME)
-        if _schema_has_id(table.schema):
-            return "al aanwezig"
-        return "oud schema — schema_migrate.py of fresh ingest"
-    db.create_table(TABLE_NAME, schema=KnowledgeSchema)
-    return "lege knowledge_base aangemaakt"
+    with lancedb_session(str(ldb_path)) as db:
+        names = list_all_table_names(db)
+        if TABLE_NAME in names:
+            table = db.open_table(TABLE_NAME)
+            if _schema_has_id(table.schema):
+                return "al aanwezig"
+            return "oud schema — schema_migrate.py of fresh ingest"
+        db.create_table(TABLE_NAME, schema=KnowledgeSchema)
+        return "lege knowledge_base aangemaakt"
 
 
 def run_init_missing(domains: list[DomainSpec], *, dry_run: bool, domain_filter: str | None) -> int:

@@ -122,7 +122,7 @@ def transcribe_media_file(
 
     # --- faster-whisper ---------------------------------------------------
     try:
-        from faster_whisper import WhisperModel
+        from hermes_cli.hardware_backend import load_faster_whisper_model
     except ImportError as exc:
         raise ImportError(
             "faster-whisper is niet geinstalleerd. "
@@ -130,10 +130,9 @@ def transcribe_media_file(
         ) from exc
 
     size = (model_size or _WHISPER_MODEL).lower()
-    device = _WHISPER_DEVICE
-    compute = _WHISPER_COMPUTE
+    preferred = _WHISPER_DEVICE
 
-    model = WhisperModel(size, device=device, compute_type=compute)
+    model = load_faster_whisper_model(size, preferred_device=preferred)
 
     segments, info = model.transcribe(str(audio_path), language=language, vad_filter=True)
     parts = [seg.text.strip() for seg in segments if seg.text.strip()]
