@@ -39,6 +39,22 @@ class TestResolveSourceFile:
         got = boot._resolve_source_file(tmp_path, "a.md")
         assert got is not None and got.name == "a.md"
 
+    def test_rejects_empty_relative_key(self, tmp_path):
+        assert boot._resolve_source_file(tmp_path, "") is None
+        assert boot._resolve_source_file(tmp_path, "   ") is None
+
+    def test_rejects_directory_not_file(self, tmp_path):
+        sub = tmp_path / "folder"
+        sub.mkdir()
+        assert boot._resolve_source_file(tmp_path, "folder") is None
+
+    def test_rejects_embedded_parent_segment(self, tmp_path):
+        (tmp_path / "safe.md").write_text("x", encoding="utf-8")
+        assert boot._resolve_source_file(tmp_path, "nested/../../outside.md") is None
+
+    def test_rejects_windows_absolute_drive_path(self, tmp_path):
+        assert boot._resolve_source_file(tmp_path, r"C:\secret\doc.md") is None
+
 
 class TestUniqueSourcesFromTable:
     def _batch(self, values: list):

@@ -17,6 +17,7 @@ from tools.process_registry import (
     MAX_OUTPUT_CHARS,
     FINISHED_TTL_SECONDS,
     MAX_PROCESSES,
+    _pty_spawn_argv,
 )
 
 
@@ -295,6 +296,13 @@ class TestStdinHelpers:
         pty.sendeof.assert_called_once()
         assert result["status"] == "ok"
 
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason=(
+            "Windows winpty: ConPTY proxy PID can outlive short -c children; "
+            "stdin EOF integration is covered on POSIX (see TestPtySpawnArgvWindows)"
+        ),
+    )
     def test_close_stdin_allows_eof_driven_process_to_finish(self, registry, tmp_path):
         """PTY mode: writing data + sending EOF lets an EOF-driven child finish.
 
@@ -303,14 +311,34 @@ class TestStdinHelpers:
         lockout (#17959). For interactive stdin → PTY mode is now the only
         supported path.
         """
+        pytest.importorskip("ptyprocess", reason="POSIX PTY requires ptyprocess")
+
+        py = sys.executable.replace("\\", "/")
+        if " " in py:
+            py = f'"{py}"'
         session = registry.spawn_local(
-            'python3 -c "import sys; print(sys.stdin.read().strip())"',
+            f'{py} -c "import sys; print(sys.stdin.read().strip())"',
             cwd=str(tmp_path),
             use_pty=True,
         )
 
         try:
-            time.sleep(0.5)
+            if not getattr(session, "_pty", None):
+                pytest.skip("PTY spawn fell back to pipe mode (stdin unavailable)")
+
+            deadline = time.time() + 5.0
+            while time.time() < deadline:
+                poll = registry.poll(session.id)
+                if poll["status"] == "running":
+                    break
+                if poll["status"] == "exited":
+                    pytest.fail(
+                        f"PTY child exited before stdin write: {poll.get('output_preview', '')!r}"
+                    )
+                time.sleep(0.1)
+            else:
+                pytest.fail("PTY child did not reach running state")
+
             assert registry.submit_stdin(session.id, "hello")["status"] == "ok"
             assert registry.close_stdin(session.id)["status"] == "ok"
 
@@ -326,6 +354,32 @@ class TestStdinHelpers:
             pytest.fail("process did not exit after stdin was closed")
         finally:
             registry.kill_process(session.id)
+
+    def test_write_stdin_winpty_accepts_str(self, registry):
+        """Windows winpty.write() requires str, not bytes (regression)."""
+        if sys.platform != "win32":
+            pytest.skip("winpty-specific")
+        pty = MagicMock()
+        s = _make_session()
+        s._pty = pty
+        registry._running[s.id] = s
+
+        result = registry.write_stdin(s.id, "hello")
+
+        pty.write.assert_called_once_with("hello")
+        assert result["status"] == "ok"
+
+
+class TestPtySpawnArgvWindows:
+    def test_direct_python_c_strips_wrapping_quotes(self):
+        if sys.platform != "win32":
+            pytest.skip("Windows-only argv builder")
+        py = sys.executable.replace("\\", "/")
+        argv = _pty_spawn_argv(f'{py} -c "import time; time.sleep(1)"', "bash.exe")
+        assert argv[0].endswith("python.exe") or argv[0].endswith("python")
+        assert argv[1] == "-c"
+        assert argv[2] == "import time; time.sleep(1)"
+        assert '"' not in argv[2]
 
 
 # =========================================================================
@@ -827,25 +881,33 @@ class TestKillProcess:
 
         terminate_calls = []
 
-        class FakeProcess:
-            def __init__(self, pid):
-                self.pid = pid
-            def children(self, recursive=False):
-                return []
-            def terminate(self):
-                terminate_calls.append(("terminate", self.pid))
-
-        import psutil as _psutil
-
         try:
-            # Post-#21561: liveness probe routes through
-            # ``ProcessRegistry._is_host_pid_alive`` (→
-            # ``gateway.status._pid_exists``), and the actual kill on POSIX
-            # routes through ``psutil.Process(pid).terminate()``. Neither
-            # touches ``os.kill`` directly. Mock both seams.
-            with patch("gateway.status._pid_exists", return_value=True), \
-                 patch.object(_psutil, "Process", side_effect=lambda pid: FakeProcess(pid)):
-                result = registry.kill_process(s.id)
+            with patch("gateway.status._pid_exists", return_value=True):
+                if sys.platform == "win32":
+                    # Windows detached kill uses taskkill via _terminate_host_pid, not psutil.
+                    with patch.object(
+                        ProcessRegistry,
+                        "_terminate_host_pid",
+                        side_effect=lambda pid: terminate_calls.append(("terminate", pid)),
+                    ):
+                        result = registry.kill_process(s.id)
+                else:
+                    import psutil as _psutil
+
+                    class FakeProcess:
+                        def __init__(self, pid):
+                            self.pid = pid
+
+                        def children(self, recursive=False):
+                            return []
+
+                        def terminate(self):
+                            terminate_calls.append(("terminate", self.pid))
+
+                    with patch.object(
+                        _psutil, "Process", side_effect=lambda pid: FakeProcess(pid)
+                    ):
+                        result = registry.kill_process(s.id)
 
             assert result["status"] == "killed"
             assert ("terminate", 424242) in terminate_calls

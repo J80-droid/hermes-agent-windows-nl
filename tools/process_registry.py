@@ -13,6 +13,11 @@ Background processes execute THROUGH the environment interface -- nothing
 runs on the host machine unless TERMINAL_ENV=local. For Docker, Singularity,
 Modal, Daytona, and SSH backends, the command runs inside the sandbox.
 
+Windows PTY (``use_pty=True``): ``_pty_spawn_argv()`` spawns ``python -c`` directly
+(winpty expects ``str`` on write); detached kills use ``_terminate_host_pid`` (taskkill).
+POSIX orphan-pipe reconcile uses ``Popen.poll()``; PTY sessions reconcile via
+``pty.isalive()`` / host PID liveness.
+
 Usage:
     from tools.process_registry import process_registry
 
@@ -73,6 +78,29 @@ WATCH_STRIKE_LIMIT = 3            # Strikes in a row → disable watch + promote
 WATCH_GLOBAL_MAX_PER_WINDOW = 15
 WATCH_GLOBAL_WINDOW_SECONDS = 10
 WATCH_GLOBAL_COOLDOWN_SECONDS = 30
+
+
+def _pty_spawn_argv(command: str, user_shell: str) -> list[str]:
+    """Build argv for PTY spawn.
+
+    On Windows, invoke ``<exe> -c ...`` directly when the executable path is
+    known so ``sendeof()`` reaches the child stdin. Other commands still run
+    through the login shell (``bash -lic``).
+    """
+    if not _IS_WINDOWS:
+        return [user_shell, "-lic", f"set +m; {command}"]
+    try:
+        parts = shlex.split(command, posix=False)
+    except ValueError:
+        parts = None
+    if parts and len(parts) >= 3 and parts[1] in ("-c", "-m"):
+        exe = parts[0].strip("\"'")
+        code = parts[2]
+        if len(code) >= 2 and code[0] == code[-1] and code[0] in "\"'":
+            code = code[1:-1]
+        if os.path.isfile(exe):
+            return [exe, parts[1], code]
+    return [user_shell, "-lic", f"set +m; {command}"]
 
 
 def format_uptime_short(seconds: int) -> str:
@@ -551,7 +579,7 @@ class ProcessRegistry:
                 pty_env = _sanitize_subprocess_env(os.environ, env_vars)
                 pty_env["PYTHONUNBUFFERED"] = "1"
                 pty_proc = _PtyProcessCls.spawn(
-                    [user_shell, "-lic", f"set +m; {command}"],
+                    _pty_spawn_argv(command, user_shell),
                     cwd=session.cwd,
                     env=pty_env,
                     dimensions=(30, 120),
@@ -963,6 +991,24 @@ class ProcessRegistry:
         if session is None or session.exited:
             return
         proc = getattr(session, "process", None)
+        pty = getattr(session, "_pty", None)
+        if proc is None and pty is not None:
+            try:
+                alive = pty.isalive()
+            except Exception:
+                alive = True
+            if alive and self._is_host_pid_alive(session.pid):
+                return
+            with session._lock:
+                if session.exited:
+                    return
+                session.exited = True
+                try:
+                    session.exit_code = pty.exitstatus if hasattr(pty, "exitstatus") else None
+                except Exception:
+                    session.exit_code = None
+            self._move_to_finished(session)
+            return
         if proc is None:
             return
         try:
@@ -1231,11 +1277,14 @@ class ProcessRegistry:
         if session.exited:
             return {"status": "already_exited", "error": "Process has already finished"}
 
-        # PTY mode -- write through pty handle (expects bytes)
+        # PTY mode -- winpty (Windows) expects str; ptyprocess (POSIX) expects bytes.
         if hasattr(session, '_pty') and session._pty:
             try:
-                pty_data = data.encode("utf-8") if isinstance(data, str) else data
-                session._pty.write(pty_data)
+                if _IS_WINDOWS:
+                    pty_payload = data if isinstance(data, str) else data.decode("utf-8", errors="replace")
+                else:
+                    pty_payload = data.encode("utf-8") if isinstance(data, str) else data
+                session._pty.write(pty_payload)
                 return {"status": "ok", "bytes_written": len(data)}
             except Exception as e:
                 return {"status": "error", "error": str(e)}

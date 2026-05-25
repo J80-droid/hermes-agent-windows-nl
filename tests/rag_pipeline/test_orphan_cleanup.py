@@ -50,6 +50,21 @@ class TestOrphanPredicate:
         pred = _orphan_predicate("bad' OR 1=1 --", ["x"])
         assert "bad'' OR 1=1 --" in pred
 
+    def test_escapes_quotes_in_active_ids(self):
+        pred = _orphan_predicate("doc.md", ["id'42"])
+        assert "id''42" in pred
+        assert "id NOT IN ('id''42')" in pred
+
+    def test_empty_source_still_valid_predicate(self):
+        pred = _orphan_predicate("", ["a"])
+        assert pred.startswith("source = ''")
+        assert "id NOT IN ('a')" in pred
+
+    def test_backslash_in_source_literal_is_sql_escaped_only(self):
+        pred = _orphan_predicate(r"folder\doc.md", ["keep"])
+        assert "source = 'folder\\doc.md'" in pred
+        assert "id NOT IN ('keep')" in pred
+
 
 class TestDeleteOrphanChunks:
     def test_happy_path_returns_count(self):

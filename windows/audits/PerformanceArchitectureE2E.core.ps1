@@ -201,7 +201,8 @@ if ($SkipPytest) {
         'tests/hermes_cli/test_config_snapshot.py',
         'tests/agent/test_review_snapshot.py',
         'tests/hermes_cli/test_filesystem_sandbox.py',
-        'tests/hermes_cli/test_hardware_backend.py'
+        'tests/hermes_cli/test_hardware_backend.py',
+        'tests/tools/test_process_registry.py'
     )
     $pytestOk = $true
     foreach ($rel in $pytestPaths) {

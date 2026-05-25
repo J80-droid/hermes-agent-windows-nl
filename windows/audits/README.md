@@ -64,7 +64,7 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | **`RUN_PLATFORM_HARDENING_REGRESSION_E2E.bat`** | Regressie: review-fixes, PS1 Join-HermesRepoPath, footguns PS1-regel (**10 stappen**) |
 | **`RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat`** | Gecombineerd: beide platform E2E's + pytest subset + `footguns --all` |
 | **`RUN_KNOWLEDGE_REPOSITORY_E2E.bat`** | KnowledgeRepository agent-API: edge cases, caller wiring, pytest (8 stappen) |
-| **`RUN_PERFORMANCE_ARCHITECTURE_E2E.bat`** | Performance-architectuur: RAG lifecycle/scan/MCP, config-snapshot, harness (11 scenario's), pytest-subset; rapport `PERFORMANCE_ARCHITECTURE_E2E_REPORT_*.md` |
+| **`RUN_PERFORMANCE_ARCHITECTURE_E2E.bat`** | Performance-architectuur: RAG lifecycle/scan/MCP, config-snapshot, harness (11 scenario's), pytest-subset (RAG performance tests + `test_process_registry.py` + sandbox/hardware/config/review); rapport `PERFORMANCE_ARCHITECTURE_E2E_REPORT_*.md` (gitignored) |
 | **`RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.bat`** | Institutioneel Python: conda hermes-env, IDE sync, venv-quarantaine, pytest (8 stappen) |
 | **`RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.bat`** | Regressie review-fixes: bootstrap stamp guard, RAG-manifest fast-path, non-interactive REPAIR, pytest (8 stappen) |
 | **`RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`** | Gecombineerd: Python E2E + KnowledgeRepository + platform gate + wiring-check |

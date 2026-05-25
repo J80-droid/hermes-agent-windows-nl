@@ -12,7 +12,7 @@ Code: `hermes_cli/hardware_backend.py`, `hermes_cli/filesystem_sandbox.py`, `scr
 | `windows/audits/RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat` | **Productie-poort:** beide E2E's + pytest subset + `footguns --all` |
 | `windows/audits/RUN_KNOWLEDGE_REPOSITORY_E2E.bat` | **KnowledgeRepository:** agent-API edge cases, caller wiring, 47 unit tests (8 stappen) |
 
-Rapporten: `WINDOWS_PLATFORM_HARDENING_E2E_REPORT_*.md`, `PLATFORM_HARDENING_REGRESSION_E2E_REPORT_*.md`, `KNOWLEDGE_REPOSITORY_E2E_REPORT_*.md`, `PLATFORM_HARDENING_PRODUCTION_GATE_REPORT_*.md`.
+Rapporten (timestamped, **gitignored**): `*_E2E_REPORT_*_*.md`, `*_PRODUCTION_GATE_REPORT_*.md` (o.a. `PLATFORM_HARDENING_PRODUCTION_GATE_REPORT_*.md`, `INSTITUTIONAL_PRODUCTION_GATE_REPORT_*.md`), `WINDOWS_PLATFORM_HARDENING_E2E_REPORT_*.md`, `KNOWLEDGE_REPOSITORY_E2E_REPORT_*.md`.
 
 ## Hardware backend (CUDA → DirectML → CPU)
 
@@ -111,10 +111,10 @@ High-level laag boven `VectorStoreBackend`:
 | Config | `hermes_cli/config_snapshot.py` — raw+expanded cache op `config.yaml` mtime; `gateway/config.py` + `filesystem_sandbox.py` bust |
 | Review-RAM | `agent/review_snapshot.py` — tail van berichten (`HERMES_BG_REVIEW_MAX_MESSAGES`, default 40) |
 | Whisper | `hardware_backend.py` — modelcache per proces |
-| Subprocessen | `process_registry.py` — stdout/stderr close + completion queue cap |
+| Subprocessen | `process_registry.py` — pipe-close + completion queue cap; Windows PTY: `_pty_spawn_argv` (direct `python -c`), `str` op winpty-write, detached kill via `taskkill`, PTY/PID reconcile in `poll()` |
 | MCP stderr | `mcp_tool.shutdown_mcp_servers` — sluit log-handle |
 
-Modules: `scripts/rag_pipeline/knowledge_repository.py`, `lancedb_storage.py` · tests: `tests/rag_pipeline/test_knowledge_repository.py` (47), `test_lancedb_storage.py`, `test_vector_store_ports.py`, plus performance-unit tests onder `tests/rag_pipeline/` · E2E: `RUN_KNOWLEDGE_REPOSITORY_E2E.bat`, **`RUN_PERFORMANCE_ARCHITECTURE_E2E.bat`**
+Modules: `scripts/rag_pipeline/knowledge_repository.py`, `lancedb_storage.py`, `tools/process_registry.py` · tests: `tests/rag_pipeline/*` (performance subset), `tests/tools/test_process_registry.py` (60 passed op Windows; 6 skipped = 5× POSIX orphan-pipe + 1× PTY EOF-integratie) · E2E: `RUN_KNOWLEDGE_REPOSITORY_E2E.bat`, **`RUN_PERFORMANCE_ARCHITECTURE_E2E.bat`** (stap 10/10 pytest omvat o.a. `test_process_registry.py`)
 
 ## Terminal tool (Windows native)
 

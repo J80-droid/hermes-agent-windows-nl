@@ -93,6 +93,8 @@ windows/audits/INSTITUTIONAL_E2E_LAST_RUN.log
 # Timestamped E2E run-rapporten (lokaal; baselines zonder _HHMMSS mogen in repo)
 windows/audits/*_E2E_REPORT_*_*.md
 windows/audits/CODEBASE_SMOKE_AUDIT_REPORT_*.md
+# Gecombineerde productie-poorten (INSTITUTIONAL / PLATFORM_HARDENING)
+windows/audits/*_PRODUCTION_GATE_REPORT_*.md
 windows/audits/CODEBASE_SMOKE_STEPLOG_*.json
 windows/audits/SKILL_DRIFT_AUDIT_*.md
 windows/audits/TOOLSET_DOMAIN_E2E_LAST_RUN.log

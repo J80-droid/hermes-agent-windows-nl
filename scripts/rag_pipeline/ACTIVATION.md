@@ -114,7 +114,7 @@ flowchart LR
 | 2 | `pyproject.toml` extra `[rag]` | Ja — `pip install -e ".[rag]"` | Eenmalig in `hermes-env` |
 | 3 | Automatische MCP + RAG-deps | Ja — `install-J..ps1` / `setup_hermes_windows.ps1` → `install_rag_extras.ps1` | Nieuwe sessie na install |
 | 4 | `tests/rag_pipeline/` (pytest) | Ja | `pytest tests/rag_pipeline/ -q` (o.a. bootstrap, chunking, orphan, MCP, ingest_state) |
-| 4b | Performance-architecture E2E | Ja | `windows\audits\RUN_PERFORMANCE_ARCHITECTURE_E2E.bat` (10/10 + harness) |
+| 4b | Performance-architecture E2E | Ja | `windows\audits\RUN_PERFORMANCE_ARCHITECTURE_E2E.bat` (10/10 + harness; pytest: RAG + `test_process_registry`, sandbox, hardware, config/review snapshot) |
 | 5 | Rooktest (5 commando’s) | Ja — hieronder | Alle 5 stappen doorlopen |
 | A | `update_knowledge.bat` tot einde | — | Log: `[OK] Ingestie-scan afgerond` |
 | B | MCP + nieuwe Hermes-sessie | MCP in elk profiel (`domains.yaml`) | `update_knowledge.bat --mcp-test` OK |
@@ -269,7 +269,7 @@ Als Hermes bij vragen over jouw lokale kennis toch **VWO.com / Google / curl** g
 
 ## Changelog (technisch)
 
-- **Performance-architectuur (2026-05-25):** `schema_migrate.py` / `bootstrap_ingest_state.py` via `KnowledgeRepository.session()`; enkelvoudige directory-scan (`source_formats.collect_indexed_files`); `ingest_chunking.py` + `document_converter.py`; MCP `_ensure_mcp_knowledge()` + cache-reset; orphan cleanup batched; gedeelde MarkItDown-converter; runtime: `hermes_cli/config_snapshot.py`, `agent/review_snapshot.py` (`HERMES_BG_REVIEW_MAX_MESSAGES`), gateway config-cache op mtime, sandbox bust, Whisper-modelcache, `process_registry` pipe-close, `mcp_tool` stderr-log close. E2E: `RUN_PERFORMANCE_ARCHITECTURE_E2E.bat`. Unit tests: `test_bootstrap_ingest_state`, `test_ingest_chunking`, `test_orphan_cleanup`, `test_source_formats`, `test_document_converter`, `test_ingest_state_needs_processing`, uitgebreid `test_mcp_server`.
+- **Performance-architectuur (2026-05-25):** `schema_migrate.py` / `bootstrap_ingest_state.py` via `KnowledgeRepository.session()`; enkelvoudige directory-scan (`source_formats.collect_indexed_files`); `ingest_chunking.py` + `document_converter.py`; MCP `_ensure_mcp_knowledge()` + cache-reset; orphan cleanup batched; gedeelde MarkItDown-converter; runtime: `hermes_cli/config_snapshot.py`, `agent/review_snapshot.py` (`HERMES_BG_REVIEW_MAX_MESSAGES`), gateway config-cache op mtime, sandbox bust, Whisper-modelcache, `process_registry` pipe-close + Windows PTY (`_pty_spawn_argv`, winpty `str`-write, detached `taskkill`), `mcp_tool` stderr-log close. E2E: `RUN_PERFORMANCE_ARCHITECTURE_E2E.bat` (pytest-subset incl. `test_process_registry.py`). Unit tests: `test_bootstrap_ingest_state`, `test_ingest_chunking`, `test_orphan_cleanup`, `test_source_formats`, `test_document_converter`, `test_ingest_state_needs_processing`, uitgebreid `test_mcp_server`; path-traversal/orphan-predicate edge cases; gate-rapporten `*_PRODUCTION_GATE_REPORT_*.md` gitignored.
 - `ingest_handlers.py` (refactor): conversieketen opgesplitst (`_try_pymupdf_first_path`, `_apply_pandoc_office_fallback`, `_try_html_parser_fallback`, early returns).
 - `bootstrap_ingest_state.py` (refactor): scan/arrow-fallback, pad-validatie en disk-matching in aparte helpers.
 - `ingest.py`: `_plan_incremental_ingest`, `_apply_media_only_filter`; chunking geïmporteerd uit `ingest_chunking.py`.
