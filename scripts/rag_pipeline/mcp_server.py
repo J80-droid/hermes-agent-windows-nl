@@ -1,4 +1,3 @@
-import sys
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -15,19 +14,20 @@ _db: Any = None
 _table: Any = None
 
 
-def _get_repo() -> KnowledgeRepository:
-    global _repo
-    if _repo is None:
-        _repo = KnowledgeRepository(db_path=get_db_path())
-    return _repo
-
-
-def _get_knowledge_table() -> Any:
-    global _db, _table
-    if _table is None:
-        _db = _get_repo().backend.connect(get_db_path())
-        _table = _get_repo().ensure_table(_db)
-    return _table
+def _ensure_mcp_knowledge() -> tuple[KnowledgeRepository, Any]:
+    """Single connect path: repo + tracked connection + ensured table."""
+    global _repo, _db, _table
+    if _repo is not None and _db is not None and _table is not None:
+        return _repo, _table
+    try:
+        if _repo is None:
+            _repo = KnowledgeRepository(db_path=get_db_path())
+        _db = _repo.backend.connect(get_db_path())
+        _table = _repo.ensure_table(_db)
+        return _repo, _table
+    except Exception:
+        close_lancedb_mcp_connection()
+        raise
 
 
 def close_lancedb_mcp_connection() -> None:
@@ -58,12 +58,8 @@ def search_knowledge(query: str, limit: int = 5) -> str:
     if not str(query).strip():
         return "Geen zoekterm opgegeven."
     try:
-        safe_limit = max(1, min(int(limit), 50))
-    except (TypeError, ValueError):
-        safe_limit = 5
-    try:
-        table = _get_knowledge_table()
-        results = _get_repo().search(query, limit=safe_limit, table=table)
+        repo, table = _ensure_mcp_knowledge()
+        results = repo.search(query, limit=limit, table=table)
 
         output = []
         for res in results:

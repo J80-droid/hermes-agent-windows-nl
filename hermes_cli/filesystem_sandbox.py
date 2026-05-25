@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 _SANDBOX_ROOT_CACHE: Path | None = None
 _ENFORCE_CACHE: bool | None = None
 _SANDBOX_ENV_SNAPSHOT: tuple[str, ...] | None = None
+_SANDBOX_CONFIG_MTIME_NS: int | None = None
 
 _SANDBOX_ENV_KEYS = (
     "HERMES_WORKSPACE_ROOT",
@@ -66,13 +67,23 @@ def _sandbox_env_snapshot() -> tuple[str, ...]:
 
 
 def bust_sandbox_cache_if_env_changed() -> None:
-    """Clear cached sandbox root/enforcement when relevant env vars change."""
-    global _SANDBOX_ROOT_CACHE, _ENFORCE_CACHE, _SANDBOX_ENV_SNAPSHOT
+    """Clear cached sandbox root/enforcement when env or config.yaml changes."""
+    global _SANDBOX_ROOT_CACHE, _ENFORCE_CACHE, _SANDBOX_ENV_SNAPSHOT, _SANDBOX_CONFIG_MTIME_NS
     current = _sandbox_env_snapshot()
     if _SANDBOX_ENV_SNAPSHOT is not None and current != _SANDBOX_ENV_SNAPSHOT:
         _SANDBOX_ROOT_CACHE = None
         _ENFORCE_CACHE = None
     _SANDBOX_ENV_SNAPSHOT = current
+    try:
+        from hermes_cli.config_snapshot import config_path_mtime_ns
+
+        cfg_mtime = config_path_mtime_ns()
+    except Exception:
+        cfg_mtime = 0
+    if _SANDBOX_CONFIG_MTIME_NS is not None and cfg_mtime != _SANDBOX_CONFIG_MTIME_NS:
+        _SANDBOX_ROOT_CACHE = None
+        _ENFORCE_CACHE = None
+    _SANDBOX_CONFIG_MTIME_NS = cfg_mtime
 
 
 def is_sandbox_enforced() -> bool:
@@ -91,9 +102,9 @@ def is_sandbox_enforced() -> bool:
         return _ENFORCE_CACHE
 
     try:
-        from hermes_cli.config import load_config
+        from hermes_cli.config_snapshot import get_config_snapshot
 
-        cfg = load_config() or {}
+        cfg = get_config_snapshot().expanded or {}
         workspace_cfg = cfg.get("workspace") or {}
         if isinstance(workspace_cfg, dict):
             enforce = workspace_cfg.get("enforce_sandbox")
@@ -132,9 +143,9 @@ def get_workspace_root() -> Path:
         candidates.append(env_root)
 
     try:
-        from hermes_cli.config import load_config
+        from hermes_cli.config_snapshot import get_config_snapshot
 
-        cfg = load_config() or {}
+        cfg = get_config_snapshot().expanded or {}
         workspace_cfg = cfg.get("workspace") or {}
         if isinstance(workspace_cfg, dict):
             cfg_root = str(workspace_cfg.get("root") or "").strip()

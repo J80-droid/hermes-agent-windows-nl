@@ -33,6 +33,7 @@ _CUDA_LIB_ERROR_MARKERS = (
 )
 
 _onnx_providers_cache: list[str] | None = None
+_whisper_model_cache: dict[tuple[str, str], Any] = {}
 
 
 class BackendName(str, Enum):
@@ -244,14 +245,25 @@ def log_local_inference_backends(console: Any | None = None) -> None:
             print(line)
 
 
+def clear_faster_whisper_model_cache() -> None:
+    """Drop cached Whisper models (tests, device fallback)."""
+    _whisper_model_cache.clear()
+
+
 def load_faster_whisper_model(model_name: str, preferred_device: str = "auto"):
-    """Load faster-whisper with CUDA/auto -> CPU fallback."""
+    """Load faster-whisper with CUDA/auto -> CPU fallback (cached per model+device)."""
     from faster_whisper import WhisperModel
 
     pref = (preferred_device or "auto").strip().lower()
+    model_key = model_name.strip().lower()
+    cache_key = (model_key, pref)
+    cached = _whisper_model_cache.get(cache_key)
+    if cached is not None:
+        return cached
     if pref == "cpu":
         model = WhisperModel(model_name, device="cpu", compute_type="int8")
         record_backend("stt-whisper", BackendName.CPU, f"model={model_name}, compute=int8")
+        _whisper_model_cache[cache_key] = model
         return model
 
     device = "cuda" if pref == "cuda" else "auto"
@@ -266,6 +278,7 @@ def load_faster_whisper_model(model_name: str, preferred_device: str = "auto"):
             BackendName.CUDA if resolved_device == "cuda" else BackendName.CPU,
             f"model={model_name}, device={resolved_device}, compute={compute}",
         )
+        _whisper_model_cache[cache_key] = model
         return model
     except Exception as exc:
         if pref == "cuda" and not looks_like_cuda_lib_error(exc):
@@ -280,14 +293,22 @@ def load_faster_whisper_model(model_name: str, preferred_device: str = "auto"):
         )
         model = WhisperModel(model_name, device="cpu", compute_type="int8")
         record_backend("stt-whisper", BackendName.CPU, f"model={model_name}, compute=int8 (GPU fallback)")
+        _whisper_model_cache[cache_key] = model
+        if pref in ("auto", "cuda"):
+            _whisper_model_cache[(model_key, "cpu")] = model
         return model
 
 
 def reload_faster_whisper_cpu(model_name: str):
     from faster_whisper import WhisperModel
 
+    model_key = model_name.strip().lower()
+    for key in list(_whisper_model_cache):
+        if key[0] == model_key:
+            del _whisper_model_cache[key]
     model = WhisperModel(model_name, device="cpu", compute_type="int8")
     record_backend("stt-whisper", BackendName.CPU, f"model={model_name}, compute=int8 (runtime fallback)")
+    _whisper_model_cache[(model_key, "cpu")] = model
     return model
 
 
@@ -378,3 +399,4 @@ def reset_hardware_backend_cache() -> None:
     _onnx_providers_cache = None
     _startup_summary_printed = False
     _selections.clear()
+    clear_faster_whisper_model_cache()

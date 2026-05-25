@@ -22,6 +22,8 @@ import os
 from types import SimpleNamespace
 from typing import Any, Dict, List
 
+from agent.review_snapshot import snapshot_messages_for_background_review
+
 logger = logging.getLogger(__name__)
 
 
@@ -154,7 +156,7 @@ def run_codex_app_server_turn(
     ):
         try:
             agent._spawn_background_review(
-                messages_snapshot=list(messages),
+                messages_snapshot=snapshot_messages_for_background_review(messages),
                 review_memory=should_review_memory,
                 review_skills=should_review_skills,
             )

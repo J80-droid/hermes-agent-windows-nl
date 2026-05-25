@@ -6,6 +6,10 @@ Wijzig alleen hier (en `ingest_config.py` voor uitsluitingen); `ingest.py` en
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
+
+
 # --- Platte tekst (UTF-8 in ingest) ------------------------------------------
 
 PLAIN_SUFFIXES: frozenset[str] = frozenset(
@@ -138,6 +142,72 @@ ALL_INDEXED_SUFFIXES: frozenset[str] = PLAIN_SUFFIXES | MARKITDOWN_SUFFIXES | ME
 def supported_extension_globs() -> list[str]:
     """Glob-patronen voor Path.rglob, gesorteerd voor stabiele scans."""
     return [f"*{ext}" for ext in sorted(ALL_INDEXED_SUFFIXES)]
+
+
+_SKIP_DIR_NAMES_CF = frozenset(
+    {
+        ".git",
+        ".svn",
+        ".hg",
+        "node_modules",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".tox",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".idea",
+        ".vs",
+        "dist",
+        "build",
+        "_PROBLEMATISCHE_BESTANDEN",
+    }
+)
+
+
+def _should_prune_dir(name: str) -> bool:
+    return name.casefold() in _SKIP_DIR_NAMES_CF
+
+
+def collect_indexed_files(root: Path) -> list[Path]:
+    """Single tree walk: filter op ALL_INDEXED_SUFFIXES (geen 70+ rglob-passes)."""
+    seen: set[object] = set()
+    out: list[Path] = []
+    try:
+        root = root.resolve()
+    except OSError:
+        return []
+
+    def _walk(dir_path: Path) -> None:
+        try:
+            with os.scandir(dir_path) as entries:
+                for entry in entries:
+                    if entry.is_symlink():
+                        continue
+                    if entry.is_dir(follow_symlinks=False):
+                        if not _should_prune_dir(entry.name):
+                            _walk(Path(entry.path))
+                        continue
+                    if not entry.is_file(follow_symlinks=False):
+                        continue
+                    path = Path(entry.path)
+                    if path.suffix.lower() not in ALL_INDEXED_SUFFIXES:
+                        continue
+                    try:
+                        key = path.resolve()
+                    except OSError:
+                        key = path
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    out.append(path)
+        except OSError:
+            return
+
+    if root.is_dir():
+        _walk(root)
+    out.sort(key=lambda p: str(p).casefold())
+    return out
 
 
 def route_for_suffix(suffix: str) -> str:

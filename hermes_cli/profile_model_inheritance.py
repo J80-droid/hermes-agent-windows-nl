@@ -385,6 +385,18 @@ def bust_config_caches(*paths: Path) -> None:
         if clear_all:
             cfg_mod._LOAD_CONFIG_CACHE.clear()
             cfg_mod._RAW_CONFIG_CACHE.clear()
+            try:
+                from hermes_cli.config_snapshot import bust_config_snapshot
+
+                bust_config_snapshot()
+            except Exception:
+                pass
+            try:
+                from gateway.config import bust_gateway_config_cache
+
+                bust_gateway_config_cache()
+            except Exception:
+                pass
             return
         for path in paths:
             key = str(path)

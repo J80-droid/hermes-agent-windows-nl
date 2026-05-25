@@ -6,20 +6,23 @@ Dit document is de **in-repo** kopie van het activatieplan (Cursor-plan: *LanceD
 
 Scripts in deze map:
 
-- `ingest.py` — orchestratie: scan, chunking, upsert, voortgang.
+- `ingest.py` — orchestratie: scan, incrementele planning, chunking, upsert, voortgang.
+- `ingest_chunking.py` — semantische chunking + deterministische `chunk_row_id` (SHA-256).
+- `document_converter.py` — conversie-port (`DocumentConverter`); standaard `MarkItDownDocumentConverter` → `ingest_handlers`.
+- `bootstrap_ingest_state.py` — herbouw `.hermes_rag_ingest_state.json` uit LanceDB + bronmap (geen re-embed).
 - `run_domains_ingest.py` — multi-domein uit `domains.yaml`, quarantaine-preflight, MCP-verify; `--ingest-remaining` (7 domeinen, skip leeg); `ingest_preflight.py`.
 - `sync_profile_mcp_from_domains.py` — `mcp_servers` in alle profielen vanuit `domains.yaml`.
 - `domains_config.py` — laadt domeinen + `media_policy`, `quarantine_restore`.
 - `source_layout.py` — quarantaine terug naar canonieke paden.
 - `ingest_run_summary.py` — eindrapport console + `rag_ingest_run_summary.json`.
-- `source_formats.py` — centrale extensiematrix (plain / MarkItDown / media).
+- `source_formats.py` — centrale extensiematrix (plain / MarkItDown / media); `collect_indexed_files()` = één `os.scandir`-walk (geen 70+ `rglob`).
 - `ingest_config.py` — uitsluitingen (`node_modules`, `~$*`, binaries); optioneel **`HERMES_RAG_MAX_FILE_MB`** (standaard **geen** limiet).
 - `ingest_handlers.py` — MarkItDown + optionele **pandoc**-fallback voor legacy Office/OpenDocument.
-- `ingest_state.py` — incrementele ingest (`mtime`/`size`/content-fingerprint) in `HERMES_LANCEDB_PATH/.hermes_rag_ingest_state.json`.
-- `orphan_cleanup.py` — verwijdert oude chunk-`id`s na inkrimpen of verwijderen van een bron.
+- `ingest_state.py` — incrementele ingest (`mtime`/`size`/content-fingerprint) in `HERMES_LANCEDB_PATH/.hermes_rag_ingest_state.json`; `needs_processing()` → `(bool, content_hash | None)`.
+- `orphan_cleanup.py` — verwijdert oude chunk-`id`s na inkrimpen of verwijderen van een bron (batched `NOT IN`, max 100 id's per clause).
 - `subtitle_sidecar.py` — `.vtt`/`.srt` vóór Whisper; geen dubbele index naast media.
 - `audio_transcriber.py` — lokale audio/video via faster-whisper + ffmpeg.
-- `mcp_server.py` — stdio MCP-server met tool `search_knowledge` (via `KnowledgeRepository`).
+- `mcp_server.py` — stdio MCP-server met tool `search_knowledge` (één connect-pad via `KnowledgeRepository`; cache-reset bij fout).
 - `kb_schema.py` — lazy `KnowledgeSchema`, padconstanten en `list_all_table_names()`.
 - `kb_schema_constants.py` — lichte constanten (`TABLE_NAME`, `get_db_path()`).
 - `knowledge_repository.py` — agent-API boven VectorStore: `session()`, `ensure_table`, `search`, `upsert_chunks` (edge cases: lege query, limit-clamp, verplichte `id`, merge-fout wrap).
@@ -110,7 +113,8 @@ flowchart LR
 | 1 | CLI/Web bron-chips (`cli.py`, `web/…/Markdown.tsx`) | Ja — `[Bron: …]` → backticks | — |
 | 2 | `pyproject.toml` extra `[rag]` | Ja — `pip install -e ".[rag]"` | Eenmalig in `hermes-env` |
 | 3 | Automatische MCP + RAG-deps | Ja — `install-J..ps1` / `setup_hermes_windows.ps1` → `install_rag_extras.ps1` | Nieuwe sessie na install |
-| 4 | `tests/rag_pipeline/` (pytest) | Ja | `pytest tests/rag_pipeline/ -q` |
+| 4 | `tests/rag_pipeline/` (pytest) | Ja | `pytest tests/rag_pipeline/ -q` (o.a. bootstrap, chunking, orphan, MCP, ingest_state) |
+| 4b | Performance-architecture E2E | Ja | `windows\audits\RUN_PERFORMANCE_ARCHITECTURE_E2E.bat` (10/10 + harness) |
 | 5 | Rooktest (5 commando’s) | Ja — hieronder | Alle 5 stappen doorlopen |
 | A | `update_knowledge.bat` tot einde | — | Log: `[OK] Ingestie-scan afgerond` |
 | B | MCP + nieuwe Hermes-sessie | MCP in elk profiel (`domains.yaml`) | `update_knowledge.bat --mcp-test` OK |
@@ -265,6 +269,10 @@ Als Hermes bij vragen over jouw lokale kennis toch **VWO.com / Google / curl** g
 
 ## Changelog (technisch)
 
+- **Performance-architectuur (2026-05-25):** `schema_migrate.py` / `bootstrap_ingest_state.py` via `KnowledgeRepository.session()`; enkelvoudige directory-scan (`source_formats.collect_indexed_files`); `ingest_chunking.py` + `document_converter.py`; MCP `_ensure_mcp_knowledge()` + cache-reset; orphan cleanup batched; gedeelde MarkItDown-converter; runtime: `hermes_cli/config_snapshot.py`, `agent/review_snapshot.py` (`HERMES_BG_REVIEW_MAX_MESSAGES`), gateway config-cache op mtime, sandbox bust, Whisper-modelcache, `process_registry` pipe-close, `mcp_tool` stderr-log close. E2E: `RUN_PERFORMANCE_ARCHITECTURE_E2E.bat`. Unit tests: `test_bootstrap_ingest_state`, `test_ingest_chunking`, `test_orphan_cleanup`, `test_source_formats`, `test_document_converter`, `test_ingest_state_needs_processing`, uitgebreid `test_mcp_server`.
+- `ingest_handlers.py` (refactor): conversieketen opgesplitst (`_try_pymupdf_first_path`, `_apply_pandoc_office_fallback`, `_try_html_parser_fallback`, early returns).
+- `bootstrap_ingest_state.py` (refactor): scan/arrow-fallback, pad-validatie en disk-matching in aparte helpers.
+- `ingest.py`: `_plan_incremental_ingest`, `_apply_media_only_filter`; chunking geïmporteerd uit `ingest_chunking.py`.
 - `ingest_state.py`, `orphan_cleanup.py`, `subtitle_sidecar.py`, `ingest_handlers.py`: incrementele ingest, orphan cleanup, ondertitel-prioriteit, pandoc-fallback.
 - `source_formats.py` + `ingest_config.py`: volledige Office/OpenDocument-dekking, media, ondertitels, uitsluitingen en max. bestandsgrootte; `ingest.py` importeert centrale sets.
 - `ingest.py`: uitgebreide extensiematrix (Excel incl. `.xls`/`.xlsm`, PowerPoint `.pptx`, CSV, web `.html`/`.htm`, `.xml`, Outlook `.msg`); één MarkItDown-route via `_MARKITDOWN_SUFFIXES`.

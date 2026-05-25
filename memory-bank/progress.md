@@ -2,6 +2,7 @@
 
 ## Code (P2 + institutioneel)
 
+- [x] Performance-architectuur (2026-05-25): RAG lifecycle/scan/MCP/orphan/bootstrap; `ingest_chunking`, `document_converter`, `config_snapshot`, `review_snapshot`; runtime pipe/Whisper/config caps; refactor ingest_handlers/bootstrap/ingest; unit tests (83+ nieuw subset); E2E `RUN_PERFORMANCE_ARCHITECTURE_E2E` 10/10
 - [x] `pyproject.toml` extra `[rag]` (+ faster-whisper)
 - [x] pytest `tests/rag_pipeline/` + integratie `rag_integration`
 - [x] Multi-domein ingest (`run_domains_ingest.py`, `domains_config.py`, `domains.yaml`)

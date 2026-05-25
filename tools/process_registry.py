@@ -165,7 +165,7 @@ class ProcessRegistry:
         # both land here, distinguished by "type" field.  CLI process_loop and
         # gateway drain this after each agent turn to auto-trigger new turns.
         import queue as _queue_mod
-        self.completion_queue: _queue_mod.Queue = _queue_mod.Queue()
+        self.completion_queue: _queue_mod.Queue = _queue_mod.Queue(maxsize=256)
 
         # Track sessions whose completion was already consumed by the agent
         # via wait/poll/log.  Drain loops skip notifications for these.
@@ -269,7 +269,7 @@ class ProcessRegistry:
             if should_disable:
                 # Emit exactly one "watch disabled, falling back to notify_on_complete"
                 # summary event so the agent/user sees why things went quiet.
-                self.completion_queue.put({
+                self._enqueue_completion_event({
                     "session_id": session.id,
                     "session_key": session.session_key,
                     "command": session.command,
@@ -300,7 +300,7 @@ class ProcessRegistry:
         if not self._global_watch_admit(now):
             return
 
-        self.completion_queue.put({
+        self._enqueue_completion_event({
             "session_id": session.id,
             "session_key": session.session_key,
             "command": session.command,
@@ -382,9 +382,9 @@ class ProcessRegistry:
 
         # Queue summary events outside the lock.
         if release_msg is not None:
-            self.completion_queue.put(release_msg)
+            self._enqueue_completion_event(release_msg)
         if trip_now is not None:
-            self.completion_queue.put({
+            self._enqueue_completion_event({
                 "session_id": "",
                 "session_key": "",
                 "command": "",
@@ -728,14 +728,37 @@ class ProcessRegistry:
         self._write_checkpoint()
         return session
 
+    @staticmethod
+    def _release_local_popen_io(session: ProcessSession, *, join_reader: bool = True) -> None:
+        """Close Popen pipes and optionally join the stdout reader (Windows fd hygiene)."""
+        proc = getattr(session, "process", None)
+        if proc is not None:
+            for attr in ("stdout", "stderr", "stdin"):
+                stream = getattr(proc, attr, None)
+                if stream is not None:
+                    try:
+                        stream.close()
+                    except Exception:
+                        pass
+        if join_reader:
+            reader = getattr(session, "_reader_thread", None)
+            if reader is not None and reader.is_alive() and reader is not threading.current_thread():
+                reader.join(timeout=2.0)
+
     # ----- Reader / Poller Threads -----
 
     def _reader_loop(self, session: ProcessSession):
         """Background thread: read stdout from a local Popen process."""
         first_chunk = True
+        stdout = getattr(session.process, "stdout", None)
+        if stdout is None:
+            session.exited = True
+            session.exit_code = -1
+            self._move_to_finished(session)
+            return
         try:
             while True:
-                chunk = session.process.stdout.read(4096)
+                chunk = stdout.read(4096)
                 if not chunk:
                     break
                 if first_chunk:
@@ -754,6 +777,7 @@ class ProcessRegistry:
                 session.process.wait(timeout=5)
             except Exception as e:
                 logger.debug("Process wait timed out or failed: %s", e)
+            self._release_local_popen_io(session, join_reader=False)
             session.exited = True
             session.exit_code = session.process.returncode
             self._move_to_finished(session)
@@ -860,13 +884,29 @@ class ProcessRegistry:
         if was_running and session.notify_on_complete:
             from tools.ansi_strip import strip_ansi
             output_tail = strip_ansi(session.output_buffer[-2000:]) if session.output_buffer else ""
-            self.completion_queue.put({
+            self._enqueue_completion_event({
                 "type": "completion",
                 "session_id": session.id,
                 "command": session.command,
                 "exit_code": session.exit_code,
                 "output": output_tail,
             })
+
+    def _enqueue_completion_event(self, event: dict) -> None:
+        """Enqueue completion; drop oldest entry when queue is full."""
+        import queue as _queue_mod
+
+        try:
+            self.completion_queue.put_nowait(event)
+        except _queue_mod.Full:
+            try:
+                self.completion_queue.get_nowait()
+            except _queue_mod.Empty:
+                pass
+            try:
+                self.completion_queue.put_nowait(event)
+            except _queue_mod.Full:
+                logger.debug("Completion queue full; dropped notification for %s", event.get("session_id"))
 
     # ----- Query Methods -----
 
@@ -970,6 +1010,7 @@ class ProcessRegistry:
             "was still blocked (orphaned pipe). Flipped to exited.",
             session.id, rc,
         )
+        self._release_local_popen_io(session)
         self._move_to_finished(session)
 
     def poll(self, session_id: str) -> dict:
@@ -1175,6 +1216,7 @@ class ProcessRegistry:
                 }
             session.exited = True
             session.exit_code = -15  # SIGTERM
+            self._release_local_popen_io(session)
             self._move_to_finished(session)
             self._write_checkpoint()
             return {"status": "killed", "session_id": session.id}

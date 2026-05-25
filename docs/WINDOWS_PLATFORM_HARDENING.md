@@ -98,7 +98,23 @@ High-level laag boven `VectorStoreBackend`:
 
 **Ingest:** `_upsert_chunk_rows(..., repo=repo)` hergebruikt dezelfde `KnowledgeRepository`-instantie per run (geen per-batch allocatie).
 
-Modules: `scripts/rag_pipeline/knowledge_repository.py`, `lancedb_storage.py` · tests: `tests/rag_pipeline/test_knowledge_repository.py` (47), `test_lancedb_storage.py`, `test_vector_store_ports.py` · E2E: `RUN_KNOWLEDGE_REPOSITORY_E2E.bat`
+### Performance-architectuur (2026-05-25)
+
+| Onderdeel | Gedrag |
+|-----------|--------|
+| Bronscan | `source_formats.collect_indexed_files` — één `scandir`-walk, gededupliceerd op `resolve()` |
+| Chunking | `ingest_chunking.py` — semantische splits + `chunk_row_id` |
+| Conversie | `document_converter.py` — injecteerbare `DocumentConverter` (tests) |
+| Bootstrap-staat | `bootstrap_ingest_state.py` — column-scan `source`, geen volledige `to_arrow()` tenzij fallback |
+| Orphan cleanup | `orphan_cleanup.py` — `NOT IN` in batches van 100 id's |
+| MCP | `mcp_server._ensure_mcp_knowledge()` — repo + table cache; reset bij connect-fout |
+| Config | `hermes_cli/config_snapshot.py` — raw+expanded cache op `config.yaml` mtime; `gateway/config.py` + `filesystem_sandbox.py` bust |
+| Review-RAM | `agent/review_snapshot.py` — tail van berichten (`HERMES_BG_REVIEW_MAX_MESSAGES`, default 40) |
+| Whisper | `hardware_backend.py` — modelcache per proces |
+| Subprocessen | `process_registry.py` — stdout/stderr close + completion queue cap |
+| MCP stderr | `mcp_tool.shutdown_mcp_servers` — sluit log-handle |
+
+Modules: `scripts/rag_pipeline/knowledge_repository.py`, `lancedb_storage.py` · tests: `tests/rag_pipeline/test_knowledge_repository.py` (47), `test_lancedb_storage.py`, `test_vector_store_ports.py`, plus performance-unit tests onder `tests/rag_pipeline/` · E2E: `RUN_KNOWLEDGE_REPOSITORY_E2E.bat`, **`RUN_PERFORMANCE_ARCHITECTURE_E2E.bat`**
 
 ## Terminal tool (Windows native)
 

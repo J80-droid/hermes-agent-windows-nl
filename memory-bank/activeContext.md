@@ -2,6 +2,8 @@
 
 ## Focus
 
+**Performance-architectuur RAG + runtime (2026-05-25, PASS):** LanceDB via `KnowledgeRepository.session()` (schema_migrate, bootstrap); enkelvoudige `collect_indexed_files`; `ingest_chunking` + `document_converter`; MCP `_ensure_mcp_knowledge`; batched orphan cleanup; `config_snapshot` + gateway/sandbox mtime-cache; `review_snapshot` (`HERMES_BG_REVIEW_MAX_MESSAGES`); Whisper-cache; process_registry pipe-close; mcp stderr-log close. Unit tests +83 (`tests/rag_pipeline/*`, `test_config_snapshot`, `test_review_snapshot`). E2E **10/10** `RUN_PERFORMANCE_ARCHITECTURE_E2E.bat`. Refactor clean-code: `ingest_handlers`, `bootstrap_ingest_state`, `ingest._plan_incremental_ingest`. Docs: `ACTIVATION.md`, `WINDOWS_PLATFORM_HARDENING.md`, `windows/audits/README.md`.
+
 **Platform hardening 10/10 (2026-05-25):** VectorStore-laag (`vector_store_*`, `lancedb_backend`), `KnowledgeRepository` (47 unit tests), regression E2E **10/10**, dedicated `RUN_KNOWLEDGE_REPOSITORY_E2E.bat` **8/8**, productie-poort `RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat`. Sandbox env-cache bust; hardware `reset_hardware_backend_cache()`; `patch_tool` her-propageert `PermissionError`. Docs: `docs/WINDOWS_PLATFORM_HARDENING.md`.
 
 **Python institutioneel review-fixes (2026-05-25):** bootstrap stamp alleen na succesvolle RAG-sync; `rag-deps.json` fast-path (`rag_extras_verified`); REPAIR non-interactive; `HERMES_CONDA_ROOT`; `Test-HermesPythonHasPip`/`Test-HermesRagExtrasInstalled` catch op ongeldige stub-`.exe`; regression E2E **8/8** (`RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E`); pytest `test_hermes_python_institutional.py` **40 passed**. Runbook: `docs/INSTITUTIONAL_OPERATIONS.md`.

@@ -4220,8 +4220,10 @@ def run_conversation(
     # so it never competes with the user's task for model attention.
     if final_response and not interrupted and (_should_review_memory or _should_review_skills):
         try:
+            from agent.review_snapshot import snapshot_messages_for_background_review
+
             agent._spawn_background_review(
-                messages_snapshot=list(messages),
+                messages_snapshot=snapshot_messages_for_background_review(messages),
                 review_memory=_should_review_memory,
                 review_skills=_should_review_skills,
             )

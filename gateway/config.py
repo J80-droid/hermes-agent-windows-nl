@@ -681,6 +681,15 @@ class GatewayConfig:
         return "public"
 
 
+_gw_config_cache: tuple[int, GatewayConfig] | None = None
+
+
+def bust_gateway_config_cache() -> None:
+    """Clear cached GatewayConfig (call after config.yaml changes)."""
+    global _gw_config_cache
+    _gw_config_cache = None
+
+
 def load_gateway_config() -> GatewayConfig:
     """
     Load gateway configuration from multiple sources.
@@ -691,6 +700,22 @@ def load_gateway_config() -> GatewayConfig:
     3. ~/.hermes/gateway.json (legacy — provides defaults under config.yaml)
     4. Built-in defaults
     """
+    global _gw_config_cache
+    try:
+        from hermes_cli.config_snapshot import config_path_mtime_ns
+
+        mtime_ns = config_path_mtime_ns()
+    except Exception:
+        mtime_ns = 0
+    if _gw_config_cache is not None and _gw_config_cache[0] == mtime_ns:
+        return _gw_config_cache[1]
+
+    config = _build_gateway_config()
+    _gw_config_cache = (mtime_ns, config)
+    return config
+
+
+def _build_gateway_config() -> GatewayConfig:
     _home = get_hermes_home()
     gw_data: dict = {}
 

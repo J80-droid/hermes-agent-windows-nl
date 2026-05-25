@@ -1,4 +1,8 @@
-"""Incrementele ingest-staat (mtime/grootte/content-fingerprint) naast LanceDB."""
+"""Incrementele ingest-staat (mtime/grootte/content-fingerprint) naast LanceDB.
+
+``needs_processing(relative_source, path)`` retourneert ``(should_process, content_hash | None)``:
+hash wordt alleen berekend wanneer mtime/grootte wijkt van de opgeslagen entry.
+"""
 
 from __future__ import annotations
 
@@ -120,28 +124,35 @@ class IngestState:
                 pass
             raise
 
-    def needs_processing(self, relative_source: str, path: Path) -> bool:
+    def needs_processing(self, relative_source: str, path: Path) -> tuple[bool, str | None]:
+        """Return (should_process, content_hash_if_computed)."""
         if not incremental_ingest_enabled():
-            return True
+            return True, None
         rel = normalize_relative_source(relative_source)
         prev = self.entries.get(rel)
         if prev is None:
-            return True
+            return True, None
         try:
             st = path.stat()
         except OSError:
-            return True
+            return True, None
         if int(prev.get("mtime_ns", -1)) != st.st_mtime_ns or int(prev.get("size", -1)) != st.st_size:
             fp = file_content_fingerprint(path)
-            return prev.get("content_hash") != fp
-        return False
+            return prev.get("content_hash") != fp, fp
+        return False, None
 
-    def _entry_for_path(self, path: Path, *, chunk_count: int) -> dict[str, Any]:
+    def _entry_for_path(
+        self,
+        path: Path,
+        *,
+        chunk_count: int,
+        content_hash: str | None = None,
+    ) -> dict[str, Any]:
         st = path.stat()
         return {
             "mtime_ns": st.st_mtime_ns,
             "size": st.st_size,
-            "content_hash": file_content_fingerprint(path),
+            "content_hash": content_hash if content_hash is not None else file_content_fingerprint(path),
             "chunk_count": chunk_count,
         }
 
@@ -152,9 +163,15 @@ class IngestState:
         *,
         chunk_count: int,
         checkpoint: bool = True,
+        content_hash: str | None = None,
     ) -> None:
         rel = normalize_relative_source(relative_source)
-        self.entries[rel] = self._entry_for_path(path, chunk_count=chunk_count)
+        try:
+            self.entries[rel] = self._entry_for_path(
+                path, chunk_count=chunk_count, content_hash=content_hash
+            )
+        except OSError:
+            return
         if checkpoint:
             self.maybe_checkpoint_save()
 

@@ -3507,6 +3507,15 @@ def shutdown_mcp_servers():
                 logger.debug("Error during MCP shutdown: %s", exc)
 
     _stop_mcp_loop()
+    global _mcp_stderr_log_fh
+    with _mcp_stderr_log_lock:
+        fh = _mcp_stderr_log_fh
+        if fh is not None and fh not in (sys.stderr, sys.stdout):
+            try:
+                fh.close()
+            except Exception as exc:
+                logger.debug("Error closing MCP stderr log handle: %s", exc)
+        _mcp_stderr_log_fh = None
 
 
 def _kill_orphaned_mcp_children(include_active: bool = False) -> None:

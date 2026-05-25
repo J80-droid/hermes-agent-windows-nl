@@ -8,25 +8,20 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-import lancedb
-import pyarrow as pa
-
 from kb_schema import DB_PATH, TABLE_NAME, get_knowledge_schema, list_all_table_names
-
-
-def _schema_has_id(schema: pa.Schema) -> bool:
-    return "id" in schema.names
+from knowledge_repository import KnowledgeRepository, schema_has_id
 
 
 def inspect() -> int:
-    db = lancedb.connect(DB_PATH)
-    if TABLE_NAME not in list_all_table_names(db):
-        print(f"[OK] Geen tabel '{TABLE_NAME}' — verse installatie of nog niet geïndexeerd.")
-        return 0
-    table = db.open_table(TABLE_NAME)
-    if _schema_has_id(table.schema):
-        print(f"[OK] Tabel '{TABLE_NAME}' heeft kolom 'id' (upsert-schema).")
-        return 0
+    repo = KnowledgeRepository(db_path=str(DB_PATH))
+    with repo.session() as db:
+        if TABLE_NAME not in list_all_table_names(db):
+            print(f"[OK] Geen tabel '{TABLE_NAME}' — verse installatie of nog niet geïndexeerd.")
+            return 0
+        table = db.open_table(TABLE_NAME)
+        if schema_has_id(table.schema):
+            print(f"[OK] Tabel '{TABLE_NAME}' heeft kolom 'id' (upsert-schema).")
+            return 0
     print(
         f"[ACTIE] Tabel '{TABLE_NAME}' mist kolom 'id' (oud schema).\n"
         f"  Database: {DB_PATH}\n"
@@ -40,22 +35,40 @@ def inspect() -> int:
 
 def backup_and_reset() -> int:
     root = Path(DB_PATH)
-    if TABLE_NAME not in list_all_table_names(lancedb.connect(DB_PATH)):
-        print(f"[INFO] Geen tabel '{TABLE_NAME}' — niets te migreren.")
+    repo = KnowledgeRepository(db_path=str(DB_PATH))
+    needs_reset = False
+    with repo.session() as db:
+        if TABLE_NAME not in list_all_table_names(db):
+            print(f"[INFO] Geen tabel '{TABLE_NAME}' — niets te migreren.")
+            return 0
+        table = db.open_table(TABLE_NAME)
+        if schema_has_id(table.schema):
+            print("[OK] Schema al actueel — geen migratie nodig.")
+            return 0
+        needs_reset = True
+
+    if not needs_reset:
         return 0
-    table = lancedb.connect(DB_PATH).open_table(TABLE_NAME)
-    if _schema_has_id(table.schema):
-        print("[OK] Schema al actueel — geen migratie nodig.")
-        return 0
+
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     backup = root.parent / f"{root.name}.pre-id-migration.{stamp}"
-    if root.exists():
-        shutil.copytree(root, backup)
-        print(f"[OK] Backup: {backup}")
-        shutil.rmtree(root)
-        print(f"[OK] Verwijderd: {root}")
-    db = lancedb.connect(DB_PATH)
-    db.create_table(TABLE_NAME, schema=get_knowledge_schema())
+    try:
+        if root.exists():
+            shutil.copytree(root, backup)
+            print(f"[OK] Backup: {backup}")
+            shutil.rmtree(root)
+            print(f"[OK] Verwijderd: {root}")
+    except OSError as exc:
+        print(f"[ERROR] Backup/verwijderen mislukt: {exc}", file=sys.stderr)
+        return 1
+
+    root.mkdir(parents=True, exist_ok=True)
+    try:
+        with repo.session() as db:
+            db.create_table(TABLE_NAME, schema=get_knowledge_schema())
+    except Exception as exc:
+        print(f"[ERROR] Kon lege tabel niet aanmaken: {exc}", file=sys.stderr)
+        return 1
     print(f"[OK] Lege tabel '{TABLE_NAME}' met KnowledgeSchema aangemaakt. Draai daarna ingest.")
     return 0
 

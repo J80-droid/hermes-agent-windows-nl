@@ -1,13 +1,8 @@
 import gc
-import hashlib
 import os
-import re
 import sys
 from pathlib import Path
 from typing import Optional
-
-import pyarrow as pa
-from markitdown import MarkItDown
 
 
 def _env_truthy(name: str) -> bool:
@@ -68,8 +63,9 @@ try:
 except ImportError:
     _HAS_AUDIO_TRANSCRIBER = False
 
+from document_converter import convert_document
+from ingest_chunking import DEFAULT_MAX_WORDS, chunk_row_id, semantic_chunk_document
 from ingest_config import filter_ingest_candidates, max_file_bytes
-from ingest_handlers import convert_document
 from ingest_ocr import stub_text_from_empty_file
 from ingest_live_progress import FileActivityTracker, set_active_tracker, set_step
 from ingest_runtime import (
@@ -94,149 +90,27 @@ from ingest_state import (
     state_file_path,
 )
 from orphan_cleanup import delete_all_chunks_for_source, delete_orphan_chunks_for_source
-from source_formats import MARKITDOWN_SUFFIXES, MEDIA_SUFFIXES, supported_extension_globs
+from source_formats import (
+    MARKITDOWN_SUFFIXES,
+    MEDIA_SUFFIXES,
+    collect_indexed_files,
+    supported_extension_globs,
+)
 from subtitle_sidecar import filter_subtitles_indexed_via_media, read_media_text_via_sidecar
-
-# Semantische chunking: kleinere, coherentere stukken dan vaste woordvensters.
-DEFAULT_MAX_WORDS = 400
 
 _MARKITDOWN_SUFFIXES = MARKITDOWN_SUFFIXES
 _MEDIA_SUFFIXES = MEDIA_SUFFIXES
 
-# Fenced code (``` ... ```): als éénheid behouden waar mogelijk; anders op \n\n binnen het blok.
-_CODE_FENCE = re.compile(r"```[a-zA-Z0-9_+-]*\s*\n?([\s\S]*?)```", re.MULTILINE)
-# Markdown koppen ## t/m ######
-_MD_HEADING_SPLIT = re.compile(r"(?m)^(?=(?:#{2,6}\s))")
-# Zin-einde (incl. ellipsis) gevolgd door witruimte
-_SENTENCE_SPLIT = re.compile(r"(?<=[.!?…])\s+")
 
-
-def _word_count(text: str) -> int:
-    return len(text.split())
-
-
-def _iter_fenced_and_prose(text: str):
-    """Wisselt tussen ruwe tekst (False) en volledige ```-fence inclusief backticks (True)."""
-    last = 0
-    for m in _CODE_FENCE.finditer(text):
-        if m.start() > last:
-            yield text[last:m.start()], False
-        yield m.group(0), True
-        last = m.end()
-    if last < len(text):
-        yield text[last:], False
-
-
-def _pack_units(
-    units: list[str],
-    max_words: int,
-    joiner: str,
-) -> list[str]:
-    """Voeg opeenvolgende eenheden samen tot max_words; te grote eenheid apart opsplitsen."""
-    out: list[str] = []
-    buf: list[str] = []
-    wc = 0
-    for u in units:
-        u = u.strip()
-        if not u:
-            continue
-        uw = _word_count(u)
-        if uw > max_words:
-            if buf:
-                out.append(joiner.join(buf))
-                buf = []
-                wc = 0
-            out.extend(_split_oversized(u, max_words))
-        elif wc + uw > max_words:
-            if buf:
-                out.append(joiner.join(buf))
-            buf = [u]
-            wc = uw
-        else:
-            buf.append(u)
-            wc += uw
-    if buf:
-        out.append(joiner.join(buf))
-    return out
-
-
-def _split_oversized(unit: str, max_words: int) -> list[str]:
-    parts = [p.strip() for p in _SENTENCE_SPLIT.split(unit) if p.strip()]
-    if len(parts) <= 1:
-        return _split_by_lines_or_words(unit, max_words)
-    return _pack_units(parts, max_words, joiner=" ")
-
-
-def _split_by_lines_or_words(unit: str, max_words: int) -> list[str]:
-    lines = [ln.strip() for ln in unit.split("\n") if ln.strip()]
-    if len(lines) > 1:
-        return _pack_units(lines, max_words, joiner="\n")
-    words = unit.split()
-    if not words:
-        return []
-    out: list[str] = []
-    for i in range(0, len(words), max_words):
-        chunk = " ".join(words[i : i + max_words])
-        if chunk.strip():
-            out.append(chunk)
-    return out
-
-
-def _chunk_prose(text: str, max_words: int) -> list[str]:
-    text = text.replace("\r\n", "\n").replace("\r", "\n").strip()
-    if not text:
-        return []
-    units: list[str] = []
-    for section in _MD_HEADING_SPLIT.split(text):
-        section = section.strip()
-        if not section:
-            continue
-        for para in re.split(r"\n{2,}", section):
-            p = para.strip()
-            if p:
-                units.append(p)
-    return _pack_units(units, max_words, joiner="\n\n")
-
-
-def _chunk_code_fence(block: str, max_words: int) -> list[str]:
-    block = block.strip()
-    if not block:
-        return []
-    if _word_count(block) <= max_words:
-        return [block]
-    inner_parts = [p.strip() for p in block.split("\n\n") if p.strip()]
-    if len(inner_parts) > 1:
-        return _pack_units(inner_parts, max_words, joiner="\n\n")
-    return _split_by_lines_or_words(block, max_words)
-
-
-def _collect_rag_source_files(path: Path, extensions: list[str]) -> list[Path]:
-    """Verzamelt bronbestanden, past uitsluitingen toe, sorteert voor stabiele volgorde."""
-    seen: set[object] = set()
-    out: list[Path] = []
-    for ext in extensions:
-        for file_path in path.rglob(ext):
-            try:
-                key = file_path.resolve()
-            except OSError:
-                key = file_path
-            if key in seen:
-                continue
-            seen.add(key)
-            out.append(file_path)
-    out.sort(key=lambda p: str(p).casefold())
+def _collect_rag_source_files(path: Path, extensions: list[str] | None = None) -> list[Path]:
+    """Verzamelt bronbestanden (één tree-walk), past uitsluitingen toe."""
+    del extensions  # backward-compatible signature; scan uses ALL_INDEXED_SUFFIXES
+    out = collect_indexed_files(path)
     filtered, skipped = filter_ingest_candidates(out)
     if skipped:
         parts = ", ".join(f"{k}={v}" for k, v in sorted(skipped.items()))
         print(f"{C_YELLOW}[WARN]{C_RESET} Overgeslagen na scan: {parts}")
     return filtered
-
-
-def _chunk_row_id(relative_source: str, chunk_index: int) -> str:
-    """Deterministische sleutel: zelfde bron + chunk-index => zelfde id (veilig voor upsert)."""
-    rel = Path(relative_source).as_posix()
-    return hashlib.sha256(f"{rel}\0#{chunk_index}".encode("utf-8")).hexdigest()
-
 
 
 def _upsert_chunk_rows(table, rows: list[dict], *, repo: "KnowledgeRepository | None" = None) -> None:
@@ -296,6 +170,49 @@ def _relative_source(file_path: Path, root: Path) -> str:
     return normalize_relative_source(str(file_path.relative_to(root)))
 
 
+def _plan_incremental_ingest(
+    all_files: list[Path],
+    root: Path,
+    ingest_state: IngestState,
+) -> tuple[list[Path], int, dict[str, str]]:
+    """Bepaal welke bestanden verwerkt moeten worden (incrementele modus)."""
+    to_process: list[Path] = []
+    skipped_unchanged = 0
+    fingerprint_by_rel: dict[str, str] = {}
+
+    if not incremental_ingest_enabled():
+        return all_files, skipped_unchanged, fingerprint_by_rel
+
+    for file_path in all_files:
+        rel = _relative_source(file_path, root)
+        needs, content_fp = ingest_state.needs_processing(rel, file_path)
+        if not needs:
+            skipped_unchanged += 1
+            continue
+        to_process.append(file_path)
+        if content_fp:
+            fingerprint_by_rel[rel] = content_fp
+
+    if skipped_unchanged:
+        print(
+            f"{C_CYAN}[INFO]{C_RESET} Incrementele ingest: {skipped_unchanged} ongewijzigde "
+            f"bron(nen) overgeslagen (`HERMES_RAG_INCREMENTAL=1`; volledige scan: "
+            f"`HERMES_RAG_FORCE_FULL=1`)."
+        )
+    return to_process, skipped_unchanged, fingerprint_by_rel
+
+
+def _apply_media_only_filter(to_process: list[Path]) -> list[Path]:
+    if not _env_truthy("HERMES_RAG_MEDIA_ONLY"):
+        return to_process
+    media_only_list = [fp for fp in to_process if fp.suffix.lower() in MEDIA_SUFFIXES]
+    print(
+        f"{C_CYAN}[INFO]{C_RESET} Media-only modus: {len(media_only_list)} van "
+        f"{len(to_process)} te verwerken bron(nen) (audio/video)."
+    )
+    return media_only_list
+
+
 def _read_plain_utf8(file_path: Path, pbar: object) -> str | None:
     """Leest UTF-8 platte tekst; `None` bij fout (waarschuwing al gelogd)."""
     set_step("Lezen")
@@ -323,21 +240,6 @@ def _read_plain_utf8(file_path: Path, pbar: object) -> str | None:
             pbar,
         )
         return None
-
-
-def semantic_chunk_document(text: str, max_words: int = DEFAULT_MAX_WORDS) -> list[str]:
-    """
-    Splits tekst op natuurlijke grenzen: fenced code, Markdown-koppen (##+),
-    alinea's (dubbele newline), zinnen en zo nodig regels/woorden — met max. ~max_words woorden per chunk.
-    """
-    text = text.replace("\r\n", "\n").replace("\r", "\n")
-    chunks: list[str] = []
-    for segment, is_fence in _iter_fenced_and_prose(text):
-        if is_fence:
-            chunks.extend(_chunk_code_fence(segment, max_words))
-        else:
-            chunks.extend(_chunk_prose(segment, max_words))
-    return [c for c in chunks if c.strip()]
 
 
 def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS):
@@ -403,31 +305,10 @@ def _process_and_ingest_with_db(
 
     current_sources = {normalize_relative_source(_relative_source(p, path)) for p in all_files}
     ingest_state = IngestState.load()
-    to_process: list[Path] = []
-    skipped_unchanged = 0
-    if incremental_ingest_enabled():
-        for fp in all_files:
-            rel = _relative_source(fp, path)
-            if ingest_state.needs_processing(rel, fp):
-                to_process.append(fp)
-            else:
-                skipped_unchanged += 1
-        if skipped_unchanged:
-            print(
-                f"{C_CYAN}[INFO]{C_RESET} Incrementele ingest: {skipped_unchanged} ongewijzigde "
-                f"bron(nen) overgeslagen (`HERMES_RAG_INCREMENTAL=1`; volledige scan: "
-                f"`HERMES_RAG_FORCE_FULL=1`)."
-            )
-    else:
-        to_process = all_files
-
-    if _env_truthy("HERMES_RAG_MEDIA_ONLY"):
-        media_only_list = [fp for fp in to_process if fp.suffix.lower() in MEDIA_SUFFIXES]
-        print(
-            f"{C_CYAN}[INFO]{C_RESET} Media-only modus: {len(media_only_list)} van "
-            f"{len(to_process)} te verwerken bron(nen) (audio/video)."
-        )
-        to_process = media_only_list
+    to_process, skipped_unchanged, fingerprint_by_rel = _plan_incremental_ingest(
+        all_files, path, ingest_state
+    )
+    to_process = _apply_media_only_filter(to_process)
 
     _cpu = os.cpu_count() or 4
     conv_workers = _int_env_positive("HERMES_RAG_CONVERT_WORKERS", 1, cap=min(_cpu, 8))
@@ -450,6 +331,10 @@ def _process_and_ingest_with_db(
         f"timeout/bron={int(file_timeout)}s (0=uit) | "
         f"live [LIVE]-tick elke 3s + postfix ⏳ | detail: HERMES_RAG_VERBOSE=1"
     )
+
+    from ingest_handlers import reset_markitdown_converter
+
+    reset_markitdown_converter()
 
     print_phase("Indexeren")
     mark_ingest_started(total=len(to_process))
@@ -555,7 +440,7 @@ def _process_and_ingest_with_db(
 
             rows: list[dict] = [
                 {
-                    "id": _chunk_row_id(str(relative_source), i),
+                    "id": chunk_row_id(str(relative_source), i),
                     "text": chunk,
                     "source": str(relative_source),
                 }
@@ -593,7 +478,12 @@ def _process_and_ingest_with_db(
                         pbar,
                     )
             ingest_state.record_success(
-                str(relative_source), file_path, chunk_count=len(rows)
+                str(relative_source),
+                file_path,
+                chunk_count=len(rows),
+                content_hash=fingerprint_by_rel.get(
+                    normalize_relative_source(str(relative_source))
+                ),
             )
             any_indexed = True
             indexed_this_run += 1

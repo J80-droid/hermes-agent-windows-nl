@@ -1628,14 +1628,25 @@ class SessionDB:
 
         self._execute_write(_do)
 
-    def get_messages(self, session_id: str) -> List[Dict[str, Any]]:
-        """Load all messages for a session, ordered by insertion order."""
+    def get_messages(self, session_id: str, *, limit: int | None = None) -> List[Dict[str, Any]]:
+        """Load messages for a session, ordered by insertion order.
+
+        When ``limit`` is set, returns only the most recent ``limit`` messages
+        (reduces RAM on long resume paths).
+        """
         with self._lock:
-            cursor = self._conn.execute(
-                "SELECT * FROM messages WHERE session_id = ? ORDER BY id",
-                (session_id,),
-            )
-            rows = cursor.fetchall()
+            if limit is not None and limit > 0:
+                cursor = self._conn.execute(
+                    "SELECT * FROM messages WHERE session_id = ? ORDER BY id DESC LIMIT ?",
+                    (session_id, int(limit)),
+                )
+                rows = list(reversed(cursor.fetchall()))
+            else:
+                cursor = self._conn.execute(
+                    "SELECT * FROM messages WHERE session_id = ? ORDER BY id",
+                    (session_id,),
+                )
+                rows = cursor.fetchall()
         result = []
         for row in rows:
             msg = dict(row)
