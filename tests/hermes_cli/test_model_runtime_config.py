@@ -674,6 +674,41 @@ class TestRepairModelProviderCoherence:
         assert any("Note:" in a for a in actions)
 
 
+class TestResetConfigProvider:
+    def test_logout_reset_writes_root_auto(self, hermes_tree):
+        from hermes_cli.auth import _reset_config_provider
+
+        root, prof = hermes_tree
+        path = _reset_config_provider()
+        assert path == root / "config.yaml"
+        cfg = yaml.safe_load((root / "config.yaml").read_text(encoding="utf-8"))
+        assert cfg["model"]["provider"] == "auto"
+        prof_cfg = yaml.safe_load((prof / "config.yaml").read_text(encoding="utf-8"))
+        assert "provider" not in str(prof_cfg)
+
+
+class TestReadAuthJson:
+    def test_reads_utf8_bom_auth_file(self, flat_home):
+        from hermes_cli.auth import read_auth_json
+
+        bom_auth = flat_home / "auth.json"
+        bom_auth.write_bytes(
+            b"\xef\xbb\xbf" + b'{"version": 1, "active_provider": "nous", "providers": {}}'
+        )
+        data = read_auth_json(bom_auth)
+        assert data.get("active_provider") == "nous"
+
+    def test_load_auth_store_accepts_bom(self, flat_home, monkeypatch):
+        from hermes_cli.auth import _load_auth_store
+
+        (flat_home / "auth.json").write_bytes(
+            b"\xef\xbb\xbf"
+            + b'{"version": 1, "active_provider": "openrouter", "providers": {}}'
+        )
+        store = _load_auth_store(flat_home / "auth.json")
+        assert store.get("active_provider") == "openrouter"
+
+
 class TestBustAllRuntimeConfigCaches:
     def test_delegates_to_profile_bust(self, flat_home, monkeypatch):
         from hermes_cli.model_runtime_config import bust_all_runtime_config_caches

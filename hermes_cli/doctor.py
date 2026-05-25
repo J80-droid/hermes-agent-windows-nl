@@ -750,8 +750,6 @@ def run_doctor(args):
             else:
                 check_info("Run 'hermes setup' to create one")
                 issues.append("Run 'hermes setup' to create .env")
-    
-    import sys
 
     if sys.platform == "win32":
         _check_windows_split_home_config(issues, should_fix=should_fix)

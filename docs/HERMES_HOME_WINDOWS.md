@@ -74,7 +74,7 @@ Symptoom: `auth.json` heeft `active_provider: nous` maar chat gebruikt nog **Gem
 | 2 | `hermes config get model.provider` → verwacht jouw gekozen provider (bijv. `nous`) |
 | 3 | Hermes/gateway volledig herstarten + `/new` in chat |
 
-**Architectuur (repo):** `hermes_cli/model_runtime_config.py`
+**Architectuur (repo):** `hermes_cli/model_runtime_config.py` · `hermes_cli/auth.read_auth_json()` (UTF-8 BOM-safe)
 
 - `persist_model_runtime()` — atomisch `model.provider`, `model.default`, `base_url` naar **root** + sync `auth.active_provider`
 - `detect_model_provider_incoherence()` — auth/config-mismatch, vendor-slug vs provider, stale host in `base_url`

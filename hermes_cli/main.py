@@ -564,7 +564,9 @@ def _has_any_provider_configured() -> bool:
         try:
             import json
 
-            auth = json.loads(auth_file.read_text())
+            from hermes_cli.auth import read_auth_json
+
+            auth = read_auth_json(auth_file)
             active = auth.get("active_provider")
             if active:
                 status = get_auth_status(active)
@@ -3767,22 +3769,27 @@ def _model_flow_custom(config):
 
         print(f"Default model set to: {model_name} (via {effective_url})")
     else:
-        if base_url or api_key:
-            deactivate_provider()
-        # Even without a model name, persist the custom endpoint on the
-        # caller's config dict so the setup wizard doesn't lose it.
-        _caller_model = config.get("model")
-        if not isinstance(_caller_model, dict):
-            _caller_model = {"default": _caller_model} if _caller_model else {}
-        _caller_model["provider"] = "custom"
-        _caller_model["base_url"] = effective_url
+        extra: dict = {}
         if effective_key:
-            _caller_model["api_key"] = effective_key
+            extra["api_key"] = effective_key
         if api_mode:
-            _caller_model["api_mode"] = api_mode
+            extra["api_mode"] = api_mode
         else:
-            _caller_model.pop("api_mode", None)
-        config["model"] = _caller_model
+            extra["api_mode"] = None
+        from hermes_cli.model_runtime_config import persist_model_runtime
+
+        persist_model_runtime(
+            "custom",
+            default_model=None,
+            inference_base_url=effective_url,
+            extra_model_fields=extra or None,
+            sync_auth=False,
+        )
+        deactivate_provider()
+        cfg = load_config()
+        model = cfg.get("model")
+        if isinstance(model, dict):
+            config["model"] = dict(model)
         print("Endpoint saved. Use `/model` in chat or `hermes model` to set a model.")
 
     # Auto-save to custom_providers so it appears in the menu next time
@@ -4283,38 +4290,35 @@ def _model_flow_azure_foundry(config, current_model=""):
     if not use_entra:
         save_env_value("AZURE_FOUNDRY_API_KEY", effective_key)
 
-    cfg = load_config()
-    model = cfg.get("model")
-    if not isinstance(model, dict):
-        model = {"default": model} if model else {}
-        cfg["model"] = model
-
-    model["provider"] = "azure-foundry"
-    model["base_url"] = effective_url
-    model["api_mode"] = api_mode
-    model["default"] = effective_model
-    model["auth_mode"] = auth_mode_label
+    clean_entra: dict = {}
     if use_entra:
-        # Persist only the non-default Entra scope so config.yaml stays tidy.
-        # Azure identity selection stays in standard AZURE_* env vars.
-        clean_entra: dict = {}
         for key in ("scope",):
             val = entra_overrides.get(key)
             if val:
                 clean_entra[key] = val
-        if clean_entra:
-            model["entra"] = clean_entra
-        elif "entra" in model:
-            del model["entra"]
-    else:
-        if "entra" in model:
-            del model["entra"]
-    if ctx_len:
-        model["context_length"] = ctx_len
 
-    save_config(cfg)
-    deactivate_provider()
-    config["model"] = dict(model)
+    extra_fields: dict = {
+        "api_mode": api_mode,
+        "auth_mode": auth_mode_label,
+    }
+    if ctx_len:
+        extra_fields["context_length"] = ctx_len
+    if use_entra:
+        if clean_entra:
+            extra_fields["entra"] = clean_entra
+        else:
+            extra_fields["entra"] = None
+    else:
+        extra_fields["entra"] = None
+
+    _commit_provider_model(
+        "azure-foundry",
+        effective_model,
+        inference_base_url=effective_url,
+        extra_model_fields=extra_fields,
+    )
+    cfg = load_config()
+    config["model"] = dict(cfg.get("model") or {})
 
     # Clear any conflicting env vars so auxiliary clients don't poison
     # themselves with a stale OpenAI base URL / key.

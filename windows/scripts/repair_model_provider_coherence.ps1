@@ -5,7 +5,9 @@ param(
     [switch]$Quiet
 )
 
+$ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'HermesHomeCommon.ps1')
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 
 $runtimeRoot = Get-HermesRuntimeRoot
 $configPath = Get-HermesCanonicalConfigPath
@@ -16,8 +18,8 @@ if (-not (Test-Path -LiteralPath $configPath)) {
     exit 1
 }
 
-$py = Join-Path $PSScriptRoot '..\..\hermes_cli'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+$python = Get-HermesAuditPython -RepoRoot $repoRoot
 
 $code = @"
 import os, sys
@@ -52,8 +54,8 @@ sys.exit(0)
 $tmp = [System.IO.Path]::GetTempFileName() + '.py'
 Set-Content -LiteralPath $tmp -Value $code -Encoding UTF8
 try {
-    & python $tmp
-    $exit = $LASTEXITCODE
+    & $python $tmp
+    $exit = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
 } finally {
     Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
 }
@@ -67,6 +69,7 @@ if ($exit -ne 0) {
 
 if (-not $Quiet) {
     Write-HermesOk 'Model/provider coherence hersteld'
+    Write-Host "  Python: $python"
     Write-Host '  Herstart Hermes/gateway en start een nieuwe chat (/new).'
 }
 exit 0

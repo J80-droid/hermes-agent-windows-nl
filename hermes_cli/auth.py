@@ -808,6 +808,22 @@ def _oauth_trace(event: str, *, sequence_id: Optional[str] = None, **fields: Any
 # Auth Store — persistence layer for ~/.hermes/auth.json
 # =============================================================================
 
+
+def read_auth_json(auth_file: Optional[Path] = None) -> Dict[str, Any]:
+    """Load Hermes ``auth.json`` with UTF-8 BOM tolerance.
+
+    Use this for all reads of ``%LOCALAPPDATA%/hermes/auth.json`` (and profile
+    copies). External tools (PowerShell, editors) may write a BOM prefix; plain
+    ``utf-8`` decodes fail with ``JSONDecodeError`` and previously caused empty
+    auth stores plus accidental ``.corrupt`` backups.
+    """
+    path = auth_file or _auth_file_path()
+    if not path.is_file():
+        return {}
+    raw = json.loads(path.read_text(encoding="utf-8-sig"))
+    return raw if isinstance(raw, dict) else {}
+
+
 def _auth_file_path() -> Path:
     path = get_hermes_home() / "auth.json"
     # Seat belt: if pytest is running and HERMES_HOME resolves to the real
@@ -1001,7 +1017,7 @@ def _load_auth_store(auth_file: Optional[Path] = None) -> Dict[str, Any]:
         return {"version": AUTH_STORE_VERSION, "providers": {}}
 
     try:
-        raw = json.loads(auth_file.read_text())
+        raw = read_auth_json(auth_file)
     except Exception as exc:
         corrupt_path = auth_file.with_suffix(".json.corrupt")
         try:
@@ -6042,22 +6058,16 @@ def _logout_default_provider_from_config() -> Optional[str]:
 
 
 def _reset_config_provider() -> Path:
-    """Reset config.yaml provider back to auto after logout."""
-    config_path = get_config_path()
-    if not config_path.exists():
-        return config_path
+    """Reset root model.provider to auto after logout (never profile-local yaml)."""
+    from hermes_cli.model_runtime_config import persist_model_runtime
 
-    config = read_raw_config()
-    if not config:
-        return config_path
-
-    model = config.get("model")
-    if isinstance(model, dict):
-        model["provider"] = "auto"
-        if "base_url" in model:
-            model["base_url"] = OPENROUTER_BASE_URL
-    atomic_yaml_write(config_path, config, sort_keys=False)
-    return config_path
+    result = persist_model_runtime(
+        "auto",
+        inference_base_url=OPENROUTER_BASE_URL,
+        sync_auth=False,
+    )
+    deactivate_provider()
+    return result.config_path
 
 
 def _prompt_model_selection(
