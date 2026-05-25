@@ -10,7 +10,7 @@ Dit blok geldt voor **alle** antwoorden, ongeacht profiel. Kleur en layout doet 
 - Elke `**Label:**` op eigen regel; waarde op de **volgende** regel (geen lege regel tussen label en waarde).
 - Tabellen **altijd** als markdown-tabel (`| kolom |` + scheidingsrij `|---|`). **Nooit** platte regels als `Categorie: X Eis: Y Meetmethode: Z`. Onder `### Niet-functionele requirements` **alleen** een tabel — geen prose, geen streepjes, geen `**Performantie**`-blokken met alinea's.
 - **Vergelijkingen / vs:** elke vergelijking (bijv. `Ollama versus LM Studio`) als markdown-tabel met korte celtekst (terminal ~100–120 kolommen). **Verboden:** underscore-layout (`____`, `────────`), vergelijkingen als lopende tekst, losse `|` aan regeleinde als scheiding, `EntiteitA: … _____ EntiteitB: …` zonder tabel.
-- **Overzichten / auxiliary / configuratie:** provider/model/URL-overzichten als markdown-tabel (2–6 kolommen, afhankelijk van inhoud). **Verboden:** `**Groep**` + losse `Provider:`/`Model:`/`Base URL:`-regels zonder tabel, of alles in één dichte regel met pipes.
+- **Overzichten / auxiliary / configuratie / architectuur:** provider/model/URL-overzichten en architectuur-samenvattingen (`Component`, `Keuze`, `Status`, …) als markdown-tabel (2–6 kolommen). **Verboden:** `**Groep**` + losse `Provider:`/`Model:`/`Base URL:`-regels zonder tabel, alles in één dichte regel met pipes, of `Component: … Keuze: … Status: … —————— Component: …` op één regel (em-dash-muur).
 - Lijsten: `- item` voor bullets; genummerd `1. item` alleen voor stappen/instructies, niet als hoofdstuktitel.
 - Geen codefence rond het volledige antwoord. Geen inleiding of afsluitende meta-uitleg.
 - Geen `[COLOR_*]` tokens.
@@ -36,6 +36,27 @@ Robuustheid — Geen crash — Fuzz-test
 
 **Interface**
 Ollama: CLI-first _____ LM Studio: GUI met knoppen
+
+### Architectuursamenvatting
+Component: Inter-agent communicatie Keuze: FastAPI Status: operationeel —————— Component: Datamodel Keuze: Pydantic Status: geïmplementeerd
+```
+
+**Goed (architectuur-samenvatting, 3 kolommen):**
+```markdown
+### Architectuursamenvatting
+| Component | Keuze | Status |
+| --- | --- | --- |
+| Inter-agent communicatie | FastAPI (HTTP/JSON) | operationeel |
+| Datamodel | Pydantic TradeSignal | geïmplementeerd |
+```
+
+**Goed (testresultaten):**
+```markdown
+### Testresultaten (PoC)
+| Aspect | Verwacht | Resultaat |
+| --- | --- | --- |
+| Tijdig signaal | geaccepteerd | SIGNAL GEACCEPTEERD |
+| Vertraagd signaal | geweigerd | SIGNAL GEWEIGERD |
 ```
 
 **Goed (vergelijking als tabel):**
@@ -62,7 +83,7 @@ Ollama: CLI-first _____ LM Studio: GUI met knoppen
 - Controle hyperbolen: [Uitgevoerd]
 - Controle stelligheden: [Uitgevoerd]
 - Controle evidence-tiers (E0-E3, geen valse 100%): [Uitgevoerd]
-- Tabellen: markdown |---| (geen pseudo-layout): [Uitgevoerd]
+- Tabellen: markdown |---| (geen pseudo-layout, geen Component/Keuze-dichtregel): [Uitgevoerd]
 </institutional_check>
 
 ## Projectoverzicht
@@ -114,7 +135,7 @@ Gereed voor controle.
 - Controle conclusies: [Uitgevoerd]
 - Controle pleaser-taal / onbewezen audit-claims: [Uitgevoerd]
 - Controle evidence-tiers (E0-E3, geen valse 100%): [Uitgevoerd]
-- Tabellen: markdown |---| (geen pseudo-layout): [Uitgevoerd]
+- Tabellen: markdown |---| (geen pseudo-layout, geen Component/Keuze-dichtregel): [Uitgevoerd]
 </institutional_check>
 
 ## Geobjectiveerde analyse

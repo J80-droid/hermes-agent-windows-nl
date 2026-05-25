@@ -458,12 +458,17 @@ _BOLD_CATEGORY_INLINE_RE = re.compile(
     r"^\*\*(?P<label>[^*\n]+)\*\*\s+(?P<rest>.+)$"
 )
 _MAX_COMPARISON_COLUMNS = 6
-# Overview intent: auxiliary/config tables (Provider/Model/Base URL, 2-6 columns).
+# Overview intent: auxiliary/config/architecture tables (2-6 columns).
 # Excludes bare "taken" to avoid false positives on "### Hulp taken" (Cloud/Lokaal).
 _OVERVIEW_HEADING_HINT_RE = re.compile(
-    r"(?i)\b(overzicht|auxiliary|configuratie|stack)\b",
+    r"(?i)\b(overzicht|auxiliary|configuratie|stack|architectuur|architectuursamenvatting|"
+    r"samenvatting|implementatie|testresultaten|poc)\b",
 )
 _OVERVIEW_FIELD_LINE_RE = re.compile(r"^([^:|]{1,48}):\s*(.+)$", re.IGNORECASE)
+_FIELD_KEY_TOKEN_RE = re.compile(r"(?i)\b([A-Za-z][A-Za-z0-9\-]{0,39}):\s")
+_FIELD_REPEAT_GATE_RE = re.compile(
+    r"(?i)(?:component|keuze|status|categorie|eis|meetmethode)\s*:"
+)
 _CATEGORY_HEADER_NAMES = frozenset({"category", "categorie", "taak", "task", "aspect"})
 
 
@@ -554,9 +559,66 @@ def _count_pseudo_table_signals(body_lines: list[str]) -> int:
             signals += 1
         if _OVERVIEW_FIELD_LINE_RE.match(stripped):
             signals += 1
+        if len(_FIELD_KEY_TOKEN_RE.findall(stripped)) >= 3:
+            signals += 1
         if _BOLD_CATEGORY_LINE_RE.match(stripped):
             signals += 1
     return signals
+
+
+def _discover_repeated_field_keys(text: str) -> list[str] | None:
+    """Find Label: keys that repeat across em-dash-separated records (e.g. Component/Keuze/Status)."""
+    if not text or not text.strip():
+        return None
+    counts: dict[str, int] = {}
+    order: list[str] = []
+    seen_low: set[str] = set()
+    for match in _FIELD_KEY_TOKEN_RE.finditer(text):
+        key = _normalize_field_key(match.group(1))
+        low = key.lower()
+        if not key:
+            continue
+        counts[low] = counts.get(low, 0) + 1
+        if low not in seen_low:
+            seen_low.add(low)
+            order.append(key)
+    repeated = [k for k in order if counts.get(k.lower(), 0) >= 2]
+    if len(repeated) < 2:
+        return None
+    return repeated[:_MAX_COMPARISON_COLUMNS]
+
+
+def _parse_collapsed_record_rows(
+    body_lines: list[str],
+    field_keys: list[str] | None = None,
+) -> tuple[list[str], list[list[str]]] | None:
+    """Parse em-dash-separated Component/Keuze/Status blocks into a markdown table."""
+    chunks: list[str] = []
+    for line in body_lines:
+        stripped = _strip_orphan_trailing_pipe(line.strip())
+        if not stripped or _PSEUDO_SEPARATOR_LINE_RE.match(stripped):
+            continue
+        if stripped.startswith("|") and _looks_like_markdown_table_row(stripped):
+            return None
+        chunks.append(stripped)
+    if not chunks:
+        return None
+    full = " ".join(chunks)
+    keys = field_keys or _discover_repeated_field_keys(full)
+    if not keys or len(keys) < 2:
+        return None
+    segments = [p.strip() for p in _INLINE_DUAL_SPLIT_RE.split(full) if p.strip()]
+    if len(segments) < 2:
+        segments = [full]
+    rows: list[list[str]] = []
+    for segment in segments:
+        values = _extract_field_values_from_text(segment, keys)
+        filled = sum(1 for k in keys if (values.get(k) or "").strip())
+        if filled >= 2:
+            rows.append([_sanitize_table_cell(values.get(k, "-")) for k in keys])
+    if len(rows) < 2:
+        return None
+    return keys, rows
 
 
 def _normalize_field_key(key: str) -> str:
@@ -703,6 +765,10 @@ def _parse_collapsed_overview_body(
     body_lines: list[str],
 ) -> tuple[list[str], list[list[str]]] | None:
     """Single-paragraph pseudo with embedded pipe header + Label: tokens."""
+    record_parsed = _parse_collapsed_record_rows(body_lines)
+    if record_parsed:
+        return record_parsed
+
     chunks: list[str] = []
     for line in body_lines:
         stripped = _strip_orphan_trailing_pipe(line.strip())
@@ -789,6 +855,10 @@ def _parse_overview_body_to_rows(
     body_lines: list[str],
 ) -> tuple[list[str], list[list[str]]] | None:
     """Context-dependent overview/config tables (2-6 columns)."""
+    record_parsed = _parse_collapsed_record_rows(body_lines)
+    if record_parsed:
+        return record_parsed
+
     headers = _overview_headers_from_body(body_lines)
     if headers:
         rows = _parse_overview_field_rows(body_lines, headers)
@@ -837,6 +907,13 @@ def _should_attempt_pseudo_normalize(
             or _overview_headers_from_body(body_lines) is not None
         )
     if intent == "explicit_grid":
+        return True
+    joined = "\n".join(
+        _strip_orphan_trailing_pipe(ln.strip())
+        for ln in body_lines
+        if ln.strip() and not _PSEUDO_SEPARATOR_LINE_RE.match(ln.strip())
+    )
+    if _discover_repeated_field_keys(joined):
         return True
     return _count_pseudo_table_signals(body_lines) >= 2
 
@@ -1022,6 +1099,8 @@ def normalize_pseudo_tables_to_markdown(text: str) -> str:
         or re.search(r"_{4,}", text)
         or re.search(r"^\*\*[^*]+\*\*", text, re.MULTILINE)
         or re.search(r"(?i)\b(versus|vs\.?|vergelijk|comparison|overzicht|auxiliary)\b", text)
+        or re.search(r"[—–-]{4,}", text)
+        or len(_FIELD_REPEAT_GATE_RE.findall(text)) >= 2
     ):
         return text
 

@@ -78,7 +78,7 @@ Runtime/AST: vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
 | **`RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`** | Klassieke CLI (`hermes chat`): `status_bar_cost.py`, `cli.py` hooks, `/cost`, smoke + pytest |
 | **`RUN_PARETO_E2E.bat`** | OpenRouter Pareto Code router: model-gate, transport/summary parity, pytest, verify script |
 | **`RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat`** | Pseudo-tabel normalizer: underscore/vs→markdown, pytest + TS parity + diagnose/score (10 stappen) |
-| **`RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat`** | Context-aware overview (2-6 kolommen): grouped/collapsed auxiliary, intent routing, streaming flush, TS parity (12 stappen) |
+| **`RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat`** | Context-aware overview (2-6 kolommen): grouped/collapsed auxiliary, Component/Keuze/Status em-dash, intent routing, TS parity (10 stappen) |
 | **`RUN_WINDOWS_PLATFORM_HARDENING_E2E.bat`** | Platform hardening: filesystem sandbox, hardware backend (CUDA/DirectML/CPU), LanceDB storage lifecycle (10 stappen) |
 | **`RUN_PLATFORM_HARDENING_REGRESSION_E2E.bat`** | Regressie: review-fixes, PS1 Join-HermesRepoPath, footguns PS1-regel (**10 stappen**) |
 | **`RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat`** | Gecombineerd: beide platform E2E's + pytest subset + `footguns --all` |

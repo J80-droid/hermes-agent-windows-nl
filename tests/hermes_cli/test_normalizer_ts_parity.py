@@ -87,6 +87,13 @@ PARITY_FIXTURES: list[tuple[str, str]] = [
         "Host: redis\n"
         "Port: 6379\n",
     ),
+    (
+        "architecture_collapsed_emdash",
+        "### Architectuursamenvatting\n\n"
+        "Component: Inter-agent communicatie Keuze: FastAPI Status: operationeel "
+        "\u2014\u2014\u2014\u2014\u2014\u2014 "
+        "Component: Datamodel Keuze: Pydantic Status: geimplementeerd\n",
+    ),
 ]
 
 

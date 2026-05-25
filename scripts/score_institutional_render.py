@@ -57,6 +57,30 @@ def _score_heading_table_tight(md: str) -> tuple[int, str]:
     return 10, "Kop direct op tabel/lijst"
 
 
+def _score_architectuur_tabel(md: str) -> tuple[int, str]:
+    """After normalize: architecture/summary sections must not keep collapsed Component/Keuze rows."""
+    for m in re.finditer(
+        r"^#{1,6}\s+.*(?:architectuur|architectuursamenvatting|samenvatting|poc).*$",
+        md,
+        re.MULTILINE | re.IGNORECASE,
+    ):
+        tail = md[m.end() :]
+        next_h = re.search(r"^#{1,6}\s+", tail, re.MULTILINE)
+        body = tail[: next_h.start()] if next_h else tail
+        if not body.strip():
+            continue
+        if re.search(r"[—–-]{4,}", body):
+            return 4, "Architectuur-sectie met em-dash pseudo-layout"
+        if re.search(
+            r"(?im)(?:component|keuze|status)\s*:.*(?:component|keuze|status)\s*:",
+            body,
+        ) and not re.search(r"^\|\s*[-:]+\s*\|", body, re.MULTILINE):
+            return 5, "Architectuur-sectie met Component/Keuze-dichtregel zonder tabel"
+        if not re.search(r"^\|[^|\n]+\|", body, re.MULTILINE):
+            return 5, "Architectuur-sectie zonder markdown-tabel"
+    return 10, "Architectuur/overzicht als markdown-tabel (of n.v.t.)"
+
+
 def _score_vergelijking_tabel(md: str) -> tuple[int, str]:
     """After normalize: versus/comparison sections must not keep pseudo underscores."""
     for m in re.finditer(
@@ -140,6 +164,7 @@ def score_markdown(md: str) -> dict[str, tuple[int, str]]:
         "labels": _score_labels(normalized),
         "nfr_tabel": _score_nfr_table(normalized),
         "vergelijking_tabel": _score_vergelijking_tabel(normalized),
+        "architectuur_tabel": _score_architectuur_tabel(normalized),
         "kleur_h2_kolom0": _score_heading_vs_table_color(),
         "render_pipeline": _score_render_pipeline(normalized),
     }

@@ -278,8 +278,11 @@ const BOLD_CATEGORY_LINE_RE = /^\*\*(?<label>[^*\n]+)\*\*\s*$/
 const BOLD_CATEGORY_INLINE_RE = /^\*\*(?<label>[^*\n]+)\*\*\s+(?<rest>.+)$/
 const MAX_COMPARISON_COLUMNS = 6
 const OVERVIEW_HEADING_HINT_RE =
-  /\b(overzicht|auxiliary|configuratie|stack)\b/i
+  /\b(overzicht|auxiliary|configuratie|stack|architectuur|architectuursamenvatting|samenvatting|implementatie|testresultaten|poc)\b/i
 const OVERVIEW_FIELD_LINE_RE = /^([^:|]{1,48}):\s*(.+)$/i
+const FIELD_KEY_TOKEN_RE = /\b([A-Za-z][A-Za-z0-9\-]{0,39}):\s/gi
+const FIELD_REPEAT_GATE_RE =
+  /(?:component|keuze|status|categorie|eis|meetmethode)\s*:/gi
 const CATEGORY_HEADER_NAMES = new Set(['category', 'categorie', 'taak', 'task', 'aspect'])
 
 function splitMarkdownTableRow(row: string): string[] {
@@ -356,9 +359,64 @@ function countPseudoTableSignals(bodyLines: string[]): number {
     if (BOLD_CATEGORY_INLINE_RE.test(stripped) && INLINE_DUAL_SPLIT_RE.test(stripped)) signals++
     if (INLINE_DUAL_SPLIT_RE.test(stripped) && !stripped.startsWith('|')) signals++
     if (OVERVIEW_FIELD_LINE_RE.test(stripped)) signals++
+    const labelTokens = stripped.match(new RegExp(FIELD_KEY_TOKEN_RE.source, 'gi')) ?? []
+    if (labelTokens.length >= 3) signals++
     if (BOLD_CATEGORY_LINE_RE.test(stripped)) signals++
   }
   return signals
+}
+
+function discoverRepeatedFieldKeys(text: string): string[] | null {
+  if (!text?.trim()) return null
+  const counts = new Map<string, number>()
+  const order: string[] = []
+  const seenLow = new Set<string>()
+  const re = new RegExp(FIELD_KEY_TOKEN_RE.source, 'gi')
+  let match: RegExpExecArray | null
+  while ((match = re.exec(text)) !== null) {
+    const key = normalizeFieldKey(match[1]!)
+    const low = key.toLowerCase()
+    if (!key) continue
+    counts.set(low, (counts.get(low) ?? 0) + 1)
+    if (!seenLow.has(low)) {
+      seenLow.add(low)
+      order.push(key)
+    }
+  }
+  const repeated = order.filter((k) => (counts.get(k.toLowerCase()) ?? 0) >= 2)
+  if (repeated.length < 2) return null
+  return repeated.slice(0, MAX_COMPARISON_COLUMNS)
+}
+
+function parseCollapsedRecordRows(
+  bodyLines: string[],
+  fieldKeys?: string[] | null,
+): { headers: string[]; rows: string[][] } | null {
+  const chunks: string[] = []
+  for (const line of bodyLines) {
+    const stripped = stripOrphanTrailingPipe(line.trim())
+    if (!stripped || PSEUDO_SEPARATOR_LINE_RE.test(stripped)) continue
+    if (stripped.startsWith('|') && looksLikeMarkdownTableRow(stripped)) return null
+    chunks.push(stripped)
+  }
+  if (!chunks.length) return null
+  const full = chunks.join(' ')
+  const keys = fieldKeys ?? discoverRepeatedFieldKeys(full)
+  if (!keys || keys.length < 2) return null
+  let segments = INLINE_DUAL_SPLIT_RE.test(full)
+    ? full.split(INLINE_DUAL_SPLIT_RE).map((p) => p.trim()).filter(Boolean)
+    : [full]
+  if (segments.length < 2) segments = [full]
+  const rows: string[][] = []
+  for (const segment of segments) {
+    const values = extractFieldValuesFromText(segment, keys)
+    const filled = keys.filter((k) => (values[k] ?? '').trim()).length
+    if (filled >= 2) {
+      rows.push(keys.map((k) => sanitizeTableCell(values[k] ?? '-')))
+    }
+  }
+  if (rows.length < 2) return null
+  return { headers: keys, rows }
 }
 
 function normalizeFieldKey(key: string): string {
@@ -415,8 +473,16 @@ function overviewHeadersFromBody(bodyLines: string[]): string[] | null {
     }
     break
   }
-  const fieldKeys = collectOverviewFieldKeys(bodyLines)
-  if (fieldKeys.length < 2) return null
+  let fieldKeys = collectOverviewFieldKeys(bodyLines)
+  if (fieldKeys.length < 2) {
+    const joined = bodyLines
+      .map((ln) => stripOrphanTrailingPipe(ln.trim()))
+      .filter((ln) => ln && !PSEUDO_SEPARATOR_LINE_RE.test(ln))
+      .join(' ')
+    const discovered = discoverRepeatedFieldKeys(joined)
+    if (!discovered) return null
+    fieldKeys = discovered
+  }
   if (CATEGORY_HEADER_NAMES.has(fieldKeys[0]!.toLowerCase())) {
     return fieldKeys.slice(0, MAX_COMPARISON_COLUMNS)
   }
@@ -502,6 +568,9 @@ function parseOverviewFieldRows(bodyLines: string[], headers: string[]): string[
 function parseCollapsedOverviewBody(
   bodyLines: string[],
 ): { headers: string[]; rows: string[][] } | null {
+  const recordParsed = parseCollapsedRecordRows(bodyLines)
+  if (recordParsed) return recordParsed
+
   const chunks: string[] = []
   for (const line of bodyLines) {
     const stripped = stripOrphanTrailingPipe(line.trim())
@@ -575,6 +644,9 @@ function parseExplicitHeaderGrid(
 function parseOverviewBodyToRows(
   bodyLines: string[],
 ): { headers: string[]; rows: string[][] } | null {
+  const recordParsed = parseCollapsedRecordRows(bodyLines)
+  if (recordParsed) return recordParsed
+
   const headers = overviewHeadersFromBody(bodyLines)
   if (headers) {
     const rows = parseOverviewFieldRows(bodyLines, headers)
@@ -809,12 +881,15 @@ function ensureMarkdownTableDividers(text: string): string {
 function normalizePseudoTablesToMarkdown(text: string): string {
   if (!text?.trim()) return text || ''
   text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  const fieldRepeatMatches = text.match(FIELD_REPEAT_GATE_RE) ?? []
   if (
     !(
       text.includes('|') ||
       /_{4,}/.test(text) ||
       /^\*\*[^*]+\*\*/m.test(text) ||
-      /\b(versus|vs\.?|vergelijk|comparison|overzicht|auxiliary)\b/i.test(text)
+      /\b(versus|vs\.?|vergelijk|comparison|overzicht|auxiliary)\b/i.test(text) ||
+      /[—–-]{4,}/.test(text) ||
+      fieldRepeatMatches.length >= 2
     )
   ) {
     return text

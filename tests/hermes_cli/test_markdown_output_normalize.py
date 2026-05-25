@@ -416,6 +416,69 @@ def test_normalize_overview_separator_between_groups_no_duplicate_row():
     assert "| Groep B | beta | m2 |" in out
 
 
+_ARCHITECTURE_COLLAPSED_RAW = (
+    "### Architectuursamenvatting\n\n"
+    "Component: Inter-agent communicatie Keuze: FastAPI Status: operationeel "
+    "\u2014\u2014\u2014\u2014\u2014\u2014 "
+    "Component: Datamodel Keuze: Pydantic Status: geimplementeerd\n"
+)
+
+
+def test_architecture_collapsed_emdash_three_col():
+    out = normalize_pseudo_tables_to_markdown(_ARCHITECTURE_COLLAPSED_RAW)
+    assert "| Component | Keuze | Status |" in out
+    assert "| --- | --- | --- |" in out
+    assert "| Inter-agent communicatie | FastAPI | operationeel |" in out
+    assert "| Datamodel | Pydantic | geimplementeerd |" in out
+    assert "\u2014\u2014\u2014" not in out
+
+
+def test_architecture_heading_overview_intent():
+    from hermes_cli.markdown_output_normalize import (
+        _infer_section_intent,
+        _parse_section_to_table,
+    )
+
+    body = _ARCHITECTURE_COLLAPSED_RAW.splitlines()[2:]
+    heading = "### Architectuursamenvatting"
+    assert _infer_section_intent(heading, body) == "overview"
+    parsed = _parse_section_to_table(heading, body)
+    assert parsed is not None
+    headers, rows = parsed
+    assert headers == ["Component", "Keuze", "Status"]
+    assert len(rows) >= 2
+
+
+def test_discover_keys_from_multi_label_line():
+    from hermes_cli.markdown_output_normalize import _discover_repeated_field_keys
+
+    line = (
+        "Component: A Keuze: B Status: C "
+        "\u2014\u2014\u2014\u2014 "
+        "Component: D Keuze: E Status: F"
+    )
+    keys = _discover_repeated_field_keys(line)
+    assert keys == ["Component", "Keuze", "Status"]
+
+
+def test_collapsed_record_idempotent_on_valid_table():
+    raw = (
+        "### Architectuursamenvatting\n"
+        "| Component | Keuze | Status |\n"
+        "| --- | --- | --- |\n"
+        "| A | B | C |\n"
+        "| D | E | F |\n"
+    )
+    out = normalize_pseudo_tables_to_markdown(raw)
+    dividers = [
+        ln
+        for ln in out.splitlines()
+        if re.match(r"^\|\s*[-:]+\s*\|", ln.strip())
+    ]
+    assert len(dividers) == 1
+    assert "| A | B | C |" in out
+
+
 def test_normalize_pseudo_idempotent_on_valid_comparison_table():
     raw = (
         "### Vergelijking: Foo versus Bar\n"

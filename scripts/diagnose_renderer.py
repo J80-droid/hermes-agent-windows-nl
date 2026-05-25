@@ -214,7 +214,7 @@ def _pseudo_table_warning(md: str) -> str | None:
     """Warn when a versus/comparison or overview section still has pseudo-layout."""
     section_patterns = [
         r"^#{1,6}\s+.*(?:versus|vs\.?|vergelijk|comparison).*$",
-        r"^#{1,6}\s+.*(?:overzicht|auxiliary).*$",
+        r"^#{1,6}\s+.*(?:overzicht|auxiliary|architectuur|architectuursamenvatting|poc).*$",
     ]
     for pattern in section_patterns:
         for m in re.finditer(pattern, md, re.MULTILINE | re.IGNORECASE):
@@ -233,6 +233,11 @@ def _pseudo_table_warning(md: str) -> str | None:
                 body,
             ) and not re.search(r"^\|\s*[-:]+\s*\|", body, re.MULTILINE):
                 return "Overzicht/auxiliary-sectie met Label:-regels zonder markdown-tabel"
+            if re.search(r"[—–-]{4,}", body) and re.search(
+                r"(?im)(?:component|keuze|status)\s*:",
+                body,
+            ):
+                return "Architectuur-sectie met em-dash Component/Keuze pseudo-layout"
     return None
 
 

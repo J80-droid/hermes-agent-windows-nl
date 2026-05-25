@@ -66,8 +66,11 @@ python scripts/verify_institutional_guard.py
 Of handmatig:
 
 ```bat
-pytest tests/cli/test_institutional_rich_render.py tests/hermes_cli/test_normalizer_ts_parity.py -q
+pytest tests/cli/test_institutional_rich_render.py tests/hermes_cli/test_normalizer_ts_parity.py tests/hermes_cli/test_markdown_output_normalize.py -q
+python scripts/verify_pseudo_table_normalizer.py --verify
 python scripts/score_institutional_render.py --verify
 ```
+
+Bij wijzigingen aan `markdown_output_normalize.py`: spiegel `web/src/lib/institutionalMarkdown.ts` en voeg fixture `architecture_collapsed_emdash` toe (Component/Keuze/Status + em-dash).
 
 Zie ook: `docs/INSTITUTIONAL_PRESENTATION.md`, `docs/INSTITUTIONAL_PORTING_GUIDE.md`.

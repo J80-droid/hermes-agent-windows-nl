@@ -207,6 +207,25 @@ def test_generic_provider_model_fallback() -> None:
     step("Generic intent: Provider/Port overview fallback", ok)
 
 
+def test_architecture_collapsed_emdash() -> None:
+    from hermes_cli.markdown_output_normalize import normalize_pseudo_tables_to_markdown
+
+    raw = (
+        "### Architectuursamenvatting\n\n"
+        "Component: Inter-agent communicatie Keuze: FastAPI Status: operationeel "
+        "\u2014\u2014\u2014\u2014\u2014\u2014 "
+        "Component: Datamodel Keuze: Pydantic Status: geimplementeerd\n"
+    )
+    out = normalize_pseudo_tables_to_markdown(raw)
+    ok = (
+        _has_divider(out)
+        and "| Component | Keuze | Status |" in out
+        and "| Inter-agent communicatie | FastAPI | operationeel |" in out
+        and "\u2014\u2014\u2014" not in out
+    )
+    step("Architectuur: Component/Keuze/Status em-dash → markdown-tabel", ok)
+
+
 def test_crlf_windows_line_endings() -> None:
     from hermes_cli.markdown_output_normalize import normalize_pseudo_tables_to_markdown
 
@@ -234,11 +253,12 @@ def main() -> int:
     test_separator_no_duplicate_rows()
     test_valid_4col_table_idempotent()
     test_generic_provider_model_fallback()
+    test_architecture_collapsed_emdash()
     test_crlf_windows_line_endings()
     if FAILURES:
         print(f"=== HARNESS: FAIL ({FAILURES}) ===", file=sys.stderr)
         return 1
-    print("=== HARNESS: PASS (9/9) ===")
+    print("=== HARNESS: PASS (10/10) ===")
     return 0
 
 

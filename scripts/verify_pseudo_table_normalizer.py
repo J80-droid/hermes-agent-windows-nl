@@ -29,6 +29,13 @@ _PIPE_PROBE = (
     "| Web | DeepSeek |\n"
 )
 
+_ARCHITECTURE_PROBE = (
+    "### Architectuursamenvatting\n\n"
+    "Component: Inter-agent communicatie Keuze: FastAPI Status: operationeel "
+    "\u2014\u2014\u2014\u2014\u2014\u2014 "
+    "Component: Datamodel Keuze: Pydantic Status: geimplementeerd\n"
+)
+
 _OVERVIEW_4COL_PROBE = (
     "### Overzicht per auxiliary taak\n\n"
     "**Lokale achtergrondtaken (compression, web_extract, …)**\n"
@@ -74,6 +81,14 @@ def verify_pseudo_table_normalizer() -> tuple[bool, str | None]:
     if "| Provider |" not in overview and "| Categorie | Provider |" not in overview:
         return False, "Overview 4-koloms probe: Provider-kolom ontbreekt"
 
+    arch = normalize_assistant_markdown(_ARCHITECTURE_PROBE)
+    if "\u2014\u2014\u2014" in arch:
+        return False, "Architectuur-probe: em-dash restant na normalize"
+    if not _has_divider(arch):
+        return False, "Architectuur-probe: geen |---| divider"
+    if "| Component | Keuze | Status |" not in arch:
+        return False, "Architectuur-probe: Component/Keuze/Status header ontbreekt"
+
     return True, None
 
 
@@ -89,7 +104,10 @@ def main() -> int:
     ok, reason = verify_pseudo_table_normalizer()
     if ok:
         if args.verify:
-            print("[VERIFY OK] pseudo-table normalizer (Ollama vs, auxiliary, pipe divider, overview 4col)")
+            print(
+                "[VERIFY OK] pseudo-table normalizer "
+                "(Ollama vs, auxiliary, pipe divider, overview 4col, architectuur)"
+            )
         else:
             print("OK: pseudo-table normalizer probes passed")
         return 0
