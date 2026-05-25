@@ -936,6 +936,37 @@ def run_doctor(args):
                 except Exception:
                     pass
 
+            try:
+                from hermes_cli.model_runtime_config import (
+                    detect_model_provider_incoherence,
+                    repair_model_provider_coherence,
+                )
+
+                coherence_issues = detect_model_provider_incoherence(cfg)
+                for ci in coherence_issues:
+                    if ci.severity == "error":
+                        check_fail(
+                            "Model/provider coherence",
+                            f"({ci.code})",
+                        )
+                    else:
+                        check_warn(
+                            "Model/provider coherence",
+                            f"({ci.code})",
+                        )
+                    issues.append(ci.message)
+                if should_fix and coherence_issues:
+                    actions = repair_model_provider_coherence(issues=coherence_issues)
+                    for action in actions:
+                        check_ok(action)
+                    if actions:
+                        fixed_count += 1
+            except Exception as coherence_exc:
+                check_warn(
+                    "Model/provider coherence check skipped",
+                    f"({coherence_exc})",
+                )
+
         except Exception as e:
             check_warn("Could not validate model/provider config", f"({e})")
     else:

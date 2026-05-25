@@ -19,6 +19,7 @@ param(
     [switch]$IncludeParetoE2E,
     [switch]$IncludePseudoTableNormalizerE2E,
     [switch]$IncludeHermesHomeE2E,
+    [switch]$IncludeModelProviderCoherenceE2E,
     [switch]$IncludePythonInstitutionalE2E,
     [switch]$IncludeInstitutionalProductionGate,
     [switch]$IncludeCodebaseSmoke,
@@ -285,6 +286,14 @@ if ($IncludeHermesHomeE2E -or $IncludeAllE2E) {
     $homeE2e = Join-Path $scriptRoot 'RUN_HERMES_HOME_E2E.ps1'
     Invoke-Step 'hermes-home-e2e' {
         & $homeE2e -RepoRoot $repoRoot
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeModelProviderCoherenceE2E -or $IncludeAllE2E) {
+    $coherenceE2e = Join-Path $scriptRoot 'RUN_MODEL_PROVIDER_COHERENCE_E2E.bat'
+    Invoke-Step 'model-provider-coherence-e2e' {
+        & $coherenceE2e
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

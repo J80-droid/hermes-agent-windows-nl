@@ -220,6 +220,49 @@ def test_merge_corrupt_legacy_yaml_no_crash(base: Path) -> None:
     step("corrupt legacy YAML → graceful skip", ok, f"exit={proc.returncode}")
 
 
+def test_persist_model_from_profile_home_writes_root(base: Path) -> None:
+    """Simulate hermes -p core model → persist must update root model.provider."""
+    root, prof = _tree(base)
+    (root / "config.yaml").write_text(
+        "model:\n  provider: gemini\n  default: old-model\n",
+        encoding="utf-8",
+    )
+    (prof / "config.yaml").write_text("agent:\n  max_turns: 2\n", encoding="utf-8")
+    (root / "auth.json").write_text(
+        '{"version": 1, "active_provider": "gemini", "providers": {}}',
+        encoding="utf-8",
+    )
+
+    import hermes_cli.profile_model_inheritance as pmi
+
+    real_root = pmi.root_config_path
+
+    def _root():
+        return root / "config.yaml"
+
+    pmi.root_config_path = _root  # type: ignore[method-assign]
+    try:
+        with mock.patch.dict(os.environ, {"HERMES_HOME": str(prof)}):
+            with mock.patch("hermes_constants.get_default_hermes_root", return_value=root):
+                from hermes_cli.model_runtime_config import persist_model_runtime
+
+                persist_model_runtime(
+                    "nous",
+                    default_model="deepseek/deepseek-v4-flash:free",
+                    inference_base_url="https://inference-api.nousresearch.com/v1",
+                )
+        text = (root / "config.yaml").read_text(encoding="utf-8")
+        prof_text = (prof / "config.yaml").read_text(encoding="utf-8")
+        ok = (
+            "provider: nous" in text
+            and "provider: gemini" not in text
+            and "model:" not in prof_text
+        )
+        step("persist_model_runtime vanuit profiel → root", ok, text[:120])
+    finally:
+        pmi.root_config_path = real_root  # type: ignore[method-assign]
+
+
 def test_single_root_read_in_inheritance(base: Path) -> None:
     root, prof = _tree(base)
     (root / "config.yaml").write_text(
@@ -264,6 +307,7 @@ def run_all() -> int:
             ("partial_save", test_partial_save_preserves_root_providers),
             ("providers_redirect", test_explicit_providers_save_redirects_to_root),
             ("corrupt_yaml", test_merge_corrupt_legacy_yaml_no_crash),
+            ("persist_model_root", test_persist_model_from_profile_home_writes_root),
             ("single_read", test_single_root_read_in_inheritance),
         ]
         for label, fn in tests:

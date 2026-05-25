@@ -85,6 +85,14 @@ function Test-HermesConfigDrift {
     }
 
     if ($issues.Count -eq 0) {
+        if (-not (Test-HermesModelProviderCoherence -Quiet:$Quiet)) {
+            $issues.Add(
+                'Model/provider incoherentie (auth.json vs config) — run windows\REPAIR_MODEL_PROVIDER.bat of hermes doctor --fix'
+            )
+        }
+    }
+
+    if ($issues.Count -eq 0) {
         if (-not $Quiet) {
             Write-HermesOk 'Geen config drift (split-home)'
         }
@@ -98,6 +106,42 @@ function Test-HermesConfigDrift {
         }
     }
     return $false
+}
+
+function Test-HermesModelProviderCoherence {
+    param([switch]$Quiet)
+    $configPath = Get-HermesCanonicalConfigPath
+    if (-not (Test-Path -LiteralPath $configPath)) {
+        return $true
+    }
+    try {
+        $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+        $runtimeRoot = Get-HermesRuntimeRoot
+        $python = Get-HermesAuditPython -RepoRoot $repoRoot
+        $code = @"
+import os, sys
+sys.path.insert(0, r'$repoRoot')
+os.environ['HERMES_HOME'] = r'$runtimeRoot'
+os.environ.setdefault('HERMES_WIN_PREFER_LOCALAPPDATA', '1')
+from hermes_cli.config import load_config
+from hermes_cli.model_runtime_config import detect_model_provider_incoherence
+issues = detect_model_provider_incoherence(load_config())
+if not issues:
+    sys.exit(0)
+for i in issues:
+    print(f'{i.severity}: {i.message}')
+sys.exit(1)
+"@
+        & $python -c $code 2>&1 | ForEach-Object {
+            if (-not $Quiet) { Write-HermesFail $_ }
+        }
+        return $false
+    } catch {
+        if (-not $Quiet) {
+            Write-HermesFail "Model/provider coherence check mislukt: $($_.Exception.Message)"
+        }
+        return $false
+    }
 }
 
 function Test-HermesProfileGlobalConfigBlocks {

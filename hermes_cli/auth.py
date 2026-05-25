@@ -1023,6 +1023,12 @@ def _load_auth_store(auth_file: Optional[Path] = None) -> Dict[str, Any]:
         raw.setdefault("providers", {})
         return raw
 
+    # Minimal store: active_provider set without a populated providers map yet.
+    if isinstance(raw, dict) and str(raw.get("active_provider") or "").strip():
+        raw.setdefault("providers", {})
+        raw.setdefault("version", AUTH_STORE_VERSION)
+        return raw
+
     # Migrate from PR's "systems" format if present
     if isinstance(raw, dict) and isinstance(raw.get("systems"), dict):
         systems = raw["systems"]
@@ -5959,65 +5965,32 @@ def _update_config_for_provider(
     inference_base_url: str,
     default_model: Optional[str] = None,
 ) -> Path:
-    """Update config.yaml and auth.json to reflect the active provider.
+    """Update root config.yaml and auth.json to reflect the active provider.
 
-    When *default_model* is provided the function also writes it as the
-    ``model.default`` value.  This prevents a race condition where the
-    gateway (which re-reads config per-message) picks up the new provider
-    before the caller has finished model selection, resulting in a
-    mismatched model/provider (e.g. ``anthropic/claude-opus-4.6`` sent to
-    MiniMax's API).
+    Delegates to ``persist_model_runtime`` so profile-mode ``HERMES_HOME``
+    never writes a discarded ``model:`` block under ``profiles/<name>/``.
     """
-    # Set active_provider in auth.json so auto-resolution picks this provider
-    with _auth_store_lock():
-        auth_store = _load_auth_store()
-        auth_store["active_provider"] = provider_id
-        _save_auth_store(auth_store)
+    from hermes_cli.model_runtime_config import (
+        _model_section_from_config,
+        _read_root_yaml,
+        persist_model_runtime,
+    )
 
-    # Update config.yaml model section
-    config_path = get_config_path()
-    config_path.parent.mkdir(parents=True, exist_ok=True)
-
-    config = read_raw_config()
-
-    current_model = config.get("model")
-    if isinstance(current_model, dict):
-        model_cfg = dict(current_model)
-    elif isinstance(current_model, str) and current_model.strip():
-        model_cfg = {"default": current_model.strip()}
-    else:
-        model_cfg = {}
-
-    model_cfg["provider"] = provider_id
-    if inference_base_url and inference_base_url.strip():
-        model_cfg["base_url"] = inference_base_url.rstrip("/")
-    else:
-        # Clear stale base_url to prevent contamination when switching providers
-        model_cfg.pop("base_url", None)
-
-    # Clear stale api_key/api_mode left over from a previous custom provider.
-    # When the user switches from e.g. a MiniMax custom endpoint
-    # (api_mode=anthropic_messages, api_key=mxp-...) to a built-in provider
-    # (e.g. OpenRouter), the stale api_key/api_mode would override the new
-    # provider's credentials and transport choice.  Built-in providers that
-    # need a specific api_mode (copilot, xai) set it at request-resolution
-    # time via `_copilot_runtime_api_mode` / `_detect_api_mode_for_url`, so
-    # removing the persisted value here is safe.
-    model_cfg.pop("api_key", None)
-    model_cfg.pop("api_mode", None)
-
-    # When switching to a non-OpenRouter provider, ensure model.default is
-    # valid for the new provider.  An OpenRouter-formatted name like
-    # "anthropic/claude-opus-4.6" will fail on direct-API providers.
+    effective_default = default_model
     if default_model:
-        cur_default = model_cfg.get("default", "")
-        if not cur_default or "/" in cur_default:
-            model_cfg["default"] = default_model
+        cur = str(
+            _model_section_from_config(_read_root_yaml()).get("default") or ""
+        ).strip()
+        if cur and "/" not in cur:
+            effective_default = None
 
-    config["model"] = model_cfg
-
-    atomic_yaml_write(config_path, config, sort_keys=False)
-    return config_path
+    result = persist_model_runtime(
+        provider_id,
+        default_model=effective_default,
+        inference_base_url=inference_base_url,
+        sync_auth=True,
+    )
+    return result.config_path
 
 
 def _get_config_provider() -> Optional[str]:
@@ -6264,20 +6237,23 @@ def _prompt_model_selection(
 
 
 def _save_model_choice(model_id: str) -> None:
-    """Save the selected model to config.yaml (single source of truth).
+    """Save only ``model.default`` to root config — does NOT change provider.
 
-    The model is stored in config.yaml only — NOT in .env.  This avoids
-    conflicts in multi-agent setups where env vars would stomp each other.
+    Prefer ``persist_model_runtime`` when switching provider + model together.
+    Updating default alone can leave a mismatched provider if interrupted;
+    provider flows must call ``persist_model_runtime`` once at the end.
     """
-    from hermes_cli.config import save_config, load_config
+    from hermes_cli.profile_model_inheritance import save_model_section_to_root
 
-    config = load_config()
-    # Always use dict format so provider/base_url can be stored alongside
-    if isinstance(config.get("model"), dict):
-        config["model"]["default"] = model_id
-    else:
-        config["model"] = {"default": model_id}
-    save_config(config)
+    root_cfg = {}
+    try:
+        from hermes_cli.model_runtime_config import _read_root_yaml, _model_section_from_config
+
+        root_cfg = _model_section_from_config(_read_root_yaml())
+    except Exception:
+        pass
+    root_cfg["default"] = model_id
+    save_model_section_to_root(root_cfg)
 
 
 def login_command(args) -> None:
@@ -7615,9 +7591,7 @@ def _login_nous(args, pconfig: ProviderConfig) -> None:
         config_path = _update_config_for_provider(
             "nous", inference_base_url, default_model=selected_model,
         )
-        if selected_model:
-            _save_model_choice(selected_model)
-            print(f"Default model set to: {selected_model}")
+        print(f"Default model set to: {selected_model}")
         print(f"  Config updated: {config_path} (model.provider=nous)")
 
     except KeyboardInterrupt:

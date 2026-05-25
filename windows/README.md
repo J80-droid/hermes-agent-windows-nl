@@ -127,8 +127,9 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 
 | Onderwerp | Plek |
 | --------- | ---- |
-| Model/provider (alle profielen) | `%LOCALAPPDATA%\hermes\config.yaml` — `hermes model` |
+| Model/provider (alle profielen) | `%LOCALAPPDATA%\hermes\config.yaml` — `hermes model` (atomisch via `persist_model_runtime`) |
 | Profiel legal/core (MCP) | `%LOCALAPPDATA%\hermes\profiles\<naam>\config.yaml` — **geen** `model:` |
+| Auth/config split-brain | `REPAIR_MODEL_PROVIDER.bat` of `hermes doctor --fix` |
 | Opruimen oude `model:` in profielen | `DOCTOR_FIX.bat` of `hermes doctor --fix` |
 
 Zie `docs\PROFILE_MODEL_INHERITANCE.md`.
@@ -139,7 +140,7 @@ Zie `docs\PROFILE_MODEL_INHERITANCE.md`.
 - `team_display.defaults` — teamweergave (`skin=default`, `final_response_markdown=render`, `assistant_render_style=institutional_rich`, `assistant_palette=demo`, `assistant_label_columns=true`, `compact=false`, `streaming=false`)
 - `apply_team_display.ps1` — team display naar **actief profiel** (`profiles\<active>\config.yaml`; root blijft `HERMES_HOME`)
 - `audits\RUN_INSTITUTIONAL_E2E.bat` — institutioneel pakket (**11 stappen**, incl. Rich-renderer 2e); zie `audits\README.md`
-- **Split-home:** `docs\HERMES_HOME_WINDOWS.md` · drift: `VERIFY_HERMES_CONFIG_DRIFT.bat` · migratie: `APPLY_HERMES_HOME_MIGRATION.bat` · E2E: `audits\RUN_HERMES_HOME_E2E.bat`, `audits\RUN_ROOT_CONFIG_INHERITANCE_E2E.bat` (`RUN_AUDITS.bat -IncludeHermesHomeE2E`)
+- **Split-home:** `docs\HERMES_HOME_WINDOWS.md` · drift: `VERIFY_HERMES_CONFIG_DRIFT.bat` (incl. coherence) · migratie: `APPLY_HERMES_HOME_MIGRATION.bat` · E2E: `RUN_HERMES_HOME_E2E.bat`, `RUN_ROOT_CONFIG_INHERITANCE_E2E.bat`, `audits\RUN_MODEL_PROVIDER_COHERENCE_E2E.bat` (`RUN_AUDITS.bat -IncludeModelProviderCoherenceE2E`)
 - `sync_hermes_api_env.ps1` — API-keys + vault-paden (`OBSIDIAN_VAULT_PATH`, `WIKI_PATH`) naar alle profiel-`.env`
 - `TERMINAL_WINDOWS.md` — WT, skin, markdown-kleuren, API-home
 - `PSScriptAnalyzerSettings.psd1` — lint-regels

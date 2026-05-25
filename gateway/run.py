@@ -18123,6 +18123,21 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
     from hermes_logging import setup_logging
     setup_logging(hermes_home=_hermes_home, mode="gateway")
 
+    try:
+        from hermes_cli.model_runtime_config import detect_model_provider_incoherence
+
+        _coherence_issues = detect_model_provider_incoherence()
+        for _ci in _coherence_issues:
+            logger.warning("Model/provider coherence: %s", _ci.message)
+        if _coherence_issues and os.environ.get("HERMES_STRICT_CONFIG_COHERENCE") == "1":
+            logger.error(
+                "HERMES_STRICT_CONFIG_COHERENCE=1 — refusing gateway start until "
+                "hermes doctor --fix resolves model/provider mismatch."
+            )
+            return False
+    except Exception:
+        pass
+
     # Periodic process memory usage logging (gateway only) — emits a
     # grep-friendly "[MEMORY] rss=...MB ..." line every N minutes so
     # slow leaks in the long-lived gateway process show up as a time

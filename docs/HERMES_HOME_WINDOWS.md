@@ -64,6 +64,26 @@ Canoniek bestand: `%LOCALAPPDATA%\hermes\config.yaml`
 2. Sync naar runtime + profielen: `windows\SYNC_HERMES_API_ENV.bat`
 3. Na sync: `hermes doctor` — geen "key only in legacy" WARN
 
+## Model/provider split-brain (auth vs config)
+
+Symptoom: `auth.json` heeft `active_provider: nous` maar chat gebruikt nog **Gemini** (`model.provider: gemini` in root config, soms met verkeerde `base_url`).
+
+| Stap | Actie |
+|------|--------|
+| 1 | `windows\REPAIR_MODEL_PROVIDER.bat` of `hermes doctor --fix` |
+| 2 | `hermes config get model.provider` → verwacht jouw gekozen provider (bijv. `nous`) |
+| 3 | Hermes/gateway volledig herstarten + `/new` in chat |
+
+**Architectuur (repo):** `hermes_cli/model_runtime_config.py`
+
+- `persist_model_runtime()` — atomisch `model.provider`, `model.default`, `base_url` naar **root** + sync `auth.active_provider`
+- `detect_model_provider_incoherence()` — auth/config-mismatch, vendor-slug vs provider, stale host in `base_url`
+- `repair_model_provider_coherence()` — herstel (default: config volgt auth)
+
+**Oorzaak (opgelost):** oude flows schreven alleen `model.default` vóór `model.provider`, naar profiel-yaml i.p.v. root, of wisten `active_provider` na persist via `deactivate_provider()`. Gebruik `hermes model` / setup; intern via `_commit_provider_model()`.
+
+**Validatie:** `audits\RUN_MODEL_PROVIDER_COHERENCE_E2E.bat` (10 scenario's) · `RUN_AUDITS.bat -IncludeModelProviderCoherenceE2E` · `verify_hermes_config_drift.ps1` (coherence-check) · pytest `tests/hermes_cli/test_model_runtime_config.py`
+
 ## Gemini / auth.json (HTTP 400)
 
 Symptoom: keys gesynced maar vision/Gemini faalt met HTTP 400.

@@ -512,6 +512,20 @@ Rapport: `HERMES_HOME_E2E_REPORT_<timestamp>.md` (gitignored via `*_E2E_REPORT_*
 
 Zie `docs/HERMES_HOME_WINDOWS.md`.
 
+## Model/provider coherence E2E
+
+```text
+audits\RUN_MODEL_PROVIDER_COHERENCE_E2E.bat
+```
+
+Of via `windows\audits\RUN_MODEL_PROVIDER_COHERENCE_E2E.bat` (delegate). Optioneel in `RUN_AUDITS.bat`: `-IncludeModelProviderCoherenceE2E`.
+
+| Stap | Controle |
+| ---- | -------- |
+| E1–E10 | Harness `audits/ModelProviderCoherenceE2E.harness.py`: root persist vanuit profiel, detect (split-brain, vendor-slug, base_url), repair, auth-sync, custom `api_key`, minimale auth.json |
+
+Geen live API. Zie `audits/README.md` en `docs/HERMES_HOME_WINDOWS.md` § split-brain.
+
 ## Root config inheritance E2E
 
 ```text

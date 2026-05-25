@@ -7,7 +7,7 @@ Domein-profielen (`legal`, `core`, `academics`, …) gebruiken **dezelfde global
 | Plek | Windows-pad | Gebruik |
 |------|-------------|---------|
 | **Root config** | `%LOCALAPPDATA%\hermes\config.yaml` | Enige plek voor `model`, `auxiliary`, `providers` / `custom_providers` |
-| **`hermes model`** | schrijft naar root | Interactieve modelwijziging |
+| **`hermes model`** | schrijft naar root | Interactieve modelwijziging via `persist_model_runtime()` |
 | **`hermes config set model.*`** | schrijft naar root | CLI-key-value |
 | **Auxiliary preset** | `windows\APPLY_AUXILIARY_HYBRID_PRESET.bat` | Qwen lokaal + Gemini vision (root only) |
 | **Venice / custom providers** | root config + `SYNC_HERMES_API_ENV.bat` | Template: `docs/templates/PROVIDERS_VENICE.yaml` |
@@ -80,6 +80,8 @@ Bij `--clone` / `--clone-config` wordt `config.yaml` eerst gekopieerd en daarna 
 | `search_knowledge` niet geladen in chat | `mcp.servers` i.p.v. `mcp_servers` in profiel | `sync_profile_mcp_from_domains.py` of `hermes doctor --fix` |
 | Chat 401 / verkeerde provider | Profiel had eigen model; keys in root `.env` | Root model + keys in `%LOCALAPPDATA%\hermes\.env` |
 | `hermes -p legal model` lijkt profiel te wijzigen | Oud gedrag vóór overerving | Update repo; model gaat naar root |
+| Auth `nous`, chat nog Gemini | Split-brain auth vs `model.provider` | `hermes doctor --fix` of `windows\REPAIR_MODEL_PROVIDER.bat` |
+| Vendor-slug (`deepseek/...`) op verkeerde provider | Alleen default gezet, provider oud | `hermes model` opnieuw; doctor meldt `vendor_slug_wrong_provider` |
 
 **API-keys:** profielen hebben eigen `.env` voor tokens; het **model** komt uit root. Bij 401: controleer provider-key voor het **effectieve** model (doctor toont inherited model).
 
@@ -100,6 +102,7 @@ Zelfde patroon voor `auxiliary.inherit: false` of `providers.inherit: false`. Da
 
 | Onderdeel | Gedrag |
 |-----------|--------|
+| `hermes_cli/model_runtime_config.py` | `persist_model_runtime`, coherence detect/repair; root + auth sync |
 | `hermes_cli/profile_model_inheritance.py` | Resolve model/auxiliary/providers; strip; root-save; `root_config_path()`; `bust_config_caches()` |
 | `apply_profile_root_config_inheritance()` | Eén root YAML-read per load; merged model + auxiliary + providers |
 | `load_config()` | Past overerving toe; ook zonder profiel-`config.yaml` |
@@ -109,8 +112,8 @@ Zelfde patroon voor `auxiliary.inherit: false` of `providers.inherit: false`. Da
 | `merge_legacy_providers_config.py` / `collect_env_sync_keys.py` | Altijd runtime root (niet profiel-`HERMES_HOME`) |
 | `hermes profile create` | Stript global blocks na `--clone` / `--clone-all` |
 | `hermes doctor` | Meldt inheritance + Venice gap; `--fix` stript stale blokken |
-| Tests | `tests/hermes_cli/test_profile_model_inheritance.py`, `test_merge_legacy_providers_config.py` |
-| E2E | `windows/audits/RUN_ROOT_CONFIG_INHERITANCE_E2E.bat` (**10/10**; harness 8/8 + `py_compile` guard) |
+| Tests | `test_profile_model_inheritance.py`, `test_model_runtime_config.py` (45), `test_doctor_model_coherence.py`, `test_merge_legacy_providers_config.py` |
+| E2E | `audits/RUN_MODEL_PROVIDER_COHERENCE_E2E.bat` (**10/10**) · `RUN_ROOT_CONFIG_INHERITANCE_E2E.bat` (**10/10**) |
 
 ## Relatie met RAG
 
