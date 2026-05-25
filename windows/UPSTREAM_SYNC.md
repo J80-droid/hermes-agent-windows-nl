@@ -146,10 +146,17 @@ powershell -File windows\upstream_sync.ps1 -Phase Preflight
 
 `hermes_update.bat` = dezelfde keten als `UPDATE_HERMES.bat` (niet meer alleen `launch_hermes update` zonder preflight).
 
-`hermes update` (CLI) met **`HERMES_UPDATE_FROM_UPSTREAM=1`** doet alleen git merge + deps — preflight/post-merge alleen via bovenstaande bats. Dat doet:
+**Fase 2 in `upstream_sync.ps1` (`UPDATE_HERMES.bat`)** doet expliciet:
 
-1. **`git fetch upstream`** + **`git merge upstream/main`** (NousResearch — niet alleen fork `origin`)
-2. Python-afhankelijkheden opnieuw installeren (zoals `hermes update` altijd deed)
+1. **`Invoke-UpstreamGitMergeIfBehind`** — na preflight (die al `git fetch upstream` deed) wordt fetch overgeslagen (`$script:UpstreamPreflightFetched`); anders `git fetch upstream`. Controleert `upstream/main`, telt achterstand, merge met `--no-edit` of stopt bij conflicten (exit 6/7).
+2. **`pip install -e .`** via conda `hermes-env` wanneer er commits zijn gemerged (`Install-HermesEditablePythonAfterUpstreamMerge`) — **vóór** `hermes update`, omdat `hermes update` pip kan overslaan als `origin` al up-to-date is terwijl `pyproject.toml` net van upstream kwam.
+3. **`hermes update -y`** — pip/uv, Node UI, skills (pullt `origin`; merge staat al op HEAD)
+
+`HERMES_UPDATE_FROM_UPSTREAM=1` is een marker voor logging; de merge gebeurt in PowerShell, niet in `hermes_cli/main.py` (die pullt alleen `origin`).
+
+**E2E na wijzigingen aan fase 2:** `windows\audits\RUN_UPSTREAM_SYNC_PHASE2_E2E.bat` (8 stappen: wiring, volgorde, TUI, vitest, harness).
+
+Alleen `hermes update` **zonder** `UPDATE_HERMES.bat` haalt **geen** Nous-merge binnen — gebruik altijd het batchbestand op deze fork.
 
 ```cmd
 cd D:\A.I\APPS\Hermes_agent_WS\hermes-agent
@@ -190,8 +197,8 @@ Daarna optioneel nog `windows\hermes_update.bat` voor deps.
 
 | Situatie | Gedrag |
 | -------- | ------ |
-| **`windows\UPDATE_HERMES.bat`** / **`hermes_update.bat`** | Zelfde keten: preflight + upstream merge + RAG-postinstall |
-| **`hermes update` zonder env-var** | Nog steeds **`origin`** (fork) — zoals upstream Hermes |
+| **`windows\UPDATE_HERMES.bat`** / **`hermes_update.bat`** | Preflight + **`git merge upstream/main`** (ps1) + `hermes update` + post-merge RAG |
+| **`hermes update` alleen** (CLI) | Alleen **`origin`** — **geen** upstream-merge op fork |
 | Eigen RAG-commits | Blijven behouden via **merge** (niet `reset --hard` op upstream) |
 | Conflicten bij merge | Update stopt — handmatig oplossen (`UPSTREAM_SYNC.md` conflict-tabel) |
 
@@ -221,7 +228,7 @@ Bij merge van Nous in jouw fork botsen vaak **jouw fork-only** paden met upstrea
 | --- | -------------- |
 | `hermes_cli/usage_snapshot.py` | **Behoud fork** — breakdown + usage payload |
 | `tui_gateway/server.py` | `_get_usage` → delegatie naar `build_session_usage_snapshot` |
-| `ui-tui/src/domain/usageCostBar.ts` | **Behoud fork** — responsive formatter + `statusRuleColumns` + `resolveStatusRuleLayout` (optionele `cwdReserve` van `statusRuleWidths`) |
+| `ui-tui/src/domain/usageCostBar.ts` | **Behoud fork** — responsive formatter + `statusRuleColumns` + `statusRuleMinLeftWidth` + `resolveStatusRuleLayout` (`cwdReserve` + optionele `leftWidth` van `statusRuleWidths`; niet-eindige cols/breakdown genegeerd) |
 | `ui-tui/src/components/appChrome.tsx` | **Combineer:** upstream `statusRuleWidths` + fork cost inline; `cwdReserve: rightWidth + separatorWidth` |
 | `hermes_cli/profiles.py` | **Combineer:** `strip_model_block_from_profile_config` vóór `_maybe_register_gateway_service` (s6 container) |
 | `ui-tui/src/app/createGatewayEventHandler.ts` | turn/tool client-side hooks + live `~NK tok` fallback |

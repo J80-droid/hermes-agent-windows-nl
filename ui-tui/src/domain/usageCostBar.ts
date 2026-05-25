@@ -69,16 +69,16 @@ export function formatCostBreakdownPct(pct: CostBreakdownPct | undefined): strin
 
   const parts: string[] = []
 
-  if (typeof pct.cw === 'number') {
+  if (typeof pct.cw === 'number' && Number.isFinite(pct.cw)) {
     parts.push(`cw ${pct.cw}%`)
   }
-  if (typeof pct.out === 'number') {
+  if (typeof pct.out === 'number' && Number.isFinite(pct.out)) {
     parts.push(`out ${pct.out}%`)
   }
-  if (typeof pct.in === 'number') {
+  if (typeof pct.in === 'number' && Number.isFinite(pct.in)) {
     parts.push(`in ${pct.in}%`)
   }
-  if (typeof pct.cr === 'number') {
+  if (typeof pct.cr === 'number' && Number.isFinite(pct.cr)) {
     parts.push(`cr ${pct.cr}%`)
   }
 
@@ -143,12 +143,23 @@ export function shouldShowStatusBarCostRich(showCost: boolean): boolean {
   return showCost
 }
 
-const STATUS_RULE_MIN_LEFT_WIDTH = 12
+/** Minimum left segment width; must match ``statusRuleWidths`` in appChrome. */
+export function statusRuleMinLeftWidth(effectiveCols: number): number {
+  return effectiveCols >= 24 ? 8 : 1
+}
+
+/** Approximate display cols for status + model before inline cost (wide terminals). */
+const STATUS_RULE_NON_COST_RESERVE_WIDE = 24
+const STATUS_RULE_NON_COST_RESERVE_NARROW = 6
 
 /** ComposerPane uses ``paddingX={1}``; StatusRule must fit that inner width. */
 export const STATUS_RULE_HORIZONTAL_PADDING = 2
 
+/** Effective status-rule width inside ComposerPane (non-finite terminal cols → 1). */
 export function statusRuleColumns(cols: number): number {
+  if (!Number.isFinite(cols)) {
+    return 1
+  }
   return Math.max(1, cols - STATUS_RULE_HORIZONTAL_PADDING)
 }
 
@@ -161,22 +172,25 @@ export function resolveStatusRuleLayout(opts: {
   cols: number
   /** Display columns for cwd + separator (from ``statusRuleWidths`` when known). */
   cwdReserve?: number
+  /** Left box width from ``statusRuleWidths`` — keeps cost tier aligned with real layout. */
+  leftWidth?: number
   costBarMode: CostBarMode
   cwdLabel: string
   showCost: boolean
   usage: StatusBarCostUsage
 }): { costLabel: string | null; leftWidth: number } {
   const cols = statusRuleColumns(opts.cols)
+  const minLeft = statusRuleMinLeftWidth(cols)
   const cwdReserve =
     opts.cwdReserve ??
-    Math.min(stringWidth(opts.cwdLabel), Math.max(0, cols - STATUS_RULE_MIN_LEFT_WIDTH - 1)) +
-      (cols >= 24 ? 3 : 1)
-  const costAvailableWidth = Math.max(0, cols - cwdReserve - STATUS_RULE_MIN_LEFT_WIDTH)
+    Math.min(stringWidth(opts.cwdLabel), Math.max(0, cols - minLeft - 1)) + (cols >= 24 ? 3 : 1)
+  const leftWidth = opts.leftWidth ?? Math.max(minLeft, cols - cwdReserve)
+  const nonCostReserve =
+    cols >= 24 ? STATUS_RULE_NON_COST_RESERVE_WIDE : STATUS_RULE_NON_COST_RESERVE_NARROW
+  const costAvailableWidth = Math.max(0, leftWidth - nonCostReserve)
   const costLabel = shouldShowStatusBarCostRich(opts.showCost)
     ? formatStatusBarCostRich(opts.usage, { mode: opts.costBarMode, width: costAvailableWidth })
     : null
-  // Cost is rendered inside the left segment (after model), not a flex sibling.
-  const leftWidth = Math.max(STATUS_RULE_MIN_LEFT_WIDTH, cols - cwdReserve)
 
   return { costLabel, leftWidth }
 }

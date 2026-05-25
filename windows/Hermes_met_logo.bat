@@ -31,7 +31,7 @@ if exist "%WIN_DIR%\launch_hermes.bat" (
   exit /b !ERRORLEVEL!
 )
 
-for /f "delims=" %%P in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%WIN_DIR%\scripts\resolve_hermes_python.ps1" -RepoRoot "%REPO_ROOT%" -RequirePip 2^>nul') do set "HERMES_PYTHON=%%P"
+for /f "delims=" %%P in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/scripts/resolve_hermes_python.ps1" -RepoRoot "%REPO_ROOT%" -RequirePip 2^>nul') do set "HERMES_PYTHON=%%P"
 if defined HERMES_PYTHON (
   echo %C%[INFO]%R% No launch_hermes.bat - starting via canonieke Python cli.py
   "%HERMES_PYTHON%" "%REPO_ROOT%\cli.py" %*

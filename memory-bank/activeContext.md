@@ -10,7 +10,7 @@
 
 **Split-home & root inheritance (2026-05-25, productie-niveau — AF):** `model` + `auxiliary` + `providers` overerving; Venice merge + env sync; save-guard + cache-bust; keten `APPLY_HERMES_HOME_MIGRATION.bat` (7 stappen); E2E **14/14** (`RUN_HERMES_HOME_E2E`) + **10/10** (`RUN_ROOT_CONFIG_INHERITANCE_E2E`, harness + `py_compile` guard). Runbook: `docs/HERMES_HOME_WINDOWS.md`.
 
-**Upstream merge 87 commits (2026-05-25, PASS):** `MERGE_UPSTREAM.bat -AutoResolve` + handmatige fixes (`profiles.py`, `appChrome.tsx`, `profiles.md`); merge-commit `82e92a08b`; `UPDATE_HERMES.bat` post-merge OK. Integratie: `cwdReserve` in `resolveStatusRuleLayout` (display-breedte = `statusRuleWidths`); profile create strip+s6. E2E **10/10** `RUN_UPSTREAM_MERGE_INTEGRATION_E2E.bat`; vitest 52 + pytest profile-strip. Vorige grote merge: `UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md` (58 commits).
+**Upstream sync fase 2 + TUI layout (2026-05-25):** `Invoke-UpstreamGitMergeIfBehind` (preflight fetch-dedup, rev-parse/rev-list guards); `pip install -e .` na merge vóór `hermes update`; TUI `statusRuleMinLeftWidth` + `leftWidth` in `resolveStatusRuleLayout`; finite cols/breakdown in `usageCostBar.ts`. E2E **8/8** `RUN_UPSTREAM_SYNC_PHASE2_E2E.bat`; vitest usageCostBar **63** tests. Merge 87+17: `82e92a08b`, `9e49dbd85`; integratie `RUN_UPSTREAM_MERGE_INTEGRATION_E2E` 10/10.
 
 **IDE-onderhoud landkaart (2026-05-23):** `lancedb_maintenance.py` + `LANCEDB_MAINTENANCE.bat`; merge snippet-preview; `audit_skill_drift.py`; volledige E2E `windows/audits/RUN_IDE_MAINTENANCE_E2E.bat` (rapport `IDE_MAINTENANCE_E2E_REPORT_*.md`).
 

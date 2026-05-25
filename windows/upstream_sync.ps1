@@ -155,6 +155,7 @@ function Invoke-UpstreamPreflight {
         Write-Err "git fetch upstream mislukt."
         return 3
     }
+    $script:UpstreamPreflightFetched = $true
 
     $lr = (git rev-list --left-right --count HEAD...upstream/main 2>$null).Trim() -split '\s+'
     $ahead = [int]$lr[0]
@@ -211,6 +212,74 @@ function Invoke-UpstreamPreflight {
     return 0
 }
 
+# Fase-2 upstream merge: fetch (tenzij preflight net fetchte), merge upstream/main, tell merged count.
+function Invoke-UpstreamGitMergeIfBehind {
+    $script:LastUpstreamMergedCount = 0
+
+    if (-not (git rev-parse --verify upstream/main^{commit} 2>$null)) {
+        Write-Err 'upstream/main ontbreekt - voeg remote upstream toe (preflight doet dit normaal).'
+        return 3
+    }
+
+    if (-not $script:UpstreamPreflightFetched) {
+        git fetch upstream --quiet 2>$null
+        if (Test-NativeCommandFailed) {
+            Write-Err 'git fetch upstream mislukt vóór merge.'
+            return 3
+        }
+    }
+    $script:UpstreamPreflightFetched = $false
+
+    git rev-list --count HEAD..upstream/main 2>$null | Out-Null
+    if (Test-NativeCommandFailed) {
+        Write-Err 'Kon achterstand t.o.v. upstream/main niet bepalen.'
+        return 3
+    }
+    $behind = [int](git rev-list --count HEAD..upstream/main 2>$null)
+    if ($behind -le 0) {
+        Write-Ok 'Al gelijk met upstream/main (geen merge nodig).'
+        return 0
+    }
+
+    $mergeHead = Join-Path (Get-Location) '.git\MERGE_HEAD'
+    if (Test-Path -LiteralPath $mergeHead) {
+        Write-Warn 'Merge al bezig - los conflicten op of gebruik MERGE_UPSTREAM.bat -FinalizeOnly.'
+        return 7
+    }
+
+    Write-Step "git merge upstream/main ($behind commit(s))..."
+    git merge upstream/main --no-edit 2>&1 | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+        if (Test-Path -LiteralPath $mergeHead) {
+            Write-Err 'Merge upstream/main mislukt (conflicten). Los op via windows\MERGE_UPSTREAM.bat of: git merge --abort'
+        } else {
+            Write-Err 'git merge upstream/main mislukt.'
+        }
+        return 6
+    }
+    $script:LastUpstreamMergedCount = $behind
+    Write-Ok 'upstream/main gemerged in main.'
+    return 0
+}
+
+# hermes update slaat pip over als origin up-to-date is; na upstream-merge wel pyproject syncen.
+function Install-HermesEditablePythonAfterUpstreamMerge {
+    param(
+        [Parameter(Mandatory)][string]$CondaExe,
+        [Parameter(Mandatory)][string]$Repo
+    )
+    Write-Step 'pip install -e . na upstream-merge (hermes update slaat pip over als origin up-to-date)...'
+    [void](Invoke-HermesNativeCommand -FilePath $CondaExe -ArgumentList @(
+        'run', '-n', 'hermes-env', '--no-capture-output', 'python', '-m', 'pip', 'install', '-e', $Repo, '-q'
+    ) -WorkingDirectory $Repo -Quiet)
+    if (Test-NativeCommandFailed) {
+        Write-Warn 'pip install -e . na merge had waarschuwingen - probeer REPAIR_PYTHON.bat.'
+        return 1
+    }
+    Write-Ok 'Python package bijgewerkt na merge.'
+    return 0
+}
+
 function Invoke-HermesUpdate {
     param([string[]]$ExtraArgs)
 
@@ -241,9 +310,20 @@ function Invoke-HermesUpdate {
 
     Write-Uitleg @(
         'Fase 2/3 - hermes update: merge upstream/main, pip/uv, Node UI, skills sync.'
+        'Eerst git merge upstream/main (fork); daarna hermes update voor deps/skills.'
         'Dit kan enkele minuten duren; output van Nous-cli volgt hieronder.'
     )
-    Write-Step "hermes update - NousResearch upstream/main + dependencies"
+
+    $mergeCode = Invoke-UpstreamGitMergeIfBehind
+    if ($mergeCode -ne 0) {
+        return $mergeCode
+    }
+
+    if ($script:LastUpstreamMergedCount -gt 0) {
+        [void](Install-HermesEditablePythonAfterUpstreamMerge -CondaExe $conda -Repo (Get-Location).Path)
+    }
+
+    Write-Step "hermes update - dependencies + skills (origin/upstream al op HEAD)"
     $updateArgs = @('run', '-n', 'hermes-env', '--no-capture-output', 'hermes', 'update', '-y') + $ExtraArgs
     return Invoke-HermesNativeCommand -FilePath $conda -ArgumentList $updateArgs -WorkingDirectory (Get-Location).Path
 }

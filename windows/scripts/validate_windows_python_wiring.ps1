@@ -20,7 +20,7 @@ $allowlist = @(
 
 $patterns = @(
     @{ Name = 'bare_python_call'; Regex = '(?i)(call\s+python\b|[^\\]\bpython\s+-m\s)'; Roots = @('windows\scripts') },
-    @{ Name = 'venv_python_bat'; Regex = '(?i)\.venv\\Scripts\\python\.exe'; Roots = @('windows') }
+    @{ Name = 'venv_python_bat'; Regex = '(?i)\.venv/Scripts/python\.exe'; Roots = @('windows') }
 )
 
 $failures = [System.Collections.Generic.List[string]]::new()

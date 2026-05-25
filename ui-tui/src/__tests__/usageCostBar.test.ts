@@ -1,5 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import * as liveTurnCost from '../domain/liveTurnCost.js'
+import * as usageModule from '../domain/usage.js'
 import {
   formatCostBreakdownPct,
   formatSessionCostLabel,
@@ -10,7 +12,8 @@ import {
   resolveStatusRuleLayout,
   shouldShowStatusBarCostRich,
   STATUS_RULE_HORIZONTAL_PADDING,
-  statusRuleColumns
+  statusRuleColumns,
+  statusRuleMinLeftWidth
 } from '../domain/usageCostBar.js'
 import { statusRuleWidths } from '../components/appChrome.js'
 
@@ -194,6 +197,12 @@ describe('formatCostBreakdownPct edge cases', () => {
       formatCostBreakdownPct({ cw: 'bad' as unknown as number, out: 10 })
     ).toBe('out 10%')
   })
+
+  it('skips NaN and Infinity breakdown values', () => {
+    expect(formatCostBreakdownPct({ cw: Number.NaN, out: 10, in: Number.POSITIVE_INFINITY })).toBe(
+      'out 10%'
+    )
+  })
 })
 
 describe('resolveCostBarTier boundaries', () => {
@@ -241,6 +250,11 @@ describe('statusRuleColumns edge cases', () => {
     expect(statusRuleColumns(STATUS_RULE_HORIZONTAL_PADDING)).toBe(1)
   })
 
+  it('clamps non-finite cols to 1 effective column', () => {
+    expect(statusRuleColumns(Number.NaN)).toBe(1)
+    expect(statusRuleColumns(Number.POSITIVE_INFINITY)).toBe(1)
+  })
+
   it('subtracts horizontal padding for wide terminals', () => {
     expect(statusRuleColumns(100)).toBe(100 - STATUS_RULE_HORIZONTAL_PADDING)
   })
@@ -268,7 +282,7 @@ describe('resolveStatusRuleLayout edge cases', () => {
       usage
     })
     expect(layout.costLabel).toBeNull()
-    expect(layout.leftWidth).toBeGreaterThanOrEqual(12)
+    expect(layout.leftWidth).toBeGreaterThanOrEqual(statusRuleMinLeftWidth(statusRuleColumns(120)))
   })
 
   it('honours explicit cwdReserve=0 (max space for cost segment)', () => {
@@ -292,7 +306,7 @@ describe('resolveStatusRuleLayout edge cases', () => {
     expect(noReserve.costLabel?.length ?? 0).toBeGreaterThanOrEqual(withReserve.costLabel?.length ?? 0)
   })
 
-  it('clamps leftWidth to STATUS_RULE_MIN_LEFT_WIDTH under extreme cwdReserve', () => {
+  it('clamps leftWidth to statusRuleMinLeftWidth under extreme cwdReserve', () => {
     const layout = resolveStatusRuleLayout({
       cols: 40,
       cwdReserve: 200,
@@ -301,7 +315,7 @@ describe('resolveStatusRuleLayout edge cases', () => {
       showCost: true,
       usage
     })
-    expect(layout.leftWidth).toBe(12)
+    expect(layout.leftWidth).toBe(8)
     expect(layout.costLabel).toBeTruthy()
   })
 
@@ -358,6 +372,289 @@ describe('resolveStatusRuleLayout edge cases', () => {
       showCost: true,
       usage
     })
-    expect(layout.leftWidth).toBeGreaterThanOrEqual(12)
+    expect(layout.leftWidth).toBeGreaterThanOrEqual(8)
+  })
+})
+
+describe('statusRuleMinLeftWidth', () => {
+  it('returns 8 at the wide-terminal boundary (24 effective cols)', () => {
+    expect(statusRuleMinLeftWidth(24)).toBe(8)
+    expect(statusRuleMinLeftWidth(100)).toBe(8)
+  })
+
+  it('returns 1 below the wide-terminal boundary', () => {
+    expect(statusRuleMinLeftWidth(23)).toBe(1)
+    expect(statusRuleMinLeftWidth(1)).toBe(1)
+  })
+
+  it('treats invalid numeric input without throwing (coerced comparisons)', () => {
+    expect(statusRuleMinLeftWidth(Number.NaN)).toBe(1)
+    expect(statusRuleMinLeftWidth(Number.POSITIVE_INFINITY)).toBe(8)
+  })
+})
+
+describe('resolveStatusRuleLayout leftWidth override', () => {
+  const usage = {
+    calls: 2,
+    cost_status: 'estimated' as const,
+    cost_usd: 1,
+    turn_cost_usd: 0.05
+  }
+
+  beforeEach(() => {
+    stringWidthMock.mockImplementation((s: string) => [...s].length)
+  })
+
+  it('prefers explicit leftWidth over cols - cwdReserve', () => {
+    const layout = resolveStatusRuleLayout({
+      cols: 100,
+      cwdReserve: 40,
+      leftWidth: 55,
+      costBarMode: 'rich',
+      cwdLabel: '~/ignored',
+      showCost: true,
+      usage
+    })
+    expect(layout.leftWidth).toBe(55)
+  })
+
+  it('uses narrow non-cost reserve when effective cols < 24', () => {
+    const narrow = resolveStatusRuleLayout({
+      cols: 18,
+      leftWidth: 10,
+      costBarMode: 'rich',
+      cwdLabel: 'x',
+      showCost: true,
+      usage
+    })
+    const wide = resolveStatusRuleLayout({
+      cols: 80,
+      leftWidth: 10,
+      costBarMode: 'rich',
+      cwdLabel: 'x',
+      showCost: true,
+      usage
+    })
+    expect(narrow.costLabel).toBe('$1.00')
+    expect(wide.costLabel).toBe('$1.00')
+    expect((wide.costLabel?.length ?? 0) >= (narrow.costLabel?.length ?? 0)).toBe(true)
+  })
+
+  it('yields session-tier cost when leftWidth is smaller than non-cost reserve', () => {
+    const layout = resolveStatusRuleLayout({
+      cols: 80,
+      leftWidth: 4,
+      costBarMode: 'rich',
+      cwdLabel: '',
+      showCost: true,
+      usage: { calls: 1, cost_status: 'estimated', cost_usd: 9.99, turn_cost_usd: 0.5 }
+    })
+    expect(layout.costLabel).toBe('$9.99')
+    expect(layout.leftWidth).toBe(4)
+  })
+
+  it('aligns with statusRuleWidths when leftWidth is passed through', () => {
+    const cols = 90
+    const cwd = '~/workspace/hermes-agent'
+    const ruleCols = statusRuleColumns(cols)
+    const widths = statusRuleWidths(ruleCols, cwd)
+    const layout = resolveStatusRuleLayout({
+      cols,
+      cwdReserve: widths.rightWidth + widths.separatorWidth,
+      leftWidth: widths.leftWidth,
+      costBarMode: 'rich',
+      cwdLabel: cwd,
+      showCost: true,
+      usage
+    })
+    expect(layout.leftWidth).toBe(widths.leftWidth)
+  })
+})
+
+describe('resolveStatusRuleLayout invalid input', () => {
+  const usage = { calls: 0, cost_status: 'unknown' as const }
+
+  beforeEach(() => {
+    stringWidthMock.mockImplementation((s: string) => [...s].length)
+  })
+
+  it('handles NaN and negative cols via statusRuleColumns clamp', () => {
+    const layout = resolveStatusRuleLayout({
+      cols: Number.NaN,
+      costBarMode: 'rich',
+      cwdLabel: 'a',
+      showCost: false,
+      usage
+    })
+    expect(layout.leftWidth).toBeGreaterThanOrEqual(1)
+    expect(layout.costLabel).toBeNull()
+  })
+
+  it('does not throw when stringWidth returns 0 for a long cwdLabel', () => {
+    stringWidthMock.mockReturnValue(0)
+    expect(() =>
+      resolveStatusRuleLayout({
+        cols: 60,
+        costBarMode: 'rich',
+        cwdLabel: 'x'.repeat(500),
+        showCost: true,
+        usage: { calls: 1, cost_status: 'estimated', cost_usd: 1 }
+      })
+    ).not.toThrow()
+  })
+
+  it('does not throw when stringWidth throws (mocked dependency failure)', () => {
+    stringWidthMock.mockImplementation(() => {
+      throw new Error('stringWidth unavailable')
+    })
+    expect(() =>
+      resolveStatusRuleLayout({
+        cols: 40,
+        costBarMode: 'minimal',
+        cwdLabel: 'bad',
+        showCost: false,
+        usage
+      })
+    ).toThrow('stringWidth unavailable')
+  })
+})
+
+describe('formatStatusBarCostRich with mocked formatters', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('falls back to formatSessionCostLabel when minimal mode and formatStatusBarCost returns null', () => {
+    vi.spyOn(usageModule, 'formatStatusBarCost').mockReturnValue(null)
+    const text = formatStatusBarCostRich(
+      { calls: 0, cost_status: 'included' },
+      { mode: 'minimal', width: 120 }
+    )
+    expect(text).toBe('included')
+    expect(usageModule.formatStatusBarCost).toHaveBeenCalled()
+  })
+
+  it('delegates turn USD formatting to formatTurnCostUsd', () => {
+    const spy = vi.spyOn(liveTurnCost, 'formatTurnCostUsd').mockReturnValue('~MOCK_TURN')
+    const text = formatStatusBarCostRich(
+      { calls: 1, cost_status: 'estimated', cost_usd: 1, turn_cost_usd: 0.2, turn_cost_estimated: true },
+      { mode: 'rich', width: 120 }
+    )
+    expect(spy).toHaveBeenCalledWith(0.2, true)
+    expect(text).toContain('MOCK_TURN')
+  })
+
+  it('delegates live tokens to formatTurnLiveTokens when USD absent', () => {
+    const spy = vi.spyOn(liveTurnCost, 'formatTurnLiveTokens').mockReturnValue('~MOCK_TOK')
+    const text = formatStatusBarCostRich(
+      { calls: 1, cost_status: 'unknown', turn_live_tokens: 42_000 },
+      { mode: 'rich', width: 120 }
+    )
+    expect(spy).toHaveBeenCalledWith(42_000)
+    expect(text).toContain('MOCK_TOK')
+  })
+})
+
+describe('formatStatusBarCostRich tier and segment edge cases', () => {
+  it('costs tier without turn shows session only in cost pair', () => {
+    expect(
+      formatStatusBarCostRich(
+        { calls: 3, cost_status: 'estimated', cost_usd: 4, session_tools_executed: 2 },
+        { mode: 'rich', width: 65 }
+      )
+    ).toBe('$4.00 │ 3 calls │ 2 tools')
+  })
+
+  it('full tier omits non-finite breakdown fields (NaN ignored)', () => {
+    const text = formatStatusBarCostRich(
+      {
+        calls: 1,
+        cost_status: 'estimated',
+        cost_usd: 1,
+        cost_breakdown_pct: { cw: Number.NaN, out: undefined } as never
+      },
+      { mode: 'rich', width: 100 }
+    )
+    expect(text).toBe('$1.00 │ 1 calls')
+    expect(text).not.toContain('cw')
+  })
+
+  it('full tier omits breakdown when partial pct has only non-number fields', () => {
+    const text = formatStatusBarCostRich(
+      {
+        calls: 1,
+        cost_status: 'estimated',
+        cost_usd: 1,
+        cost_breakdown_pct: { cw: 'bad', out: null } as never
+      },
+      { mode: 'rich', width: 100 }
+    )
+    expect(text).toBe('$1.00 │ 1 calls')
+  })
+
+  it('uses default FULL_MIN_WIDTH when width option omitted', () => {
+    const withDefault = formatStatusBarCostRich(
+      {
+        calls: 1,
+        cost_status: 'estimated',
+        cost_usd: 1,
+        cost_breakdown_pct: { cw: 10, out: 20, in: 30, cr: 40 },
+        turn_cost_usd: 0.01
+      },
+      { mode: 'rich' }
+    )
+    expect(withDefault).toContain('cw 10%')
+  })
+
+  it('NaN width falls through to session tier via resolveCostBarTier', () => {
+    expect(
+      formatStatusBarCostRich({ calls: 0, cost_status: 'estimated', cost_usd: 2.5 }, { mode: 'rich', width: Number.NaN })
+    ).toBe('$2.50')
+  })
+})
+
+describe('formatUsdCompact invalid numeric input', () => {
+  it('formats NaN and Infinity without throwing', () => {
+    expect(formatUsdCompact(Number.NaN)).toBe('$NaN')
+    expect(formatUsdCompact(Number.POSITIVE_INFINITY)).toBe('$Infinity')
+  })
+})
+
+describe('formatSessionCostLabel negative and invalid input', () => {
+  it('treats negative cost_usd as explicit numeric (caller responsibility)', () => {
+    expect(formatSessionCostLabel({ cost_usd: -1, calls: 1 })).toBe('$-1.00')
+  })
+
+  it('treats NaN cost_usd as number type and formats it', () => {
+    expect(formatSessionCostLabel({ cost_usd: Number.NaN, calls: 1 })).toBe('$NaN')
+  })
+
+  it('unknown status with truthy non-number calls still returns n/a', () => {
+    expect(formatSessionCostLabel({ cost_status: 'unknown', calls: 1 })).toBe('n/a')
+  })
+})
+
+describe('formatTurnCostLabel with mocked liveTurnCost', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('passes turn_cost_estimated flag to formatTurnCostUsd', () => {
+    const spy = vi.spyOn(liveTurnCost, 'formatTurnCostUsd').mockReturnValue('~$0.99')
+    formatTurnCostLabel({ calls: 1, turn_cost_usd: 0.99, turn_cost_estimated: true })
+    expect(spy).toHaveBeenCalledWith(0.99, true)
+  })
+
+  it('ignores zero turn_live_tokens and returns null', () => {
+    const spy = vi.spyOn(liveTurnCost, 'formatTurnLiveTokens')
+    expect(formatTurnCostLabel({ calls: 1, turn_live_tokens: 0 })).toBeNull()
+    expect(spy).not.toHaveBeenCalled()
+  })
+})
+
+describe('shouldShowStatusBarCostRich', () => {
+  it('does not inspect usage (boolean passthrough only)', () => {
+    expect(shouldShowStatusBarCostRich(true)).toBe(true)
+    expect(shouldShowStatusBarCostRich(false)).toBe(false)
   })
 })

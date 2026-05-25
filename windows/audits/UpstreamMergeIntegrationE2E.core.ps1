@@ -104,13 +104,19 @@ Add-StepResult '1/10 repo artefacten' ($missing.Count -eq 0) $detail1
 $appChrome = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'ui-tui/src/components/appChrome.tsx')
 $usageCost = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'ui-tui/src/domain/usageCostBar.ts')
 $profilesPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/profiles.py')
+$upstreamSync = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/upstream_sync.ps1')
+$upstreamMergeOk = ($upstreamSync -match 'function Invoke-UpstreamGitMergeIfBehind') -and
+    ($upstreamSync -match 'Invoke-UpstreamGitMergeIfBehind') -and
+    ($upstreamSync -match 'git merge upstream/main')
+
 $wiringOk = ($appChrome -match 'cwdReserve:\s*rightWidth\s*\+\s*separatorWidth') -and
     ($appChrome -match 'statusRuleWidths\(ruleCols') -and
     ($usageCost -match 'cwdReserve\?') -and
     ($usageCost -match 'stringWidth') -and
     ($profilesPy -match 'except ImportError:') -and
-    ($profilesPy -match '_maybe_register_gateway_service\(canon\)')
-Add-StepResult '2/10 bron wiring (cwdReserve + profiles)' $wiringOk
+    ($profilesPy -match '_maybe_register_gateway_service\(canon\)') -and
+    $upstreamMergeOk
+Add-StepResult '2/10 bron wiring + upstream_sync merge' $wiringOk
 
 $mergePs1 = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/merge_upstream_fork.ps1')
 $upstreamMd = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/UPSTREAM_SYNC.md')

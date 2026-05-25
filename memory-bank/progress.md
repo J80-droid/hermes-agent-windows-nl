@@ -28,7 +28,8 @@
 - [x] ICT-team profielen: `ict`, `security`, `dev`, `data` — SOUL's, toolsets, RAG-mappen, procedures, E2E PASS
 - [x] Upstream-update keten: `windows/upstream_sync.ps1`, `UPDATE_HERMES.bat`, `UPSTREAM_SYNC.md` (+ post-merge institutional runtime, git-inspectie + rooktest-matrix)
 - [x] Upstream merge 2026-05-23: 58 Nous-commits, 1 conflict (CI tests.yml), E2E PASS — `windows/audits/UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md`
-- [x] Upstream merge 2026-05-25: 87 Nous-commits (`82e92a08b`); handmatig `profiles.py`/`appChrome.tsx`; `cwdReserve`+`statusRuleWidths`; E2E `RUN_UPSTREAM_MERGE_INTEGRATION_E2E` 10/10; vitest 52 + `test_profiles_create_model_strip`
+- [x] Upstream merge 2026-05-25: 87+17 Nous (`82e92a08b`, `9e49dbd85`); `upstream_sync.ps1` merge vóór `hermes update`; `cwdReserve`+`statusRuleWidths`; E2E `RUN_UPSTREAM_MERGE_INTEGRATION_E2E` 10/10
+- [x] Upstream sync fase 2 hardening (2026-05-25): preflight fetch-dedup, `pip install -e .` na merge, TUI `statusRuleMinLeftWidth`+`leftWidth`; E2E `RUN_UPSTREAM_SYNC_PHASE2_E2E` 8/8; vitest usageCostBar 63 tests
 - [x] `MERGE_UPSTREAM.bat` + IDE-prompt (`merge_upstream_fork.ps1`); default IDE-guided, `-AutoResolve` opt-in
 - [x] Merge `-PromptOnly`: git-diff snippets per conflict (`Get-ConflictSnippetForPrompt`, `Get-ConflictSnippetFromGitDiff`)
 - [x] LanceDB onderhoud: `scripts/rag_pipeline/lancedb_maintenance.py`, `windows/LANCEDB_MAINTENANCE.bat` (list/inspect/init-missing/compact/benchmark)

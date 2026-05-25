@@ -56,6 +56,7 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | **`RUN_MEMORY_PRODUCTION_GATE.bat`** | Gecombineerd: trust limits + memory E2E (18/18) + trust forensic E2E + pytest memory/trust |
 | **`RUN_AUDITS.bat -IncludeMemoryProductionGate`** | Alleen memory productie-poort (ook in `-IncludeAllE2E`) |
 | **`RUN_UPSTREAM_MERGE_INTEGRATION_E2E.bat`** | Na upstream-merge: `cwdReserve`+`statusRuleWidths`, profile create strip+s6, vitest/pytest/harness (**10 stappen**) |
+| **`RUN_UPSTREAM_SYNC_PHASE2_E2E.bat`** | Fase-2 keten: `Invoke-UpstreamGitMergeIfBehind`, preflight fetch-dedup, `pip install -e .` na merge, TUI `leftWidth`/`statusRuleMinLeftWidth`, vitest + harness (**8 stappen**) |
 | **`RUN_STATUS_BAR_COST_E2E.bat`** | TUI statusbalk (rich): `show_cost`, `cost_bar_mode`, breakdown, turn-delta, live `~$turn`, gateway smoke |
 | **`RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`** | Klassieke CLI (`hermes chat`): `status_bar_cost.py`, `cli.py` hooks, `/cost`, smoke + pytest |
 | **`RUN_PARETO_E2E.bat`** | OpenRouter Pareto Code router: model-gate, transport/summary parity, pytest, verify script |

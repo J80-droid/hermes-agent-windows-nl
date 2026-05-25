@@ -10,7 +10,11 @@ import { $uiState } from '../app/uiStore.js'
 import { FACES } from '../content/faces.js'
 import { VERBS } from '../content/verbs.js'
 import { fmtDuration } from '../domain/messages.js'
-import { resolveStatusRuleLayout, statusRuleColumns } from '../domain/usageCostBar.js'
+import {
+  resolveStatusRuleLayout,
+  statusRuleColumns,
+  statusRuleMinLeftWidth
+} from '../domain/usageCostBar.js'
 import type { CostBarMode } from '../domain/usageCostBar.js'
 import { stickyPromptFromViewport } from '../domain/viewport.js'
 import { buildSubagentTree, treeTotals, widthByDepth } from '../lib/subagentTree.js'
@@ -156,7 +160,7 @@ function ctxBar(pct: number | undefined, w = 10) {
 export function statusRuleWidths(cols: number, cwdLabel: string) {
   const width = Math.max(1, Math.floor(cols || 1))
   const desiredSeparatorWidth = width >= 24 ? 3 : 1
-  const minLeftWidth = width >= 24 ? 8 : 1
+  const minLeftWidth = statusRuleMinLeftWidth(width)
   const maxRightWidth = Math.max(0, width - desiredSeparatorWidth - minLeftWidth)
 
   if (!cwdLabel || maxRightWidth <= 0) {
@@ -323,6 +327,7 @@ export function StatusRule({
   const { costLabel } = resolveStatusRuleLayout({
     cols,
     cwdReserve: rightWidth + separatorWidth,
+    leftWidth,
     costBarMode,
     cwdLabel,
     showCost,
