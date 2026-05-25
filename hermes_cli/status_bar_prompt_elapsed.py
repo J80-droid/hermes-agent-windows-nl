@@ -24,9 +24,19 @@ def prompt_elapsed_contains_emoji(text: str) -> bool:
     return any(ch in _TIMER_EMOJI_CHARS for ch in (text or ""))
 
 
+def _coerce_epoch_seconds(value: Any) -> Optional[float]:
+    """Parse wall-clock epoch seconds; reject bool, non-numeric, and non-finite values."""
+    if type(value) not in (int, float):  # bool is a subclass of int — exclude explicitly
+        return None
+    seconds = float(value)
+    if not math.isfinite(seconds):
+        return None
+    return seconds
+
+
 def _coerce_non_negative_seconds(value: Any) -> float:
     """Map duration inputs to a finite, non-negative second count (invalid → 0)."""
-    if not isinstance(value, (int, float)):
+    if type(value) not in (int, float):
         return 0.0
     seconds = float(value)
     if not math.isfinite(seconds):
@@ -70,9 +80,7 @@ def format_prompt_elapsed_status_bar(
     clamped via ``_format_time_str``.
     """
     duration_sec = _coerce_non_negative_seconds(prompt_duration)
-    started_at: Optional[float] = None
-    if isinstance(prompt_start_time, (int, float)) and math.isfinite(float(prompt_start_time)):
-        started_at = float(prompt_start_time)
+    started_at = _coerce_epoch_seconds(prompt_start_time)
 
     if started_at is None and duration_sec <= 0.0:
         time_str = "0s"
@@ -80,7 +88,9 @@ def format_prompt_elapsed_status_bar(
             return f"{_EMOJI_FROZEN} {time_str}"
         return time_str
 
-    clock = now if (isinstance(now, (int, float)) and math.isfinite(float(now))) else time.time()
+    clock = _coerce_epoch_seconds(now) if now is not None else None
+    if clock is None:
+        clock = time.time()
     elapsed = (clock - started_at) if started_at is not None else duration_sec
     time_str = _format_time_str(elapsed)
 
@@ -91,6 +101,9 @@ def format_prompt_elapsed_status_bar(
     return f"{emoji} {time_str}"
 
 
-def should_show_prompt_timer_emoji(show_emoji: bool) -> bool:
-    """Return whether timer emoji prefix is enabled (config already resolved)."""
-    return bool(show_emoji)
+def should_show_prompt_timer_emoji(show_emoji: Any) -> bool:
+    """Return whether timer emoji prefix is enabled.
+
+    Expects a bool from ``cli.py`` after ``is_truthy_value``; non-bool values are off.
+    """
+    return show_emoji is True

@@ -56,9 +56,9 @@ class TestShouldShowPromptTimerEmoji:
     def test_falsy_or_non_bool_coerced(self, value):
         assert should_show_prompt_timer_emoji(value) is False
 
-    @pytest.mark.parametrize("value", [1, "on", "yes"])
-    def test_truthy_non_bool_uses_python_bool(self, value):
-        assert should_show_prompt_timer_emoji(value) is True
+    @pytest.mark.parametrize("value", [1, "on", "yes", None, "false"])
+    def test_non_bool_values_are_off(self, value):
+        assert should_show_prompt_timer_emoji(value) is False
 
 
 # --- format_prompt_elapsed_status_bar: happy path ---
@@ -190,12 +190,13 @@ class TestFormatPromptElapsedEdgeCases:
         out = format_prompt_elapsed_status_bar(None, invalid_duration, show_emoji=False)  # type: ignore[arg-type]
         assert out == "0s"
 
-    def test_bool_start_time_treated_as_numeric_timestamp(self):
-        # bool is a subclass of int in Python; True == 1.0 epoch second formatting edge.
-        out = format_prompt_elapsed_status_bar(
-            True, 0.0, live=True, show_emoji=False, now=101.0
-        )
+    def test_bool_start_time_rejected_uses_duration(self):
+        out = format_prompt_elapsed_status_bar(True, 100.0, show_emoji=False)
         assert out == "1m 40s"
+
+    def test_bool_start_time_rejected_with_zero_duration(self):
+        out = format_prompt_elapsed_status_bar(True, 0.0, live=True, show_emoji=False, now=101.0)
+        assert out == "0s"
 
     def test_very_large_elapsed_days_format(self):
         out = format_prompt_elapsed_status_bar(None, 10 * 86400 + 3661.0, show_emoji=False)
