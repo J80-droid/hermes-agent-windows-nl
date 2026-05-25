@@ -14,28 +14,6 @@ if (-not $RepoRoot) {
 
 . (Join-Path $scriptRoot '..\HermesShellCommon.ps1')
 
-function Get-HermesAuditPython {
-    if ($env:HERMES_AUDIT_PYTHON -and (Test-Path -LiteralPath $env:HERMES_AUDIT_PYTHON)) {
-        return $env:HERMES_AUDIT_PYTHON
-    }
-    $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
-    if (Test-Path -LiteralPath $conda) {
-        $out = & $conda run -n hermes-env python -c "import sys; print(sys.executable)" 2>$null
-        if ($LASTEXITCODE -eq 0 -and $out) {
-            return ($out | Select-Object -Last 1).ToString().Trim()
-        }
-    }
-    foreach ($candidate in @(
-            (Join-Path $env:USERPROFILE 'miniconda3\envs\hermes-env\python.exe'),
-            'python'
-        )) {
-        if ($candidate -eq 'python' -or (Test-Path -LiteralPath $candidate)) {
-            return $candidate
-        }
-    }
-    return 'python'
-}
-
 $failures = 0
 $reportStamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'
 Write-Host '=== Platform Hardening Production Gate ===' -ForegroundColor Cyan
@@ -51,7 +29,7 @@ Write-Host '--- RUN_PLATFORM_HARDENING_REGRESSION_E2E ---' -ForegroundColor Cyan
 if (Test-NativeCommandFailed) { $failures++ }
 
 if (-not $SkipPytest) {
-    $auditPython = Get-HermesAuditPython
+    $auditPython = Get-HermesAuditPython -RepoRoot $RepoRoot
     $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
     $pytestTargets = @(
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_filesystem_sandbox.py'),

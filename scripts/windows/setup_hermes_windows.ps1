@@ -357,11 +357,8 @@ if ((Test-Path -LiteralPath $ensurePy) -and -not $WhatIfPreference) {
 }
 
 if (-not $WhatIfPreference) {
-    $stampDir = Join-Path $env:USERPROFILE '.hermes'
-    $stampFile = Join-Path $stampDir 'launch_bootstrap.stamp'
-    if (-not (Test-Path -LiteralPath $stampDir)) {
-        New-Item -ItemType Directory -Path $stampDir -Force | Out-Null
-    }
+    . (Join-Path $root 'windows/HermesPythonPolicy.ps1')
+    $stampFile = Sync-HermesLaunchBootstrapStamp
     Set-Content -LiteralPath $stampFile -Value (Get-Date -Format 'o') -Encoding utf8
 }
 

@@ -32,25 +32,21 @@ echo %C%+------------------------------------------------------------------+%R%
 echo.
 
 if not defined HERMES_CONDA_ENV set "HERMES_CONDA_ENV=hermes-env"
-if not defined HERMES_PYTHON if exist "%USERPROFILE%\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe" set "HERMES_PYTHON=%USERPROFILE%\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe"
-if not defined HERMES_PYTHON if exist "%USERPROFILE%\anaconda3\envs\!HERMES_CONDA_ENV!\python.exe" set "HERMES_PYTHON=%USERPROFILE%\anaconda3\envs\!HERMES_CONDA_ENV!\python.exe"
-if not defined HERMES_PYTHON if exist "%LOCALAPPDATA%\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe" set "HERMES_PYTHON=%LOCALAPPDATA%\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe"
-if not defined HERMES_PYTHON if exist "%LOCALAPPDATA%\anaconda3\envs\!HERMES_CONDA_ENV!\python.exe" set "HERMES_PYTHON=%LOCALAPPDATA%\anaconda3\envs\!HERMES_CONDA_ENV!\python.exe"
-if not defined HERMES_PYTHON if exist "C:\ProgramData\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe" set "HERMES_PYTHON=C:\ProgramData\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe"
-if not defined HERMES_PYTHON if exist "C:\ProgramData\anaconda3\envs\!HERMES_CONDA_ENV!\python.exe" set "HERMES_PYTHON=C:\ProgramData\anaconda3\envs\!HERMES_CONDA_ENV!\python.exe"
+for /f "delims=" %%P in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\resolve_hermes_python.ps1" -RepoRoot "%CD%" -RequirePip 2^>nul') do set "HERMES_PYTHON=%%P"
 
 echo %A%  python -m hermes_cli.main setup%R%  ^|  repo: %CD%
 echo.
 
 set "RC=1"
 if defined HERMES_PYTHON (
-  echo [INFO] Gebruik Conda-python: !HERMES_PYTHON!
+  echo [INFO] Gebruik canonieke Python: !HERMES_PYTHON!
   call "!HERMES_PYTHON!" -m hermes_cli.main setup
   set "RC=!ERRORLEVEL!"
   goto :wiz_done
 )
-if exist ".venv\Scripts\python.exe" (
-  echo [INFO] Gebruik: .venv\Scripts\python.exe
+if "%HERMES_ALLOW_UV_VENV%"=="1" if exist ".venv\Scripts\python.exe" (
+  echo [WARN] .venv is niet canoniek — gebruik REPAIR_PYTHON.bat of conda hermes-env.
+  echo [INFO] Gebruik: .venv\Scripts\python.exe ^(HERMES_ALLOW_UV_VENV=1^)
   call ".venv\Scripts\python.exe" -m hermes_cli.main setup
   set "RC=!ERRORLEVEL!"
   goto :wiz_done
@@ -98,8 +94,8 @@ if !errorlevel! equ 0 (
 )
 
 echo [ERROR] Geen geschikte Python/hermes gevonden.
-echo   Maak conda-env "%HERMES_CONDA_ENV%" aan, of installeer .venv in deze repo.
-echo   Zie windows\launch_hermes.bat voor dezelfde paden.
+echo   Draai windows\REPAIR_PYTHON.bat of maak conda-env "%HERMES_CONDA_ENV%" aan.
+echo   Zie docs\HERMES_START.md ^(Python institutioneel^).
 if not defined HERMES_OPEN_SETUP_NOPAUSE pause
 exit /b 1
 

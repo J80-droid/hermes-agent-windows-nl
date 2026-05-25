@@ -65,6 +65,7 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | **`RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat`** | Gecombineerd: beide platform E2E's + pytest subset + `footguns --all` |
 | **`RUN_KNOWLEDGE_REPOSITORY_E2E.bat`** | KnowledgeRepository agent-API: edge cases, caller wiring, pytest (8 stappen) |
 | **`RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.bat`** | Institutioneel Python: conda hermes-env, IDE sync, venv-quarantaine, pytest (8 stappen) |
+| **`RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`** | Gecombineerd: Python E2E + KnowledgeRepository + platform gate + wiring-check |
 | **`RUN_AUDITS.bat -IncludePseudoTableNormalizerE2E`** | Bovenstaande pseudo-tabel E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeMemoryArchitectureE2E`** | Bovenstaande memory E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeStatusBarCostE2E`** | Bovenstaande statusbalk-kosten E2E in gecombineerde poort |
@@ -251,6 +252,24 @@ Dedicated audit voor institutioneel Python-beleid: conda `hermes-env` als enige 
 Optioneel: `-SkipPytest` op `RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.ps1`.
 
 Rapport: `HERMES_PYTHON_INSTITUTIONAL_E2E_REPORT_*.md` (gitignored). Zie `docs/HERMES_START.md` § Python institutioneel.
+
+## Institutional production gate
+
+```text
+windows\audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat
+```
+
+| Volgorde | Audit |
+|----------|-------|
+| 1 | `RUN_HERMES_PYTHON_INSTITUTIONAL_E2E` (8/8) |
+| 2 | `RUN_KNOWLEDGE_REPOSITORY_E2E` (8/8) |
+| 3 | `RUN_PLATFORM_HARDENING_PRODUCTION_GATE` |
+| 4 | `validate_windows_python_wiring.ps1` |
+| Optioneel | `-IncludeMemoryGate` → memory production gate |
+
+Optioneel: `-SkipPytest` op onderliggende E2E's.
+
+Rapport: `INSTITUTIONAL_PRODUCTION_GATE_REPORT_*.md`. Zie `docs/INSTITUTIONAL_OPERATIONS.md`.
 
 ## Memory-architectuur E2E (L1–L4)
 

@@ -88,6 +88,21 @@ if ($badLiterals.Count -gt 0) {
     Write-Host '  [OK] Geen \s in pad-literals' -ForegroundColor Green
 }
 
+Write-Host '[INFO] Python wiring (resolver, geen bare python/.venv)...' -ForegroundColor Cyan
+$pyWiring = Join-Path $repo 'windows\scripts\validate_windows_python_wiring.ps1'
+if (Test-Path -LiteralPath $pyWiring) {
+    & $pyWiring -RepoRoot $repo
+    if ($LASTEXITCODE -ne 0) {
+        [void]$failures.Add('validate_windows_python_wiring.ps1 faalde')
+        Write-Host '  [FAIL] legacy Python wiring' -ForegroundColor Red
+    } else {
+        Write-Host '  [OK] Python wiring institutioneel' -ForegroundColor Green
+    }
+} else {
+    [void]$failures.Add('validate_windows_python_wiring.ps1 ontbreekt')
+    Write-Host '  [FAIL] validate_windows_python_wiring.ps1 ontbreekt' -ForegroundColor Red
+}
+
 Write-Host '[INFO] Setup PS1 (canoniek + wrapper, single source)...' -ForegroundColor Cyan
 $setupCanon = Get-HermesCanonicalSetupScriptPath -RepoRoot $repo
 $setupWrapper = Get-HermesSetupWrapperScriptPath -RepoRoot $repo

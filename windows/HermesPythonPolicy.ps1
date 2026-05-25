@@ -98,19 +98,167 @@ function Invoke-HermesQuarantineBrokenVenv {
     return $true
 }
 
+function Get-HermesPythonPolicyManifestPath {
+    return Join-Path (Join-Path $env:LOCALAPPDATA 'Hermes') 'python-policy.json'
+}
+
+function Get-HermesRagDepsManifestPath {
+    return Join-Path (Join-Path $env:LOCALAPPDATA 'Hermes') 'rag-deps.json'
+}
+
+function Get-HermesPythonFromPolicyManifest {
+    $path = Get-HermesPythonPolicyManifestPath
+    if (-not (Test-Path -LiteralPath $path)) { return $null }
+    try {
+        $j = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
+        $py = $j.preferred_python
+        if ($py -and (Test-Path -LiteralPath $py.ToString())) {
+            return $py.ToString()
+        }
+    } catch {
+        return $null
+    }
+    return $null
+}
+
+function Resolve-HermesPythonExe {
+    <#
+    .SYNOPSIS
+        Canonieke Python-resolver: HERMES_PYTHON > conda > manifest > optionele .venv.
+    #>
+    param(
+        [string]$RepoRoot = '',
+        [switch]$RequirePip
+    )
+
+    $candidates = [System.Collections.Generic.List[string]]::new()
+
+    if ($env:HERMES_PYTHON -and (Test-Path -LiteralPath $env:HERMES_PYTHON)) {
+        [void]$candidates.Add($env:HERMES_PYTHON)
+    }
+
+    $savedHermesPython = $env:HERMES_PYTHON
+    if ($savedHermesPython) {
+        Remove-Item Env:HERMES_PYTHON -ErrorAction SilentlyContinue
+    }
+    try {
+        $condaOnly = Get-HermesCondaPython
+    } finally {
+        if ($null -ne $savedHermesPython) {
+            $env:HERMES_PYTHON = $savedHermesPython
+        }
+    }
+    if ($condaOnly -and -not $candidates.Contains($condaOnly)) {
+        [void]$candidates.Add($condaOnly)
+    }
+
+    $manifestPy = Get-HermesPythonFromPolicyManifest
+    if ($manifestPy -and -not $candidates.Contains($manifestPy)) {
+        [void]$candidates.Add($manifestPy)
+    }
+
+    if ($RepoRoot -and $env:HERMES_ALLOW_UV_VENV -eq '1') {
+        $venvPy = Get-HermesRepoVenvPython -RepoRoot $RepoRoot
+        if ($venvPy -and (Test-HermesPythonHasPip -PythonExe $venvPy) -and -not $candidates.Contains($venvPy)) {
+            [void]$candidates.Add($venvPy)
+        }
+    }
+
+    foreach ($py in $candidates) {
+        if ($RequirePip -and -not (Test-HermesPythonHasPip -PythonExe $py)) { continue }
+        return $py
+    }
+    return $null
+}
+
+function Test-HermesRagExtrasInstalled {
+    param([Parameter(Mandatory)][string]$PythonExe)
+    if (-not (Test-Path -LiteralPath $PythonExe)) { return $false }
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'SilentlyContinue'
+    try {
+        $null = & $PythonExe -c "import lancedb, sentence_transformers" 2>&1
+        return ($LASTEXITCODE -eq 0)
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+}
+
+function Write-HermesRagDepsManifest {
+    param([Parameter(Mandatory)][string]$PythonExe)
+
+    $policyDir = Join-Path $env:LOCALAPPDATA 'Hermes'
+    New-Item -ItemType Directory -Force -Path $policyDir | Out-Null
+    $manifestPath = Get-HermesRagDepsManifestPath
+    $version = ''
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'SilentlyContinue'
+    try {
+        $version = (& $PythonExe -c "import importlib.metadata as m; print(m.version('hermes-agent'))" 2>$null | Select-Object -Last 1).ToString().Trim()
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+    @{
+        installed_at  = (Get-Date).ToUniversalTime().ToString('o')
+        python_exe    = $PythonExe
+        rag_extra     = 'rag'
+        package_version = $version
+    } | ConvertTo-Json | Set-Content -LiteralPath $manifestPath -Encoding UTF8
+    return $manifestPath
+}
+
+function Test-HermesNeedsRagExtrasInstall {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$PyprojectPath
+    )
+    if (-not (Test-Path -LiteralPath $PyprojectPath)) { return $true }
+
+    $manifestPath = Get-HermesRagDepsManifestPath
+    if (-not (Test-Path -LiteralPath $manifestPath)) { return $true }
+
+    try {
+        $j = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $manifestTime = (Get-Item -LiteralPath $manifestPath).LastWriteTimeUtc
+        $projTime = (Get-Item -LiteralPath $PyprojectPath).LastWriteTimeUtc
+        if ($projTime -gt $manifestTime) { return $true }
+        $py = Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip
+        if (-not $py) { return $true }
+        if ($j.python_exe -and ($j.python_exe.ToString() -ne $py)) { return $true }
+        return -not (Test-HermesRagExtrasInstalled -PythonExe $py)
+    } catch {
+        return $true
+    }
+}
+
+function Get-HermesLaunchBootstrapStampPath {
+    return Join-Path (Join-Path $env:LOCALAPPDATA 'hermes') 'launch_bootstrap.stamp'
+}
+
+function Sync-HermesLaunchBootstrapStamp {
+    <#
+    .SYNOPSIS
+        Migreert legacy stamp (%USERPROFILE%\.hermes) naar %LOCALAPPDATA%\hermes.
+    #>
+    $canonical = Get-HermesLaunchBootstrapStampPath
+    $canonicalDir = Split-Path -Parent $canonical
+    if (-not (Test-Path -LiteralPath $canonicalDir)) {
+        New-Item -ItemType Directory -Path $canonicalDir -Force | Out-Null
+    }
+    $legacy = Join-Path (Join-Path $env:USERPROFILE '.hermes') 'launch_bootstrap.stamp'
+    if ((Test-Path -LiteralPath $legacy) -and -not (Test-Path -LiteralPath $canonical)) {
+        Move-Item -LiteralPath $legacy -Destination $canonical -Force
+    }
+    return $canonical
+}
+
 function Get-HermesPreferredPython {
     <#
     .SYNOPSIS
         Eén interpreter voor RAG/setup: conda hermes-env (institutioneel).
     #>
     param([string]$RepoRoot = '')
-    $conda = Get-HermesCondaPython
-    if ($conda) { return $conda }
-    if ($RepoRoot -and $env:HERMES_ALLOW_UV_VENV -eq '1') {
-        $venvPy = Get-HermesRepoVenvPython -RepoRoot $RepoRoot
-        if ($venvPy -and (Test-HermesPythonHasPip -PythonExe $venvPy)) { return $venvPy }
-    }
-    return $null
+    return Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip
 }
 
 function Get-HermesRagPython {
@@ -123,8 +271,8 @@ function Get-HermesRagPython {
         [switch]$IncludeVenvWithoutPip
     )
     $out = @()
-    $conda = Get-HermesCondaPython
-    if ($conda) { $out += $conda }
+    $primary = Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip
+    if ($primary) { $out += $primary }
     if (-not $RepoRoot) { return $out }
     if ($env:HERMES_ALLOW_UV_VENV -ne '1') { return $out }
 

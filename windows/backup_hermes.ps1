@@ -219,13 +219,11 @@ if (Test-Path -LiteralPath $dbPath) {
         $res = py -3 -c $verifyCmd 2>$null
     }
     if (-not $res) {
-        $condaPy = Join-Path $env:USERPROFILE 'miniconda3\envs\hermes-env\python.exe'
-        if (Test-Path -LiteralPath $condaPy) {
+        . (Join-Path $PSScriptRoot 'HermesPythonPolicy.ps1')
+        $condaPy = Resolve-HermesPythonExe -RepoRoot $repo -RequirePip
+        if ($condaPy) {
             $res = & $condaPy -c $verifyCmd 2>$null
         }
-    }
-    if (-not $res) {
-        $res = python -c $verifyCmd 2>$null
     }
     $ErrorActionPreference = $prevE
     if ($res -eq 'ok') {

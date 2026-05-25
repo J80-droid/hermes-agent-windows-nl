@@ -58,6 +58,10 @@ if (-not $SkipPip) {
     }
     if ($installed -gt 0) {
         Write-RagMsg ('[OK] RAG-dependencies op {0} interpreter(s).' -f $installed) 'Green'
+        $manifestPy = ($pythons | Where-Object { Test-HermesPythonHasPip -PythonExe $_ } | Select-Object -First 1)
+        if ($manifestPy) {
+            Write-HermesRagDepsManifest -PythonExe $manifestPy | Out-Null
+        }
     } elseif ($pythons.Count -eq 0) {
         Write-RagMsg '[WARN] Geen Python met pip — conda: conda activate hermes-env; pip install -e .[rag]' 'Yellow'
     }

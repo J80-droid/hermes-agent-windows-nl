@@ -12,11 +12,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'rag\rag_institutional_env.ps1')
+. (Join-Path $PSScriptRoot '..\HermesPythonPolicy.ps1')
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $env:HERMES_REPO = $repo
 
 $domainsYaml = if ($env:HERMES_DOMAINS_YAML) { $env:HERMES_DOMAINS_YAML } else { Join-Path $env:USERPROFILE 'data\domains.yaml' }
-$py = Join-Path $env:USERPROFILE 'miniconda3\envs\hermes-env\python.exe'
+$py = Resolve-HermesPythonExe -RepoRoot $repo -RequirePip
 $runner = Join-Path $repo 'scripts\rag_pipeline\run_domains_ingest.py'
 
 if (-not (Test-Path -LiteralPath $py)) {

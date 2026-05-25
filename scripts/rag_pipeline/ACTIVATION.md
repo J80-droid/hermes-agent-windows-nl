@@ -103,6 +103,8 @@ flowchart LR
 
 ## 100%-checklist (code vs. jouw run)
 
+**Institutioneel (drie lagen):** (1) `REPAIR_PYTHON.bat` = interpreter, (2) `install_rag_extras.ps1` = `[rag]`-deps (auto via bootstrap), (3) `update_knowledge.bat` = index. Zie `docs/INSTITUTIONAL_OPERATIONS.md`.
+
 | # | Onderdeel | In repo (code) | Jouw run (verplicht voor E2E) |
 | - | --------- | -------------- | ----------------------------- |
 | 1 | CLI/Web bron-chips (`cli.py`, `web/…/Markdown.tsx`) | Ja — `[Bron: …]` → backticks | — |

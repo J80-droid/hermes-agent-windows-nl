@@ -31,11 +31,12 @@ if exist "%WIN_DIR%\launch_hermes.bat" (
   exit /b !ERRORLEVEL!
 )
 
-if exist "%REPO_ROOT%\.venv\Scripts\python.exe" (
-  echo %C%[INFO]%R% No launch_hermes.bat - starting via .venv\python cli.py
-  "%REPO_ROOT%\.venv\Scripts\python.exe" "%REPO_ROOT%\cli.py" %*
+for /f "delims=" %%P in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%WIN_DIR%\scripts\resolve_hermes_python.ps1" -RepoRoot "%REPO_ROOT%" -RequirePip 2^>nul') do set "HERMES_PYTHON=%%P"
+if defined HERMES_PYTHON (
+  echo %C%[INFO]%R% No launch_hermes.bat - starting via canonieke Python cli.py
+  "%HERMES_PYTHON%" "%REPO_ROOT%\cli.py" %*
   exit /b !ERRORLEVEL!
 )
 
-echo [ERROR] Missing launch_hermes.bat and .venv\Scripts\python.exe. Run install.ps1 or uv sync.
+echo [ERROR] Missing launch_hermes.bat and conda hermes-env. Run REPAIR_PYTHON.bat or SETUP_HERMES.bat.
 exit /b 1

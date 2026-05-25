@@ -6,6 +6,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
+. (Join-Path $PSScriptRoot '..\HermesPythonPolicy.ps1')
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 } else {
@@ -17,17 +18,12 @@ if (Test-Path -LiteralPath $ensureEnv) {
     & $ensureEnv -FixUserEnv -SkipVerify
 }
 
-$stampDir = Join-Path $env:LOCALAPPDATA 'hermes'
-$stampFile = Join-Path $stampDir 'launch_bootstrap.stamp'
+$stampFile = Sync-HermesLaunchBootstrapStamp
 $pyproject = Join-Path $RepoRoot 'pyproject.toml'
 $needRag = $ForceRagCheck.IsPresent
 
-if (-not $needRag -and (Test-Path -LiteralPath $stampFile) -and (Test-Path -LiteralPath $pyproject)) {
-    $stampTime = (Get-Item -LiteralPath $stampFile).LastWriteTimeUtc
-    $projTime = (Get-Item -LiteralPath $pyproject).LastWriteTimeUtc
-    if ($projTime -le $stampTime) { $needRag = $false } else { $needRag = $true }
-} elseif (-not (Test-Path -LiteralPath $stampFile)) {
-    $needRag = $true
+if (-not $needRag) {
+    $needRag = Test-HermesNeedsRagExtrasInstall -RepoRoot $RepoRoot -PyprojectPath $pyproject
 }
 
 $ensurePy = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/ensure_hermes_python.ps1'
@@ -41,8 +37,8 @@ if ($needRag) {
         Write-Host '[INFO] RAG/MCP eenmalige sync (pyproject gewijzigd of eerste start)...' -ForegroundColor Cyan
         & $ragExtras -RepoRoot $RepoRoot -Quiet
     }
-    if (-not (Test-Path -LiteralPath $stampDir)) {
-        New-Item -ItemType Directory -Path $stampDir -Force | Out-Null
+    if (-not (Test-Path -LiteralPath (Split-Path -Parent $stampFile))) {
+        New-Item -ItemType Directory -Path (Split-Path -Parent $stampFile) -Force | Out-Null
     }
     Set-Content -LiteralPath $stampFile -Value (Get-Date -Format 'o') -Encoding utf8
 }

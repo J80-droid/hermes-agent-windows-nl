@@ -12,6 +12,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $scriptDir "rag_log_encoding.ps1")
 . (Join-Path $scriptDir "rag_ingest_log_filter.ps1")
 . (Join-Path $scriptDir "enable_console_ansi.ps1")
+. (Join-Path $scriptDir "..\HermesPythonPolicy.ps1")
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $scriptDir "..\..")).Path
 }
@@ -67,6 +68,12 @@ if (Test-Path $perfScript) {
     . $perfScript
 }
 
+$pyExe = Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip
+if (-not $pyExe) {
+    Write-Error "Geen conda hermes-env gevonden. Draai windows\REPAIR_PYTHON.bat."
+    exit 1
+}
+
 $cmd = @"
 call "$activate" $CondaEnv
 if errorlevel 1 exit /b 1
@@ -74,7 +81,7 @@ cd /d "$RepoRoot"
 set HERMES_FORCE_COLOR=1
 set FORCE_COLOR=1
 set PYTHONIOENCODING=utf-8
-python -u scripts\rag_pipeline\ingest.py
+"$pyExe" -u scripts\rag_pipeline\ingest.py
 exit /b %ERRORLEVEL%
 "@
 

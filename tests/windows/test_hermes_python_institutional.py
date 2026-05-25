@@ -62,12 +62,24 @@ def test_policy_helpers_present():
     for name in (
         "Get-HermesCondaEnvName",
         "Get-HermesCondaPython",
+        "Resolve-HermesPythonExe",
+        "Test-HermesRagExtrasInstalled",
         "Update-HermesVscodeInterpreterPath",
         "Invoke-HermesSyncIdePython",
         "Write-HermesPythonPolicyManifest",
+        "Write-HermesRagDepsManifest",
         "Invoke-HermesQuarantineBrokenVenv",
     ):
         assert f"function {name}" in text
+
+
+def test_resolve_script_exists():
+    assert (REPO / "windows" / "scripts" / "resolve_hermes_python.ps1").is_file()
+
+
+def test_get_preferred_python_delegates_to_resolver():
+    text = POLICY_PS1.read_text(encoding="utf-8")
+    assert "Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip" in text
 
 
 def test_quarantine_uses_try_catch_on_rename():
@@ -95,6 +107,8 @@ def test_repair_bat_invokes_sync_ide():
     text = REPAIR_BAT.read_text(encoding="utf-8")
     assert "-SyncIde" in text
     assert "ensure_hermes_python.ps1" in text
+    assert "check_hermes_rag_after_repair.ps1" in text
+    assert "install_rag_extras.ps1" in text
 
 
 def test_vscode_settings_canonical_interpreter():
@@ -381,3 +395,84 @@ def test_ensure_hermes_python_requires_conda_or_hermes_python():
         if proc.returncode == 0:
             pytest.skip("host heeft conda hermes-env — negatieve test niet van toepassing")
         assert "Geen conda" in proc.stdout + proc.stderr or proc.returncode != 0
+
+
+def test_resolve_hermes_python_exe_prefers_hermes_python_env():
+    with tempfile.NamedTemporaryFile(suffix=".exe", delete=False) as handle:
+        fake = handle.name
+        handle.write(b"stub")
+    try:
+        script = f"""
+{_dot_source_policy()}
+$env:HERMES_PYTHON = '{fake.replace("'", "''")}'
+$r = Resolve-HermesPythonExe -RequirePip:$false
+if ($r -ne '{fake.replace("'", "''")}') {{ exit 1 }}
+exit 0
+"""
+        proc = _run_powershell(script)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+    finally:
+        Path(fake).unlink(missing_ok=True)
+
+
+def test_resolve_script_prints_path():
+    proc = subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(REPO / "windows" / "scripts" / "resolve_hermes_python.ps1"),
+            "-RepoRoot",
+            str(REPO),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        cwd=str(REPO),
+        timeout=60,
+        check=False,
+    )
+    if proc.returncode != 0:
+        pytest.skip("conda hermes-env niet beschikbaar op test-host")
+    assert proc.stdout.strip().endswith("python.exe")
+
+
+def test_resolve_manifest_fallback():
+    with tempfile.TemporaryDirectory() as tmp:
+        fake = str(Path(tmp) / "manifest-python.exe")
+        Path(fake).write_bytes(b"stub")
+        policy_dir = Path(os.environ.get("LOCALAPPDATA", "")) / "Hermes"
+        policy_dir.mkdir(parents=True, exist_ok=True)
+        manifest = policy_dir / "python-policy.json"
+        backup = manifest.read_text(encoding="utf-8") if manifest.is_file() else None
+        manifest.write_text(
+            f'{{"preferred_python":"{fake.replace(chr(92), chr(92)+chr(92))}"}}',
+            encoding="utf-8",
+        )
+        try:
+            script = f"""
+{_dot_source_policy()}
+Remove-Item Env:HERMES_PYTHON -ErrorAction SilentlyContinue
+$saved = $env:HERMES_CONDA_ENV
+$env:HERMES_CONDA_ENV = '__nonexistent_manifest_test__'
+$r = Resolve-HermesPythonExe -RequirePip:$false
+if ($null -ne $saved) {{ $env:HERMES_CONDA_ENV = $saved }} else {{ Remove-Item Env:HERMES_CONDA_ENV -ErrorAction SilentlyContinue }}
+if ($r -ne '{fake.replace("'", "''")}') {{ exit 1 }}
+exit 0
+"""
+            proc = _run_powershell(script)
+            if proc.returncode != 0:
+                conda_probe = _run_powershell(
+                    f"{_dot_source_policy()}; Remove-Item Env:HERMES_PYTHON -ErrorAction SilentlyContinue; if (Get-HermesCondaPython) {{ exit 0 }} else {{ exit 1 }}"
+                )
+                if conda_probe.returncode == 0:
+                    pytest.skip("conda gevonden vóór manifest — volgorde-test niet betrouwbaar")
+            assert proc.returncode == 0, proc.stdout + proc.stderr
+        finally:
+            if backup is None:
+                manifest.unlink(missing_ok=True)
+            else:
+                manifest.write_text(backup, encoding="utf-8")

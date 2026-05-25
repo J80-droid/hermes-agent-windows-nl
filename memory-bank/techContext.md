@@ -1,6 +1,6 @@
 # Tech context
 
-- **Python:** conda `hermes-env` (ingest/MCP); optioneel uv `.venv` voor `hermes` CLI
+- **Python:** conda `hermes-env` (canoniek via `Resolve-HermesPythonExe` / `HermesPythonPolicy.ps1`); geen repo `.venv` als runtime; optioneel uv alleen met `HERMES_ALLOW_UV_VENV=1`
 - **Index:** per domein `%USERPROFILE%\data\lancedb\<domein>\` — config in `%USERPROFILE%\data\domains.yaml` (voorbeeld `docs/domains.yaml.example`)
 - **Rapporten:** `rag_ingest_run_summary.json`, `rag_ingest_skipped_report.md` per domein
 - **Bronnen:** `%USERPROFILE%\data\raw_source_files`

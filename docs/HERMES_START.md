@@ -15,7 +15,17 @@
 
 **Niet doen:** `python -m venv .venv` in repo-root; Cursor workspace `(venv)` als Hermes-runtime; handmatig `.venv` laten staan “voor de IDE”.
 
-Override conda-pad: `HERMES_PYTHON` of `HERMES_CONDA_ROOT` (zie `HermesPythonPolicy.ps1`).
+Override conda-pad: `HERMES_PYTHON` of `HERMES_CONDA_ROOT` (zie `HermesPythonPolicy.ps1`, `Resolve-HermesPythonExe`).
+
+### Drie lagen (interpreter → deps → index)
+
+| Laag | Commando |
+|------|----------|
+| Interpreter + IDE | `windows\REPAIR_PYTHON.bat` |
+| RAG-deps `[rag]` | Automatisch bij start (`launch_bootstrap.ps1`) of `install_rag_extras.ps1` |
+| LanceDB-index | `windows\scripts\update_knowledge.bat` |
+
+Productie-gate: `windows\audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`. Runbook: `docs/INSTITUTIONAL_OPERATIONS.md`.
 
 Je ziet `(venv)` in de terminalprompt? Dat is **niet** `hermes-env` — wissel interpreter of draai `REPAIR_PYTHON.bat`.
 

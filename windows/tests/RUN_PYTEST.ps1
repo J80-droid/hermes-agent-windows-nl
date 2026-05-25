@@ -8,12 +8,10 @@ $windowsDir = Split-Path -Parent $testsDir
 $repoRoot = (Resolve-Path (Join-Path $windowsDir '..')).Path
 Set-Location -LiteralPath $repoRoot
 
-$py = Join-Path $env:USERPROFILE 'miniconda3\envs\hermes-env\python.exe'
-if (-not (Test-Path -LiteralPath $py)) {
-    $py = 'C:\ProgramData\miniconda3\envs\hermes-env\python.exe'
-}
-if (-not (Test-Path -LiteralPath $py)) {
-    Write-Host 'ERROR: hermes-env python.exe niet gevonden. Pas pad in RUN_PYTEST.ps1 aan.' -ForegroundColor Red
+. (Join-Path $windowsDir 'HermesPythonPolicy.ps1')
+$py = Resolve-HermesPythonExe -RepoRoot $repoRoot -RequirePip
+if (-not $py) {
+    Write-Host 'ERROR: hermes-env python.exe niet gevonden. Draai windows\REPAIR_PYTHON.bat.' -ForegroundColor Red
     exit 1
 }
 

@@ -54,3 +54,31 @@ function Read-HermesRepoText {
     )
     return Get-Content -LiteralPath $Path -Raw -Encoding UTF8
 }
+
+function Get-HermesAuditPython {
+    <#
+    .SYNOPSIS
+        Canonieke audit-python via HermesPythonPolicy (conda hermes-env).
+    #>
+    param([string]$RepoRoot = '')
+
+    $policyPath = Join-Path $PSScriptRoot 'HermesPythonPolicy.ps1'
+    if (-not (Test-Path -LiteralPath $policyPath)) {
+        $policyPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'HermesPythonPolicy.ps1'
+    }
+    if (Test-Path -LiteralPath $policyPath) {
+        . $policyPath
+    }
+
+    if ($env:HERMES_AUDIT_PYTHON -and (Test-Path -LiteralPath $env:HERMES_AUDIT_PYTHON)) {
+        return $env:HERMES_AUDIT_PYTHON
+    }
+
+    if (-not $RepoRoot) {
+        $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+    }
+
+    $py = Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip
+    if ($py) { return $py }
+    return 'python'
+}

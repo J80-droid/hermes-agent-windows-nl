@@ -31,7 +31,11 @@ $files = @(
     'windows/audits/RUN_PLATFORM_HARDENING_PRODUCTION_GATE.ps1',
     'windows/audits/HermesPythonInstitutionalE2E.core.ps1',
     'windows/audits/HermesPythonInstitutionalE2E.harness.ps1',
-    'windows/audits/RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.ps1'
+    'windows/audits/RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.ps1',
+    'windows/audits/RUN_INSTITUTIONAL_PRODUCTION_GATE.ps1',
+    'windows/scripts/resolve_hermes_python.ps1',
+    'windows/scripts/validate_windows_python_wiring.ps1',
+    'windows/scripts/check_hermes_rag_after_repair.ps1'
 )
 
 $failed = 0

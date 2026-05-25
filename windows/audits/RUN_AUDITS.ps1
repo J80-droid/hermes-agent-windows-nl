@@ -19,6 +19,8 @@ param(
     [switch]$IncludeParetoE2E,
     [switch]$IncludePseudoTableNormalizerE2E,
     [switch]$IncludeHermesHomeE2E,
+    [switch]$IncludePythonInstitutionalE2E,
+    [switch]$IncludeInstitutionalProductionGate,
     [switch]$IncludeCodebaseSmoke,
     [switch]$IncludeCodebaseSmokeE2E,
     [switch]$SkipPytest,
@@ -35,20 +37,6 @@ Set-Location $repoRoot
 
 $failures = 0
 $skipped = 0
-
-function Get-HermesAuditPython {
-    if ($env:HERMES_AUDIT_PYTHON -and (Test-Path -LiteralPath $env:HERMES_AUDIT_PYTHON)) {
-        return $env:HERMES_AUDIT_PYTHON
-    }
-    $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
-    if (Test-Path -LiteralPath $conda) {
-        $out = & $conda run -n hermes-env python -c "import sys; print(sys.executable)" 2>$null
-        if ($LASTEXITCODE -eq 0 -and $out) {
-            return ($out | Select-Object -Last 1).ToString().Trim()
-        }
-    }
-    return 'python'
-}
 
 function Invoke-Step {
     param(
@@ -114,7 +102,7 @@ if (-not $SkipFootguns) {
     $footguns = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'scripts/check-windows-footguns.py'
     if (Test-Path -LiteralPath $footguns) {
         Invoke-Step 'windows-footguns' {
-            $py = Get-HermesAuditPython
+            $py = Get-HermesAuditPython -RepoRoot $repoRoot
             & $py $footguns --all
             $global:LASTEXITCODE = $LASTEXITCODE
         }
@@ -297,6 +285,22 @@ if ($IncludeHermesHomeE2E -or $IncludeAllE2E) {
     $homeE2e = Join-Path $scriptRoot 'RUN_HERMES_HOME_E2E.ps1'
     Invoke-Step 'hermes-home-e2e' {
         & $homeE2e -RepoRoot $repoRoot
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludePythonInstitutionalE2E -or $IncludeAllE2E) {
+    $pyInst = Join-Path $scriptRoot 'RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.ps1'
+    Invoke-Step 'hermes-python-institutional-e2e' {
+        & $pyInst -RepoRoot $repoRoot
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeInstitutionalProductionGate) {
+    $instGate = Join-Path $scriptRoot 'RUN_INSTITUTIONAL_PRODUCTION_GATE.ps1'
+    Invoke-Step 'institutional-production-gate' {
+        & $instGate -RepoRoot $repoRoot
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

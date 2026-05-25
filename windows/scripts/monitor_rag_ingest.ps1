@@ -13,7 +13,9 @@ if (-not $env:HERMES_REPO) {
     }
 }
 
-$py = Join-Path $env:USERPROFILE "miniconda3\envs\hermes-env\python.exe"
+. (Join-Path $PSScriptRoot '..\HermesPythonPolicy.ps1')
+$repoRoot = if ($env:HERMES_REPO) { $env:HERMES_REPO } else { (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path }
+$py = Resolve-HermesPythonExe -RepoRoot $repoRoot -RequirePip
 $cli = Join-Path $env:HERMES_REPO "scripts\rag_pipeline\ingest_live_status.py"
 if ((Test-Path $py) -and (Test-Path $cli)) {
     $jsonLine = & $py $cli --db-path $DbPath --json | Where-Object { $_.TrimStart().StartsWith('{') } | Select-Object -First 1

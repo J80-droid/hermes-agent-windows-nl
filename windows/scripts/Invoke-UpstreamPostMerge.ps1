@@ -4,6 +4,7 @@
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 . (Join-Path $PSScriptRoot '..\HermesNativeInvoke.ps1')
+. (Join-Path $PSScriptRoot '..\HermesPythonPolicy.ps1')
 Import-Module (Join-Path $PSScriptRoot 'TrustRuntimePending.psm1') -Force
 
 function Write-Step([string]$Msg, [string]$Color = 'Cyan') {
@@ -73,10 +74,10 @@ function Invoke-UpstreamPostMerge {
         return 5
     }
 
-    $py = Join-Path $env:USERPROFILE 'miniconda3\envs\hermes-env\python.exe'
+    $py = Resolve-HermesPythonExe -RepoRoot $Repo -RequirePip
     if ($InstallRag) {
-        if (-not (Test-Path -LiteralPath $py)) {
-            Write-Warn "Python niet gevonden: $py - sla RAG-postinstall over."
+        if (-not $py) {
+            Write-Warn 'Geen conda hermes-env - sla RAG-postinstall over. Draai REPAIR_PYTHON.bat.'
         } else {
             $extras = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/scripts/install_rag_extras.ps1'
             if (Test-Path -LiteralPath $extras) {

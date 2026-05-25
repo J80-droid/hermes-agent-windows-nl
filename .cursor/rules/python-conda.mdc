@@ -10,7 +10,7 @@ alwaysApply: true
 
 | Rol | Interpreter |
 |-----|-------------|
-| Hermes runtime (RAG, CLI, ingest, audits) | **conda `hermes-env`** via `HermesPythonPolicy.ps1` |
+| Hermes runtime (RAG, CLI, ingest, audits) | **conda `hermes-env`** via `Resolve-HermesPythonExe` / `HermesPythonPolicy.ps1` |
 | IDE (Cursor/VS Code) | Zelfde env: `.vscode/settings.json` → `python.defaultInterpreterPath` |
 | Pytest | `windows\tests\RUN_PYTEST.ps1` (conda) |
 

@@ -14,8 +14,13 @@ if (-not $env:HERMES_REPO) {
     }
 }
 
-$py = Join-Path $env:USERPROFILE "miniconda3\envs\hermes-env\python.exe"
-if (-not (Test-Path $py)) { $py = "python" }
+. (Join-Path $PSScriptRoot '..\..\HermesPythonPolicy.ps1')
+$repoRoot = $env:HERMES_REPO
+$py = Resolve-HermesPythonExe -RepoRoot $repoRoot -RequirePip
+if (-not $py) {
+    Write-Host '[ERROR] Geen conda hermes-env. Draai REPAIR_PYTHON.bat.' -ForegroundColor Red
+    exit 1
+}
 
 Write-Host ""
 Write-Host ('[INFO] ' + 'Hermes RAG ingest status - domein: ' + $Domain)

@@ -19,28 +19,6 @@ if (-not $RepoRoot) {
 $failures = 0
 $steps = [System.Collections.Generic.List[object]]::new()
 
-function Get-HermesAuditPython {
-    if ($env:HERMES_AUDIT_PYTHON -and (Test-Path -LiteralPath $env:HERMES_AUDIT_PYTHON)) {
-        return $env:HERMES_AUDIT_PYTHON
-    }
-    $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
-    if (Test-Path -LiteralPath $conda) {
-        $out = & $conda run -n hermes-env python -c "import sys; print(sys.executable)" 2>$null
-        if ($LASTEXITCODE -eq 0 -and $out) {
-            return ($out | Select-Object -Last 1).ToString().Trim()
-        }
-    }
-    foreach ($candidate in @(
-            (Join-Path $env:USERPROFILE 'miniconda3\envs\hermes-env\python.exe'),
-            'python'
-        )) {
-        if ($candidate -eq 'python' -or (Test-Path -LiteralPath $candidate)) {
-            return $candidate
-        }
-    }
-    return 'python'
-}
-
 function Add-StepResult {
     param([string]$Name, [bool]$Ok, [string]$Detail = '')
     $steps.Add([pscustomobject]@{ Step = $Name; Ok = $Ok; Detail = $Detail })
@@ -72,13 +50,15 @@ function Invoke-AuditCommand {
 
 Write-Host '=== Hermes Python institutional E2E ===' -ForegroundColor Cyan
 $reportStamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'
-$python = Get-HermesAuditPython
+$python = Get-HermesAuditPython -RepoRoot $RepoRoot
 
 # --- 1 Repo artefacten ---
 $repoFiles = @(
     'windows/HermesPythonPolicy.ps1',
     'windows/scripts/ensure_hermes_python.ps1',
     'windows/scripts/sync_hermes_ide_python.ps1',
+    'windows/scripts/resolve_hermes_python.ps1',
+    'windows/scripts/validate_windows_python_wiring.ps1',
     'windows/REPAIR_PYTHON.bat',
     'windows/scripts/launch_bootstrap.ps1',
     '.vscode/settings.json',
@@ -96,11 +76,12 @@ Add-StepResult -Name '1/8 repo Python institutional artefacten' -Ok $artOk
 
 # --- 2 Policy helpers aanwezig ---
 $policyPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/HermesPythonPolicy.ps1')
-$helperOk = ($policyPy -match 'function Update-HermesVscodeInterpreterPath') -and
+$helperOk = ($policyPy -match 'function Resolve-HermesPythonExe') -and
+    ($policyPy -match 'function Update-HermesVscodeInterpreterPath') -and
     ($policyPy -match 'function Invoke-HermesSyncIdePython') -and
     ($policyPy -match 'try \{') -and
     ($policyPy -match 'Rename-Item')
-Add-StepResult -Name '2/8 HermesPythonPolicy helpers + venv quarantaine catch' -Ok $helperOk
+Add-StepResult -Name '2/8 HermesPythonPolicy resolver + venv quarantaine catch' -Ok $helperOk
 
 # --- 3 REPAIR + ensure wiring ---
 $repairBat = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/REPAIR_PYTHON.bat')

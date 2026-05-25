@@ -41,7 +41,14 @@ if errorlevel 1 (
   exit /b 1
 )
 
-python scripts\rag_pipeline\warm_embedding_cache.py
+for /f "delims=" %%P in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0resolve_hermes_python.ps1" -RepoRoot "%CD%" -RequirePip 2^>nul') do set "HERMES_PYTHON=%%P"
+if not defined HERMES_PYTHON (
+  echo [ERROR] Geen conda hermes-env. Draai windows\REPAIR_PYTHON.bat
+  pause
+  exit /b 1
+)
+
+"%HERMES_PYTHON%" scripts\rag_pipeline\warm_embedding_cache.py
 if errorlevel 1 (
   echo [ERROR] Warme start mislukt ^(exit %ERRORLEVEL%^).
   pause

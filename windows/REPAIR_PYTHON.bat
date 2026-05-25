@@ -15,10 +15,10 @@ if %ERR% neq 0 (
   pause
   exit /b %ERR%
 )
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\check_hermes_rag_after_repair.ps1" -RepoRoot "%CD%"
 echo.
-echo Optioneel conda deps:
-echo   conda activate hermes-env
-echo   pip install -e ".[rag]"
+echo RAG-deps: vereist voor kennisbank; automatisch bij start/setup via install_rag_extras.ps1
+echo   Handmatig: powershell -File windows\scripts\install_rag_extras.ps1
 echo.
 pause
 exit /b 0
