@@ -3,6 +3,12 @@
 # Of vanaf scripts/audits: . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 #
 # Pad-helpers: Join-HermesRepoPath (OS-native separators) + Read-HermesRepoText (UTF-8).
+#
+# Conventie:
+#   - Repo-bestanden (git-style forward slashes): Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'docs/foo.md'
+#   - Tekst lezen: Read-HermesRepoText -Path (Join-HermesRepoPath ...)
+#   - Navigatie t.o.v. het script (..\\..): Join-Path $PSScriptRoot '..' — geen Join-HermesRepoPath
+#   - Dot-source verplicht in audit/core scripts die bovenstaande helpers gebruiken
 
 function Test-NativeCommandFailed {
     # Na een puur PowerShell-script is $LASTEXITCODE vaak $null; $null -ne 0 is ten onrechte $true.

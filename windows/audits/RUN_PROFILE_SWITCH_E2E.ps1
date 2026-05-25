@@ -22,7 +22,7 @@ if (Test-NativeCommandFailed) { throw "hermes-env python niet beschikbaar" }
 $python = ($python | Select-Object -Last 1).Trim()
 
 Write-Host '=== 1/5 verify_hermes_home ===' -ForegroundColor Cyan
-& (Join-Path $repoRoot 'windows/scripts/verify_hermes_home.ps1')
+& (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/verify_hermes_home.ps1')
 if (Test-NativeCommandFailed) { exit 1 }
 
 Write-Host '=== 2/5 pytest profile switch subset ===' -ForegroundColor Cyan
@@ -34,7 +34,7 @@ Write-Host '=== 2/5 pytest profile switch subset ===' -ForegroundColor Cyan
 if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 
 Write-Host '=== 3/5 SWITCH_PROFILE.bat (legal) ===' -ForegroundColor Cyan
-$switchBat = Join-Path $repoRoot 'windows/SWITCH_PROFILE.bat'
+$switchBat = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/SWITCH_PROFILE.bat'
 & cmd /c "`"$switchBat`" legal"
 if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 

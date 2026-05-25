@@ -411,6 +411,22 @@ class TestShutdownHooks:
         extra.assert_called_once()
         shutdown.assert_called_once()
 
+    def test_extra_cleanup_registered_after_connect(self, monkeypatch):
+        extra = MagicMock()
+        shutdown = MagicMock()
+        handlers: list = []
+        monkeypatch.setattr(storage.atexit, "register", lambda fn: handlers.append(fn))
+        monkeypatch.setattr(storage, "shutdown_all_lancedb_connections", shutdown)
+
+        storage.reset_lancedb_storage_state()
+        storage.register_lancedb_connection(object())
+        storage.register_lancedb_shutdown_hooks(extra_cleanup=extra)
+        assert handlers
+        handlers[0]()
+
+        extra.assert_called_once()
+        shutdown.assert_called_once()
+
     def test_signal_handler_invokes_cleanup(self, monkeypatch):
         shutdown = MagicMock()
         captured: dict = {}

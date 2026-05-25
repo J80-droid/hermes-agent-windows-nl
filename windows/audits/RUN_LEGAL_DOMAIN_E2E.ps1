@@ -25,7 +25,7 @@ foreach ($rel in @(
     'docs/templates/SOUL_LEGAL_DOMAIN.md',
     'docs/legal/_Taxonomy_README.md'
 )) {
-    if (-not (Test-Path -LiteralPath (Join-Path $repoRoot $rel))) {
+    if (-not (Test-Path -LiteralPath (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath $rel))) {
         Write-Host ('[FAIL] ' + 'Ontbreekt: ' + $rel) -ForegroundColor Red
         $failures++
     }
@@ -124,7 +124,7 @@ if (-not (Test-Path -LiteralPath $rawLegal)) {
 Write-Host '=== 6/8 taxonomy sync script dry-run ===' -ForegroundColor Cyan
 $conda = Find-Conda
 $python = (& $conda run -n hermes-env python -c "import sys; print(sys.executable)" 2>&1 | Select-Object -Last 1).Trim()
-& $python (Join-Path $repoRoot 'scripts\rag_pipeline\sync_legal_lens_table_from_taxonomy.py') --dry-run
+& $python (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'scripts/rag_pipeline/sync_legal_lens_table_from_taxonomy.py') --dry-run
 if (Test-NativeCommandFailed) { $failures++ }
 
 Write-Host '=== 7/8 pytest legal docs ===' -ForegroundColor Cyan
@@ -134,7 +134,7 @@ if (Test-NativeCommandFailed) {
 }
 
 Write-Host '=== 8/8 legal rooktest (search) ===' -ForegroundColor Cyan
-$rooktest = Join-Path $repoRoot 'scripts\rag_pipeline\_rooktest_search.py'
+$rooktest = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'scripts/rag_pipeline/_rooktest_search.py'
 if (Test-Path -LiteralPath $rooktest) {
     $env:HERMES_LANCEDB_PATH = Join-Path $env:USERPROFILE 'data\lancedb\legal'
     $prevEap = $ErrorActionPreference

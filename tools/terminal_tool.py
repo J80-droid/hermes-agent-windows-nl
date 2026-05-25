@@ -895,6 +895,7 @@ import sys
 
 # Tool description for LLM
 TERMINAL_TOOL_DESCRIPTION = """Execute shell commands on a Linux environment. Filesystem usually persists between calls.
+On native Windows, commands run in Git Bash (see HERMES_GIT_BASH_PATH / windows-native.md).
 
 Do NOT use cat/head/tail to read files — use read_file instead.
 Do NOT use grep/rg/find to search — use search_files instead.

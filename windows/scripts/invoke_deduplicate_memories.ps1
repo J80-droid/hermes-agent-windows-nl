@@ -4,6 +4,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 } else {
@@ -17,7 +18,7 @@ if (-not $py) {
     exit 1
 }
 
-$script = Join-Path $RepoRoot 'scripts/deduplicate_memories.py'
+$script = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/deduplicate_memories.py'
 if (-not (Test-Path -LiteralPath $script)) {
     Write-Host '[FAIL] scripts/deduplicate_memories.py ontbreekt' -ForegroundColor Red
     exit 1

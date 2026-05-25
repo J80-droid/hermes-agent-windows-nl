@@ -91,7 +91,7 @@ $env:HERMES_HOME = $hermes
 $logPath = Join-Path $scriptRoot 'TOOLSET_DOMAIN_E2E_LAST_RUN.log'
 
 Write-Host '=== Toolset domain E2E (1/6 hermes home) ===' -ForegroundColor Cyan
-$verifyHome = Join-Path $RepoRoot 'windows/scripts/verify_hermes_home.ps1'
+$verifyHome = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/verify_hermes_home.ps1'
 if (Test-Path -LiteralPath $verifyHome) {
     & $verifyHome
     if (Test-NativeCommandFailed) {
@@ -132,7 +132,7 @@ try {
 }
 
 Write-Host '=== Toolset domain E2E (4/6 manifest drift --check) ===' -ForegroundColor Cyan
-$checkScript = Join-Path $RepoRoot 'windows/scripts/sync_profile_toolsets_from_manifest.py'
+$checkScript = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/sync_profile_toolsets_from_manifest.py'
 & $py $checkScript --repo-root $RepoRoot --hermes-root $hermes --check 2>&1 | Out-Host
 if (Test-NativeCommandFailed) {
     Step-Fail 'manifest-check' 'Draai windows\SYNC_DOMAIN_TOOLSETS.bat'
@@ -143,7 +143,7 @@ if (Test-NativeCommandFailed) {
 Write-Host '=== Toolset domain E2E (5/6 runtime tool-counts) ===' -ForegroundColor Cyan
 $env:HERMES_TOOLSET_E2E_REPO = $RepoRoot
 $env:HERMES_TOOLSET_E2E_HOME = $hermes
-$runtimePy = Join-Path $RepoRoot 'windows/scripts/toolset_domain_e2e_runtime.py'
+$runtimePy = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/toolset_domain_e2e_runtime.py'
 
 $prevEap = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
@@ -185,7 +185,7 @@ if (Test-NativeCommandFailed) {
 }
 
 Write-Host '=== Toolset domain E2E (6/6 SOUL tool governance snippet) ===' -ForegroundColor Cyan
-$snippetPath = Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_TOOL_GOVERNANCE.md'
+$snippetPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'docs/templates/SOUL_SHARED_TOOL_GOVERNANCE.md'
 if (-not (Test-Path -LiteralPath $snippetPath)) {
     Step-Fail 'SOUL tool governance template' 'docs/templates/SOUL_SHARED_TOOL_GOVERNANCE.md ontbreekt'
 }

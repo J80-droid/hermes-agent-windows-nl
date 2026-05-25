@@ -8,6 +8,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 Import-Module (Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1') -Force
 
 if (-not $RepoRoot) {
@@ -16,7 +17,7 @@ if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 }
 
-$templatePath = Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_VALUES.md'
+$templatePath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'docs/templates/SOUL_SHARED_VALUES.md'
 
 Write-Host '--- SOUL Values & Principles sync ---' -ForegroundColor Cyan
 $null = Sync-SoulSnippet `

@@ -295,7 +295,7 @@ try {
     }
 
     if ($script:UpstreamExitCode -eq 0 -and $Phase -eq 'PostMerge') {
-        . (Join-Path $PSScriptRoot 'scripts/Invoke-UpstreamPostMerge.ps1')
+        . (Join-HermesRepoPath -RepoRoot $PSScriptRoot -RelativePath 'scripts/Invoke-UpstreamPostMerge.ps1')
         $pmArgs = @{
             Repo                     = $repo
             InstallRag               = [bool]$InstallRag

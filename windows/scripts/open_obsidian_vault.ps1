@@ -6,6 +6,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 . (Join-Path $PSScriptRoot 'HermesObsidianVaultCommon.ps1')
 
 if (-not $RepoRoot) {
@@ -15,7 +16,7 @@ if (-not $RepoRoot) {
 }
 
 if (-not $SkipEnvSync) {
-    $syncPs1 = Join-Path $RepoRoot 'windows/sync_hermes_api_env.ps1'
+    $syncPs1 = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/sync_hermes_api_env.ps1'
     if (Test-Path -LiteralPath $syncPs1) {
         if (-not $Quiet) {
             Write-Host '[INFO] Vault-env sync (SYNC_HERMES_API_ENV)...' -ForegroundColor Gray

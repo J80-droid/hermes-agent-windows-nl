@@ -6,6 +6,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 . (Join-Path $PSScriptRoot 'HermesObsidianVaultCommon.ps1')
 
 if (-not $RepoRoot) {
@@ -23,7 +24,7 @@ if (-not $VaultPath) {
     exit 1
 }
 
-$templateRoot = Join-Path $RepoRoot 'docs/templates/obsidian_vault_scaffold'
+$templateRoot = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'docs/templates/obsidian_vault_scaffold'
 if (-not (Test-Path -LiteralPath $templateRoot)) {
     Write-Host "[FAIL] Scaffold ontbreekt: $templateRoot" -ForegroundColor Red
     exit 1
@@ -40,7 +41,7 @@ $created = 0
 $skipped = 0
 Get-ChildItem -LiteralPath $templateRoot -Recurse -File | ForEach-Object {
     $rel = $_.FullName.Substring($templateRoot.Length).TrimStart('\', '/')
-    $dest = Join-Path $VaultPath ($rel -replace '/', '\')
+    $dest = Join-HermesRepoPath -RepoRoot $VaultPath -RelativePath $rel
     $parent = Split-Path -Parent $dest
     if ($parent -and -not (Test-Path -LiteralPath $parent)) {
         New-Item -ItemType Directory -Path $parent -Force | Out-Null

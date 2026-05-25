@@ -14,7 +14,7 @@ param(
 )
 
 . (Join-Path $PSScriptRoot 'HermesShellCommon.ps1')
-. (Join-Path $PSScriptRoot 'scripts/HermesBackupCommon.ps1')
+. (Join-HermesRepoPath -RepoRoot $PSScriptRoot -RelativePath 'scripts/HermesBackupCommon.ps1')
 $ErrorActionPreference = 'Stop'
 
 $startDir = if ($PSScriptRoot) { $PSScriptRoot } elseif ($MyInvocation.MyCommand.Path) {
@@ -86,7 +86,7 @@ if (Test-Path -LiteralPath $legacyRoot) {
     Write-Host '  [SKIP] Geen legacy ~/.hermes' -ForegroundColor DarkYellow
 }
 
-$soulBackupPs1 = Join-Path $repoRoot 'windows/backup_soul_profiles.ps1'
+$soulBackupPs1 = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/backup_soul_profiles.ps1'
 $runtimePersonaFiles = @()
 if (Test-Path -LiteralPath $soulBackupPs1) {
     Write-Host '[3/12] Persona-subset (localappdata_hermes)...' -ForegroundColor Gray

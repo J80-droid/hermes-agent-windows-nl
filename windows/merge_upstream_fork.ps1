@@ -310,7 +310,7 @@ function Get-ConflictSnippetForPrompt {
         [switch]$PreferGitPreview
     )
 
-    $fullPath = Join-Path $RepoRoot ($Path -replace '/', [IO.Path]::DirectorySeparatorChar)
+    $fullPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $Path
     if (-not $PreferGitPreview -and (Test-Path -LiteralPath $fullPath)) {
         $fromFile = Get-ConflictSnippet -Path $fullPath
         if ($fromFile) { return $fromFile }

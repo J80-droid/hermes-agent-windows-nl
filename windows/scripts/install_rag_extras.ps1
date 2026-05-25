@@ -68,7 +68,7 @@ if (-not $SkipPip) {
 
 if (-not $SkipModelWarm) {
     $py = ($pythons | Where-Object { Test-HermesPythonHasPip -PythonExe $_ } | Select-Object -First 1)
-    $warmScript = Join-Path $RepoRoot 'scripts/rag_pipeline/warm_embedding_cache.py'
+    $warmScript = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/warm_embedding_cache.py'
     if ($py -and (Test-Path -LiteralPath $warmScript)) {
         Write-RagMsg '[INFO] Embedding-modelcache warmen...' 'Cyan'
         & $py $warmScript

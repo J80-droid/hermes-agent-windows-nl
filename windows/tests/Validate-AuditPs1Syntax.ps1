@@ -1,4 +1,5 @@
 # Snelle syntax-check voor audit-PS1 (zelfde als CI/PSScriptAnalyzer; IDE-cache kan achterlopen).
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 Set-Location $repo
@@ -26,7 +27,7 @@ $files = @(
 
 $failed = 0
 foreach ($rel in $files) {
-    $path = Join-Path $repo $rel
+    $path = Join-HermesRepoPath -RepoRoot $repo -RelativePath $rel
     $parseErr = [System.Collections.Generic.List[object]]::new()
     $null = [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$null, [ref]$parseErr)
     if ($parseErr.Count -gt 0) {
@@ -40,9 +41,9 @@ foreach ($rel in $files) {
 
 if (Get-Module -ListAvailable PSScriptAnalyzer) {
     Import-Module PSScriptAnalyzer -Force
-    $settings = Join-Path $repo 'windows/PSScriptAnalyzerSettings.psd1'
+    $settings = Join-HermesRepoPath -RepoRoot $repo -RelativePath 'windows/PSScriptAnalyzerSettings.psd1'
     foreach ($rel in $files) {
-        $path = Join-Path $repo $rel
+        $path = Join-HermesRepoPath -RepoRoot $repo -RelativePath $rel
         $issues = Invoke-ScriptAnalyzer -Path $path -Settings $settings -Severity Error
         if ($issues) {
             Write-Host "[PSSA] $rel" -ForegroundColor Red

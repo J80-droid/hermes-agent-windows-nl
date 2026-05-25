@@ -5,13 +5,14 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 } else {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 }
 
-$ensureEnv = Join-Path $RepoRoot 'windows/scripts/ensure_hermes_launch_env.ps1'
+$ensureEnv = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/ensure_hermes_launch_env.ps1'
 if (Test-Path -LiteralPath $ensureEnv) {
     & $ensureEnv -FixUserEnv -SkipVerify
 }
@@ -29,13 +30,13 @@ if (-not $needRag -and (Test-Path -LiteralPath $stampFile) -and (Test-Path -Lite
     $needRag = $true
 }
 
-$ensurePy = Join-Path $RepoRoot 'windows/scripts/ensure_hermes_python.ps1'
+$ensurePy = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/ensure_hermes_python.ps1'
 if (Test-Path -LiteralPath $ensurePy) {
     & $ensurePy -RepoRoot $RepoRoot -Quiet
 }
 
 if ($needRag) {
-    $ragExtras = Join-Path $RepoRoot 'windows/scripts/install_rag_extras.ps1'
+    $ragExtras = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/install_rag_extras.ps1'
     if (Test-Path -LiteralPath $ragExtras) {
         Write-Host '[INFO] RAG/MCP eenmalige sync (pyproject gewijzigd of eerste start)...' -ForegroundColor Cyan
         & $ragExtras -RepoRoot $RepoRoot -Quiet

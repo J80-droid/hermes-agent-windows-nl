@@ -8,6 +8,8 @@ Deze map bevat de **fork** kwaliteitspoorten (geen 1:1 upstream-kloon).
 windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat
 ```
 
+**Pad-conventie (verplicht voor nieuwe audits):** dot-source `HermesShellCommon.ps1` en gebruik altijd `Join-HermesRepoPath` + `Read-HermesRepoText` voor repo-paden (forward slashes). Geen `$rel -replace '/', '\'` of `Join-Path $repoRoot 'mixed\paths'`. Navigatie naar repo-root vanuit een audit-runner: `Join-Path $PSScriptRoot '..\..'`. Zie `docs/WINDOWS_PLATFORM_HARDENING.md` en `HermesShellCommon.ps1`. `check-windows-footguns.py` flagt legacy PS1-padpatronen onder `windows/`.
+
 Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Developer: Reload Window`.
 
 **PSES-valkuil:** in single-quoted strings faalt de IDE-parser soms op paden met extensie (bijv. `'README.md'` → `.md` buiten de string). Gebruik dubbele quotes (`"README.md"`) of concatenatie (`'README' + '.md'`). Runtime/AST is dan wél correct — vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
@@ -57,6 +59,7 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | **`RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat`** | Pseudo-tabel normalizer: underscore/vs→markdown, pytest + TS parity + diagnose/score (10 stappen) |
 | **`RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat`** | Context-aware overview (2-6 kolommen): grouped/collapsed auxiliary, intent routing, streaming flush, TS parity (12 stappen) |
 | **`RUN_WINDOWS_PLATFORM_HARDENING_E2E.bat`** | Platform hardening: filesystem sandbox, hardware backend (CUDA/DirectML/CPU), LanceDB storage lifecycle (10 stappen) |
+| **`RUN_PLATFORM_HARDENING_REGRESSION_E2E.bat`** | Regressie: review-fixes, PS1 Join-HermesRepoPath, footguns PS1-regel (8 stappen) |
 | **`RUN_AUDITS.bat -IncludePseudoTableNormalizerE2E`** | Bovenstaande pseudo-tabel E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeMemoryArchitectureE2E`** | Bovenstaande memory E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeStatusBarCostE2E`** | Bovenstaande statusbalk-kosten E2E in gecombineerde poort |
@@ -157,6 +160,29 @@ Dedicated audit voor filesystem sandbox, hardware backend fallback en LanceDB st
 Optioneel: `-SkipPytest` op `RUN_WINDOWS_PLATFORM_HARDENING_E2E.ps1`.
 
 Rapport: `WINDOWS_PLATFORM_HARDENING_E2E_REPORT_*.md`. Zie `docs/WINDOWS_PLATFORM_HARDENING.md`.
+
+## Platform hardening regressie E2E
+
+```text
+windows\audits\RUN_PLATFORM_HARDENING_REGRESSION_E2E.bat
+```
+
+Validatie van code-review fixes en PS1-padmigratie (naast de basis hardening E2E).
+
+| Stap | Controle |
+| ---- | -------- |
+| 1/8 | Repo-artefacten (review modules + regression runners) |
+| 2/8 | Geen legacy `$rel -replace` in `windows/audits/*.ps1` |
+| 3/8 | `HermesShellCommon.ps1` pad-conventie gedocumenteerd |
+| 4/8 | `check-windows-footguns.py` PS1-padregel actief |
+| 5/8 | Code wiring: env-var sandbox, GPU fallback, `_run_shutdown_hooks`, `PermissionError` in file_tools |
+| 6/8 | Isolated harness (`PlatformHardeningRegressionE2E.harness.py`, 8 scenario's) |
+| 7/8 | pytest: filesystem_sandbox + hardware_backend + lancedb_storage |
+| 8/8 | Footguns op gewijzigde modules |
+
+Optioneel: `-SkipPytest` op `RUN_PLATFORM_HARDENING_REGRESSION_E2E.ps1`.
+
+Rapport: `PLATFORM_HARDENING_REGRESSION_E2E_REPORT_*.md`.
 
 ## Memory-architectuur E2E (L1–L4)
 

@@ -86,7 +86,7 @@ $repoFiles = @(
 )
 $repoOk = $true
 foreach ($rel in $repoFiles) {
-    if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot ($rel -replace '/', '\')))) {
+    if (-not (Test-Path -LiteralPath (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $rel))) {
         $repoOk = $false
         Write-Host ('  ontbreekt: ' + $rel) -ForegroundColor Red
     }
@@ -94,8 +94,8 @@ foreach ($rel in $repoFiles) {
 Add-StepResult -Name '1/5 repo codebase-audit files' -Ok $repoOk
 
 # --- 2 Template denylist (strict) ---
-$validateScript = Join-Path $RepoRoot 'scripts/validate_soul_anatomy.py'
-$reportTpl = Join-Path $RepoRoot 'docs/templates/CODEBASE_AUDIT_REPORT.md'
+$validateScript = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/validate_soul_anatomy.py'
+$reportTpl = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'docs/templates/CODEBASE_AUDIT_REPORT.md'
 $tplOk = $false
 if ((Test-Path -LiteralPath $validateScript) -and (Test-Path -LiteralPath $reportTpl)) {
     $tplOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
@@ -112,7 +112,7 @@ $pytestOk = $true
 if (-not $SkipPytest) {
     $pytestOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-Path $RepoRoot 'tests/windows/test_codebase_smoke_audit.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/windows/test_codebase_smoke_audit.py'),
         '-q',
         '--tb=short',
         '-o', 'addopts='

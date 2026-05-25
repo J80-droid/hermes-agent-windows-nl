@@ -1,3 +1,4 @@
+. (Join-Path $PSScriptRoot 'HermesShellCommon.ps1')
 ﻿# Institutional Runtime wrapper for Hermes Agent on Windows.
 # Detecteert of setup nodig is en start de juiste interface.
 $ErrorActionPreference = 'Continue'
@@ -17,7 +18,7 @@ if ($env:WT_SESSION) {
     $env:COLORTERM = 'truecolor'
     if (-not $env:TERM) { $env:TERM = 'xterm-256color' }
 }
-$ansiPs1 = Join-Path $repoRoot 'windows/scripts/enable_console_ansi.ps1'
+$ansiPs1 = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/enable_console_ansi.ps1'
 if (Test-Path -LiteralPath $ansiPs1) {
     . $ansiPs1
 }
@@ -77,7 +78,7 @@ if (-not $condaExe) {
     exit 1
 }
 
-$ensureEnv = Join-Path $repoRoot 'windows/scripts/ensure_hermes_launch_env.ps1'
+$ensureEnv = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/ensure_hermes_launch_env.ps1'
 if (Test-Path -LiteralPath $ensureEnv) {
     & $ensureEnv -FixUserEnv
     if ($LASTEXITCODE -ne 0) {

@@ -7,6 +7,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'HermesShellCommon.ps1')
 
 $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } elseif ($MyInvocation.MyCommand.Path) {
     Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -27,7 +28,7 @@ if (-not $RepoRoot.Trim()) {
 }
 
 $windowsDirResolved = Join-Path $RepoRoot 'windows'
-$icoGenPy = Join-Path $windowsDirResolved 'tools/generate_colored_hermes_icons.py'
+$icoGenPy = Join-HermesRepoPath -RepoRoot $windowsDirResolved -RelativePath 'tools/generate_colored_hermes_icons.py'
 $needIconGen = (Test-Path -LiteralPath $icoGenPy) -and (
     Test-HermesWindowsIconRegenNeeded -RepoRoot $RepoRoot -WindowsDir $windowsDirResolved
 )
@@ -105,7 +106,7 @@ if (-not $Quiet) {
 $shortcutPairCount = $shortcutNames.Count
 for ($shortcutIndex = 0; $shortcutIndex -lt $shortcutPairCount; $shortcutIndex++) {
     $lnkPath = Join-Path $OutDir $shortcutNames[$shortcutIndex]
-    $batPath = Join-Path $RepoRoot ($shortcutBats[$shortcutIndex] -replace '/', '\')
+    $batPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $shortcutBats[$shortcutIndex]
     $iconPath = Get-HermesTaskbarRoleIconPath -Role $shortcutRoles[$shortcutIndex] -WindowsDir $windowsDirResolved
     try {
         if (Set-HermesShellShortcut -ShortcutPath $lnkPath -TargetBatPath $batPath `

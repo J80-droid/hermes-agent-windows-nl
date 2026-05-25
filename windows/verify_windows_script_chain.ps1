@@ -65,7 +65,7 @@ $failures = New-Object System.Collections.Generic.List[string]
 Write-Host ('[INFO] ' + 'Repo: ' + $repo) -ForegroundColor Cyan
 Write-Host '[INFO] Kritieke bestanden in git...' -ForegroundColor Cyan
 foreach ($rel in Get-HermesCriticalWindowsRepoPath) {
-    $full = Join-Path $repo ($rel -replace '/', [IO.Path]::DirectorySeparatorChar)
+    $full = Join-HermesRepoPath -RepoRoot $repo -RelativePath $rel
     if (Test-Path -LiteralPath $full) {
         Write-Host "  [OK] $rel" -ForegroundColor Green
     } else {
@@ -201,7 +201,7 @@ if (Test-Path -LiteralPath $verifyTb) {
     if (-not (Test-NativeCommandFailed)) {
         $tbOk = $true
     } else {
-        $fixPins = Join-Path $repo 'windows/fix_hermes_taskbar_pins.ps1'
+        $fixPins = Join-HermesRepoPath -RepoRoot $repo -RelativePath 'windows/fix_hermes_taskbar_pins.ps1'
         if (Test-Path -LiteralPath $fixPins) {
             Write-Host '  [INFO] .lnk iconen bijwerken (fix_hermes_taskbar_pins.ps1)...' -ForegroundColor Gray
             & $fixPins -RepoRoot $repo -Quiet

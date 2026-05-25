@@ -90,7 +90,7 @@ $repoFiles = @(
 )
 $repoOk = $true
 foreach ($rel in $repoFiles) {
-    if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot ($rel -replace '/', '\')))) {
+    if (-not (Test-Path -LiteralPath (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $rel))) {
         $repoOk = $false
         break
     }
@@ -98,8 +98,8 @@ foreach ($rel in $repoFiles) {
 Add-StepResult -Name '1/12 repo classic CLI cost artefacten' -Ok $repoOk
 
 # --- 2 cli.py + formatter hooks ---
-$cliText = Get-Content -LiteralPath (Join-Path $RepoRoot 'cli.py') -Raw -Encoding UTF8
-$sbcText = Get-Content -LiteralPath (Join-Path $RepoRoot 'hermes_cli/status_bar_cost.py') -Raw -Encoding UTF8
+$cliText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'cli.py')
+$sbcText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/status_bar_cost.py')
 $hooksOk = $cliText.Contains('_append_status_bar_cost_fragments') -and
     $cliText.Contains('_handle_cost_command') -and
     ($cliText -match 'canonical == .cost.') -and
@@ -109,8 +109,8 @@ $hooksOk = $cliText.Contains('_append_status_bar_cost_fragments') -and
 Add-StepResult -Name '2/12 cli.py hooks + status_bar_cost.py' -Ok $hooksOk
 
 # --- 3 commands.py + merge keepOurs ---
-$commandsText = Get-Content -LiteralPath (Join-Path $RepoRoot 'hermes_cli/commands.py') -Raw -Encoding UTF8
-$mergePs1 = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/merge_upstream_fork.ps1') -Raw -Encoding UTF8
+$commandsText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/commands.py')
+$mergePs1 = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/merge_upstream_fork.ps1')
 $registryOk = $commandsText.Contains('CommandDef') -and
     $commandsText.Contains('"cost"') -and
     $mergePs1.Contains('hermes_cli/status_bar_cost.py') -and
@@ -118,7 +118,7 @@ $registryOk = $commandsText.Contains('CommandDef') -and
 Add-StepResult -Name '3/12 cost command + merge keepOurs' -Ok $registryOk
 
 # --- 4 UPSTREAM_SYNC classic parity ---
-$upstreamMd = Get-Content -LiteralPath (Join-Path $RepoRoot "windows/UPSTREAM_SYNC.md") -Raw -Encoding UTF8
+$upstreamMd = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/UPSTREAM_SYNC.md")
 $upstreamOk = $upstreamMd.Contains('Classic CLI parity') -and
     $upstreamMd.Contains('status_bar_cost.py') -and
     $upstreamMd.Contains('cli.py')
@@ -132,46 +132,46 @@ if ($SkipPytest) {
 } else {
     $fmtOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-Path $RepoRoot 'tests/hermes_cli/test_status_bar_cost.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_status_bar_cost.py'),
         '-q', '-o', 'addopts='
     )
     Add-StepResult -Name '5/12 pytest status_bar_cost formatter' -Ok $fmtOk -Detail $python
 
     $cliBarOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-Path $RepoRoot 'tests/cli/test_cli_status_bar.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/cli/test_cli_status_bar.py'),
         '-q', '-o', 'addopts='
     )
     Add-StepResult -Name '6/12 pytest cli status bar + cost' -Ok $cliBarOk
 
     $repoE2eOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-Path $RepoRoot 'tests/windows/test_status_bar_cost_e2e.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/windows/test_status_bar_cost_e2e.py'),
         '-q', '-o', 'addopts='
     )
     Add-StepResult -Name '7/12 pytest repo e2e module' -Ok $repoE2eOk
 }
 
 # --- 8 Classic CLI smoke ---
-$smokePy = Join-Path $RepoRoot 'scripts/status_bar_cost_classic_cli_smoke.py'
+$smokePy = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/status_bar_cost_classic_cli_smoke.py'
 $smokeOk = Invoke-AuditCommand -Exe $python -ArgumentList @($smokePy)
 Add-StepResult -Name '8/12 classic CLI smoke render + cost' -Ok $smokeOk -Detail 'status_bar_cost_classic_cli_smoke.py'
 
 # --- 9 Live post-turn smoke (hermes chat code path) ---
-$liveSmokePy = Join-Path $RepoRoot 'scripts/status_bar_cost_classic_cli_live_smoke.py'
+$liveSmokePy = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/status_bar_cost_classic_cli_live_smoke.py'
 $liveOk = Invoke-AuditCommand -Exe $python -ArgumentList @($liveSmokePy)
 Add-StepResult -Name '9/12 live post-turn status bar + cost toggle' -Ok $liveOk -Detail 'status_bar_cost_classic_cli_live_smoke.py'
 
 # --- 10 verify wiring ---
-$verifyPy = Join-Path $RepoRoot 'scripts/verify_usage_cost_bar.py'
+$verifyPy = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/verify_usage_cost_bar.py'
 $verifyOk = Invoke-AuditCommand -Exe $python -ArgumentList @($verifyPy, '--verify')
 Add-StepResult -Name '10/12 verify_usage_cost_bar classic hooks' -Ok $verifyOk
 
 # --- 11 Documentatie ---
-$cliMd = Get-Content -LiteralPath (Join-Path $RepoRoot "website/docs/user-guide/cli.md") -Raw -Encoding UTF8
-$termMd = Get-Content -LiteralPath (Join-Path $RepoRoot "windows/TERMINAL_WINDOWS.md") -Raw -Encoding UTF8
-$configMd = Get-Content -LiteralPath (Join-Path $RepoRoot "website/docs/user-guide/configuration.md") -Raw -Encoding UTF8
-$configPy = Get-Content -LiteralPath (Join-Path $RepoRoot 'hermes_cli/config.py') -Raw -Encoding UTF8
+$cliMd = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "website/docs/user-guide/cli.md")
+$termMd = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/TERMINAL_WINDOWS.md")
+$configMd = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "website/docs/user-guide/configuration.md")
+$configPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/config.py')
 $docsOk = $cliMd.Contains('/cost') -and
     $termMd.Contains('klassieke CLI') -and
     $configMd.Contains('classic CLI') -and
@@ -179,8 +179,8 @@ $docsOk = $cliMd.Contains('/cost') -and
 Add-StepResult -Name '11/12 docs TUI + classic CLI parity' -Ok $docsOk
 
 # --- 12 Gemini cache pricing (geen n/a bij cache hits) ---
-$pricingText = Get-Content -LiteralPath (Join-Path $RepoRoot 'agent/usage_pricing.py') -Raw -Encoding UTF8
-$snapshotText = Get-Content -LiteralPath (Join-Path $RepoRoot 'hermes_cli/usage_snapshot.py') -Raw -Encoding UTF8
+$pricingText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'agent/usage_pricing.py')
+$snapshotText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/usage_snapshot.py')
 $catalogOk = $pricingText.Contains('_GOOGLE_GEMINI_PRICING') -and
     $pricingText.Contains('"gemini-3.5-flash"') -and
     $pricingText.Contains('cache_read_cost_per_million') -and
@@ -192,13 +192,13 @@ if ($SkipPytest) {
 } else {
     $geminiPricingOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-Path $RepoRoot 'tests/agent/test_usage_pricing.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/agent/test_usage_pricing.py'),
         '-q', '-o', 'addopts=',
         '-k', 'gemini_35 or gemini_31 or gemini_25_flash_cache or google_gemini_cli'
     )
     $geminiSnapshotOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-Path $RepoRoot 'tests/hermes_cli/test_usage_snapshot.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_usage_snapshot.py'),
         '-q', '-o', 'addopts=',
         '-k', 'gemini_35'
     )

@@ -100,7 +100,7 @@ if ($ActiveProfileOnly) {
     . (Join-Path $scriptDir 'scripts\HermesHomeCommon.ps1')
     Ensure-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
     Write-Host ('[INFO] ' + 'Profiel display patch: ' + $activeProfile + ' (HERMES_HOME blijft root)') -ForegroundColor Cyan
-    & $condaExe run -n hermes-env --no-capture-output python (Join-Path $repoRoot 'windows/scripts/apply_team_display_profiles.py') --profile $activeProfile
+    & $condaExe run -n hermes-env --no-capture-output python (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/apply_team_display_profiles.py') --profile $activeProfile
     if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
     Write-Host '[OK] Team display op actief profiel.' -ForegroundColor Green
     exit 0
@@ -110,7 +110,7 @@ $env:HERMES_ROOT = $hermesRoot
 
 Write-Host '[INFO] Team display (alle profielen via YAML-patch)...' -ForegroundColor Cyan
 
-& $condaExe run -n hermes-env --no-capture-output python (Join-Path $repoRoot 'windows/scripts/apply_team_display_profiles.py')
+& $condaExe run -n hermes-env --no-capture-output python (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/apply_team_display_profiles.py')
 
 if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 

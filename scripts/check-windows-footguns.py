@@ -5,6 +5,11 @@ Grep-based checker for Windows cross-platform footguns.
 Flags common patterns that break silently on Windows. Run before PRs —
 cheap, fast, catches regressions in a codebase that runs on three OSes.
 
+Scans Python (``hermes_cli/``, ``tools/``, ``scripts/``, …) and PowerShell
+scripts under ``windows/`` (including legacy ``Join-Path $x ($rel -replace …)``
+repo-path patterns). Paths outside the repo root (explicit CLI args) are
+supported via ``should_scan_file``.
+
 Usage:
     # Scan staged changes (default when run from a git checkout)
     python scripts/check-windows-footguns.py
@@ -383,6 +388,25 @@ FOOTGUNS: list[Footgun] = [
             "tests/",
         ),
     ),
+    Footgun(
+        name="PS1: legacy Join-Path with -replace for repo paths",
+        pattern=re.compile(
+            r"Join-Path\s+\$\w+\s+\(\$\w+\s+-replace\s+'/',"
+        ),
+        message=(
+            "Windows audit/script paths should use Join-HermesRepoPath "
+            "(dot-source HermesShellCommon.ps1) instead of manual "
+            "$rel -replace '/', '\\'. Ensures one convention and UTF-8 reads "
+            "via Read-HermesRepoText."
+        ),
+        fix=(
+            "Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'path/to/file'"
+        ),
+        path_allowlist=(
+            "HermesShellCommon.ps1",
+            "HermesHomeCommon.ps1",
+        ),
+    ),
 ]
 
 
@@ -397,14 +421,18 @@ def should_scan_file(path: Path) -> bool:
         if str(path).endswith(suffix):
             return False
     # Skip self and docs that intentionally mention the patterns
-    rel = path.relative_to(REPO_ROOT).as_posix()
+    try:
+        rel = path.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        rel = path.as_posix()
     if rel in EXCLUDED_FILES:
         return False
     # Only scan text files (rough heuristic — .py, .md, .sh, .ps1, .yaml, etc.)
+    # Python sources + Windows PowerShell scripts (audit path conventions).
     if path.suffix in {".py", ".pyw", ".pyi"}:
         return True
-    # Other file types are read but only Python-specific patterns would match;
-    # that's fine and cheap to skip.
+    if path.suffix == ".ps1" and "windows" in path.parts:
+        return True
     return False
 
 
@@ -636,6 +664,7 @@ def main(argv: list[str]) -> int:
             REPO_ROOT / "scripts",
             REPO_ROOT / "acp_adapter",
             REPO_ROOT / "acp_registry",
+            REPO_ROOT / "windows",
         ]
         roots = [r for r in roots if r.exists()]
     elif args.diff:
@@ -658,12 +687,15 @@ def main(argv: list[str]) -> int:
     for path in iter_files(roots):
         files_scanned += 1
         matches = scan_file(path, FOOTGUNS)
-        for lineno, line, fg in matches:
-            rel = path.relative_to(REPO_ROOT).as_posix()
-            print(f"{rel}:{lineno}: [{fg.name}]")
+        for lineno, line, footgun in matches:
+            try:
+                rel = path.relative_to(REPO_ROOT).as_posix()
+            except ValueError:
+                rel = path.as_posix()
+            print(f"{rel}:{lineno}: [{footgun.name}]")
             print(f"    {line.strip()}")
-            print(f"    — {fg.message}")
-            print(f"    Fix: {fg.fix.splitlines()[0]}")
+            print(f"    — {footgun.message}")
+            print(f"    Fix: {footgun.fix.splitlines()[0]}")
             print()
             total_matches += 1
 

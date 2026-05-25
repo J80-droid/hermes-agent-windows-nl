@@ -8,6 +8,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 
 $modulePath = Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1'
 if (-not (Test-Path -LiteralPath $modulePath)) {
@@ -21,7 +22,7 @@ if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 }
 
-$templatePath = Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_INTERACTION.md'
+$templatePath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'docs/templates/SOUL_SHARED_INTERACTION.md'
 
 Write-Host '--- SOUL Interaction sync ---' -ForegroundColor Cyan
 $null = Sync-SoulSnippet `

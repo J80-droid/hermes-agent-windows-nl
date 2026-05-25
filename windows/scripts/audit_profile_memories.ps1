@@ -5,6 +5,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 . (Join-Path $PSScriptRoot 'MemoryAuditCommon.ps1')
 
 if (-not $HermesRoot) {
@@ -80,8 +81,8 @@ if (Test-Path -LiteralPath $rootCfg) {
     $memLimitRoot = if ($limRoot.MemoryCharLimit -gt 0) { $limRoot.MemoryCharLimit } else { 4000 }
     $userLimitRoot = if ($limRoot.UserCharLimit -gt 0) { $limRoot.UserCharLimit } else { 1800 }
     Write-Host '--- legacy root (memories/) ---' -ForegroundColor Cyan
-    Test-AuditMemoryFile -Label 'root' -Path (Join-Path $HermesRoot 'memories/MEMORY.md') -File 'MEMORY.md' -MemLimit $memLimitRoot -UserLimit $userLimitRoot
-    Test-AuditMemoryFile -Label 'root' -Path (Join-Path $HermesRoot 'memories/USER.md') -File 'USER.md' -MemLimit $memLimitRoot -UserLimit $userLimitRoot
+    Test-AuditMemoryFile -Label 'root' -Path (Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath 'memories/MEMORY.md') -File 'MEMORY.md' -MemLimit $memLimitRoot -UserLimit $userLimitRoot
+    Test-AuditMemoryFile -Label 'root' -Path (Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath 'memories/USER.md') -File 'USER.md' -MemLimit $memLimitRoot -UserLimit $userLimitRoot
     Write-Host ''
 }
 

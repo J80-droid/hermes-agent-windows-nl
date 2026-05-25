@@ -55,7 +55,7 @@ function Get-PytestNodePath {
         [string]$RelativeFile,
         [string]$NodeName
     )
-    $filePath = Join-Path $RepoRoot ($RelativeFile -replace '/', '\')
+    $filePath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $RelativeFile
     return ($filePath + '::' + $NodeName)
 }
 
@@ -96,12 +96,12 @@ $env:PYTHONPATH = $RepoRoot
 
 if ($ApplyDisplayFix) {
     Write-Host '--- apply_team_display (optioneel) ---' -ForegroundColor Cyan
-    & (Join-Path $RepoRoot 'windows/apply_team_display.ps1')
+    & (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/apply_team_display.ps1')
     Add-StepResult -Name '0/10 apply_team_display' -Ok (-not (Test-NativeCommandFailed))
 }
 
 # --- 1 Repo defaults + fork-owned artefacten ---
-$defaultsPath = Join-Path $RepoRoot 'windows/team_display.defaults'
+$defaultsPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/team_display.defaults'
 $defaultsText = if (Test-Path -LiteralPath $defaultsPath) {
     Get-Content -LiteralPath $defaultsPath -Raw -Encoding UTF8
 } else { '' }
@@ -119,7 +119,7 @@ $repoFiles = @(
     'windows/audits/RUN_STATUS_BAR_COST_E2E.ps1'
 )
 foreach ($rel in $repoFiles) {
-    if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot ($rel -replace '/', '\')))) {
+    if (-not (Test-Path -LiteralPath (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $rel))) {
         $repoOk = $false
         break
     }
@@ -127,9 +127,9 @@ foreach ($rel in $repoFiles) {
 Add-StepResult -Name '1/10 repo defaults + artefacten' -Ok $repoOk -Detail 'show_cost + cost_bar_mode=rich'
 
 # --- 2 Guardrails (institutional + diagnose + verify) ---
-$instE2e = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/audits/RUN_INSTITUTIONAL_E2E.ps1') -Raw -Encoding UTF8
-$diagPy = Get-Content -LiteralPath (Join-Path $RepoRoot 'scripts/diagnose_renderer.py') -Raw -Encoding UTF8
-$mergePs1 = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/merge_upstream_fork.ps1') -Raw -Encoding UTF8
+$instE2e = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/audits/RUN_INSTITUTIONAL_E2E.ps1')
+$diagPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/diagnose_renderer.py')
+$mergePs1 = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/merge_upstream_fork.ps1')
 $guardOk = ($instE2e -match 'cost_bar_mode=rich') -and ($diagPy -match 'cost_bar_mode') -and ($mergePs1 -match 'usage_snapshot.py') -and ($mergePs1 -match 'usageCostBar.ts')
 Add-StepResult -Name '2/10 drift guards + keepOurs' -Ok $guardOk
 
@@ -153,10 +153,10 @@ if (-not $SkipVitest) {
 # --- 4 Pytest keten ---
 $pytestArgs = @(
     '-m', 'pytest',
-    (Join-Path $RepoRoot 'tests/hermes_cli/test_usage_snapshot.py'),
-    (Join-Path $RepoRoot 'tests/windows/test_status_bar_cost_e2e.py'),
-    (Join-Path $RepoRoot 'tests/windows/test_team_display_defaults.py'),
-    (Join-Path $RepoRoot 'tests/windows/test_apply_team_display_root.py'),
+    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_usage_snapshot.py'),
+    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/windows/test_status_bar_cost_e2e.py'),
+    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/windows/test_team_display_defaults.py'),
+    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/windows/test_apply_team_display_root.py'),
     (Get-PytestNodePath 'tests/test_tui_gateway_server.py' 'test_config_get_cost_survives_non_dict_display'),
     (Get-PytestNodePath 'tests/test_tui_gateway_server.py' 'test_config_set_cost_survives_non_dict_display'),
     (Get-PytestNodePath 'tests/test_tui_gateway_server.py' 'test_config_set_cost_toggle_empty_value'),
@@ -213,17 +213,17 @@ if ($SkipRuntime) {
 }
 
 # --- 7 Gateway smoke (cost + breakdown) ---
-$smokePy = Join-Path $RepoRoot 'scripts/status_bar_cost_gateway_smoke.py'
+$smokePy = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/status_bar_cost_gateway_smoke.py'
 $gatewayOk = Invoke-AuditCommand -Exe $python -ArgumentList @($smokePy)
 Add-StepResult -Name '7/10 gateway smoke cost + breakdown' -Ok $gatewayOk -Detail 'status_bar_cost_gateway_smoke.py'
 
 # --- 8 Verify wiring script ---
-$verifyPy = Join-Path $RepoRoot 'scripts/verify_usage_cost_bar.py'
+$verifyPy = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/verify_usage_cost_bar.py'
 $verifyOk = Invoke-AuditCommand -Exe $python -ArgumentList @($verifyPy, '--verify')
 Add-StepResult -Name '8/10 verify_usage_cost_bar' -Ok $verifyOk
 
 # --- 9 UPSTREAM_SYNC conflict-tabel ---
-$upstreamMd = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/UPSTREAM_SYNC.md') -Raw -Encoding UTF8
+$upstreamMd = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/UPSTREAM_SYNC.md')
 $upstreamOk = ($upstreamMd -match 'usage_snapshot.py') -and ($upstreamMd -match 'usageCostBar.ts') -and ($upstreamMd -match 'cost_bar_mode=rich')
 Add-StepResult -Name '9/10 UPSTREAM_SYNC cost-bar tabel' -Ok $upstreamOk
 

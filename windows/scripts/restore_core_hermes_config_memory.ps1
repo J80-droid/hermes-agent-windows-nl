@@ -6,6 +6,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 } else {
@@ -15,7 +16,7 @@ if (-not $RepoRoot) {
 . (Join-Path $PSScriptRoot 'HermesMemoryMergeCommon.ps1')
 
 $root = Get-HermesMemoryHermesRoot -OverrideRoot $HermesRoot
-$coreMemPath = Join-Path $root 'profiles/core/memories/MEMORY.md'
+$coreMemPath = Join-HermesRepoPath -RepoRoot $root -RelativePath 'profiles/core/memories/MEMORY.md'
 if (-not (Test-Path -LiteralPath $coreMemPath)) {
     Write-Host '[SKIP] core MEMORY ontbreekt' -ForegroundColor Yellow
     exit 0

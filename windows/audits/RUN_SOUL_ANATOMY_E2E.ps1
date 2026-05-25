@@ -1,5 +1,6 @@
 # E2E: SOUL anatomy — repo templates + runtime SOUL.md
 
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
@@ -72,7 +73,7 @@ $missing = @()
 
 foreach ($rel in $requiredTemplates) {
 
-    if (-not (Test-Path -LiteralPath (Join-Path $repoRoot $rel))) {
+    if (-not (Test-Path -LiteralPath (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath $rel))) {
 
         $missing += $rel
 
@@ -98,9 +99,9 @@ function Test-RepoSoulTemplatesAnatomy {
 
     $templateFail = $false
 
-    $paths = @(Get-ChildItem (Join-Path $Root 'docs/templates') -Filter 'SOUL_*_DOMAIN.md')
+    $paths = @(Get-ChildItem (Join-HermesRepoPath -RepoRoot $Root -RelativePath 'docs/templates') -Filter 'SOUL_*_DOMAIN.md')
 
-    $paths += Get-Item (Join-Path $Root 'docs/templates/SOUL_CORE_ORCHESTRATOR.md')
+    $paths += Get-Item (Join-HermesRepoPath -RepoRoot $Root -RelativePath 'docs/templates/SOUL_CORE_ORCHESTRATOR.md')
 
     foreach ($f in $paths) {
 
@@ -146,7 +147,7 @@ function Test-RepoSoulTemplatesAnatomy {
 
 
 
-$validateScript = Join-Path $repoRoot 'scripts/validate_soul_anatomy.py'
+$validateScript = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'scripts/validate_soul_anatomy.py'
 
 $pyOk = $false
 
@@ -178,7 +179,7 @@ if ($pyOk) {
 
 }
 
-$reportTpl = Join-Path $repoRoot 'docs/templates/CODEBASE_AUDIT_REPORT.md'
+$reportTpl = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'docs/templates/CODEBASE_AUDIT_REPORT.md'
 if ((Test-Path -LiteralPath $validateScript) -and (Test-Path -LiteralPath $reportTpl)) {
   $caOk = $false
   try {
@@ -195,7 +196,7 @@ if ((Test-Path -LiteralPath $validateScript) -and (Test-Path -LiteralPath $repor
   }
 }
 
-Import-Module (Join-Path $repoRoot 'windows/scripts/SyncSoulSnippet.psm1') -Force
+Import-Module (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/SyncSoulSnippet.psm1') -Force
 
 $hermesRoot = Get-HermesRoot
 

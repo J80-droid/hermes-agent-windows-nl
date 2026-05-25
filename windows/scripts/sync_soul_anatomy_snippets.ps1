@@ -9,6 +9,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 Import-Module (Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1') -Force
 
 $suppressReminder = $false
@@ -18,7 +19,7 @@ if ($Quiet -and $env:HERMES_SUPPRESS_SOUL_REMINDER -ne '1') {
 }
 
 if (-not $RepoRoot) {
-    $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
+    $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 } else {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 }

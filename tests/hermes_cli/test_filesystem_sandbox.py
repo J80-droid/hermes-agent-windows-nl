@@ -76,6 +76,12 @@ class TestForbiddenPathContent:
         assert err is not None
         assert "Device" in err or "extended" in err
 
+    def test_blocks_env_var_traversal(self, monkeypatch):
+        monkeypatch.setenv("HERMES_ESCAPE", "../outside")
+        err = fs.has_forbidden_path_content("%HERMES_ESCAPE%/secret.txt")
+        assert err is not None
+        assert ".." in err
+
 
 class TestWindowsPathTraversal:
     @pytest.mark.parametrize(

@@ -7,6 +7,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
@@ -150,7 +151,7 @@ if ($IncludeRawSource -and $RenameFiles) {
     }
 }
 
-$reportPath = Join-Path $RepoRoot 'windows/audits/scrub_identity_report.json'
+$reportPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/audits/scrub_identity_report.json'
 if (-not $DryRun) {
     @{
         generated_at = (Get-Date).ToString('o')

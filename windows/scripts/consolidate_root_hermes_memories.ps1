@@ -6,6 +6,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 } else {
@@ -18,10 +19,10 @@ $root = Get-HermesMemoryHermesRoot -OverrideRoot $HermesRoot
 $memorySeed = Get-HermesMemorySeedEntries -RepoRoot $RepoRoot -SectionName 'MEMORY.md'
 $userSeed = Get-HermesMemorySeedEntries -RepoRoot $RepoRoot -SectionName 'USER.md'
 
-$rootMemPath = Join-Path $root 'memories/MEMORY.md'
-$rootUserPath = Join-Path $root 'memories/USER.md'
-$legalMemPath = Join-Path $root 'profiles/legal/memories/MEMORY.md'
-$coreMemPath = Join-Path $root 'profiles/core/memories/MEMORY.md'
+$rootMemPath = Join-HermesRepoPath -RepoRoot $root -RelativePath 'memories/MEMORY.md'
+$rootUserPath = Join-HermesRepoPath -RepoRoot $root -RelativePath 'memories/USER.md'
+$legalMemPath = Join-HermesRepoPath -RepoRoot $root -RelativePath 'profiles/legal/memories/MEMORY.md'
+$coreMemPath = Join-HermesRepoPath -RepoRoot $root -RelativePath 'profiles/core/memories/MEMORY.md'
 
 if (-not (Test-Path -LiteralPath $rootMemPath)) {
     Write-Host '[SKIP] Geen legacy root memories/MEMORY.md' -ForegroundColor Yellow

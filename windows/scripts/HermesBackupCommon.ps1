@@ -1,7 +1,8 @@
 # Gedeelde Hermes Windows backup/restore helpers (schema v3).
 # Parity exclude-regels: hermes_cli/backup.py (_EXCLUDED_DIRS, WAL/SHM, pid-files).
-# Dot-source: . (Join-Path $PSScriptRoot 'scripts/HermesBackupCommon.ps1')
+# Dot-source: . (Join-HermesRepoPath -RepoRoot $PSScriptRoot -RelativePath 'scripts/HermesBackupCommon.ps1')
 
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 . (Join-Path $PSScriptRoot 'HermesHomeCommon.ps1')
 
 function Get-HermesRobocopyExePath {
@@ -285,9 +286,9 @@ function Copy-HermesPersonaSubsetFromRuntime {
     $relPaths = Get-HermesPersonaRelativePaths -ProfilesRoot $profilesDir
     $copied = [System.Collections.Generic.List[string]]::new()
     foreach ($rel in $relPaths) {
-        $src = Join-Path $RuntimeRoot ($rel -replace '/', '\')
+        $src = Join-HermesRepoPath -RepoRoot $RuntimeRoot -RelativePath $rel
         if (-not (Test-Path -LiteralPath $src)) { continue }
-        $dst = Join-Path $DstRoot ($rel -replace '/', '\')
+        $dst = Join-HermesRepoPath -RepoRoot $DstRoot -RelativePath $rel
         $parent = Split-Path -Parent $dst
         if ($parent -and -not (Test-Path -LiteralPath $parent)) {
             New-Item -ItemType Directory -Path $parent -Force | Out-Null
@@ -307,9 +308,9 @@ function Invoke-HermesRestorePersonaSubsetFromRuntimeBackup {
     $relPaths = Get-HermesPersonaRelativePaths -ProfilesRoot $profilesRoot
     $count = 0
     foreach ($rel in $relPaths) {
-        $src = Join-Path $RuntimeBackupRoot ($rel -replace '/', '\')
+        $src = Join-HermesRepoPath -RepoRoot $RuntimeBackupRoot -RelativePath $rel
         if (-not (Test-Path -LiteralPath $src)) { continue }
-        $target = Join-Path $RuntimeDst ($rel -replace '/', '\')
+        $target = Join-HermesRepoPath -RepoRoot $RuntimeDst -RelativePath $rel
         $parent = Split-Path -Parent $target
         if ($parent -and -not (Test-Path -LiteralPath $parent)) {
             New-Item -ItemType Directory -Path $parent -Force | Out-Null

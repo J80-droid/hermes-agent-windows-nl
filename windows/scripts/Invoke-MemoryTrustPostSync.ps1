@@ -6,6 +6,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 } else {
@@ -26,7 +27,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 if (-not $SkipProductionGate) {
-    $gatePs1 = Join-Path $RepoRoot 'windows/audits/RUN_MEMORY_PRODUCTION_GATE.ps1'
+    $gatePs1 = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/audits/RUN_MEMORY_PRODUCTION_GATE.ps1'
     if (-not (Test-Path -LiteralPath $gatePs1)) {
         Write-Host '[FAIL] RUN_MEMORY_PRODUCTION_GATE.ps1 ontbreekt' -ForegroundColor Red
         exit 1

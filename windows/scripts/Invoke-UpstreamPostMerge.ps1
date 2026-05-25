@@ -1,5 +1,5 @@
 # Post-merge keten voor upstream_sync.ps1 (trust, SOUL, verify, optionele codebase smoke).
-# Dot-source: . (Join-Path $PSScriptRoot 'scripts/Invoke-UpstreamPostMerge.ps1')
+# Dot-source: . (Join-HermesRepoPath -RepoRoot $PSScriptRoot -RelativePath 'scripts/Invoke-UpstreamPostMerge.ps1')
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
@@ -29,7 +29,7 @@ function Invoke-UpstreamPostMergeCodebaseSmoke {
     if (-not ($WantE2E -or $WantSmoke)) {
         return 0
     }
-    $helper = Join-Path $Repo 'windows/scripts/Invoke-PostSyncCodebaseSmoke.ps1'
+    $helper = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/scripts/Invoke-PostSyncCodebaseSmoke.ps1'
     if (-not (Test-Path -LiteralPath $helper)) {
         Write-Warn "Ontbreekt: $helper"
         return 0
@@ -77,7 +77,7 @@ function Invoke-UpstreamPostMerge {
         if (-not (Test-Path -LiteralPath $py)) {
             Write-Warn "Python niet gevonden: $py - sla RAG-postinstall over."
         } else {
-            $extras = Join-Path $Repo 'windows/scripts/install_rag_extras.ps1'
+            $extras = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/scripts/install_rag_extras.ps1'
             if (Test-Path -LiteralPath $extras) {
                 Write-Step 'RAG extras MCP + rag...'
                 & $extras
@@ -94,7 +94,7 @@ function Invoke-UpstreamPostMerge {
     }
 
     if ($exitCode -eq 0 -and $McpTest) {
-        $bat = Join-Path $Repo 'windows/scripts/update_knowledge.bat'
+        $bat = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/scripts/update_knowledge.bat'
         if (Test-Path -LiteralPath $bat) {
             Write-Step 'MCP-probe alle domeinen...'
             $env:HERMES_NONINTERACTIVE = '1'
@@ -118,7 +118,7 @@ function Invoke-UpstreamPostMerge {
     }
 
     if ($exitCode -eq 0) {
-        $apiEnvPs1 = Join-Path $Repo 'windows/sync_hermes_api_env.ps1'
+        $apiEnvPs1 = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/sync_hermes_api_env.ps1'
         if (Test-Path -LiteralPath $apiEnvPs1) {
             Write-Step 'API-keys + vault-paden OBSIDIAN_VAULT_PATH naar alle profielen...'
             $env:HERMES_SKIP_PAUSE = '1'
@@ -132,7 +132,7 @@ function Invoke-UpstreamPostMerge {
     }
 
     if ($exitCode -eq 0) {
-        $verifyHome = Join-Path $Repo 'windows/scripts/verify_hermes_home.ps1'
+        $verifyHome = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/scripts/verify_hermes_home.ps1'
         if (Test-Path -LiteralPath $verifyHome) {
             Write-Step 'Hermes home + config drift verify...'
             & $verifyHome -StrictDrift
@@ -146,7 +146,7 @@ function Invoke-UpstreamPostMerge {
     }
 
     if ($LASTEXITCODE -eq 0) {
-        $verifyDrift = Join-Path $Repo 'windows/scripts/verify_hermes_config_drift.ps1'
+        $verifyDrift = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/scripts/verify_hermes_config_drift.ps1'
         if (Test-Path -LiteralPath $verifyDrift) {
             Write-Step 'verify_hermes_config_drift (strict)...'
             & $verifyDrift -Strict
@@ -175,7 +175,7 @@ function Invoke-UpstreamPostMerge {
 
     $soulDeployOk = $false
     if ($exitCode -eq 0) {
-        $launchSoul = Join-Path $Repo 'windows/scripts/launch_soul_anatomy_deploy.ps1'
+        $launchSoul = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/scripts/launch_soul_anatomy_deploy.ps1'
         if (Test-Path -LiteralPath $launchSoul) {
             Write-Step 'SOUL anatomy deploy 13 templates + snippets...'
             $env:HERMES_SKIP_PAUSE = '1'
@@ -190,7 +190,7 @@ function Invoke-UpstreamPostMerge {
     }
 
     if ($exitCode -eq 0) {
-        $instPs1 = Join-Path $Repo 'windows/apply_institutional_runtime.ps1'
+        $instPs1 = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/apply_institutional_runtime.ps1'
         if (Test-Path -LiteralPath $instPs1) {
             Write-Step 'Institutioneel runtime display + SOUL snippets, geen E2E...'
             $env:HERMES_SKIP_PAUSE = '1'
@@ -206,7 +206,7 @@ function Invoke-UpstreamPostMerge {
     }
 
     if ($exitCode -eq 0) {
-        $rebuildTui = Join-Path $Repo 'windows/scripts/rebuild_tui.ps1'
+        $rebuildTui = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/scripts/rebuild_tui.ps1'
         if (Test-Path -LiteralPath $rebuildTui) {
             Write-Step 'TUI bundel ui-tui/dist herbouwen...'
             & powershell -NoProfile -ExecutionPolicy Bypass -File $rebuildTui -RepoRoot $Repo
@@ -219,7 +219,7 @@ function Invoke-UpstreamPostMerge {
     }
 
     if ($exitCode -eq 0) {
-        $fixPins = Join-Path $Repo 'windows/fix_hermes_taskbar_pins.ps1'
+        $fixPins = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/fix_hermes_taskbar_pins.ps1'
         if (Test-Path -LiteralPath $fixPins) {
             Write-Step 'Taakbalk-iconen .lnk + icooncache voor verify...'
             & powershell -NoProfile -ExecutionPolicy Bypass -File $fixPins -RepoRoot $Repo -Quiet
@@ -232,7 +232,7 @@ function Invoke-UpstreamPostMerge {
     }
 
     if ($exitCode -eq 0) {
-        $verify = Join-Path $Repo 'windows/verify_windows_script_chain.ps1'
+        $verify = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/verify_windows_script_chain.ps1'
         if (Test-Path -LiteralPath $verify) {
             Write-Step 'Windows script-keten verify - geautomatiseerd, geen pause'
             & $verify

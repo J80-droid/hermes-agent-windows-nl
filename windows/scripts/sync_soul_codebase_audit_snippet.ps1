@@ -8,6 +8,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 
 $modulePath = Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1'
 if (-not (Test-Path -LiteralPath $modulePath)) {
@@ -16,12 +17,12 @@ if (-not (Test-Path -LiteralPath $modulePath)) {
 Import-Module "$modulePath" -Force
 
 if (-not $RepoRoot) {
-    $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
+    $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 } else {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 }
 
-$templatePath = Join-Path $RepoRoot 'docs/templates/SOUL_SHARED_CODEBASE_AUDIT.md'
+$templatePath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'docs/templates/SOUL_SHARED_CODEBASE_AUDIT.md'
 
 Write-Host '--- SOUL Codebase-audit sync ---' -ForegroundColor Cyan
 $null = Sync-SoulSnippet `

@@ -9,6 +9,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 . (Join-Path $PSScriptRoot 'HermesHomeCommon.ps1')
 Import-Module (Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1') -Force
 
@@ -19,7 +20,7 @@ if ($RepoRoot) {
     $RepoRoot = $RepoRoot.Trim().Trim('"')
 }
 if (-not $RepoRoot) {
-    $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
+    $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 } elseif (-not (Test-Path -LiteralPath $RepoRoot)) {
     Write-Host ('ERROR: RepoRoot bestaat niet: ' + $RepoRoot) -ForegroundColor Red
     exit 1
@@ -48,9 +49,9 @@ $stampDir = Get-HermesRoot
 $stampFile = Join-Path $stampDir 'launch_institutional_runtime.stamp'
 
 $watchFiles = @(
-    (Join-Path $RepoRoot 'windows/team_display.defaults'),
-    (Join-Path $RepoRoot 'windows/scripts/apply_team_display_profiles.py'),
-    (Join-Path $RepoRoot 'windows/apply_institutional_runtime.ps1')
+    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/team_display.defaults'),
+    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/apply_team_display_profiles.py'),
+    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/apply_institutional_runtime.ps1')
 ) | Where-Object { Test-Path -LiteralPath $_ }
 
 $needRun = $Force.IsPresent -or $runE2e
@@ -67,7 +68,7 @@ if (-not $needRun -and (Test-Path -LiteralPath $stampFile) -and $watchFiles.Coun
 }
 
 if (-not $needRun) {
-    $driftScript = Join-Path $RepoRoot 'windows/scripts/apply_team_display_profiles.py'
+    $driftScript = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/apply_team_display_profiles.py'
     if (Test-Path -LiteralPath $driftScript) {
         $env:HERMES_ROOT = $stampDir
         $env:PYTHONPATH = $RepoRoot
@@ -100,7 +101,7 @@ if (-not $needRun) {
     exit 0
 }
 
-$runtimePs1 = Join-Path $RepoRoot 'windows/apply_institutional_runtime.ps1'
+$runtimePs1 = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/apply_institutional_runtime.ps1'
 $runtimeArgs = @{ SkipE2E = (-not $runE2e); NoPause = $true }
 if (Test-SoulAnatomyDeployJustRan) {
     $runtimeArgs['SkipSoul'] = $true

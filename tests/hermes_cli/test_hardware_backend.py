@@ -59,10 +59,30 @@ def test_probe_startup_backends_includes_whisper_note(monkeypatch):
     assert "DirectML not supported" in joined
 
 
-def test_record_backend_and_summary():
+def test_select_torch_device_cuda_unavailable_falls_back(monkeypatch):
+    monkeypatch.setattr(hb, "probe_torch_cuda", lambda: False)
+    device, backend = hb.select_torch_device("cuda")
+    assert device == "cpu"
+    assert backend == hb.BackendName.CPU
+
+
+def test_load_faster_whisper_auto_falls_back_to_cpu(monkeypatch):
+    class FakeWhisper:
+        def __init__(self, model_name, device, compute_type):
+            self.model_name = model_name
+            self.device = device
+            self.compute_type = compute_type
+
+    calls: list[tuple[str, str, str]] = []
+
+    def fake_ctor(model_name, device, compute_type):
+        calls.append((model_name, device, compute_type))
+        if device in {"cuda", "auto"} and len(calls) == 1:
+            raise RuntimeError("cannot be loaded")
+        return FakeWhisper(model_name, device, compute_type)
+
+    monkeypatch.setattr("faster_whisper.WhisperModel", fake_ctor)
     hb._selections.clear()
-    hb._startup_summary_printed = False
-    hb.record_backend("test-comp", hb.BackendName.DIRECTML, "providers=DmlExecutionProvider")
-    summary = hb.format_backend_summary_for_terminal()
-    assert "test-comp" in summary
-    assert "directml" in summary
+    model = hb.load_faster_whisper_model("tiny", preferred_device="auto")
+    assert model.device == "cpu"
+    assert len(calls) == 2

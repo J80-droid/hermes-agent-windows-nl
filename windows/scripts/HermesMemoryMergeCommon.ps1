@@ -1,5 +1,6 @@
 # Gedeelde §-merge helpers voor sync_profile_memories.ps1 en consolidate_root_hermes_memories.ps1
 
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 function Get-MemorySectionDelimiterChar {
     return [string][char]0x00A7
 }
@@ -26,7 +27,7 @@ function Get-HermesMemorySeedEntries {
         [Parameter(Mandatory)][string]$RepoRoot,
         [Parameter(Mandatory)][string]$SectionName
     )
-    $seedPath = Join-Path $RepoRoot 'docs/templates/MEMORY_CANONICAL_SEED.md'
+    $seedPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'docs/templates/MEMORY_CANONICAL_SEED.md'
     if (-not (Test-Path -LiteralPath $seedPath)) {
         Write-Error "Seed ontbreekt: $seedPath"
     }
@@ -137,7 +138,7 @@ function Flush-PendingHermesConfigToCore {
         [switch]$DryRun
     )
     if (-not $script:PendingHermesConfigSections -or $script:PendingHermesConfigSections.Count -eq 0) { return }
-    $coreMemPath = Join-Path $HermesRoot 'profiles/core/memories/MEMORY.md'
+    $coreMemPath = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath 'profiles/core/memories/MEMORY.md'
     if (-not (Test-Path -LiteralPath (Split-Path -Parent $coreMemPath))) { return }
     $memorySeed = Get-HermesMemorySeedEntries -RepoRoot $RepoRoot -SectionName 'MEMORY.md'
     Write-Host "[INFO] $($script:PendingHermesConfigSections.Count) Hermes-config sectie(s) naar core" -ForegroundColor Cyan
@@ -154,7 +155,7 @@ function Invoke-RebalanceHermesConfigToCore {
         [switch]$DryRun
     )
     $profilesDir = Join-Path $HermesRoot 'profiles'
-    $coreMemPath = Join-Path $HermesRoot 'profiles/core/memories/MEMORY.md'
+    $coreMemPath = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath 'profiles/core/memories/MEMORY.md'
     if (-not (Test-Path -LiteralPath $profilesDir)) { return }
     $memorySeed = Get-HermesMemorySeedEntries -RepoRoot $RepoRoot -SectionName 'MEMORY.md'
     $toCore = [System.Collections.Generic.List[string]]::new()

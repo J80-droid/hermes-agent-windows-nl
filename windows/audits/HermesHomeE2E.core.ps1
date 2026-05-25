@@ -50,7 +50,7 @@ $repoArtifacts = @(
     'docs/templates/AUXILIARY_HYBRID_OLLAMA.yaml'
 )
 $missingRepo = @($repoArtifacts | Where-Object {
-    -not (Test-Path -LiteralPath (Join-Path $RepoRoot ($_ -replace '/', [IO.Path]::DirectorySeparatorChar)))
+    -not (Test-Path -LiteralPath (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $_))
 })
 $repoDetail = if ($missingRepo.Count) { ($missingRepo -join ', ') } else { "$($repoArtifacts.Count) bestanden" }
 Add-StepResult '1/14 Repo split-home artefacten' ($missingRepo.Count -eq 0) $repoDetail
@@ -101,18 +101,18 @@ $legacyHubDetail = if (Test-Path -LiteralPath $readme) {
 }
 Add-StepResult '5/14 Legacy hub README of archive' $legacyOk $legacyHubDetail
 
-$inventory = Join-Path $windowsRoot 'scripts/inventory_hermes_home.ps1'
+$inventory = Join-HermesRepoPath -RepoRoot $windowsRoot -RelativePath 'scripts/inventory_hermes_home.ps1'
 & $inventory -Quiet
 Add-StepResult '6/14 inventory_hermes_home -Quiet' ($LASTEXITCODE -eq 0)
 
 Ensure-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
 $env:HERMES_HOME = (Get-HermesRuntimeRoot).TrimEnd('\')
 
-$verifyHome = Join-Path $windowsRoot 'scripts/verify_hermes_home.ps1'
+$verifyHome = Join-HermesRepoPath -RepoRoot $windowsRoot -RelativePath 'scripts/verify_hermes_home.ps1'
 & $verifyHome -StrictDrift:$StrictDrift
 Add-StepResult '7/14 verify_hermes_home' ($LASTEXITCODE -eq 0)
 
-$verifyDrift = Join-Path $windowsRoot 'scripts/verify_hermes_config_drift.ps1'
+$verifyDrift = Join-HermesRepoPath -RepoRoot $windowsRoot -RelativePath 'scripts/verify_hermes_config_drift.ps1'
 & $verifyDrift -Strict:$StrictDrift
 Add-StepResult '8/14 verify_hermes_config_drift' ($LASTEXITCODE -eq 0)
 

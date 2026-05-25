@@ -5,6 +5,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 
 if (-not $RepoRoot.Trim()) {
     $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
@@ -14,7 +15,7 @@ if (-not $RepoRoot.Trim()) {
 
 $tuiDir = Join-Path $RepoRoot 'ui-tui'
 $pkg = Join-Path $tuiDir 'package.json'
-$entry = Join-Path $tuiDir 'dist/entry.js'
+$entry = Join-HermesRepoPath -RepoRoot $tuiDir -RelativePath 'dist/entry.js'
 if (-not (Test-Path -LiteralPath $pkg)) {
     Write-Host "[ERROR] Ontbreekt: $pkg" -ForegroundColor Red
     exit 1

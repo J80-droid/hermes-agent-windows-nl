@@ -87,7 +87,7 @@ $repoFiles = @(
 )
 $repoOk = $true
 foreach ($rel in $repoFiles) {
-    if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot ($rel -replace '/', '\')))) {
+    if (-not (Test-Path -LiteralPath (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $rel))) {
         $repoOk = $false
         break
     }
@@ -95,20 +95,20 @@ foreach ($rel in $repoFiles) {
 Add-StepResult -Name '1/8 repo pareto wiring files' -Ok $repoOk
 
 # --- 2 OpenRouter plugin model-gate ---
-$pluginPath = Join-Path $RepoRoot 'plugins/model-providers/openrouter/__init__.py'
+$pluginPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'plugins/model-providers/openrouter/__init__.py'
 $pluginText = Get-Content -LiteralPath $pluginPath -Raw -Encoding UTF8
 $pluginOk = ($pluginText -match 'openrouter/pareto-code') -and ($pluginText -match 'pareto-router') -and ($pluginText -match 'min_coding_score')
 Add-StepResult -Name '2/8 openrouter plugin model-gate' -Ok $pluginOk
 
 # --- 3 Transport + summary helper parity ---
-$transportText = Get-Content -LiteralPath (Join-Path $RepoRoot 'agent/transports/chat_completions.py') -Raw -Encoding UTF8
-$helpersText = Get-Content -LiteralPath (Join-Path $RepoRoot 'agent/chat_completion_helpers.py') -Raw -Encoding UTF8
+$transportText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'agent/transports/chat_completions.py')
+$helpersText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'agent/chat_completion_helpers.py')
 $parityOk = ($transportText -match 'pareto-router') -and ($helpersText -match 'pareto-router') -and ($transportText -match 'openrouter/pareto-code') -and ($helpersText -match 'openrouter/pareto-code')
 Add-StepResult -Name '3/8 transport + summary parity' -Ok $parityOk
 
 # --- 4 Config template + model catalog ---
-$configText = Get-Content -LiteralPath (Join-Path $RepoRoot 'hermes_cli/config.py') -Raw -Encoding UTF8
-$modelsText = Get-Content -LiteralPath (Join-Path $RepoRoot 'hermes_cli/models.py') -Raw -Encoding UTF8
+$configText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/config.py')
+$modelsText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/models.py')
 $configOk = ($configText -match 'min_coding_score') -and ($configText -match 'openrouter/pareto-code') -and ($modelsText -match 'openrouter/pareto-code')
 Add-StepResult -Name '4/8 config + model catalog' -Ok $configOk
 
@@ -119,7 +119,7 @@ if ($SkipPytest) {
 } else {
     $transportOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-Path $RepoRoot 'tests/agent/transports/test_chat_completions.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/agent/transports/test_chat_completions.py'),
         '-k', 'openrouter_pareto',
         '-q',
         '-o', 'addopts='
@@ -128,8 +128,8 @@ if ($SkipPytest) {
 
     $moduleOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-Path $RepoRoot 'tests/windows/test_pareto_e2e.py'),
-        (Join-Path $RepoRoot 'tests/providers/test_provider_profiles.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/windows/test_pareto_e2e.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/providers/test_provider_profiles.py'),
         '-k', 'pareto',
         '-q',
         '-o', 'addopts='
@@ -138,13 +138,13 @@ if ($SkipPytest) {
 }
 
 # --- 7 Verify script ---
-$verifyPy = Join-Path $RepoRoot 'scripts/verify_pareto_router.py'
+$verifyPy = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/verify_pareto_router.py'
 $verifyOk = Invoke-AuditCommand -Exe $python -ArgumentList @($verifyPy, '--verify')
 Add-StepResult -Name '7/8 verify_pareto_router' -Ok $verifyOk
 
 # --- 8 Documentatie ---
-$providersMd = Join-Path $RepoRoot 'website/docs/integrations/providers.md'
-$configMd = Join-Path $RepoRoot 'website/docs/user-guide/configuration.md'
+$providersMd = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'website/docs/integrations/providers.md'
+$configMd = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'website/docs/user-guide/configuration.md'
 $docsOk = $false
 if ((Test-Path -LiteralPath $providersMd) -and (Test-Path -LiteralPath $configMd)) {
     $providersText = Get-Content -LiteralPath $providersMd -Raw -Encoding UTF8

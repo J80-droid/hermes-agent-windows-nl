@@ -140,7 +140,7 @@ Invoke-SmokeStep -Name 'pytest_windows_critical' -Tier 'E2' -Source 'tests/windo
 }
 
 Invoke-SmokeStep -Name 'verify_windows_chain' -Tier 'E1' -Source 'windows/verify_windows_script_chain.ps1' -AllowSkip {
-    $chain = Join-Path $RepoRoot 'windows/verify_windows_script_chain.ps1'
+    $chain = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/verify_windows_script_chain.ps1'
     if (-not (Test-Path -LiteralPath $chain)) {
         $global:LASTEXITCODE = 2
         return
@@ -150,22 +150,22 @@ Invoke-SmokeStep -Name 'verify_windows_chain' -Tier 'E1' -Source 'windows/verify
 }
 
 Invoke-SmokeStep -Name 'diagnose_renderer' -Tier 'E1' -Source 'scripts/diagnose_renderer.py' {
-    & $py (Join-Path $RepoRoot 'scripts/diagnose_renderer.py') --verify
+    & $py (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/diagnose_renderer.py') --verify
     $global:LASTEXITCODE = $LASTEXITCODE
 }
 
 Invoke-SmokeStep -Name 'audit_skill_drift' -Tier 'E1' -Source 'scripts/audit_skill_drift.py' {
-    & $py (Join-Path $RepoRoot 'scripts/audit_skill_drift.py')
+    & $py (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/audit_skill_drift.py')
     $global:LASTEXITCODE = $LASTEXITCODE
 }
 
 Invoke-SmokeStep -Name 'verify_usage_cost_bar' -Tier 'E1' -Source 'scripts/verify_usage_cost_bar.py' {
-    & $py (Join-Path $RepoRoot 'scripts/verify_usage_cost_bar.py') --verify
+    & $py (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/verify_usage_cost_bar.py') --verify
     $global:LASTEXITCODE = $LASTEXITCODE
 }
 
 Invoke-SmokeStep -Name 'verify_pareto_router' -Tier 'E1' -Source 'scripts/verify_pareto_router.py' {
-    & $py (Join-Path $RepoRoot 'scripts/verify_pareto_router.py') --verify
+    & $py (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/verify_pareto_router.py') --verify
     $global:LASTEXITCODE = $LASTEXITCODE
 }
 
@@ -249,7 +249,7 @@ if ($ReportPath) {
 $utf8NoBom = New-Object System.Text.UTF8Encoding $false
 [System.IO.File]::WriteAllText($jsonPath, ($stepLog | ConvertTo-Json -Depth 6), $utf8NoBom)
 
-$emit = Join-Path $RepoRoot 'scripts/emit_codebase_smoke_report.py'
+$emit = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/emit_codebase_smoke_report.py'
 if (Test-Path -LiteralPath $emit) {
     & $py $emit $jsonPath -o $reportPath
     if ($LASTEXITCODE -ne 0) {

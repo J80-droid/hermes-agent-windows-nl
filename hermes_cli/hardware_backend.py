@@ -151,9 +151,15 @@ def select_torch_device(preferred: str = "auto") -> tuple[str, BackendName]:
     if pref == "cpu":
         return "cpu", BackendName.CPU
     if pref == "cuda":
-        return "cuda", BackendName.CUDA
+        if probe_torch_cuda():
+            return "cuda", BackendName.CUDA
+        logger.warning("PyTorch CUDA requested but unavailable — using CPU")
+        return "cpu", BackendName.CPU
     if pref == "mps":
-        return "mps", BackendName.MPS
+        if probe_torch_mps():
+            return "mps", BackendName.MPS
+        logger.warning("PyTorch MPS requested but unavailable — using CPU")
+        return "cpu", BackendName.CPU
     if probe_torch_cuda():
         return "cuda", BackendName.CUDA
     if probe_torch_mps():
@@ -252,22 +258,28 @@ def load_faster_whisper_model(model_name: str, preferred_device: str = "auto"):
     compute = "auto"
     try:
         model = WhisperModel(model_name, device=device, compute_type=compute)
+        resolved_device = device
+        if device == "auto":
+            resolved_device = "cuda" if probe_torch_cuda() else "cpu"
         record_backend(
             "stt-whisper",
-            BackendName.CUDA if device == "cuda" else BackendName.AUTO,
-            f"model={model_name}, device={device}, compute={compute}",
+            BackendName.CUDA if resolved_device == "cuda" else BackendName.CPU,
+            f"model={model_name}, device={resolved_device}, compute={compute}",
         )
         return model
     except Exception as exc:
-        if pref == "cuda" or not looks_like_cuda_lib_error(exc):
+        if pref == "cuda" and not looks_like_cuda_lib_error(exc):
+            raise
+        if pref not in {"auto", "cuda"}:
             raise
         logger.warning(
-            "faster-whisper CUDA load failed (%s) — falling back to CPU (int8). "
+            "faster-whisper %s load failed (%s) — falling back to CPU (int8). "
             "Install NVIDIA CUDA runtime for GPU STT. DirectML is not supported by ctranslate2.",
+            device,
             exc,
         )
         model = WhisperModel(model_name, device="cpu", compute_type="int8")
-        record_backend("stt-whisper", BackendName.CPU, f"model={model_name}, compute=int8 (CUDA fallback)")
+        record_backend("stt-whisper", BackendName.CPU, f"model={model_name}, compute=int8 (GPU fallback)")
         return model
 
 

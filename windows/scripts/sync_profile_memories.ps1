@@ -6,6 +6,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
@@ -21,7 +22,7 @@ $memorySeed = Get-HermesMemorySeedEntries -RepoRoot $RepoRoot -SectionName 'MEMO
 Initialize-PendingHermesConfigSections
 
 $targets = @(
-    @{ User = Join-Path $root 'memories/USER.md'; Memory = Join-Path $root 'memories/MEMORY.md' }
+    @{ User = Join-HermesRepoPath -RepoRoot $root -RelativePath 'memories/USER.md'; Memory = Join-HermesRepoPath -RepoRoot $root -RelativePath 'memories/MEMORY.md' }
 )
 $profilesDir = Join-Path $root 'profiles'
 if (Test-Path -LiteralPath $profilesDir) {

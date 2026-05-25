@@ -6,6 +6,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 . (Join-Path $PSScriptRoot 'HermesMemoryMergeCommon.ps1')
 
 function Get-HermesRoot {
@@ -41,7 +42,7 @@ function Format-Preview {
 $root = Get-HermesRoot -OverrideRoot $HermesRoot
 $failures = 0
 $targets = @(
-    @{ Name = 'root'; UserPath = Join-Path $root 'memories/USER.md' }
+    @{ Name = 'root'; UserPath = Join-HermesRepoPath -RepoRoot $root -RelativePath 'memories/USER.md' }
 )
 
 $profilesDir = Join-Path $root 'profiles'

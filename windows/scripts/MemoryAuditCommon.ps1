@@ -1,6 +1,7 @@
 # Gedeelde helpers voor memory/trust E2E en audit_profile_memories.ps1
 #Requires -Version 5.1
 
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 $script:MemoryIdentityAllowPatterns = @(
     'miniconda3[\\/]envs[\\/]hermes-env[\\/]python\.exe',
     'Documents[\\/]Hermes Knowledge',
@@ -259,7 +260,7 @@ function Test-MemoryConsolidationLayout {
     param([string]$HermesRoot)
     $failures = [System.Collections.Generic.List[string]]::new()
 
-    $rootMemPath = Join-Path $HermesRoot 'memories/MEMORY.md'
+    $rootMemPath = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath 'memories/MEMORY.md'
     $rootSections = Get-MemoryMarkdownSectionsFromFile -FilePath $rootMemPath
     if ($rootSections.Count -gt 4) {
         [void]$failures.Add("root: $($rootSections.Count) MEMORY-secties (verwacht seed-only ~3)")
@@ -275,7 +276,7 @@ function Test-MemoryConsolidationLayout {
         }
     }
 
-    $coreMemPath = Join-Path $HermesRoot 'profiles/core/memories/MEMORY.md'
+    $coreMemPath = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath 'profiles/core/memories/MEMORY.md'
     $coreHasHermes = $false
     foreach ($sec in (Get-MemoryMarkdownSectionsFromFile -FilePath $coreMemPath)) {
         if (Test-MemoryHermesConfigSection -Text $sec) { $coreHasHermes = $true }
@@ -284,7 +285,7 @@ function Test-MemoryConsolidationLayout {
         [void]$failures.Add('core: Hermes-config ontbreekt (MCP/multi-profile)')
     }
 
-    $legalMemPath = Join-Path $HermesRoot 'profiles/legal/memories/MEMORY.md'
+    $legalMemPath = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath 'profiles/legal/memories/MEMORY.md'
     foreach ($sec in (Get-MemoryMarkdownSectionsFromFile -FilePath $legalMemPath)) {
         $norm = Normalize-MemorySectionEntry -Text $sec
         if (Get-MemoryPolicyBucket -Norm $norm) { continue }

@@ -67,7 +67,7 @@ $repoArtifacts = @(
     'windows/audits/RUN_ROOT_CONFIG_INHERITANCE_E2E.ps1'
 )
 $missingRepo = @($repoArtifacts | Where-Object {
-    -not (Test-Path -LiteralPath (Join-Path $RepoRoot ($_ -replace '/', [IO.Path]::DirectorySeparatorChar)))
+    -not (Test-Path -LiteralPath (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $_))
 })
 $repoDetail = if ($missingRepo.Count) { ($missingRepo -join ', ') } else { "$($repoArtifacts.Count) bestanden" }
 Add-StepResult '1/10 Repo root-inheritance artefacten' ($missingRepo.Count -eq 0) $repoDetail
@@ -96,11 +96,11 @@ try {
 }
 Add-StepResult '3/10 isolated inheritance harness (8 scenario''s)' ($LASTEXITCODE -eq 0)
 
-$inhPy = Get-Content -LiteralPath (Join-Path $RepoRoot 'hermes_cli/profile_model_inheritance.py') -Raw -Encoding UTF8
-$cfgPy = Get-Content -LiteralPath (Join-Path $RepoRoot 'hermes_cli/config.py') -Raw -Encoding UTF8
-$collectScript = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/scripts/collect_env_sync_keys.py') -Raw -Encoding UTF8
+$inhPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/profile_model_inheritance.py')
+$cfgPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/config.py')
+$collectScript = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/collect_env_sync_keys.py')
 # Regressie: docstring moet afgesloten zijn vóór imports (py_compile vangt syntaxfouten).
-& $python -m py_compile (Join-Path $RepoRoot 'windows/scripts/collect_env_sync_keys.py') 2>$null
+& $python -m py_compile (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/collect_env_sync_keys.py') 2>$null
 $collectCompileOk = ($LASTEXITCODE -eq 0)
 $wiringOk = ($inhPy -match 'root_user = _read_yaml\(root_config_path\(\)\)') -and
     ($inhPy -match 'def bust_config_caches') -and
@@ -119,7 +119,7 @@ Add-StepResult '6/10 runtime: Venice provider in root config' $veniceOk 'provide
 
 $runtimeRoot = Get-HermesRuntimeRoot
 $runtimeCfg = Join-Path $runtimeRoot 'config.yaml'
-$mergePy = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/scripts/merge_legacy_providers_config.py') -Raw -Encoding UTF8
+$mergePy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/merge_legacy_providers_config.py')
 $mergeUsesRoot = $mergePy -match 'root_config_path\(\)'
 Add-StepResult '7/10 merge script gebruikt root_config_path' $mergeUsesRoot
 
@@ -143,7 +143,7 @@ print(cfg.get('auxiliary', {}).get('compression', {}).get('provider', ''))
         Add-StepResult '8/10 live: core profiel erft auxiliary.compression' $true 'profiles/core ontbreekt - skip'
     }
 
-    $collectOut = & $python (Join-Path $RepoRoot 'windows/scripts/collect_env_sync_keys.py') 2>&1
+    $collectOut = & $python (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/collect_env_sync_keys.py') 2>&1
     $collectOk = ($LASTEXITCODE -eq 0)
     $collectDetail = if ($collectOut) { ($collectOut | Select-Object -Last 3) -join ', ' } else { 'geen keys' }
     Add-StepResult '9/10 live: collect_env_sync_keys op runtime root' $collectOk $collectDetail
@@ -151,7 +151,7 @@ print(cfg.get('auxiliary', {}).get('compression', {}).get('provider', ''))
     Write-Host '[SKIP] 8-9/10 live runtime checks (-SkipLive of geen config)' -ForegroundColor Yellow
 }
 
-$envScript = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/sync_hermes_api_env.ps1') -Raw -Encoding UTF8
+$envScript = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/sync_hermes_api_env.ps1')
 $envOk = ($envScript -match 'collect_env_sync_keys') -and ($envScript -match 'VENICE')
 Add-StepResult '10/10 sync_hermes_api_env Venice + dynamic keys' $envOk
 

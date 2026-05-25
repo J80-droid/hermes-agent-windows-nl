@@ -29,7 +29,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Landkaart / volledige lijsten | skill `landkaart` (`/landkaart`) |
 | Domeinen toevoegen (`domains.yaml`) | [domains.yaml.example](domains.yaml.example) + [DOMAIN_BLUEPRINT.md](DOMAIN_BLUEPRINT.md) |
 | RAG env-defaults (stale, torch-ruis) | [RAG_INSTITUTIONAL_ENV.md](RAG_INSTITUTIONAL_ENV.md) |
-| Windows platform hardening (sandbox, GPU, LanceDB) | [WINDOWS_PLATFORM_HARDENING.md](WINDOWS_PLATFORM_HARDENING.md) · E2E: `windows/audits/RUN_WINDOWS_PLATFORM_HARDENING_E2E.bat` |
+| Windows platform hardening (sandbox, GPU, LanceDB) | [WINDOWS_PLATFORM_HARDENING.md](WINDOWS_PLATFORM_HARDENING.md) · E2E: `RUN_WINDOWS_PLATFORM_HARDENING_E2E.bat`, `RUN_PLATFORM_HARDENING_REGRESSION_E2E.bat` |
 | Technische ingest/MCP-stappen | [../scripts/rag_pipeline/ACTIVATION.md](../scripts/rag_pipeline/ACTIVATION.md) |
 | Windows-scripts en taakbalk | [../windows/README.md](../windows/README.md) |
 | Terminal, skin, markdown-kleuren, API-home | [../windows/TERMINAL_WINDOWS.md](../windows/TERMINAL_WINDOWS.md) |

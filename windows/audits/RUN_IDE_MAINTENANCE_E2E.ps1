@@ -99,7 +99,7 @@ $required = @(
     '.cursor/rules/python-conda.mdc',
     '.cursor/rules/powershell-windows-paths.mdc'
 )
-$missing = @($required | Where-Object { -not (Test-Path -LiteralPath (Join-Path $repoRoot $_)) })
+$missing = @($required | Where-Object { -not (Test-Path -LiteralPath (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath $_)) })
 if ($missing.Count -gt 0) {
     Step-Fail "Ontbrekende bestanden: $($missing -join ', ')"
 } else {
@@ -108,7 +108,7 @@ if ($missing.Count -gt 0) {
 
 # --- 2 Windows verify chain ---
 Write-StepHeader 'verify_windows_script_chain'
-$chain = Join-Path $repoRoot 'windows/verify_windows_script_chain.ps1'
+$chain = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/verify_windows_script_chain.ps1'
 & $chain
 if ($LASTEXITCODE -ne 0) {
     Step-Fail 'verify_windows_script_chain.ps1'
@@ -161,7 +161,7 @@ if ($batCode -ne 0) {
 
 # --- 6 LANCEDB inspect ---
 Write-StepHeader 'LANCEDB_MAINTENANCE --inspect'
-$maintPy = Join-Path $repoRoot 'scripts/rag_pipeline/lancedb_maintenance.py'
+$maintPy = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'scripts/rag_pipeline/lancedb_maintenance.py'
 $inspectOut = & $python $maintPy --inspect 2>&1 | Out-String
 $inspectCode = if ($null -eq $LASTEXITCODE) { 0 } else { [int]$LASTEXITCODE }
 if ($inspectOut -match '(?m)\[ACTIE\]') {
@@ -174,7 +174,7 @@ if ($inspectOut -match '(?m)\[ACTIE\]') {
 
 # --- 7 Skill drift ---
 Write-StepHeader 'audit_skill_drift.py'
-$drift = Join-Path $repoRoot 'scripts/audit_skill_drift.py'
+$drift = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'scripts/audit_skill_drift.py'
 & $python $drift
 if ($LASTEXITCODE -ne 0) {
     Step-Fail 'skill/docs drift bevindingen'
@@ -194,7 +194,7 @@ if ($LASTEXITCODE -ne 0) {
 # --- 9 MERGE_UPSTREAM -PromptOnly ---
 if (-not $SkipMergePreview) {
     Write-StepHeader 'MERGE_UPSTREAM.bat -PromptOnly'
-    $mergeBat = Join-Path $repoRoot 'windows/MERGE_UPSTREAM.bat'
+    $mergeBat = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/MERGE_UPSTREAM.bat'
     $env:HERMES_NONINTERACTIVE = '1'
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
@@ -218,7 +218,7 @@ if (-not $SkipMergePreview) {
 # --- 10 Display fix (optioneel) ---
 if ($ApplyDisplayFix) {
     Write-StepHeader 'apply_team_display (optioneel)'
-    & (Join-Path $repoRoot 'windows/apply_team_display.ps1')
+    & (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/apply_team_display.ps1')
     if ($LASTEXITCODE -ne 0) {
         Step-Fail 'apply_team_display.ps1'
     } else {
@@ -228,12 +228,12 @@ if ($ApplyDisplayFix) {
 
 # --- 11 diagnose_renderer ---
 Write-StepHeader 'diagnose_renderer.py --verify'
-$diag = Join-Path $repoRoot 'scripts/diagnose_renderer.py'
+$diag = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'scripts/diagnose_renderer.py'
 & $python $diag --verify
 if ($LASTEXITCODE -ne 0) {
   if (-not $ApplyDisplayFix) {
         Write-Host '[INFO] Eerste poging mislukt - auto-fix team display...' -ForegroundColor Yellow
-        & (Join-Path $repoRoot 'windows/apply_team_display.ps1')
+        & (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/apply_team_display.ps1')
         & $python $diag --verify
     }
     if ($LASTEXITCODE -ne 0) {
@@ -247,7 +247,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # --- 12 score ---
 Write-StepHeader 'score_institutional_render.py --verify'
-$score = Join-Path $repoRoot 'scripts/score_institutional_render.py'
+$score = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'scripts/score_institutional_render.py'
 & $python $score --verify
 if ($LASTEXITCODE -ne 0) {
     Step-Fail 'score onder drempel 9.0'
@@ -266,7 +266,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # --- 14 institutional guard (skip of subset; geen --force) ---
 Write-StepHeader 'verify_institutional_guard'
-$guard = Join-Path $repoRoot 'scripts/verify_institutional_guard.py'
+$guard = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'scripts/verify_institutional_guard.py'
 $guardOut = & $python $guard 2>&1 | Out-String
 $guardCode = $LASTEXITCODE
 if ($guardCode -ne 0) {
@@ -279,14 +279,14 @@ if ($guardCode -ne 0) {
 
 # --- 15 IDE conda config ---
 Write-StepHeader 'IDE conda interpreter config'
-$vscode = Join-Path $repoRoot '.vscode/settings.json'
+$vscode = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath '.vscode/settings.json'
 $vsText = Get-Content -LiteralPath $vscode -Raw -Encoding UTF8
 if ($vsText -notmatch 'hermes-env' -or $vsText -notmatch 'python\.exe') {
     Step-Fail '.vscode/settings.json mist hermes-env python pad'
 } else {
     Step-Ok '.vscode hermes-env python pad'
 }
-$condaRule = Join-Path $repoRoot '.cursor/rules/python-conda.mdc'
+$condaRule = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath '.cursor/rules/python-conda.mdc'
 if (-not (Test-Path -LiteralPath $condaRule)) {
     Step-Fail 'python-conda.mdc ontbreekt'
 } else {

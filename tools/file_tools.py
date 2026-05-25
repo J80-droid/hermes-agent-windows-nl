@@ -881,6 +881,8 @@ def write_file_tool(path: str, content: str, task_id: str = "default",
         # check below still runs.
         try:
             _resolved = str(_resolve_path_for_task(path, task_id))
+        except PermissionError as exc:
+            return tool_error(str(exc))
         except Exception:
             _resolved = None
 
@@ -959,6 +961,8 @@ def patch_tool(mode: str = "replace", path: str = None, old_string: str = None,
         for _p in _paths_to_check:
             try:
                 _r = str(_resolve_path_for_task(_p, task_id))
+            except PermissionError:
+                raise
             except Exception:
                 _r = None
             if _r and _r not in _seen:
@@ -981,6 +985,8 @@ def patch_tool(mode: str = "replace", path: str = None, old_string: str = None,
             for _p in _paths_to_check:
                 try:
                     _r = str(_resolve_path_for_task(_p, task_id))
+                except PermissionError:
+                    raise
                 except Exception:
                     _r = None
                 _path_to_resolved[_p] = _r

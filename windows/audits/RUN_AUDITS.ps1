@@ -27,6 +27,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 $scriptRoot = $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $scriptRoot '..\..')).Path
 Set-Location $repoRoot
@@ -78,18 +79,18 @@ function Invoke-Step {
     return (-not $stepFailed)
 }
 
-$verify = Join-Path $repoRoot 'windows/scripts/verify_hermes_home.ps1'
+$verify = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/verify_hermes_home.ps1'
 if (Test-Path -LiteralPath $verify) {
     Invoke-Step 'verify_hermes_home' { & $verify }
 }
 
-$verifyDrift = Join-Path $repoRoot 'windows/scripts/verify_hermes_config_drift.ps1'
+$verifyDrift = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/verify_hermes_config_drift.ps1'
 if (Test-Path -LiteralPath $verifyDrift) {
     Invoke-Step 'verify_hermes_config_drift' { & $verifyDrift }
 }
 
 if (-not $SkipVerifyChain) {
-    $chain = Join-Path $repoRoot 'windows/verify_windows_script_chain.ps1'
+    $chain = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/verify_windows_script_chain.ps1'
     if (Test-Path -LiteralPath $chain) {
         Invoke-Step 'verify_windows_chain' -AllowSkip {
             & $chain
@@ -97,7 +98,7 @@ if (-not $SkipVerifyChain) {
     }
 }
 
-$invokePsa = Join-Path $repoRoot 'windows/Invoke-HermesPSScriptAnalyzer.ps1'
+$invokePsa = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/Invoke-HermesPSScriptAnalyzer.ps1'
 if (Test-Path -LiteralPath $invokePsa) {
     $requirePsa = $RequirePSScriptAnalyzer.IsPresent
     Invoke-Step 'PSScriptAnalyzer' {
@@ -109,7 +110,7 @@ if (Test-Path -LiteralPath $invokePsa) {
 }
 
 if (-not $SkipFootguns) {
-    $footguns = Join-Path $repoRoot 'scripts/check-windows-footguns.py'
+    $footguns = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'scripts/check-windows-footguns.py'
     if (Test-Path -LiteralPath $footguns) {
         Invoke-Step 'windows-footguns' {
             $py = Get-HermesAuditPython

@@ -1,3 +1,4 @@
+. (Join-Path $PSScriptRoot 'HermesShellCommon.ps1')
 <#
 .SYNOPSIS
     Kopieert API-keys en vault-paden van ~/.hermes/.env naar %LOCALAPPDATA%\hermes\.env en alle profiel-.env bestanden.
@@ -174,7 +175,7 @@ if ((Test-Path -LiteralPath $fixPool) -and $apiToCopy.ContainsKey('GOOGLE_API_KE
     & $fixPool -HermesRoot $targetRoot -GoogleApiKey $apiToCopy['GOOGLE_API_KEY']
 }
 
-$ensureVault = Join-Path $PSScriptRoot 'scripts/ensure_hermes_knowledge_vault.ps1'
+$ensureVault = Join-HermesRepoPath -RepoRoot $PSScriptRoot -RelativePath 'scripts/ensure_hermes_knowledge_vault.ps1'
 if (Test-Path -LiteralPath $ensureVault) {
     $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
     & $ensureVault -RepoRoot $repoRoot -Quiet

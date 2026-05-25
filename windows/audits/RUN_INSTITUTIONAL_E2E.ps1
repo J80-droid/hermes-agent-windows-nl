@@ -34,7 +34,7 @@ $python = ($python | Select-Object -Last 1).Trim()
 
 if ($ApplyRuntime) {
     Write-Host '=== 0/11 runtime toepassen (display + SOUL) ===' -ForegroundColor Cyan
-    $runtimePs1 = Join-Path $repoRoot 'windows/apply_institutional_runtime.ps1'
+    $runtimePs1 = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/apply_institutional_runtime.ps1'
     & $runtimePs1 -SkipE2E -NoPause
     if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
     Write-Host '[OK] runtime display + SOUL toegepast' -ForegroundColor Green
@@ -112,7 +112,7 @@ $requiredRepo = @(
 
 Write-Host '=== 1/11 repo-artefacten ===' -ForegroundColor Cyan
 foreach ($rel in $requiredRepo) {
-    $full = Join-Path $repoRoot ($rel -replace '/', '\')
+    $full = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath $rel
     if (-not (Test-Path -LiteralPath $full)) {
         Write-Host ('[FAIL] ' + 'Ontbreekt: ' + $rel) -ForegroundColor Red
         exit 1
@@ -150,7 +150,7 @@ if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 Write-Host '[OK] institutional Rich renderer pytest' -ForegroundColor Green
 
 Write-Host '=== 2f/11 runtime diagnose renderer (palette + config live) ===' -ForegroundColor Cyan
-$diag = Join-Path $repoRoot 'scripts/diagnose_renderer.py'
+$diag = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'scripts/diagnose_renderer.py'
 & $python $diag --verify
 if (Test-NativeCommandFailed) {
     Write-Host '[FAIL] diagnose_renderer --verify faalde (renderer of palette niet correct)' -ForegroundColor Red
@@ -159,7 +159,7 @@ if (Test-NativeCommandFailed) {
 Write-Host '[OK] diagnose_renderer institutional_rich + demo geverifieerd' -ForegroundColor Green
 
 Write-Host '=== 2g/11 institutional render score (10/10 checklist) ===' -ForegroundColor Cyan
-$score = Join-Path $repoRoot 'scripts/score_institutional_render.py'
+$score = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'scripts/score_institutional_render.py'
 & $python $score --verify
 if (Test-NativeCommandFailed) {
     Write-Host '[FAIL] score_institutional_render --verify faalde (score < 9.0)' -ForegroundColor Red
@@ -186,7 +186,7 @@ if (Test-NativeCommandFailed) {
 Write-Host '[OK] Hermes split-home E2E' -ForegroundColor Green
 
 Write-Host '=== 2c/11 team_display.defaults inhoud ===' -ForegroundColor Cyan
-$td = Get-Content -LiteralPath (Join-Path $repoRoot 'windows/team_display.defaults') -Raw -Encoding UTF8
+$td = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/team_display.defaults')
 foreach ($needle in @(
         'final_response_markdown=render',
         'assistant_render_style=institutional_rich',
@@ -208,7 +208,7 @@ if ($td -match 'compact=true') {
 Write-Host '[OK] team_display.defaults institutioneel' -ForegroundColor Green
 
 Write-Host '=== 3/11 landkaart CLI smoke ===' -ForegroundColor Cyan
-$landkaart = Join-Path $repoRoot 'skills/productivity/landkaart/scripts/inventory_landkaart.py'
+$landkaart = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'skills/productivity/landkaart/scripts/inventory_landkaart.py'
 $stdin = "alpha`nbeta`ngamma"
 $jsonOut = ($stdin | & $python $landkaart --json 2>&1 | Out-String).Trim()
 if (Test-NativeCommandFailed) {
@@ -232,7 +232,7 @@ Write-Host '=== 4/11 backup_soul_profiles (tijdelijke map) ===' -ForegroundColor
 $tempBackup = Join-Path $env:TEMP ("hermes_institutional_e2e_" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $tempBackup -Force | Out-Null
 try {
-    $copied = & (Join-Path $repoRoot 'windows/backup_soul_profiles.ps1') -BackupFolder $tempBackup
+    $copied = & (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/backup_soul_profiles.ps1') -BackupFolder $tempBackup
     if ($null -eq $copied) { $copied = @() }
     $personaRoot = Join-Path $tempBackup 'localappdata_hermes'
     if (-not (Test-Path -LiteralPath $personaRoot)) {
@@ -268,7 +268,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $hermesRoot 'config.yaml'))) {
     $hermesRoot = Join-Path $env:USERPROFILE '.hermes'
 }
 $coreSoulPath = Join-Path $hermesRoot 'profiles\core\SOUL.md'
-$template = Get-Content -LiteralPath (Join-Path $repoRoot 'docs/templates/SOUL_SHARED_INTERACTION.md') -Raw -Encoding UTF8
+$template = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'docs/templates/SOUL_SHARED_INTERACTION.md')
 if (-not (Test-Path -LiteralPath $coreSoulPath)) {
     Write-Host ('[SKIP] ' + 'Geen runtime core SOUL: ' + $coreSoulPath) -ForegroundColor Yellow
 } else {
@@ -285,7 +285,7 @@ if (-not (Test-Path -LiteralPath $coreSoulPath)) {
 }
 
 Write-Host '=== 5b/11 SOUL Outputformaat (runtime read-only) ===' -ForegroundColor Cyan
-$outputTemplate = Get-Content -LiteralPath (Join-Path $repoRoot 'docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md') -Raw -Encoding UTF8
+$outputTemplate = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md')
 if (-not (Test-Path -LiteralPath $coreSoulPath)) {
     Write-Host '[SKIP]Geen runtime core SOUL voor Outputformaat-check' -ForegroundColor Yellow
 } else {
@@ -388,13 +388,13 @@ if (Test-NativeCommandFailed) {
 Write-Host '[OK] rich_output + display_markdown smoke' -ForegroundColor Green
 
 Write-Host '=== 8/11 RESTORE help + UPDATE skip-pause regressie ===' -ForegroundColor Cyan
-$restoreBat = Join-Path $repoRoot 'windows/RESTORE_FROM_BACKUP.bat'
+$restoreBat = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/RESTORE_FROM_BACKUP.bat'
 $restoreText = Get-Content -LiteralPath $restoreBat -Raw -Encoding UTF8
 if ($restoreText -notmatch 'RestoreRuntimePersonas') {
     Write-Host '[FAIL] RESTORE_FROM_BACKUP.bat vermeldt -RestoreRuntimePersonas niet' -ForegroundColor Red
     exit 1
 }
-$updateBat = Get-Content -LiteralPath (Join-Path $repoRoot 'windows/UPDATE_HERMES.bat') -Raw -Encoding UTF8
+$updateBat = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/UPDATE_HERMES.bat')
 if ($updateBat -notmatch 'HERMES_SKIP_PAUSE_AFTER_UPDATE') {
     Write-Host '[FAIL] UPDATE_HERMES.bat mist HERMES_SKIP_PAUSE_AFTER_UPDATE' -ForegroundColor Red
     exit 1
@@ -411,7 +411,7 @@ if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 Write-Host '[OK] profielwissel pytest subset' -ForegroundColor Green
 
 Write-Host '=== 10/11 profielwissel runtime (SWITCH legal, terug core) ===' -ForegroundColor Cyan
-$switchBat = Join-Path $repoRoot 'windows/SWITCH_PROFILE.bat'
+$switchBat = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/SWITCH_PROFILE.bat'
 $activePath = Join-Path $hermesRoot 'active_profile'
 & cmd /c "`"$switchBat`" legal"
 if (Test-NativeCommandFailed) {

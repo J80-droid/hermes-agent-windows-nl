@@ -19,7 +19,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot 'scripts/HermesBackupCommon.ps1')
+. (Join-Path $PSScriptRoot 'HermesShellCommon.ps1')
+. (Join-HermesRepoPath -RepoRoot $PSScriptRoot -RelativePath 'scripts/HermesBackupCommon.ps1')
 
 function Get-HermesRepoRootFromScript {
     $startDir = if ($PSScriptRoot) { $PSScriptRoot } elseif ($MyInvocation.MyCommand.Path) {
@@ -169,7 +170,7 @@ if ($RestoreRuntimeFull -or $RestoreRuntimePersonas) {
 }
 
 if ($RestoreRuntimeFull -or $RestoreRuntimePersonas -or $RestoreLegacyProfile -or $RestoreUserProfile) {
-  . (Join-Path $PSScriptRoot 'scripts/HermesHomeCommon.ps1')
+  . (Join-HermesRepoPath -RepoRoot $PSScriptRoot -RelativePath 'scripts/HermesHomeCommon.ps1')
   $postRoot = Ensure-UserHermesHomeRoot -FixUserEnv -Quiet
   Write-Host ('[INFO] Post-restore HERMES_HOME = ' + $postRoot) -ForegroundColor Cyan
   $syncBat = Join-Path $PSScriptRoot 'SYNC_HERMES_API_ENV.bat'

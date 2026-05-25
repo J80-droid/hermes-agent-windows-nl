@@ -43,7 +43,7 @@ class FilesystemSandboxViolation(Exception):
 def default_workspace_root() -> Path:
     """Return the built-in workspace root (created on first use)."""
     if sys.platform == "win32":
-        local_app = os.environ.get("LOCALAPPDATA")
+        local_app = (os.environ.get("LOCALAPPDATA") or "").strip()
         if local_app:
             root = Path(local_app) / "hermes" / "workspace"
         else:
@@ -149,19 +149,30 @@ def reset_workspace_cache() -> None:
 
 
 def has_forbidden_path_content(path_str: str) -> str | None:
-    """Return an error message for obviously malicious path strings."""
+    """Return an error message for obviously malicious path strings.
+
+    Expands ``%ENV%`` and ``~`` before checking traversal components so
+    obfuscated ``..`` via environment variables is caught.
+    """
     if not path_str or not str(path_str).strip():
         return "Empty path is not allowed."
 
     if "\x00" in path_str:
         return "Path contains null bytes."
 
-    normalized = str(path_str).replace("/", os.sep)
-    for prefix in _WINDOWS_DEVICE_PREFIXES:
-        if normalized.startswith(prefix):
-            return f"Device or extended path prefix is not allowed: {prefix!r}"
+    expanded = os.path.expandvars(os.path.expanduser(str(path_str)))
+    normalized = expanded.replace("/", os.sep)
+    if sys.platform == "win32":
+        normalized_lower = normalized.lower()
+        for prefix in _WINDOWS_DEVICE_PREFIXES:
+            if normalized_lower.startswith(prefix.lower()):
+                return f"Device or extended path prefix is not allowed: {prefix!r}"
+    else:
+        for prefix in _WINDOWS_DEVICE_PREFIXES:
+            if normalized.startswith(prefix):
+                return f"Device or extended path prefix is not allowed: {prefix!r}"
 
-    parts = Path(path_str).parts
+    parts = Path(expanded).parts
     if ".." in parts:
         return "Path traversal ('..') is not allowed."
 

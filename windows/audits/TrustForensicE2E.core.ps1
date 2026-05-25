@@ -39,19 +39,19 @@ $repoFiles = @(
 )
 $docTrustForensic = 'docs/TRUST_' + 'FORENSIC_PROTOCOL.md'
 foreach ($rel in ($repoFiles + $docTrustForensic)) {
-    $p = Join-Path $RepoRoot ($rel -replace '/', '\')
+    $p = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $rel
     if (-not (Test-Path -LiteralPath $p)) {
         Write-Host ('[FAIL] ' + 'Ontbreekt: ' + $rel) -ForegroundColor Red
         $failures++
     }
 }
-$legalTpl = Get-Content -LiteralPath (Join-Path $RepoRoot 'docs/templates/SOUL_LEGAL_DOMAIN.md') -Raw -Encoding UTF8
+$legalTpl = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'docs/templates/SOUL_LEGAL_DOMAIN.md')
 if (-not (Test-HermesSoulLegalForensicTrust -Text $legalTpl)) {
     Write-Host '[FAIL] SOUL_LEGAL_DOMAIN mist Forensic en trust' -ForegroundColor Red
     $failures++
 }
 
-$legalMem = Join-Path $hermesRoot 'profiles/legal/memories'
+$legalMem = Join-HermesRepoPath -RepoRoot $hermesRoot -RelativePath 'profiles/legal/memories'
 if (-not (Test-Path -LiteralPath $legalMem)) {
     Write-Host '[FAIL] profiles/legal/memories ontbreekt' -ForegroundColor Red
     $failures++
@@ -59,7 +59,7 @@ if (-not (Test-Path -LiteralPath $legalMem)) {
 
 $failures += Invoke-HermesTrustForensicProfileChecks -HermesRoot $hermesRoot
 
-$legalSoul = Join-Path $hermesRoot 'profiles/legal/SOUL.md'
+$legalSoul = Join-HermesRepoPath -RepoRoot $hermesRoot -RelativePath 'profiles/legal/SOUL.md'
 if (Test-Path -LiteralPath $legalSoul) {
     $ls = Get-Content -LiteralPath $legalSoul -Raw -Encoding UTF8
     if (-not (Test-HermesSoulLegalForensicTrust -Text $ls)) {
@@ -75,8 +75,8 @@ foreach ($cf in $configFails) {
 }
 
 $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
-$pytestTrustDocs = Join-Path $RepoRoot 'tests/windows/test_trust_forensic_docs.py'
-$pytestScrub = Join-Path $RepoRoot 'tests/windows/test_scrub_identity.py'
+$pytestTrustDocs = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/windows/test_trust_forensic_docs.py'
+$pytestScrub = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/windows/test_scrub_identity.py'
 $pytestFiles = @($pytestTrustDocs, $pytestScrub)
 foreach ($pytestFile in $pytestFiles) {
     if (-not (Test-Path -LiteralPath $pytestFile)) {

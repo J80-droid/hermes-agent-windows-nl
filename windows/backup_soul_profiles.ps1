@@ -5,7 +5,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot 'scripts/HermesBackupCommon.ps1')
+. (Join-Path $PSScriptRoot 'HermesShellCommon.ps1')
+. (Join-HermesRepoPath -RepoRoot $PSScriptRoot -RelativePath 'scripts/HermesBackupCommon.ps1')
 
 $root = Get-HermesRuntimeRoot
 if (-not (Test-Path -LiteralPath (Join-Path $root 'config.yaml'))) {

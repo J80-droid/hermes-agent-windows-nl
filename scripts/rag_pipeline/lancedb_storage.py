@@ -25,7 +25,9 @@ _STALE_EXACT_NAMES = {".lance-lock", ".tmp"}
 
 _open_connections: list[Any] = []
 _connections_lock = threading.Lock()
+_shutdown_lock = threading.Lock()
 _shutdown_registered = False
+_extra_shutdown: Callable[[], None] | None = None
 _preflight_done: set[str] = set()
 _preflight_lock = threading.Lock()
 
@@ -165,13 +167,10 @@ def close_lancedb_connection(connection: Any | None) -> None:
 
 def register_lancedb_connection(connection: Any) -> None:
     """Track an open connection for graceful process shutdown."""
-    global _shutdown_registered
     with _connections_lock:
         if connection not in _open_connections:
             _open_connections.append(connection)
-        if not _shutdown_registered:
-            atexit.register(shutdown_all_lancedb_connections)
-            _shutdown_registered = True
+    _ensure_shutdown_registered()
 
 
 def shutdown_all_lancedb_connections() -> None:
@@ -183,14 +182,34 @@ def shutdown_all_lancedb_connections() -> None:
         close_lancedb_connection(conn)
 
 
+def _run_shutdown_hooks() -> None:
+    """Single shutdown entry: optional MCP cleanup, then close all connections."""
+    if _extra_shutdown is not None:
+        try:
+            _extra_shutdown()
+        except Exception as exc:
+            logger.warning("LanceDB extra cleanup failed: %s", exc)
+    shutdown_all_lancedb_connections()
+
+
+def _ensure_shutdown_registered() -> None:
+    global _shutdown_registered
+    with _shutdown_lock:
+        if not _shutdown_registered:
+            atexit.register(_run_shutdown_hooks)
+            _shutdown_registered = True
+
+
 def reset_lancedb_storage_state() -> None:
     """Test helper: clear tracked connections and shutdown flag."""
-    global _shutdown_registered
+    global _shutdown_registered, _extra_shutdown
     with _connections_lock:
         _open_connections.clear()
     with _preflight_lock:
         _preflight_done.clear()
-    _shutdown_registered = False
+    with _shutdown_lock:
+        _shutdown_registered = False
+        _extra_shutdown = None
 
 
 def connect_lancedb(uri: str | None = None, *, domain: str | None = None) -> Any:
@@ -221,25 +240,16 @@ def register_lancedb_shutdown_hooks(
     extra_cleanup: Callable[[], None] | None = None,
 ) -> None:
     """Register SIG/atexit hooks for MCP servers and long-lived agent processes."""
-    global _shutdown_registered
-
-    def _cleanup() -> None:
-        if extra_cleanup is not None:
-            try:
-                extra_cleanup()
-            except Exception as exc:
-                logger.warning("LanceDB extra cleanup failed: %s", exc)
-        shutdown_all_lancedb_connections()
-
-    if not _shutdown_registered:
-        atexit.register(_cleanup)
-        _shutdown_registered = True
+    global _extra_shutdown
+    if extra_cleanup is not None:
+        _extra_shutdown = extra_cleanup
+    _ensure_shutdown_registered()
 
     import signal
 
     def _signal_handler(signum, frame):  # noqa: ARG001
         logger.info("LanceDB shutdown hook received signal %s", signum)
-        _cleanup()
+        _run_shutdown_hooks()
 
     for sig_name in ("SIGINT", "SIGTERM", "SIGBREAK"):
         sig = getattr(signal, sig_name, None)

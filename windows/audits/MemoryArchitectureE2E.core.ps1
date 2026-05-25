@@ -111,15 +111,15 @@ $repoChecks = @(
 )
 $repoOk = $true
 foreach ($rel in $repoChecks) {
-    if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot ($rel -replace '/', '\')))) {
+    if (-not (Test-Path -LiteralPath (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $rel))) {
         $repoOk = $false
         break
     }
 }
-$upstream = Get-Content -LiteralPath (Join-Path $RepoRoot "windows/upstream_sync.ps1") -Raw -Encoding UTF8
-$postPull = Get-Content -LiteralPath (Join-Path $RepoRoot "windows/POST_GIT_PULL.bat") -Raw -Encoding UTF8
-$trustBat = Get-Content -LiteralPath (Join-Path $RepoRoot "windows/SYNC_TRUST_RUNTIME.bat") -Raw -Encoding UTF8
-$syncMemPs1 = Get-Content -LiteralPath (Join-Path $RepoRoot "windows/scripts/sync_profile_memories.ps1") -Raw -Encoding UTF8
+$upstream = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/upstream_sync.ps1")
+$postPull = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/POST_GIT_PULL.bat")
+$trustBat = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/SYNC_TRUST_RUNTIME.bat")
+$syncMemPs1 = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/scripts/sync_profile_memories.ps1")
 if ($upstream -notmatch 'sync_hermes_api_env\.ps1') { $repoOk = $false }
 if ($postPull -notmatch 'SYNC_HERMES_API_ENV') { $repoOk = $false }
 if ($trustBat -notmatch 'SYNC_HERMES_API_ENV') { $repoOk = $false }
@@ -145,7 +145,7 @@ Add-StepResult -Name '3/18 env-voorbeeld in repo' -Ok $exampleOk -Detail $exampl
 
 # --- 3 Sync script ---
 if (-not $SkipSyncRun) {
-    $syncPs1 = Join-Path $RepoRoot "windows/sync_hermes_api_env.ps1"
+    $syncPs1 = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/sync_hermes_api_env.ps1"
     & $syncPs1
     $syncOk = -not (Test-NativeCommandFailed)
     Add-StepResult -Name '4/18 sync_hermes_api_env.ps1' -Ok $syncOk
@@ -210,8 +210,8 @@ if (Test-Path -LiteralPath $configPath) {
 Add-StepResult -Name '8/18 geen externe memory provider' -Ok $l3Ok -Detail 'memory.provider niet actief'
 
 # --- 8 KANBAN + core MEMORY (vault + Hermes-config) ---
-$kanban = Join-Path $hermesRoot "profiles/core/KANBAN_WORKFLOWS.md"
-$coreMem = Join-Path $hermesRoot "profiles/core/memories/MEMORY.md"
+$kanban = Join-HermesRepoPath -RepoRoot $hermesRoot -RelativePath "profiles/core/KANBAN_WORKFLOWS.md"
+$coreMem = Join-HermesRepoPath -RepoRoot $hermesRoot -RelativePath "profiles/core/memories/MEMORY.md"
 $metaOk = $true
 if (-not (Test-Path -LiteralPath $kanban)) { $metaOk = $false }
 else {
@@ -226,7 +226,7 @@ else {
 }
 Add-StepResult -Name '9/18 KANBAN + core MEMORY' -Ok $metaOk -Detail 'vault + Hermes-config in core'
 
-$skillPath = Join-Path $RepoRoot "skills/note-taking/obsidian/SKILL.md"
+$skillPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "skills/note-taking/obsidian/SKILL.md"
 $skillOk = $false
 if (Test-Path -LiteralPath $skillPath) {
     $skillText = Get-Content -LiteralPath $skillPath -Raw -Encoding UTF8
@@ -235,7 +235,7 @@ if (Test-Path -LiteralPath $skillPath) {
 Add-StepResult -Name '10/18 obsidian skill fallback' -Ok $skillOk -Detail 'fork default in SKILL.md'
 
 # --- 11 Alle profiel-configs memory 4000/1800 (MemoryAuditCommon vanaf hier) ---
-. (Join-Path $windowsRoot "scripts/MemoryAuditCommon.ps1")
+. (Join-HermesRepoPath -RepoRoot $windowsRoot -RelativePath "scripts/MemoryAuditCommon.ps1")
 
 $configFails = Test-AllProfileMemoryConfigLimits -HermesRoot $hermesRoot
 $step11Ok = ($configFails.Count -eq 0)
@@ -243,8 +243,8 @@ $step11Detail = if ($step11Ok) { 'root + 13 profielen' } else { ($configFails -j
 Add-StepResult -Name '11/18 profiel memory limits' -Ok $step11Ok -Detail $step11Detail
 
 # --- 12 core MEMORY.md lengte vs limit ---
-$coreCfg = Join-Path $hermesRoot "profiles/core/config.yaml"
-$coreMemPath = Join-Path $hermesRoot "profiles/core/memories/MEMORY.md"
+$coreCfg = Join-HermesRepoPath -RepoRoot $hermesRoot -RelativePath "profiles/core/config.yaml"
+$coreMemPath = Join-HermesRepoPath -RepoRoot $hermesRoot -RelativePath "profiles/core/memories/MEMORY.md"
 $lim = Get-MemoryLimitsFromConfig -ConfigPath $coreCfg
 $memLimit = if ($lim.MemoryCharLimit -gt 0) { $lim.MemoryCharLimit } else { 4000 }
 $step12Ok = $false
@@ -260,7 +260,7 @@ Add-StepResult -Name '12/18 core MEMORY grootte' -Ok $step12Ok -Detail $step12De
 $encOk = $true
 $encDetail = @()
 foreach ($rel in @("USER.md", "MEMORY.md")) {
-    $p = Join-Path $hermesRoot "profiles/core/memories/$rel"
+    $p = Join-HermesRepoPath -RepoRoot $hermesRoot -RelativePath "profiles/core/memories/$rel"
     if (Test-Path -LiteralPath $p) {
         $t = Get-Content -LiteralPath $p -Raw -Encoding UTF8
         if (Test-MemoryDoubleEncoding -Text $t) {
@@ -283,10 +283,10 @@ $step14Detail = if ($step14Ok) { 'profielen + legacy root' } else { ($sizeFails 
 Add-StepResult -Name '14/18 alle profiel MEMORY/USER' -Ok $step14Ok -Detail $step14Detail
 
 # --- 15 deduplicate + post-sync scripts in repo ---
-$dedupPyPath = Join-Path $RepoRoot "scripts/deduplicate_memories.py"
-$dedupPs1 = Join-Path $RepoRoot "windows/scripts/invoke_deduplicate_memories.ps1"
-$postSync = Join-Path $RepoRoot "windows/scripts/Invoke-MemoryTrustPostSync.ps1"
-$noticePy = Join-Path $RepoRoot "hermes_cli/institutional_new_chat_notice.py"
+$dedupPyPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "scripts/deduplicate_memories.py"
+$dedupPs1 = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/scripts/invoke_deduplicate_memories.ps1"
+$postSync = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/scripts/Invoke-MemoryTrustPostSync.ps1"
+$noticePy = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "hermes_cli/institutional_new_chat_notice.py"
 $step15Ok = (Test-Path -LiteralPath $dedupPyPath) -and (Test-Path -LiteralPath $dedupPs1) -and (Test-Path -LiteralPath $postSync) -and (Test-Path -LiteralPath $noticePy)
 if ($step15Ok) {
     $dedupText = Get-Content -LiteralPath $dedupPyPath -Raw -Encoding UTF8
@@ -298,9 +298,9 @@ if ($step15Ok) {
 Add-StepResult -Name '15/18 dedup + post-sync keten' -Ok $step15Ok -Detail 'dedup incl. legacy root + post-sync'
 
 # --- 16 TUI auto /new na sync ---
-$tuiNotice = Join-Path $RepoRoot "ui-tui/src/lib/newChatNotice.ts"
-$tuiWatch = Join-Path $RepoRoot "ui-tui/src/app/useInstitutionalNewChatAutoReset.ts"
-$tuiHandler = Join-Path $RepoRoot "ui-tui/src/app/createGatewayEventHandler.ts"
+$tuiNotice = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "ui-tui/src/lib/newChatNotice.ts"
+$tuiWatch = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "ui-tui/src/app/useInstitutionalNewChatAutoReset.ts"
+$tuiHandler = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "ui-tui/src/app/createGatewayEventHandler.ts"
 $step16Ok = (Test-Path -LiteralPath $tuiNotice) -and (Test-Path -LiteralPath $tuiWatch) -and (Test-Path -LiteralPath $tuiHandler)
 if ($step16Ok) {
     $handlerText = Get-Content -LiteralPath $tuiHandler -Raw -Encoding UTF8
@@ -316,7 +316,7 @@ $step17Detail = if ($step17Ok) { 'root seed-only; core Hermes-config; legal scho
 Add-StepResult -Name '17/18 memory consolidatie layout' -Ok $step17Ok -Detail $step17Detail
 
 # --- 18 section-delimiter U+00A7 (merge-common) ---
-$mergeCommon = Join-Path $RepoRoot "windows/scripts/HermesMemoryMergeCommon.ps1"
+$mergeCommon = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/scripts/HermesMemoryMergeCommon.ps1"
 $step18Ok = $false
 $step18Detail = 'HermesMemoryMergeCommon ontbreekt'
 if (Test-Path -LiteralPath $mergeCommon) {
