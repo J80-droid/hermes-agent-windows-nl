@@ -20,6 +20,7 @@ param(
     [switch]$IncludePseudoTableNormalizerE2E,
     [switch]$IncludeHermesHomeE2E,
     [switch]$IncludeModelProviderCoherenceE2E,
+    [switch]$IncludeModelProviderHardeningE2E,
     [switch]$IncludePythonInstitutionalE2E,
     [switch]$IncludeInstitutionalProductionGate,
     [switch]$IncludeCodebaseSmoke,
@@ -294,6 +295,14 @@ if ($IncludeModelProviderCoherenceE2E -or $IncludeAllE2E) {
     $coherenceE2e = Join-Path $scriptRoot 'RUN_MODEL_PROVIDER_COHERENCE_E2E.bat'
     Invoke-Step 'model-provider-coherence-e2e' {
         & $coherenceE2e
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeModelProviderHardeningE2E -or $IncludeAllE2E) {
+    $hardeningE2e = Join-Path $scriptRoot 'RUN_MODEL_PROVIDER_HARDENING_E2E.bat'
+    Invoke-Step 'model-provider-hardening-e2e' {
+        & $hardeningE2e
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

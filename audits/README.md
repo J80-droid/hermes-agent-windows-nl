@@ -47,3 +47,5 @@ audits\RUN_MODEL_PROVIDER_HARDENING_E2E.bat
 ```
 
 Windows delegate: `windows\audits\RUN_MODEL_PROVIDER_HARDENING_E2E.bat`
+
+`RUN_AUDITS.bat -IncludeModelProviderHardeningE2E` (of `-IncludeAllE2E`).

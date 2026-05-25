@@ -532,13 +532,19 @@ Geen live API. Zie `audits/README.md` en `docs/HERMES_HOME_WINDOWS.md` § split-
 audits\RUN_MODEL_PROVIDER_HARDENING_E2E.bat
 ```
 
-Of via `windows\audits\RUN_MODEL_PROVIDER_HARDENING_E2E.bat` (delegate).
+Of `windows\audits\RUN_MODEL_PROVIDER_HARDENING_E2E.bat`. Optioneel: `RUN_AUDITS.bat -IncludeModelProviderHardeningE2E` of `-IncludeAllE2E`.
 
-| Stap | Controle |
-| ---- | -------- |
-| E1–E8 | Harness `audits/ModelProviderHardeningE2E.harness.py`: YAML global-block detect/strip (geen comment false-positive), drift error-only gate, `read_auth_json` BOM/empty, corrupt auth guard, nous shared BOM, azure-foundry persist |
+| ID | Scenario |
+|----|----------|
+| E1 | YAML global blocks — geen false positive op comments |
+| E2 | `strip_all_profile_global_blocks` verwijdert echte keys |
+| E3 | Drift-gate: alleen error-severity blokkeert |
+| E4–E5 | `read_auth_json` leeg + BOM |
+| E6 | Corrupt auth + repair guard |
+| E7 | Nous shared store BOM |
+| E8 | Azure Foundry persist + auth sync |
 
-Unit tests: `tests/hermes_cli/test_auth_json_store.py`, `test_profile_model_inheritance.py` (`TestProfileGlobalConfigBlocks`).
+Harness: `audits/ModelProviderHardeningE2E.harness.py`. Unit tests: `tests/hermes_cli/test_auth_json_store.py`, `test_profile_model_inheritance.py`. Zie `audits/README.md`.
 
 ## Root config inheritance E2E
 
