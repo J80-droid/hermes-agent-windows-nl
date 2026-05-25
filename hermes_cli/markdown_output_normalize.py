@@ -469,15 +469,16 @@ _BOLD_CATEGORY_INLINE_RE = re.compile(
 _MAX_COMPARISON_COLUMNS = 6
 # Overview intent: auxiliary/config/architecture tables (2-6 columns).
 # Excludes bare "taken" to avoid false positives on "### Hulp taken" (Cloud/Lokaal).
+# No bare "samenvatting" — avoids overview intent on prose like "beknopte samenvatting".
 _OVERVIEW_HEADING_HINT_RE = re.compile(
     r"(?i)\b(overzicht|auxiliary|configuratie|stack|architectuur|architectuursamenvatting|"
-    r"samenvatting|implementatie|testresultaten|poc)\b",
+    r"implementatie|testresultaten|poc)\b",
 )
 _OVERVIEW_FIELD_LINE_RE = re.compile(r"^([^:|]{1,48}):\s*(.+)$", re.IGNORECASE)
 # Keys for collapsed records: no spaces in label (avoids "Inter-agent communicatie Keuze" false keys).
 _FIELD_KEY_TOKEN_RE = re.compile(r"(?i)\b([A-Za-z][A-Za-z0-9\-]{0,39}):\s")
 _FIELD_REPEAT_GATE_RE = re.compile(
-    r"(?i)(?:component|keuze|status|categorie|eis|meetmethode)\s*:"
+    r"(?i)(?:component|keuze|status|categorie|eis|meetmethode|laag|wat|waarom)\s*:"
 )
 _CATEGORY_HEADER_NAMES = frozenset({"category", "categorie", "taak", "task", "aspect"})
 
@@ -1138,6 +1139,55 @@ def ensure_markdown_table_dividers(text: str) -> str:
     return "\n".join(out)
 
 
+def _try_normalize_paragraph_to_table(para_lines: list[str]) -> list[str] | None:
+    """Return markdown table lines when a paragraph is a collapsed record block."""
+    if not para_lines or _section_has_markdown_table(para_lines):
+        return None
+    parsed = _parse_collapsed_record_rows(para_lines)
+    if parsed:
+        headers, rows = parsed
+        return _render_markdown_table(headers, rows)
+    return None
+
+
+def _normalize_unheaded_collapsed_paragraphs(text: str) -> str:
+    """Convert collapsed records under **labels** or plain prose (no ``##`` heading)."""
+    if not text or not text.strip():
+        return text or ""
+    lines = text.splitlines()
+    out: list[str] = []
+    i = 0
+    n = len(lines)
+    while i < n:
+        line = lines[i]
+        if _HEADING_LINE_RE.match(line):
+            out.append(line)
+            i += 1
+            continue
+        chunk: list[str] = []
+        while i < n and not _HEADING_LINE_RE.match(lines[i]):
+            chunk.append(lines[i])
+            i += 1
+        para: list[str] = []
+        for ln in chunk:
+            if not ln.strip():
+                table = _try_normalize_paragraph_to_table(para)
+                if table:
+                    out.extend(table)
+                elif para:
+                    out.extend(para)
+                out.append(ln)
+                para = []
+            else:
+                para.append(ln)
+        table = _try_normalize_paragraph_to_table(para)
+        if table:
+            out.extend(table)
+        elif para:
+            out.extend(para)
+    return "\n".join(out)
+
+
 def normalize_pseudo_tables_to_markdown(text: str) -> str:
     """Convert pseudo-layout blocks into markdown tables (context-aware 2-6 columns).
 
@@ -1202,7 +1252,7 @@ def normalize_pseudo_tables_to_markdown(text: str) -> str:
         out.append(heading)
         out.extend(body_lines)
 
-    return "\n".join(out)
+    return _normalize_unheaded_collapsed_paragraphs("\n".join(out))
 
 
 def collapse_extra_blank_lines(text: str) -> str:

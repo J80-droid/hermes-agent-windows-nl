@@ -16,6 +16,7 @@ from hermes_cli.markdown_output_normalize import (
     _collapsed_record_layout_eligible,
     _dedupe_table_rows,
     _discover_repeated_field_keys,
+    _infer_section_intent,
     _parse_collapsed_record_rows,
     _sanitize_table_cell,
     _split_record_segments,
@@ -317,6 +318,39 @@ class TestNormalizePseudoTablesIntegration:
             out = normalize_pseudo_tables_to_markdown(raw)
         mock_parse.assert_called()
         assert "| Component |" not in out or "Component: once" in out
+
+
+class TestUnheadedCollapsedParagraphs:
+    """Regression: pseudo-blocks under **labels** without ## headings (trading screenshot)."""
+
+    def test_laag_wat_waarom_emdash_without_heading(self):
+        raw = (
+            "**Doel bereikt:**\n\n"
+            "Onderzoek geschreven.\n\n"
+            "**Veerkrachtstrategie – beknopte samenvatting:**\n\n"
+            "Drie-lagen verdediging.\n\n"
+            "Laag: Fail-closed Wat: Risk crash = geen trades Waarom: Security > uptime "
+            f"{EMDASH} Laag: Graceful degradatie Wat: Redis weg Waarom: Systeem blijft draaien "
+            f"{EMDASH} Laag: Zelfbescherming Wat: Memory guard Waarom: Voorkomt swap-death\n"
+        )
+        out = normalize_pseudo_tables_to_markdown(raw)
+        assert "| Laag | Wat | Waarom |" in out
+        assert "Laag: Fail-closed Wat:" not in out or "| Fail-closed |" in out
+        assert out.count("| --- |") >= 1
+
+    def test_discover_laag_wat_waarom_keys(self):
+        text = (
+            "Laag: A Wat: B Waarom: C "
+            f"{EMDASH} Laag: D Wat: E Waarom: F"
+        )
+        assert _discover_repeated_field_keys(text) == ["Laag", "Wat", "Waarom"]
+
+    def test_beknopte_samenvatting_heading_not_overview_intent(self):
+        intent = _infer_section_intent(
+            "### Veerkrachtstrategie – beknopte samenvatting",
+            [],
+        )
+        assert intent != "overview"
 
 
 class TestNormalizeAssistantMarkdownPipeline:

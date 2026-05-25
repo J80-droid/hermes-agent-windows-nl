@@ -94,6 +94,16 @@ PARITY_FIXTURES: list[tuple[str, str]] = [
         "\u2014\u2014\u2014\u2014\u2014\u2014 "
         "Component: Datamodel Keuze: Pydantic Status: geimplementeerd\n",
     ),
+    (
+        "resilience_laag_wat_waarom_unheaded",
+        "**Veerkrachtstrategie – beknopte samenvatting:**\n\n"
+        "Drie-lagen verdediging.\n\n"
+        "Laag: Fail-closed Wat: Risk crash Waarom: Security "
+        "\u2014\u2014\u2014\u2014\u2014\u2014 "
+        "Laag: Graceful Wat: Redis weg Waarom: Systeem blijft draaien "
+        "\u2014\u2014\u2014\u2014\u2014\u2014 "
+        "Laag: Zelfbescherming Wat: Memory guard Waarom: Voorkomt swap-death\n",
+    ),
 ]
 
 

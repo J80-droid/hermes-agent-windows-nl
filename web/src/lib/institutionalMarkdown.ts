@@ -277,8 +277,9 @@ const INLINE_DUAL_SPLIT_RE = /_{4,}|─{4,}|\s+[—–-]{2,}\s+/
 const BOLD_CATEGORY_LINE_RE = /^\*\*(?<label>[^*\n]+)\*\*\s*$/
 const BOLD_CATEGORY_INLINE_RE = /^\*\*(?<label>[^*\n]+)\*\*\s+(?<rest>.+)$/
 const MAX_COMPARISON_COLUMNS = 6
+// No bare "samenvatting" — avoids overview intent on prose like "beknopte samenvatting".
 const OVERVIEW_HEADING_HINT_RE =
-  /\b(overzicht|auxiliary|configuratie|stack|architectuur|architectuursamenvatting|samenvatting|implementatie|testresultaten|poc)\b/i
+  /\b(overzicht|auxiliary|configuratie|stack|architectuur|architectuursamenvatting|implementatie|testresultaten|poc)\b/i
 const OVERVIEW_FIELD_LINE_RE = /^([^:|]{1,48}):\s*(.+)$/i
 const FIELD_KEY_TOKEN_RE = /\b([A-Za-z][A-Za-z0-9\-]{0,39}):\s/gi
 const FIELD_KEY_TOKEN_COUNT_RE = /\b[A-Za-z][A-Za-z0-9\-]{0,39}:\s/gi
@@ -373,9 +374,9 @@ function discoverRepeatedFieldKeys(text: string): string[] | null {
   const counts = new Map<string, number>()
   const order: string[] = []
   const seenLow = new Set<string>()
-  const re = new RegExp(FIELD_KEY_TOKEN_RE.source, 'gi')
+  FIELD_KEY_TOKEN_RE.lastIndex = 0
   let match: RegExpExecArray | null
-  while ((match = re.exec(text)) !== null) {
+  while ((match = FIELD_KEY_TOKEN_RE.exec(text)) !== null) {
     const key = normalizeFieldKey(match[1]!)
     const low = key.toLowerCase()
     if (!key || key.length < 2) continue
@@ -925,6 +926,49 @@ function ensureMarkdownTableDividers(text: string): string {
   return out.join('\n')
 }
 
+function tryNormalizeParagraphToTable(paraLines: string[]): string[] | null {
+  if (!paraLines.length || sectionHasMarkdownTable(paraLines)) return null
+  const parsed = parseCollapsedRecordRows(paraLines)
+  if (parsed) return renderMarkdownTable(parsed.headers, parsed.rows)
+  return null
+}
+
+function normalizeUnheadedCollapsedParagraphs(text: string): string {
+  if (!text?.trim()) return text || ''
+  const lines = text.split('\n')
+  const out: string[] = []
+  let i = 0
+  while (i < lines.length) {
+    const line = lines[i]!
+    if (HEADING_LINE_RE.test(line)) {
+      out.push(line)
+      i++
+      continue
+    }
+    const chunk: string[] = []
+    while (i < lines.length && !HEADING_LINE_RE.test(lines[i]!)) {
+      chunk.push(lines[i]!)
+      i++
+    }
+    let para: string[] = []
+    for (const ln of chunk) {
+      if (!ln.trim()) {
+        const table = tryNormalizeParagraphToTable(para)
+        if (table) out.push(...table)
+        else if (para.length) out.push(...para)
+        out.push(ln)
+        para = []
+      } else {
+        para.push(ln)
+      }
+    }
+    const table = tryNormalizeParagraphToTable(para)
+    if (table) out.push(...table)
+    else if (para.length) out.push(...para)
+  }
+  return out.join('\n')
+}
+
 function normalizePseudoTablesToMarkdown(text: string): string {
   if (!text?.trim()) return text || ''
   text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
@@ -991,7 +1035,7 @@ function normalizePseudoTablesToMarkdown(text: string): string {
     out.push(...bodyLines)
   }
 
-  return out.join('\n')
+  return normalizeUnheadedCollapsedParagraphs(out.join('\n'))
 }
 
 export function normalizeAssistantMarkdown(text: string): string {
