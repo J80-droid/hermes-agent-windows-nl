@@ -46,7 +46,7 @@ Native Windows Hermes gebruikt `%LOCALAPPDATA%\hermes`. WSL-sessies kunnen paral
 | Actie | Commando |
 | --- | --- |
 | Start Hermes | `windows\launch_hermes.bat` |
-| Na `git pull` / update | `POST_GIT_PULL.bat` of `UPDATE_HERMES.bat` |
+| Na `git pull` / update | `POST_GIT_PULL.bat` of `UPDATE_HERMES.bat` (optioneel `-AutoRepairModelProvider` bij auth/config drift) |
 | Wekelijkse kwaliteit | `windows\audits\RUN_AUDITS.bat` |
 | Config drift check | `windows\VERIFY_HERMES_CONFIG_DRIFT.bat` |
 
@@ -74,6 +74,8 @@ Symptoom: `auth.json` heeft `active_provider: nous` maar chat gebruikt nog **Gem
 | 2 | `hermes config get model.provider` → verwacht jouw gekozen provider (bijv. `nous`) |
 | 3 | Hermes/gateway volledig herstarten + `/new` in chat |
 
+**Checklist na code-deploy (operationeel):** `git pull` → `POST_GIT_PULL.bat` (optioneel `-AutoRepairModelProvider`) → `hermes config get model.provider` → Hermes + gateway afsluiten → opnieuw `launch_hermes.bat` → in chat `/new` → eerste bericht: provider Nous, geen `generativelanguage` in routing.
+
 **Architectuur (repo):** `hermes_cli/model_runtime_config.py` · `hermes_cli/auth.read_auth_json()` (UTF-8 BOM-safe)
 
 - `persist_model_runtime()` — atomisch `model.provider`, `model.default`, `base_url` naar **root** + sync `auth.active_provider`
@@ -82,7 +84,11 @@ Symptoom: `auth.json` heeft `active_provider: nous` maar chat gebruikt nog **Gem
 
 **Oorzaak (opgelost):** oude flows schreven alleen `model.default` vóór `model.provider`, naar profiel-yaml i.p.v. root, of wisten `active_provider` na persist via `deactivate_provider()`. Gebruik `hermes model` / setup; intern via `_commit_provider_model()`.
 
-**Validatie:** `audits\RUN_MODEL_PROVIDER_COHERENCE_E2E.bat` (10 scenario's) · `RUN_AUDITS.bat -IncludeModelProviderCoherenceE2E` · `verify_hermes_config_drift.ps1` (coherence-check) · pytest `tests/hermes_cli/test_model_runtime_config.py`
+**Validatie:** `audits\RUN_MODEL_PROVIDER_COHERENCE_E2E.bat` (10) · `audits\RUN_MODEL_PROVIDER_HARDENING_E2E.bat` (8: BOM, corrupt auth, global blocks, drift error-gate) · `RUN_AUDITS.bat -IncludeModelProviderCoherenceE2E` · `verify_hermes_config_drift.ps1` (coherence, error-severity) · pytest `tests/hermes_cli/test_model_runtime_config.py`, `test_auth_json_store.py`, `test_profile_model_inheritance.py`
+
+**POST_GIT_PULL opt-in:** `POST_GIT_PULL.bat -AutoRepairModelProvider` — bij drift-check éénmalig `repair_model_provider_coherence.ps1` vóór fail (standaard uit).
+
+**Gateway strict (optioneel):** `set HERMES_STRICT_CONFIG_COHERENCE=1` vóór gateway-start weigert start bij model/provider-incoherentie (standaard alleen WARN in logs).
 
 ## Gemini / auth.json (HTTP 400)
 

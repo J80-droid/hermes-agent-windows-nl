@@ -24,3 +24,26 @@ audits\RUN_MODEL_PROVIDER_COHERENCE_E2E.bat
 ```
 
 Of via `RUN_AUDITS.bat -IncludeModelProviderCoherenceE2E` (windows/audits delegateert naar deze harness).
+
+---
+
+# Model/Provider Hardening E2E
+
+Aanvullende E2E voor code-review hardening (geen live API).
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| E1 | Profiel-yaml met comment `# providers:` | Geen false-positive global blocks |
+| E2 | Echte `auxiliary`/`providers` keys | Gedetecteerd + gestript |
+| E3 | vendor_slug warn op gemini | Geen blocking errors (drift-gate) |
+| E4 | Lege auth.json | `read_auth_json` → `{}` |
+| E5 | auth.json met UTF-8 BOM | Parse OK |
+| E6 | Corrupt auth.json | Lege store + guard reset |
+| E7 | Nous shared store BOM | `_read_shared_nous_state` OK |
+| E8 | `persist_model_runtime(azure-foundry)` | Coherent + auth sync |
+
+```bat
+audits\RUN_MODEL_PROVIDER_HARDENING_E2E.bat
+```
+
+Windows delegate: `windows\audits\RUN_MODEL_PROVIDER_HARDENING_E2E.bat`

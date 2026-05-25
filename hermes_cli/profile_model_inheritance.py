@@ -10,6 +10,9 @@ Belangrijk:
 - ``apply_profile_root_config_inheritance()`` leest root YAML één keer per load.
 - ``bust_config_caches(root_path)`` leegt alle load/raw caches (profielen hangen af van root).
 - ``save_config()`` redirect naar root alleen als de key expliciet in de meegegeven ``config`` dict staat.
+- ``profile_has_global_config_blocks`` / ``list_profiles_with_global_config_blocks`` —
+  YAML top-level keys (geen comment false-positives); ``strip_all_profile_global_blocks``
+  voor doctor ``--fix`` en migratie.
 """
 
 from __future__ import annotations
@@ -464,6 +467,33 @@ def strip_global_blocks_from_profile_config(profile_dir: Path) -> bool:
     changed |= strip_auxiliary_block_from_profile_config(profile_dir)
     changed |= strip_providers_blocks_from_profile_config(profile_dir)
     return changed
+
+
+_GLOBAL_BLOCK_KEYS = frozenset({"auxiliary", "providers", "custom_providers"})
+
+
+def profile_has_global_config_blocks(profile_dir: Path) -> bool:
+    """True when profile ``config.yaml`` has top-level global blocks (YAML keys).
+
+    Uses parsed YAML only — comment lines like ``# providers:`` do not match.
+    Missing or invalid profile config returns ``False``.
+    """
+    cfg = _read_yaml(profile_dir / "config.yaml")
+    return any(key in cfg for key in _GLOBAL_BLOCK_KEYS)
+
+
+def list_profiles_with_global_config_blocks() -> list[str]:
+    """Profile names that still define auxiliary/providers locally."""
+    from hermes_constants import get_default_hermes_root
+
+    profiles_root = get_default_hermes_root() / "profiles"
+    names: list[str] = []
+    if not profiles_root.is_dir():
+        return names
+    for entry in sorted(profiles_root.iterdir()):
+        if entry.is_dir() and profile_has_global_config_blocks(entry):
+            names.append(entry.name)
+    return names
 
 
 def strip_all_profile_global_blocks() -> list[str]:

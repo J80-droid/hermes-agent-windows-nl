@@ -510,24 +510,18 @@ def _check_windows_split_home_config(issues: list, *, should_fix: bool = False) 
         pass
 
     try:
-        from hermes_constants import get_default_hermes_root
+        from hermes_cli.profile_model_inheritance import (
+            list_profiles_with_global_config_blocks,
+        )
 
-        profiles_root = get_default_hermes_root() / "profiles"
-        if profiles_root.is_dir():
-            for prof_dir in profiles_root.iterdir():
-                if not prof_dir.is_dir():
-                    continue
-                prof_cfg = prof_dir / "config.yaml"
-                if not prof_cfg.is_file():
-                    continue
-                text = prof_cfg.read_text(encoding="utf-8", errors="replace")
-                if "auxiliary:" in text or "providers:" in text or "custom_providers:" in text:
-                    check_warn(
-                        f"Profile '{prof_dir.name}' has global config blocks (auxiliary/providers)",
-                        "Run strip_profile_global_config_blocks.py or APPLY_HERMES_HOME_MIGRATION.bat",
-                    )
-                    issues.append(f"Strip global blocks from profile {prof_dir.name}")
-                    break
+        global_block_profiles = list_profiles_with_global_config_blocks()
+        if global_block_profiles:
+            first = global_block_profiles[0]
+            check_warn(
+                f"Profile '{first}' has global config blocks (auxiliary/providers)",
+                "Run 'hermes doctor --fix' or APPLY_HERMES_HOME_MIGRATION.bat",
+            )
+            issues.append(f"Strip global blocks from profile {first}")
     except Exception:
         pass
 
@@ -1029,6 +1023,36 @@ def run_doctor(args):
             p.is_dir() for p in profiles_root.iterdir()
         ):
             check_ok("Domain profiles inherit model from root config")
+    except Exception:
+        pass
+
+    # Stale auxiliary/providers in domain profiles (YAML top-level keys; not comments)
+    try:
+        from hermes_cli.profile_model_inheritance import (
+            list_profiles_with_global_config_blocks,
+            strip_all_profile_global_blocks,
+        )
+
+        global_block_profiles = list_profiles_with_global_config_blocks()
+        if global_block_profiles:
+            joined = ", ".join(global_block_profiles)
+            if should_fix:
+                stripped = strip_all_profile_global_blocks()
+                if stripped:
+                    check_ok(
+                        "Removed global auxiliary/providers blocks from profile(s): "
+                        + ", ".join(stripped)
+                    )
+                    fixed_count += len(stripped)
+            else:
+                check_warn(
+                    "Profile config contains global blocks (auxiliary/providers)",
+                    f"({joined})",
+                )
+                issues.append(
+                    "Strip auxiliary/providers from domain profiles or run "
+                    "'hermes doctor --fix' (globals live in root config.yaml only)."
+                )
     except Exception:
         pass
 

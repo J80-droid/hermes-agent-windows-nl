@@ -13,8 +13,10 @@ Callers: ``hermes model`` flows via ``_commit_provider_model`` in ``main.py``,
 ``_update_config_for_provider`` in ``auth.py``, ``hermes doctor --fix``, setup
 wizard post-checks, gateway startup WARN, ``verify_hermes_config_drift.ps1``.
 
-Windows repair: ``windows/REPAIR_MODEL_PROVIDER.bat``. E2E: ``audits/`` harness.
-Unit tests: ``tests/hermes_cli/test_model_runtime_config.py``.
+Windows repair: ``windows/REPAIR_MODEL_PROVIDER.bat``. Drift: ``verify_hermes_config_drift.ps1``
+(error-severity only). E2E: ``audits/RUN_MODEL_PROVIDER_COHERENCE_E2E.bat`` (10),
+``audits/RUN_MODEL_PROVIDER_HARDENING_E2E.bat`` (8). Unit tests:
+``tests/hermes_cli/test_model_runtime_config.py``, ``test_auth_json_store.py``.
 """
 
 from __future__ import annotations

@@ -81,6 +81,7 @@ Bij `--clone` / `--clone-config` wordt `config.yaml` eerst gekopieerd en daarna 
 | Chat 401 / verkeerde provider | Profiel had eigen model; keys in root `.env` | Root model + keys in `%LOCALAPPDATA%\hermes\.env` |
 | `hermes -p legal model` lijkt profiel te wijzigen | Oud gedrag vóór overerving | Update repo; model gaat naar root |
 | Auth `nous`, chat nog Gemini | Split-brain auth vs `model.provider` | `hermes doctor --fix` of `windows\REPAIR_MODEL_PROVIDER.bat` |
+| Gateway start met oude config | Incoherentie alleen WARN | Optioneel `HERMES_STRICT_CONFIG_COHERENCE=1` vóór gateway (weigert start tot repair) |
 | Vendor-slug (`deepseek/...`) op verkeerde provider | Alleen default gezet, provider oud | `hermes model` opnieuw; doctor meldt `vendor_slug_wrong_provider` |
 
 **API-keys:** profielen hebben eigen `.env` voor tokens; het **model** komt uit root. Bij 401: controleer provider-key voor het **effectieve** model (doctor toont inherited model).

@@ -526,6 +526,20 @@ Of via `windows\audits\RUN_MODEL_PROVIDER_COHERENCE_E2E.bat` (delegate). Optione
 
 Geen live API. Zie `audits/README.md` en `docs/HERMES_HOME_WINDOWS.md` § split-brain.
 
+## Model/provider hardening E2E
+
+```text
+audits\RUN_MODEL_PROVIDER_HARDENING_E2E.bat
+```
+
+Of via `windows\audits\RUN_MODEL_PROVIDER_HARDENING_E2E.bat` (delegate).
+
+| Stap | Controle |
+| ---- | -------- |
+| E1–E8 | Harness `audits/ModelProviderHardeningE2E.harness.py`: YAML global-block detect/strip (geen comment false-positive), drift error-only gate, `read_auth_json` BOM/empty, corrupt auth guard, nous shared BOM, azure-foundry persist |
+
+Unit tests: `tests/hermes_cli/test_auth_json_store.py`, `test_profile_model_inheritance.py` (`TestProfileGlobalConfigBlocks`).
+
 ## Root config inheritance E2E
 
 ```text

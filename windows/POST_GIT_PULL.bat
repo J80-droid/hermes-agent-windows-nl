@@ -4,7 +4,13 @@ cd /d "%~dp0\.."
 chcp 65001 >nul
 
 set "HERMES_CODEBASE_SMOKE_MODE=none"
+set "HERMES_AUTO_REPAIR_MODEL=0"
 :parse_post_pull_args
+if /I "%~1"=="-AutoRepairModelProvider" (
+  set "HERMES_AUTO_REPAIR_MODEL=1"
+  shift
+  goto parse_post_pull_args
+)
 if /I "%~1"=="-IncludeCodebaseSmokeE2E" (
   set "HERMES_CODEBASE_SMOKE_MODE=e2e"
   shift
@@ -31,6 +37,9 @@ if /I "!HERMES_CODEBASE_SMOKE_MODE!"=="e2e" (
   echo [INFO] Optie: -IncludeCodebaseSmoke ^(~32s, snelle smoke^)
 ) else (
   echo [INFO] Optioneel: -IncludeCodebaseSmoke ^(~32s^) of -IncludeCodebaseSmokeE2E ^(~45s^)
+)
+if "!HERMES_AUTO_REPAIR_MODEL!"=="1" (
+  echo [INFO] Optie: -AutoRepairModelProvider ^(herstelt auth/config split-brain bij drift^)
 )
 echo.
 
@@ -65,7 +74,11 @@ if errorlevel 1 (
 ) else (
   echo [OK] Hermes home + config drift OK.
 )
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\verify_hermes_config_drift.ps1" -Strict
+if "!HERMES_AUTO_REPAIR_MODEL!"=="1" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\verify_hermes_config_drift.ps1" -Strict -AutoRepairModelProvider
+) else (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\verify_hermes_config_drift.ps1" -Strict
+)
 if errorlevel 1 (
   echo [ERROR] verify_hermes_config_drift gefaald
   set "POST_PULL_ERR=1"

@@ -68,6 +68,8 @@ except Exception:
 # =============================================================================
 
 AUTH_STORE_VERSION = 1
+# Guard: avoid re-entrant repair when corrupt auth triggers coherence repair.
+_AUTH_CORRUPT_REPAIR_IN_PROGRESS = False
 AUTH_LOCK_TIMEOUT_SECONDS = 15.0
 
 # Nous Portal defaults
@@ -816,11 +818,18 @@ def read_auth_json(auth_file: Optional[Path] = None) -> Dict[str, Any]:
     copies). External tools (PowerShell, editors) may write a BOM prefix; plain
     ``utf-8`` decodes fail with ``JSONDecodeError`` and previously caused empty
     auth stores plus accidental ``.corrupt`` backups.
+
+    Empty or whitespace-only files return ``{}``. Non-dict JSON returns ``{}``.
+    ``_load_auth_store`` preserves corrupt files as ``.json.corrupt`` and may run
+    a one-shot config-side coherence repair (error-severity only) when parse fails.
     """
     path = auth_file or _auth_file_path()
     if not path.is_file():
         return {}
-    raw = json.loads(path.read_text(encoding="utf-8-sig"))
+    text = path.read_text(encoding="utf-8-sig")
+    if not text.strip():
+        return {}
+    raw = json.loads(text)
     return raw if isinstance(raw, dict) else {}
 
 
@@ -1025,11 +1034,44 @@ def _load_auth_store(auth_file: Optional[Path] = None) -> Dict[str, Any]:
             shutil.copy2(auth_file, corrupt_path)
         except Exception:
             pass
-        logger.warning(
-            "auth: failed to parse %s (%s) — starting with empty store. "
-            "Corrupt file preserved at %s",
-            auth_file, exc, corrupt_path,
+        logger.error(
+            "auth: failed to parse %s (%s). Corrupt file preserved at %s. "
+            "Restore from backup or run windows\\REPAIR_MODEL_PROVIDER.bat / "
+            "'hermes doctor --fix' after fixing credentials.",
+            auth_file,
+            exc,
+            corrupt_path,
         )
+        global _AUTH_CORRUPT_REPAIR_IN_PROGRESS
+        if not _AUTH_CORRUPT_REPAIR_IN_PROGRESS:
+            _AUTH_CORRUPT_REPAIR_IN_PROGRESS = True
+            try:
+                from hermes_cli.model_runtime_config import (
+                    detect_model_provider_incoherence,
+                    repair_model_provider_coherence,
+                )
+
+                empty_auth: Dict[str, Any] = {
+                    "version": AUTH_STORE_VERSION,
+                    "providers": {},
+                }
+                issues = detect_model_provider_incoherence(auth_store=empty_auth)
+                errors = [i for i in issues if i.severity == "error"]
+                if errors:
+                    actions = repair_model_provider_coherence(
+                        prefer="auth_from_config",
+                        issues=errors,
+                    )
+                    if actions:
+                        logger.warning(
+                            "auth: config-side coherence repair while auth "
+                            "unreadable: %s",
+                            "; ".join(actions),
+                        )
+            except Exception as repair_exc:
+                logger.debug("auth: config-side repair skipped: %s", repair_exc)
+            finally:
+                _AUTH_CORRUPT_REPAIR_IN_PROGRESS = False
         return {"version": AUTH_STORE_VERSION, "providers": {}}
 
     if isinstance(raw, dict) and (
@@ -1058,6 +1100,11 @@ def _load_auth_store(auth_file: Optional[Path] = None) -> Dict[str, Any]:
 
 
 def _save_auth_store(auth_store: Dict[str, Any]) -> Path:
+    """Persist Hermes auth store atomically as UTF-8 JSON without BOM.
+
+    Always use this helper (or ``persist_*_credentials``) for writes so
+    ``read_auth_json`` / ``utf-8-sig`` reads stay compatible with external tools.
+    """
     auth_file = _auth_file_path()
     auth_file.parent.mkdir(parents=True, exist_ok=True)
     # Tighten parent dir to 0o700 so siblings can't traverse to creds.
@@ -4353,7 +4400,7 @@ def _read_shared_nous_state() -> Optional[Dict[str, Any]]:
     if not path.is_file():
         return None
     try:
-        payload = json.loads(path.read_text())
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError) as exc:
         logger.debug("Shared Nous auth store at %s is unreadable: %s", path, exc)
         return None

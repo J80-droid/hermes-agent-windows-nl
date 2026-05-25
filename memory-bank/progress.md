@@ -118,7 +118,7 @@
 
 - [x] **core** — kleine ingest gedaan
 - [x] `--ingest-remaining` met `--skip-empty` (2026-05-21): 7 domeinen overgeslagen (0 bronbestanden); geen crash/pause
-- [ ] **Bronnen plaatsen** in lege `raw_source_files`-mappen (nu 0 bestanden: `01_Academics_Beta` … `08_Ventures_Incubator`; legal onder `04_Legal_Corporate` = klaar), daarna `institutional_p0_p1.bat --ingest-remaining`
+- [ ] **Bronnen plaatsen** in lege `raw_source_files`-mappen (nu 0 bestanden: `01_Academics_Beta` … `08_Ventures_Incubator`; legal onder `04_Legal_Corporate` = klaar), daarna `institutional_p0_p1.bat --ingest-remaining` — **gebruikersdata vereist**; zie sluit-checklist §4–5
 - [x] Preflight: `scripts/rag_pipeline/ingest_preflight.py` (in `institutional_p0_p1.bat --ingest-remaining`)
 - [x] `--mcp-test` (2026-05-21): legal + core OK; 7 domeinen WARN = lege LanceDB (**geen brondata** in `raw_source_files`, geen pipeline-fout)
 
@@ -129,6 +129,16 @@
 - [x] `APPLY_HERMES_HOME_MIGRATION.bat` — geautomatiseerde keten (backup + deprecate + preset + E2E)
 - [x] `RUN_HERMES_HOME_E2E.bat` PASS; drift-check groen
 - [x] User `HERMES_HOME` = `%LOCALAPPDATA%\hermes`; gateway aligned
+
+### Model/provider coherentie hardening (2026-05-25)
+
+- [x] Doctor `--fix` strip `auxiliary`/`providers` uit profiel-yaml (`strip_all_profile_global_blocks`)
+- [x] `POST_GIT_PULL.bat -AutoRepairModelProvider` (opt-in drift-repair)
+- [x] Auth corrupt-handler: expliciete fout + config-side repair poging; nous shared store `utf-8-sig`
+- [x] pytest model_runtime + doctor global-blocks + nous BOM (54+ tests)
+- [ ] **Gebruiker:** Hermes/gateway herstart + `/new` na pull (live Nous-verificatie) — zie `docs/HERMES_HOME_WINDOWS.md` checklist
+- [x] Profiel `core`: geen top-level `auxiliary:`/`providers:` (drift groen 2026-05-25)
+- [x] Drift-check: `Test-HermesModelProviderCoherence` LASTEXITCODE na pipeline gefixt
 
 ### Config (buiten repo — correct)
 

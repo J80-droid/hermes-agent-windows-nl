@@ -205,3 +205,192 @@ def test_strip_global_blocks(hermes_tree):
     assert not any(line.strip().startswith("auxiliary:") for line in text.splitlines())
     assert not any(line.strip().startswith("providers:") for line in text.splitlines())
     assert "agent:" in text
+
+
+@pytest.fixture
+def profiles_root_tree(tmp_path, monkeypatch):
+    """Runtime root with multiple profiles for global-block list/strip tests."""
+    root = tmp_path / "hermes"
+    profiles = root / "profiles"
+    profiles.mkdir(parents=True)
+    (root / "config.yaml").write_text(
+        "model:\n  provider: nous\n  default: x\n", encoding="utf-8"
+    )
+    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("HERMES_WIN_PREFER_LOCALAPPDATA", "0")
+    monkeypatch.setattr(
+        "hermes_constants.get_default_hermes_root",
+        lambda: root,
+    )
+    return root, profiles
+
+
+class TestProfileGlobalConfigBlocks:
+    """profile_has_global_config_blocks / list / strip_all (YAML keys, not comments)."""
+
+    def test_profile_has_blocks_happy_path_auxiliary(self, profiles_root_tree):
+        _, profiles = profiles_root_tree
+        prof = profiles / "alpha"
+        prof.mkdir()
+        (prof / "config.yaml").write_text(
+            "auxiliary:\n  vision:\n    provider: gemini\n", encoding="utf-8"
+        )
+        from hermes_cli.profile_model_inheritance import profile_has_global_config_blocks
+
+        assert profile_has_global_config_blocks(prof) is True
+
+    def test_profile_has_blocks_custom_providers_only(self, profiles_root_tree):
+        _, profiles = profiles_root_tree
+        prof = profiles / "beta"
+        prof.mkdir()
+        (prof / "config.yaml").write_text(
+            "custom_providers:\n  myep:\n    base_url: https://x\n", encoding="utf-8"
+        )
+        from hermes_cli.profile_model_inheritance import profile_has_global_config_blocks
+
+        assert profile_has_global_config_blocks(prof) is True
+
+    def test_profile_has_blocks_false_when_clean(self, profiles_root_tree):
+        _, profiles = profiles_root_tree
+        prof = profiles / "gamma"
+        prof.mkdir()
+        (prof / "config.yaml").write_text("agent:\n  max_turns: 1\n", encoding="utf-8")
+        from hermes_cli.profile_model_inheritance import profile_has_global_config_blocks
+
+        assert profile_has_global_config_blocks(prof) is False
+
+    def test_profile_has_blocks_false_comment_only(self, profiles_root_tree):
+        _, profiles = profiles_root_tree
+        prof = profiles / "legal"
+        prof.mkdir()
+        (prof / "config.yaml").write_text(
+            "# auxiliary: should not match\n"
+            "# providers: inherited\n"
+            "agent:\n  max_turns: 2\n",
+            encoding="utf-8",
+        )
+        from hermes_cli.profile_model_inheritance import profile_has_global_config_blocks
+
+        assert profile_has_global_config_blocks(prof) is False
+
+    def test_profile_has_blocks_false_nested_auxiliary_under_agent(self, profiles_root_tree):
+        """Nested keys must not count — only top-level YAML blocks."""
+        _, profiles = profiles_root_tree
+        prof = profiles / "nested"
+        prof.mkdir()
+        (prof / "config.yaml").write_text(
+            "agent:\n  max_turns: 1\n  auxiliary:\n    vision:\n      provider: gemini\n",
+            encoding="utf-8",
+        )
+        from hermes_cli.profile_model_inheritance import profile_has_global_config_blocks
+
+        assert profile_has_global_config_blocks(prof) is False
+
+    def test_profile_has_blocks_false_missing_config_yaml(self, profiles_root_tree):
+        _, profiles = profiles_root_tree
+        prof = profiles / "empty_cfg"
+        prof.mkdir()
+        from hermes_cli.profile_model_inheritance import profile_has_global_config_blocks
+
+        assert profile_has_global_config_blocks(prof) is False
+
+    def test_profile_has_blocks_false_invalid_yaml(self, profiles_root_tree):
+        _, profiles = profiles_root_tree
+        prof = profiles / "broken"
+        prof.mkdir()
+        (prof / "config.yaml").write_text("model: [\n", encoding="utf-8")
+        from hermes_cli.profile_model_inheritance import profile_has_global_config_blocks
+
+        assert profile_has_global_config_blocks(prof) is False
+
+    def test_list_profiles_sorted_and_skips_files(self, profiles_root_tree):
+        _, profiles = profiles_root_tree
+        for name, body in (
+            ("zebra", "providers:\n  x: {}\n"),
+            ("alpha", "agent:\n  max_turns: 1\n"),
+            ("mango", "auxiliary:\n  a: {}\n"),
+        ):
+            d = profiles / name
+            d.mkdir()
+            (d / "config.yaml").write_text(body, encoding="utf-8")
+        (profiles / "README.txt").write_text("not a profile dir", encoding="utf-8")
+
+        from hermes_cli.profile_model_inheritance import (
+            list_profiles_with_global_config_blocks,
+        )
+
+        assert list_profiles_with_global_config_blocks() == ["mango", "zebra"]
+
+    def test_list_profiles_empty_when_profiles_root_missing(self, tmp_path, monkeypatch):
+        root = tmp_path / "no_profiles"
+        root.mkdir()
+        monkeypatch.setattr(
+            "hermes_constants.get_default_hermes_root",
+            lambda: root,
+        )
+        from hermes_cli.profile_model_inheritance import (
+            list_profiles_with_global_config_blocks,
+        )
+
+        assert list_profiles_with_global_config_blocks() == []
+
+    def test_strip_all_returns_sorted_stripped_names(self, profiles_root_tree):
+        _, profiles = profiles_root_tree
+        for name in ("b_prof", "a_prof"):
+            d = profiles / name
+            d.mkdir()
+            (d / "config.yaml").write_text(
+                "providers:\n  venice:\n    api_key_env: V\n", encoding="utf-8"
+            )
+
+        from hermes_cli.profile_model_inheritance import strip_all_profile_global_blocks
+
+        stripped = strip_all_profile_global_blocks()
+        assert stripped == ["a_prof", "b_prof"]
+
+    def test_strip_all_idempotent_second_call_empty(self, profiles_root_tree):
+        _, profiles = profiles_root_tree
+        prof = profiles / "once"
+        prof.mkdir()
+        (prof / "config.yaml").write_text("auxiliary:\n  x: {}\n", encoding="utf-8")
+
+        from hermes_cli.profile_model_inheritance import strip_all_profile_global_blocks
+
+        assert strip_all_profile_global_blocks() == ["once"]
+        assert strip_all_profile_global_blocks() == []
+
+    def test_strip_all_skips_clean_profiles(self, profiles_root_tree):
+        _, profiles = profiles_root_tree
+        clean = profiles / "clean"
+        dirty = profiles / "dirty"
+        clean.mkdir()
+        dirty.mkdir()
+        (clean / "config.yaml").write_text("agent:\n  max_turns: 1\n", encoding="utf-8")
+        (dirty / "config.yaml").write_text("providers:\n  p: {}\n", encoding="utf-8")
+
+        from hermes_cli.profile_model_inheritance import (
+            list_profiles_with_global_config_blocks,
+            strip_all_profile_global_blocks,
+        )
+
+        assert list_profiles_with_global_config_blocks() == ["dirty"]
+        assert strip_all_profile_global_blocks() == ["dirty"]
+        assert list_profiles_with_global_config_blocks() == []
+
+    def test_strip_preserves_agent_block(self, profiles_root_tree):
+        _, profiles = profiles_root_tree
+        prof = profiles / "core"
+        prof.mkdir()
+        (prof / "config.yaml").write_text(
+            "auxiliary:\n  t:\n    provider: auto\n"
+            "agent:\n  max_turns: 42\n",
+            encoding="utf-8",
+        )
+        import yaml
+
+        from hermes_cli.profile_model_inheritance import strip_all_profile_global_blocks
+
+        strip_all_profile_global_blocks()
+        cfg = yaml.safe_load((prof / "config.yaml").read_text(encoding="utf-8"))
+        assert "auxiliary" not in cfg
+        assert cfg["agent"]["max_turns"] == 42

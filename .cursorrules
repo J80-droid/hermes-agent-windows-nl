@@ -14,6 +14,8 @@ Laat feiten en bewijsstukken op deze manier **onweerlegbaar traceerbaar** zijn.
 - **Runtime config:** `%LOCALAPPDATA%\hermes\config.yaml` — niet `~/.hermes\config.yaml`
 - **Secrets hub:** `%USERPROFILE%\.hermes\.env` → sync via `windows\SYNC_HERMES_API_ENV.bat`
 - Config wijzigen: `hermes config set` / `hermes model` — niet via agent `write_file`
+- **Model/provider:** altijd `persist_model_runtime` / `_commit_provider_model` naar root; nooit los `model.provider` in `profiles/*/config.yaml`; geen `auxiliary`/`providers` in profiel-yaml (doctor `--fix` strip)
+- Split-brain repair: `windows\REPAIR_MODEL_PROVIDER.bat` of `hermes doctor --fix`; na pull optioneel `POST_GIT_PULL.bat -AutoRepairModelProvider`
 - Runbook: `docs/HERMES_HOME_WINDOWS.md`
 
 ## VERGELIJKINGS-EIS (dossierblokken — geen Markdown-tabel)

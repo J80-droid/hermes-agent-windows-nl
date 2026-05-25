@@ -51,10 +51,31 @@ function Get-HermesConfigAuxiliaryFingerprint {
     return 'no-auxiliary-block'
 }
 
+function Invoke-HermesModelProviderCoherenceRepair {
+    param([switch]$Quiet)
+    $repairScript = Join-Path $PSScriptRoot 'repair_model_provider_coherence.ps1'
+    if (-not (Test-Path -LiteralPath $repairScript)) {
+        if (-not $Quiet) {
+            Write-HermesFail "Repair script ontbreekt: $repairScript"
+        }
+        return $false
+    }
+    try {
+        $null = & $repairScript -Quiet 2>&1
+        return ($LASTEXITCODE -eq 0)
+    } catch {
+        if (-not $Quiet) {
+            Write-HermesFail "Model/provider repair mislukt: $($_.Exception.Message)"
+        }
+        return $false
+    }
+}
+
 function Test-HermesConfigDrift {
     param(
         [switch]$Strict,
-        [switch]$Quiet
+        [switch]$Quiet,
+        [switch]$AutoRepairModelProvider
     )
     $runtimeCfg = Get-HermesCanonicalConfigPath
     $legacyCfg = Get-HermesLegacyConfigPath
@@ -86,9 +107,30 @@ function Test-HermesConfigDrift {
 
     if ($issues.Count -eq 0) {
         if (-not (Test-HermesModelProviderCoherence -Quiet:$Quiet)) {
-            $issues.Add(
-                'Model/provider incoherentie (auth.json vs config) — run windows\REPAIR_MODEL_PROVIDER.bat of hermes doctor --fix'
-            )
+            if ($AutoRepairModelProvider) {
+                if (-not $Quiet) {
+                    Write-HermesWarn 'Model/provider incoherentie — auto-repair (eenmalig)...'
+                }
+                if (Invoke-HermesModelProviderCoherenceRepair -Quiet:$Quiet) {
+                    if (Test-HermesModelProviderCoherence -Quiet:$Quiet) {
+                        if (-not $Quiet) {
+                            Write-HermesOk 'Model/provider incoherentie hersteld via auto-repair'
+                        }
+                    } else {
+                        $issues.Add(
+                            'Model/provider incoherentie blijft na auto-repair — run windows\REPAIR_MODEL_PROVIDER.bat of hermes doctor --fix'
+                        )
+                    }
+                } else {
+                    $issues.Add(
+                        'Model/provider auto-repair mislukt — run windows\REPAIR_MODEL_PROVIDER.bat of hermes doctor --fix'
+                    )
+                }
+            } else {
+                $issues.Add(
+                    'Model/provider incoherentie (auth.json vs config) — run windows\REPAIR_MODEL_PROVIDER.bat of hermes doctor --fix'
+                )
+            }
         }
     }
 
@@ -126,16 +168,24 @@ os.environ.setdefault('HERMES_WIN_PREFER_LOCALAPPDATA', '1')
 from hermes_cli.config import load_config
 from hermes_cli.model_runtime_config import detect_model_provider_incoherence
 issues = detect_model_provider_incoherence(load_config())
-if not issues:
+errors = [i for i in issues if getattr(i, 'severity', 'warn') == 'error']
+if not errors:
     sys.exit(0)
-for i in issues:
+for i in errors:
     print(f'{i.severity}: {i.message}')
 sys.exit(1)
 "@
-        & $python -c $code 2>&1 | ForEach-Object {
-            if (-not $Quiet) { Write-HermesFail $_ }
+        $output = & $python -c $code 2>&1
+        $exitCode = $LASTEXITCODE
+        if ($exitCode -ne 0) {
+            if (-not $Quiet) {
+                foreach ($line in @($output)) {
+                    if ($line) { Write-HermesFail $line }
+                }
+            }
+            return $false
         }
-        return $false
+        return $true
     } catch {
         if (-not $Quiet) {
             Write-HermesFail "Model/provider coherence check mislukt: $($_.Exception.Message)"

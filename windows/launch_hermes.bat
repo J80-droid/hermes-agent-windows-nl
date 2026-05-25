@@ -11,6 +11,9 @@ cd /d "%REPO_ROOT%"
 rem RAG: per-domein via profiles + domains.yaml (geen globale my_lancedb default).
 if not defined HERMES_RAG_RAW_SOURCE set "HERMES_RAG_RAW_SOURCE=%USERPROFILE%\data\raw_source_files"
 
+rem Optioneel (productie-gateway): weiger start bij auth/config split-brain.
+rem set "HERMES_STRICT_CONFIG_COHERENCE=1"
+
 rem Gateway / TUI-subprocessen: expliciet hermes-env python (voorkomt `python` = kapotte OS-installatie).
 if not defined HERMES_CONDA_ENV set "HERMES_CONDA_ENV=hermes-env"
 if not defined HERMES_PYTHON if exist "%USERPROFILE%\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe" set "HERMES_PYTHON=%USERPROFILE%\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe"

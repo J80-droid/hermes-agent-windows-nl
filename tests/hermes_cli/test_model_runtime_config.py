@@ -637,6 +637,52 @@ class TestRepairModelProviderCoherence:
         assert captured["provider"] == "nous"
         assert captured["inference_base_url"] == "https://inference-api.nousresearch.com/v1"
 
+    def test_repair_with_unreadable_auth_does_not_crash(self, flat_home, monkeypatch):
+        from hermes_cli.model_runtime_config import (
+            CoherenceIssue,
+            repair_model_provider_coherence,
+        )
+
+        (flat_home / "config.yaml").write_text(
+            "model:\n  provider: gemini\n  default: m\n",
+            encoding="utf-8",
+        )
+        (flat_home / "auth.json").write_text("{not valid json", encoding="utf-8")
+        monkeypatch.setattr(
+            "hermes_cli.model_runtime_config.persist_model_runtime",
+            lambda *a, **k: None,
+        )
+        issues = [
+            CoherenceIssue(
+                code="auth_config_provider_mismatch",
+                message="split",
+                severity="error",
+            )
+        ]
+        actions = repair_model_provider_coherence(issues=issues)
+        assert isinstance(actions, list)
+
+    def test_persist_azure_foundry_provider(self, flat_home):
+        from hermes_cli.model_runtime_config import (
+            detect_model_provider_incoherence,
+            persist_model_runtime,
+        )
+
+        persist_model_runtime(
+            "azure-foundry",
+            default_model="gpt-4.1",
+            inference_base_url="https://myfoundry.openai.azure.com/openai/v1",
+            sync_auth=True,
+        )
+        cfg = yaml.safe_load((flat_home / "config.yaml").read_text(encoding="utf-8"))
+        assert cfg["model"]["provider"] == "azure-foundry"
+        assert "myfoundry" in cfg["model"]["base_url"]
+        auth = json.loads((flat_home / "auth.json").read_text(encoding="utf-8"))
+        assert auth.get("active_provider") == "azure-foundry"
+        assert not detect_model_provider_incoherence(
+            cfg, {"active_provider": "azure-foundry", "providers": {}}
+        )
+
     def test_nous_resolve_failure_uses_registry_url(self, hermes_tree, monkeypatch):
         from hermes_cli.auth import PROVIDER_REGISTRY
         from hermes_cli.model_runtime_config import repair_model_provider_coherence
@@ -687,6 +733,29 @@ class TestResetConfigProvider:
         assert "provider" not in str(prof_cfg)
 
 
+class TestLoadAuthStoreCorruptRepair:
+    def test_corrupt_auth_repair_guard_no_recursion(self, flat_home, monkeypatch):
+        from hermes_cli import auth as auth_mod
+
+        (flat_home / "config.yaml").write_text(
+            "model:\n  provider: gemini\n  default: x\n",
+            encoding="utf-8",
+        )
+        (flat_home / "auth.json").write_text("{invalid", encoding="utf-8")
+        persist_calls: list[str] = []
+
+        def _track_persist(provider_id, **kwargs):
+            persist_calls.append(provider_id)
+
+        monkeypatch.setattr(
+            "hermes_cli.model_runtime_config.persist_model_runtime",
+            _track_persist,
+        )
+        store = auth_mod._load_auth_store(flat_home / "auth.json")
+        assert store.get("providers") == {}
+        assert auth_mod._AUTH_CORRUPT_REPAIR_IN_PROGRESS is False
+
+
 class TestReadAuthJson:
     def test_reads_utf8_bom_auth_file(self, flat_home):
         from hermes_cli.auth import read_auth_json
@@ -698,6 +767,12 @@ class TestReadAuthJson:
         data = read_auth_json(bom_auth)
         assert data.get("active_provider") == "nous"
 
+    def test_reads_empty_auth_file_as_empty_dict(self, flat_home):
+        from hermes_cli.auth import read_auth_json
+
+        (flat_home / "auth.json").write_text("", encoding="utf-8")
+        assert read_auth_json(flat_home / "auth.json") == {}
+
     def test_load_auth_store_accepts_bom(self, flat_home, monkeypatch):
         from hermes_cli.auth import _load_auth_store
 
@@ -707,6 +782,24 @@ class TestReadAuthJson:
         )
         store = _load_auth_store(flat_home / "auth.json")
         assert store.get("active_provider") == "openrouter"
+
+
+class TestNousSharedStoreBom:
+    def test_read_shared_nous_state_utf8_sig(self, tmp_path, monkeypatch):
+        from hermes_cli.auth import NOUS_SHARED_STORE_FILENAME, _read_shared_nous_state
+
+        shared_dir = tmp_path / "shared"
+        shared_dir.mkdir()
+        store_path = shared_dir / NOUS_SHARED_STORE_FILENAME
+        store_path.write_bytes(
+            b"\xef\xbb\xbf"
+            + b'{"refresh_token": "rt-test", "access_token": "at-test"}'
+        )
+        monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(shared_dir))
+        state = _read_shared_nous_state()
+        assert state is not None
+        assert state["refresh_token"] == "rt-test"
+        assert state["access_token"] == "at-test"
 
 
 class TestBustAllRuntimeConfigCaches:
