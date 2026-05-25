@@ -152,6 +152,7 @@ function ctxBar(pct: number | undefined, w = 10) {
   return '█'.repeat(filled) + '░'.repeat(w - filled)
 }
 
+/** Split status-rule width between left (status/model/cost) and right (cwd). Uses display width. */
 export function statusRuleWidths(cols: number, cwdLabel: string) {
   const width = Math.max(1, Math.floor(cols || 1))
   const desiredSeparatorWidth = width >= 24 ? 3 : 1
@@ -318,14 +319,15 @@ export function StatusRule({
 
   const bar = usage.context_max ? ctxBar(pct) : ''
   const ruleCols = statusRuleColumns(cols)
+  const { leftWidth, rightWidth, separatorWidth } = statusRuleWidths(ruleCols, cwdLabel)
   const { costLabel } = resolveStatusRuleLayout({
     cols,
+    cwdReserve: rightWidth + separatorWidth,
     costBarMode,
     cwdLabel,
     showCost,
     usage
   })
-  const { leftWidth, rightWidth, separatorWidth } = statusRuleWidths(ruleCols, cwdLabel)
 
   return (
     <Box flexDirection="row" height={1} width={ruleCols}>

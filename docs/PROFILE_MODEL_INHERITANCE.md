@@ -51,6 +51,15 @@ agent:
 
 **Let op:** het oude nested formaat `mcp.servers` wordt door Hermes CLI/chat **genegeerd** — gebruik alleen `mcp_servers:` op root-niveau in het profiel-yaml.
 
+## Automatisch bij `hermes profile create`
+
+Na aanmaken van een profiel (met of zonder `--clone`):
+
+1. **`strip_model_block_from_profile_config`** — verwijdert een gekopieerd `model:`-blok en zet een inheritance-comment in `config.yaml` (fork; zie `hermes_cli/profile_model_inheritance.py`).
+2. **`_maybe_register_gateway_service`** — upstream Phase 4: in Docker/s6 registreert het een gateway-slot; op Windows/host is dit een stille no-op.
+
+Bij `--clone` / `--clone-config` wordt `config.yaml` eerst gekopieerd en daarna gestript. Unit tests: `tests/hermes_cli/test_profiles_create_model_strip.py`.
+
 ## Commando’s (cheatsheet)
 
 | Actie | Commando |

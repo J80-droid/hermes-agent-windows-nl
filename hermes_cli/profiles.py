@@ -821,12 +821,14 @@ def create_profile(
         except Exception:
             pass  # non-fatal — user can describe later with `hermes profile describe`
 
+    # Fork: drop cloned model: blocks so domain profiles inherit root config.
+    # ImportError only — strip_model_block_from_profile_config handles I/O/YAML internally.
     try:
         from hermes_cli.profile_model_inheritance import strip_model_block_from_profile_config
-
+    except ImportError:
+        pass  # minimal / partial installs
+    else:
         strip_model_block_from_profile_config(profile_dir)
-    except Exception:
-        pass
 
     # Phase 4: when running inside a container under s6, register the
     # new profile's gateway as a runtime s6 service so

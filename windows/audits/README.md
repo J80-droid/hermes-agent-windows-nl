@@ -55,6 +55,7 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | **`RUN_MEMORY_ARCHITECTURE_E2E.bat`** | L4 vault-paden, sync, geen L3, profiel-limits 4000/1800, **alle profielen** MEMORY/USER, dedup-keten, TUI auto `/new` (**16 stappen**) |
 | **`RUN_MEMORY_PRODUCTION_GATE.bat`** | Gecombineerd: trust limits + memory E2E (18/18) + trust forensic E2E + pytest memory/trust |
 | **`RUN_AUDITS.bat -IncludeMemoryProductionGate`** | Alleen memory productie-poort (ook in `-IncludeAllE2E`) |
+| **`RUN_UPSTREAM_MERGE_INTEGRATION_E2E.bat`** | Na upstream-merge: `cwdReserve`+`statusRuleWidths`, profile create strip+s6, vitest/pytest/harness (**10 stappen**) |
 | **`RUN_STATUS_BAR_COST_E2E.bat`** | TUI statusbalk (rich): `show_cost`, `cost_bar_mode`, breakdown, turn-delta, live `~$turn`, gateway smoke |
 | **`RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`** | Klassieke CLI (`hermes chat`): `status_bar_cost.py`, `cli.py` hooks, `/cost`, smoke + pytest |
 | **`RUN_PARETO_E2E.bat`** | OpenRouter Pareto Code router: model-gate, transport/summary parity, pytest, verify script |

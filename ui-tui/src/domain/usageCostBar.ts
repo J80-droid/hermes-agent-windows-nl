@@ -1,3 +1,5 @@
+import { stringWidth } from '@hermes/ink'
+
 import type { Usage } from '../types.js'
 
 import { formatTurnCostUsd, formatTurnLiveTokens } from './liveTurnCost.js'
@@ -150,16 +152,25 @@ export function statusRuleColumns(cols: number): number {
   return Math.max(1, cols - STATUS_RULE_HORIZONTAL_PADDING)
 }
 
-/** Reserve a non-truncated cost segment before the cwd label on the status rule. */
+/**
+ * Reserve width for the inline cost segment on the status rule.
+ * When ``cwdReserve`` is set (from ``statusRuleWidths`` in appChrome), cost tiers
+ * use display columns — not ``cwdLabel.length`` (CJK-safe via Ink ``stringWidth``).
+ */
 export function resolveStatusRuleLayout(opts: {
   cols: number
+  /** Display columns for cwd + separator (from ``statusRuleWidths`` when known). */
+  cwdReserve?: number
   costBarMode: CostBarMode
   cwdLabel: string
   showCost: boolean
   usage: StatusBarCostUsage
 }): { costLabel: string | null; leftWidth: number } {
   const cols = statusRuleColumns(opts.cols)
-  const cwdReserve = opts.cwdLabel.length + 3
+  const cwdReserve =
+    opts.cwdReserve ??
+    Math.min(stringWidth(opts.cwdLabel), Math.max(0, cols - STATUS_RULE_MIN_LEFT_WIDTH - 1)) +
+      (cols >= 24 ? 3 : 1)
   const costAvailableWidth = Math.max(0, cols - cwdReserve - STATUS_RULE_MIN_LEFT_WIDTH)
   const costLabel = shouldShowStatusBarCostRich(opts.showCost)
     ? formatStatusBarCostRich(opts.usage, { mode: opts.costBarMode, width: costAvailableWidth })

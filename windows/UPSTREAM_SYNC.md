@@ -221,8 +221,9 @@ Bij merge van Nous in jouw fork botsen vaak **jouw fork-only** paden met upstrea
 | --- | -------------- |
 | `hermes_cli/usage_snapshot.py` | **Behoud fork** — breakdown + usage payload |
 | `tui_gateway/server.py` | `_get_usage` → delegatie naar `build_session_usage_snapshot` |
-| `ui-tui/src/domain/usageCostBar.ts` | **Behoud fork** — responsive formatter + `statusRuleColumns` + `resolveStatusRuleLayout` |
-| `ui-tui/src/components/appChrome.tsx` | StatusRule: gereserveerd kostensegment vóór cwd |
+| `ui-tui/src/domain/usageCostBar.ts` | **Behoud fork** — responsive formatter + `statusRuleColumns` + `resolveStatusRuleLayout` (optionele `cwdReserve` van `statusRuleWidths`) |
+| `ui-tui/src/components/appChrome.tsx` | **Combineer:** upstream `statusRuleWidths` + fork cost inline; `cwdReserve: rightWidth + separatorWidth` |
+| `hermes_cli/profiles.py` | **Combineer:** `strip_model_block_from_profile_config` vóór `_maybe_register_gateway_service` (s6 container) |
 | `ui-tui/src/app/createGatewayEventHandler.ts` | turn/tool client-side hooks + live `~NK tok` fallback |
 | `hermes_cli/config.py` | **Behoud fork** — `show_cost: true`, `cost_bar_mode: rich` defaults |
 | `agent/usage_pricing.py` | **Geen fork-wijzigingen** — snapshot volgt upstream API |
@@ -322,7 +323,7 @@ Geen verplichting; git history blijft de volledige changelog.
 11. Institutioneel E2E: `windows\audits\RUN_INSTITUTIONAL_E2E.bat` (**11 stappen**)
 12. Rooktest presentatie: `pytest tests/cli/test_institutional_rich_render.py … -q`
 
-**Laatste volledige audit:** `windows/audits/UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md` (merge 58 commits + UPDATE + E2E PASS).
+**Laatste volledige audit:** `windows/audits/UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md` (merge 58 commits + UPDATE + E2E PASS). Na merge 87 commits (2026-05-25): `windows\audits\RUN_UPSTREAM_MERGE_INTEGRATION_E2E.bat` (10/10: vitest statusRule/usageCostBar, pytest profile+s6, harness).
 
 ---
 
