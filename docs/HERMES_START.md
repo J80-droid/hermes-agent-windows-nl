@@ -10,6 +10,7 @@
 | Na clone / andere conda-locatie | `windows\REPAIR_PYTHON.bat` → sync IDE + quarantaine kapotte `.venv` |
 | Pytest / audits | `windows\tests\RUN_PYTEST.ps1` of audit-`.bat` — nooit bare `python` als conda ontbreekt |
 | Python-beleid E2E | `windows\audits\RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.bat` (8/8: policy, IDE sync, pytest) |
+| Python review-fixes E2E | `windows\audits\RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.bat` (8/8: stamp guard, manifest fast-path, non-interactive REPAIR) |
 | `.venv`-warn bij start | Normaal: negeren als conda OK; opruimen via `REPAIR_PYTHON.bat` (Hermes/Cursor eerst sluiten) |
 | Geavanceerd (uv naast conda) | Alleen met `HERMES_ALLOW_UV_VENV=1` — niet voor productie-default |
 
@@ -22,7 +23,7 @@ Override conda-pad: `HERMES_PYTHON` of `HERMES_CONDA_ROOT` (zie `HermesPythonPol
 | Laag | Commando |
 |------|----------|
 | Interpreter + IDE | `windows\REPAIR_PYTHON.bat` |
-| RAG-deps `[rag]` | Automatisch bij start (`launch_bootstrap.ps1`) of `install_rag_extras.ps1` |
+| RAG-deps `[rag]` | Automatisch bij start (`launch_bootstrap.ps1`; stamp alleen na succes) of `install_rag_extras.ps1` |
 | LanceDB-index | `windows\scripts\update_knowledge.bat` |
 
 Productie-gate: `windows\audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`. Runbook: `docs/INSTITUTIONAL_OPERATIONS.md`.

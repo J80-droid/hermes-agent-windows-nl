@@ -19,6 +19,9 @@ REPAIR_BAT = REPO / "windows" / "REPAIR_PYTHON.bat"
 VSCODE_SETTINGS = REPO / ".vscode" / "settings.json"
 HERMES_START = REPO / "docs" / "HERMES_START.md"
 INSTITUTIONAL_MD = REPO / "windows" / "INSTITUTIONAL.md"
+CHECK_RAG_PS1 = REPO / "windows" / "scripts" / "check_hermes_rag_after_repair.ps1"
+LAUNCH_BOOTSTRAP_PS1 = REPO / "windows" / "scripts" / "launch_bootstrap.ps1"
+RAG_MANIFEST = Path(os.environ.get("LOCALAPPDATA", "")) / "Hermes" / "rag-deps.json"
 
 
 def _read(rel: str) -> str:
@@ -54,6 +57,25 @@ def _dot_source_policy() -> str:
     return f". '{path}'"
 
 
+def _rag_manifest_backup():
+    if RAG_MANIFEST.is_file():
+        return RAG_MANIFEST.read_text(encoding="utf-8")
+    return None
+
+
+def _restore_rag_manifest(backup: str | None) -> None:
+    if backup is None:
+        RAG_MANIFEST.unlink(missing_ok=True)
+    else:
+        RAG_MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+        RAG_MANIFEST.write_text(backup, encoding="utf-8")
+
+
+def _conda_available() -> bool:
+    probe = _run_powershell(f"{_dot_source_policy()}; if (Get-HermesCondaPython) {{ exit 0 }} else {{ exit 1 }}")
+    return probe.returncode == 0
+
+
 # --- Static wiring (happy path + regressie) ---
 
 
@@ -64,6 +86,8 @@ def test_policy_helpers_present():
         "Get-HermesCondaPython",
         "Resolve-HermesPythonExe",
         "Test-HermesRagExtrasInstalled",
+        "Test-HermesNeedsRagExtrasInstall",
+        "Sync-HermesLaunchBootstrapStamp",
         "Update-HermesVscodeInterpreterPath",
         "Invoke-HermesSyncIdePython",
         "Write-HermesPythonPolicyManifest",
@@ -135,6 +159,37 @@ def test_e2e_audit_files_exist():
         "RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.bat",
     ):
         assert (audits / name).is_file()
+
+
+def test_regression_e2e_audit_files_exist():
+    audits = REPO / "windows" / "audits"
+    for name in (
+        "HermesPythonInstitutionalRegressionE2E.core.ps1",
+        "HermesPythonInstitutionalRegressionE2E.harness.ps1",
+        "RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.ps1",
+        "RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.bat",
+    ):
+        assert (audits / name).is_file()
+
+
+def test_policy_hermes_conda_root_wiring():
+    text = POLICY_PS1.read_text(encoding="utf-8")
+    assert "HERMES_CONDA_ROOT" in text
+    assert "rag_extras_verified" in text
+
+
+def test_launch_bootstrap_stamp_guard_wiring():
+    text = LAUNCH_BOOTSTRAP_PS1.read_text(encoding="utf-8")
+    assert "Test-HermesNeedsRagExtrasInstall" in text
+    assert "$ragOk" in text
+    assert "Sync-HermesLaunchBootstrapStamp" in text
+
+
+def test_check_rag_after_repair_noninteractive_wiring():
+    text = CHECK_RAG_PS1.read_text(encoding="utf-8")
+    assert "[switch]$NonInteractive" in text
+    assert "HERMES_NONINTERACTIVE" in text
+    assert "IsInputRedirected" in text
 
 
 # --- Update-HermesVscodeInterpreterPath (isolated temp dirs) ---
@@ -476,3 +531,275 @@ exit 0
                 manifest.unlink(missing_ok=True)
             else:
                 manifest.write_text(backup, encoding="utf-8")
+
+
+# --- Review-fixes: CONDA_ROOT, RAG manifest, invalid input ---
+
+
+def test_get_conda_python_hermes_conda_root():
+    with tempfile.TemporaryDirectory() as tmp:
+        env_name = "hermes-env"
+        conda_root = Path(tmp)
+        py_path = conda_root / "envs" / env_name / "python.exe"
+        py_path.parent.mkdir(parents=True)
+        py_path.write_bytes(b"stub")
+        script = f"""
+{_dot_source_policy()}
+$prev = $env:HERMES_CONDA_ROOT
+$prevPy = $env:HERMES_PYTHON
+Remove-Item Env:HERMES_PYTHON -ErrorAction SilentlyContinue
+$env:HERMES_CONDA_ROOT = '{str(conda_root).replace("'", "''")}'
+$r = Get-HermesCondaPython
+if ($r -ne '{str(py_path).replace("'", "''")}') {{ exit 1 }}
+if ($null -eq $prev) {{ Remove-Item Env:HERMES_CONDA_ROOT -ErrorAction SilentlyContinue }} else {{ $env:HERMES_CONDA_ROOT = $prev }}
+if ($null -eq $prevPy) {{ Remove-Item Env:HERMES_PYTHON -ErrorAction SilentlyContinue }} else {{ $env:HERMES_PYTHON = $prevPy }}
+exit 0
+"""
+        proc = _run_powershell(script)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def test_rag_extras_installed_false_for_invalid_stub_exe():
+    with tempfile.NamedTemporaryFile(suffix=".exe", delete=False) as handle:
+        stub = handle.name
+        handle.write(b"not-a-valid-pe")
+    try:
+        script = f"""
+{_dot_source_policy()}
+if (Test-HermesRagExtrasInstalled -PythonExe '{stub.replace("'", "''")}') {{ exit 1 }}
+exit 0
+"""
+        proc = _run_powershell(script)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+    finally:
+        Path(stub).unlink(missing_ok=True)
+
+
+def test_rag_extras_installed_false_for_missing_path():
+    script = f"""
+{_dot_source_policy()}
+if (Test-HermesRagExtrasInstalled -PythonExe 'C:\\missing\\python.exe') {{ exit 1 }}
+exit 0
+"""
+    proc = _run_powershell(script)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def test_write_rag_deps_manifest_returns_null_without_rag():
+    with tempfile.NamedTemporaryFile(suffix=".exe", delete=False) as handle:
+        stub = handle.name
+        handle.write(b"stub")
+    try:
+        script = f"""
+{_dot_source_policy()}
+$r = Write-HermesRagDepsManifest -PythonExe '{stub.replace("'", "''")}'
+if ($null -ne $r) {{ exit 1 }}
+exit 0
+"""
+        proc = _run_powershell(script)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+    finally:
+        Path(stub).unlink(missing_ok=True)
+
+
+def test_needs_rag_extras_install_false_with_verified_manifest():
+    if not _conda_available():
+        pytest.skip("conda hermes-env niet beschikbaar op test-host")
+
+    backup = _rag_manifest_backup()
+    try:
+        script = f"""
+{_dot_source_policy()}
+$py = Resolve-HermesPythonExe -RepoRoot '{str(REPO).replace("'", "''")}' -RequirePip
+if (-not $py) {{ exit 9 }}
+$p = Get-HermesRagDepsManifestPath
+New-Item -ItemType Directory -Force -Path (Split-Path -Parent $p) | Out-Null
+@{{
+    installed_at = (Get-Date).ToUniversalTime().ToString('o')
+    python_exe = $py
+    rag_extras_verified = $true
+}} | ConvertTo-Json | Set-Content -LiteralPath $p -Encoding UTF8
+$needs = Test-HermesNeedsRagExtrasInstall -RepoRoot '{str(REPO).replace("'", "''")}' -PyprojectPath '{str(REPO / "pyproject.toml").replace("'", "''")}'
+if ($needs) {{ exit 1 }}
+exit 0
+"""
+        proc = _run_powershell(script)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+    finally:
+        _restore_rag_manifest(backup)
+
+
+def test_needs_rag_extras_install_true_when_python_mismatch():
+    if not _conda_available():
+        pytest.skip("conda hermes-env niet beschikbaar op test-host")
+
+    backup = _rag_manifest_backup()
+    try:
+        script = f"""
+{_dot_source_policy()}
+$p = Get-HermesRagDepsManifestPath
+New-Item -ItemType Directory -Force -Path (Split-Path -Parent $p) | Out-Null
+@{{
+    installed_at = (Get-Date).ToUniversalTime().ToString('o')
+    python_exe = 'C:\\\\Other\\\\python.exe'
+    rag_extras_verified = $true
+}} | ConvertTo-Json | Set-Content -LiteralPath $p -Encoding UTF8
+$needs = Test-HermesNeedsRagExtrasInstall -RepoRoot '{str(REPO).replace("'", "''")}' -PyprojectPath '{str(REPO / "pyproject.toml").replace("'", "''")}'
+if (-not $needs) {{ exit 1 }}
+exit 0
+"""
+        proc = _run_powershell(script)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+    finally:
+        _restore_rag_manifest(backup)
+
+
+def test_needs_rag_extras_install_true_when_pyproject_missing():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        script = f"""
+{_dot_source_policy()}
+$needs = Test-HermesNeedsRagExtrasInstall -RepoRoot '{str(root).replace("'", "''")}' -PyprojectPath '{str(root / "missing.toml").replace("'", "''")}'
+if (-not $needs) {{ exit 1 }}
+exit 0
+"""
+        proc = _run_powershell(script)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def test_needs_rag_extras_install_true_on_corrupt_manifest():
+    if not _conda_available():
+        pytest.skip("conda hermes-env niet beschikbaar op test-host")
+
+    backup = _rag_manifest_backup()
+    try:
+        RAG_MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+        RAG_MANIFEST.write_text("{not-json", encoding="utf-8")
+        script = f"""
+{_dot_source_policy()}
+$needs = Test-HermesNeedsRagExtrasInstall -RepoRoot '{str(REPO).replace("'", "''")}' -PyprojectPath '{str(REPO / "pyproject.toml").replace("'", "''")}'
+if (-not $needs) {{ exit 1 }}
+exit 0
+"""
+        proc = _run_powershell(script)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+    finally:
+        _restore_rag_manifest(backup)
+
+
+def test_sync_launch_bootstrap_stamp_canonical_path():
+    script = f"""
+{_dot_source_policy()}
+$p = Sync-HermesLaunchBootstrapStamp
+$expected = Join-Path (Join-Path $env:LOCALAPPDATA 'hermes') 'launch_bootstrap.stamp'
+if ($p -ne $expected) {{ exit 1 }}
+exit 0
+"""
+    proc = _run_powershell(script)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def test_resolve_requires_pip_skips_stub_without_pip():
+    with tempfile.NamedTemporaryFile(suffix=".exe", delete=False) as handle:
+        stub = handle.name
+        handle.write(b"stub")
+    try:
+        script = f"""
+{_dot_source_policy()}
+$env:HERMES_PYTHON = '{stub.replace("'", "''")}'
+$r = Resolve-HermesPythonExe -RequirePip
+if ($r -eq '{stub.replace("'", "''")}') {{ exit 1 }}
+exit 0
+"""
+        proc = _run_powershell(script)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+    finally:
+        Path(stub).unlink(missing_ok=True)
+
+
+def test_check_rag_after_repair_noninteractive_exits_quickly():
+    proc = subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(CHECK_RAG_PS1),
+            "-RepoRoot",
+            str(REPO),
+            "-NonInteractive",
+            "-Quiet",
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env={**os.environ, "HERMES_NONINTERACTIVE": "1"},
+        cwd=str(REPO),
+        timeout=30,
+        check=False,
+    )
+    assert proc.returncode in (0, 1)
+    assert "Read-Host" not in (proc.stdout + proc.stderr)
+
+
+def test_get_hermes_audit_python_idempotent_dot_source():
+    """Get-HermesAuditPython mag policy niet dubbel laden (geen crash)."""
+    shell = REPO / "windows" / "HermesShellCommon.ps1"
+    script = f"""
+. '{str(shell).replace("'", "''")}'
+. '{str(POLICY_PS1).replace("'", "''")}'
+$p1 = Get-HermesAuditPython -RepoRoot '{str(REPO).replace("'", "''")}'
+$p2 = Get-HermesAuditPython -RepoRoot '{str(REPO).replace("'", "''")}'
+if (-not $p1 -or -not $p2) {{ exit 1 }}
+if ($p1 -ne $p2) {{ exit 2 }}
+exit 0
+"""
+    proc = _run_powershell(script)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def test_resolve_script_fails_without_conda():
+    """Negatief: resolve_hermes_python.ps1 exit 1 zonder interpreter."""
+    with tempfile.TemporaryDirectory() as tmp:
+        env = {
+            k: v
+            for k, v in os.environ.items()
+            if k not in ("HERMES_PYTHON", "HERMES_CONDA_ROOT", "HERMES_CONDA_ENV", "HERMES_AUDIT_PYTHON")
+        }
+        proc = subprocess.run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(REPO / "windows" / "scripts" / "resolve_hermes_python.ps1"),
+                "-RepoRoot",
+                str(tmp),
+                "-RequirePip",
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=env,
+            cwd=str(REPO),
+            timeout=60,
+            check=False,
+        )
+        if proc.returncode == 0:
+            pytest.skip("host conda resolveert ondanks lege repo — negatieve test niet betrouwbaar")
+        assert proc.returncode == 1
+        assert "Resolve-HermesPythonExe" in proc.stderr or proc.returncode == 1
+
+
+def test_test_hermes_python_has_pip_false_for_missing():
+    script = f"""
+{_dot_source_policy()}
+if (Test-HermesPythonHasPip -PythonExe 'C:\\\\no\\\\such\\\\python.exe') {{ exit 1 }}
+exit 0
+"""
+    proc = _run_powershell(script)
+    assert proc.returncode == 0, proc.stdout + proc.stderr

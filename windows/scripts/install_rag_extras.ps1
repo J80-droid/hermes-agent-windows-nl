@@ -59,7 +59,8 @@ if (-not $SkipPip) {
     if ($installed -gt 0) {
         Write-RagMsg ('[OK] RAG-dependencies op {0} interpreter(s).' -f $installed) 'Green'
         $manifestPy = ($pythons | Where-Object { Test-HermesPythonHasPip -PythonExe $_ } | Select-Object -First 1)
-        if ($manifestPy) {
+        # Manifest alleen na geverifieerde import (rag_extras_verified fast-path voor bootstrap).
+        if ($manifestPy -and (Test-HermesRagExtrasInstalled -PythonExe $manifestPy)) {
             Write-HermesRagDepsManifest -PythonExe $manifestPy | Out-Null
         }
     } elseif ($pythons.Count -eq 0) {

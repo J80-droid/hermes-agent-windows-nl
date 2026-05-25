@@ -1,5 +1,9 @@
 # Institutioneel: conda hermes-env = canonieke Python op deze fork.
 # Optionele repo\.venv alleen als pip werkt EN HERMES_ALLOW_UV_VENV=1.
+# Resolver: Resolve-HermesPythonExe (HERMES_PYTHON > conda > manifest > .venv).
+# Override conda-locatie: HERMES_CONDA_ROOT + HERMES_CONDA_ENV (default hermes-env).
+# RAG-manifest: %LOCALAPPDATA%\Hermes\rag-deps.json (rag_extras_verified fast-path).
+# Bootstrap-stamp: %LOCALAPPDATA%\hermes\launch_bootstrap.stamp (Sync-HermesLaunchBootstrapStamp).
 # Dot-source: . (Join-Path $PSScriptRoot 'HermesPythonPolicy.ps1')
 
 function Get-HermesCondaEnvName {
@@ -12,6 +16,10 @@ function Get-HermesCondaPython {
         return $env:HERMES_PYTHON
     }
     $envName = Get-HermesCondaEnvName
+    if ($env:HERMES_CONDA_ROOT) {
+        $rootPy = Join-Path $env:HERMES_CONDA_ROOT "envs\$envName\python.exe"
+        if (Test-Path -LiteralPath $rootPy) { return $rootPy }
+    }
     foreach ($c in @(
             (Join-Path $env:USERPROFILE "miniconda3\envs\$envName\python.exe"),
             (Join-Path $env:USERPROFILE "anaconda3\envs\$envName\python.exe"),
@@ -35,6 +43,10 @@ function Get-HermesRepoVenvPython {
 }
 
 function Test-HermesPythonHasPip {
+    <#
+    .SYNOPSIS
+        True als python.exe -m pip --version exit 0. Ongeldige/kapotte .exe → $false (catch).
+    #>
     param([Parameter(Mandatory)][string]$PythonExe)
     if (-not (Test-Path -LiteralPath $PythonExe)) { return $false }
     $prevEap = $ErrorActionPreference
@@ -42,6 +54,8 @@ function Test-HermesPythonHasPip {
     try {
         $null = & $PythonExe -m pip --version 2>&1
         return ($LASTEXITCODE -eq 0)
+    } catch {
+        return $false
     } finally {
         $ErrorActionPreference = $prevEap
     }
@@ -172,6 +186,10 @@ function Resolve-HermesPythonExe {
 }
 
 function Test-HermesRagExtrasInstalled {
+    <#
+    .SYNOPSIS
+        True als lancedb + sentence_transformers importeerbaar zijn. Ongeldige .exe → $false (catch).
+    #>
     param([Parameter(Mandatory)][string]$PythonExe)
     if (-not (Test-Path -LiteralPath $PythonExe)) { return $false }
     $prevEap = $ErrorActionPreference
@@ -179,6 +197,8 @@ function Test-HermesRagExtrasInstalled {
     try {
         $null = & $PythonExe -c "import lancedb, sentence_transformers" 2>&1
         return ($LASTEXITCODE -eq 0)
+    } catch {
+        return $false
     } finally {
         $ErrorActionPreference = $prevEap
     }
@@ -186,6 +206,10 @@ function Test-HermesRagExtrasInstalled {
 
 function Write-HermesRagDepsManifest {
     param([Parameter(Mandatory)][string]$PythonExe)
+
+    if (-not (Test-HermesRagExtrasInstalled -PythonExe $PythonExe)) {
+        return $null
+    }
 
     $policyDir = Join-Path $env:LOCALAPPDATA 'Hermes'
     New-Item -ItemType Directory -Force -Path $policyDir | Out-Null
@@ -199,15 +223,20 @@ function Write-HermesRagDepsManifest {
         $ErrorActionPreference = $prevEap
     }
     @{
-        installed_at  = (Get-Date).ToUniversalTime().ToString('o')
-        python_exe    = $PythonExe
-        rag_extra     = 'rag'
-        package_version = $version
+        installed_at         = (Get-Date).ToUniversalTime().ToString('o')
+        python_exe           = $PythonExe
+        rag_extra            = 'rag'
+        package_version      = $version
+        rag_extras_verified  = $true
     } | ConvertTo-Json | Set-Content -LiteralPath $manifestPath -Encoding UTF8
     return $manifestPath
 }
 
 function Test-HermesNeedsRagExtrasInstall {
+    <#
+    .SYNOPSIS
+        True als RAG [rag]-install nodig is. Fast-path: rag-deps.json met rag_extras_verified + zelfde python_exe.
+    #>
     param(
         [Parameter(Mandatory)][string]$RepoRoot,
         [Parameter(Mandatory)][string]$PyprojectPath
@@ -225,6 +254,7 @@ function Test-HermesNeedsRagExtrasInstall {
         $py = Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip
         if (-not $py) { return $true }
         if ($j.python_exe -and ($j.python_exe.ToString() -ne $py)) { return $true }
+        if ($j.rag_extras_verified -eq $true) { return $false }
         return -not (Test-HermesRagExtrasInstalled -PythonExe $py)
     } catch {
         return $true
@@ -247,7 +277,11 @@ function Sync-HermesLaunchBootstrapStamp {
     }
     $legacy = Join-Path (Join-Path $env:USERPROFILE '.hermes') 'launch_bootstrap.stamp'
     if ((Test-Path -LiteralPath $legacy) -and -not (Test-Path -LiteralPath $canonical)) {
-        Move-Item -LiteralPath $legacy -Destination $canonical -Force
+        try {
+            Move-Item -LiteralPath $legacy -Destination $canonical -Force -ErrorAction Stop
+        } catch {
+            # Legacy stamp locked or race — canonical pad blijft leidend bij volgende run.
+        }
     }
     return $canonical
 }
@@ -317,7 +351,7 @@ function Update-HermesVscodeInterpreterPath {
     )
 
     if (-not $PythonExe) {
-        $PythonExe = Get-HermesCondaPython
+        $PythonExe = Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip
     }
     if (-not $PythonExe) {
         return @{

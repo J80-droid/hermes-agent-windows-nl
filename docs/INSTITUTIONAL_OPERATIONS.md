@@ -10,7 +10,14 @@ Runbook voor dagelijks gebruik, recovery en release-validatie.
 | 2 — RAG-deps | `pip install -e ".[rag]"` + markitdown/MCP | `windows\scripts\install_rag_extras.ps1` (auto via bootstrap) |
 | 3 — Index | LanceDB per domein | `windows\scripts\update_knowledge.bat` |
 
-Resolver (alle scripts): `Resolve-HermesPythonExe` in `windows/HermesPythonPolicy.ps1` — BAT: `resolve_hermes_python.ps1`.
+**Manifesten (fast-path, geen dubbele pip):**
+
+| Bestand | Doel |
+|---------|------|
+| `%LOCALAPPDATA%\Hermes\rag-deps.json` | `rag_extras_verified` + `python_exe` — skip RAG-reinstall als pyproject ongewijzigd |
+| `%LOCALAPPDATA%\hermes\launch_bootstrap.stamp` | Alleen bijgewerkt na **succesvolle** RAG-sync (`launch_bootstrap.ps1`) |
+
+Override conda: `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV`.
 
 ## Eerste machine (clone)
 
@@ -19,6 +26,7 @@ Resolver (alle scripts): `Resolve-HermesPythonExe` in `windows/HermesPythonPolic
 3. `windows\scripts\update_knowledge.bat` (ingest)
 4. Rooktest: `scripts/rag_pipeline/ACTIVATION.md` (A+B+C)
 5. Gate: `windows\audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`
+6. Regressie (review-fixes): `windows\audits\RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.bat` (8/8)
 
 ## Dagelijks
 
@@ -41,7 +49,9 @@ Resolver (alle scripts): `Resolve-HermesPythonExe` in `windows/HermesPythonPolic
 | `(venv)` in prompt | `REPAIR_PYTHON.bat` — niet `hermes-env` |
 | `import lancedb` faalt | `install_rag_extras.ps1` |
 | IDE verkeerde interpreter | `REPAIR_PYTHON.bat` of `sync_hermes_ide_python.ps1` |
-| Dubbele RAG-install | Stamp: `%LOCALAPPDATA%\hermes\launch_bootstrap.stamp` (canoniek) |
+| Dubbele RAG-install | Verwijder `%LOCALAPPDATA%\Hermes\rag-deps.json` of wacht op pyproject-wijziging; stamp: `%LOCALAPPDATA%\hermes\launch_bootstrap.stamp` |
+| RAG-sync mislukt bij start | Stamp niet bijgewerkt — retry bij volgende start; log in bootstrap |
+| REPAIR hangt op Read-Host | Gebruik `-NonInteractive` of `HERMES_NONINTERACTIVE=1` (automatisch in CI/audit) |
 | Legacy `.venv` | Quarantaine via `ensure_hermes_python.ps1`; niet productie-default |
 
 ## Pre-release (handmatig)

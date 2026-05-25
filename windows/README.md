@@ -8,8 +8,10 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | ----- | ------ |
 | Canoniek | **conda `hermes-env`** — RAG, `launch_hermes.bat`, ingest, setup, IDE (`.vscode/settings.json`) |
 | Niet gebruiken | Workspace `(venv)`; repo `.venv` als runtime (lockt bootstrap, dubbele deps) |
-| Reparatie | `REPAIR_PYTHON.bat` — quarantaine `.venv`, sync IDE-interpreter, bevestig conda |
+| Reparatie | `REPAIR_PYTHON.bat` — quarantaine `.venv`, sync IDE-interpreter, bevestig conda, RAG-check (non-interactive in CI) |
 | Geavanceerd | `HERMES_ALLOW_UV_VENV=1` alleen bewust; niet productie-default |
+| Override | `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV` — zie `HermesPythonPolicy.ps1` |
+| RAG-manifest | `%LOCALAPPDATA%\Hermes\rag-deps.json` (`rag_extras_verified` fast-path) |
 | Future-proof | Eén waarheid: Hermes scripts + Cursor interpreter =zelfde `hermes-env` |
 
 ## Eerste installatie
@@ -93,6 +95,9 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 | Pseudo-tabel normalizer E2E | `audits\RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat` · `RUN_AUDITS.bat -IncludePseudoTableNormalizerE2E` · `-IncludeAllE2E` |
 | Platform hardening E2E (sandbox, GPU, LanceDB) | `audits\RUN_WINDOWS_PLATFORM_HARDENING_E2E.bat` · zie `docs\WINDOWS_PLATFORM_HARDENING.md` |
 | Platform hardening regressie E2E | `audits\RUN_PLATFORM_HARDENING_REGRESSION_E2E.bat` |
+| Python institutioneel E2E | `audits\RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.bat` · zie `docs\HERMES_START.md` |
+| Python institutional regressie E2E | `audits\RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.bat` (review-fixes, 8/8) |
+| Institutional productie-poort | `audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat` · `docs\INSTITUTIONAL_OPERATIONS.md` |
 | Codebase smoke E2E (E1/E2) | `audits\RUN_CODEBASE_SMOKE_E2E.bat` · `RUN_AUDITS.bat -IncludeCodebaseSmokeE2E` · `-IncludeAllE2E` |
 | Codebase smoke (snel) | `audits\RUN_CODEBASE_SMOKE_AUDIT.bat` · `RUN_AUDITS.bat -IncludeCodebaseSmoke` |
 | Na pull/update (optioneel) | `POST_GIT_PULL.bat -IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E` · `UPDATE_HERMES.bat` (zelfde vlaggen) |

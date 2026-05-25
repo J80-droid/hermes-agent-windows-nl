@@ -67,7 +67,9 @@ function Get-HermesAuditPython {
         $policyPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'HermesPythonPolicy.ps1'
     }
     if (Test-Path -LiteralPath $policyPath) {
-        . $policyPath
+        if (-not (Get-Command Resolve-HermesPythonExe -ErrorAction SilentlyContinue)) {
+            . $policyPath
+        }
     }
 
     if ($env:HERMES_AUDIT_PYTHON -and (Test-Path -LiteralPath $env:HERMES_AUDIT_PYTHON)) {

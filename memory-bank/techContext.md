@@ -1,6 +1,6 @@
 # Tech context
 
-- **Python:** conda `hermes-env` (canoniek via `Resolve-HermesPythonExe` / `HermesPythonPolicy.ps1`); geen repo `.venv` als runtime; optioneel uv alleen met `HERMES_ALLOW_UV_VENV=1`
+- **Python:** conda `hermes-env` (canoniek via `Resolve-HermesPythonExe` / `HermesPythonPolicy.ps1`); geen repo `.venv` als runtime; optioneel uv alleen met `HERMES_ALLOW_UV_VENV=1`; override `HERMES_CONDA_ROOT`; RAG-manifest `%LOCALAPPDATA%\Hermes\rag-deps.json`; bootstrap-stamp `%LOCALAPPDATA%\hermes\launch_bootstrap.stamp` (alleen na succesvolle RAG-sync)
 - **Index:** per domein `%USERPROFILE%\data\lancedb\<domein>\` — config in `%USERPROFILE%\data\domains.yaml` (voorbeeld `docs/domains.yaml.example`)
 - **Rapporten:** `rag_ingest_run_summary.json`, `rag_ingest_skipped_report.md` per domein
 - **Bronnen:** `%USERPROFILE%\data\raw_source_files`

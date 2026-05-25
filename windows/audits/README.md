@@ -65,6 +65,7 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | **`RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat`** | Gecombineerd: beide platform E2E's + pytest subset + `footguns --all` |
 | **`RUN_KNOWLEDGE_REPOSITORY_E2E.bat`** | KnowledgeRepository agent-API: edge cases, caller wiring, pytest (8 stappen) |
 | **`RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.bat`** | Institutioneel Python: conda hermes-env, IDE sync, venv-quarantaine, pytest (8 stappen) |
+| **`RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.bat`** | Regressie review-fixes: bootstrap stamp guard, RAG-manifest fast-path, non-interactive REPAIR, pytest (8 stappen) |
 | **`RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`** | Gecombineerd: Python E2E + KnowledgeRepository + platform gate + wiring-check |
 | **`RUN_AUDITS.bat -IncludePseudoTableNormalizerE2E`** | Bovenstaande pseudo-tabel E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeMemoryArchitectureE2E`** | Bovenstaande memory E2E in gecombineerde poort |
@@ -252,6 +253,29 @@ Dedicated audit voor institutioneel Python-beleid: conda `hermes-env` als enige 
 Optioneel: `-SkipPytest` op `RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.ps1`.
 
 Rapport: `HERMES_PYTHON_INSTITUTIONAL_E2E_REPORT_*.md` (gitignored). Zie `docs/HERMES_START.md` § Python institutioneel.
+
+## Hermes Python institutional regression E2E
+
+```text
+windows\audits\RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.bat
+```
+
+Validatie van code-review fixes (naast basis Python institutional E2E).
+
+| Stap | Controle |
+| ---- | -------- |
+| 1/8 | Repo-artefacten (policy, bootstrap, REPAIR-check, pytest) |
+| 2/8 | Policy: `HERMES_CONDA_ROOT`, `rag_extras_verified`, manifest fast-path |
+| 3/8 | `launch_bootstrap.ps1`: stamp alleen na `$ragOk` |
+| 4/8 | `check_hermes_rag_after_repair.ps1`: `-NonInteractive` / `HERMES_NONINTERACTIVE` / `IsInputRedirected` |
+| 5/8 | Isolated harness (`HermesPythonInstitutionalRegressionE2E.harness.ps1`, 8 scenario's) |
+| 6/8 | pytest `test_hermes_python_institutional.py` (40+ tests) |
+| 7/8 | Setup gebruikt canonieke bootstrap stamp (`Sync-HermesLaunchBootstrapStamp`) |
+| 8/8 | `install_rag_extras.ps1`: manifest alleen na geverifieerde RAG-import |
+
+Optioneel: `-SkipPytest` op `RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.ps1`.
+
+Rapport: `HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E_REPORT_*.md` (gitignored). Zie `docs/INSTITUTIONAL_OPERATIONS.md`.
 
 ## Institutional production gate
 

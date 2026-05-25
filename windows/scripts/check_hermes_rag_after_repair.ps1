@@ -1,7 +1,9 @@
 # Na REPAIR_PYTHON: controleer RAG [rag]-deps (niet-blokkerend).
+# NonInteractive: -NonInteractive, HERMES_NONINTERACTIVE=1, of redirected stdin (geen Read-Host hang).
 param(
     [string]$RepoRoot = '',
-    [switch]$Quiet
+    [switch]$Quiet,
+    [switch]$NonInteractive
 )
 
 $ErrorActionPreference = 'Stop'
@@ -32,11 +34,14 @@ if (-not $Quiet) {
     Write-Host '[WARN] RAG-deps ([rag]) ontbreken — vereist voor update_knowledge / search_knowledge.' -ForegroundColor Yellow
     Write-Host '  Automatisch bij start/setup, of handmatig:' -ForegroundColor DarkYellow
     Write-Host '    powershell -File windows\scripts\install_rag_extras.ps1' -ForegroundColor DarkYellow
-    $answer = Read-Host 'Nu install_rag_extras.ps1 draaien? (J/N)'
-    if ($answer -match '^[Jj]') {
-        $extras = Join-Path $PSScriptRoot 'install_rag_extras.ps1'
-        & $extras -RepoRoot $RepoRoot
-        exit $LASTEXITCODE
+    $autoSkip = $NonInteractive.IsPresent -or ($env:HERMES_NONINTERACTIVE -eq '1') -or [Console]::IsInputRedirected
+    if (-not $autoSkip) {
+        $answer = Read-Host 'Nu install_rag_extras.ps1 draaien? (J/N)'
+        if ($answer -match '^[Jj]') {
+            $extras = Join-Path $PSScriptRoot 'install_rag_extras.ps1'
+            & $extras -RepoRoot $RepoRoot
+            exit $LASTEXITCODE
+        }
     }
 }
 exit 0
