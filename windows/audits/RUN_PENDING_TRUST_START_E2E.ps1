@@ -89,7 +89,7 @@ if ($pendingIdx -le $instIdx) {
 }
 
 $postMerge = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/Invoke-UpstreamPostMerge.ps1')
-if ($postMerge -notmatch 'Set-PendingTrustRuntime' -or $postMerge -notmatch 'Clear-PendingTrustRuntime') {
+if ($postMerge -notmatch 'Register-PendingTrustRuntimeRequired' -or $postMerge -notmatch 'Clear-PendingTrustRuntime') {
     Step-Fail 'Invoke-UpstreamPostMerge.ps1' 'mist pending trust stamp'
 } else {
     Step-Ok 'Invoke-UpstreamPostMerge.ps1 pending stamp'

@@ -58,6 +58,8 @@ Extra pytest-argumenten worden doorgegeven (bijv. een enkele test):
 - **`Test-PsesTokenizer.ps1`**: AST-parse (zelfde tokenizer als PSES) voor fork-kritieke `windows\*.ps1` scripts (incl. identity repair).
 - **`HermesShellCommon.Unit.Tests.ps1`**: `Format-HermesStepLabel`, `Test-NativeCommandFailed`, `Join-HermesRepoPath` (geen Pester).
 - **`MemoryAuditCommon.Unit.Tests.ps1`**: identity allowlist, `Repair-HermesIdentityLine`, runtime/repo scrub, skip zonder `config.yaml`.
+- **`TrustRuntimePending.Unit.Tests.ps1`**: stamp, attempts, max-pogingen, corrupte/leeg JSON (geïsoleerde `LOCALAPPDATA`).
+- **`Invoke-MemoryTrustPostSync.Unit.Tests.ps1`**: mock runtime, notice JSON, skip scrub (geen production gate).
 - **`tests\windows\test_memory_identity_repair.ps1`**: geïsoleerde runtime mock (legacy runner).
 - **`tests\windows\test_scrub_identity.py`**: pytest parity met PS1 allowlist.
 
@@ -67,7 +69,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\tests\HermesShellC
 powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\tests\MemoryAuditCommon.Unit.Tests.ps1
 ```
 
-E2E-poorten: **`RUN_HERMES_SHELL_COMMON_E2E.bat`**, **`RUN_MEMORY_IDENTITY_REPAIR_E2E.bat`** (alleen deze nieuwe audit draaien).
+E2E-poorten: **`RUN_HERMES_SHELL_COMMON_E2E.bat`**, **`RUN_MEMORY_IDENTITY_REPAIR_E2E.bat`**, **`RUN_MEMORY_TRUST_INTEGRATION_E2E.bat`** (alleen de nieuwe audit draaien via de bijbehorende `RUN_*.bat`).
 
 ## `RUN_PSScriptAnalyzer`
 

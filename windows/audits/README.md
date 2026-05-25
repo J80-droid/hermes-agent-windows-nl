@@ -2,7 +2,7 @@
 
 Deze map bevat de **fork** kwaliteitspoorten (geen 1:1 upstream-kloon).
 
-**IDE-markeringen op audit-`.ps1`?** Rode strepen kunnen verouderde PowerShell-extensie-cache zijn. Verifieer met:
+**IDE-markeringen op audit-`.ps1`?** Rode strepen zijn vaak **PSES-tokenizer false positives** (runtime is meestal OK). Extra “PSES-workarounds” in code kunnen **meer** meldingen geven (cross-file dot-source). Verifieer met AST, niet alleen de Problems-lijst. Workspace: `powershell.scriptAnalysis.enable: false`, `powershell.project.enable: false`. Verifieer met:
 
 ```bat
 windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat
@@ -20,6 +20,8 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 - ongequote git-refs (`git merge upstream/main`) → PSES ziet `/` als deling; altijd `'upstream/main'` en `'HEAD..upstream/main'`
 - `/` in **dubbele** aanhalingstekens (`"upstream/main"`, `"miniconda3/anaconda3"`) → zelfde tokenizer-bug; gebruik enkelvoudige quotes of concatenatie
 - `[TAG]` in strings (`'[ERROR]'`, `"[OK]"`) → type-literal; gebruik `OK:` / `ERROR:` of `-join '[', 'OK', ']'`
+- **`-ForegroundColor` als switch** op `Write-Host` of in parameters (`$ForegroundColor`) → PSES splitst `-Foreground` + `Color`; gebruik `Write-HermesTag` / `Write-HermesSection` (plain `Write-Host`, geen kleur-switches)
+- **`function Set-*`** in `.psm1` met grote `param()`-blokken → tokenizer-cascade; prefer `Register-*` / `Write-*` voor stamps (bijv. `Register-PendingTrustRuntimeRequired`)
 
 **IDE:** na wijzigingen: PowerShell: Restart Session + Developer: Reload Window. Verifieer met `windows\tests\Test-PsesTokenizer.ps1` (AST), `windows\tests\HermesShellCommon.Unit.Tests.ps1` (helpers), `RUN_HERMES_SHELL_COMMON_E2E.bat` (PSES-poort) en `VALIDATE_AUDIT_PS1_SYNTAX.bat`. Logging-tags in `HermesShellCommon.ps1` gebruiken `INFO ` / `OK ` (spatie, geen dubbele punt — PSES-tokenizer).
 
@@ -47,6 +49,7 @@ Runtime/AST: vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
 | **`RUN_AUDITS.bat -IncludeAllE2E`** | Institutioneel + legal + profielwissel + toolset + SOUL deploy-start + memory + statusbalk + **Hermes split-home** + … |
 | **`RUN_SOUL_DEPLOY_START_E2E.bat`** | Stamp/startketen: launch_hermes, POST_GIT_PULL, upstream SkipSoul, anatomy subset |
 | **`RUN_MEMORY_IDENTITY_REPAIR_E2E.bat`** | Runtime identity scrub (pre-audit), post-sync integratie, skip-flag, unit + pytest (**PASS**) |
+| **`RUN_MEMORY_TRUST_INTEGRATION_E2E.bat`** | Geïntegreerde poort: post-sync notice, pending trust, PSES AST, 4 unit runners (**8 stappen**) |
 | **`RUN_PENDING_TRUST_START_E2E.bat`** | Pending trust bij start: stamp, post-merge, launcher (skip/max/dry-run), pytest wiring |
 | **`RUN_AUDITS.bat -IncludePendingTrustStartE2E`** | Zelfde pending-trust E2E in gecombineerde audit |
 | **`RUN_AUDITS.bat -IncludeSoulDeployStartE2E`** | Alleen SOUL deploy-start E2E |

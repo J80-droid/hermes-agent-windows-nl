@@ -89,7 +89,7 @@ def isolated_localappdata(tmp_path, monkeypatch):
 class TestTrustRuntimePendingHappyPath:
     def test_set_clear_roundtrip(self, isolated_localappdata):
         r = _run_pending_ps(
-            "Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'unit'; "
+            "Register-PendingTrustRuntimeRequired -Source 'UPDATE_HERMES' -Reason 'unit'; "
             "if (-not (Test-PendingTrustRuntime)) { exit 2 }; "
             "Clear-PendingTrustRuntime; "
             "if (Test-PendingTrustRuntime) { exit 3 }"
@@ -99,7 +99,7 @@ class TestTrustRuntimePendingHappyPath:
     def test_stamp_payload_fields(self, isolated_localappdata):
         repo = r"D:\fake\repo"
         _run_pending_ps(
-            f"Set-PendingTrustRuntime -Source 'POST_GIT_PULL' -Reason 'trust fail' -RepoRoot '{repo}'"
+            f"Register-PendingTrustRuntimeRequired -Source 'POST_GIT_PULL' -Reason 'trust fail' -RepoRoot '{repo}'"
         )
         data = _read_stamp(isolated_localappdata)
         assert data is not None
@@ -112,10 +112,10 @@ class TestTrustRuntimePendingHappyPath:
 
     def test_preserves_created_at_on_refresh(self, isolated_localappdata):
         r = _run_pending_ps(
-            "Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'first'; "
+            "Register-PendingTrustRuntimeRequired -Source 'UPDATE_HERMES' -Reason 'first'; "
             "$t1 = (Get-PendingTrustRuntime).created_at; "
             "Start-Sleep -Milliseconds 50; "
-            "Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'second'; "
+            "Register-PendingTrustRuntimeRequired -Source 'UPDATE_HERMES' -Reason 'second'; "
             "$t2 = (Get-PendingTrustRuntime).created_at; "
             "if (-not $t1 -or $t1 -ne $t2) { exit 7 }"
         )
@@ -123,7 +123,7 @@ class TestTrustRuntimePendingHappyPath:
 
     def test_register_increments_and_max_threshold(self, isolated_localappdata):
         r = _run_pending_ps(
-            "Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'test'; "
+            "Register-PendingTrustRuntimeRequired -Source 'UPDATE_HERMES' -Reason 'test'; "
             "$a = Register-PendingTrustRuntimeAttempt; "
             "$b = Register-PendingTrustRuntimeAttempt; "
             "$c = Register-PendingTrustRuntimeAttempt; "
@@ -134,7 +134,7 @@ class TestTrustRuntimePendingHappyPath:
 
     def test_creates_hermes_directory_when_missing(self, isolated_localappdata):
         assert not (isolated_localappdata / "hermes").exists()
-        r = _run_pending_ps("Set-PendingTrustRuntime -Reason 'mkdir test'")
+        r = _run_pending_ps("Register-PendingTrustRuntimeRequired -Reason 'mkdir test'")
         assert r.returncode == 0, r.stderr or r.stdout
         assert _stamp_file(isolated_localappdata).is_file()
 
@@ -204,7 +204,7 @@ class TestTrustRuntimePendingEdgeCases:
         assert r.returncode == 0, r.stderr or r.stdout
 
     def test_max_attempts_false_below_threshold(self, isolated_localappdata):
-        _run_pending_ps("Set-PendingTrustRuntime -Reason 'low attempts'")
+        _run_pending_ps("Register-PendingTrustRuntimeRequired -Reason 'low attempts'")
         _run_pending_ps("Register-PendingTrustRuntimeAttempt | Out-Null")
         r = _run_pending_ps(
             "if (Test-PendingTrustRuntimeMaxAttemptsReached) { exit 6 }"
@@ -219,7 +219,7 @@ class TestTrustRuntimePendingEdgeCases:
 
     def test_register_preserves_source_and_reason(self, isolated_localappdata):
         _run_pending_ps(
-            "Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'keep me' -RepoRoot 'C:\\r'"
+            "Register-PendingTrustRuntimeRequired -Source 'UPDATE_HERMES' -Reason 'keep me' -RepoRoot 'C:\\r'"
         )
         _run_pending_ps("Register-PendingTrustRuntimeAttempt -RepoRoot 'C:\\r2' | Out-Null")
         data = _read_stamp(isolated_localappdata)
@@ -240,7 +240,7 @@ class TestTrustRuntimePendingEdgeCases:
         assert r.returncode == 0, r.stderr or r.stdout
 
     def test_clear_stale_keeps_valid_required(self, isolated_localappdata):
-        _run_pending_ps("Set-PendingTrustRuntime -Reason 'valid'")
+        _run_pending_ps("Register-PendingTrustRuntimeRequired -Reason 'valid'")
         r = _run_pending_ps(
             "Clear-StalePendingTrustRuntimeFile; "
             "if (-not (Test-PendingTrustRuntime)) { exit 9 }"
@@ -272,7 +272,7 @@ class TestLaunchPendingTrustRuntime:
 
     def test_skip_flag_keeps_pending(self, isolated_localappdata):
         _run_pending_ps(
-            "Set-PendingTrustRuntime -Reason 'skip test'",
+            "Register-PendingTrustRuntimeRequired -Reason 'skip test'",
             env={"LOCALAPPDATA": str(isolated_localappdata)},
         )
         r = _run_launcher_ps(
@@ -287,7 +287,7 @@ class TestLaunchPendingTrustRuntime:
 
     def test_dry_run_clears_pending_without_light_chain(self, isolated_localappdata):
         _run_pending_ps(
-            "Set-PendingTrustRuntime -Reason 'dry'",
+            "Register-PendingTrustRuntimeRequired -Reason 'dry'",
             env={"LOCALAPPDATA": str(isolated_localappdata)},
         )
         r = _run_launcher_ps(
@@ -303,7 +303,7 @@ class TestLaunchPendingTrustRuntime:
     def test_max_attempts_does_not_increment_fourth_launch(self, isolated_localappdata):
         env = {"LOCALAPPDATA": str(isolated_localappdata), "HERMES_REPO_ROOT": str(REPO)}
         _run_pending_ps(
-            "Set-PendingTrustRuntime -Reason 'max'; "
+            "Register-PendingTrustRuntimeRequired -Reason 'max'; "
             "Register-PendingTrustRuntimeAttempt | Out-Null; "
             "Register-PendingTrustRuntimeAttempt | Out-Null; "
             "Register-PendingTrustRuntimeAttempt | Out-Null",
@@ -344,7 +344,7 @@ class TestLaunchPendingTrustRuntimeNegative:
             encoding="utf-8",
         )
         _run_pending_ps(
-            "Set-PendingTrustRuntime -Reason 'neg'",
+            "Register-PendingTrustRuntimeRequired -Reason 'neg'",
             env={"LOCALAPPDATA": str(isolated_localappdata)},
         )
         script = f"""
@@ -372,7 +372,7 @@ class TestPendingTrustRepoWiring:
             encoding="utf-8"
         )
         assert "TrustRuntimePending.psm1" in text
-        assert "Set-PendingTrustRuntime" in text
+        assert "Register-PendingTrustRuntimeRequired" in text
         assert "Clear-PendingTrustRuntime" in text
 
     def test_launch_hermes_wires_pending_trust_runtime(self):

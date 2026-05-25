@@ -114,7 +114,7 @@ function Invoke-UpstreamPostMerge {
             if (Test-NativeCommandFailed) {
                 Write-Warn 'SYNC_TRUST_RUNTIME.bat faalde - trust-nazorg bij volgende Hermes-start.'
                 try {
-                    Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'Trust runtime mislukt tijdens update' -RepoRoot $Repo
+                    Register-PendingTrustRuntimeRequired -Source 'UPDATE_HERMES' -Reason 'Trust runtime mislukt tijdens update' -RepoRoot $Repo
                 } catch {
                     Write-Warn 'Kon pending_trust_runtime.json niet schrijven - draai SYNC_TRUST_RUNTIME.bat handmatig.'
                 }

@@ -7,9 +7,10 @@
     "*.psm1": "powershell",
     "*.psd1": "powershell"
   },
-  "powershell.scriptAnalysis.enable": true,
+  "powershell.scriptAnalysis.enable": false,
   "powershell.scriptAnalysis.settingsPath": "${workspaceFolder}/windows/PSScriptAnalyzerSettings.psd1",
-  "powershell.analyzeOnlyOpenDocuments": false,
+  "powershell.analyzeOnlyOpenDocuments": true,
+  "powershell.project.enable": false,
   "powershell.scriptAnalysis.useScriptPath": true,
   "powershell.scriptAnalysis.excludeRules": [
     "PSUseDeclaredVarsMoreThanAssignments"

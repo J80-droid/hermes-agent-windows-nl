@@ -51,11 +51,13 @@ Add-StepResult '1/7 artefacten' ($missing.Count -eq 0) $(if ($missing.Count) { $
 $commonPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/HermesShellCommon.ps1'
 $common = Read-HermesRepoText -Path $commonPath
 $apiOk = ($common -match 'function Write-HermesInfo') -and
+    ($common -match 'function Write-HermesSection') -and
     ($common -match 'function Format-HermesStepLabel') -and
     ($common -match 'function Invoke-GitCommand') -and
     ($common -match 'function Test-NativeCommandFailed') -and
     ($common.IndexOf("-Tag 'INFO '") -ge 0) -and
-    ($common.IndexOf("-Tag 'OK '") -ge 0)
+    ($common.IndexOf("-Tag 'OK '") -ge 0) -and
+    ($common.IndexOf('function Write-HermesSection') -ge 0)
 Add-StepResult '2/7 HermesShellCommon API + PSES tags' $apiOk
 
 # --- 3 Runtime helpers ---

@@ -16,6 +16,11 @@ CRITICAL_PS1 = [
     "windows/sync_hermes_api_env.ps1",
     "windows/scripts/HermesHomeCommon.ps1",
     "windows/scripts/check_hermes_rag_after_repair.ps1",
+    "windows/scripts/MemoryAuditCommon.ps1",
+    "windows/scripts/Invoke-MemoryTrustPostSync.ps1",
+    "windows/scripts/TrustRuntimePending.psm1",
+    "windows/audits/PendingTrustStartE2E.core.ps1",
+    "windows/audits/MemoryIdentityRepairE2E.core.ps1",
 ]
 
 FORBIDDEN = [
@@ -23,6 +28,8 @@ FORBIDDEN = [
     (re.compile(r'2>&1'), "stderr redirect 2>&1 (PSES tokenizer)"),
     (re.compile(r'"\[(?:INFO|OK|WARN|FAIL|ERROR|SKIP)\]'), "bracket tag in double-quoted string"),
     (re.compile(r'"\$[A-Za-z_][A-Za-z0-9_]*/\$'), "division-like $var/$var in double quotes"),
+    (re.compile(r'-(?<!@)ForegroundColor\s'), "bare -ForegroundColor switch (use Write-HermesHostLine)"),
+    (re.compile(r'ForegroundColor\s*='), "ForegroundColor hashtable key (use Foreground+Color split)"),
 ]
 
 
@@ -58,11 +65,13 @@ def check_shell_common_api(failures: list[str]) -> None:
     common = (REPO / "windows/HermesShellCommon.ps1").read_text(encoding="utf-8")
     required = [
         "function Write-HermesInfo",
+        "function Write-HermesSection",
         "function Format-HermesStepLabel",
         "function Invoke-GitCommand",
         "function Test-NativeCommandFailed",
         "-Tag 'INFO '",
         "-Tag 'OK '",
+        "function Write-HermesSection",
         "Total moet minimaal 1 zijn",
     ]
     for needle in required:

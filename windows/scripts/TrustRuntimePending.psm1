@@ -1,6 +1,6 @@
 # Pending trust-runtime na mislukte UPDATE/post-merge.
 # Stamp: %LOCALAPPDATA%\hermes\pending_trust_runtime.json (status=required).
-# Start-hook: launch_pending_trust_runtime.ps1 -> Invoke-TrustRuntimeLight.ps1 (licht, geen production gate).
+# Start-hook: launch_pending_trust_runtime.ps1 roept Invoke-TrustRuntimeLight.ps1 aan (licht, geen production gate).
 $script:PendingTrustMaxAttempts = 3
 
 function Get-PendingTrustRuntimeAttempts {
@@ -24,8 +24,12 @@ function Get-PendingTrustRuntime {
         if (-not $raw.Trim()) { return $null }
         $data = $raw | ConvertFrom-Json
         if ($data -is [pscustomobject]) {
+            $status = [string]$data.status
+            if ([string]::IsNullOrWhiteSpace($status)) {
+                return $null
+            }
             return @{
-                status     = [string]$data.status
+                status     = $status
                 source     = [string]$data.source
                 created_at = [string]$data.created_at
                 reason     = [string]$data.reason
@@ -43,14 +47,13 @@ function Get-PendingTrustRuntime {
 function Test-PendingTrustRuntime {
     $data = Get-PendingTrustRuntime
     if (-not $data) { return $false }
-    return $data.status -eq 'required'
+    return ($data.status -eq 'required')
 }
 
-function Set-PendingTrustRuntime {
-    [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Low')]
+function Register-PendingTrustRuntimeRequired {
     param(
         [string]$Source = 'UPDATE_HERMES',
-        [string]$Reason = 'Trust runtime nog niet afgerond',
+        [string]$Reason = 'Trust runtime pending',
         [string]$RepoRoot = ''
     )
     $path = Get-PendingTrustRuntimePath
@@ -68,9 +71,6 @@ function Set-PendingTrustRuntime {
         reason     = $Reason
         attempts   = $attempts
         repo_root  = $RepoRoot
-    }
-    if ($PSCmdlet -and -not $PSCmdlet.ShouldProcess($path, 'Write pending trust runtime')) {
-        return
     }
     $utf8 = [System.Text.UTF8Encoding]::new($false)
     try {
@@ -117,7 +117,7 @@ function Clear-StalePendingTrustRuntimeFile {
     if (-not (Test-Path -LiteralPath $path)) { return }
     if (Test-PendingTrustRuntime) { return }
     Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
-    Write-Host '[WARN] Ongeldige pending_trust_runtime.json verwijderd.' -ForegroundColor Yellow
+    Write-Host 'WARN Ongeldige pending_trust_runtime.json verwijderd.'
 }
 
 function Test-PendingTrustRuntimeMaxAttemptsReached {
@@ -127,17 +127,17 @@ function Test-PendingTrustRuntimeMaxAttemptsReached {
 }
 
 function Write-PendingTrustRuntimeFallbackHint {
-    Write-Host '[WARN] Trust-nazorg mislukt na meerdere pogingen.' -ForegroundColor Yellow
-    Write-Host '  Handmatig: windows\APPLY_TRUST_PROTOCOL.bat (na backup)' -ForegroundColor DarkYellow
-    Write-Host '  Of: windows\scripts\repair_runtime_identity.ps1 && windows\SYNC_TRUST_RUNTIME.bat' -ForegroundColor DarkYellow
-    Write-Host '  Snelle poort: set HERMES_SKIP_MEMORY_PRODUCTION_GATE=1 vóór SYNC_TRUST_RUNTIME.bat' -ForegroundColor DarkGray
+    Write-Host 'WARN Trust-nazorg mislukt na meerdere pogingen.'
+    Write-Host 'WARN Handmatig: windows\APPLY_TRUST_PROTOCOL.bat (na backup)'
+    Write-Host 'WARN Of: repair_runtime_identity.ps1 dan SYNC_TRUST_RUNTIME.bat'
+    Write-Host 'WARN Snelle poort: set HERMES_SKIP_MEMORY_PRODUCTION_GATE=1 vóór SYNC_TRUST_RUNTIME.bat'
 }
 
 Export-ModuleMember -Function @(
     'Get-PendingTrustRuntimePath'
     'Get-PendingTrustRuntime'
     'Test-PendingTrustRuntime'
-    'Set-PendingTrustRuntime'
+    'Register-PendingTrustRuntimeRequired'
     'Clear-PendingTrustRuntime'
     'Clear-StalePendingTrustRuntimeFile'
     'Register-PendingTrustRuntimeAttempt'

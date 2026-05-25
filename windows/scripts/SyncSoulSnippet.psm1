@@ -397,12 +397,12 @@ function Set-SoulAnatomyDeployStamp {
 function Set-InstitutionalNewChatReminder {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'None')]
     param(
-        [string]$Reason = 'SOUL/presentatie gewijzigd',
+        [string]$Reason = 'SOUL-presentatie gewijzigd',
         [string]$RepoRoot = '',
-        [string]$SmokeTestPrompt = 'docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md',
+        [string]$SmokeTestPrompt = 'docs\templates\INSTITUTIONAL_RENDERER_TEST_PROMPT.md',
         [switch]$Quiet
     )
-    if (-not $PSCmdlet.ShouldProcess('institutional_new_chat_required.json', 'Write /new reminder')) { return }
+    if (-not $PSCmdlet.ShouldProcess('institutional_new_chat_required.json', 'Write new-chat reminder')) { return }
     $hermesDir = Join-Path $env:LOCALAPPDATA 'hermes'
     if (-not (Test-Path -LiteralPath $hermesDir)) {
         New-Item -ItemType Directory -Path $hermesDir -Force | Out-Null
@@ -416,7 +416,7 @@ function Set-InstitutionalNewChatReminder {
     }
     $payload | ConvertTo-Json | Set-Content -LiteralPath $noticePath -Encoding UTF8
     if (-not $Quiet -and $env:HERMES_SUPPRESS_SOUL_REMINDER -ne '1') {
-        Write-Host 'HERINNERING: Start een nieuwe chat (/new) - SOUL/system prompt is vernieuwd.' -ForegroundColor Yellow
+        Write-Host 'HERINNERING: Start een nieuwe chat (slash-new) - SOUL-system prompt is vernieuwd.' -ForegroundColor Yellow
         Write-Host "  Rooktest: $SmokeTestPrompt" -ForegroundColor DarkYellow
     }
 }

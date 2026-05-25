@@ -1,21 +1,30 @@
 # Gedeelde helpers voor memory/trust E2E en audit_profile_memories.ps1
 #Requires -Version 5.1
 
-. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
+# Dot-source HermesShellCommon.ps1 vóór dit bestand (Join-HermesRepoPath, Write-HermesOk).
+# PSES: geen '[' of '}' in regex-literals — whitespace via Replace-loop.
+# Allow-patterns: gebouwd met [char]47 (match ook Windows-paden na normalisatie).
+$script:MemoryIdentitySlash = [char]47
+$s = $script:MemoryIdentitySlash
 $script:MemoryIdentityAllowPatterns = @(
-    'miniconda3[\\/]envs[\\/]hermes-env[\\/]python\.exe',
-    'Documents[\\/]Hermes Knowledge',
-    'Documents[\\/]Obsidian Vault',
-    'AppData[\\/]Local[\\/]hermes',
-    '[\\/]Users[\\/][^\\/]+[\\/]AppData',
-    'data[\\/]lancedb[\\/]'
+    ('miniconda3' + $s + 'envs' + $s + 'hermes-env' + $s + 'python.exe'),
+    ('Documents' + $s + 'Hermes Knowledge'),
+    ('Documents' + $s + 'Obsidian Vault'),
+    ('AppData' + $s + 'Local' + $s + 'hermes'),
+    ('data' + $s + 'lancedb' + $s)
 )
 
 function Test-MemoryIdentityLineAllowed {
     param([string]$Line)
     if ([string]::IsNullOrWhiteSpace($Line)) { return $true }
+    $slash = [char]47
+    $back = [char]92
+    $norm = $Line.Replace($back, $slash)
+    $usersSeg = 'Users' + $slash
+    $appDataSeg = $slash + 'AppData'
+    if ($norm.Contains($usersSeg) -and $norm.Contains($appDataSeg)) { return $true }
     foreach ($pat in $script:MemoryIdentityAllowPatterns) {
-        if ($Line -match $pat) { return $true }
+        if ($norm.Contains($pat)) { return $true }
     }
     return $false
 }
@@ -24,9 +33,9 @@ function Test-MemoryIdentityLeak {
     param([string]$Line)
     if ([string]::IsNullOrWhiteSpace($Line)) { return $false }
     if (Test-MemoryIdentityLineAllowed -Line $Line) { return $false }
-    if ($Line -match '(?i)Jamel\s+el\s+Mourif') { return $true }
-    if ($Line -match '(?i)\bel Mourif\b') { return $true }
-    if ($Line -match '(?i)\bJamel\b') { return $true }
+    if ($Line -imatch 'jamel el mourif') { return $true }
+    if ($Line -imatch 'el mourif') { return $true }
+    if ($Line -imatch 'jamel') { return $true }
     return $false
 }
 
@@ -44,7 +53,7 @@ function Test-MemoryFileIdentityLeaks {
     foreach ($line in Get-Content -LiteralPath $FilePath -Encoding UTF8) {
         $i++
         if (Test-MemoryIdentityLeak -Line $line) {
-            $leaks.Add("${i}:$line")
+            $leaks.Add(($i.ToString() + ':' + $line))
         }
     }
     $LeakLines.Value = $leaks
@@ -63,10 +72,14 @@ function Repair-HermesIdentityLine {
     param([string]$Line)
     if (-not (Test-MemoryIdentityLeak -Line $Line)) { return $Line }
     $out = $Line
-    $out = [regex]::Replace($out, '(?i)\bJamel\s+el\s+Mourif\b', 'J.')
-    $out = [regex]::Replace($out, '(?i)\bJamel\b', 'J.')
-    $out = [regex]::Replace($out, '(?i)\bel\s+Mourif\b', '')
-    return ($out -replace '[ \t]{2,}', ' ').Trim()
+    $out = [regex]::Replace($out, 'Jamel el Mourif', 'J.', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    $out = [regex]::Replace($out, 'Jamel', 'J.', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    $out = [regex]::Replace($out, 'el Mourif', '', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    $out = $out.Replace([char]9, ' ')
+    while ($out.Contains('  ')) {
+        $out = $out.Replace('  ', ' ')
+    }
+    return $out.Trim()
 }
 
 function Repair-HermesIdentityInFile {
@@ -75,12 +88,21 @@ function Repair-HermesIdentityInFile {
         [switch]$DryRun
     )
     if (-not (Test-Path -LiteralPath $FilePath)) {
-        return @{ Changed = $false; HitCount = 0; Error = $null }
+        return @{
+            Changed  = $false
+            HitCount = 0
+            Error    = ''
+        }
     }
-    try {
-        $lines = @(Get-Content -LiteralPath $FilePath -Encoding UTF8 -ErrorAction Stop)
-    } catch {
-        return @{ Changed = $false; HitCount = 0; Error = $_.Exception.Message }
+    $lines = @(Get-Content -LiteralPath $FilePath -Encoding UTF8 -ErrorAction SilentlyContinue)
+    if ($null -eq $lines -or $lines.Count -eq 0) {
+        if (-not (Test-Path -LiteralPath $FilePath)) {
+            return @{
+                Changed  = $false
+                HitCount = 0
+                Error    = 'read failed'
+            }
+        }
     }
     $hitCount = 0
     $changed = $false
@@ -94,13 +116,20 @@ function Repair-HermesIdentityInFile {
         [void]$outLines.Add($repaired)
     }
     if ($changed -and -not $DryRun) {
-        try {
-            Set-Content -LiteralPath $FilePath -Value $outLines -Encoding UTF8 -ErrorAction Stop
-        } catch {
-            return @{ Changed = $false; HitCount = $hitCount; Error = $_.Exception.Message }
+        Set-Content -LiteralPath $FilePath -Value $outLines -Encoding UTF8 -ErrorAction SilentlyContinue
+        if (-not $?) {
+            return @{
+                Changed  = $false
+                HitCount = $hitCount
+                Error    = 'write failed'
+            }
         }
     }
-    return @{ Changed = $changed; HitCount = $hitCount; Error = $null }
+    return @{
+        Changed  = $changed
+        HitCount = $hitCount
+        Error    = ''
+    }
 }
 
 function Get-HermesRuntimeRoot {
@@ -114,19 +143,24 @@ function Get-HermesRuntimeRoot {
 function Get-HermesPersonaFilePaths {
     param([string]$HermesRoot)
     $list = [System.Collections.Generic.List[string]]::new()
-    foreach ($rel in @('SOUL.md', 'memories/USER.md', 'memories/MEMORY.md')) {
-        $p = Join-Path $HermesRoot $rel
+    $slash = [char]47
+    $rootRels = @('SOUL.md', ('memories' + $slash + 'USER.md'), ('memories' + $slash + 'MEMORY.md'))
+    foreach ($rel in $rootRels) {
+        $p = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath $rel
         if (Test-Path -LiteralPath $p) { [void]$list.Add($p) }
     }
-    $profilesDir = Join-Path $HermesRoot 'profiles'
+    $profilesDir = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath 'profiles'
     if (Test-Path -LiteralPath $profilesDir) {
         Get-ChildItem -LiteralPath $profilesDir -Directory | ForEach-Object {
+            $profileName = $_.Name
             foreach ($name in @('SOUL.md', 'LEGAL_ACTIVE_MATTERS.md')) {
-                $p = Join-Path $_.FullName $name
+                $profRel = 'profiles' + $slash + $profileName + $slash + $name
+                $p = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath $profRel
                 if (Test-Path -LiteralPath $p) { [void]$list.Add($p) }
             }
-            foreach ($mem in @('memories/USER.md', 'memories/MEMORY.md')) {
-                $p = Join-Path $_.FullName $mem
+            foreach ($memLeaf in @('USER.md', 'MEMORY.md')) {
+                $memRel = 'profiles' + $slash + $profileName + $slash + 'memories' + $slash + $memLeaf
+                $p = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath $memRel
                 if (Test-Path -LiteralPath $p) { [void]$list.Add($p) }
             }
         }
@@ -136,19 +170,33 @@ function Get-HermesPersonaFilePaths {
 
 function Test-HermesScrubExcludedPath {
     param([string]$FullPath)
-    $norm = $FullPath -replace '\\', '/'
-    $excludePatterns = @(
-        '/lancedb(/|$)', '\.lance($|/)', '/logs(/|$)', '/\.git(/|$)', '/website(/|$)',
-        '/node_modules(/|$)', '/__pycache__(/|$)', '/backups(/|$)', '/sessions(/|$)',
-        '/pastes(/|$)', '/cache(/|$)', '/state-snapshots(/|$)', '/venv(/|$)',
-        '/skills(/|$)', '/_trust_backup_', '/scrub_identity_report\.json$',
-        '/scrub_identity_to_J\.ps1$', '/repair_runtime_identity\.ps1$',
-        '/RUN_TRUST_FORENSIC_E2E\.ps1$'
+    $slash = [char]47
+    $norm = $FullPath.Replace([char]92, $slash)
+    $segments = @(
+        ($slash + 'lancedb'),
+        '.lance',
+        ($slash + 'logs'),
+        ($slash + '.git'),
+        ($slash + 'website'),
+        ($slash + 'node_modules'),
+        ($slash + '__pycache__'),
+        ($slash + 'backups'),
+        ($slash + 'sessions'),
+        ($slash + 'pastes'),
+        ($slash + 'cache'),
+        ($slash + 'state-snapshots'),
+        ($slash + 'venv'),
+        ($slash + 'skills'),
+        '_trust_backup_',
+        'scrub_identity_report.json',
+        'scrub_identity_to_J.ps1',
+        'repair_runtime_identity.ps1',
+        'RUN_TRUST_FORENSIC_E2E.ps1'
     )
-    foreach ($pat in $excludePatterns) {
-        if ($norm -match $pat) { return $true }
+    foreach ($seg in $segments) {
+        if ($norm.Contains($seg)) { return $true }
     }
-    if ($norm -match '/\.env$') { return $true }
+    if ($norm.EndsWith('.env', [StringComparison]::OrdinalIgnoreCase)) { return $true }
     return $false
 }
 
@@ -206,7 +254,7 @@ function Repair-HermesRuntimeIdentity {
             }
             [void]$changedPaths.Add($rel)
             if (-not $Quiet) {
-                Write-Host ('[OK] scrubbed: ' + $rel) -ForegroundColor Green
+                Write-HermesOk ('scrubbed: ' + $rel)
             }
         }
     }
@@ -245,7 +293,7 @@ function Repair-HermesRepoIdentity {
             }
             [void]$changedPaths.Add($rel)
             if (-not $Quiet) {
-                Write-Host ('[OK] repo scrubbed: ' + $rel) -ForegroundColor Green
+                Write-HermesOk ('repo scrubbed: ' + $rel)
             }
         }
     }
@@ -318,8 +366,8 @@ function Test-AllProfileMemoryConfigLimits {
     $failures = [System.Collections.Generic.List[string]]::new()
     $rootCfg = Join-Path $HermesRoot 'config.yaml'
     if (Test-Path -LiteralPath $rootCfg) {
-        $ok, $detail = Test-ProfileMemoryConfigLimits -ConfigPath $rootCfg -MinMemory $MinMemory -MinUser $MinUser
-        if (-not $ok) { $failures.Add("root: $detail") }
+        $rootLimit = Test-ProfileMemoryConfigLimits -ConfigPath $rootCfg -MinMemory $MinMemory -MinUser $MinUser
+        if (-not $rootLimit[0]) { $failures.Add('root: ' + $rootLimit[1]) }
     } else {
         $failures.Add('root: config.yaml ontbreekt')
     }
@@ -331,8 +379,8 @@ function Test-AllProfileMemoryConfigLimits {
                 $failures.Add("$($_.Name): config.yaml ontbreekt")
                 return
             }
-            $ok, $detail = Test-ProfileMemoryConfigLimits -ConfigPath $cfg -MinMemory $MinMemory -MinUser $MinUser
-            if (-not $ok) { $failures.Add("$($_.Name): $detail") }
+            $profLimit = Test-ProfileMemoryConfigLimits -ConfigPath $cfg -MinMemory $MinMemory -MinUser $MinUser
+            if (-not $profLimit[0]) { $failures.Add($_.Name + ': ' + $profLimit[1]) }
         }
     }
     return $failures
@@ -342,8 +390,10 @@ function Get-MemorySectionHashes {
     param([string]$FilePath)
     if (-not (Test-Path -LiteralPath $FilePath)) { return @() }
     $raw = Get-Content -LiteralPath $FilePath -Raw -Encoding UTF8
-    $sep = '(?:' + [regex]::Escape((Get-MemoryDoubleEncodedSectionMarker)) + '|' + [regex]::Escape((Get-MemorySectionMarker)) + ')'
-    $parts = $raw -split $sep
+    $markerA = [regex]::Escape((Get-MemoryDoubleEncodedSectionMarker))
+    $markerB = [regex]::Escape((Get-MemorySectionMarker))
+    $splitPattern = $markerA + '|' + $markerB
+    $parts = $raw -split $splitPattern
     $hashes = [System.Collections.Generic.List[string]]::new()
     foreach ($part in $parts) {
         $norm = ($part.Trim() -replace '\s+', ' ').ToLowerInvariant()
@@ -458,7 +508,7 @@ function Test-MemoryConsolidationLayout {
     param([string]$HermesRoot)
     $failures = [System.Collections.Generic.List[string]]::new()
 
-    $rootMemPath = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath 'memories/MEMORY.md'
+    $rootMemPath = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath ('memories' + [char]47 + 'MEMORY.md')
     $rootSections = Get-MemoryMarkdownSectionsFromFile -FilePath $rootMemPath
     if ($rootSections.Count -gt 4) {
         [void]$failures.Add("root: $($rootSections.Count) MEMORY-secties (verwacht seed-only ~3)")
@@ -474,7 +524,8 @@ function Test-MemoryConsolidationLayout {
         }
     }
 
-    $coreMemPath = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath 'profiles/core/memories/MEMORY.md'
+    $s = [char]47
+    $coreMemPath = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath ('profiles' + $s + 'core' + $s + 'memories' + $s + 'MEMORY.md')
     $coreHasHermes = $false
     foreach ($sec in (Get-MemoryMarkdownSectionsFromFile -FilePath $coreMemPath)) {
         if (Test-MemoryHermesConfigSection -Text $sec) { $coreHasHermes = $true }
@@ -483,7 +534,7 @@ function Test-MemoryConsolidationLayout {
         [void]$failures.Add('core: Hermes-config ontbreekt (MCP/multi-profile)')
     }
 
-    $legalMemPath = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath 'profiles/legal/memories/MEMORY.md'
+    $legalMemPath = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath ('profiles' + $s + 'legal' + $s + 'memories' + $s + 'MEMORY.md')
     foreach ($sec in (Get-MemoryMarkdownSectionsFromFile -FilePath $legalMemPath)) {
         $norm = ConvertTo-MemorySectionNormalized -Text $sec
         if (Get-MemoryPolicyBucket -Norm $norm) { continue }

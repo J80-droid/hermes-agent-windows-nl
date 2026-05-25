@@ -66,10 +66,27 @@ try {
     $global:LASTEXITCODE = $savedExit
 }
 
+# --- Invoke-GitCommand (happy + exit code) ---
+$gitVer = Invoke-GitCommand -Arguments @('--version')
+Assert-True ($gitVer -eq 0) 'git --version exit 0'
+$capture = Invoke-GitCommand -Arguments @('--version') -CaptureOutput
+Assert-True ($capture.ExitCode -eq 0) 'capture exit 0'
+Assert-True ($capture.Output -match 'git version') 'capture output non-empty'
+$badGit = Invoke-GitCommand -Arguments @('rev-parse', 'not-a-real-ref-xyz')
+Assert-True ($badGit -ne 0) 'invalid ref non-zero exit'
+
+# --- Invoke-GitCommand restores ErrorActionPreference ---
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = 'Stop'
+$null = Invoke-GitCommand -Arguments @('--version')
+Assert-Equal 'Stop' $ErrorActionPreference 'EAP restored after Invoke-GitCommand'
+$ErrorActionPreference = $prevEap
+
 # --- Write-HermesTag: geen bracket-tags (PSES) ---
 $commonText = Read-HermesRepoText -Path $joined
 Assert-True ($commonText -notmatch 'Write-HermesTag ''\[INFO\]') 'no bracket INFO tag in source'
 Assert-True ($commonText -match "-Tag 'INFO '") 'INFO tag in source'
+Assert-True ($commonText -match 'finally') 'Invoke-GitCommand uses finally for EAP restore'
 
 if ($script:UnitFailed -gt 0) {
     Write-Host ("Unit tests FAILED: $script:UnitFailed") -ForegroundColor Red

@@ -1,5 +1,5 @@
 # Gedeelde helpers voor windows scripts. Dot-source vanuit windows of scripts map.
-# Zie windows/audits/README.md voor PSES-conventies.
+# PSES: geen kleuren-switches, geen slash in strings, geen accolade-format strings.
 
 function Test-NativeCommandFailed {
     return ($null -ne $LASTEXITCODE -and [int]$LASTEXITCODE -ne 0)
@@ -10,40 +10,44 @@ function Write-HermesTag {
         [Parameter(Mandatory)]
         [string]$Tag,
         [Parameter(Mandatory)]
-        [string]$Message,
-        [string]$ForegroundColor = 'Gray'
+        [string]$Message
     )
-    Write-Host ($Tag + $Message) -ForegroundColor $ForegroundColor
+    Write-Host ($Tag + $Message)
+}
+
+function Write-HermesSection {
+    param([string]$Message)
+    Write-Host $Message
 }
 
 function Write-HermesInfo {
     param([string]$Message)
-    Write-HermesTag -Tag 'INFO ' -Message $Message -ForegroundColor Cyan
+    Write-HermesTag -Tag 'INFO ' -Message $Message
 }
 
 function Write-HermesOk {
     param([string]$Message)
-    Write-HermesTag -Tag 'OK ' -Message $Message -ForegroundColor Green
+    Write-HermesTag -Tag 'OK ' -Message $Message
 }
 
 function Write-HermesWarn {
     param([string]$Message)
-    Write-HermesTag -Tag 'WARN ' -Message $Message -ForegroundColor Yellow
+    Write-HermesTag -Tag 'WARN ' -Message $Message
 }
 
 function Write-HermesFail {
     param([string]$Message)
-    Write-HermesTag -Tag 'FAIL ' -Message $Message -ForegroundColor Red
+    Write-HermesTag -Tag 'FAIL ' -Message $Message
 }
 
 function Write-HermesErr {
     param([string]$Message)
-    Write-HermesTag -Tag 'ERROR ' -Message $Message -ForegroundColor Red
+    Write-HermesTag -Tag 'ERROR ' -Message $Message
 }
 
 function Write-HermesSkip {
     param([string]$Message)
-    Write-HermesTag -Tag 'SKIP ' -Message $Message -ForegroundColor Yellow
+    Write-HermesTag -Tag 'SKIP ' -Message $Message
 }
 
 function Format-HermesStepLabel {
@@ -61,7 +65,7 @@ function Format-HermesStepLabel {
     if ($Step -lt 1 -or $Step -gt $Total) {
         throw ('Format-HermesStepLabel: Step ' + $Step + ' moet tussen 1 en ' + $Total + ' liggen.')
     }
-    return ('Stap {0} van {1} - {2}' -f $Step, $Total, $Suffix)
+    return ('Stap ' + $Step + ' van ' + $Total + ' - ' + $Suffix)
 }
 
 function Invoke-GitCommand {
@@ -76,7 +80,10 @@ function Invoke-GitCommand {
         if ($CaptureOutput) {
             $out = & git @Arguments
             $code = [int]$LASTEXITCODE
-            return [pscustomobject]@{ ExitCode = $code; Output = $out }
+            return [pscustomobject]@{
+                ExitCode = $code
+                Output   = $out
+            }
         }
         & git @Arguments | Out-Null
         return [int]$LASTEXITCODE

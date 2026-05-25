@@ -7,16 +7,24 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 $script:CoreFailures = 0
+
+function Get-PendingTrustE2EMockMemoryConfigYaml {
+    return (@(
+        'memory:',
+        '  memory_char_limit: 4000',
+        '  user_char_limit: 1800'
+    ) -join [Environment]::NewLine)
+}
 
 function Add-PendingTrustE2EStep {
     param([string]$Name, [bool]$Ok, [string]$Detail = '')
-    $suffix = ''
-    if ($Detail) { $suffix = ' - ' + $Detail }
+    $suffix = if ($Detail) { ' - ' + $Detail } else { '' }
     if ($Ok) {
-        Write-Host ('[OK] ' + $Name + $suffix) -ForegroundColor Green
+        Write-HermesOk ($Name + $suffix)
     } else {
-        Write-Host ('[FAIL] ' + $Name + $suffix) -ForegroundColor Red
+        Write-HermesFail ($Name + $suffix)
         $script:CoreFailures++
     }
 }
@@ -64,14 +72,14 @@ function Invoke-PendingTrustStartE2ECore {
         [string]$IsolatedHermesDir = ''
     )
 
-    Write-Host '--- PendingTrust core: module lifecycle ---' -ForegroundColor Cyan
+    Write-HermesSection '--- PendingTrust core: module lifecycle ---'
     Clear-PendingTrustRuntime
-    Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'E2E test' -RepoRoot $RepoRoot
-    Add-PendingTrustE2EStep 'Set-PendingTrustRuntime' (Test-PendingTrustRuntime)
+    Register-PendingTrustRuntimeRequired -Source 'UPDATE_HERMES' -Reason 'E2E test' -RepoRoot $RepoRoot
+    Add-PendingTrustE2EStep 'Register-PendingTrustRuntimeRequired' (Test-PendingTrustRuntime)
 
     $first = Get-PendingTrustRuntime
     Start-Sleep -Milliseconds 30
-    Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'E2E refresh' -RepoRoot $RepoRoot
+    Register-PendingTrustRuntimeRequired -Source 'UPDATE_HERMES' -Reason 'E2E refresh' -RepoRoot $RepoRoot
     $second = Get-PendingTrustRuntime
     Add-PendingTrustE2EStep 'created_at behouden' ($first.created_at -eq $second.created_at) $first.created_at
 
@@ -89,22 +97,18 @@ function Invoke-PendingTrustStartE2ECore {
     Clear-StalePendingTrustRuntimeFile
     Add-PendingTrustE2EStep 'Clear-StalePendingTrustRuntimeFile' (-not (Test-Path -LiteralPath $stalePath))
 
-    Write-Host '--- PendingTrust core: identity repair ---' -ForegroundColor Cyan
+    Write-HermesSection '--- PendingTrust core: identity repair ---'
     $identityRoot = Join-Path (Split-Path -Parent $IsolatedHermesDir) 'identity_mock_hermes'
     $idCoreMemDir = Join-Path $identityRoot 'profiles\core\memories'
     New-Item -ItemType Directory -Path $idCoreMemDir -Force | Out-Null
     Set-Content -LiteralPath (Join-Path $identityRoot 'config.yaml') -Value 'model: test' -Encoding UTF8
-    Set-Content -LiteralPath (Join-Path $identityRoot 'profiles\core\config.yaml') -Value @'
-memory:
-  memory_char_limit: 4000
-  user_char_limit: 1800
-'@ -Encoding UTF8
+    Set-Content -LiteralPath (Join-Path $identityRoot 'profiles\core\config.yaml') -Value (Get-PendingTrustE2EMockMemoryConfigYaml) -Encoding UTF8
     $idMemPath = Join-Path $idCoreMemDir 'MEMORY.md'
-    Set-Content -LiteralPath $idMemPath -Value @(
-        'Runtime: C:\Users\jamel\AppData\Local\hermes',
-        'Note from Jamel about strategy.'
-    ) -Encoding UTF8
-    . (Join-Path $RepoRoot 'windows/scripts/MemoryAuditCommon.ps1')
+    $runtimeLine = 'Runtime: ' + (Join-Path $env:LOCALAPPDATA 'hermes')
+    $leakLine = 'Note from Jamel about strategy.'
+    Set-Content -LiteralPath $idMemPath -Value @($runtimeLine, $leakLine) -Encoding UTF8
+    $memAuditCommon = Join-Path $RepoRoot 'windows\scripts\MemoryAuditCommon.ps1'
+    . $memAuditCommon
     $leaksPre = Get-MemoryFileIdentityLeakLines -FilePath $idMemPath
     Add-PendingTrustE2EStep 'identity mock has leak' ($leaksPre.Count -ge 1) ('count=' + $leaksPre.Count)
     $repairPre = Repair-HermesRuntimeIdentity -HermesRoot $identityRoot -Quiet
@@ -112,12 +116,12 @@ memory:
     $leaksPost = Get-MemoryFileIdentityLeakLines -FilePath $idMemPath
     Add-PendingTrustE2EStep 'identity repair clears leak' ($leaksPost.Count -eq 0)
 
-    Write-Host '--- PendingTrust core: launcher gedrag ---' -ForegroundColor Cyan
+    Write-HermesSection '--- PendingTrust core: launcher gedrag ---'
 
     & $LauncherPath -RepoRoot $RepoRoot -Quiet | Out-Null
     Add-PendingTrustE2EStep 'no pending exit 0' ($LASTEXITCODE -eq 0)
 
-    Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'skip-flag E2E' -RepoRoot $RepoRoot
+    Register-PendingTrustRuntimeRequired -Source 'UPDATE_HERMES' -Reason 'skip-flag E2E' -RepoRoot $RepoRoot
     $env:HERMES_SKIP_PENDING_TRUST_ON_START = '1'
     & $LauncherPath -RepoRoot $RepoRoot | Out-Null
     Add-PendingTrustE2EStep 'skip-flag exit 0' ($LASTEXITCODE -eq 0)
@@ -127,7 +131,7 @@ memory:
     Remove-Item -Path env:HERMES_SKIP_PENDING_TRUST_ON_START -ErrorAction SilentlyContinue
 
     Clear-PendingTrustRuntime
-    Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'max attempts E2E' -RepoRoot $RepoRoot
+    Register-PendingTrustRuntimeRequired -Source 'UPDATE_HERMES' -Reason 'max attempts E2E' -RepoRoot $RepoRoot
     Register-PendingTrustRuntimeAttempt -RepoRoot $RepoRoot | Out-Null
     Register-PendingTrustRuntimeAttempt -RepoRoot $RepoRoot | Out-Null
     Register-PendingTrustRuntimeAttempt -RepoRoot $RepoRoot | Out-Null
@@ -141,7 +145,7 @@ memory:
     Add-PendingTrustE2EStep 'max attempts pending blijft' (Test-PendingTrustRuntime)
 
     Clear-PendingTrustRuntime
-    Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'dry-run E2E' -RepoRoot $RepoRoot
+    Register-PendingTrustRuntimeRequired -Source 'UPDATE_HERMES' -Reason 'dry-run E2E' -RepoRoot $RepoRoot
     $env:HERMES_PENDING_TRUST_E2E_DRY_RUN = '1'
     $env:HERMES_REPO_ROOT = $RepoRoot
     & $LauncherPath -RepoRoot $RepoRoot | Out-Null
@@ -150,8 +154,8 @@ memory:
     Remove-Item -Path env:HERMES_PENDING_TRUST_E2E_DRY_RUN -ErrorAction SilentlyContinue
 }
 
-$modulePath = Join-Path $RepoRoot 'windows/scripts/TrustRuntimePending.psm1'
-$launcherPath = Join-Path $RepoRoot 'windows/scripts/launch_pending_trust_runtime.ps1'
+$modulePath = Join-Path $RepoRoot 'windows\scripts\TrustRuntimePending.psm1'
+$launcherPath = Join-Path $RepoRoot 'windows\scripts\launch_pending_trust_runtime.ps1'
 Import-Module $modulePath -Force
 
 $prevLocalAppData = $env:LOCALAPPDATA

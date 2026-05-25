@@ -1,4 +1,4 @@
-# Na SYNC_TRUST_RUNTIME: audit, productie-poort, /new-reminder (volledig geautomatiseerd).
+# Na SYNC_TRUST_RUNTIME: audit, productie-poort, new-chat reminder (volledig geautomatiseerd).
 param(
     [string]$RepoRoot = '',
     [string]$HermesRuntimeRoot = '',
@@ -8,71 +8,91 @@ param(
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
-. (Join-Path $PSScriptRoot 'MemoryAuditCommon.ps1')
+
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 } else {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 }
 
-if ($env:HERMES_SKIP_RUNTIME_IDENTITY_SCRUB -notin @('1', 'true', 'True', 'yes', 'Yes')) {
+$skipScrubValues = @('1', 'true', 'True', 'yes', 'Yes')
+$scrubEnv = [string]$env:HERMES_SKIP_RUNTIME_IDENTITY_SCRUB
+if ($skipScrubValues -notcontains $scrubEnv) {
+    . (Join-Path $PSScriptRoot 'MemoryAuditCommon.ps1')
     if (-not $Quiet) {
-        Write-Host '--- Repair-HermesRuntimeIdentity (pre-audit) ---' -ForegroundColor Cyan
+        Write-HermesInfo 'Repair-HermesRuntimeIdentity (pre-audit)'
     }
-    $scrubParams = @{ Quiet = $Quiet }
-    if ($HermesRuntimeRoot) { $scrubParams['HermesRoot'] = $HermesRuntimeRoot }
-    $scrubResult = Repair-HermesRuntimeIdentity @scrubParams
+    if ($HermesRuntimeRoot) {
+        if ($Quiet) {
+            $scrubResult = Repair-HermesRuntimeIdentity -HermesRoot $HermesRuntimeRoot -Quiet
+        } else {
+            $scrubResult = Repair-HermesRuntimeIdentity -HermesRoot $HermesRuntimeRoot
+        }
+    } elseif ($Quiet) {
+        $scrubResult = Repair-HermesRuntimeIdentity -Quiet
+    } else {
+        $scrubResult = Repair-HermesRuntimeIdentity
+    }
     if (-not $Quiet -and $scrubResult.FilesChanged -eq 0) {
-        Write-Host '[INFO] Runtime identity: geen wijzigingen nodig' -ForegroundColor DarkGray
+        Write-HermesInfo 'Runtime identity: geen wijzigingen nodig'
     }
 } elseif (-not $Quiet) {
-    Write-Host '[INFO] Runtime identity scrub overgeslagen (HERMES_SKIP_RUNTIME_IDENTITY_SCRUB)' -ForegroundColor DarkGray
+    Write-HermesInfo 'Runtime identity scrub overgeslagen (HERMES_SKIP_RUNTIME_IDENTITY_SCRUB)'
 }
 
 $auditScript = Join-Path $PSScriptRoot 'audit_profile_memories.ps1'
 if (-not (Test-Path -LiteralPath $auditScript)) {
-    Write-Host '[FAIL] audit_profile_memories.ps1 ontbreekt' -ForegroundColor Red
+    Write-HermesFail 'audit_profile_memories.ps1 ontbreekt'
     exit 1
 }
 
-Write-Host '--- audit_profile_memories ---' -ForegroundColor Cyan
+Write-HermesInfo 'audit_profile_memories'
 if ($HermesRuntimeRoot) {
     & $auditScript -HermesRoot $HermesRuntimeRoot
 } else {
     & $auditScript
 }
-if ($LASTEXITCODE -ne 0) {
-    Write-Host '[FAIL] audit_profile_memories' -ForegroundColor Red
+if (Test-NativeCommandFailed) {
+    Write-HermesFail 'audit_profile_memories'
     exit 1
 }
 
 if (-not $SkipProductionGate) {
-    $gatePs1 = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/audits/RUN_MEMORY_PRODUCTION_GATE.ps1'
-    if (-not (Test-Path -LiteralPath $gatePs1)) {
-        Write-Host '[FAIL] RUN_MEMORY_PRODUCTION_GATE.ps1 ontbreekt' -ForegroundColor Red
+    $gateScript = Join-Path $RepoRoot 'windows\audits\RUN_MEMORY_PRODUCTION_GATE.ps1'
+    if (-not (Test-Path -LiteralPath $gateScript)) {
+        Write-HermesFail 'RUN_MEMORY_PRODUCTION_GATE.ps1 ontbreekt'
         exit 1
     }
-    Write-Host '--- RUN_MEMORY_PRODUCTION_GATE ---' -ForegroundColor Cyan
-    & $gatePs1 -RepoRoot $RepoRoot
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host '[FAIL] RUN_MEMORY_PRODUCTION_GATE' -ForegroundColor Red
+    Write-HermesInfo 'RUN_MEMORY_PRODUCTION_GATE'
+    & $gateScript -RepoRoot $RepoRoot
+    if (Test-NativeCommandFailed) {
+        Write-HermesFail 'RUN_MEMORY_PRODUCTION_GATE'
         exit 1
     }
 }
 
-$snippetModule = Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1'
-if (-not (Test-Path -LiteralPath $snippetModule)) {
-    Write-Host '[FAIL] SyncSoulSnippet.psm1 ontbreekt' -ForegroundColor Red
+$smokeRel = Join-Path 'docs' 'MEMORY_ARCHITECTURE.md'
+$hermesDir = Join-Path $env:LOCALAPPDATA 'hermes'
+if (-not (Test-Path -LiteralPath $hermesDir)) {
+    New-Item -ItemType Directory -Path $hermesDir -Force | Out-Null
+}
+$noticePath = Join-Path $hermesDir 'institutional_new_chat_required.json'
+$noticePayload = @{
+    required_at       = (Get-Date -Format 'o')
+    reason            = 'Memory-trust sync'
+    smoke_test_prompt = $smokeRel
+    repo_root         = $RepoRoot
+}
+try {
+    $noticePayload | ConvertTo-Json | Set-Content -LiteralPath $noticePath -Encoding UTF8
+} catch {
+    Write-HermesFail ('Kon institutional_new_chat_required.json niet schrijven: ' + $_.Exception.Message)
     exit 1
 }
-Import-Module $snippetModule -Force
-Set-InstitutionalNewChatReminder `
-    -Reason 'Memory/trust sync (USER.md, limits, SOUL)' `
-    -RepoRoot $RepoRoot `
-    -SmokeTestPrompt 'docs/MEMORY_ARCHITECTURE.md' `
-    -Quiet:$Quiet
-
+if (-not $Quiet -and $env:HERMES_SUPPRESS_SOUL_REMINDER -ne '1') {
+    Write-HermesWarn ('Start een nieuwe chat (slash-new). Rooktest: ' + $smokeRel)
+}
 if (-not $Quiet) {
-    Write-Host '[OK] /new-reminder gezet - TUI start automatisch een nieuwe sessie (banner + live reset)' -ForegroundColor Green
+    Write-HermesOk 'new-reminder gezet - TUI start automatisch een nieuwe sessie (banner + live reset)'
 }
 exit 0

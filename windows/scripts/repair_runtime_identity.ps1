@@ -8,17 +8,18 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 . (Join-Path $PSScriptRoot 'MemoryAuditCommon.ps1')
 
 if ($env:HERMES_SKIP_RUNTIME_IDENTITY_SCRUB -in @('1', 'true', 'True', 'yes', 'Yes')) {
     if (-not $Quiet) {
-        Write-Host '[INFO] Runtime identity scrub overgeslagen (HERMES_SKIP_RUNTIME_IDENTITY_SCRUB).' -ForegroundColor DarkGray
+        Write-HermesInfo 'Runtime identity scrub overgeslagen (HERMES_SKIP_RUNTIME_IDENTITY_SCRUB).'
     }
     exit 0
 }
 
 $result = Repair-HermesRuntimeIdentity -HermesRoot $HermesRoot -DryRun:$DryRun -Quiet:$Quiet
 if (-not $Quiet) {
-    Write-Host ('[INFO] Runtime scrub: ' + $result.FilesChanged + ' bestand(en), ' + $result.HitCount + ' regel(s)') -ForegroundColor Cyan
+    Write-HermesInfo ('Runtime scrub: ' + $result.FilesChanged + ' bestand(en), ' + $result.HitCount + ' regel(s)')
 }
 exit 0
