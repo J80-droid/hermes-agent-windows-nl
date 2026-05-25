@@ -2,7 +2,7 @@
 
 ## Focus
 
-**Split-home & runtime (2026-05-24, productie-niveau — AF):** Eénmalige keten `APPLY_HERMES_HOME_MIGRATION.bat` (backup → deprecate → preset → E2E). Legacy gearchiveerd; auxiliary hybrid actief. E2E **PASS**. Runbook: `docs/HERMES_HOME_WINDOWS.md`.
+**Split-home & root inheritance (2026-05-25, productie-niveau — AF):** `model` + `auxiliary` + `providers` overerving; Venice merge + env sync; save-guard + cache-bust; keten `APPLY_HERMES_HOME_MIGRATION.bat` (7 stappen); E2E **14/14** (`RUN_HERMES_HOME_E2E`) + **10/10** (`RUN_ROOT_CONFIG_INHERITANCE_E2E`). Runbook: `docs/HERMES_HOME_WINDOWS.md`.
 
 **Upstream + UPDATE E2E (2026-05-23, PASS):** merge 58 Nous-commits (`dd44205dd`), `UPDATE_HERMES.bat` post-merge incl. `apply_institutional_runtime -SkipE2E`, institutional E2E 11/11, push `e445d1cca`. Rapport: `windows/audits/UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md`. Volgende upstream: `MERGE_UPSTREAM.bat -PromptOnly` → IDE-prompt met **git-diff snippets** per conflictbestand.
 
@@ -67,6 +67,8 @@
 | Codebase-audit smoke (E1/E2) | `RUN_CODEBASE_SMOKE_E2E.bat` (E2E) · `RUN_CODEBASE_SMOKE_AUDIT.bat` (snel) · `RUN_AUDITS -IncludeCodebaseSmokeE2E` / `-IncludeAllE2E` · [CODEBASE_AUDIT_EVIDENCE.md](docs/CODEBASE_AUDIT_EVIDENCE.md) |
 | E2E institutioneel | `windows/audits/RUN_INSTITUTIONAL_E2E.bat` |
 | Hermes start (bat) | `../../HERMES_START.md` |
+| E2E Hermes split-home | `windows/audits/RUN_HERMES_HOME_E2E.bat` |
+| E2E root inheritance | `windows/audits/RUN_ROOT_CONFIG_INHERITANCE_E2E.bat` |
 | Windows | `windows/README.md` |
 | Terminal / display / API-home | `windows/TERMINAL_WINDOWS.md` |
 | Nous upstream | `windows/UPSTREAM_SYNC.md`; merge: `MERGE_UPSTREAM.bat`; audit: `windows/audits/UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md` |

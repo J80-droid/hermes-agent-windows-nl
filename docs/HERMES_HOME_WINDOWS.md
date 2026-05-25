@@ -16,7 +16,7 @@ Deze fork gebruikt **twee bewuste locaties** — geen symlink, geen blind oversc
 | Wekelijks | `windows\audits\RUN_AUDITS.bat` | Kwaliteit |
 | Release | `windows\audits\RUN_AUDITS.bat -IncludeAllE2E` | Vóór grote wijziging |
 | Config wijziging | `APPLY_AUXILIARY_HYBRID_PRESET.bat` + `hermes config get auxiliary` | Eenmalig / na model pull |
-| **Split-home migratie (eenmalig)** | `APPLY_HERMES_HOME_MIGRATION.bat` | Backup + deprecate + preset + E2E in één keten |
+| **Split-home migratie (eenmalig)** | `APPLY_HERMES_HOME_MIGRATION.bat` | Backup → deprecate → preset → Venice merge → strip → env sync → E2E |
 
 ## Twee checkouts (footgun)
 
@@ -69,11 +69,13 @@ Kanban-workers krijgen `HERMES_HOME` geïnjecteerd (`hermes_cli/kanban_db.py`). 
 
 ## Eenmalig: split-home migratie (aanbevolen)
 
-**Eén commando** (backup → deprecate → auxiliary preset → E2E):
+**Eén commando** (backup → deprecate → auxiliary preset → Venice merge → strip profielen → env sync → E2E):
 
 ```bat
 windows\APPLY_HERMES_HOME_MIGRATION.bat
 ```
+
+Keten (7 stappen): backup → deprecate → auxiliary preset → merge legacy providers (Venice) → strip profile global blocks → sync API env → HermesHome E2E (14 checks).
 
 Hermes/gateway moet **volledig gestopt** zijn vóór start. Her-run na eerdere backup:
 
@@ -87,7 +89,10 @@ windows\APPLY_HERMES_HOME_MIGRATION.bat -SkipBackup -NoPause
 windows\MANAGE_BACKUPS.bat
 windows\DEPRECATE_LEGACY_CONFIG.bat
 windows\APPLY_AUXILIARY_HYBRID_PRESET.bat
+windows\scripts\merge_legacy_providers_config.py
+windows\SYNC_HERMES_API_ENV.bat
 windows\audits\RUN_HERMES_HOME_E2E.bat
+windows\audits\RUN_ROOT_CONFIG_INHERITANCE_E2E.bat
 ```
 
 Optioneel alleen ontbrekende auxiliary keys kopiëren bij deprecate:
@@ -107,12 +112,30 @@ hermes config get auxiliary.vision.provider
 
 Preflight: Ollama op `http://localhost:11434/v1`, `GOOGLE_API_KEY` in runtime `.env`. Na apply: `/new` in TUI (reminder via `institutional_new_chat_required.json`).
 
+## Global config (root only)
+
+Deze keys horen **alleen** in `%LOCALAPPDATA%\hermes\config.yaml` (root), niet in `profiles\<naam>\config.yaml`:
+
+| Blok | Beheer |
+| --- | --- |
+| `model:` | `hermes model` / root config |
+| `auxiliary:` | `APPLY_AUXILIARY_HYBRID_PRESET.bat` |
+| `providers:` / `custom_providers:` | Model picker; Venice: `docs/templates/PROVIDERS_VENICE.yaml` |
+
+Profiel-modus (`active_profile=core`) erft deze blokken automatisch van root via `profile_model_inheritance.py`. Stale profiel-blokken: `strip_profile_global_config_blocks.py` of migratie-keten. Partial profiel-save (bijv. alleen `agent.max_turns`) overschrijft root `providers` **niet**.
+
+## Venice + custom providers
+
+Legacy `providers.venice` wordt gemerged via migratie-keten. API-key: `SYNC_HERMES_API_ENV.bat` (incl. `VENICE_API_KEY`). Model picker toont Venice zodra config + runtime `.env` kloppen.
+
 ## Drift / diagnose
 
 | Symptoom | Fix |
 | --- | --- |
 | Agent schrijft config op verkeerd pad | `DEPRECATE_LEGACY_CONFIG.bat`; SOUL governance snippet sync |
-| Twee verschillende auxiliary-blokken | `VERIFY_HERMES_CONFIG_DRIFT.bat` → deprecate |
+| Twee verschillende auxiliary-blokken | `VERIFY_HERMES_CONFIG_DRIFT.bat` → migratie |
+| Auxiliary in profiel-yaml (core) | `APPLY_HERMES_HOME_MIGRATION.bat` (strip + preset) |
+| Venice ontbreekt in picker | `merge_legacy_providers_config.py` + `SYNC_HERMES_API_ENV.bat` |
 | Tekst-aux nog op `provider: auto` | `APPLY_AUXILIARY_HYBRID_PRESET.bat` |
 | `HERMES_HOME=profiles\…` | `hermes profile use <naam> --fix-hermes-home` |
 | Gateway verkeerde home | `VERIFY_GATEWAY_HOME.bat` → `REPAIR_GATEWAY_HOME.bat` |
@@ -123,8 +146,11 @@ Preflight: Ollama op `http://localhost:11434/v1`, `GOOGLE_API_KEY` in runtime `.
 ```bat
 windows\INVENTORY_HERMES_HOME.bat
 windows\audits\RUN_HERMES_HOME_E2E.bat
+windows\audits\RUN_ROOT_CONFIG_INHERITANCE_E2E.bat
 windows\audits\RUN_AUDITS.bat -IncludeHermesHomeE2E
 ```
+
+**Root-inheritance E2E** (`RUN_ROOT_CONFIG_INHERITANCE_E2E.bat`): 10 stappen — pytest inheritance/merge, isolated harness (8 scenario's: pad, cache-bust, save-guard, corrupt YAML), runtime Venice + profiel auxiliary inheritance.
 
 ## Feature flag (Python fallback)
 

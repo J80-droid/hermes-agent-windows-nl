@@ -10,7 +10,9 @@ echo %ESC%[96m====================================================
 echo  Hermes: split-home migratie (automatisch)
 echo  - backup (MANAGE_BACKUPS)
 echo  - deprecate legacy ~/.hermes/config.yaml
-echo  - auxiliary hybrid preset (Qwen + Gemini vision)
+echo  - merge legacy providers (Venice)
+echo  - auxiliary hybrid preset + strip profile blocks
+echo  - sync API env (legacy -^> runtime)
 echo  - RUN_HERMES_HOME_E2E
 echo ====================================================%ESC%[0m
 echo.

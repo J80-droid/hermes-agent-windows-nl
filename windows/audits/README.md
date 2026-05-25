@@ -60,9 +60,10 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 | **`RUN_AUDITS.bat -IncludeStatusBarCostE2E`** | Bovenstaande statusbalk-kosten E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E`** | Klassieke CLI statusbalk-kosten E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeParetoE2E`** | Bovenstaande Pareto router E2E in gecombineerde poort |
-| **`RUN_HERMES_HOME_E2E.bat`** | Split-home: repo-artefacten, pytest, drift, inventory, gateway, auxiliary vision (**11 stappen**) |
+| **`RUN_HERMES_HOME_E2E.bat`** | Split-home: repo-artefacten, pytest, drift, inventory, gateway, Venice, auxiliary inheritance (**14 stappen**) |
+| **`RUN_ROOT_CONFIG_INHERITANCE_E2E.bat`** | Root inheritance: pytest + isolated harness (8 scenario's) + runtime Venice/auxiliary (**10 stappen**) |
 | **`RUN_AUDITS.bat -IncludeHermesHomeE2E`** | Bovenstaande Hermes-home E2E in gecombineerde poort |
-| **`APPLY_HERMES_HOME_MIGRATION.bat`** | Eenmalig: backup → deprecate → preset → E2E (zelfde poort als handmatige keten) |
+| **`APPLY_HERMES_HOME_MIGRATION.bat`** | Eenmalig: backup → deprecate → preset → Venice merge → strip → env sync → E2E |
 | **`windows\tests\RUN_PYTEST.bat`** | Brede pytest (excl. integration) |
 | **`windows\VERIFY_WINDOWS_CHAIN.bat`** | Script-keten backup/RAG (handmatig, pause) |
 | **`RUN_BACKUP_E2E.bat`** | Lightweight backup schema v3 test (`tests/windows/test_backup_runtime.ps1`) |
@@ -290,23 +291,51 @@ Optioneel: `-SkipPytest` op `RUN_HERMES_HOME_E2E.ps1`.
 
 | Stap | Controle |
 | ---- | -------- |
-| 1/11 | Repo-artefacten (HermesHomeCommon, migration bat, presets, docs) |
-| 2/11 | pytest: doctor split-home, constants, config get, profile override guard |
-| 3/11 | `Get-HermesRuntimeRoot` consistent across modules |
-| 4/11 | Geen actieve `~/.hermes/config.yaml` |
-| 5/11 | Legacy hub: `CONFIG_README.txt` of `config.yaml.deprecated-*` |
-| 6/11 | `inventory_hermes_home.ps1 -Quiet` |
-| 7–8/11 | `verify_hermes_home` + `verify_hermes_config_drift` |
-| 9/11 | `Ensure-UserHermesHomeRoot` proces-env |
-| 10/11 | User `HERMES_HOME` = runtime root (geen `profiles\*`) |
-| 11/11 | Gateway HERMES_HOME aligned |
-| + | `auxiliary.vision.provider=gemini` (hard check) |
+| 1/14 | Repo-artefacten (HermesHomeCommon, migration, merge Venice, presets, docs) |
+| 2/14 | pytest: doctor split-home, inheritance, merge, constants, config |
+| 3/14 | `Get-HermesRuntimeRoot` consistent across modules |
+| 4/14 | Geen actieve `~/.hermes/config.yaml` |
+| 5/14 | Legacy hub: `CONFIG_README.txt` of `config.yaml.deprecated-*` |
+| 6/14 | `inventory_hermes_home.ps1 -Quiet` |
+| 7–8/14 | `verify_hermes_home` + `verify_hermes_config_drift` |
+| 9/14 | `Ensure-UserHermesHomeRoot` proces-env |
+| 10/14 | User `HERMES_HOME` = runtime root (geen `profiles\*`) |
+| 11/14 | Gateway HERMES_HOME aligned |
+| 12/14 | Geen `model`/`auxiliary`/`providers` in profiel-yaml |
+| 13/14 | Venice provider in root config |
+| 14/14 | `VENICE_API_KEY` gesynced naar runtime `.env` |
+| + | `auxiliary.vision.provider=gemini`; core erft `auxiliary.compression.provider=custom` |
 
-**Productie-poort:** `APPLY_HERMES_HOME_MIGRATION.bat` = backup → deprecate → preset → deze E2E.
+**Productie-poort:** `APPLY_HERMES_HOME_MIGRATION.bat` = backup → deprecate → preset → Venice merge → strip → env sync → deze E2E.
 
 Rapport: `HERMES_HOME_E2E_REPORT_<timestamp>.md` (gitignored via `*_E2E_REPORT_*_*.md`).
 
 Zie `docs/HERMES_HOME_WINDOWS.md`.
+
+## Root config inheritance E2E
+
+```text
+windows\audits\RUN_ROOT_CONFIG_INHERITANCE_E2E.bat
+```
+
+Optioneel: `-SkipPytest`, `-SkipLive` op `RUN_ROOT_CONFIG_INHERITANCE_E2E.ps1`.
+
+| Stap | Controle |
+| ---- | -------- |
+| 1/10 | Repo-artefacten (inheritance module, merge/collect scripts, E2E harness) |
+| 2/10 | pytest: `test_profile_model_inheritance.py`, `test_merge_legacy_providers_config.py` |
+| 3/10 | Isolated harness: pad, env-sync, merge→root, cache-bust, save-guard, corrupt YAML, 1× root read |
+| 4/10 | Code wiring (incoming_keys save guard, bust_config_caches clear_all) |
+| 5/10 | Runtime: geen profiel global blocks |
+| 6/10 | Runtime: Venice in root config |
+| 7/10 | `merge_legacy_providers_config.py` gebruikt `root_config_path()` |
+| 8/10 | Live: `profiles/core` erft `auxiliary.compression.provider=custom` |
+| 9/10 | Live: `collect_env_sync_keys.py` op runtime root |
+| 10/10 | `sync_hermes_api_env.ps1` Venice + dynamic keys |
+
+Rapport: `ROOT_CONFIG_INHERITANCE_E2E_REPORT_<timestamp>.md` (gitignored).
+
+Zie `docs/PROFILE_MODEL_INHERITANCE.md`.
 
 ## SOUL deploy bij start E2E
 

@@ -78,6 +78,11 @@ function Test-HermesConfigDrift {
     }
 
     if ($issues.Count -eq 0) {
+        $profileIssues = Test-HermesProfileGlobalConfigBlocks -Quiet:$Quiet
+        foreach ($pi in $profileIssues) { $issues.Add($pi) }
+    }
+
+    if ($issues.Count -eq 0) {
         if (-not $Quiet) {
             Write-Host '[OK] Geen config drift (split-home)' -ForegroundColor Green
         }
@@ -89,6 +94,53 @@ function Test-HermesConfigDrift {
         if (-not $Quiet) {
             Write-Host ('[FAIL] ' + $issue) -ForegroundColor Red
         }
+    }
+    return $false
+}
+
+function Test-HermesProfileGlobalConfigBlocks {
+    param([switch]$Quiet)
+    $issues = [System.Collections.Generic.List[string]]::new()
+    $profilesRoot = Join-Path (Get-HermesRuntimeRoot) 'profiles'
+    if (-not (Test-Path -LiteralPath $profilesRoot)) { return @() }
+    foreach ($dir in Get-ChildItem -LiteralPath $profilesRoot -Directory) {
+        $cfg = Join-Path $dir.FullName 'config.yaml'
+        if (-not (Test-Path -LiteralPath $cfg)) { continue }
+        $raw = Get-Content -LiteralPath $cfg -Raw -Encoding UTF8
+        if ($raw -match '(?m)^auxiliary:\s*') {
+            $issues.Add("Profiel '$($dir.Name)' heeft eigen auxiliary - hoort in root config (strip_profile_global_config_blocks.py)")
+        }
+        if ($raw -match '(?m)^providers:\s*' -or $raw -match '(?m)^custom_providers:\s*') {
+            $issues.Add("Profiel '$($dir.Name)' heeft eigen providers - hoort in root config")
+        }
+    }
+    if ($issues.Count -gt 0 -and -not $Quiet) {
+        foreach ($issue in $issues) {
+            Write-Host ('[FAIL] ' + $issue) -ForegroundColor Red
+        }
+    }
+    return @($issues)
+}
+
+function Test-HermesVeniceProviderConfigured {
+    param([switch]$Quiet)
+    $runtimeCfg = Get-HermesCanonicalConfigPath
+    if (-not (Test-Path -LiteralPath $runtimeCfg)) { return $true }
+    $raw = Get-Content -LiteralPath $runtimeCfg -Raw -Encoding UTF8
+    if ($raw -match '(?m)^\s+venice:') { return $true }
+    $legacyRoot = Get-HermesLegacyRoot
+    $best = $null
+    $bestSize = 0
+    foreach ($pat in @('config.yaml.bak.*', 'config.yaml.deprecated-*')) {
+        foreach ($f in Get-ChildItem -LiteralPath $legacyRoot -Filter $pat -File -ErrorAction SilentlyContinue) {
+            if ($f.Length -gt $bestSize) { $bestSize = $f.Length; $best = $f.FullName }
+        }
+    }
+    if (-not $best) { return $true }
+    $legacyRaw = Get-Content -LiteralPath $best -Raw -Encoding UTF8
+    if ($legacyRaw -notmatch '(?m)^providers:\s*\r?\n\s+venice:') { return $true }
+    if (-not $Quiet) {
+        Write-Host '[WARN] Venice provider ontbreekt in runtime config - run merge_legacy_providers_config.py' -ForegroundColor Yellow
     }
     return $false
 }

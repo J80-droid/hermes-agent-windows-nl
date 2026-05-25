@@ -12,7 +12,7 @@
 - [x] HTML-fallback na MarkItDown-fout
 - [x] MCP per profile (`lancedb-<domein>`) — **`mcp_servers:`** (sync: `sync_profile_mcp_from_domains.py`)
 - [x] Institutionele P0-pipeline (`windows/scripts/institutional_p0_p1.bat`)
-- [x] Profiel-model overerving (`profile_model_inheritance.py`, docs, doctor `--fix`, tests)
+- [x] Profiel → root config overerving (`profile_model_inheritance.py`: model + auxiliary + providers; save-guard, cache-bust; docs, doctor `--fix`, tests, E2E harness)
 - [x] Windows launchers (`update_knowledge.bat` / `.ps1`, `windows/scripts/rag/`)
 - [x] Noob-doc `docs/RAG_TWEE_FASEN.md` (bibliotheek vs. balie, twee fasen)
 - [x] Taakbalk RAG interactief: `RAG_KNOWLEDGE_UPDATE.bat` + `.lnk` `cmd /k` (J/N via `set /p`); nacht: `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` (`HERMES_NONINTERACTIVE=1`)
@@ -20,7 +20,7 @@
 - [x] SOUL Anatomy: `SOUL_ANATOMY_SPEC`, 13× `SOUL_*_DOMAIN` + core orchestrator, shared VALUES/WORKFLOW/MEMORY/TRUST, sync + `migrate_soul_anatomy.ps1`, `validate_soul_anatomy.py`, `RUN_SOUL_ANATOMY_E2E.ps1`, `RUN_SOUL_DEPLOY_START_E2E.ps1`; stamp-deploy `launch_soul_anatomy_deploy.ps1` (start + POST_GIT_PULL); runtime `APPLY_SOUL_ANATOMY_RUNTIME.bat`; output-sync insert + duplicate-repair (2026-05-23)
 - [x] SOUL snippet-sync robuustheid: `Test-NativeCommandFailed` in `SyncSoulSnippet.psm1` + orchestrator/deploy/institutional/sync_all; alle `sync_soul_*_snippet.ps1` met `exit 0`; verify-keten pad-literals `/`; IDE/PSES parser-hygiëne (2026-05-23)
 - [x] SOUL governance: zekerheid %, gaps/strategie, ga-door 1/N, tool 1× retry, geen compromis; `SOUL_ROOT_FALLBACK` + `sync_root_soul_fallback.ps1`; `validate_soul_anatomy.py --check-governance`; `docs/SOUL_GOVERNANCE.md` (2026-05-23)
-- [x] Windows split-home runtime: `HermesHomeCommon.ps1`, drift/migratie/E2E, doctor + `hermes config get`, `HERMES_WIN_PREFER_LOCALAPPDATA`, `docs/HERMES_HOME_WINDOWS.md` (2026-05-23; **machine + audits groen 2026-05-24**)
+- [x] Windows split-home runtime: `HermesHomeCommon.ps1`, drift/migratie/E2E, Venice merge, root inheritance E2E, doctor + `hermes config get`, `HERMES_WIN_PREFER_LOCALAPPDATA`, `docs/HERMES_HOME_WINDOWS.md` (2026-05-23; **machine + audits groen 2026-05-25**)
 - [x] `HermesShellCommon.ps1`: gedeelde `Test-NativeCommandFailed` + `Write-Hermes*`; hele `windows/**/*.ps1` IDE-safe `[TAG]`-logging + native-exit checks; repair-tools in `windows/tools/` (2026-05-23)
 - [x] Domein-toolsets: `docs/domain_toolsets.yaml`, `DOMAIN_TOOLSET_AUDIT.md`, `SYNC_DOMAIN_TOOLSETS.bat`, `SOUL_SHARED_TOOL_GOVERNANCE`, `RUN_TOOLSET_DOMAIN_E2E.ps1`
 - [x] Runtime provision: `--create-missing` in `sync_profile_toolsets_from_manifest.py` (+ `--clone-from`, `--provision-only`, `--sync-soul-snippets`); tests `test_provision_profile_from_manifest.py`; E2E `RUN_PROVISION_DOMAIN_E2E.bat`; skill `create_fork_domain`

@@ -350,6 +350,45 @@ def _env_has_non_empty_key(env_path: Path, key: str) -> bool:
     return False
 
 
+def _find_legacy_config_backup(legacy_root: Path) -> Path | None:
+    """Best-effort largest legacy config backup for provider restore hints."""
+    best: Path | None = None
+    best_size = -1
+    patterns = ("config.yaml.bak.*", "config.yaml.deprecated-*", "config.yaml.backup.*")
+    for pattern in patterns:
+        for path in legacy_root.glob(pattern):
+            try:
+                size = path.stat().st_size
+                if size > best_size:
+                    best_size = size
+                    best = path
+            except OSError:
+                continue
+    legacy_cfg = legacy_root / "config.yaml"
+    if legacy_cfg.is_file():
+        try:
+            size = legacy_cfg.stat().st_size
+            if size > best_size:
+                best = legacy_cfg
+        except OSError:
+            pass
+    return best
+
+
+def _read_yaml_providers(path: Path) -> dict:
+    if not path.is_file():
+        return {}
+    try:
+        import yaml
+
+        with open(path, encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        providers = data.get("providers") if isinstance(data, dict) else {}
+        return providers if isinstance(providers, dict) else {}
+    except Exception:
+        return {}
+
+
 def _check_windows_split_home_config(issues: list, *, should_fix: bool = False) -> None:
     """Warn when legacy ~/.hermes/config.yaml coexists with Windows runtime config."""
     if sys.platform != "win32":
@@ -381,6 +420,55 @@ def _check_windows_split_home_config(issues: list, *, should_fix: bool = False) 
             "Run windows\\SYNC_HERMES_API_ENV.bat",
         )
         issues.append("Sync API keys (SYNC_HERMES_API_ENV.bat)")
+
+    if _env_has_non_empty_key(legacy_env, "VENICE_API_KEY") and not _env_has_non_empty_key(
+        runtime_env, "VENICE_API_KEY"
+    ):
+        check_warn(
+            "VENICE_API_KEY only in legacy ~/.hermes/.env",
+            "Run windows\\SYNC_HERMES_API_ENV.bat",
+        )
+        issues.append("Sync Venice API key (SYNC_HERMES_API_ENV.bat)")
+
+    try:
+        import yaml
+
+        if runtime_cfg.is_file():
+            with open(runtime_cfg, encoding="utf-8") as f:
+                rt_data = yaml.safe_load(f) or {}
+            providers = rt_data.get("providers") if isinstance(rt_data, dict) else {}
+            if not (isinstance(providers, dict) and providers.get("venice")):
+                legacy_backup = _find_legacy_config_backup(legacy_root)
+                if legacy_backup and "venice" in _read_yaml_providers(legacy_backup):
+                    check_warn(
+                        "Venice provider missing from runtime config",
+                        "Run windows\\APPLY_HERMES_HOME_MIGRATION.bat or merge_legacy_providers_config.py",
+                    )
+                    issues.append("Restore Venice provider in root config.yaml")
+    except Exception:
+        pass
+
+    try:
+        from hermes_constants import get_default_hermes_root
+
+        profiles_root = get_default_hermes_root() / "profiles"
+        if profiles_root.is_dir():
+            for prof_dir in profiles_root.iterdir():
+                if not prof_dir.is_dir():
+                    continue
+                prof_cfg = prof_dir / "config.yaml"
+                if not prof_cfg.is_file():
+                    continue
+                text = prof_cfg.read_text(encoding="utf-8", errors="replace")
+                if "auxiliary:" in text or "providers:" in text or "custom_providers:" in text:
+                    check_warn(
+                        f"Profile '{prof_dir.name}' has global config blocks (auxiliary/providers)",
+                        "Run strip_profile_global_config_blocks.py or APPLY_HERMES_HOME_MIGRATION.bat",
+                    )
+                    issues.append(f"Strip global blocks from profile {prof_dir.name}")
+                    break
+    except Exception:
+        pass
 
     if should_fix:
         try:

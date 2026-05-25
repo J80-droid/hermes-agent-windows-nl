@@ -42,6 +42,9 @@ $repoArtifacts = @(
     'windows/APPLY_HERMES_HOME_MIGRATION.bat',
     'windows/DEPRECATE_LEGACY_CONFIG.bat',
     'windows/APPLY_AUXILIARY_HYBRID_PRESET.bat',
+    'windows/scripts/merge_legacy_providers_config.py',
+    'windows/scripts/strip_profile_global_config_blocks.py',
+    'docs/templates/PROVIDERS_VENICE.yaml',
     'docs/HERMES_HOME_WINDOWS.md',
     'docs/templates/SOUL_SHARED_CONFIG_GOVERNANCE.md',
     'docs/templates/AUXILIARY_HYBRID_OLLAMA.yaml'
@@ -50,7 +53,7 @@ $missingRepo = @($repoArtifacts | Where-Object {
     -not (Test-Path -LiteralPath (Join-Path $RepoRoot ($_ -replace '/', [IO.Path]::DirectorySeparatorChar)))
 })
 $repoDetail = if ($missingRepo.Count) { ($missingRepo -join ', ') } else { "$($repoArtifacts.Count) bestanden" }
-Add-StepResult '1/11 Repo split-home artefacten' ($missingRepo.Count -eq 0) $repoDetail
+Add-StepResult '1/14 Repo split-home artefacten' ($missingRepo.Count -eq 0) $repoDetail
 
 if (-not $SkipPytest) {
     $conda = Join-Path $env:USERPROFILE 'miniconda3/Scripts/conda.exe'
@@ -59,6 +62,8 @@ if (-not $SkipPytest) {
         try {
             & $conda run -n hermes-env --no-capture-output python -m pytest `
                 tests/hermes_cli/test_doctor.py::TestWindowsSplitHomeCheck `
+                tests/hermes_cli/test_profile_model_inheritance.py `
+                tests/hermes_cli/test_merge_legacy_providers_config.py `
                 tests/test_hermes_constants.py `
                 tests/hermes_cli/test_config.py::TestGetConfigValue `
                 tests/hermes_cli/test_apply_profile_override.py `
@@ -66,23 +71,23 @@ if (-not $SkipPytest) {
         } finally {
             Pop-Location
         }
-        Add-StepResult '2/11 pytest split-home subset' ($LASTEXITCODE -eq 0)
+        Add-StepResult '2/14 pytest split-home subset' ($LASTEXITCODE -eq 0)
     } else {
-        Write-Host '[SKIP] 2/11 pytest split-home — conda niet gevonden' -ForegroundColor Yellow
+        Write-Host '[SKIP] 2/14 pytest split-home — conda niet gevonden' -ForegroundColor Yellow
     }
 } else {
-    Write-Host '[SKIP] 2/11 pytest split-home (-SkipPytest)' -ForegroundColor Yellow
+    Write-Host '[SKIP] 2/14 pytest split-home (-SkipPytest)' -ForegroundColor Yellow
 }
 
 $rootA = Get-HermesRuntimeRoot
 . (Join-Path $windowsRoot (Join-Path 'scripts' 'HermesBackupCommon.ps1'))
 $rootB = Get-HermesRuntimeRoot
-Add-StepResult '3/11 Get-HermesRuntimeRoot consistent' ($rootA -eq $rootB) ($rootA + ' vs ' + $rootB)
+Add-StepResult '3/14 Get-HermesRuntimeRoot consistent' ($rootA -eq $rootB) ($rootA + ' vs ' + $rootB)
 
 $legacyCfg = Get-HermesLegacyConfigPath
 $legacyRoot = Get-HermesLegacyRoot
 $legacyDetail = if (Test-Path -LiteralPath $legacyCfg) { $legacyCfg } else { 'deprecated-only OK' }
-Add-StepResult '4/11 Geen actieve legacy config.yaml' (-not (Test-Path -LiteralPath $legacyCfg)) $legacyDetail
+Add-StepResult '4/14 Geen actieve legacy config.yaml' (-not (Test-Path -LiteralPath $legacyCfg)) $legacyDetail
 
 $readme = Join-Path $legacyRoot 'CONFIG_README.txt'
 $deprecated = @(Get-ChildItem -LiteralPath $legacyRoot -Filter 'config.yaml.deprecated-*' -File -ErrorAction SilentlyContinue)
@@ -94,24 +99,27 @@ $legacyHubDetail = if (Test-Path -LiteralPath $readme) {
 } else {
     'legacy hub ontbreekt'
 }
-Add-StepResult '5/11 Legacy hub README of archive' $legacyOk $legacyHubDetail
+Add-StepResult '5/14 Legacy hub README of archive' $legacyOk $legacyHubDetail
 
 $inventory = Join-Path $windowsRoot 'scripts/inventory_hermes_home.ps1'
 & $inventory -Quiet
-Add-StepResult '6/11 inventory_hermes_home -Quiet' ($LASTEXITCODE -eq 0)
+Add-StepResult '6/14 inventory_hermes_home -Quiet' ($LASTEXITCODE -eq 0)
+
+Ensure-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
+$env:HERMES_HOME = (Get-HermesRuntimeRoot).TrimEnd('\')
 
 $verifyHome = Join-Path $windowsRoot 'scripts/verify_hermes_home.ps1'
 & $verifyHome -StrictDrift:$StrictDrift
-Add-StepResult '7/11 verify_hermes_home' ($LASTEXITCODE -eq 0)
+Add-StepResult '7/14 verify_hermes_home' ($LASTEXITCODE -eq 0)
 
 $verifyDrift = Join-Path $windowsRoot 'scripts/verify_hermes_config_drift.ps1'
 & $verifyDrift -Strict:$StrictDrift
-Add-StepResult '8/11 verify_hermes_config_drift' ($LASTEXITCODE -eq 0)
+Add-StepResult '8/14 verify_hermes_config_drift' ($LASTEXITCODE -eq 0)
 
 $expected = (Get-HermesRuntimeRoot).TrimEnd('\')
 Ensure-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
 $procHome = if ($env:HERMES_HOME) { $env:HERMES_HOME.TrimEnd('\') } else { '' }
-Add-StepResult '9/11 Ensure-UserHermesHomeRoot proces-env' ($procHome -eq $expected) $procHome
+Add-StepResult '9/14 Ensure-UserHermesHomeRoot proces-env' ($procHome -eq $expected) $procHome
 
 $userHome = [Environment]::GetEnvironmentVariable('HERMES_HOME', 'User')
 $userOk = $true
@@ -125,10 +133,30 @@ if ($userHome) {
         $userOk = $false
     }
 }
-Add-StepResult '10/11 User HERMES_HOME = runtime root' $userOk $userDetail
+Add-StepResult '10/14 User HERMES_HOME = runtime root' $userOk $userDetail
 
 $gwOk = Test-HermesGatewayHomeAlignment -Quiet
-Add-StepResult '11/11 Test-HermesGatewayHomeAlignment' $gwOk 'REPAIR_GATEWAY_HOME.bat'
+Add-StepResult '11/14 Test-HermesGatewayHomeAlignment' $gwOk 'REPAIR_GATEWAY_HOME.bat'
+
+$profileBlockIssues = Test-HermesProfileGlobalConfigBlocks -Quiet
+$profileBlockDetail = if ($profileBlockIssues.Count) { $profileBlockIssues -join '; ' } else { 'OK' }
+Add-StepResult '12/14 Geen profile auxiliary/providers blocks' ($profileBlockIssues.Count -eq 0) $profileBlockDetail
+
+$veniceOk = Test-HermesVeniceProviderConfigured -Quiet
+$veniceDetail = if ($veniceOk) { 'providers.venice present or not required' } else { 'restore merge_legacy_providers_config.py' }
+Add-StepResult '13/14 Venice provider in runtime config' $veniceOk $veniceDetail
+
+$legacyEnv = Join-Path (Get-HermesLegacyRoot) '.env'
+$runtimeEnv = Join-Path (Get-HermesRuntimeRoot) '.env'
+$veniceEnvOk = $true
+$veniceEnvDetail = 'n/a'
+if ((Test-Path -LiteralPath $legacyEnv) -and (Select-String -Path $legacyEnv -Pattern '^\s*VENICE_API_KEY\s*=\s*\S+' -Quiet)) {
+    $veniceEnvOk = (Test-Path -LiteralPath $runtimeEnv) -and (
+        Select-String -Path $runtimeEnv -Pattern '^\s*VENICE_API_KEY\s*=\s*\S+' -Quiet
+    )
+    $veniceEnvDetail = if ($veniceEnvOk) { 'VENICE_API_KEY in runtime .env' } else { 'run SYNC_HERMES_API_ENV.bat' }
+}
+Add-StepResult '14/14 VENICE_API_KEY synced to runtime' $veniceEnvOk $veniceEnvDetail
 
 $runtimeCfg = Get-HermesCanonicalConfigPath
 if (Test-Path -LiteralPath $runtimeCfg) {
@@ -138,6 +166,18 @@ if (Test-Path -LiteralPath $runtimeCfg) {
         if ($LASTEXITCODE -eq 0) {
             $val = ($visionOut | Select-Object -Last 1).ToString().Trim().ToLower()
             Add-StepResult 'auxiliary.vision.provider=gemini' ($val -eq 'gemini') $val
+            $coreProf = Join-Path (Get-HermesRuntimeRoot) 'profiles\core\config.yaml'
+            if (Test-Path -LiteralPath $coreProf) {
+                $prevHome = $env:HERMES_HOME
+                $env:HERMES_HOME = (Split-Path -Parent $coreProf)
+                $compOut = & $conda run -n hermes-env --no-capture-output hermes config get auxiliary.compression.provider 2>&1
+                if ($LASTEXITCODE -eq 0) {
+                    $compVal = ($compOut | Select-Object -Last 1).ToString().Trim().ToLower()
+                    Add-StepResult 'profile core inherits auxiliary.compression=custom' ($compVal -eq 'custom') $compVal
+                }
+                if ($prevHome) { $env:HERMES_HOME = $prevHome } else { Remove-Item Env:HERMES_HOME -ErrorAction SilentlyContinue }
+                Ensure-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
+            }
         } else {
             Add-StepResult 'auxiliary.vision.provider=gemini' $false 'CLI exit non-zero'
         }

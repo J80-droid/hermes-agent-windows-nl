@@ -9,13 +9,15 @@
 
 Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `load_cli_config()`.
 
-## Profiel-model overerving
+## Profiel → root config overerving
 
 - `is_profile_hermes_home()` → pad onder `profiles/<naam>`.
-- `resolve_model_section()` → root-model, tenzij `model.inherit: false`.
-- `save_config()` / `config set model.*` → schrijven naar **root**, niet naar profiel-yaml.
-- `hermes profile create` → `strip_model_block_from_profile_config()` na clone.
-- `hermes doctor --fix` → verwijdert verouderde `model:`-blokken in alle profielen.
+- `resolve_model_section()` / `resolve_auxiliary_section()` / `resolve_providers_sections()` → root, tenzij `*.inherit: false`.
+- `apply_profile_root_config_inheritance()` → één root YAML-read per load.
+- `root_config_path()` → altijd `get_default_hermes_root()` (niet profiel-`HERMES_HOME`).
+- `save_config()` / `config set` → global keys naar **root**; redirect alleen als key expliciet in save-payload.
+- `bust_config_caches(root)` → leegt alle load/raw caches (profielen hangen af van root).
+- `hermes profile create` / `doctor --fix` → strip stale global blocks in profielen.
 
 ## RAG-pijplijn
 
@@ -85,9 +87,10 @@ Defaults: `windows/team_display.defaults`; toepassen: `APPLY_INSTITUTIONAL_RUNTI
 ## Windows split-home (config single-source)
 
 - **Runtime:** `%LOCALAPPDATA%\hermes\` — enige actieve `config.yaml`; `HERMES_HOME` = root (niet `profiles\*`).
+- **Root-only globals:** `model`, `auxiliary`, `providers`/`custom_providers` — profielen erven via `profile_model_inheritance.py` (load + save redirect); geen stale blocks in `profiles/*/config.yaml`.
 - **Legacy hub:** `%USERPROFILE%\.hermes\` — `.env` + `_local_assets`; geen actieve config (deprecate → `config.yaml.deprecated-*` + `CONFIG_README.txt`).
 - **Module:** `windows/scripts/HermesHomeCommon.ps1` (paden, drift, gateway, launch-env).
-- **Poorten:** `VERIFY_HERMES_CONFIG_DRIFT.bat` (dagelijks/post-pull); `APPLY_HERMES_HOME_MIGRATION.bat` (eenmalig); `RUN_HERMES_HOME_E2E.bat` / `RUN_AUDITS -IncludeHermesHomeE2E` (11 stappen + pytest).
+- **Poorten:** `VERIFY_HERMES_CONFIG_DRIFT.bat` (dagelijks/post-pull); `APPLY_HERMES_HOME_MIGRATION.bat` (backup → deprecate → providers/Venice merge → preset → env sync → E2E 14 stappen); `SYNC_HERMES_API_ENV.bat` (incl. `VENICE_API_KEY` + dynamic `key_env`).
 - **Integratie:** `POST_GIT_PULL`, `UPDATE_HERMES` (via `Invoke-UpstreamPostMerge`), `RUN_INSTITUTIONAL_E2E` stap 2i, `launch_institutional_runtime -CheckDrift`.
 - **Docs:** `docs/HERMES_HOME_WINDOWS.md`; SOUL snippet `SOUL_SHARED_CONFIG_GOVERNANCE.md`; footguns `check-windows-footguns.py`.
 

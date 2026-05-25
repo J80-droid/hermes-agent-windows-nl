@@ -7,8 +7,8 @@ Instructions for AI coding assistants and developers working on the hermes-agent
 - Index: `windows/scripts/update_knowledge.bat` → `scripts/rag_pipeline/ingest.py` (zie `scripts/rag_pipeline/ACTIVATION.md`).
 - RAG: `windows\scripts\update_knowledge.bat` (per-domein via `%USERPROFILE%\data\domains.yaml`).
 - MCP: per profiel `lancedb-<domein>` in profile `config.yaml` (niet globale `lancedb-knowledge`).
-- **Model/provider:** domeinprofielen **erven** van root `%LOCALAPPDATA%\hermes\config.yaml` — geen `model:` in `profiles/<naam>/config.yaml` (tenzij `model.inherit: false`). Code: `hermes_cli/profile_model_inheritance.py`; docs: `docs/PROFILE_MODEL_INHERITANCE.md`.
-- **Windows split-home (2026-05-23):** `HermesHomeCommon.psm1`, drift verify, deprecate legacy config, auxiliary hybrid preset, `HermesHomeE2E`, doctor + `HERMES_WIN_PREFER_LOCALAPPDATA`, runbook `docs/HERMES_HOME_WINDOWS.md`.
+- **Model/provider/auxiliary/providers:** domeinprofielen **erven** van root `%LOCALAPPDATA%\hermes\config.yaml` — geen global blocks in `profiles/<naam>/config.yaml` (tenzij `*.inherit: false`). Code: `hermes_cli/profile_model_inheritance.py`; docs: `docs/PROFILE_MODEL_INHERITANCE.md`, `docs/HERMES_HOME_WINDOWS.md`.
+- **Windows split-home (2026-05-23+):** `HermesHomeCommon.ps1`, drift verify, deprecate legacy config, auxiliary hybrid preset, Venice merge, root inheritance E2E, doctor + `HERMES_WIN_PREFER_LOCALAPPDATA`, runbook `docs/HERMES_HOME_WINDOWS.md`.
 - Citatieregels: `.cursorrules` + `LANCEDB_RAG_STRICT_CITATION_GUIDANCE` in `agent/prompt_builder.py` (actief wanneer tool `search_knowledge` geladen is).
 
 ## Development Environment

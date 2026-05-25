@@ -1,0 +1,10 @@
+# Reference fragment — Venice custom provider (OpenAI-compatible API).
+# Restore via windows/scripts/merge_legacy_providers_config.py or manually in root config.
+
+providers:
+  venice:
+    base_url: https://api.venice.ai/api/v1
+    provider: custom
+    api_key_env: VENICE_API_KEY
+
+# Requires VENICE_API_KEY in runtime .env (sync: windows/SYNC_HERMES_API_ENV.bat)

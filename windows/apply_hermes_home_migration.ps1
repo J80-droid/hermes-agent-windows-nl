@@ -1,26 +1,13 @@
 <#
 .SYNOPSIS
-    Eénmalige split-home migratie: backup → deprecate legacy config → auxiliary preset → E2E.
-.DESCRIPTION
-    Idempotent waar mogelijk. Deprecate is no-op als legacy config.yaml al gearchiveerd is.
-    Backup vereist dat Hermes/gateway volledig gestopt zijn (behalve met -SkipBackup).
-.PARAMETER SkipBackup
-    Sla backup over (her-run na eerdere MANAGE_BACKUPS).
-.PARAMETER SkipDeprecate
-    Sla deprecate over (legacy al gearchiveerd).
-.PARAMETER SkipAuxiliary
-    Sla auxiliary preset over.
-.PARAMETER SkipE2E
-    Sla RUN_HERMES_HOME_E2E over.
-.PARAMETER NoCopyAuxiliaryOnly
-    Deprecate zonder selectieve auxiliary-merge (standaard: -CopyAuxiliaryOnly).
-.PARAMETER NoPause
-    Geen pause aan het einde.
+    Eénmalige split-home migratie: backup → deprecate → providers → preset → env → E2E.
 #>
 param(
     [switch]$SkipBackup,
     [switch]$SkipDeprecate,
+    [switch]$SkipProviders,
     [switch]$SkipAuxiliary,
+    [switch]$SkipEnvSync,
     [switch]$SkipE2E,
     [switch]$NoCopyAuxiliaryOnly,
     [switch]$NoPause
@@ -37,10 +24,7 @@ Set-Location $repoRoot
 
 Write-Host '=== Hermes split-home migratie (automatisch) ===' -ForegroundColor Cyan
 Write-Host "[INFO] Repo: $repoRoot" -ForegroundColor Cyan
-if ($NoCopyAuxiliaryOnly) {
-    Write-Host '[INFO] Deprecate zonder -CopyAuxiliaryOnly' -ForegroundColor Cyan
-}
-Write-Host '[INFO] Keten: backup -> deprecate -> auxiliary preset -> E2E' -ForegroundColor Cyan
+Write-Host '[INFO] Keten: backup -> deprecate -> providers -> preset -> strip -> env -> E2E' -ForegroundColor Cyan
 Write-Host ''
 
 function Invoke-Step {
@@ -58,18 +42,22 @@ function Invoke-Step {
     Write-Host ''
 }
 
+$step = 1
+$total = 7
+
 if (-not $SkipBackup) {
-    Invoke-Step -Name '1/4 Backup (MANAGE_BACKUPS)' -Action {
+    Invoke-Step -Name "$step/$total Backup (MANAGE_BACKUPS)" -Action {
         $env:HERMES_BACKUP_NONINTERACTIVE = '1'
         & (Join-Path $windowsRoot 'backup_hermes.ps1') -SkipPause
     }
 } else {
-    Write-Host '[SKIP] 1/4 Backup (-SkipBackup)' -ForegroundColor Yellow
+    Write-Host "[SKIP] $step/$total Backup (-SkipBackup)" -ForegroundColor Yellow
     Write-Host ''
 }
+$step++
 
 if (-not $SkipDeprecate) {
-    Invoke-Step -Name '2/4 Deprecate legacy config' -Action {
+    Invoke-Step -Name "$step/$total Deprecate legacy config" -Action {
         if (-not $NoCopyAuxiliaryOnly) {
             & (Join-Path $windowsRoot 'scripts\deprecate_legacy_config.ps1') -CopyAuxiliaryOnly
         } else {
@@ -77,25 +65,55 @@ if (-not $SkipDeprecate) {
         }
     }
 } else {
-    Write-Host '[SKIP] 2/4 Deprecate (-SkipDeprecate)' -ForegroundColor Yellow
+    Write-Host "[SKIP] $step/$total Deprecate (-SkipDeprecate)" -ForegroundColor Yellow
     Write-Host ''
 }
+$step++
 
 if (-not $SkipAuxiliary) {
-    Invoke-Step -Name '3/4 Auxiliary hybrid preset' -Action {
+    Invoke-Step -Name "$step/$total Auxiliary hybrid preset + strip profiles" -Action {
         & (Join-Path $windowsRoot 'scripts\apply_auxiliary_hybrid_preset.ps1')
     }
 } else {
-    Write-Host '[SKIP] 3/4 Auxiliary (-SkipAuxiliary)' -ForegroundColor Yellow
+    Write-Host "[SKIP] $step/$total Auxiliary (-SkipAuxiliary)" -ForegroundColor Yellow
     Write-Host ''
 }
+$step++
+
+if (-not $SkipProviders) {
+    Invoke-Step -Name "$step/$total Merge legacy providers (Venice)" -Action {
+        $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
+        & $conda run -n hermes-env --no-capture-output python (Join-Path $windowsRoot 'scripts\merge_legacy_providers_config.py')
+    }
+} else {
+    Write-Host "[SKIP] $step/$total Providers (-SkipProviders)" -ForegroundColor Yellow
+    Write-Host ''
+}
+$step++
+
+Invoke-Step -Name "$step/$total Strip profile global blocks" -Action {
+    $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
+    & $conda run -n hermes-env --no-capture-output python (Join-Path $windowsRoot 'scripts\strip_profile_global_config_blocks.py')
+}
+$step++
+
+if (-not $SkipEnvSync) {
+    Invoke-Step -Name "$step/$total Sync API env (legacy -> runtime)" -Action {
+        $env:HERMES_SKIP_PAUSE = '1'
+        & (Join-Path $windowsRoot 'sync_hermes_api_env.ps1')
+    }
+} else {
+    Write-Host "[SKIP] $step/$total Env sync (-SkipEnvSync)" -ForegroundColor Yellow
+    Write-Host ''
+}
+$step++
 
 if (-not $SkipE2E) {
-    Invoke-Step -Name '4/4 HermesHome E2E' -Action {
+    Invoke-Step -Name "$step/$total HermesHome E2E" -Action {
         & (Join-Path $windowsRoot 'audits\RUN_HERMES_HOME_E2E.ps1') -RepoRoot $repoRoot
     }
 } else {
-    Write-Host '[SKIP] 4/4 E2E (-SkipE2E)' -ForegroundColor Yellow
+    Write-Host "[SKIP] $step/$total E2E (-SkipE2E)" -ForegroundColor Yellow
     Write-Host ''
 }
 

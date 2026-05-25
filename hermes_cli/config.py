@@ -4498,10 +4498,10 @@ def _load_config_impl(*, want_deepcopy: bool) -> Dict[str, Any]:
                 config = _deep_merge(config, user_config)
                 try:
                     from hermes_cli.profile_model_inheritance import (
-                        apply_profile_model_inheritance,
+                        apply_profile_root_config_inheritance,
                     )
 
-                    config = apply_profile_model_inheritance(config, user_config)
+                    config = apply_profile_root_config_inheritance(config, user_config)
                 except Exception:
                     pass
             except Exception as e:
@@ -4509,10 +4509,10 @@ def _load_config_impl(*, want_deepcopy: bool) -> Dict[str, Any]:
         else:
             try:
                 from hermes_cli.profile_model_inheritance import (
-                    apply_profile_model_inheritance,
+                    apply_profile_root_config_inheritance,
                 )
 
-                config = apply_profile_model_inheritance(config, {})
+                config = apply_profile_root_config_inheritance(config, {})
             except Exception:
                 pass
 
@@ -4636,17 +4636,40 @@ def save_config(config: Dict[str, Any]):
                 _LAST_EXPANDED_CONFIG_BY_PATH.get(str(config_path)),
             )
 
-        # Named profiles: inference model lives in root config, not profile yaml.
+        # Named profiles: global blocks live in root config, not profile yaml.
+        # Redirect naar root alleen als model/auxiliary/providers expliciet in `config` zitten
+        # (voorkomt per ongeluk overschrijven van root providers bij partial profiel-save).
+        incoming_keys = set(config.keys()) if isinstance(config, dict) else set()
         try:
             from hermes_cli.profile_model_inheritance import (
+                save_auxiliary_section_to_root,
                 save_model_section_to_root,
+                save_providers_sections_to_root,
+                should_redirect_auxiliary_save_to_root,
                 should_redirect_model_save_to_root,
+                should_redirect_providers_save_to_root,
             )
 
             if should_redirect_model_save_to_root():
                 model_section = normalized.pop("model", None)
-                if model_section is not None:
+                if "model" in incoming_keys and model_section is not None:
                     save_model_section_to_root(model_section)
+            if should_redirect_auxiliary_save_to_root():
+                auxiliary_section = normalized.pop("auxiliary", None)
+                if "auxiliary" in incoming_keys and auxiliary_section is not None:
+                    save_auxiliary_section_to_root(auxiliary_section)
+            if should_redirect_providers_save_to_root():
+                providers_section = normalized.pop("providers", None)
+                custom_providers_section = normalized.pop("custom_providers", None)
+                providers_in_save = "providers" in incoming_keys
+                custom_in_save = "custom_providers" in incoming_keys
+                if (providers_in_save or custom_in_save) and (
+                    providers_section is not None or custom_providers_section is not None
+                ):
+                    save_providers_sections_to_root(
+                        providers_section if isinstance(providers_section, dict) else {},
+                        custom_providers_section if custom_in_save else None,
+                    )
         except Exception:
             pass
 
@@ -5406,13 +5429,14 @@ def set_config_value(key: str, value: str):
     try:
         from hermes_cli.profile_model_inheritance import (
             bust_config_caches,
-            is_global_model_config_key,
+            is_global_root_config_key,
             root_config_path,
         )
 
-        bust_config_caches(config_path)
-        if is_global_model_config_key(key):
+        if is_global_root_config_key(key):
             bust_config_caches(root_config_path())
+        else:
+            bust_config_caches(config_path)
     except Exception:
         pass
 

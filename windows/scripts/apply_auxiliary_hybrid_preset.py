@@ -68,7 +68,8 @@ def main() -> int:
         or str(Path(os.environ.get("LOCALAPPDATA", "")) / "hermes"),
     )
 
-    from hermes_cli.config import load_config, save_config
+    from hermes_cli.profile_model_inheritance import bust_config_caches, root_config_path
+    from utils import atomic_yaml_write
 
     if not PRESET_PATH.is_file():
         print(f"Preset missing: {PRESET_PATH}", file=sys.stderr)
@@ -95,7 +96,20 @@ def main() -> int:
         if not _google_key_in_env(legacy_env):
             print("[WARN] GOOGLE_API_KEY not found in runtime or ~/.hermes/.env — vision may fail.")
 
-    cfg = load_config()
+    root_path = root_config_path()
+    root_path.parent.mkdir(parents=True, exist_ok=True)
+    if root_path.is_file():
+        try:
+            with root_path.open(encoding="utf-8") as f:
+                cfg = yaml.safe_load(f) or {}
+        except Exception as exc:
+            print(f"[FAIL] Could not read {root_path}: {exc}", file=sys.stderr)
+            return 1
+    else:
+        cfg = {}
+    if not isinstance(cfg, dict):
+        cfg = {}
+
     aux = cfg.setdefault("auxiliary", {})
     if not isinstance(aux, dict):
         aux = {}
@@ -119,8 +133,9 @@ def main() -> int:
         print(yaml.safe_dump({"auxiliary": aux}, sort_keys=False, allow_unicode=True))
         return 0
 
-    save_config(cfg)
-    print("[OK] Auxiliary hybrid preset applied to", os.environ["HERMES_HOME"])
+    atomic_yaml_write(root_path, cfg, sort_keys=False)
+    bust_config_caches(root_path)
+    print("[OK] Auxiliary hybrid preset applied to", root_path.parent)
     for task in TEXT_AUX + ("vision",):
         slot = aux.get(task, {})
         prov = slot.get("provider") if isinstance(slot, dict) else "?"
@@ -129,6 +144,16 @@ def main() -> int:
     print("[VERIFY] hermes config get auxiliary.vision.provider →", end=" ")
     vision = aux.get("vision") or {}
     print(vision.get("provider") if isinstance(vision, dict) else "?")
+
+    try:
+        from hermes_cli.profile_model_inheritance import strip_all_profile_global_blocks
+
+        stripped = strip_all_profile_global_blocks()
+        if stripped:
+            print("[OK] Stripped stale profile global blocks:", ", ".join(stripped))
+    except Exception as exc:
+        print(f"[WARN] Profile strip skipped: {exc}", file=sys.stderr)
+
     return 0
 
 
