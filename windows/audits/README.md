@@ -21,7 +21,7 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 - `/` in **dubbele** aanhalingstekens (`"upstream/main"`, `"miniconda3/anaconda3"`) → zelfde tokenizer-bug; gebruik enkelvoudige quotes of concatenatie
 - `[TAG]` in strings (`'[ERROR]'`, `"[OK]"`) → type-literal; gebruik `OK:` / `ERROR:` of `-join '[', 'OK', ']'`
 
-**IDE:** na wijzigingen: PowerShell: Restart Session + Developer: Reload Window. Verifieer met `windows\tests\Test-PsesTokenizer.ps1` (AST) en `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
+**IDE:** na wijzigingen: PowerShell: Restart Session + Developer: Reload Window. Verifieer met `windows\tests\Test-PsesTokenizer.ps1` (AST), `windows\tests\HermesShellCommon.Unit.Tests.ps1` (helpers), `RUN_HERMES_SHELL_COMMON_E2E.bat` (PSES-poort) en `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
 
 Runtime/AST: vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
 
@@ -68,6 +68,7 @@ Runtime/AST: vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
 | **`RUN_AUDITS.bat -IncludeMemoryProductionGate`** | Alleen memory productie-poort (ook in `-IncludeAllE2E`) |
 | **`RUN_UPSTREAM_MERGE_INTEGRATION_E2E.bat`** | Na upstream-merge: `cwdReserve`+`statusRuleWidths`, profile create strip+s6, vitest/pytest/harness (**10 stappen**) |
 | **`RUN_UPSTREAM_SYNC_PHASE2_E2E.bat`** | Fase-2 keten: `Invoke-UpstreamGitMergeIfBehind`, preflight fetch-dedup, `pip install -e .` na merge, TUI `leftWidth`/`statusRuleMinLeftWidth`, vitest + harness (**8 stappen**) |
+| **`RUN_HERMES_SHELL_COMMON_E2E.bat`** | PSES-safe logging/git: `HermesShellCommon` API, `Format-HermesStepLabel`, geen `2>&1`/`[TAG]` in kritieke ps1, AST + python harness (**7 stappen**) |
 | **`RUN_STATUS_BAR_COST_E2E.bat`** | TUI statusbalk (rich): `show_cost`, `cost_bar_mode`, breakdown, turn-delta, live `~$turn`, gateway smoke |
 | **`RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`** | Klassieke CLI (`hermes chat`): `status_bar_cost.py`, `cli.py` hooks, `/cost`, smoke + pytest |
 | **`RUN_PARETO_E2E.bat`** | OpenRouter Pareto Code router: model-gate, transport/summary parity, pytest, verify script |

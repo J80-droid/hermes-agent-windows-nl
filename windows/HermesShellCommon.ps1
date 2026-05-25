@@ -11,7 +11,11 @@
 #   - Dot-source verplicht in audit/core scripts die bovenstaande helpers gebruiken
 
 function Test-NativeCommandFailed {
-    # Na een puur PowerShell-script is $LASTEXITCODE vaak $null; $null -ne 0 is ten onrechte $true.
+    <#
+    .SYNOPSIS
+    True als de laatste native opdracht (git, conda, npm, …) met niet-nul exitcode eindigde.
+    $null LASTEXITCODE na puur PowerShell wordt als succes beschouwd (geen valse positieven).
+    #>
     return ($null -ne $LASTEXITCODE -and [int]$LASTEXITCODE -ne 0)
 }
 
@@ -32,18 +36,25 @@ function Write-HermesErr { param([string]$Message) Write-HermesTag 'ERROR: ' $Me
 function Write-HermesSkip { param([string]$Message) Write-HermesTag 'SKIP: ' $Message Yellow }
 
 function Format-HermesStepLabel {
+    <#
+    .SYNOPSIS
+    PSES-veilig voortgangslabel zonder slash of [TAG] in dubbele quotes.
+    #>
     param(
         [Parameter(Mandatory)][int]$Step,
-        [Parameter(Mandatory)][int]$Total,
+        [Parameter(Mandatory)][ValidateRange(1, [int]::MaxValue)][int]$Total,
         [Parameter(Mandatory)][string]$Suffix
     )
+    if ($Step -lt 1 -or $Step -gt $Total) {
+        throw "Format-HermesStepLabel: Step ($Step) moet tussen 1 en Total ($Total) liggen."
+    }
     return ('Stap {0} van {1} - {2}' -f $Step, $Total, $Suffix)
 }
 
 function Invoke-GitCommand {
     <#
     .SYNOPSIS
-    Run git without 2>&1/2>$null (PSES-safe). Returns exit code; optional captured output.
+    Run git without stderr merge redirects (PSES-safe). Returns exit code; optional captured output.
     #>
     param(
         [Parameter(Mandatory)][string[]]$Arguments,

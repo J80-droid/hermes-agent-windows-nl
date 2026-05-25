@@ -155,7 +155,12 @@ function Invoke-UpstreamPreflight {
 
     $upstreamRef = 'upstream/main'
     $lrRaw = git rev-list --left-right --count ('HEAD...' + $upstreamRef)
+    if (Test-NativeCommandFailed) {
+        Write-HermesErr 'Kon fork vs upstream main niet vergelijken.'
+        return 3
+    }
     $lr = if ($lrRaw) { ($lrRaw | Select-Object -First 1).ToString().Trim() -split '\s+' } else { @('0', '0') }
+    if ($lr.Count -lt 2) { $lr = @('0', '0') }
     $ahead = [int]$lr[0]
     $behind = [int]$lr[1]
     Write-Host "  Fork-only commits (ahead):  $ahead"

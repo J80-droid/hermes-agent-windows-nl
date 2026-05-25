@@ -53,6 +53,18 @@ Extra pytest-argumenten worden doorgegeven (bijv. een enkele test):
 .\windows\tests\RUN_PYTEST.ps1 tests\tools\test_search_hidden_dirs.py -q
 ```
 
+## `Test-PsesTokenizer.ps1` en `HermesShellCommon.Unit.Tests.ps1`
+
+- **`Test-PsesTokenizer.ps1`**: AST-parse (zelfde tokenizer als PSES) voor 12 fork-kritieke `windows\*.ps1` scripts.
+- **`HermesShellCommon.Unit.Tests.ps1`**: unit asserts voor `Format-HermesStepLabel`, `Test-NativeCommandFailed`, `Join-HermesRepoPath` (geen Pester).
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\tests\Test-PsesTokenizer.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\tests\HermesShellCommon.Unit.Tests.ps1
+```
+
+E2E-poort (bron + harness): **`windows\audits\RUN_HERMES_SHELL_COMMON_E2E.bat`**.
+
 ## `RUN_PSScriptAnalyzer`
 
 - Vereist dat **PSScriptAnalyzer** al op de machine staat (`Get-Module -ListAvailable PSScriptAnalyzer`). Er is **geen** automatische `Install-Module` (die hangt vaak vast in IDE/headless); eenmalig in een gewone PowerShell:

@@ -195,7 +195,7 @@ function Test-HermesRagExtrasInstalled {
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'SilentlyContinue'
     try {
-        $null = & $PythonExe -c "import lancedb, sentence_transformers" 2>&1
+        $null = & $PythonExe -c 'import lancedb, sentence_transformers'
         return ($LASTEXITCODE -eq 0)
     } catch {
         return $false
@@ -218,7 +218,10 @@ function Write-HermesRagDepsManifest {
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'SilentlyContinue'
     try {
-        $version = (& $PythonExe -c "import importlib.metadata as m; print(m.version('hermes-agent'))" 2>$null | Select-Object -Last 1).ToString().Trim()
+        $verOut = & $PythonExe -c "import importlib.metadata as m; print(m.version('hermes-agent'))"
+        if ($LASTEXITCODE -eq 0 -and $verOut) {
+            $version = ($verOut | Select-Object -Last 1).ToString().Trim()
+        }
     } finally {
         $ErrorActionPreference = $prevEap
     }
@@ -397,9 +400,9 @@ function Update-HermesVscodeInterpreterPath {
 
     if (-not $Quiet) {
         if ($changed) {
-            Write-Host "[OK] IDE interpreter -> $PythonExe" -ForegroundColor Green
+            Write-Host ('OK: IDE interpreter -> ' + $PythonExe) -ForegroundColor Green
         } else {
-            Write-Host "[OK] IDE interpreter al canoniek: $PythonExe" -ForegroundColor Green
+            Write-Host ('OK: IDE interpreter al canoniek: ' + $PythonExe) -ForegroundColor Green
         }
     }
 
