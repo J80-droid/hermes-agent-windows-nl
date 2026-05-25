@@ -20,7 +20,7 @@
 
 **TUI statusbalk-kosten (2026-05-24, rich bar + layout-fix):** Framework-default **`show_cost: true`** + **`cost_bar_mode: rich`**; altijd zichtbaar (`n/a`/`included`/`~NK tok`); `statusRuleColumns` (composer `paddingX` −2) + `resolveStatusRuleLayout`; live turn-kosten; Gemini 3.x → geschatte USD via `usage_pricing`; **`REBUILD_TUI.bat`** + volledige Hermes-herstart na TUI-pull (dist niet hot-reload). E2E `RUN_STATUS_BAR_COST_E2E.bat`.
 
-**Klassieke CLI prompt-wachtrij (2026-05-25):** `/queue` list/pop/clear; compact preview-paneel boven input + `queue:N` statusbalk; module `hermes_cli/cli_pending_queue.py`; tests `test_cli_pending_queue.py` + `test_cli_init.py`.
+**Klassieke CLI prompt-wachtrij (2026-05-25, PASS):** `/queue` list|pop|clear + `/q` alias; compact hint (max 2 previews, smalle terminal → `/queue list`); statusbalk `queue:N`; ack `[N] Queued for next turn|when idle`; review: hint geblokkeerd bij `_command_running`, `pop` via `get_nowait`, `format_removed_preview`. Module `hermes_cli/cli_pending_queue.py`. Unit **88** `test_cli_pending_queue.py`; E2E **17/17** `audits/RUN_CLI_PENDING_QUEUE_E2E.bat`. Docs: `windows/README.md`, `audits/README.md`.
 
 **Klassieke CLI statusbalk-kosten (2026-05-24):** Pariteit met TUI — `hermes_cli/status_bar_cost.py` + dunne hooks in `cli.py` (`_append_status_bar_cost_fragments`, `/cost`); zelfde defaults en responsive tiers (≥52 cols session, ≥76 rich breakdown); data via `build_session_usage_snapshot` + `_seed_agent_session_cost`. **Layout (breed):** model → ctx → bar/% → duur → ⏲ → kosten (gedimd blauw `status-bar-cost`) → breakdown → calls → tools (`0 tools` in full tier). **Tool-teller:** `agent.session_tool_executions` in `tool_executor.py`. **Gemini cache pricing:** `agent/usage_pricing.py` (`_GOOGLE_GEMINI_PRICING`, Standard tier; geen storage/Batch/Flex); geen `n/a` bij cache-hits op `provider=gemini`. E2E **`RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`** (12/12 PASS).
 
@@ -78,6 +78,7 @@
 | E2E institutioneel | `windows/audits/RUN_INSTITUTIONAL_E2E.bat` |
 | E2E context-aware pseudo-tabel | `windows/audits/RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat` |
 | E2E collapsed record pseudo-tabel | `audits/RUN_COLLAPSED_RECORD_PSEUDO_TABLE_E2E.bat` (10/10); unit `tests/hermes_cli/test_collapsed_record_pseudo_table.py` |
+| E2E klassieke CLI prompt-wachtrij | `audits/RUN_CLI_PENDING_QUEUE_E2E.bat` (17/17); unit `tests/hermes_cli/test_cli_pending_queue.py` (88) |
 | Hermes start (bat) | `../../HERMES_START.md` |
 | E2E Hermes split-home | `windows/audits/RUN_HERMES_HOME_E2E.bat` |
 | E2E root inheritance | `windows/audits/RUN_ROOT_CONFIG_INHERITANCE_E2E.bat` |

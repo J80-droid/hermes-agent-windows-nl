@@ -14,6 +14,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Obsidian vault openen (L4) | `windows/OPEN_OBSIDIAN_VAULT.bat` — taakbalk: `Hermes - Obsidian vault - naar taakbalk slepen.lnk` |
 | TUI statusbalk-kosten (rich: turn/sessie, breakdown, tools) | `windows/audits/RUN_STATUS_BAR_COST_E2E.bat` · `-ApplyDisplayFix` · `RUN_AUDITS.bat -IncludeStatusBarCostE2E` — rapport `windows/audits/STATUS_BAR_COST_E2E_REPORT_2026-05-23.md` |
 | Klassieke CLI statusbalk-kosten (Gemini cache, 12-stappen E2E) | `windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` · `RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E` — rapport `windows/audits/CLASSIC_CLI_STATUS_BAR_COST_E2E_REPORT_2026-05-24.md` |
+| Klassieke CLI prompt-wachtrij (`/queue`, hint, status) | [../windows/README.md](../windows/README.md) § `/queue` · E2E: `audits/RUN_CLI_PENDING_QUEUE_E2E.bat` · unit: `pytest tests/hermes_cli/test_cli_pending_queue.py -q` |
 | OpenRouter Pareto Code router | `windows/audits/RUN_PARETO_E2E.bat` · `RUN_AUDITS.bat -IncludeParetoE2E` — rapport lokaal: `PARETO_E2E_REPORT_*.md` (gitignored) |
 | Toolsets per domein (minimaal + opt-in) | [DOMAIN_TOOLSET_AUDIT.md](DOMAIN_TOOLSET_AUDIT.md) — sync: `windows/SYNC_DOMAIN_TOOLSETS.bat` |
 | Model/provider voor **alle** profielen instellen | [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md) |

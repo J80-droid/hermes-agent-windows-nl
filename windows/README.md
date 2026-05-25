@@ -36,7 +36,9 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 | `/queue pop` | Eerste item verwijderen (FIFO) |
 | `/queue clear` | Hele wachtrij legen |
 
-**Zichtbaar:** compact paneel boven de invoer (`queued (N)` + max. 2 previews) en `queue:N` in de statusbalk. De TUI heeft een rijkere queue-UI (`ui-tui/README.md`).
+**Zichtbaar:** compact paneel boven de invoer (`queued (N)` + max. 2 previews) en `queue:N` in de statusbalk (ook op smalle terminals). Hint verborgen tijdens sudo/approval/clarify/lopend slash-commando. De TUI heeft een rijkere queue-UI (`ui-tui/README.md`).
+
+**Audit:** `audits\RUN_CLI_PENDING_QUEUE_E2E.bat` (17/17, geen live API). Unit: `pytest tests\hermes_cli\test_cli_pending_queue.py` (88 tests).
 
 | Taak | Script |
 | ---- | ------ |

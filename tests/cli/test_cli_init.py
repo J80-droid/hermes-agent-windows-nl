@@ -196,6 +196,11 @@ class TestBusyInputMode:
         cli.process_command("/queue clear")
         assert cli._pending_input.empty()
 
+    def test_queue_hint_blocked_during_command(self):
+        cli = _make_cli()
+        cli._command_running = True
+        assert cli._queue_hint_blocked()
+
     def test_queue_empty_snapshot(self):
         cli = _make_cli()
         assert cli._pending_queue_entries() == []

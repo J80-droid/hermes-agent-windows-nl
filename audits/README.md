@@ -76,3 +76,35 @@ audits\RUN_COLLAPSED_RECORD_PSEUDO_TABLE_E2E.bat
 Unit tests (geen live API): `pytest tests/hermes_cli/test_collapsed_record_pseudo_table.py` — happy path, edge cases (pipe in cel, dedupe, eligibility), negatieve input; mocks op interne helpers waar nodig.
 
 Uitvoeren vanuit repo-root `hermes-agent\` (zelfde patroon als andere `audits\RUN_*` runners).
+
+---
+
+# Classic CLI pending queue E2E
+
+Geïsoleerde E2E voor `_pending_input` wachtrij: `/queue` list/pop/clear, compact hint-paneel, statusbalk `queue:N`. Geen live API, geen volledige TUI.
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| E1 | FIFO snapshot (3 items) | Volgorde first → third |
+| E2 | `render_queue_lines` list_mode | Max 8 regels + `…and N more` |
+| E3 | `pop_pending_head` | Head weg, rest behouden |
+| E4 | `clear_pending_queue` | Depth 0, count=2 |
+| E5 | Pop lege queue | `None`, geen crash |
+| E6 | Slash in queue | `[cmd]` prefix |
+| E7 | Tuple + images | `[N images]` suffix |
+| E8 | `enqueue_ack_message` | `next turn` vs `when idle` |
+| E9 | `queue_status_fragment` | Alleen bij depth > 0 |
+| E10 | Smalle terminal hint | `/queue list` + `hint_panel_height=2` |
+| E11 | `format_removed_preview` | ANSI-strip + ellipsis |
+| E12 | HermesCLI 3× enqueue | Snapshot FIFO |
+| E13 | HermesCLI pop + clear | FIFO + leeg |
+| E14 | HermesCLI `/q` alias | Queue, niet quit |
+| E15 | `_command_running` | `_queue_hint_blocked` |
+| E16 | Statusbalk helper | `queue:1` fragment |
+| E17 | pytest gate | `test_cli_pending_queue` + queue-filter `test_cli_init` |
+
+```bat
+audits\RUN_CLI_PENDING_QUEUE_E2E.bat
+```
+
+Unit tests: `pytest tests/hermes_cli/test_cli_pending_queue.py tests/cli/test_cli_init.py -k "queue or pending"`.

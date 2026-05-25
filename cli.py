@@ -3323,12 +3323,14 @@ class HermesCLI:
         self._invalidate(min_interval=0.0)
 
     def _queue_hint_blocked(self) -> bool:
+        """Hide compact queue hint during sudo/approval/clarify/command-running UI."""
         return bool(
             self._sudo_state
             or self._secret_state
             or self._approval_state
             or getattr(self, "_slash_confirm_state", None)
             or self._clarify_state
+            or self._command_running
         )
 
     def _pending_queue_entries(self) -> list:
@@ -3344,6 +3346,7 @@ class HermesCLI:
             _cprint(line)
 
     def _enqueue_pending_user(self, payload, *, silent: bool = False) -> None:
+        """FIFO enqueue with ``[N] Queued for …`` ack and hint/status invalidation."""
         from hermes_cli.cli_pending_queue import enqueue_ack_message, pending_queue_depth
 
         self._pending_input.put(payload)
@@ -3370,6 +3373,7 @@ class HermesCLI:
             frags.append(("class:status-bar-dim", frag))
 
     def _handle_queue_command(self, cmd_original: str) -> None:
+        """``/queue`` / ``/q``: list (default), pop, clear, or enqueue ``<prompt>``."""
         from hermes_cli.cli_pending_queue import clear_pending_queue, pop_pending_head, pending_queue_depth
 
         parts = cmd_original.split(None, 2)
@@ -3382,11 +3386,13 @@ class HermesCLI:
             self._print_pending_queue_list()
             return
         if verb == "pop":
+            from hermes_cli.cli_pending_queue import format_removed_preview
+
             removed = pop_pending_head(self._pending_input)
             if removed is None:
                 _cprint("  (queue empty)")
             else:
-                preview = removed[:80] + ("..." if len(removed) > 80 else "")
+                preview = format_removed_preview(removed)
                 _cprint(f"  {_ACCENT}Removed:{_RST} {preview}")
                 remaining = pending_queue_depth(self._pending_input)
                 _cprint(f"  {_DIM}{remaining} item(s) remaining{_RST}")
@@ -3927,11 +3933,10 @@ class HermesCLI:
             yolo_active = bool(os.getenv("HERMES_YOLO_MODE"))
             if width < 52:
                 text = f"⚕ {snapshot['model_short']} · {duration_label}"
-                from hermes_cli.cli_pending_queue import pending_queue_depth, queue_status_fragment
-
-                qfrag = queue_status_fragment(pending_queue_depth(getattr(self, "_pending_input", None)))
-                if qfrag:
-                    text += f" · {qfrag}"
+                parts_narrow = []
+                self._append_pending_queue_status_part(parts_narrow)
+                if parts_narrow:
+                    text += f" · {parts_narrow[0]}"
                 if yolo_active:
                     text += " · ⚠ YOLO"
                 return self._trim_status_bar_text(text, width)

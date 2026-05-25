@@ -1,4 +1,24 @@
-"""Helpers for classic CLI ``_pending_input`` queue display and management."""
+"""Classic CLI ``_pending_input`` queue — display, FIFO management, hint/status UI.
+
+Used by ``HermesCLI`` (``cli.py``) for follow-up prompts while the agent runs.
+Storage remains ``queue.Queue`` on ``self._pending_input``; this module only peeks
+(``list(q.queue)``) or mutates via ``get_nowait`` (pop/clear) — never changes FIFO
+semantics of ``process_loop``.
+
+Payload shapes:
+  - ``str``: user text or slash command (shown as ``[cmd] /…`` when applicable)
+  - ``(text, [Path, ...])``: text plus attached images (``[N images]`` suffix)
+
+Public API:
+  - ``normalize_pending_entry``, ``snapshot_pending_queue``, ``pending_queue_depth``
+  - ``render_queue_lines`` (hint max 2 rows; list max 8 + overflow hint)
+  - ``pop_pending_head``, ``clear_pending_queue``
+  - ``queue_status_fragment``, ``enqueue_ack_message``
+  - ``hint_panel_height``, ``hint_panel_fragments``, ``format_removed_preview``
+
+Tests: ``tests/hermes_cli/test_cli_pending_queue.py`` (88+ cases).
+E2E: ``audits/RUN_CLI_PENDING_QUEUE_E2E.bat`` (17 scenarios, no live API).
+"""
 
 from __future__ import annotations
 
@@ -23,11 +43,16 @@ def _looks_like_slash_command(text: str) -> bool:
 
 def normalize_pending_entry(entry: Any) -> str:
     """Turn a queue payload into a single-line label for display."""
-    if isinstance(entry, tuple) and entry:
+    if isinstance(entry, tuple):
+        if not entry:
+            return "(empty)"
         text = str(entry[0] or "").strip()
         images = entry[1] if len(entry) > 1 else None
-        if images:
-            count = len(images) if hasattr(images, "__len__") else 1
+        if images is not None and not isinstance(images, (str, bytes)):
+            try:
+                count = len(images)  # type: ignore[arg-type]
+            except TypeError:
+                count = 1
             suffix = f" [{count} image{'s' if count != 1 else ''}]"
             text = (text + suffix).strip() if text else suffix.strip()
     else:
@@ -109,8 +134,8 @@ def render_queue_lines(
 
 
 def pop_pending_head(q: Optional[Queue]) -> Optional[str]:
-    """Remove FIFO head without blocking."""
-    if q is None or pending_queue_depth(q) <= 0:
+    """Remove FIFO head without blocking (no depth pre-check — avoids qsize races)."""
+    if q is None:
         return None
     try:
         raw = q.get_nowait()
@@ -156,10 +181,19 @@ def hint_panel_height(depth: int, terminal_width: int) -> int:
     if depth <= 0:
         return 0
     if terminal_width < 60:
-        return 1
+        # Matches render_queue_lines narrow layout: header + "/queue list"
+        return 2
     visible = min(2, depth)
     extra = 1 if depth > visible else 0
     return 1 + visible + extra
+
+
+def format_removed_preview(label: str, *, max_len: int = 80) -> str:
+    """Truncate pop/clear feedback without breaking multibyte or ANSI edge cases."""
+    clean = _CONTROL_RE.sub("", _strip_ansi(label)).strip()
+    if len(clean) <= max_len:
+        return clean
+    return format_queue_preview(clean, max_len)
 
 
 def hint_panel_fragments(
