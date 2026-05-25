@@ -60,7 +60,8 @@ function Restore-PendingTrustE2EEnvironment {
 function Invoke-PendingTrustStartE2ECore {
     param(
         [string]$RepoRoot,
-        [string]$LauncherPath
+        [string]$LauncherPath,
+        [string]$IsolatedHermesDir = ''
     )
 
     Write-Host '--- PendingTrust core: module lifecycle ---' -ForegroundColor Cyan
@@ -87,6 +88,29 @@ function Invoke-PendingTrustStartE2ECore {
     Add-PendingTrustE2EStep 'stale status niet pending' (-not (Test-PendingTrustRuntime))
     Clear-StalePendingTrustRuntimeFile
     Add-PendingTrustE2EStep 'Clear-StalePendingTrustRuntimeFile' (-not (Test-Path -LiteralPath $stalePath))
+
+    Write-Host '--- PendingTrust core: identity repair ---' -ForegroundColor Cyan
+    $identityRoot = Join-Path (Split-Path -Parent $IsolatedHermesDir) 'identity_mock_hermes'
+    $idCoreMemDir = Join-Path $identityRoot 'profiles\core\memories'
+    New-Item -ItemType Directory -Path $idCoreMemDir -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $identityRoot 'config.yaml') -Value 'model: test' -Encoding UTF8
+    Set-Content -LiteralPath (Join-Path $identityRoot 'profiles\core\config.yaml') -Value @'
+memory:
+  memory_char_limit: 4000
+  user_char_limit: 1800
+'@ -Encoding UTF8
+    $idMemPath = Join-Path $idCoreMemDir 'MEMORY.md'
+    Set-Content -LiteralPath $idMemPath -Value @(
+        'Runtime: C:\Users\jamel\AppData\Local\hermes',
+        'Note from Jamel about strategy.'
+    ) -Encoding UTF8
+    . (Join-Path $RepoRoot 'windows/scripts/MemoryAuditCommon.ps1')
+    $leaksPre = Get-MemoryFileIdentityLeakLines -FilePath $idMemPath
+    Add-PendingTrustE2EStep 'identity mock has leak' ($leaksPre.Count -ge 1) ('count=' + $leaksPre.Count)
+    $repairPre = Repair-HermesRuntimeIdentity -HermesRoot $identityRoot -Quiet
+    Add-PendingTrustE2EStep 'identity repair changed file' ($repairPre.FilesChanged -ge 1)
+    $leaksPost = Get-MemoryFileIdentityLeakLines -FilePath $idMemPath
+    Add-PendingTrustE2EStep 'identity repair clears leak' ($leaksPost.Count -eq 0)
 
     Write-Host '--- PendingTrust core: launcher gedrag ---' -ForegroundColor Cyan
 
@@ -139,7 +163,7 @@ if (-not (Test-Path -LiteralPath $IsolatedHermesDir)) {
     New-Item -ItemType Directory -Path $IsolatedHermesDir -Force | Out-Null
 }
 
-Invoke-PendingTrustStartE2ECore -RepoRoot $RepoRoot -LauncherPath $launcherPath
+Invoke-PendingTrustStartE2ECore -RepoRoot $RepoRoot -LauncherPath $launcherPath -IsolatedHermesDir $IsolatedHermesDir
 
 Restore-PendingTrustE2EEnvironment -PrevLocalAppData $prevLocalAppData -PrevSkip $prevSkip -PrevDry $prevDry -PrevRepo $prevRepo -IsolatedDir $IsolatedHermesDir
 

@@ -53,17 +53,21 @@ Extra pytest-argumenten worden doorgegeven (bijv. een enkele test):
 .\windows\tests\RUN_PYTEST.ps1 tests\tools\test_search_hidden_dirs.py -q
 ```
 
-## `Test-PsesTokenizer.ps1` en `HermesShellCommon.Unit.Tests.ps1`
+## `Test-PsesTokenizer.ps1`, `HermesShellCommon` en `MemoryAuditCommon` unit tests
 
-- **`Test-PsesTokenizer.ps1`**: AST-parse (zelfde tokenizer als PSES) voor 12 fork-kritieke `windows\*.ps1` scripts.
-- **`HermesShellCommon.Unit.Tests.ps1`**: unit asserts voor `Format-HermesStepLabel`, `Test-NativeCommandFailed`, `Join-HermesRepoPath` (geen Pester).
+- **`Test-PsesTokenizer.ps1`**: AST-parse (zelfde tokenizer als PSES) voor fork-kritieke `windows\*.ps1` scripts (incl. identity repair).
+- **`HermesShellCommon.Unit.Tests.ps1`**: `Format-HermesStepLabel`, `Test-NativeCommandFailed`, `Join-HermesRepoPath` (geen Pester).
+- **`MemoryAuditCommon.Unit.Tests.ps1`**: identity allowlist, `Repair-HermesIdentityLine`, runtime/repo scrub, skip zonder `config.yaml`.
+- **`tests\windows\test_memory_identity_repair.ps1`**: geïsoleerde runtime mock (legacy runner).
+- **`tests\windows\test_scrub_identity.py`**: pytest parity met PS1 allowlist.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\tests\Test-PsesTokenizer.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\tests\HermesShellCommon.Unit.Tests.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\tests\MemoryAuditCommon.Unit.Tests.ps1
 ```
 
-E2E-poort (bron + harness): **`windows\audits\RUN_HERMES_SHELL_COMMON_E2E.bat`**.
+E2E-poorten: **`RUN_HERMES_SHELL_COMMON_E2E.bat`**, **`RUN_MEMORY_IDENTITY_REPAIR_E2E.bat`** (alleen deze nieuwe audit draaien).
 
 ## `RUN_PSScriptAnalyzer`
 

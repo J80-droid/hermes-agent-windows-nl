@@ -7,6 +7,7 @@ $script:MemoryIdentityAllowPatterns = @(
     'Documents[\\/]Hermes Knowledge',
     'Documents[\\/]Obsidian Vault',
     'AppData[\\/]Local[\\/]hermes',
+    '[\\/]Users[\\/][^\\/]+[\\/]AppData',
     'data[\\/]lancedb[\\/]'
 )
 
@@ -23,7 +24,7 @@ function Test-MemoryIdentityLeak {
     param([string]$Line)
     if ([string]::IsNullOrWhiteSpace($Line)) { return $false }
     if (Test-MemoryIdentityLineAllowed -Line $Line) { return $false }
-    if ($Line -match 'Jamel el Mourif') { return $true }
+    if ($Line -match '(?i)Jamel\s+el\s+Mourif') { return $true }
     if ($Line -match '(?i)\bel Mourif\b') { return $true }
     if ($Line -match '(?i)\bJamel\b') { return $true }
     return $false
@@ -56,6 +57,203 @@ function Get-MemoryFileIdentityLeakLines {
     [void](Test-MemoryFileIdentityLeaks -FilePath $FilePath -LeakLines ([ref]$leaks))
     if ($null -eq $leaks) { return @() }
     return @($leaks)
+}
+
+function Repair-HermesIdentityLine {
+    param([string]$Line)
+    if (-not (Test-MemoryIdentityLeak -Line $Line)) { return $Line }
+    $out = $Line
+    $out = [regex]::Replace($out, '(?i)\bJamel\s+el\s+Mourif\b', 'J.')
+    $out = [regex]::Replace($out, '(?i)\bJamel\b', 'J.')
+    $out = [regex]::Replace($out, '(?i)\bel\s+Mourif\b', '')
+    return ($out -replace '[ \t]{2,}', ' ').Trim()
+}
+
+function Repair-HermesIdentityInFile {
+    param(
+        [Parameter(Mandatory)][string]$FilePath,
+        [switch]$DryRun
+    )
+    if (-not (Test-Path -LiteralPath $FilePath)) {
+        return @{ Changed = $false; HitCount = 0; Error = $null }
+    }
+    try {
+        $lines = @(Get-Content -LiteralPath $FilePath -Encoding UTF8 -ErrorAction Stop)
+    } catch {
+        return @{ Changed = $false; HitCount = 0; Error = $_.Exception.Message }
+    }
+    $hitCount = 0
+    $changed = $false
+    $outLines = [System.Collections.Generic.List[string]]::new()
+    foreach ($line in $lines) {
+        $repaired = Repair-HermesIdentityLine -Line $line
+        if ($repaired -ne $line) {
+            $hitCount++
+            $changed = $true
+        }
+        [void]$outLines.Add($repaired)
+    }
+    if ($changed -and -not $DryRun) {
+        try {
+            Set-Content -LiteralPath $FilePath -Value $outLines -Encoding UTF8 -ErrorAction Stop
+        } catch {
+            return @{ Changed = $false; HitCount = $hitCount; Error = $_.Exception.Message }
+        }
+    }
+    return @{ Changed = $changed; HitCount = $hitCount; Error = $null }
+}
+
+function Get-HermesRuntimeRoot {
+    $localRoot = Join-Path $env:LOCALAPPDATA 'hermes'
+    if (Test-Path -LiteralPath (Join-Path $localRoot 'config.yaml')) { return $localRoot }
+    $homeRoot = Join-Path $env:USERPROFILE '.hermes'
+    if (Test-Path -LiteralPath (Join-Path $homeRoot 'config.yaml')) { return $homeRoot }
+    return $localRoot
+}
+
+function Get-HermesPersonaFilePaths {
+    param([string]$HermesRoot)
+    $list = [System.Collections.Generic.List[string]]::new()
+    foreach ($rel in @('SOUL.md', 'memories/USER.md', 'memories/MEMORY.md')) {
+        $p = Join-Path $HermesRoot $rel
+        if (Test-Path -LiteralPath $p) { [void]$list.Add($p) }
+    }
+    $profilesDir = Join-Path $HermesRoot 'profiles'
+    if (Test-Path -LiteralPath $profilesDir) {
+        Get-ChildItem -LiteralPath $profilesDir -Directory | ForEach-Object {
+            foreach ($name in @('SOUL.md', 'LEGAL_ACTIVE_MATTERS.md')) {
+                $p = Join-Path $_.FullName $name
+                if (Test-Path -LiteralPath $p) { [void]$list.Add($p) }
+            }
+            foreach ($mem in @('memories/USER.md', 'memories/MEMORY.md')) {
+                $p = Join-Path $_.FullName $mem
+                if (Test-Path -LiteralPath $p) { [void]$list.Add($p) }
+            }
+        }
+    }
+    return @($list | Select-Object -Unique)
+}
+
+function Test-HermesScrubExcludedPath {
+    param([string]$FullPath)
+    $norm = $FullPath -replace '\\', '/'
+    $excludePatterns = @(
+        '/lancedb(/|$)', '\.lance($|/)', '/logs(/|$)', '/\.git(/|$)', '/website(/|$)',
+        '/node_modules(/|$)', '/__pycache__(/|$)', '/backups(/|$)', '/sessions(/|$)',
+        '/pastes(/|$)', '/cache(/|$)', '/state-snapshots(/|$)', '/venv(/|$)',
+        '/skills(/|$)', '/_trust_backup_', '/scrub_identity_report\.json$',
+        '/scrub_identity_to_J\.ps1$', '/repair_runtime_identity\.ps1$',
+        '/RUN_TRUST_FORENSIC_E2E\.ps1$'
+    )
+    foreach ($pat in $excludePatterns) {
+        if ($norm -match $pat) { return $true }
+    }
+    if ($norm -match '/\.env$') { return $true }
+    return $false
+}
+
+function Get-HermesScrubTextExtensions {
+    return @('.md', '.txt', '.yaml', '.yml', '.bat', '.json', '.csv', '.html', '.htm', '.xml', '.ini', '.example')
+}
+
+function Get-HermesScrubTargetFiles {
+    param([string[]]$RootPaths)
+    $files = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($rootPath in $RootPaths) {
+        if (-not (Test-Path -LiteralPath $rootPath)) { continue }
+        if ((Get-Item -LiteralPath $rootPath).PSIsContainer) {
+            Get-ChildItem -LiteralPath $rootPath -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object {
+                if (-not (Test-HermesScrubExcludedPath -FullPath $_.FullName)) {
+                    [void]$files.Add($_.FullName)
+                }
+            }
+        } elseif (-not (Test-HermesScrubExcludedPath -FullPath $rootPath)) {
+            [void]$files.Add($rootPath)
+        }
+    }
+    return @($files)
+}
+
+function Repair-HermesRuntimeIdentity {
+    param(
+        [string]$HermesRoot = '',
+        [switch]$DryRun,
+        [switch]$Quiet
+    )
+    if (-not $HermesRoot) {
+        $HermesRoot = Get-HermesRuntimeRoot
+    }
+    if (-not (Test-Path -LiteralPath (Join-Path $HermesRoot 'config.yaml'))) {
+        return @{
+            FilesChanged = 0
+            HitCount     = 0
+            ChangedPaths = @()
+            Skipped      = $true
+            Reason       = 'geen config.yaml onder runtime root'
+        }
+    }
+    $totalHits = 0
+    $filesChanged = 0
+    $changedPaths = [System.Collections.Generic.List[string]]::new()
+    foreach ($filePath in (Get-HermesPersonaFilePaths -HermesRoot $HermesRoot)) {
+        $result = Repair-HermesIdentityInFile -FilePath $filePath -DryRun:$DryRun
+        $totalHits += $result.HitCount
+        if ($result.Changed) {
+            $filesChanged++
+            $rel = $filePath
+            if ($filePath.StartsWith($HermesRoot, [StringComparison]::OrdinalIgnoreCase)) {
+                $rel = $filePath.Substring($HermesRoot.Length).TrimStart('\', '/')
+            }
+            [void]$changedPaths.Add($rel)
+            if (-not $Quiet) {
+                Write-Host ('[OK] scrubbed: ' + $rel) -ForegroundColor Green
+            }
+        }
+    }
+    return @{
+        FilesChanged = $filesChanged
+        HitCount     = $totalHits
+        ChangedPaths = @($changedPaths)
+    }
+}
+
+function Repair-HermesRepoIdentity {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [switch]$DryRun,
+        [switch]$Quiet
+    )
+    $textExtensions = Get-HermesScrubTextExtensions
+    $targetFiles = Get-HermesScrubTargetFiles -RootPaths @(
+        (Join-Path $RepoRoot 'docs'),
+        (Join-Path $RepoRoot 'memory-bank'),
+        (Join-Path $RepoRoot 'windows')
+    )
+    $totalHits = 0
+    $filesChanged = 0
+    $changedPaths = [System.Collections.Generic.List[string]]::new()
+    foreach ($filePath in ($targetFiles | Select-Object -Unique)) {
+        $ext = [IO.Path]::GetExtension($filePath).ToLowerInvariant()
+        if ($textExtensions -notcontains $ext) { continue }
+        $result = Repair-HermesIdentityInFile -FilePath $filePath -DryRun:$DryRun
+        $totalHits += $result.HitCount
+        if ($result.Changed) {
+            $filesChanged++
+            $rel = $filePath
+            if ($filePath.StartsWith($RepoRoot, [StringComparison]::OrdinalIgnoreCase)) {
+                $rel = $filePath.Substring($RepoRoot.Length).TrimStart('\', '/')
+            }
+            [void]$changedPaths.Add($rel)
+            if (-not $Quiet) {
+                Write-Host ('[OK] repo scrubbed: ' + $rel) -ForegroundColor Green
+            }
+        }
+    }
+    return @{
+        FilesChanged = $filesChanged
+        HitCount     = $totalHits
+        ChangedPaths = @($changedPaths)
+    }
 }
 
 function Get-MemoryDoubleEncodedSectionMarker {

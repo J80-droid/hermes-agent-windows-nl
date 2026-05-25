@@ -45,7 +45,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | SOUL deploy-start E2E | `audits\RUN_SOUL_DEPLOY_START_E2E.bat` of `RUN_AUDITS.bat -IncludeSoulDeployStartE2E` |
 | SOUL anatomy E2E (runtime) | `audits\RUN_SOUL_ANATOMY_E2E.ps1` |
 | SOUL legacy → anatomy | `MIGRATE_SOUL_ANATOMY.bat` |
-| Trust & Forensic (legal + SOUL + memory + J.) | `SYNC_TRUST_RUNTIME.bat` — volledige keten (sync, dedup, audit, production gate, /new-banner); `APPLY_TRUST_PROTOCOL.bat` (+ scrub) — `docs\TRUST_FORENSIC_PROTOCOL.md` |
+| Trust & Forensic (legal + SOUL + memory + J.) | `SYNC_TRUST_RUNTIME.bat` — sync + **pre-audit runtime scrub** + audit + gate + /new; `SYNC_TRUST_PROTOCOL.bat` / `APPLY_TRUST_PROTOCOL.bat` — + repo-scrub; `scripts\repair_runtime_identity.ps1` — handmatig; `docs\TRUST_FORENSIC_PROTOCOL.md` |
 | Pending trust na mislukte UPDATE | Automatisch bij `start_hermes.bat` via `scripts\launch_pending_trust_runtime.ps1` → `Invoke-TrustRuntimeLight.ps1` (geen pytest-gate); stamp `%LOCALAPPDATA%\hermes\pending_trust_runtime.json`; skip: `HERMES_SKIP_PENDING_TRUST_ON_START=1` |
 | Pending trust E2E | `audits\RUN_PENDING_TRUST_START_E2E.bat` of `RUN_AUDITS.bat -IncludePendingTrustStartE2E` |
 | Domein-toolsets (minimaal + opt-in) | `SYNC_DOMAIN_TOOLSETS.bat` — `docs\domain_toolsets.yaml`, `docs\DOMAIN_TOOLSET_AUDIT.md` |

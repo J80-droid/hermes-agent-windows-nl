@@ -173,7 +173,9 @@ if ($rc -ne 0) {
 
         Write-Host '[WARN] Trust-nazorg mislukt - wordt opnieuw geprobeerd bij volgende start.' -ForegroundColor Yellow
 
-        Write-Host '  Kopieer: set HERMES_SKIP_MEMORY_PRODUCTION_GATE=1 && windows\SYNC_TRUST_RUNTIME.bat' -ForegroundColor DarkYellow
+        Write-Host '  Handmatig: windows\APPLY_TRUST_PROTOCOL.bat (na backup)' -ForegroundColor DarkYellow
+
+        Write-Host '  Of: windows\scripts\repair_runtime_identity.ps1 && windows\SYNC_TRUST_RUNTIME.bat' -ForegroundColor DarkYellow
 
     }
 

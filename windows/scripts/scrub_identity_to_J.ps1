@@ -1,6 +1,8 @@
-# Replace user identity variants with J. — excludes lancedb index files.
+# Replace user identity variants with J. — line-by-line (audit allowlist); excludes lancedb index files.
 param(
     [string]$RepoRoot = '',
+    [switch]$RuntimeOnly,
+    [switch]$RepoOnly,
     [switch]$IncludeRawSource,
     [switch]$RenameFiles,
     [switch]$DryRun
@@ -8,6 +10,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
+. (Join-Path $PSScriptRoot 'MemoryAuditCommon.ps1')
 
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
@@ -15,120 +18,36 @@ if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 }
 
-$IdentityPattern = '(?i)\bJamel\s+el\s+Mourif\b|\bJamel\b|\bel\s+Mourif\b'
-
-function Get-HermesRoot {
-    $localRoot = Join-Path $env:LOCALAPPDATA 'hermes'
-    if (Test-Path -LiteralPath (Join-Path $localRoot 'config.yaml')) { return $localRoot }
-    $homeRoot = Join-Path $env:USERPROFILE '.hermes'
-    if (Test-Path -LiteralPath (Join-Path $homeRoot 'config.yaml')) { return $homeRoot }
-    return $localRoot
+$report = [ordered]@{
+    runtime_hits = 0
+    repo_hits    = 0
+    runtime_files = @()
+    repo_files    = @()
 }
+$totalHits = 0
 
-function Test-ScrubExcludedPath {
-    param([string]$FullPath)
-    $norm = $FullPath -replace '\\', '/'
-    $excludePatterns = @(
-        '/lancedb(/|$)', '\.lance($|/)', '/logs(/|$)', '/\.git(/|$)', '/website(/|$)',
-        '/node_modules(/|$)', '/__pycache__(/|$)', '/backups(/|$)', '/sessions(/|$)',
-        '/pastes(/|$)', '/cache(/|$)', '/state-snapshots(/|$)', '/venv(/|$)',
-        '/skills(/|$)', '/_trust_backup_', '/scrub_identity_report\.json$',
-        '/scrub_identity_to_J\.ps1$', '/RUN_TRUST_FORENSIC_E2E\.ps1$'
-    )
-    foreach ($pat in $excludePatterns) {
-        if ($norm -match $pat) { return $true }
-    }
-    if ($norm -match '/\.env$') { return $true }
-    return $false
-}
-
-function Invoke-IdentityScrub {
+function Invoke-IdentityScrubFileName {
     param([string]$Text)
     $out = $Text
     $out = [regex]::Replace($out, '(?i)\bJamel\s+el\s+Mourif\b', 'J.')
     $out = [regex]::Replace($out, '(?i)\bJamel\b', 'J.')
     $out = [regex]::Replace($out, '(?i)\bel\s+Mourif\b', '')
-    $out = $out -replace '[ \t]{2,}', ' '
+    $out = $out -replace '\s+', ' ' -replace '^\s+|\s+$', ''
     return $out
 }
 
-function Get-ScrubTargetFiles {
-    param([string[]]$RootPaths)
-    $files = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
-    foreach ($rootPath in $RootPaths) {
-        if (-not (Test-Path -LiteralPath $rootPath)) { continue }
-        if ((Get-Item -LiteralPath $rootPath).PSIsContainer) {
-            Get-ChildItem -LiteralPath $rootPath -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object {
-                if (-not (Test-ScrubExcludedPath -FullPath $_.FullName)) {
-                    [void]$files.Add($_.FullName)
-                }
-            }
-        } else {
-            if (-not (Test-ScrubExcludedPath -FullPath $rootPath)) {
-                [void]$files.Add($rootPath)
-            }
-        }
-    }
-    return @($files)
+if (-not $RepoOnly) {
+    $runtimeResult = Repair-HermesRuntimeIdentity -DryRun:$DryRun
+    $report.runtime_hits = $runtimeResult.HitCount
+    $report.runtime_files = @($runtimeResult.ChangedPaths)
+    $totalHits += $runtimeResult.HitCount
 }
 
-function Get-HermesPersonaFiles {
-    param([string]$HermesRoot)
-    $list = [System.Collections.Generic.List[string]]::new()
-    foreach ($rel in @('SOUL.md', 'memories/USER.md', 'memories/MEMORY.md')) {
-        $p = Join-Path $HermesRoot $rel
-        if (Test-Path -LiteralPath $p) { [void]$list.Add($p) }
-    }
-    $profilesDir = Join-Path $HermesRoot 'profiles'
-    if (Test-Path -LiteralPath $profilesDir) {
-        Get-ChildItem -LiteralPath $profilesDir -Directory | ForEach-Object {
-            foreach ($name in @('SOUL.md', 'LEGAL_ACTIVE_MATTERS.md')) {
-                $p = Join-Path $_.FullName $name
-                if (Test-Path -LiteralPath $p) { [void]$list.Add($p) }
-            }
-            foreach ($mem in @('memories/USER.md', 'memories/MEMORY.md')) {
-                $p = Join-Path $_.FullName $mem
-                if (Test-Path -LiteralPath $p) { [void]$list.Add($p) }
-            }
-        }
-    }
-    return $list.ToArray()
-}
-
-$textExtensions = @(
-    '.md', '.txt', '.yaml', '.yml', '.bat', '.json', '.csv', '.html', '.htm', '.xml', '.ini', '.example'
-)
-
-$hermesRoot = Get-HermesRoot
-$targetFiles = Get-HermesPersonaFiles -HermesRoot $hermesRoot
-$targetFiles += Get-ScrubTargetFiles -RootPaths @(
-    (Join-Path $RepoRoot 'docs'),
-    (Join-Path $RepoRoot 'memory-bank'),
-    (Join-Path $RepoRoot 'windows')
-)
-if ($IncludeRawSource) {
-    $targetFiles += Get-ScrubTargetFiles -RootPaths @(Join-Path $env:USERPROFILE 'data/raw_source_files')
-}
-
-$report = [ordered]@{}
-$totalHits = 0
-
-foreach ($filePath in ($targetFiles | Select-Object -Unique)) {
-    $ext = [IO.Path]::GetExtension($filePath).ToLowerInvariant()
-    if ($textExtensions -notcontains $ext) { continue }
-    $before = Get-Content -LiteralPath $filePath -Raw -Encoding UTF8 -ErrorAction SilentlyContinue
-    if ($null -eq $before -or $before -notmatch $IdentityPattern) { continue }
-    $after = Invoke-IdentityScrub -Text $before
-    if ($after -eq $before) { continue }
-    $hitCount = [regex]::Matches($before, $IdentityPattern).Count
-    $report[$filePath] = @{ hits = $hitCount }
-    $script:totalHits += $hitCount
-    if ($DryRun) {
-        Write-Host ('[DRY] ' + $filePath + ' (' + $hitCount + ')') -ForegroundColor DarkGray
-    } else {
-        Set-Content -LiteralPath $filePath -Value $after -Encoding UTF8 -NoNewline
-        Write-Host ('[OK] ' + $filePath) -ForegroundColor Green
-    }
+if (-not $RuntimeOnly) {
+    $repoResult = Repair-HermesRepoIdentity -RepoRoot $RepoRoot -DryRun:$DryRun
+    $report.repo_hits = $repoResult.HitCount
+    $report.repo_files = @($repoResult.ChangedPaths)
+    $totalHits += $repoResult.HitCount
 }
 
 if ($IncludeRawSource -and $RenameFiles) {
@@ -137,8 +56,7 @@ if ($IncludeRawSource -and $RenameFiles) {
         Get-ChildItem -LiteralPath $rawRoot -Recurse -File -ErrorAction SilentlyContinue |
             Where-Object { $_.Name -match '(?i)Jamel|MOURIF|el\s+Mourif' } |
             ForEach-Object {
-                $newName = Invoke-IdentityScrub -Text $_.Name
-                $newName = $newName -replace '\s+', ' ' -replace '^\s+|\s+$', ''
+                $newName = Invoke-IdentityScrubFileName -Text $_.Name
                 if ([string]::IsNullOrWhiteSpace($newName) -or $newName -eq $_.Name) { return }
                 $dest = Join-Path $_.DirectoryName $newName
                 if ($DryRun) {
@@ -151,13 +69,30 @@ if ($IncludeRawSource -and $RenameFiles) {
     }
 }
 
+if ($IncludeRawSource -and -not $RuntimeOnly) {
+    $rawFiles = Get-HermesScrubTargetFiles -RootPaths @(Join-Path $env:USERPROFILE 'data/raw_source_files')
+    $textExtensions = Get-HermesScrubTextExtensions
+    foreach ($filePath in $rawFiles) {
+        $ext = [IO.Path]::GetExtension($filePath).ToLowerInvariant()
+        if ($textExtensions -notcontains $ext) { continue }
+        $result = Repair-HermesIdentityInFile -FilePath $filePath -DryRun:$DryRun
+        if ($result.Changed) {
+            $totalHits += $result.HitCount
+            Write-Host ('[OK] raw: ' + $filePath) -ForegroundColor Green
+        }
+    }
+}
+
 $reportPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/audits/scrub_identity_report.json'
 if (-not $DryRun) {
     @{
-        generated_at = (Get-Date).ToString('o')
-        dry_run      = $false
-        total_hits   = $totalHits
-        files        = $report
+        generated_at  = (Get-Date).ToString('o')
+        dry_run       = $false
+        total_hits    = $totalHits
+        runtime_hits  = $report.runtime_hits
+        repo_hits     = $report.repo_hits
+        runtime_files = $report.runtime_files
+        repo_files    = $report.repo_files
     } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $reportPath -Encoding UTF8
 }
-Write-Host ('[INFO] ' + 'Scrub klaar: ' + $totalHits + ' hit(s), ' + $($report.Count) + ' bestand(en)') -ForegroundColor Cyan
+Write-Host ('[INFO] Scrub klaar: ' + $totalHits + ' regel(s); runtime=' + $report.runtime_hits + ' repo=' + $report.repo_hits) -ForegroundColor Cyan

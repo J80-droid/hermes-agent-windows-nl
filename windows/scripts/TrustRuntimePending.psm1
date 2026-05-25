@@ -128,7 +128,9 @@ function Test-PendingTrustRuntimeMaxAttemptsReached {
 
 function Write-PendingTrustRuntimeFallbackHint {
     Write-Host '[WARN] Trust-nazorg mislukt na meerdere pogingen.' -ForegroundColor Yellow
-    Write-Host '  Kopieer: set HERMES_SKIP_MEMORY_PRODUCTION_GATE=1 && windows\SYNC_TRUST_RUNTIME.bat' -ForegroundColor DarkYellow
+    Write-Host '  Handmatig: windows\APPLY_TRUST_PROTOCOL.bat (na backup)' -ForegroundColor DarkYellow
+    Write-Host '  Of: windows\scripts\repair_runtime_identity.ps1 && windows\SYNC_TRUST_RUNTIME.bat' -ForegroundColor DarkYellow
+    Write-Host '  Snelle poort: set HERMES_SKIP_MEMORY_PRODUCTION_GATE=1 vóór SYNC_TRUST_RUNTIME.bat' -ForegroundColor DarkGray
 }
 
 Export-ModuleMember -Function @(

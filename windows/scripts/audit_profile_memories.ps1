@@ -59,6 +59,14 @@ function Test-AuditMemoryFile {
     $leaks = $null
     if (Test-MemoryFileIdentityLeaks -FilePath $Path -LeakLines ([ref]$leaks)) {
         Write-HermesFail ('  identiteitslek (' + $leaks.Count + ' regel(s))')
+        foreach ($leak in @($leaks | Select-Object -First 3)) {
+            $preview = $leak
+            if ($preview.Length -gt 120) {
+                $preview = $preview.Substring(0, 120) + '...'
+            }
+            Write-Host ('         ' + $preview) -ForegroundColor Red
+        }
+        Write-Host '         Hint: auto-scrub mislukt of HERMES_SKIP_RUNTIME_IDENTITY_SCRUB=1 — draai repair_runtime_identity.ps1 of APPLY_TRUST_PROTOCOL.bat' -ForegroundColor DarkYellow
         $script:issues++
     }
 

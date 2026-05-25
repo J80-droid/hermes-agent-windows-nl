@@ -66,6 +66,7 @@ windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat
 | Stap | Actie | Succes |
 |------|--------|--------|
 | 1–3 | `SYNC_TRUST_RUNTIME.bat` | SOUL + memory-seed + dedup + limits + vault-env + snapshot |
+| 3b | (zelfde BAT) `Repair-HermesRuntimeIdentity` in `Invoke-MemoryTrustPostSync` | regel-scrub vóór audit (allowlist = audit) |
 | 4 | (zelfde BAT) `audit_profile_memories.ps1` | geen OVER, geen `Â§`, geen identiteitslek |
 | 5 | (zelfde BAT) `RUN_MEMORY_PRODUCTION_GATE` | PASS (tenzij `HERMES_SKIP_MEMORY_PRODUCTION_GATE=1`; pytest memory/trust) |
 | 6 | (zelfde BAT) `/new`-reminder JSON | TUI: auto `/new` bij start + live tijdens sync; CLI: gele banner |
