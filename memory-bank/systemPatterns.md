@@ -90,7 +90,7 @@ Defaults: `windows/team_display.defaults`; toepassen: `APPLY_INSTITUTIONAL_RUNTI
 - **Root-only globals:** `model`, `auxiliary`, `providers`/`custom_providers` — profielen erven via `profile_model_inheritance.py` (load + save redirect); geen stale blocks in `profiles/*/config.yaml`.
 - **Legacy hub:** `%USERPROFILE%\.hermes\` — `.env` + `_local_assets`; geen actieve config (deprecate → `config.yaml.deprecated-*` + `CONFIG_README.txt`).
 - **Module:** `windows/scripts/HermesHomeCommon.ps1` (paden, drift, gateway, launch-env).
-- **Poorten:** `VERIFY_HERMES_CONFIG_DRIFT.bat` (dagelijks/post-pull); `APPLY_HERMES_HOME_MIGRATION.bat` (backup → deprecate → providers/Venice merge → preset → env sync → E2E 14 stappen); `SYNC_HERMES_API_ENV.bat` (incl. `VENICE_API_KEY` + dynamic `key_env`).
+- **Poorten:** `VERIFY_HERMES_CONFIG_DRIFT.bat` (dagelijks/post-pull); `APPLY_HERMES_HOME_MIGRATION.bat` (7 stappen); `RUN_HERMES_HOME_E2E.bat` (14/14); `RUN_ROOT_CONFIG_INHERITANCE_E2E.bat` (10/10, incl. `py_compile` op `collect_env_sync_keys.py`); `SYNC_HERMES_API_ENV.bat` (incl. `VENICE_API_KEY` + dynamic `key_env`).
 - **Integratie:** `POST_GIT_PULL`, `UPDATE_HERMES` (via `Invoke-UpstreamPostMerge`), `RUN_INSTITUTIONAL_E2E` stap 2i, `launch_institutional_runtime -CheckDrift`.
 - **Docs:** `docs/HERMES_HOME_WINDOWS.md`; SOUL snippet `SOUL_SHARED_CONFIG_GOVERNANCE.md`; footguns `check-windows-footguns.py`.
 

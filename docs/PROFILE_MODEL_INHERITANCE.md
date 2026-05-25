@@ -101,7 +101,7 @@ Zelfde patroon voor `auxiliary.inherit: false` of `providers.inherit: false`. Da
 | `hermes profile create` | Stript global blocks na `--clone` / `--clone-all` |
 | `hermes doctor` | Meldt inheritance + Venice gap; `--fix` stript stale blokken |
 | Tests | `tests/hermes_cli/test_profile_model_inheritance.py`, `test_merge_legacy_providers_config.py` |
-| E2E | `windows/audits/RUN_ROOT_CONFIG_INHERITANCE_E2E.bat` (10 stappen + harness) |
+| E2E | `windows/audits/RUN_ROOT_CONFIG_INHERITANCE_E2E.bat` (**10/10**; harness 8/8 + `py_compile` guard) |
 
 ## Relatie met RAG
 

@@ -2,6 +2,8 @@
 """Collect env var names to sync from runtime root config (providers, auxiliary).
 
 Leest altijd ``root_config_path()`` — ook wanneer ``HERMES_HOME`` een profielsubmap is.
+
+Gebruikt door ``sync_hermes_api_env.ps1``; E2E valideert syntax via ``py_compile`` (stap 4/10).
 """
 from __future__ import annotations
 

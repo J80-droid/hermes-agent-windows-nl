@@ -150,7 +150,9 @@ windows\audits\RUN_ROOT_CONFIG_INHERITANCE_E2E.bat
 windows\audits\RUN_AUDITS.bat -IncludeHermesHomeE2E
 ```
 
-**Root-inheritance E2E** (`RUN_ROOT_CONFIG_INHERITANCE_E2E.bat`): 10 stappen — pytest inheritance/merge, isolated harness (8 scenario's: pad, cache-bust, save-guard, corrupt YAML), runtime Venice + profiel auxiliary inheritance.
+**Root-inheritance E2E** (`RUN_ROOT_CONFIG_INHERITANCE_E2E.bat`): **10/10 PASS** — pytest inheritance/merge, isolated harness (8 scenario's), `py_compile`-guard op env-sync script, runtime Venice + profiel auxiliary inheritance.
+
+**HermesHome E2E** (`RUN_HERMES_HOME_E2E.bat`): **14/14 PASS** — split-home drift, Venice env, auxiliary inheritance live checks.
 
 ## Feature flag (Python fallback)
 

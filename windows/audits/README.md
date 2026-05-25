@@ -325,7 +325,7 @@ Optioneel: `-SkipPytest`, `-SkipLive` op `RUN_ROOT_CONFIG_INHERITANCE_E2E.ps1`.
 | 1/10 | Repo-artefacten (inheritance module, merge/collect scripts, E2E harness) |
 | 2/10 | pytest: `test_profile_model_inheritance.py`, `test_merge_legacy_providers_config.py` |
 | 3/10 | Isolated harness: pad, env-sync, merge→root, cache-bust, save-guard, corrupt YAML, 1× root read |
-| 4/10 | Code wiring (incoming_keys save guard, bust_config_caches clear_all) |
+| 4/10 | Code wiring + `py_compile` op `collect_env_sync_keys.py` (save guard, cache bust) |
 | 5/10 | Runtime: geen profiel global blocks |
 | 6/10 | Runtime: Venice in root config |
 | 7/10 | `merge_legacy_providers_config.py` gebruikt `root_config_path()` |
