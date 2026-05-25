@@ -175,6 +175,35 @@ class TestBusyInputMode:
         assert cli._interrupt_queue.get_nowait() == "redirect"
         assert cli._pending_input.empty()
 
+    def test_queue_list_entries(self):
+        cli = _make_cli()
+        cli.process_command("/queue first")
+        cli.process_command("/queue second")
+        assert cli._pending_queue_entries() == ["first", "second"]
+
+    def test_queue_pop_removes_head(self):
+        cli = _make_cli()
+        cli.process_command("/queue first")
+        cli.process_command("/queue second")
+        cli.process_command("/queue pop")
+        assert cli._pending_input.get_nowait() == "second"
+        assert cli._pending_input.empty()
+
+    def test_queue_clear_empties(self):
+        cli = _make_cli()
+        cli.process_command("/queue one")
+        cli.process_command("/queue two")
+        cli.process_command("/queue clear")
+        assert cli._pending_input.empty()
+
+    def test_queue_empty_snapshot(self):
+        cli = _make_cli()
+        assert cli._pending_queue_entries() == []
+        from hermes_cli.cli_pending_queue import render_queue_lines
+
+        lines = render_queue_lines([], width=80, list_mode=True)
+        assert any("empty" in ln.lower() for ln in lines)
+
 
 class TestPromptToolkitTerminalCompatibility:
     def test_lf_enter_binds_to_submit_handler_posix(self):

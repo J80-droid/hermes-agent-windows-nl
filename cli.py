@@ -3318,6 +3318,89 @@ class HermesCLI:
             self._last_invalidate = now
             self._app.invalidate()
 
+    def _invalidate_queue_ui(self) -> None:
+        """Repaint hint panel and status bar after queue mutation."""
+        self._invalidate(min_interval=0.0)
+
+    def _queue_hint_blocked(self) -> bool:
+        return bool(
+            self._sudo_state
+            or self._secret_state
+            or self._approval_state
+            or getattr(self, "_slash_confirm_state", None)
+            or self._clarify_state
+        )
+
+    def _pending_queue_entries(self) -> list:
+        from hermes_cli.cli_pending_queue import snapshot_pending_queue
+
+        return snapshot_pending_queue(getattr(self, "_pending_input", None))
+
+    def _print_pending_queue_list(self) -> None:
+        from hermes_cli.cli_pending_queue import render_queue_lines
+
+        width = self._get_tui_terminal_width()
+        for line in render_queue_lines(self._pending_queue_entries(), width=width, list_mode=True):
+            _cprint(line)
+
+    def _enqueue_pending_user(self, payload, *, silent: bool = False) -> None:
+        from hermes_cli.cli_pending_queue import enqueue_ack_message, pending_queue_depth
+
+        self._pending_input.put(payload)
+        if not silent:
+            depth = pending_queue_depth(self._pending_input)
+            _cprint(
+                f"  {_ACCENT}{enqueue_ack_message(payload, depth=depth, agent_running=self._agent_running)}{_RST}"
+            )
+        self._invalidate_queue_ui()
+
+    def _append_pending_queue_status_part(self, parts: list) -> None:
+        from hermes_cli.cli_pending_queue import pending_queue_depth, queue_status_fragment
+
+        frag = queue_status_fragment(pending_queue_depth(getattr(self, "_pending_input", None)))
+        if frag:
+            parts.append(frag)
+
+    def _append_pending_queue_status_fragments(self, frags: list, *, separator: str = " · ") -> None:
+        from hermes_cli.cli_pending_queue import pending_queue_depth, queue_status_fragment
+
+        frag = queue_status_fragment(pending_queue_depth(getattr(self, "_pending_input", None)))
+        if frag:
+            frags.append(("class:status-bar-dim", separator))
+            frags.append(("class:status-bar-dim", frag))
+
+    def _handle_queue_command(self, cmd_original: str) -> None:
+        from hermes_cli.cli_pending_queue import clear_pending_queue, pop_pending_head, pending_queue_depth
+
+        parts = cmd_original.split(None, 2)
+        if len(parts) == 1:
+            self._print_pending_queue_list()
+            return
+
+        verb = parts[1].strip().lower()
+        if verb == "list":
+            self._print_pending_queue_list()
+            return
+        if verb == "pop":
+            removed = pop_pending_head(self._pending_input)
+            if removed is None:
+                _cprint("  (queue empty)")
+            else:
+                preview = removed[:80] + ("..." if len(removed) > 80 else "")
+                _cprint(f"  {_ACCENT}Removed:{_RST} {preview}")
+                remaining = pending_queue_depth(self._pending_input)
+                _cprint(f"  {_DIM}{remaining} item(s) remaining{_RST}")
+            self._invalidate_queue_ui()
+            return
+        if verb == "clear":
+            removed = clear_pending_queue(self._pending_input)
+            _cprint(f"  {_ACCENT}Cleared {removed} queued item(s){_RST}")
+            self._invalidate_queue_ui()
+            return
+
+        payload = parts[1] if len(parts) == 2 else f"{parts[1]} {parts[2]}".strip()
+        self._enqueue_pending_user(payload)
+
     def _force_full_redraw(self) -> None:
         """Force a clean full-screen repaint of the prompt_toolkit UI.
 
@@ -3844,6 +3927,11 @@ class HermesCLI:
             yolo_active = bool(os.getenv("HERMES_YOLO_MODE"))
             if width < 52:
                 text = f"⚕ {snapshot['model_short']} · {duration_label}"
+                from hermes_cli.cli_pending_queue import pending_queue_depth, queue_status_fragment
+
+                qfrag = queue_status_fragment(pending_queue_depth(getattr(self, "_pending_input", None)))
+                if qfrag:
+                    text += f" · {qfrag}"
                 if yolo_active:
                     text += " · ⚠ YOLO"
                 return self._trim_status_bar_text(text, width)
@@ -3861,6 +3949,7 @@ class HermesCLI:
                     parts.append(f"⚙ {bg_proc_count}")
                 parts.append(duration_label)
                 self._append_status_bar_cost_text_part(parts, snapshot, width)
+                self._append_pending_queue_status_part(parts)
                 if yolo_active:
                     parts.append("⚠ YOLO")
                 return self._trim_status_bar_text(" · ".join(parts), width)
@@ -3888,6 +3977,7 @@ class HermesCLI:
             if prompt_elapsed:
                 parts.append(prompt_elapsed)
             self._append_status_bar_cost_text_part(parts, snapshot, width)
+            self._append_pending_queue_status_part(parts)
             if yolo_active:
                 parts.append("⚠ YOLO")
             return self._trim_status_bar_text(" │ ".join(parts), width)
@@ -3915,6 +4005,7 @@ class HermesCLI:
                     ("class:status-bar-dim", " · "),
                     ("class:status-bar-dim", duration_label),
                 ]
+                self._append_pending_queue_status_fragments(frags, separator=" · ")
                 if yolo_active:
                     frags.append(("class:status-bar-dim", " · "))
                     frags.append(("class:status-bar-yolo", "⚠ YOLO"))
@@ -3948,6 +4039,7 @@ class HermesCLI:
                     self._append_status_bar_cost_fragments(
                         frags, snapshot, width, separator=" · "
                     )
+                    self._append_pending_queue_status_fragments(frags, separator=" · ")
                     if yolo_active:
                         frags.append(("class:status-bar-dim", " · "))
                         frags.append(("class:status-bar-yolo", "⚠ YOLO"))
@@ -3993,6 +4085,7 @@ class HermesCLI:
                         frags.append(("class:status-bar-dim", " │ "))
                         frags.append(("class:status-bar-dim", prompt_elapsed))
                     self._append_status_bar_cost_fragments(frags, snapshot, width)
+                    self._append_pending_queue_status_fragments(frags, separator=" │ ")
                     if yolo_active:
                         frags.append(("class:status-bar-dim", " │ "))
                         frags.append(("class:status-bar-yolo", "⚠ YOLO"))
@@ -8763,17 +8856,7 @@ class HermesCLI:
         elif canonical == "background":
             self._handle_background_command(cmd_original)
         elif canonical == "queue":
-            # Extract prompt after "/queue " or "/q "
-            parts = cmd_original.split(None, 1)
-            payload = parts[1].strip() if len(parts) > 1 else ""
-            if not payload:
-                _cprint("  Usage: /queue <prompt>")
-            else:
-                self._pending_input.put(payload)
-                if self._agent_running:
-                    _cprint(f"  Queued for the next turn: {payload[:80]}{'...' if len(payload) > 80 else ''}")
-                else:
-                    _cprint(f"  Queued: {payload[:80]}{'...' if len(payload) > 80 else ''}")
+            self._handle_queue_command(cmd_original)
         elif canonical == "steer":
             # Inject a message after the next tool call without interrupting.
             # If the agent is actively running, push the text into the agent's
@@ -8796,8 +8879,9 @@ class HermesCLI:
                         _cprint("  Steer rejected (empty payload).")
             else:
                 # No active run — treat as a normal next-turn message.
-                self._pending_input.put(payload)
-                _cprint(f"  No agent running; queued as next turn: {payload[:80]}{'...' if len(payload) > 80 else ''}")
+                self._enqueue_pending_user(payload, silent=True)
+                preview = payload[:80] + ("..." if len(payload) > 80 else "")
+                _cprint(f"  {_DIM}No agent running; queued as next turn: {preview}{_RST}")
         elif canonical == "goal":
             self._handle_goal_command(cmd_original)
         elif canonical == "subgoal":
@@ -12948,10 +13032,7 @@ class HermesCLI:
                             else:
                                 _effective_mode = "queue"
                     if _effective_mode == "queue":
-                        # Queue for the next turn instead of interrupting
-                        self._pending_input.put(payload)
-                        preview = text if text else f"[{len(images)} image{'s' if len(images) != 1 else ''} attached]"
-                        _cprint(f"  Queued for the next turn: {preview[:80]}{'...' if len(preview) > 80 else ''}")
+                        self._enqueue_pending_user(payload)
                     elif _effective_mode == "interrupt":
                         self._interrupt_queue.put(payload)
                         # Debug: log to file when message enters interrupt queue
@@ -13825,7 +13906,11 @@ class HermesCLI:
                 status = cli_ref._command_status or "Processing command..."
                 return f"{frame} {status}"
             if cli_ref._agent_running:
-                return "msg=interrupt · /queue · /bg · /steer · Ctrl+C cancel"
+                from hermes_cli.cli_pending_queue import pending_queue_depth
+
+                depth = pending_queue_depth(cli_ref._pending_input)
+                prefix = f"queue:{depth} · " if depth > 0 and cli_ref._get_tui_terminal_width() >= 70 else ""
+                return f"{prefix}msg=interrupt · /queue · /bg · /steer · Ctrl+C cancel"
             if cli_ref._voice_mode:
                 _label = cli_ref._voice_record_key_label()
                 return f"type or {_label} to record"
@@ -13837,6 +13922,16 @@ class HermesCLI:
         # extra instructions (sudo countdown, approval navigation, clarify).
         # The agent-running interrupt hint is now an inline placeholder above.
         def get_hint_text():
+            if not cli_ref._queue_hint_blocked():
+                entries = cli_ref._pending_queue_entries()
+                if entries:
+                    from hermes_cli.cli_pending_queue import hint_panel_fragments
+
+                    return hint_panel_fragments(
+                        entries,
+                        terminal_width=cli_ref._get_tui_terminal_width(),
+                    )
+
             if cli_ref._sudo_state:
                 remaining = max(0, int(cli_ref._sudo_deadline - time.monotonic()))
                 return [
@@ -13887,6 +13982,13 @@ class HermesCLI:
             return []
 
         def get_hint_height():
+            if not cli_ref._queue_hint_blocked():
+                from hermes_cli.cli_pending_queue import hint_panel_height, pending_queue_depth
+
+                depth = pending_queue_depth(cli_ref._pending_input)
+                if depth > 0:
+                    return hint_panel_height(depth, cli_ref._get_tui_terminal_width())
+
             if cli_ref._sudo_state or cli_ref._secret_state or cli_ref._approval_state or cli_ref._slash_confirm_state or cli_ref._clarify_state or cli_ref._command_running:
                 return 1
             # Keep a spacer while the agent runs on roomy terminals, but reclaim
@@ -14555,6 +14657,8 @@ class HermesCLI:
                     
                     if not user_input:
                         continue
+
+                    self._invalidate_queue_ui()
 
                     # The user has typed and submitted something, so any
                     # post-resize transient suppression should end here.
