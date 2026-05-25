@@ -12,10 +12,11 @@ Schrijf het fictieve dossier **"Hermes Render Test"** exact volgens onderstaande
 
 1. **Koppen:** alleen `##`, `###`, `####` — nooit `1. Titel` of `1.1 Sub`.
 2. **Kop op inhoud:** na elke kop **direct** op de volgende regel de inhoud (geen lege regel tussen kop en tabel/lijst/tekst).
-3. **Tabellen:** minimaal **vier** echte markdown-tabellen (`| … |` + `|---|`).
+3. **Tabellen:** minimaal **vijf** echte markdown-tabellen (`| … |` + `|---|`).
 4. **`<institutional_check>`** op eigen regels (zie sjabloon).
 5. **Labels:** `**Label:**` op eigen regel, waarde op de volgende regel.
 6. **NFR:** onder `### Niet-functionele requirements` alleen een **tabel** (kolommen: Categorie, Eis, Meetmethode) — geen platte `Categorie: … Eis: …` tekst.
+7. **Strategie/architectuur:** `### Veerkrachtstrategie` met tabel `| Laag | Wat | Waarom |` (min. 3 rijen) — **geen** `**Veerkrachtstrategie – beknopte samenvatting:**` + em-dash-dichtregel.
 
 ### Structuur (exact deze volgorde)
 
@@ -68,6 +69,14 @@ Gereed voor controle.
 | Categorie | Eis | Meetmethode |
 | --- | --- | --- |
 | (min. 3 rijen) |
+
+### Veerkrachtstrategie
+
+[1 zin intro.]
+
+| Laag | Wat | Waarom |
+| --- | --- | --- |
+| (min. 3 rijen; geen em-dash tussen rijen in bron) |
 
 ## Conclusie
 

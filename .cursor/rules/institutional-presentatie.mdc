@@ -73,4 +73,13 @@ python scripts/score_institutional_render.py --verify
 
 Bij wijzigingen aan `markdown_output_normalize.py`: spiegel `web/src/lib/institutionalMarkdown.ts` en voeg fixture `architecture_collapsed_emdash` toe (Component/Keuze/Status + em-dash).
 
+## SOUL (Laag A) — record-tabellen
+
+Model **moet** pseudo-layout vermijden; schrijf direct markdown-tabellen onder `###`-kop:
+
+- Architectuur: `| Component | Keuze | Status |`
+- Strategie/lagen: `| Laag | Wat | Waarom |` onder `### Veerkrachtstrategie` (niet alleen `**Label:**` + em-dash-regels)
+
+Normalizer herstelt unheaded `Laag`/`Wat`/`Waarom` alsnog; SOUL staat in `docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md`. Na wijziging: `windows\SYNC_SOUL_SNIPPETS.bat` + `/new`.
+
 Zie ook: `docs/INSTITUTIONAL_PRESENTATION.md`, `docs/INSTITUTIONAL_PORTING_GUIDE.md`.
