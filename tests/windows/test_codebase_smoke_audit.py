@@ -55,6 +55,8 @@ def test_post_git_pull_and_update_optional_smoke_flags():
     assert "IncludeCodebaseSmoke" in upstream
     assert "Invoke-UpstreamPostMerge.ps1" in upstream
     assert "Invoke-PostSyncCodebaseSmoke.ps1" in post
+    assert "Set-PendingTrustRuntime" in post
+    assert "Clear-PendingTrustRuntime" in post
     update = (REPO / "windows/UPDATE_HERMES.bat").read_text(encoding="utf-8")
     assert "-IncludeCodebaseSmokeE2E" in update
     assert "-IncludeCodebaseSmoke" in update

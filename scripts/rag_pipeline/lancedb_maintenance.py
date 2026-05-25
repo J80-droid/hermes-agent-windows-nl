@@ -12,12 +12,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-import lancedb
 import pyarrow as pa
 
 from domains_config import DomainSpec, default_domains_yaml, load_domains, resolve_domain_paths
-from kb_schema import TABLE_NAME, KnowledgeSchema, list_all_table_names
-from lancedb_storage import lancedb_session
+from kb_schema import TABLE_NAME, get_knowledge_schema, list_all_table_names
+from knowledge_repository import KnowledgeRepository
 
 RAG_DIR = Path(__file__).resolve().parent
 REPO_ROOT = RAG_DIR.parents[1]
@@ -94,7 +93,7 @@ def inspect_domain(spec: DomainSpec) -> DomainReport:
         return rep
 
     try:
-        with lancedb_session(str(ldb_path)) as db:
+        with KnowledgeRepository(db_path=str(ldb_path)).session() as db:
             names = list_all_table_names(db)
             if TABLE_NAME not in names:
                 rep.schema_note = f"geen tabel '{TABLE_NAME}'"
@@ -120,7 +119,7 @@ def compact_domain(spec: DomainSpec, *, dry_run: bool) -> str:
     if dry_run:
         return "dry-run: zou compact_files() aanroepen"
     try:
-        with lancedb_session(str(rep.lancedb_path)) as db:
+        with KnowledgeRepository(db_path=str(rep.lancedb_path)).session() as db:
             table = db.open_table(TABLE_NAME)
             table.compact_files()
             try:
@@ -137,7 +136,7 @@ def benchmark_domain(spec: DomainSpec, *, queries: int, query_text: str) -> tupl
     if not rep.has_table or not rep.row_count:
         return None, None, rep.schema_note or "lege of ontbrekende tabel"
     try:
-        with lancedb_session(str(rep.lancedb_path)) as db:
+        with KnowledgeRepository(db_path=str(rep.lancedb_path)).session() as db:
             table = db.open_table(TABLE_NAME)
             samples: list[float] = []
             for _ in range(max(1, queries)):
@@ -178,7 +177,7 @@ def init_missing_domain(spec: DomainSpec, *, dry_run: bool) -> str:
     ldb_path, _raw, _profile = resolve_domain_paths(spec)
     if ldb_path.is_dir():
         try:
-            with lancedb_session(str(ldb_path)) as db:
+            with KnowledgeRepository(db_path=str(ldb_path)).session() as db:
                 if TABLE_NAME in list_all_table_names(db):
                     table = db.open_table(TABLE_NAME)
                     if _schema_has_id(table.schema):
@@ -188,14 +187,14 @@ def init_missing_domain(spec: DomainSpec, *, dry_run: bool) -> str:
             return f"fout bij openen: {exc}"
     if dry_run:
         return f"dry-run: zou {ldb_path} initialiseren"
-    with lancedb_session(str(ldb_path)) as db:
+    with KnowledgeRepository(db_path=str(ldb_path)).session() as db:
         names = list_all_table_names(db)
         if TABLE_NAME in names:
             table = db.open_table(TABLE_NAME)
             if _schema_has_id(table.schema):
                 return "al aanwezig"
             return "oud schema — schema_migrate.py of fresh ingest"
-        db.create_table(TABLE_NAME, schema=KnowledgeSchema)
+        db.create_table(TABLE_NAME, schema=get_knowledge_schema())
         return "lege knowledge_base aangemaakt"
 
 

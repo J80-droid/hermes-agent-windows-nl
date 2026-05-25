@@ -1,5 +1,5 @@
 . (Join-Path $PSScriptRoot 'HermesShellCommon.ps1')
-﻿# Institutional Runtime wrapper for Hermes Agent on Windows.
+# Institutional Runtime wrapper for Hermes Agent on Windows.
 # Detecteert of setup nodig is en start de juiste interface.
 $ErrorActionPreference = 'Continue'
 $scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } elseif ($MyInvocation.MyCommand.Path) {

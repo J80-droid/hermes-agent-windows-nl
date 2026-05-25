@@ -80,6 +80,12 @@ $repoFiles = @(
     'hermes_cli/hardware_backend.py',
     'hermes_cli/config.py',
     'scripts/rag_pipeline/lancedb_storage.py',
+    'scripts/rag_pipeline/vector_store_paths.py',
+    'scripts/rag_pipeline/vector_store_lifecycle.py',
+    'scripts/rag_pipeline/vector_store_ports.py',
+    'scripts/rag_pipeline/lancedb_backend.py',
+    'scripts/rag_pipeline/kb_schema_constants.py',
+    'scripts/rag_pipeline/knowledge_repository.py',
     'scripts/rag_pipeline/kb_schema.py',
     'scripts/rag_pipeline/mcp_server.py',
     'scripts/rag_pipeline/ingest.py',
@@ -119,15 +125,20 @@ $hwOk = ($hwPy -match 'def build_onnx_provider_attempts') -and
 Add-StepResult -Name '3/10 hardware backend + CLI startup logging' -Ok $hwOk
 
 # --- 4 LanceDB storage wiring ---
-$ldbPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/lancedb_storage.py')
+$ldbFacade = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/lancedb_storage.py')
+$ldbLife = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/vector_store_lifecycle.py')
+$ldbPorts = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/vector_store_ports.py')
+$ldbBackend = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/lancedb_backend.py')
 $mcpPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/mcp_server.py')
 $ingestPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/ingest.py')
-$ldbOk = ($ldbPy -match 'def preflight_vector_store') -and
-    ($ldbPy -match 'def lancedb_session') -and
-    ($ldbPy -match 'def shutdown_all_lancedb_connections') -and
-    ($mcpPy -match 'close_lancedb_mcp_connection') -and
-    ($mcpPy -match 'register_lancedb_shutdown_hooks') -and
-    ($ingestPy -match 'close_lancedb_connection')
+$ldbOk = ($ldbLife -match 'def preflight_vector_store') -and
+    ($ldbLife -match 'def shutdown_all_lancedb_connections') -and
+    ($ldbFacade -match 'def lancedb_session') -and
+    ($ldbPorts -match 'get_vector_store_backend') -and
+    ($ldbBackend -match 'class LanceDBVectorStoreBackend') -and
+    ($mcpPy -match 'KnowledgeRepository') -and
+    ($mcpPy -match 'register_shutdown_hooks') -and
+    ($ingestPy -match 'KnowledgeRepository')
 Add-StepResult -Name '4/10 LanceDB storage lifecycle wiring' -Ok $ldbOk
 
 # --- 5 Config + dependencies ---

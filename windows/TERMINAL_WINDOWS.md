@@ -38,7 +38,7 @@ Standaard skin is **`default`** (goud/kawaii). Als je **blauw/cyaan** ziet, staa
 ```bat
 windows\APPLY_TEAM_DISPLAY.bat
 
-Bij **start** (`start_hermes.bat` → `launch_hermes.bat`): automatisch display + SOUL via `scripts\launch_institutional_runtime.ps1`. Die roept `apply_team_display.ps1` aan (alle keys uit `team_display.defaults`, incl. `show_cost` en `cost_bar_mode`) wanneer de repo-defaults nieuwer zijn dan de stamp **of** runtime drift detecteert. Geen E2E tenzij `--institutional-e2e`. Handmatig: `APPLY_TEAM_DISPLAY.bat` alleen nodig bij `HERMES_SKIP_INSTITUTIONAL_RUNTIME=1` of directe `cli.py`-start zonder launcher.
+Bij **start** (`start_hermes.bat` → `launch_hermes.bat`): volgorde — (1) SOUL anatomy deploy (`launch_soul_anatomy_deploy.ps1`, skip via `HERMES_SKIP_SOUL_DEPLOY_ON_START`), (2) institutioneel runtime (`launch_institutional_runtime.ps1`, skip via `HERMES_SKIP_INSTITUTIONAL_RUNTIME`), (3) **pending trust-nazorg** (`launch_pending_trust_runtime.ps1` als `pending_trust_runtime.json` bestaat; skip via `HERMES_SKIP_PENDING_TRUST_ON_START=1`), (4) Hermes runtime. Institutioneel roept `apply_team_display.ps1` aan wanneer repo-defaults nieuwer zijn dan de stamp **of** runtime drift detecteert. Geen E2E tenzij `--institutional-e2e`. Handmatig: `APPLY_TEAM_DISPLAY.bat` alleen bij skip institutional of directe `cli.py`-start.
 ```
 
 of: `hermes config set display.skin default` — daarna Hermes opnieuw starten.

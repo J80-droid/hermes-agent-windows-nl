@@ -8,9 +8,11 @@ Code: `hermes_cli/hardware_backend.py`, `hermes_cli/filesystem_sandbox.py`, `scr
 | Runner | Scope |
 |--------|--------|
 | `windows/audits/RUN_WINDOWS_PLATFORM_HARDENING_E2E.bat` | Basis: sandbox, hardware, LanceDB lifecycle (10 stappen) |
-| `windows/audits/RUN_PLATFORM_HARDENING_REGRESSION_E2E.bat` | Regressie: review-fixes, PS1-padconventie, footguns (8 stappen) |
+| `windows/audits/RUN_PLATFORM_HARDENING_REGRESSION_E2E.bat` | Regressie: review-fixes, PS1-padconventie, footguns (10 stappen) |
+| `windows/audits/RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat` | **Productie-poort:** beide E2E's + pytest subset + `footguns --all` |
+| `windows/audits/RUN_KNOWLEDGE_REPOSITORY_E2E.bat` | **KnowledgeRepository:** agent-API edge cases, caller wiring, 47 unit tests (8 stappen) |
 
-Rapporten: `WINDOWS_PLATFORM_HARDENING_E2E_REPORT_*.md`, `PLATFORM_HARDENING_REGRESSION_E2E_REPORT_*.md`.
+Rapporten: `WINDOWS_PLATFORM_HARDENING_E2E_REPORT_*.md`, `PLATFORM_HARDENING_REGRESSION_E2E_REPORT_*.md`, `KNOWLEDGE_REPOSITORY_E2E_REPORT_*.md`, `PLATFORM_HARDENING_PRODUCTION_GATE_REPORT_*.md`.
 
 ## Hardware backend (CUDA → DirectML → CPU)
 
@@ -26,7 +28,7 @@ Lokale STT/TTS kiest automatisch de beste beschikbare accelerator.
 
 **Startup-logging:** bij `hermes chat` toont de banner de gekozen backends wanneer `hardware.log_backends_at_startup: true` (default).
 
-Module: `hermes_cli/hardware_backend.py` · tests: `tests/hermes_cli/test_hardware_backend.py`
+Module: `hermes_cli/hardware_backend.py` · tests: `tests/hermes_cli/test_hardware_backend.py` · cache reset: `reset_hardware_backend_cache()`
 
 ## Filesystem sandbox (agent file-tools)
 
@@ -43,7 +45,9 @@ Alle agent file-tools (`read_file`, `write_file`, `patch`, `search_files`) blijv
 
 **Blokkades:** `../`-traversal (inclusief via `%ENV%`-expansie), Windows device-paden (`\\.\`, `\\?\`, case-insensitive), paden buiten de root.
 
-**patch_tool:** sandbox-schendingen (`PermissionError`) worden niet geslikt — write/patch/search falen met duidelijke fout.
+**patch_tool:** sandbox-schendingen en echte `PermissionError` worden niet geslikt — de outer handler in `patch_tool` her-propageert `PermissionError`.
+
+**Cache:** `bust_sandbox_cache_if_env_changed()` invalideert root/enforce-cache bij wijziging van `HERMES_WORKSPACE_ROOT`, `TERMINAL_CWD` of `HERMES_ENFORCE_FILE_SANDBOX`.
 
 **Beperking:** defense-in-depth alleen — de terminal-tool draait als dezelfde OS-gebruiker en kan de grens omzeilen. Zie ook `agent/file_safety.py` (credentials, cross-profile).
 
@@ -52,6 +56,18 @@ Module: `hermes_cli/filesystem_sandbox.py` · wiring: `tools/file_tools.py` · t
 ## LanceDB storage (VectorStore + lifecycle)
 
 Absolute paden, stale lock-cleanup en graceful shutdown voor ingest, MCP en maintenance.
+
+**Architectuur (laag):**
+
+| Module | Rol |
+|--------|-----|
+| `vector_store_paths.py` | Padresolutie (licht, geen LanceDB-import) |
+| `vector_store_lifecycle.py` | Preflight, connection tracking, shutdown hooks |
+| `vector_store_ports.py` | `VectorStoreBackend` protocol + DI |
+| `lancedb_backend.py` | LanceDB-implementatie (lazy import) |
+| `lancedb_storage.py` | Backward-compatible facade |
+| `knowledge_repository.py` | Agent-API: `ensure_table`, `search`, `upsert_chunks`, `session()` |
+| `kb_schema_constants.py` / `kb_schema.py` | Schema (lazy) + tabelnamen |
 
 **Default VectorStore-root (Windows):** `%LOCALAPPDATA%\hermes\VectorStore\<domein>\`
 
@@ -65,9 +81,24 @@ Absolute paden, stale lock-cleanup en graceful shutdown voor ingest, MCP en main
 
 **Lifecycle:** `lancedb_session()` context manager, `_run_shutdown_hooks()` (atexit + optionele `extra_cleanup`), `register_lancedb_shutdown_hooks()` voor MCP (SIG/atexit). Eén atexit-handler — ook wanneer `connect_lancedb()` vóór hooks draait.
 
-Gebruikt door: `kb_schema.py`, `ingest.py`, `mcp_server.py`, `lancedb_maintenance.py`, `domains_config.py`.
+Gebruikt door: `kb_schema.py`, `ingest.py`, `mcp_server.py`, `lancedb_maintenance.py`, `domains_config.py` (via `KnowledgeRepository` / `vector_store_*`).
 
-Module: `scripts/rag_pipeline/lancedb_storage.py` · tests: `tests/rag_pipeline/test_lancedb_storage.py`
+### KnowledgeRepository (agent-API)
+
+High-level laag boven `VectorStoreBackend`:
+
+| Methode | Gedrag |
+|---------|--------|
+| `session()` | Connect + gegarandeerd `close` in `finally` |
+| `ensure_table(db)` | Open of create `knowledge_base`; weigert legacy schema zonder `id` |
+| `search(query, limit, table)` | Lege/whitespace query → `[]`; limit geclamped 1–50; invalid limit → fallback 5 |
+| `upsert_chunks(table, rows)` | `merge_insert` op `id`; vereist `id` per rij; batching; fouten als `RuntimeError` |
+
+**MCP shutdown:** `mcp_server.py` registreert hooks via `get_vector_store_backend().register_shutdown_hooks(...)` (geen repo-singleton bij import).
+
+**Ingest:** `_upsert_chunk_rows(..., repo=repo)` hergebruikt dezelfde `KnowledgeRepository`-instantie per run (geen per-batch allocatie).
+
+Modules: `scripts/rag_pipeline/knowledge_repository.py`, `lancedb_storage.py` · tests: `tests/rag_pipeline/test_knowledge_repository.py` (47), `test_lancedb_storage.py`, `test_vector_store_ports.py` · E2E: `RUN_KNOWLEDGE_REPOSITORY_E2E.bat`
 
 ## Terminal tool (Windows native)
 

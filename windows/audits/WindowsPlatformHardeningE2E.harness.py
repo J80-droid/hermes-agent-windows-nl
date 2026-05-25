@@ -178,18 +178,22 @@ def test_lancedb_default_vectorstore_localappdata() -> None:
 
 def test_lancedb_preflight_removes_stale_lock() -> None:
     import lancedb_storage as storage
+    import vector_store_lifecycle as lifecycle
 
     storage.reset_lancedb_storage_state()
-    storage._STALE_MIN_AGE_SEC = 0.0
-    with tempfile.TemporaryDirectory() as tmp:
-        store = Path(tmp) / "legal"
-        lance_dir = store / "knowledge_base.lance"
-        lance_dir.mkdir(parents=True)
-        lock = lance_dir / "manifest.lance-lock"
-        lock.write_text("stale", encoding="utf-8")
-        removed = storage.preflight_vector_store(store, force=True)
-        ok = not lock.exists() and len(removed) >= 1
-        step("LanceDB storage: preflight removes stale .lance-lock", ok)
+    lifecycle._STALE_MIN_AGE_SEC = 0.0
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Path(tmp) / "legal"
+            lance_dir = store / "knowledge_base.lance"
+            lance_dir.mkdir(parents=True)
+            lock = lance_dir / "manifest.lance-lock"
+            lock.write_text("stale", encoding="utf-8")
+            removed = storage.preflight_vector_store(store, force=True)
+            ok = not lock.exists() and len(removed) >= 1
+            step("LanceDB storage: preflight removes stale .lance-lock", ok)
+    finally:
+        lifecycle._STALE_MIN_AGE_SEC = 30.0
 
 
 def test_lancedb_session_closes_connection() -> None:

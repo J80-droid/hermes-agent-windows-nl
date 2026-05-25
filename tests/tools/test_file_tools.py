@@ -8,12 +8,25 @@ import json
 import logging
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from tools.file_tools import (
     READ_FILE_SCHEMA,
     WRITE_FILE_SCHEMA,
     PATCH_SCHEMA,
     SEARCH_FILES_SCHEMA,
 )
+
+
+@pytest.fixture(autouse=True)
+def _disable_file_sandbox_for_unit_tests(monkeypatch):
+    """Handlers use arbitrary /tmp paths; sandbox is tested in hermes_cli tests."""
+    monkeypatch.setenv("HERMES_ENFORCE_FILE_SANDBOX", "0")
+    from hermes_cli import filesystem_sandbox as fss
+
+    fss.reset_workspace_cache()
+    yield
+    fss.reset_workspace_cache()
 
 
 class TestReadFileHandler:

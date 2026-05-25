@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-import lancedb
 import pyarrow as pa
 from markitdown import MarkItDown
 
@@ -60,7 +59,7 @@ from ingest_ui import (
     warn as _ui_warn,
 )
 
-from kb_schema import DB_PATH, TABLE_NAME, KnowledgeSchema, list_all_table_names
+from kb_schema import DB_PATH, TABLE_NAME
 
 try:
     from audio_transcriber import transcribe_media_file, write_transcript_to_temp
@@ -239,14 +238,11 @@ def _chunk_row_id(relative_source: str, chunk_index: int) -> str:
     return hashlib.sha256(f"{rel}\0#{chunk_index}".encode("utf-8")).hexdigest()
 
 
-def _schema_has_id(schema: pa.Schema) -> bool:
-    return "id" in schema.names
 
+def _upsert_chunk_rows(table, rows: list[dict], *, repo: "KnowledgeRepository | None" = None) -> None:
+    from knowledge_repository import KnowledgeRepository
 
-def _upsert_chunk_rows(table, rows: list[dict]) -> None:
-    if not rows:
-        return
-    table.merge_insert("id").when_matched_update_all().when_not_matched_insert_all().execute(rows)
+    (repo or KnowledgeRepository()).upsert_chunks(table, rows)
 
 
 def _upsert_rows_with_embed_progress(
@@ -255,6 +251,8 @@ def _upsert_rows_with_embed_progress(
     relative_source: str,
     pbar: object,
     embed_batch: int,
+    *,
+    repo: "KnowledgeRepository | None" = None,
 ) -> None:
     """Voert merge_insert uit; bij veel chunks tussenloggen zodat [EMBEDDEN] niet 'stil' voelt."""
     n = len(rows)
@@ -272,7 +270,7 @@ def _upsert_rows_with_embed_progress(
             f"{C_CYAN}[INFO]{C_RESET} Upsert {n} chunk(s) voor bron: {relative_source} (merge_insert op id)...",
             pbar,
         )
-        _upsert_chunk_rows(table, rows)
+        _upsert_chunk_rows(table, rows, repo=repo)
         return
 
     log_during_progress(
@@ -291,7 +289,7 @@ def _upsert_rows_with_embed_progress(
             f"{C_CYAN}[INFO]{C_RESET} Upsert {len(part)} chunk(s) (merge_insert op id)...",
             pbar,
         )
-        _upsert_chunk_rows(table, part)
+        _upsert_chunk_rows(table, part, repo=repo)
 
 
 def _relative_source(file_path: Path, root: Path) -> str:
@@ -344,32 +342,39 @@ def semantic_chunk_document(text: str, max_words: int = DEFAULT_MAX_WORDS) -> li
 
 def process_and_ingest(source_directory: str, max_words: int = DEFAULT_MAX_WORDS):
     """Scant de bronmap, verwerkt bestanden en schrijft naar LanceDB met idempotente upsert op `id`."""
-    from lancedb_storage import close_lancedb_connection, connect_lancedb
+    from knowledge_repository import KnowledgeRepository
 
+    repo = KnowledgeRepository(db_path=DB_PATH)
     _ui_info(f"Initialiseren databaseverbinding op: {DB_PATH}")
-    db = connect_lancedb(DB_PATH)
+    with repo.session() as db:
+        _process_and_ingest_with_db(db, source_directory, max_words, repo=repo)
+
+
+def _process_and_ingest_with_db(
+    db,
+    source_directory: str,
+    max_words: int = DEFAULT_MAX_WORDS,
+    *,
+    repo=None,
+):
+    from knowledge_repository import KnowledgeRepository
+
+    repo = repo or KnowledgeRepository(db_path=DB_PATH)
+
+    existed = TABLE_NAME in repo.list_table_names(db)
     try:
-        _process_and_ingest_with_db(db, source_directory, max_words)
-    finally:
-        close_lancedb_connection(db)
+        table = repo.ensure_table(db)
+    except RuntimeError as exc:
+        print(f"{C_RED}[ERROR]{C_RESET} {exc}")
+        print(
+            f"{C_RED}[ERROR]{C_RESET} Kies eenmalig 'J' / HERMES_RAG_FRESH=1, of: "
+            "python scripts/rag_pipeline/schema_migrate.py --backup-and-reset"
+        )
+        sys.exit(2)
 
-
-def _process_and_ingest_with_db(db, source_directory: str, max_words: int = DEFAULT_MAX_WORDS):
-
-    if TABLE_NAME in list_all_table_names(db):
-        table = db.open_table(TABLE_NAME)
+    if existed:
         _ui_info(f"Bestaande tabel '{TABLE_NAME}' geopend.")
-        if not _schema_has_id(table.schema):
-            print(
-                f"{C_RED}[ERROR]{C_RESET} De bestaande tabel mist de kolom 'id' (oud schema vóór upsert-architectuur)."
-            )
-            print(
-                f"{C_RED}[ERROR]{C_RESET} Kies eenmalig 'J' / HERMES_RAG_FRESH=1, of: "
-                "python scripts/rag_pipeline/schema_migrate.py --backup-and-reset"
-            )
-            sys.exit(2)
     else:
-        table = db.create_table(TABLE_NAME, schema=KnowledgeSchema)
         _ui_info(f"Nieuwe tabel '{TABLE_NAME}' succesvol aangemaakt.")
 
     supported_extensions = supported_extension_globs()
@@ -575,7 +580,7 @@ def _process_and_ingest_with_db(db, source_directory: str, max_words: int = DEFA
 
             set_step("Embedden")
             _upsert_rows_with_embed_progress(
-                table, rows, str(relative_source), pbar, embed_batch=embed_batch
+                table, rows, str(relative_source), pbar, embed_batch=embed_batch, repo=repo
             )
             if orphan_cleanup_enabled():
                 removed = delete_orphan_chunks_for_source(

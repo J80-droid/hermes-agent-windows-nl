@@ -7,7 +7,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RAG_DIR = REPO_ROOT / "scripts" / "rag_pipeline"
@@ -82,6 +82,38 @@ def test_patch_tool_blocks_sandbox_escape() -> None:
         step("patch_tool blocks sandbox escape", ok, msg or "no error")
 
 
+def test_patch_tool_permission_error_propagates() -> None:
+    from hermes_cli import filesystem_sandbox as fs
+
+    with tempfile.TemporaryDirectory() as tmp:
+        workspace = Path(tmp) / "workspace"
+        workspace.mkdir()
+        target = workspace / "locked.txt"
+        target.write_text("original", encoding="utf-8")
+        os.environ["HERMES_WORKSPACE_ROOT"] = str(workspace)
+        os.environ["HERMES_ENFORCE_FILE_SANDBOX"] = "1"
+        os.environ["TERMINAL_CWD"] = str(workspace)
+        fs.reset_workspace_cache()
+
+        from tools import file_tools
+
+        with patch.object(
+            file_tools,
+            "_resolve_path_for_task",
+            side_effect=PermissionError("sandbox denied"),
+        ):
+            try:
+                file_tools.patch_tool(
+                    mode="replace",
+                    path="locked.txt",
+                    old_string="original",
+                    new_string="changed",
+                )
+                step("patch_tool PermissionError propagates", False, "no exception raised")
+            except PermissionError:
+                step("patch_tool PermissionError propagates", True)
+
+
 def test_hardware_cuda_device_fallback() -> None:
     from hermes_cli import hardware_backend as hb
 
@@ -113,7 +145,11 @@ def test_whisper_auto_cpu_fallback() -> None:
         return FakeWhisper(model_name, device, compute_type)
 
     hb._selections.clear()
-    import faster_whisper
+    try:
+        import faster_whisper
+    except ImportError:
+        step("Hardware: faster-whisper auto falls back to CPU", True, "skipped (faster_whisper not installed)")
+        return
 
     original = faster_whisper.WhisperModel
     faster_whisper.WhisperModel = fake_ctor  # type: ignore[misc]
@@ -126,42 +162,42 @@ def test_whisper_auto_cpu_fallback() -> None:
 
 
 def test_lancedb_extra_cleanup_after_connect() -> None:
-    import lancedb_storage as storage
+    import vector_store_lifecycle as lifecycle
 
-    storage.reset_lancedb_storage_state()
+    lifecycle.reset_lancedb_storage_state()
     calls: list[str] = []
 
     def extra() -> None:
         calls.append("extra")
 
     shutdown_mock = MagicMock()
-    original_shutdown = storage.shutdown_all_lancedb_connections
-    storage.shutdown_all_lancedb_connections = shutdown_mock  # type: ignore[method-assign]
+    original_shutdown = lifecycle.shutdown_all_lancedb_connections
+    lifecycle.shutdown_all_lancedb_connections = shutdown_mock  # type: ignore[method-assign]
     try:
-        storage.register_lancedb_connection(object())
-        storage.register_lancedb_shutdown_hooks(extra_cleanup=extra)
-        storage._run_shutdown_hooks()
+        lifecycle.register_lancedb_connection(object())
+        lifecycle.register_lancedb_shutdown_hooks(extra_cleanup=extra)
+        lifecycle._run_shutdown_hooks()
         ok = calls == ["extra"] and shutdown_mock.call_count == 1
     finally:
-        storage.shutdown_all_lancedb_connections = original_shutdown  # type: ignore[method-assign]
-        storage.reset_lancedb_storage_state()
+        lifecycle.shutdown_all_lancedb_connections = original_shutdown  # type: ignore[method-assign]
+        lifecycle.reset_lancedb_storage_state()
     step("LanceDB: extra_cleanup runs after connect-first registration", ok)
 
 
 def test_lancedb_single_atexit_handler() -> None:
-    import lancedb_storage as storage
+    import vector_store_lifecycle as lifecycle
 
-    storage.reset_lancedb_storage_state()
+    lifecycle.reset_lancedb_storage_state()
     handlers: list = []
-    original_register = storage.atexit.register
-    storage.atexit.register = lambda fn: handlers.append(fn)  # type: ignore[method-assign]
+    original_register = lifecycle.atexit.register
+    lifecycle.atexit.register = lambda fn: handlers.append(fn)  # type: ignore[method-assign]
     try:
-        storage.register_lancedb_connection(object())
-        storage.register_lancedb_shutdown_hooks(extra_cleanup=lambda: None)
+        lifecycle.register_lancedb_connection(object())
+        lifecycle.register_lancedb_shutdown_hooks(extra_cleanup=lambda: None)
         ok = len(handlers) == 1
     finally:
-        storage.atexit.register = original_register  # type: ignore[method-assign]
-        storage.reset_lancedb_storage_state()
+        lifecycle.atexit.register = original_register  # type: ignore[method-assign]
+        lifecycle.reset_lancedb_storage_state()
     step("LanceDB: single atexit shutdown handler", ok)
 
 
@@ -171,17 +207,45 @@ def test_terminal_tool_documents_git_bash() -> None:
     step("terminal_tool documents Git Bash on Windows", ok)
 
 
+def test_knowledge_repository_mock_backend() -> None:
+    from knowledge_repository import KnowledgeRepository
+
+    mock_table = MagicMock()
+    mock_table.schema.names = ["id", "text"]
+    mock_table.search.return_value.limit.return_value.to_list.return_value = [{"text": "hit"}]
+    mock_db = MagicMock()
+    page = MagicMock()
+    page.tables = ["knowledge_base"]
+    page.page_token = None
+    mock_db.list_tables.return_value = page
+    mock_db.open_table.return_value = mock_table
+
+    backend = MagicMock()
+    backend.connect.return_value = mock_db
+
+    repo = KnowledgeRepository(db_path="/tmp/kb", backend=backend)
+    with repo.session() as db:
+        table = repo.ensure_table(db)
+        hits = repo.search("query", limit=2, table=table)
+        repo.upsert_chunks(table, [{"id": "1", "text": "a", "source": "s"}])
+    backend.close.assert_called_once()
+    ok = hits == [{"text": "hit"}] and mock_table.merge_insert.called
+    step("KnowledgeRepository: session/search/upsert via DI backend", ok)
+
+
 def main() -> int:
     print("=== Platform hardening regression harness ===")
     test_sandbox_blocks_env_var_traversal()
     test_sandbox_device_prefix_case_insensitive()
     test_patch_tool_blocks_sandbox_escape()
+    test_patch_tool_permission_error_propagates()
     test_hardware_cuda_device_fallback()
     test_whisper_auto_cpu_fallback()
     test_lancedb_extra_cleanup_after_connect()
     test_lancedb_single_atexit_handler()
     test_terminal_tool_documents_git_bash()
-    total = 8
+    test_knowledge_repository_mock_backend()
+    total = 10
     if FAILURES:
         print(f"=== HARNESS: FAIL ({FAILURES}) ===", file=sys.stderr)
         return 1

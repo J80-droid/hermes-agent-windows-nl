@@ -1,55 +1,43 @@
 import sys
+from typing import Any
 
-import lancedb
 from mcp.server.fastmcp import FastMCP
 
-from kb_schema import DB_PATH, TABLE_NAME, KnowledgeSchema, list_all_table_names
-from lancedb_storage import (
-    close_lancedb_connection,
-    connect_lancedb,
-    register_lancedb_shutdown_hooks,
-)
+from kb_schema import get_db_path
+from knowledge_repository import KnowledgeRepository
+from vector_store_ports import get_vector_store_backend
 from rag_display import inline_citeer_sjabloon, source_basename
 
 mcp = FastMCP("LanceDB-Knowledge-Server")
 
-_db: lancedb.DBConnection | None = None
-_table = None
+_repo: KnowledgeRepository | None = None
+_db: Any = None
+_table: Any = None
 
 
-def _get_db() -> lancedb.DBConnection:
-    global _db
-    if _db is None:
-        _db = connect_lancedb(DB_PATH)
-    return _db
+def _get_repo() -> KnowledgeRepository:
+    global _repo
+    if _repo is None:
+        _repo = KnowledgeRepository(db_path=get_db_path())
+    return _repo
 
 
-def _ensure_knowledge_table():
-    """Opent `knowledge_base` of maakt een lege tabel met KnowledgeSchema aan (geen crash)."""
-    db = _get_db()
-    if TABLE_NAME in list_all_table_names(db):
-        return db.open_table(TABLE_NAME)
-    print(
-        f"[INFO] Tabel '{TABLE_NAME}' ontbreekt — lege tabel initialiseren met KnowledgeSchema.",
-        file=sys.stderr,
-    )
-    return db.create_table(TABLE_NAME, schema=KnowledgeSchema)
-
-
-def _get_knowledge_table():
-    global _table
+def _get_knowledge_table() -> Any:
+    global _db, _table
     if _table is None:
-        _table = _ensure_knowledge_table()
+        _db = _get_repo().backend.connect(get_db_path())
+        _table = _get_repo().ensure_table(_db)
     return _table
 
 
 def close_lancedb_mcp_connection() -> None:
     """Graceful shutdown for MCP subprocess (Windows mmap release)."""
-    global _db, _table
+    global _db, _table, _repo
     _table = None
-    if _db is not None:
-        close_lancedb_connection(_db)
+    if _db is not None and _repo is not None:
+        _repo.backend.close(_db)
         _db = None
+    _repo = None
 
 
 def reset_knowledge_table_cache() -> None:
@@ -57,7 +45,8 @@ def reset_knowledge_table_cache() -> None:
     close_lancedb_mcp_connection()
 
 
-register_lancedb_shutdown_hooks(extra_cleanup=close_lancedb_mcp_connection)
+# Shutdown hooks on the VectorStore backend (not _get_repo()) — avoids eager repo init at import.
+get_vector_store_backend().register_shutdown_hooks(extra_cleanup=close_lancedb_mcp_connection)
 
 
 @mcp.tool()
@@ -73,7 +62,8 @@ def search_knowledge(query: str, limit: int = 5) -> str:
     except (TypeError, ValueError):
         safe_limit = 5
     try:
-        results = _get_knowledge_table().search(query).limit(safe_limit).to_list()
+        table = _get_knowledge_table()
+        results = _get_repo().search(query, limit=safe_limit, table=table)
 
         output = []
         for res in results:

@@ -113,6 +113,7 @@ class TestLaunchIntegration:
     def test_launch_hermes_wires_institutional_runtime(self):
         text = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
         assert "launch_institutional_runtime.ps1" in text
+        assert "launch_pending_trust_runtime.ps1" in text
 
     def test_launch_hermes_wires_soul_deploy_before_institutional(self):
         text = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")

@@ -100,6 +100,21 @@ Taakbalk-iconen: goud=start/RAG, groen=setup, wit=update, roze=backup, cyaan=res
 
 Zie [USER_DATA_OPERATIONS.md](USER_DATA_OPERATIONS.md) en [../windows/UPSTREAM_SYNC.md](../windows/UPSTREAM_SYNC.md).
 
+## Na update: hoef je niets extra's?
+
+1. Draai **`windows\UPDATE_HERMES.bat`** (of `hermes update` via dezelfde keten).
+2. Start Hermes met **`start_hermes.bat`** — klaar.
+
+Als de update een **trust-WARN** gaf (`SYNC_TRUST_RUNTIME` mislukt), hoef je geen env-variabelen te onthouden: bij de **eerste start** vult Hermes geheugen en trust automatisch aan (~1 min). Daarna opent de TUI en start een **nieuwe chat** (`/new`) vanzelf.
+
+| Situatie | Wat jij doet |
+|----------|----------------|
+| Update OK, geen WARN | `start_hermes.bat` — klaar |
+| Update OK, trust WARN | `start_hermes.bat` — herstelt automatisch |
+| Start faalt 3× op trust-nazorg | `set HERMES_SKIP_MEMORY_PRODUCTION_GATE=1` en `windows\SYNC_TRUST_RUNTIME.bat` |
+
+Power users: `set HERMES_SKIP_PENDING_TRUST_ON_START=1` slaat nazorg bij start over. Details: [TRUST_FORENSIC_PROTOCOL.md](TRUST_FORENSIC_PROTOCOL.md).
+
 ## Meer documentatie
 
 - Index: [README.md](README.md)

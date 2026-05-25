@@ -79,6 +79,12 @@ $repoFiles = @(
     'hermes_cli/filesystem_sandbox.py',
     'hermes_cli/hardware_backend.py',
     'scripts/rag_pipeline/lancedb_storage.py',
+    'scripts/rag_pipeline/vector_store_paths.py',
+    'scripts/rag_pipeline/vector_store_lifecycle.py',
+    'scripts/rag_pipeline/vector_store_ports.py',
+    'scripts/rag_pipeline/lancedb_backend.py',
+    'scripts/rag_pipeline/kb_schema_constants.py',
+    'scripts/rag_pipeline/knowledge_repository.py',
     'tools/file_tools.py',
     'tools/terminal_tool.py',
     'scripts/check-windows-footguns.py',
@@ -94,7 +100,7 @@ foreach ($rel in $repoFiles) {
         break
     }
 }
-Add-StepResult -Name '1/8 repo regression artefacten' -Ok $repoOk
+Add-StepResult -Name '1/10 repo regression artefacten' -Ok $repoOk
 
 # --- 2 Geen legacy PS1 pad-patroon in audits ---
 $legacyPattern = "-replace\s+'/',\s+'\\\\'"
@@ -106,50 +112,57 @@ Get-ChildItem -LiteralPath $auditDir -Filter '*.ps1' -File | ForEach-Object {
         $legacyHits += $_.Name
     }
 }
-Add-StepResult -Name '2/8 audits: geen legacy `$rel -replace` pad-patroon' -Ok ($legacyHits.Count -eq 0) -Detail ($legacyHits -join ', ')
+Add-StepResult -Name '2/10 audits: geen legacy `$rel -replace` pad-patroon' -Ok ($legacyHits.Count -eq 0) -Detail ($legacyHits -join ', ')
 
 # --- 3 Join-HermesRepoPath conventie in HermesShellCommon ---
 $commonPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/HermesShellCommon.ps1')
 $commonOk = ($commonPy -match 'function Join-HermesRepoPath') -and
     ($commonPy -match 'Read-HermesRepoText') -and
     ($commonPy -match 'Navigatie t.o.v. het script')
-Add-StepResult -Name '3/8 HermesShellCommon pad-conventie gedocumenteerd' -Ok $commonOk
+Add-StepResult -Name '3/10 HermesShellCommon pad-conventie gedocumenteerd' -Ok $commonOk
 
 # --- 4 Footguns PS1 pad-regel ---
 $footgunsPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/check-windows-footguns.py')
 $footOk = ($footgunsPy -match 'PS1: legacy Join-Path with -replace') -and
     ($footgunsPy -match 'windows" in path.parts')
-Add-StepResult -Name '4/8 check-windows-footguns PS1 pad-regel' -Ok $footOk
+Add-StepResult -Name '4/10 check-windows-footguns PS1 pad-regel' -Ok $footOk
 
 # --- 5 Code wiring (review fixes) ---
 $fsPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/filesystem_sandbox.py')
 $hwPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/hardware_backend.py')
-$ldbPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/lancedb_storage.py')
+$ldbLife = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/vector_store_lifecycle.py')
+$ldbPorts = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/vector_store_ports.py')
+$ldbBackend = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/lancedb_backend.py')
 $fileTools = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tools/file_tools.py')
 $wireOk = ($fsPy -match 'os\.path\.expandvars') -and
     ($hwPy -match 'GPU fallback') -and
-    ($ldbPy -match '_run_shutdown_hooks') -and
-    ($ldbPy -match '_extra_shutdown') -and
+    ($ldbLife -match '_run_shutdown_hooks') -and
+    ($ldbLife -match '_extra_shutdown') -and
+    ($ldbPorts -match 'VectorStoreBackend') -and
+    ($ldbBackend -match 'LanceDBVectorStoreBackend') -and
     ($fileTools -match 'except PermissionError')
-Add-StepResult -Name '5/8 code wiring review-fixes' -Ok $wireOk
+Add-StepResult -Name '5/10 code wiring review-fixes' -Ok $wireOk
 
-# --- 6 Isolated harness (8 scenario''s) ---
+# --- 6 Isolated harness (10 scenario''s) ---
 $harness = Join-Path $scriptRoot 'PlatformHardeningRegressionE2E.harness.py'
 $harnessOk = Invoke-AuditCommand -Exe $python -ArgumentList @($harness)
-Add-StepResult -Name '6/8 isolated harness (8 scenario''s)' -Ok $harnessOk
+Add-StepResult -Name '6/10 isolated harness (10 scenario''s)' -Ok $harnessOk
 
 # --- 7 Pytest regressie-subset ---
 if ($SkipPytest) {
-    Add-StepResult -Name '7/8 pytest regressie-subset' -Ok $true -Detail 'overgeslagen (-SkipPytest)'
+    Add-StepResult -Name '7/10 pytest regressie-subset' -Ok $true -Detail 'overgeslagen (-SkipPytest)'
 } else {
     $pytestOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_filesystem_sandbox.py'),
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_hardware_backend.py'),
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/rag_pipeline/test_lancedb_storage.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/rag_pipeline/test_vector_store_ports.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/rag_pipeline/test_kb_schema_lazy.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/rag_pipeline/test_knowledge_repository.py'),
         '-q', '--tb=short', '-o', 'addopts='
     )
-    Add-StepResult -Name '7/8 pytest regressie-subset' -Ok $pytestOk -Detail $python
+    Add-StepResult -Name '7/10 pytest regressie-subset' -Ok $pytestOk -Detail $python
 }
 
 # --- 8 Footguns scan changed modules ---
@@ -159,9 +172,34 @@ $fgOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
     (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/filesystem_sandbox.py'),
     (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/hardware_backend.py'),
     (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tools/file_tools.py'),
-    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/lancedb_storage.py')
+    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/lancedb_storage.py'),
+    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/knowledge_repository.py')
 )
-Add-StepResult -Name '8/8 windows footguns (changed modules)' -Ok $fgOk
+Add-StepResult -Name '8/10 windows footguns (changed modules)' -Ok $fgOk
+
+# --- 9 Architecture modules ---
+$archFiles = @(
+    'scripts/rag_pipeline/knowledge_repository.py',
+    'scripts/rag_pipeline/vector_store_ports.py',
+    'scripts/rag_pipeline/lancedb_backend.py',
+    'scripts/rag_pipeline/kb_schema_constants.py'
+)
+$archOk = $true
+foreach ($rel in $archFiles) {
+    if (-not (Test-Path -LiteralPath (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $rel))) {
+        $archOk = $false
+        break
+    }
+}
+$repoPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/knowledge_repository.py')
+$archOk = $archOk -and ($repoPy -match 'class KnowledgeRepository') -and ($repoPy -match 'def ensure_table')
+Add-StepResult -Name '9/10 KnowledgeRepository + VectorStore DI modules' -Ok $archOk
+
+# --- 10 MCP + ingest use repository layer ---
+$mcpPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/mcp_server.py')
+$ingestPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/ingest.py')
+$callerOk = ($mcpPy -match 'KnowledgeRepository') -and ($ingestPy -match 'KnowledgeRepository')
+Add-StepResult -Name '10/10 ingest + MCP wired via KnowledgeRepository' -Ok $callerOk
 
 # --- Rapport ---
 $status = if ($failures -eq 0) { 'PASS' } else { "FAIL ($failures)" }
@@ -185,9 +223,10 @@ foreach ($s in $steps) {
 [void]$sb.AppendLine('## Scope')
 [void]$sb.AppendLine('- Sandbox env-var traversal + case-insensitive device paths')
 [void]$sb.AppendLine('- Hardware CUDA/auto CPU fallback + patch_tool sandbox block')
-[void]$sb.AppendLine('- LanceDB unified shutdown hooks (_extra_shutdown)')
+[void]$sb.AppendLine('- LanceDB unified shutdown hooks (_extra_shutdown) + KnowledgeRepository')
 [void]$sb.AppendLine('- PS1 Join-HermesRepoPath convention (no legacy -replace in audits)')
 [void]$sb.AppendLine('- check-windows-footguns PS1 path enforcement')
+[void]$sb.AppendLine('- Runtime: PermissionError propagation + repository DI harness')
 Set-Content -LiteralPath $reportPath -Value $sb.ToString() -Encoding UTF8
 Write-Host "Rapport: $reportPath" -ForegroundColor Cyan
 

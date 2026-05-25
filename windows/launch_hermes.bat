@@ -210,6 +210,16 @@ if not defined HERMES_SKIP_INSTITUTIONAL_RUNTIME (
   )
 )
 
+rem --- Pending trust-nazorg na mislukte UPDATE (licht; geen harde stop) ---
+if not defined HERMES_SKIP_PENDING_TRUST_ON_START (
+  set "HERMES_REPO_ROOT=!REPO_ROOT!"
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/scripts/launch_pending_trust_runtime.ps1" -RepoRoot "!REPO_ROOT!"
+  if !errorLevel! neq 0 (
+    echo %GOUD%[WARN] Trust-nazorg mislukt ^(exit !errorLevel!^) — start gaat door.%RESET%
+    echo [%DATE% %TIME%] WARN: pending trust runtime exit !errorLevel! >> "%LAUNCH_LOG%"
+  )
+)
+
 echo %GROEN%[INFO] Step 2: Launching Hermes Agent...%RESET%
 echo [%DATE% %TIME%] Launching runtime wrapper... >> "%LAUNCH_LOG%"
 

@@ -370,3 +370,11 @@ def resolve_whisper_device_from_env(
     backend = BackendName.CUDA if device == "cuda" else BackendName.CPU
     record_backend("rag-whisper", backend, f"device={device}, compute={compute}")
     return device, compute
+
+
+def reset_hardware_backend_cache() -> None:
+    """Clear cached ONNX provider list and recorded selections (tests)."""
+    global _onnx_providers_cache, _startup_summary_printed
+    _onnx_providers_cache = None
+    _startup_summary_printed = False
+    _selections.clear()

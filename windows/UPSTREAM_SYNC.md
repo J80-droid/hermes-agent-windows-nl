@@ -117,7 +117,7 @@ windows\MERGE_UPSTREAM.bat -AutoResolve
 | Schone `git status` + `git fetch upstream` + ahead/behind | Ja (preflight) |
 | Waarschuwing bij achterstand >20 + J/N | Ja |
 | `hermes update` (merge upstream + deps) | Ja |
-| Trust runtime (`SYNC_TRUST_RUNTIME.bat`, geen scrub + USER-regel snapshot) | Ja (post-merge, `HERMES_SKIP_PAUSE=1`) |
+| Trust runtime (`SYNC_TRUST_RUNTIME.bat`, geen scrub + USER-regel snapshot) | Ja (post-merge, `HERMES_SKIP_PAUSE=1`). Bij FAIL: `pending_trust_runtime.json`; eerste `start_hermes.bat` herstelt via lichte trust-nazorg |
 | API + vault-env (`sync_hermes_api_env.ps1` via trust/UPDATE/POST_GIT_PULL) | Ja (`OBSIDIAN_VAULT_PATH` naar alle profiel-`.env`) |
 | Hermes home + config drift (`verify_hermes_home`, `verify_hermes_config_drift`) | Ja (post-merge; bij FAIL: `APPLY_HERMES_HOME_MIGRATION.bat`) |
 | Domein-toolsets (`SYNC_DOMAIN_TOOLSETS.bat`) | Ja (post-merge, na trust runtime) |

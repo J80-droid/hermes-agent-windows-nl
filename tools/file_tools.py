@@ -1032,6 +1032,8 @@ def patch_tool(mode: str = "replace", path: str = None, old_string: str = None,
                     "content, or search_files to locate the text."
                 )
         return json.dumps(result_dict, ensure_ascii=False)
+    except PermissionError:
+        raise
     except Exception as e:
         return tool_error(str(e))
 

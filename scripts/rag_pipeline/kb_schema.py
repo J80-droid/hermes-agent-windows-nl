@@ -1,34 +1,42 @@
 """Gedeeld LanceDB-schema en padconstanten voor ingest en MCP-server."""
 
+from __future__ import annotations
+
+from typing import Any
+
 from rag_log_quiet import apply_torch_ingest_quiet
 
 apply_torch_ingest_quiet()
 
-import lancedb
-from lancedb.embeddings import get_registry
-from lancedb.pydantic import LanceModel, Vector
+from kb_schema_constants import EMBEDDING_MODEL_NAME, TABLE_NAME, get_db_path
 
-from lancedb_storage import resolve_lancedb_path
-
-DB_PATH = resolve_lancedb_path()
-TABLE_NAME = "knowledge_base"
-EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
-
-_registry = get_registry().get("sentence-transformers")
-_embedding_function = _registry.create(name=EMBEDDING_MODEL_NAME)
+_knowledge_schema_class: type | None = None
 
 
-class KnowledgeSchema(LanceModel):
-    """Het strikt getypeerde schema voor de vector-database (deterministische `id` voor upsert)."""
+def get_knowledge_schema() -> type:
+    """Lazy-load ``KnowledgeSchema`` (pulls sentence-transformers only when needed)."""
+    global _knowledge_schema_class
+    if _knowledge_schema_class is None:
+        from lancedb.embeddings import get_registry
+        from lancedb.pydantic import LanceModel, Vector
 
-    id: str
-    text: str = _embedding_function.SourceField()
-    vector: Vector(_embedding_function.ndims()) = _embedding_function.VectorField()
-    source: str
+        registry = get_registry().get("sentence-transformers")
+        embedding_function = registry.create(name=EMBEDDING_MODEL_NAME)
+
+        class KnowledgeSchema(LanceModel):
+            """Het strikt getypeerde schema voor de vector-database (deterministische `id` voor upsert)."""
+
+            id: str
+            text: str = embedding_function.SourceField()
+            vector: Vector(embedding_function.ndims()) = embedding_function.VectorField()
+            source: str
+
+        _knowledge_schema_class = KnowledgeSchema
+    return _knowledge_schema_class
 
 
-def list_all_table_names(db: lancedb.DBConnection) -> list[str]:
-    """Alle tabelnamen (met paginatie) — LanceDB `list_tables()` i.p.v. deprecated `table_names()`."""
+def list_all_table_names(db: Any) -> list[str]:
+    """Alle tabelnamen (met paginatie) — LanceDB ``list_tables()`` i.p.v. deprecated ``table_names()``."""
     names: list[str] = []
     page_token = None
     while True:
@@ -38,3 +46,11 @@ def list_all_table_names(db: lancedb.DBConnection) -> list[str]:
         if not page_token:
             break
     return names
+
+
+def __getattr__(name: str) -> Any:
+    if name == "DB_PATH":
+        return get_db_path()
+    if name == "KnowledgeSchema":
+        return get_knowledge_schema()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

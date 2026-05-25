@@ -19,6 +19,7 @@ if str(RAG_DIR) not in sys.path:
     sys.path.insert(0, str(RAG_DIR))
 
 import lancedb_storage as storage  # noqa: E402
+import vector_store_lifecycle as lifecycle  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -151,7 +152,7 @@ class TestStaleArtifactDetection:
         assert storage._is_stale_artifact(path) is expected
 
     def test_artifact_safe_to_remove_when_old_enough(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(storage, "_STALE_MIN_AGE_SEC", 10.0)
+        monkeypatch.setattr(lifecycle, "_STALE_MIN_AGE_SEC", 10.0)
         path = tmp_path / "old.lance-lock"
         path.write_text("lock", encoding="utf-8")
         old = time.time() - 60
@@ -159,7 +160,7 @@ class TestStaleArtifactDetection:
         assert storage._artifact_is_safe_to_remove(path) is True
 
     def test_artifact_not_safe_when_too_recent(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(storage, "_STALE_MIN_AGE_SEC", 3600.0)
+        monkeypatch.setattr(lifecycle, "_STALE_MIN_AGE_SEC", 3600.0)
         path = tmp_path / "fresh.lance-lock"
         path.write_text("lock", encoding="utf-8")
         assert storage._artifact_is_safe_to_remove(path) is False
@@ -176,7 +177,7 @@ class TestStaleArtifactDetection:
 
 class TestPreflightCleanup:
     def test_removes_stale_lock_and_tmp_files(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(storage, "_STALE_MIN_AGE_SEC", 0.0)
+        monkeypatch.setattr(lifecycle, "_STALE_MIN_AGE_SEC", 0.0)
         store = tmp_path / "legal"
         lance_dir = store / "knowledge_base.lance"
         lance_dir.mkdir(parents=True)
@@ -201,7 +202,7 @@ class TestPreflightCleanup:
         assert store.is_dir()
 
     def test_preflight_cache_skips_second_walk(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(storage, "_artifact_is_safe_to_remove", lambda _p: True)
+        monkeypatch.setattr(lifecycle, "_artifact_is_safe_to_remove", lambda _p, **_: True)
         store = tmp_path / "cached"
         store.mkdir()
         lock = store / "a.lance-lock"
@@ -216,19 +217,21 @@ class TestPreflightCleanup:
         assert lock.exists()
 
     def test_preflight_force_bypasses_cache(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(storage, "_STALE_MIN_AGE_SEC", 0.0)
+        monkeypatch.setattr(lifecycle, "_STALE_MIN_AGE_SEC", 0.0)
         store = tmp_path / "forced"
         store.mkdir()
         lock = store / "b.lance-lock"
         lock.write_text("x", encoding="utf-8")
         storage.preflight_vector_store(store)
         lock.write_text("y", encoding="utf-8")
+        old = time.time() - 60
+        os.utime(lock, (old, old))
         removed = storage.preflight_vector_store(store, force=True)
         assert len(removed) == 1
         assert not lock.exists()
 
     def test_preflight_skips_recent_artifacts(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(storage, "_STALE_MIN_AGE_SEC", 99999.0)
+        monkeypatch.setattr(lifecycle, "_STALE_MIN_AGE_SEC", 99999.0)
         store = tmp_path / "active"
         store.mkdir()
         lock = store / "active.lance-lock"
@@ -238,7 +241,7 @@ class TestPreflightCleanup:
         assert lock.exists()
 
     def test_preflight_continues_after_unlink_error(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(storage, "_STALE_MIN_AGE_SEC", 0.0)
+        monkeypatch.setattr(lifecycle, "_STALE_MIN_AGE_SEC", 0.0)
         store = tmp_path / "err"
         store.mkdir()
         lock = store / "fail.lance-lock"
@@ -255,6 +258,44 @@ class TestPreflightCleanup:
         removed = storage.preflight_vector_store(store, force=True)
         assert removed == []
         assert lock.exists()
+
+    def test_preflight_shallow_scan_finds_lance_root_locks_without_force(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(lifecycle, "_STALE_MIN_AGE_SEC", 0.0)
+        store = tmp_path / "shallow"
+        lance_dir = store / "knowledge_base.lance"
+        lance_dir.mkdir(parents=True)
+        stale_lock = lance_dir / "manifest.lance-lock"
+        stale_lock.write_text("lock", encoding="utf-8")
+        old = time.time() - 60
+        os.utime(stale_lock, (old, old))
+
+        removed = storage.preflight_vector_store(store)
+
+        assert not stale_lock.exists()
+        assert len(removed) == 1
+
+    def test_preflight_shallow_scan_skips_version_blob_tree(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(lifecycle, "_STALE_MIN_AGE_SEC", 0.0)
+        store = tmp_path / "blobs"
+        lance_dir = store / "knowledge_base.lance"
+        versions = lance_dir / "_versions" / "1"
+        versions.mkdir(parents=True)
+        decoy = versions / "segment.lance-lock"
+        decoy.write_text("should stay unless force", encoding="utf-8")
+        walk_calls: list[str] = []
+
+        original_walk = os.walk
+
+        def tracking_walk(top, *args, **kwargs):
+            walk_calls.append(str(top))
+            return original_walk(top, *args, **kwargs)
+
+        monkeypatch.setattr(storage.os, "walk", tracking_walk)
+        removed = storage.preflight_vector_store(store)
+
+        assert removed == []
+        assert decoy.exists()
+        assert walk_calls == []
 
 
 # ---------------------------------------------------------------------------
@@ -321,6 +362,16 @@ class TestConnectionLifecycle:
         storage.register_lancedb_connection(conn)
         storage.close_lancedb_connection(conn)
         conn.close.assert_not_called()
+        storage.shutdown_all_lancedb_connections()
+        conn.close.assert_not_called()
+
+    def test_close_already_closed_still_unregisters(self):
+        conn = MagicMock()
+        conn.is_open = False
+        storage.register_lancedb_connection(conn)
+        storage.close_lancedb_connection(conn)
+        storage.shutdown_all_lancedb_connections()
+        conn.close.assert_not_called()
 
     def test_close_failure_still_unregisters(self):
         conn = MagicMock()
@@ -351,7 +402,7 @@ class TestConnectLancedb:
         fake_lancedb = MagicMock()
         fake_lancedb.connect.return_value = mock_db
         monkeypatch.setitem(sys.modules, "lancedb", fake_lancedb)
-        monkeypatch.setattr(storage, "preflight_vector_store", fake_preflight)
+        monkeypatch.setattr("lancedb_backend.preflight_vector_store", fake_preflight)
 
         db_path = str(tmp_path / "connect-test")
         result = storage.connect_lancedb(db_path)
@@ -364,7 +415,7 @@ class TestConnectLancedb:
         fake_lancedb = MagicMock()
         fake_lancedb.connect.side_effect = OSError("file in use")
         monkeypatch.setitem(sys.modules, "lancedb", fake_lancedb)
-        monkeypatch.setattr(storage, "preflight_vector_store", lambda *_a, **_k: [])
+        monkeypatch.setattr("lancedb_backend.preflight_vector_store", lambda *_a, **_k: [])
 
         db_path = str(tmp_path / "fail-connect")
         with pytest.raises(RuntimeError, match="LanceDB connect failed"):
@@ -374,7 +425,7 @@ class TestConnectLancedb:
 class TestShutdownHooks:
     def test_register_shutdown_hooks_registers_atexit_once(self, monkeypatch):
         register = MagicMock()
-        monkeypatch.setattr(storage.atexit, "register", register)
+        monkeypatch.setattr(lifecycle.atexit, "register", register)
 
         storage.reset_lancedb_storage_state()
         storage.register_lancedb_shutdown_hooks()
@@ -386,8 +437,8 @@ class TestShutdownHooks:
         extra = MagicMock()
         shutdown = MagicMock()
         handlers: list = []
-        monkeypatch.setattr(storage.atexit, "register", lambda fn: handlers.append(fn))
-        monkeypatch.setattr(storage, "shutdown_all_lancedb_connections", shutdown)
+        monkeypatch.setattr(lifecycle.atexit, "register", lambda fn: handlers.append(fn))
+        monkeypatch.setattr(lifecycle, "shutdown_all_lancedb_connections", shutdown)
 
         storage.reset_lancedb_storage_state()
         storage.register_lancedb_shutdown_hooks(extra_cleanup=extra)
@@ -397,12 +448,22 @@ class TestShutdownHooks:
         extra.assert_called_once()
         shutdown.assert_called_once()
 
+    def test_shutdown_hooks_are_idempotent(self, monkeypatch):
+        shutdown = MagicMock()
+        monkeypatch.setattr(lifecycle, "shutdown_all_lancedb_connections", shutdown)
+
+        storage.reset_lancedb_storage_state()
+        storage._run_shutdown_hooks()
+        storage._run_shutdown_hooks()
+
+        shutdown.assert_called_once()
+
     def test_extra_cleanup_failure_still_runs_shutdown(self, monkeypatch):
         extra = MagicMock(side_effect=RuntimeError("cleanup boom"))
         shutdown = MagicMock()
         handlers: list = []
-        monkeypatch.setattr(storage.atexit, "register", lambda fn: handlers.append(fn))
-        monkeypatch.setattr(storage, "shutdown_all_lancedb_connections", shutdown)
+        monkeypatch.setattr(lifecycle.atexit, "register", lambda fn: handlers.append(fn))
+        monkeypatch.setattr(lifecycle, "shutdown_all_lancedb_connections", shutdown)
 
         storage.reset_lancedb_storage_state()
         storage.register_lancedb_shutdown_hooks(extra_cleanup=extra)
@@ -415,8 +476,8 @@ class TestShutdownHooks:
         extra = MagicMock()
         shutdown = MagicMock()
         handlers: list = []
-        monkeypatch.setattr(storage.atexit, "register", lambda fn: handlers.append(fn))
-        monkeypatch.setattr(storage, "shutdown_all_lancedb_connections", shutdown)
+        monkeypatch.setattr(lifecycle.atexit, "register", lambda fn: handlers.append(fn))
+        monkeypatch.setattr(lifecycle, "shutdown_all_lancedb_connections", shutdown)
 
         storage.reset_lancedb_storage_state()
         storage.register_lancedb_connection(object())
@@ -436,8 +497,8 @@ class TestShutdownHooks:
 
         import signal
 
-        monkeypatch.setattr(storage.atexit, "register", MagicMock())
-        monkeypatch.setattr(storage, "shutdown_all_lancedb_connections", shutdown)
+        monkeypatch.setattr(lifecycle.atexit, "register", MagicMock())
+        monkeypatch.setattr(lifecycle, "shutdown_all_lancedb_connections", shutdown)
         monkeypatch.setattr(signal, "signal", fake_signal)
 
         storage.reset_lancedb_storage_state()

@@ -26,6 +26,8 @@ Operationele handleiding voor J.'s Hermes Windows NL fork: verifieerbaar gedrag 
 
 **Geautomatiseerd:** `UPDATE_HERMES.bat` en `POST_GIT_PULL.bat` roepen `SYNC_TRUST_RUNTIME`, `launch_soul_anatomy_deploy.ps1 -Force` (13 SOUL-templates + stamp) en `SYNC_DOMAIN_TOOLSETS` aan. **Niet** automatisch: alleen `git pull` zonder `POST_GIT_PULL.bat` (eerste `start_hermes.bat` pikt SOUL-stamp wel op), of `hermes update` zonder `UPDATE_HERMES.bat`. Toolset-audit: `docs/DOMAIN_TOOLSET_AUDIT.md`.
 
+**Pending trust bij start:** als `SYNC_TRUST_RUNTIME` tijdens UPDATE faalt, zet post-merge een stamp `%LOCALAPPDATA%\hermes\pending_trust_runtime.json`. Bij de volgende `start_hermes.bat` → `launch_pending_trust_runtime.ps1` → lichte keten `Invoke-TrustRuntimeLight.ps1` (geen pytest-gate, geen dubbele SOUL-snippet-sync binnen 120s na anatomy deploy). Bij succes: stamp weg + `/new`-reminder. Overslaan: `HERMES_SKIP_PENDING_TRUST_ON_START=1`. Na 3 mislukte start-pogingen: handmatig `set HERMES_SKIP_MEMORY_PRODUCTION_GATE=1` + `windows\SYNC_TRUST_RUNTIME.bat`.
+
 **Nieuwe chat verplicht** na SOUL/memory-sync (agent laadt memory-snapshot pas bij sessiestart). **TUI:** automatisch via notice-vlag + `gateway.ready` / live `fs.watch`; **klassieke CLI:** gele banner + handmatig `/new`.
 
 ## Geheugenlimieten (runtime)

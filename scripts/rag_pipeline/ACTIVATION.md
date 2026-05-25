@@ -19,10 +19,13 @@ Scripts in deze map:
 - `orphan_cleanup.py` — verwijdert oude chunk-`id`s na inkrimpen of verwijderen van een bron.
 - `subtitle_sidecar.py` — `.vtt`/`.srt` vóór Whisper; geen dubbele index naast media.
 - `audio_transcriber.py` — lokale audio/video via faster-whisper + ffmpeg.
-- `mcp_server.py` — stdio MCP-server met tool `search_knowledge`.
-- `kb_schema.py` — gedeeld `KnowledgeSchema` (velden **`id`**, `text`, `vector`, `source`), padconstanten en `list_all_table_names()` (LanceDB `list_tables()` API).
-- `lancedb_storage.py` — absolute VectorStore-paden (`%LOCALAPPDATA%\hermes\VectorStore`), stale `.lance-lock`/`.tmp` preflight, `lancedb_session()` + graceful shutdown (ingest/MCP/maintenance).
-- `lancedb_maintenance.py` — multi-domein onderhoud uit `domains.yaml`: `--list`, `--inspect`, `--compact`, `--benchmark` (Windows: `windows/LANCEDB_MAINTENANCE.bat`; gebruikt `lancedb_session`).
+- `mcp_server.py` — stdio MCP-server met tool `search_knowledge` (via `KnowledgeRepository`).
+- `kb_schema.py` — lazy `KnowledgeSchema`, padconstanten en `list_all_table_names()`.
+- `kb_schema_constants.py` — lichte constanten (`TABLE_NAME`, `get_db_path()`).
+- `knowledge_repository.py` — agent-API boven VectorStore: `session()`, `ensure_table`, `search`, `upsert_chunks` (edge cases: lege query, limit-clamp, verplichte `id`, merge-fout wrap).
+- `vector_store_paths.py` / `vector_store_lifecycle.py` / `vector_store_ports.py` / `lancedb_backend.py` — paden, lifecycle, DI-backend.
+- `lancedb_storage.py` — backward-compatible facade (`connect_lancedb`, `lancedb_session`).
+- `lancedb_maintenance.py` — multi-domein onderhoud uit `domains.yaml`: `--list`, `--inspect`, `--compact`, `--benchmark` (via `KnowledgeRepository.session`).
 
 **Idempotente upsert:** elke chunk krijgt een vaste **`id`** = SHA-256 van `(<relatief pad>\\0#<chunk-index>)`. **`merge_insert(..., on='id')`** werkt bestaande rijen bij. **Orphan cleanup** (standaard aan) verwijdert chunk-`id`s die niet meer in de nieuwste chunk-set van die bron zitten. **Incrementele ingest** (standaard aan) slaat ongewijzigde bronnen over via ingest-staat naast LanceDB.
 
@@ -268,3 +271,4 @@ Als Hermes bij vragen over jouw lokale kennis toch **VWO.com / Google / curl** g
 - `list_tables()` i.p.v. deprecated `table_names()` (via `list_all_table_names` in `kb_schema.py`).
 - Sentence-transformers registry: `registry.create(name=...)` i.p.v. verwijderde `get_text_embedding_function`.
 - MCP: ontbrekende `knowledge_base` → lege tabel met `KnowledgeSchema` (stderr-log, geen stdout die stdio JSON breekt).
+- **KnowledgeRepository (2026-05):** VectorStore DI-split (`vector_store_*`, `lancedb_backend`); ingest/MCP/maintenance via repository; MCP shutdown op `get_vector_store_backend()`; unit tests `tests/rag_pipeline/test_knowledge_repository.py` (47); E2E `windows/audits/RUN_KNOWLEDGE_REPOSITORY_E2E.bat` (8/8).

@@ -45,6 +45,13 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 - **Entrypoints:** `SETUP_HERMES.bat`, `launch_hermes.bat` → canoniek PS1 (forward slashes in `.bat`).
 - **Verboden:** `Copy-Item $PSCommandPath` naar `windows/` (dubbele IDE/PSSA-lint).
 
+## Pending trust-runtime (start-hook)
+
+- **Stamp:** `%LOCALAPPDATA%\hermes\pending_trust_runtime.json` (`TrustRuntimePending.psm1`) — gezet door `Invoke-UpstreamPostMerge.ps1` als `SYNC_TRUST_RUNTIME.bat` faalt tijdens UPDATE.
+- **Start:** `launch_hermes.bat` → `launch_pending_trust_runtime.ps1` → `Invoke-TrustRuntimeLight.ps1` (subset trust-keten; standaard `SkipProductionGate`; SOUL snippets overgeslagen binnen 120s na anatomy deploy).
+- **Succes:** `Clear-PendingTrustRuntime` + `Set-InstitutionalNewChatReminder` via `Invoke-MemoryTrustPostSync.ps1`.
+- **Skip:** `HERMES_SKIP_PENDING_TRUST_ON_START=1`; max 3 pogingen, daarna handmatige fallback naar `SYNC_TRUST_RUNTIME.bat`.
+
 ## Windows taakbalk-iconen
 
 - **Bron:** `assets/Hermes_logo.png` (repo) of `%USERPROFILE%\.hermes\_local_assets\assets\Hermes_logo.png`.

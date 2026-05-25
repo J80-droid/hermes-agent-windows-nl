@@ -103,7 +103,7 @@ def _spec_from_entry(entry: dict, *, ingest_env: dict) -> DomainSpec:
 
 def default_lancedb_path_for_domain(domain_name: str) -> Path:
     """Recommended absolute LanceDB path for a domain (Windows: LOCALAPPDATA\\hermes\\VectorStore)."""
-    from lancedb_storage import resolve_lancedb_path
+    from vector_store_paths import resolve_lancedb_path
 
     return Path(resolve_lancedb_path(domain=domain_name))
 

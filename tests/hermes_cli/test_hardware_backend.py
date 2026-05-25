@@ -86,3 +86,14 @@ def test_load_faster_whisper_auto_falls_back_to_cpu(monkeypatch):
     model = hb.load_faster_whisper_model("tiny", preferred_device="auto")
     assert model.device == "cpu"
     assert len(calls) == 2
+
+
+def test_reset_hardware_backend_cache_clears_onnx_cache(monkeypatch):
+    hb.reset_hardware_backend_cache()
+    monkeypatch.setattr(hb, "get_onnxruntime_available_providers", lambda: ["CPUExecutionProvider"])
+    first = hb.get_onnxruntime_available_providers()
+    hb._onnx_providers_cache = ["CachedProvider"]
+    hb.reset_hardware_backend_cache()
+    second = hb.get_onnxruntime_available_providers()
+    assert first == ["CPUExecutionProvider"]
+    assert second == ["CPUExecutionProvider"]

@@ -22,7 +22,11 @@ $files = @(
     'windows/WindowsLocalAssetsManifest.ps1',
     'windows/upstream_sync.ps1',
     'windows/scripts/Invoke-UpstreamPostMerge.ps1',
-    'windows/scripts/Invoke-PostSyncCodebaseSmoke.ps1'
+    'windows/scripts/Invoke-PostSyncCodebaseSmoke.ps1',
+    'windows/scripts/Invoke-TrustRuntimeLight.ps1',
+    'windows/scripts/launch_pending_trust_runtime.ps1',
+    'windows/audits/PendingTrustStartE2E.core.ps1',
+    'windows/audits/RUN_PENDING_TRUST_START_E2E.ps1'
 )
 
 $failed = 0

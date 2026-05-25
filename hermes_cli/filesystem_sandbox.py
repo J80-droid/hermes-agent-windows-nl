@@ -26,6 +26,13 @@ logger = logging.getLogger(__name__)
 
 _SANDBOX_ROOT_CACHE: Path | None = None
 _ENFORCE_CACHE: bool | None = None
+_SANDBOX_ENV_SNAPSHOT: tuple[str, ...] | None = None
+
+_SANDBOX_ENV_KEYS = (
+    "HERMES_WORKSPACE_ROOT",
+    "TERMINAL_CWD",
+    "HERMES_ENFORCE_FILE_SANDBOX",
+)
 
 # Windows extended-length and device paths — reject before resolve().
 _WINDOWS_DEVICE_PREFIXES = (
@@ -54,8 +61,23 @@ def default_workspace_root() -> Path:
     return root.resolve()
 
 
+def _sandbox_env_snapshot() -> tuple[str, ...]:
+    return tuple(os.environ.get(key, "") for key in _SANDBOX_ENV_KEYS)
+
+
+def bust_sandbox_cache_if_env_changed() -> None:
+    """Clear cached sandbox root/enforcement when relevant env vars change."""
+    global _SANDBOX_ROOT_CACHE, _ENFORCE_CACHE, _SANDBOX_ENV_SNAPSHOT
+    current = _sandbox_env_snapshot()
+    if _SANDBOX_ENV_SNAPSHOT is not None and current != _SANDBOX_ENV_SNAPSHOT:
+        _SANDBOX_ROOT_CACHE = None
+        _ENFORCE_CACHE = None
+    _SANDBOX_ENV_SNAPSHOT = current
+
+
 def is_sandbox_enforced() -> bool:
     """Return True when file-tool sandbox checks are active."""
+    bust_sandbox_cache_if_env_changed()
     global _ENFORCE_CACHE
     if _ENFORCE_CACHE is not None:
         return _ENFORCE_CACHE
@@ -98,6 +120,7 @@ def _expand_workspace_path(raw: str) -> Path:
 
 def get_workspace_root() -> Path:
     """Resolve and cache the active workspace root."""
+    bust_sandbox_cache_if_env_changed()
     global _SANDBOX_ROOT_CACHE
     if _SANDBOX_ROOT_CACHE is not None:
         return _SANDBOX_ROOT_CACHE
@@ -143,9 +166,10 @@ def get_workspace_root() -> Path:
 
 def reset_workspace_cache() -> None:
     """Clear cached sandbox settings (for tests)."""
-    global _SANDBOX_ROOT_CACHE, _ENFORCE_CACHE
+    global _SANDBOX_ROOT_CACHE, _ENFORCE_CACHE, _SANDBOX_ENV_SNAPSHOT
     _SANDBOX_ROOT_CACHE = None
     _ENFORCE_CACHE = None
+    _SANDBOX_ENV_SNAPSHOT = None
 
 
 def has_forbidden_path_content(path_str: str) -> str | None:

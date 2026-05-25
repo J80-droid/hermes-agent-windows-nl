@@ -11,7 +11,7 @@ from pathlib import Path
 import lancedb
 import pyarrow as pa
 
-from kb_schema import DB_PATH, TABLE_NAME, KnowledgeSchema, list_all_table_names
+from kb_schema import DB_PATH, TABLE_NAME, get_knowledge_schema, list_all_table_names
 
 
 def _schema_has_id(schema: pa.Schema) -> bool:
@@ -55,7 +55,7 @@ def backup_and_reset() -> int:
         shutil.rmtree(root)
         print(f"[OK] Verwijderd: {root}")
     db = lancedb.connect(DB_PATH)
-    db.create_table(TABLE_NAME, schema=KnowledgeSchema)
+    db.create_table(TABLE_NAME, schema=get_knowledge_schema())
     print(f"[OK] Lege tabel '{TABLE_NAME}' met KnowledgeSchema aangemaakt. Draai daarna ingest.")
     return 0
 

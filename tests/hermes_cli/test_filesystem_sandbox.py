@@ -231,3 +231,17 @@ class TestFileToolsIntegration:
         )
         assert resolve_err is None
         assert resolved == (workspace / "README.md").resolve()
+
+
+class TestSandboxCacheInvalidation:
+    def test_env_change_busts_workspace_root_cache(self, workspace, monkeypatch, tmp_path):
+        other = tmp_path / "other_ws"
+        other.mkdir()
+        monkeypatch.setenv("HERMES_WORKSPACE_ROOT", str(workspace))
+        monkeypatch.setenv("TERMINAL_CWD", str(workspace))
+        fs.reset_workspace_cache()
+        first = fs.get_workspace_root()
+        monkeypatch.setenv("HERMES_WORKSPACE_ROOT", str(other))
+        second = fs.get_workspace_root()
+        assert first == workspace.resolve()
+        assert second == other.resolve()

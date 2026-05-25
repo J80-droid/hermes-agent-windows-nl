@@ -81,15 +81,23 @@ if (Test-Path -LiteralPath $analystTpl) {
 Assert-FileContains 'windows/launch_hermes.bat' @(
     'launch_soul_anatomy_deploy.ps1',
     'launch_institutional_runtime.ps1',
-    'HERMES_SKIP_SOUL_DEPLOY_ON_START'
+    'launch_pending_trust_runtime.ps1',
+    'HERMES_SKIP_SOUL_DEPLOY_ON_START',
+    'HERMES_SKIP_PENDING_TRUST_ON_START'
 )
 $launchBat = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/launch_hermes.bat')
 $soulIdx = $launchBat.IndexOf('launch_soul_anatomy_deploy.ps1')
 $instIdx = $launchBat.IndexOf('launch_institutional_runtime.ps1')
+$pendingIdx = $launchBat.IndexOf('launch_pending_trust_runtime.ps1')
 if ($soulIdx -lt 0 -or $instIdx -lt 0 -or $soulIdx -ge $instIdx) {
     Step-Fail 'launch_hermes.bat' 'volgorde moet zijn: soul deploy vóór institutional'
 } else {
     Step-Ok 'launch_hermes.bat volgorde soul voor institutional'
+}
+if ($pendingIdx -lt 0 -or $instIdx -lt 0 -or $pendingIdx -le $instIdx) {
+    Step-Fail 'launch_hermes.bat' 'pending trust moet na institutional runtime'
+} else {
+    Step-Ok 'launch_hermes.bat volgorde pending trust na institutional'
 }
 
 Assert-FileContains 'windows/POST_GIT_PULL.bat' @('launch_soul_anatomy_deploy.ps1', '-Force')
@@ -106,6 +114,11 @@ if (-not (Test-Path -LiteralPath $postMerge)) {
         Step-Fail 'Invoke-UpstreamPostMerge.ps1' 'mist soul deploy + soulDeployOk SkipSoul-guard'
     } else {
         Step-Ok 'Invoke-UpstreamPostMerge.ps1 soul + conditionele SkipSoul'
+    }
+    if ($pm -notmatch 'Set-PendingTrustRuntime' -or $pm -notmatch 'Clear-PendingTrustRuntime') {
+        Step-Fail 'Invoke-UpstreamPostMerge.ps1' 'mist pending trust stamp bij trust-fail/ok'
+    } else {
+        Step-Ok 'Invoke-UpstreamPostMerge.ps1 pending trust stamp'
     }
 }
 if (Test-Path -LiteralPath $upstream) {

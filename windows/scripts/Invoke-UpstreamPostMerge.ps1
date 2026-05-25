@@ -4,6 +4,7 @@
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 . (Join-Path $PSScriptRoot '..\HermesNativeInvoke.ps1')
+Import-Module (Join-Path $PSScriptRoot 'TrustRuntimePending.psm1') -Force
 
 function Write-Step([string]$Msg, [string]$Color = 'Cyan') {
     Write-Host ('[INFO] ' + $Msg) -ForegroundColor $Color
@@ -110,9 +111,15 @@ function Invoke-UpstreamPostMerge {
             $env:HERMES_SKIP_PAUSE = '1'
             & cmd /c "`"$trustBat`""
             if (Test-NativeCommandFailed) {
-                Write-Warn 'SYNC_TRUST_RUNTIME.bat faalde - draai handmatig na update.'
+                Write-Warn 'SYNC_TRUST_RUNTIME.bat faalde - trust-nazorg bij volgende Hermes-start.'
+                try {
+                    Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'Trust runtime mislukt tijdens update' -RepoRoot $Repo
+                } catch {
+                    Write-Warn 'Kon pending_trust_runtime.json niet schrijven - draai SYNC_TRUST_RUNTIME.bat handmatig.'
+                }
             } else {
                 Write-Ok 'Trust runtime gesynchroniseerd.'
+                Clear-PendingTrustRuntime
             }
         }
     }
