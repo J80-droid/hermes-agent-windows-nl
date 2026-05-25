@@ -223,6 +223,7 @@ Notes:
 - `/details [hidden|collapsed|expanded|cycle]` controls thinking/tool-detail visibility.
 - `/statusbar` toggles the status rule on/off.
 - `/cost [on|off|toggle|status]` toggles **visibility** of estimated session cost in the status bar (`display.show_cost`; default **on**).
+- `/tps [on|off|toggle|status]` toggles **generation throughput** (`NN tok/s`) after the cost segment (`display.show_status_bar_tps`; default **on**; hidden below 76 cols). Module: `src/domain/statusBarThroughput.ts`.
 - **Bar format** (`display.cost_bar_mode`, default **rich**):
   - **rich** — `$turn / $session │ cw/out/in/cr % │ calls │ tools` (responsive tiers by terminal width). When `/cost` is on, the bar is **always** shown: session falls back to `included`, `n/a`, or `$0.00` when USD pricing is missing.
   - **minimal** — legacy single-line `~$0.0042` (session only, four decimals); same fallbacks when USD is unavailable.

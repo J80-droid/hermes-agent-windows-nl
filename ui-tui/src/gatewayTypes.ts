@@ -191,6 +191,7 @@ export interface SessionUsageResponse {
   turn_cost_estimated?: boolean
   turn_cost_usd?: number
   turn_live_tokens?: number
+  last_call_tps?: number
 }
 
 export interface SessionStatusResponse {

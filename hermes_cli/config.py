@@ -1065,6 +1065,7 @@ DEFAULT_CONFIG = {
         # `git status` to verify edits landed.  Set false to suppress.
         "file_mutation_verifier": True,
         "show_cost": True,        # Show estimated session cost in TUI + classic CLI status bar
+        "show_status_bar_tps": True,  # Show generation throughput (tok/s) in status bar
         "cost_bar_mode": "rich",  # rich = turn/session + breakdown; minimal = legacy ~$0.0042
         "skin": "default",
         # UI language for static user-facing messages (approval prompts, a

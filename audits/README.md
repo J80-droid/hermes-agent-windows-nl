@@ -1,3 +1,28 @@
+# Status bar throughput (tok/s) E2E
+
+E2E voor `display.show_status_bar_tps`, classic CLI statusbalk en ui-tui parity. Geen live API.
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| E1 | Repo-artefacten | `status_bar_throughput.py`, cli/tui hooks, tests, audit runners |
+| E2 | cli.py plaatsing | Throughput-segment **na** cost (`_append_status_bar_throughput_*`) |
+| E3 | `/tps` + config default | `commands.py`, `show_status_bar_tps: true` |
+| E4 | Gateway RPC | `config.get/set` key `status_bar_tps` / `tps` |
+| E5 | Agent tracking | `record_agent_stream_delta` + `finalize_agent_call_tps` |
+| E6 | Freeze guard | CLI `_freeze_stream_tps_segment` overschrijft agent-TPS niet |
+| E7 | Formatter edges | NaN, min elapsed 0.5s, breedte ≥76, agent > CLI snapshot |
+| E8–E9 | Pytest gates | `test_status_bar_throughput.py`, cli status bar `-k throughput` |
+| E10 | Classic smoke | `scripts/status_bar_throughput_classic_cli_smoke.py` |
+| E11 | ui-tui npm | `statusBarThroughput.test.ts` + layout reserve |
+
+```bat
+audits\RUN_STATUS_BAR_THROUGHPUT_E2E.bat
+```
+
+Unit tests: `pytest tests/hermes_cli/test_status_bar_throughput.py tests/cli/test_cli_status_bar.py -k "throughput or tok"`; classic smoke: `python scripts/status_bar_throughput_classic_cli_smoke.py`.
+
+---
+
 # Model/Provider Coherence E2E
 
 Geïsoleerde E2E voor `persist_model_runtime`, coherence-detectie en repair. Geen live API-calls.

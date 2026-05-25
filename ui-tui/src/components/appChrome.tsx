@@ -15,6 +15,7 @@ import {
   statusRuleColumns,
   statusRuleMinLeftWidth
 } from '../domain/usageCostBar.js'
+import { resolveStatusBarThroughputLabel } from '../domain/statusBarThroughput.js'
 import type { CostBarMode } from '../domain/usageCostBar.js'
 import { stickyPromptFromViewport } from '../domain/viewport.js'
 import { buildSubagentTree, treeTotals, widthByDepth } from '../lib/subagentTree.js'
@@ -308,10 +309,16 @@ export function StatusRule({
   sessionStartedAt,
   costBarMode,
   showCost,
+  showStatusBarTps,
   turnStartedAt,
   voiceLabel,
   t
 }: StatusRuleProps) {
+  const lastCallTps = useTurnSelector(state => state.lastCallTps)
+  const streamGenStartedAt = useTurnSelector(state => state.streamGenStartedAt)
+  const streamOutputTokens = useTurnSelector(state => state.streamOutputTokens)
+  const reasoningTokens = useTurnSelector(state => state.reasoningTokens)
+  const toolTokens = useTurnSelector(state => state.toolTokens)
   const pct = usage.context_percent
   const barColor = ctxBarColor(pct, t)
 
@@ -331,7 +338,21 @@ export function StatusRule({
     costBarMode,
     cwdLabel,
     showCost,
+    showStatusBarTps,
     usage
+  })
+
+  const throughputLabel = resolveStatusBarThroughputLabel({
+    busy,
+    showStatusBarTps,
+    signals: {
+      lastCallTps: lastCallTps ?? usage.last_call_tps ?? null,
+      reasoningTokens,
+      streamGenStartedAt,
+      streamOutputTokens,
+      toolTokens
+    },
+    width: ruleCols
   })
 
   return (
@@ -351,6 +372,7 @@ export function StatusRule({
               {costLabel}
             </Text>
           ) : null}
+          {throughputLabel ? <Text color={t.color.muted}> │ {throughputLabel}</Text> : null}
           {ctxLabel ? <Text color={t.color.muted}> │ {ctxLabel}</Text> : null}
           {bar ? (
             <Text color={t.color.muted}>
@@ -510,6 +532,7 @@ interface StatusRuleProps {
   sessionStartedAt?: null | number
   costBarMode: CostBarMode
   showCost: boolean
+  showStatusBarTps: boolean
   status: string
   statusColor: string
   t: Theme

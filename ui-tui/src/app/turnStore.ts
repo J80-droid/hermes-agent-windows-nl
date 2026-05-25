@@ -14,6 +14,8 @@ const buildTurnState = (): TurnState => ({
   streamPendingTools: [],
   streamSegments: [],
   streamOutputTokens: 0,
+  streamGenStartedAt: null,
+  lastCallTps: null,
   streaming: '',
   subagents: [],
   todoCollapsed: false,
@@ -77,6 +79,8 @@ export interface TurnState {
   streamPendingTools: string[]
   streamSegments: Msg[]
   streamOutputTokens: number
+  streamGenStartedAt: number | null
+  lastCallTps: number | null
   streaming: string
   subagents: SubagentProgress[]
   todoCollapsed: boolean

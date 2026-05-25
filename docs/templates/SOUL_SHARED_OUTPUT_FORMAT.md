@@ -112,7 +112,6 @@ Drie-lagen verdediging tegen agent-crashes, netwerkfouten en resource-uitputting
 Korte tekst.
 
 **Dossierstatus:**
-
 Gereed voor controle.
 
 ### Team Samenstelling

@@ -2981,6 +2981,7 @@ class HermesCLI:
         self.show_timestamps = CLI_CONFIG["display"].get("timestamps", False)
         _display = CLI_CONFIG.get("display") or {}
         self._show_cost = _display.get("show_cost", True) is not False
+        self._show_status_bar_tps = _display.get("show_status_bar_tps", True) is not False
         _cost_mode = str(_display.get("cost_bar_mode") or "rich").strip().lower()
         self._cost_bar_mode = _cost_mode if _cost_mode in {"rich", "minimal"} else "rich"
         self.final_response_markdown = str(
@@ -3198,6 +3199,10 @@ class HermesCLI:
         # frozen when the agent thread completes, displayed in the status bar.
         self._prompt_start_time: Optional[float] = None  # time.time() when turn started
         self._prompt_duration: float = 0.0  # frozen duration of last completed turn
+        # Per-generation throughput for the status bar (first stream chunk → now).
+        self._stream_tps_started_at: Optional[float] = None
+        self._stream_tps_tokens_est: int = 0
+        self._last_call_tps: Optional[float] = None
         # Initialize SQLite session store early so /title works before first message
         self._session_db = None
         try:
@@ -3681,6 +3686,21 @@ class HermesCLI:
         except Exception:
             snapshot["usage"] = {"calls": snapshot.get("session_api_calls", 0) or 0}
 
+        try:
+            from hermes_cli.status_bar_throughput import live_throughput_snapshot
+
+            snapshot.update(
+                live_throughput_snapshot(
+                    agent,
+                    cli_started_at=self._stream_tps_started_at,
+                    cli_tokens_est=self._stream_tps_tokens_est,
+                    cli_last_call_tps=self._last_call_tps,
+                )
+            )
+        except Exception:
+            snapshot["stream_tps"] = None
+            snapshot["last_call_tps"] = None
+
         return snapshot
 
     def _status_bar_cost_format_width(self, terminal_width: int) -> int:
@@ -3729,6 +3749,86 @@ class HermesCLI:
         label = self._resolve_status_bar_cost_label(snapshot, terminal_width)
         if label:
             parts.append(label)
+
+    def _resolve_status_bar_throughput_label(
+        self, snapshot: Dict[str, Any], terminal_width: int
+    ) -> Optional[str]:
+        try:
+            from hermes_cli.status_bar_throughput import resolve_status_bar_throughput_label
+
+            return resolve_status_bar_throughput_label(
+                snapshot,
+                show_tps=getattr(self, "_show_status_bar_tps", True),
+                width=terminal_width,
+            )
+        except Exception:
+            return None
+
+    def _append_status_bar_throughput_fragments(
+        self,
+        frags: list,
+        snapshot: Dict[str, Any],
+        terminal_width: int,
+        *,
+        separator: str = " │ ",
+    ) -> None:
+        label = self._resolve_status_bar_throughput_label(snapshot, terminal_width)
+        if not label:
+            return
+        frags.extend([
+            ("class:status-bar-dim", separator),
+            ("class:status-bar-dim", label),
+        ])
+
+    def _append_status_bar_throughput_text_part(
+        self,
+        parts: list,
+        snapshot: Dict[str, Any],
+        terminal_width: int,
+    ) -> None:
+        label = self._resolve_status_bar_throughput_label(snapshot, terminal_width)
+        if label:
+            parts.append(label)
+
+    def _reset_stream_tps_live(self) -> None:
+        self._stream_tps_started_at = None
+        self._stream_tps_tokens_est = 0
+
+    def _freeze_stream_tps_segment(self) -> None:
+        """Clear live throughput state between stream segments.
+
+        ``finalize_agent_call_tps`` (agent) already freezes accurate per-call
+        TPS from provider usage — do not overwrite ``_last_call_tps`` here.
+        """
+        agent = getattr(self, "agent", None)
+        if agent is None:
+            if self._stream_tps_started_at is not None and self._stream_tps_tokens_est > 0:
+                try:
+                    from hermes_cli.status_bar_throughput import compute_live_tps
+
+                    frozen = compute_live_tps(
+                        self._stream_tps_tokens_est,
+                        self._stream_tps_started_at,
+                    )
+                    if frozen is not None:
+                        self._last_call_tps = frozen
+                except Exception:
+                    pass
+        self._reset_stream_tps_live()
+
+    def _record_stream_tps_delta(self, text: str) -> None:
+        """Refresh status bar during streaming (agent tracks tokens when present)."""
+        if not text:
+            return
+        if getattr(self, "agent", None) is None:
+            try:
+                from agent.model_metadata import estimate_tokens_rough
+            except Exception:
+                return
+            if self._stream_tps_started_at is None:
+                self._stream_tps_started_at = time.time()
+            self._stream_tps_tokens_est += estimate_tokens_rough(text)
+        self._invalidate(min_interval=0.25)
 
     @staticmethod
     def _status_bar_display_width(text: str) -> int:
@@ -3982,6 +4082,7 @@ class HermesCLI:
             if prompt_elapsed:
                 parts.append(prompt_elapsed)
             self._append_status_bar_cost_text_part(parts, snapshot, width)
+            self._append_status_bar_throughput_text_part(parts, snapshot, width)
             self._append_pending_queue_status_part(parts)
             if yolo_active:
                 parts.append("⚠ YOLO")
@@ -4044,6 +4145,9 @@ class HermesCLI:
                     self._append_status_bar_cost_fragments(
                         frags, snapshot, width, separator=" · "
                     )
+                    self._append_status_bar_throughput_fragments(
+                        frags, snapshot, width, separator=" · "
+                    )
                     self._append_pending_queue_status_fragments(frags, separator=" · ")
                     if yolo_active:
                         frags.append(("class:status-bar-dim", " · "))
@@ -4090,6 +4194,7 @@ class HermesCLI:
                         frags.append(("class:status-bar-dim", " │ "))
                         frags.append(("class:status-bar-dim", prompt_elapsed))
                     self._append_status_bar_cost_fragments(frags, snapshot, width)
+                    self._append_status_bar_throughput_fragments(frags, snapshot, width)
                     self._append_pending_queue_status_fragments(frags, separator=" │ ")
                     if yolo_active:
                         frags.append(("class:status-bar-dim", " │ "))
@@ -4444,12 +4549,14 @@ class HermesCLI:
         tool feed lines render cleanly between turns.
         """
         if text is None:
+            self._freeze_stream_tps_segment()
             self._flush_stream()
             self._reset_stream_state()
             return
         if not text:
             return
 
+        self._record_stream_tps_delta(text)
         self._stream_started = True
 
         # ── Tag-based reasoning suppression ──
@@ -8785,6 +8892,8 @@ class HermesCLI:
             self._console_print(f"  Status bar {state}")
         elif canonical == "cost":
             self._handle_cost_command(cmd_original)
+        elif canonical == "tps":
+            self._handle_tps_command(cmd_original)
         elif canonical == "verbose":
             self._toggle_verbose()
         elif canonical == "footer":
@@ -9826,6 +9935,52 @@ class HermesCLI:
             _cprint(f"  Status bar cost: {state}")
         else:
             _cprint("  Failed to save display.show_cost to config.yaml")
+        self._invalidate()
+
+    def _handle_tps_command(self, cmd_original: str) -> None:
+        """Toggle or inspect ``display.show_status_bar_tps`` for the status bar.
+
+        Usage:
+            /tps           → toggle
+            /tps on|off    → explicit
+            /tps status    → show current state
+        """
+        from hermes_cli.colors import Colors as _Colors
+
+        arg = ""
+        try:
+            parts = (cmd_original or "").strip().split(None, 1)
+            if len(parts) > 1:
+                arg = parts[1].strip().lower()
+        except Exception:
+            arg = ""
+
+        current = getattr(self, "_show_status_bar_tps", True)
+
+        if arg in {"status", "?"}:
+            state = "ON" if current else "OFF"
+            _cprint(f"  {_Colors.BOLD}Status bar throughput:{_Colors.RESET} {state}")
+            return
+
+        if arg in {"on", "enable", "true", "1"}:
+            new_state = True
+        elif arg in {"off", "disable", "false", "0"}:
+            new_state = False
+        elif arg in {"toggle", ""}:
+            new_state = not current
+        else:
+            _cprint("  Usage: /tps [on|off|toggle|status]")
+            return
+
+        self._show_status_bar_tps = new_state
+        if save_config_value("display.show_status_bar_tps", new_state):
+            state = (
+                f"{_Colors.GREEN}ON{_Colors.RESET}" if new_state
+                else f"{_Colors.DIM}OFF{_Colors.RESET}"
+            )
+            _cprint(f"  Status bar throughput: {state}")
+        else:
+            _cprint("  Failed to save display.show_status_bar_tps to config.yaml")
         self._invalidate()
 
     def _handle_footer_command(self, cmd_original: str) -> None:
@@ -12111,6 +12266,7 @@ class HermesCLI:
             # finishes; reset on the next turn.
             self._prompt_start_time = time.time()
             self._prompt_duration = 0.0
+            self._reset_stream_tps_live()
             agent_thread = threading.Thread(target=run_agent, daemon=True)
             agent_thread.start()
 
@@ -12192,6 +12348,7 @@ class HermesCLI:
             if self._prompt_start_time is not None:
                 self._prompt_duration = max(0.0, time.time() - self._prompt_start_time)
                 self._prompt_start_time = None
+            self._freeze_stream_tps_segment()
 
             # Proactively clean up async clients whose event loop is dead.
             # The agent thread may have created AsyncOpenAI clients bound

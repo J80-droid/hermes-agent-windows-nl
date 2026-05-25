@@ -191,6 +191,8 @@ export interface Usage {
   turn_cost_usd?: number
   /** Live turn token delta when USD pricing is unavailable (client-side during stream). */
   turn_live_tokens?: number
+  /** Last completed API-call generation throughput (tok/s). */
+  last_call_tps?: number
 }
 
 export interface SudoReq {

@@ -71,6 +71,7 @@ describe('applyDisplay', () => {
     expect(setBell).toHaveBeenCalledWith(false)
     expect(s.inlineDiffs).toBe(true)
     expect(s.showCost).toBe(true)
+    expect(s.showStatusBarTps).toBe(true)
     expect(s.costBarMode).toBe('rich')
     expect(s.showReasoning).toBe(false)
     expect(s.statusBar).toBe('top')

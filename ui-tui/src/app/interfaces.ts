@@ -112,6 +112,7 @@ export interface UiState {
   sections: SectionVisibility
   costBarMode: CostBarMode
   showCost: boolean
+  showStatusBarTps: boolean
   showReasoning: boolean
   indicatorStyle: IndicatorStyle
   sid: null | string

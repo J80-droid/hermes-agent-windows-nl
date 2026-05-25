@@ -81,7 +81,7 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 - **Kop vs. tabel:** sectiekoppen h1–h4 ≠ tabelkolommen; `header_palette` **cyaan-first** (`#66d9ef`, `#a6e22e`, …) zodat `##` groen ≠ kolom `ID`
 - Validation: required keys (`h1`, `h2`, `h3`, `h4`, `strong`, `label`, `text`, `table_header`); optional `header_palette`
 - Fallback: unknown palette → `demo` + warning
-- Diagnostics: `scripts/diagnose_renderer.py --verify` (E2E 2f); score `scripts/score_institutional_render.py --verify` (E2E 2g)
+- Diagnostics: `scripts/diagnose_renderer.py --verify` (E2E 2f); score `scripts/score_institutional_render.py --verify` (E2E 2g; unit `tests/scripts/test_score_institutional_render.py`)
 
 ### Normalizer + pariteit
 

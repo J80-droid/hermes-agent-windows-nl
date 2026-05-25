@@ -982,6 +982,10 @@ display:
   #   false: Wait for the full response before rendering
   streaming: true
 
+  # Show generation throughput (tok/s) in the classic CLI and TUI status bar.
+  # Toggle at runtime with /tps. Independent of show_cost.
+  # show_status_bar_tps: true
+
   # Show [HH:MM] timestamps on user input and assistant response labels.
   # timestamps: false
 

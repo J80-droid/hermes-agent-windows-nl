@@ -8,6 +8,7 @@ import {
 import type { SessionInterruptResponse, SubagentEventPayload } from '../gatewayTypes.js'
 import { appendToolShelfMessage, isToolShelfMessage } from '../lib/liveProgress.js'
 import { hasReasoningTag, splitReasoning } from '../lib/reasoning.js'
+import { computeLiveTps } from '../domain/statusBarThroughput.js'
 import {
   boundedLiveRenderText,
   buildToolTrailLine,
@@ -272,7 +273,28 @@ class TurnController {
     this.segmentMessages = appendToolShelfMessage(this.segmentMessages, msg)
   }
 
+  private freezeStreamTpsSegment() {
+    const state = getTurnState()
+    // Segment boundary: only output text for this generation slice (not turn-wide tool/reasoning acc).
+    const tokens = Math.max(0, state.streamOutputTokens)
+
+    if (!state.streamGenStartedAt || tokens < 1) {
+      patchTurnState({ streamGenStartedAt: null })
+
+      return
+    }
+
+    const frozen = computeLiveTps(tokens, state.streamGenStartedAt)
+
+    patchTurnState({
+      lastCallTps: frozen ?? state.lastCallTps,
+      streamGenStartedAt: null,
+      streamOutputTokens: 0
+    })
+  }
+
   flushStreamingSegment() {
+    this.freezeStreamTpsSegment()
     const raw = this.bufRef.trimStart()
 
     const split = raw
@@ -538,6 +560,10 @@ class TurnController {
     // `display.final_response_markdown: render`.
     this.bufRef += text
 
+    if (!getTurnState().streamGenStartedAt) {
+      patchTurnState({ streamGenStartedAt: Date.now() })
+    }
+
     if (getUiState().streaming) {
       this.scheduleStreaming()
     }
@@ -771,7 +797,16 @@ class TurnController {
     this.interrupted = false
     this.persistedToolLabels.clear()
     patchUiState({ busy: true })
-    patchTurnState({ activity: [], outcome: '', streamOutputTokens: 0, subagents: [], toolTokens: 0, tools: [], turnTrail: [] })
+    patchTurnState({
+      activity: [],
+      outcome: '',
+      streamOutputTokens: 0,
+      streamGenStartedAt: null,
+      subagents: [],
+      toolTokens: 0,
+      tools: [],
+      turnTrail: []
+    })
   }
 
   upsertSubagent(

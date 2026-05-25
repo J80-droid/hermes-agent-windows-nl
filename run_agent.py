@@ -3200,6 +3200,12 @@ class AIAgent:
                 text = text.lstrip("\n")
         if not text:
             return
+        try:
+            from hermes_cli.status_bar_throughput import record_agent_stream_delta
+
+            record_agent_stream_delta(self, text)
+        except Exception:
+            pass
         callbacks = [cb for cb in (self.stream_delta_callback, self._stream_callback) if cb is not None]
         delivered = False
         for cb in callbacks:

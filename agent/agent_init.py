@@ -1534,6 +1534,9 @@ def init_agent(
     agent.session_estimated_cost_usd = 0.0
     agent.session_cost_status = "unknown"
     agent.session_cost_source = "none"
+    agent._stream_gen_started_at = None
+    agent._stream_gen_tokens_est = 0
+    agent._last_call_tps = None
     
     # ── Ollama num_ctx injection ──
     # Ollama defaults to 2048 context regardless of the model's capabilities.

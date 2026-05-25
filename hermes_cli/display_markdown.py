@@ -170,15 +170,22 @@ def prepare_assistant_markdown_plain(
     *,
     panel_width: int | None = None,
     normalize_layout: bool = True,
+    realign_tables: bool = True,
 ) -> str:
-    """Plain markdown string ready for Rich ``Markdown``."""
+    """Plain markdown string ready for Rich ``Markdown``.
+
+    Set ``realign_tables=False`` for institutional Rich end panels so table
+    column widths are not re-wrapped after normalize (see ``render_final_assistant_markdown``).
+    """
     plain = _rich_text_from_ansi(text or "").plain
     if normalize_layout:
         plain = normalize_assistant_markdown(plain)
     plain = _wrap_bron_citations_for_display(plain)
     plain = _preserve_windows_dot_segments_for_markdown(plain)
-    width = panel_width if panel_width is not None else default_panel_width()
-    return realign_markdown_tables(plain, width)
+    if realign_tables:
+        width = panel_width if panel_width is not None else default_panel_width()
+        plain = realign_markdown_tables(plain, width)
+    return plain
 
 
 def render_final_assistant_markdown(
@@ -197,7 +204,9 @@ def render_final_assistant_markdown(
     if normalized_mode == "raw":
         return _rich_text_from_ansi(text)
 
-    plain = prepare_assistant_markdown_plain(text, panel_width=width)
+    plain = prepare_assistant_markdown_plain(
+        text, panel_width=width, realign_tables=False
+    )
     settings = get_assistant_render_settings()
     if settings["assistant_render_style"] == "institutional_rich":
         return render_institutional_assistant(
@@ -206,6 +215,7 @@ def render_final_assistant_markdown(
             label_columns=settings["assistant_label_columns"],
             already_normalized=True,
         )
+    plain = prepare_assistant_markdown_plain(text, panel_width=width)
     return Markdown(plain)
 
 

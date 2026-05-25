@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Score institutional renderer output against the 10/10 rooktest checklist."""
+"""Score institutional renderer output against the 10/10 rooktest checklist.
+
+Maps to ``docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md``. Nine checks
+after ``normalize_assistant_markdown``; ``--verify`` exits 0 when average ≥ 9.0.
+
+Unit tests: ``pytest tests/scripts/test_score_institutional_render.py``.
+"""
 
 from __future__ import annotations
 

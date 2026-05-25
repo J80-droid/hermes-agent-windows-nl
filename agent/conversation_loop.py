@@ -1010,6 +1010,12 @@ def run_conversation(
             logging.debug(f"Total message size: ~{approx_tokens:,} tokens")
         
         api_start_time = time.time()
+        try:
+            from hermes_cli.status_bar_throughput import reset_agent_stream_tps_live
+
+            reset_agent_stream_tps_live(agent)
+        except Exception:
+            pass
         retry_count = 0
         max_retries = agent._api_max_retries
         primary_recovery_attempted = False
@@ -1705,6 +1711,13 @@ def run_conversation(
                         prompt_tokens, completion_tokens, total_tokens,
                         api_duration, _cache_pct,
                     )
+
+                    try:
+                        from hermes_cli.status_bar_throughput import finalize_agent_call_tps
+
+                        finalize_agent_call_tps(agent, completion_tokens, api_duration)
+                    except Exception:
+                        pass
 
                     cost_result = estimate_usage_cost(
                         agent.model,

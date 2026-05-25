@@ -135,6 +135,32 @@ describe('usageCostBar', () => {
     expect(layout.costLabel).toBe(costLabel)
     expect(layout.leftWidth).toBe(effectiveCols - cwdReserve)
   })
+
+  it('resolveStatusRuleLayout reserves extra width when throughput is enabled', () => {
+    const effectiveCols = statusRuleColumns(140)
+    const cwdReserve = 12
+    const withTps = resolveStatusRuleLayout({
+      cols: 140,
+      cwdReserve,
+      costBarMode: 'rich',
+      cwdLabel: 'D:\\project',
+      showCost: true,
+      showStatusBarTps: true,
+      usage
+    })
+    const withoutTps = resolveStatusRuleLayout({
+      cols: 140,
+      cwdReserve,
+      costBarMode: 'rich',
+      cwdLabel: 'D:\\project',
+      showCost: true,
+      showStatusBarTps: false,
+      usage
+    })
+
+    expect(withTps.leftWidth).toBe(withoutTps.leftWidth)
+    expect((withTps.costLabel ?? '').length).toBeLessThanOrEqual((withoutTps.costLabel ?? '').length)
+  })
 })
 
 describe('formatUsdCompact edge cases', () => {

@@ -24,6 +24,8 @@
 
 **Klassieke CLI statusbalk-kosten (2026-05-24):** Pariteit met TUI — `hermes_cli/status_bar_cost.py` + dunne hooks in `cli.py` (`_append_status_bar_cost_fragments`, `/cost`); zelfde defaults en responsive tiers (≥52 cols session, ≥76 rich breakdown); data via `build_session_usage_snapshot` + `_seed_agent_session_cost`. **Layout (breed):** model → ctx → bar/% → duur → ⏲ → kosten (gedimd blauw `status-bar-cost`) → breakdown → calls → tools (`0 tools` in full tier). **Tool-teller:** `agent.session_tool_executions` in `tool_executor.py`. **Gemini cache pricing:** `agent/usage_pricing.py` (`_GOOGLE_GEMINI_PRICING`, Standard tier; geen storage/Batch/Flex); geen `n/a` bij cache-hits op `provider=gemini`. E2E **`RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`** (12/12 PASS).
 
+**Statusbalk throughput tok/s (2026-05-25, PASS):** `hermes_cli/status_bar_throughput.py` + TUI `statusBarThroughput.ts`; segment **na** cost (`status-bar-dim`); `display.show_status_bar_tps` default **aan**; `/tps`; gateway `config.get/set` (`status_bar_tps`/`tps`); agent stream timing (`record_agent_stream_delta`, `finalize_agent_call_tps`); CLI freeze overschrijft agent `_last_call_tps` niet. Unit: `test_status_bar_throughput.py`, cli `-k throughput`, `test_score_institutional_render.py` (renderer-score). E2E **11/11** `audits/RUN_STATUS_BAR_THROUGHPUT_E2E.bat`.
+
 **OpenRouter Pareto Code router (2026-05-24, PASS):** model-gated `min_coding_score` → `pareto-router` plugin op `openrouter/pareto-code`; verify `scripts/verify_pareto_router.py`; E2E `windows/audits/RUN_PARETO_E2E.bat` (8/8); `-IncludeParetoE2E` in `RUN_AUDITS.bat`. Geen live API-call in E2E.
 
 **Codebase-audit smoke vs release (2026-05-24):** evidence-tiers E0–E3 in `docs/CODEBASE_AUDIT_EVIDENCE.md`; smoke-runner + E2E; `RUN_AUDITS -IncludeCodebaseSmoke`. Optioneel na pull/update: `-IncludeCodebaseSmoke` (~32s) of `-IncludeCodebaseSmokeE2E` via `Invoke-PostSyncCodebaseSmoke.ps1` (standaard uit). POST_GIT_PULL: verify via `.ps1` (geen pause). SOUL via anatomy; `/new` na SOUL-wijziging.
@@ -74,6 +76,8 @@
 | E2E memory-architectuur | `windows/audits/RUN_MEMORY_ARCHITECTURE_E2E.bat` |
 | E2E statusbalk-kosten (TUI) | `windows/audits/RUN_STATUS_BAR_COST_E2E.bat` · `-ApplyDisplayFix` · `RUN_AUDITS.bat -IncludeStatusBarCostE2E` |
 | E2E statusbalk-kosten (klassieke CLI) | `windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` · `RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E` |
+| E2E statusbalk throughput (tok/s) | `audits/RUN_STATUS_BAR_THROUGHPUT_E2E.bat` (11/11); unit `tests/hermes_cli/test_status_bar_throughput.py` |
+| Score renderer unit tests | `pytest tests/scripts/test_score_institutional_render.py` (rooktest-checklist) |
 | Codebase-audit smoke (E1/E2) | `RUN_CODEBASE_SMOKE_E2E.bat` (E2E) · `RUN_CODEBASE_SMOKE_AUDIT.bat` (snel) · `RUN_AUDITS -IncludeCodebaseSmokeE2E` / `-IncludeAllE2E` · [CODEBASE_AUDIT_EVIDENCE.md](docs/CODEBASE_AUDIT_EVIDENCE.md) |
 | E2E institutioneel | `windows/audits/RUN_INSTITUTIONAL_E2E.bat` |
 | E2E context-aware pseudo-tabel | `windows/audits/RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat` |

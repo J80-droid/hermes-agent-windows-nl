@@ -3,6 +3,7 @@ import { stringWidth } from '@hermes/ink'
 import type { Usage } from '../types.js'
 
 import { formatTurnCostUsd, formatTurnLiveTokens } from './liveTurnCost.js'
+import { STATUS_RULE_TPS_RESERVE } from './statusBarThroughput.js'
 import { formatStatusBarCost } from './usage.js'
 
 export type CostBarMode = 'minimal' | 'rich'
@@ -177,6 +178,7 @@ export function resolveStatusRuleLayout(opts: {
   costBarMode: CostBarMode
   cwdLabel: string
   showCost: boolean
+  showStatusBarTps?: boolean
   usage: StatusBarCostUsage
 }): { costLabel: string | null; leftWidth: number } {
   const cols = statusRuleColumns(opts.cols)
@@ -185,8 +187,9 @@ export function resolveStatusRuleLayout(opts: {
     opts.cwdReserve ??
     Math.min(stringWidth(opts.cwdLabel), Math.max(0, cols - minLeft - 1)) + (cols >= 24 ? 3 : 1)
   const leftWidth = opts.leftWidth ?? Math.max(minLeft, cols - cwdReserve)
+  const tpsReserve = opts.showStatusBarTps && cols >= 76 ? STATUS_RULE_TPS_RESERVE : 0
   const nonCostReserve =
-    cols >= 24 ? STATUS_RULE_NON_COST_RESERVE_WIDE : STATUS_RULE_NON_COST_RESERVE_NARROW
+    (cols >= 24 ? STATUS_RULE_NON_COST_RESERVE_WIDE : STATUS_RULE_NON_COST_RESERVE_NARROW) + tpsReserve
   const costAvailableWidth = Math.max(0, leftWidth - nonCostReserve)
   const costLabel = shouldShowStatusBarCostRich(opts.showCost)
     ? formatStatusBarCostRich(opts.usage, { mode: opts.costBarMode, width: costAvailableWidth })

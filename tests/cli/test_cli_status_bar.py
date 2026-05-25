@@ -13,7 +13,11 @@ def _make_cli(model: str = "anthropic/claude-sonnet-4-20250514"):
     cli_obj.conversation_history = [{"role": "user", "content": "hi"}]
     cli_obj.agent = None
     cli_obj._show_cost = True
+    cli_obj._show_status_bar_tps = True
     cli_obj._cost_bar_mode = "rich"
+    cli_obj._last_call_tps = None
+    cli_obj._stream_tps_started_at = None
+    cli_obj._stream_tps_tokens_est = 0
     return cli_obj
 
 
@@ -127,6 +131,60 @@ class TestCLIStatusBar:
         assert "7 calls" in text
         assert "12 tools" in text
         assert text.find("$") > text.find("%"), text
+
+    def test_build_status_bar_text_shows_frozen_throughput_after_cost(self):
+        cli_obj = _attach_agent(
+            _make_cli(),
+            prompt_tokens=10_230,
+            completion_tokens=2_220,
+            total_tokens=12_450,
+            api_calls=7,
+            context_tokens=12_450,
+            context_length=200_000,
+        )
+        cli_obj._last_call_tps = 42.0
+        usage = {
+            "calls": 7,
+            "cost_status": "estimated",
+            "cost_usd": 5.74,
+        }
+        with patch(
+            "hermes_cli.usage_snapshot.build_session_usage_snapshot",
+            return_value=usage,
+        ):
+            text = cli_obj._build_status_bar_text(width=120)
+
+        assert "42 tok/s" in text
+        cost_idx = text.find("$")
+        tps_idx = text.find("tok/s")
+        assert cost_idx >= 0 and tps_idx > cost_idx
+
+    def test_build_status_bar_text_hides_throughput_below_76_columns(self):
+        cli_obj = _attach_agent(
+            _make_cli(),
+            prompt_tokens=10000,
+            completion_tokens=5000,
+            total_tokens=15000,
+            api_calls=7,
+            context_tokens=50000,
+            context_length=200_000,
+        )
+        cli_obj._last_call_tps = 55.0
+
+        text = cli_obj._build_status_bar_text(width=60)
+        assert "tok/s" not in text
+
+    def test_stream_delta_records_and_freezes_throughput(self):
+        cli_obj = _make_cli()
+        cli_obj.agent = None
+        cli_obj._record_stream_tps_delta("hello world " * 30)
+        assert cli_obj._stream_tps_started_at is not None
+        assert cli_obj._stream_tps_tokens_est > 0
+        # MIN_ELAPSED_SEC (0.5s) — backdate so freeze produces a finite rate.
+        cli_obj._stream_tps_started_at = time.time() - 1.0
+        cli_obj._freeze_stream_tps_segment()
+        assert cli_obj._stream_tps_started_at is None
+        assert cli_obj._last_call_tps is not None
 
     def test_build_status_bar_text_no_cost_below_52_columns(self):
         cli_obj = _attach_agent(

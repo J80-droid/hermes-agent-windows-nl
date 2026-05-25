@@ -4229,6 +4229,26 @@ def _(rid, params: dict) -> dict:
         _write_config_key("display.show_cost", nv_b)
         return _ok(rid, {"key": key, "value": "on" if nv_b else "off"})
 
+    if key in {"status_bar_tps", "tps"}:
+        raw = str(value or "").strip().lower()
+        display = _load_cfg().get("display")
+        d0 = display if isinstance(display, dict) else {}
+        current = bool(d0.get("show_status_bar_tps", True))
+
+        if raw == "status":
+            return _ok(rid, {"key": key, "value": "on" if current else "off"})
+        if raw in {"", "toggle"}:
+            nv_b = not current
+        elif raw in {"on", "true", "yes", "1"}:
+            nv_b = True
+        elif raw in {"off", "false", "no", "0"}:
+            nv_b = False
+        else:
+            return _err(rid, 4002, f"unknown status_bar_tps value: {value}")
+
+        _write_config_key("display.show_status_bar_tps", nv_b)
+        return _ok(rid, {"key": key, "value": "on" if nv_b else "off"})
+
     if key == "cost_bar_mode":
         raw = str(value or "").strip().lower()
         display = _load_cfg().get("display")
@@ -4442,6 +4462,10 @@ def _(rid, params: dict) -> dict:
     if key == "cost":
         display = _load_cfg().get("display")
         on = bool((display or {}).get("show_cost", True)) if isinstance(display, dict) else True
+        return _ok(rid, {"value": "on" if on else "off"})
+    if key in {"status_bar_tps", "tps"}:
+        display = _load_cfg().get("display")
+        on = bool((display or {}).get("show_status_bar_tps", True)) if isinstance(display, dict) else True
         return _ok(rid, {"value": "on" if on else "off"})
     if key == "cost_bar_mode":
         display = _load_cfg().get("display")

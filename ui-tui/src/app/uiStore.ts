@@ -21,6 +21,7 @@ const buildUiState = (): UiState => ({
   sections: {},
   costBarMode: 'rich' as CostBarMode,
   showCost: true,
+  showStatusBarTps: true,
   showReasoning: false,
   sid: null,
   status: 'summoning hermes…',

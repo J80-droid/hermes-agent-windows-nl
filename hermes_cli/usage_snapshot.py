@@ -207,4 +207,14 @@ def build_session_usage_snapshot(agent: Any) -> dict[str, Any]:
 
     _seed_agent_session_cost(agent, usage)
     _attach_cost_fields(agent, usage)
+
+    try:
+        from hermes_cli.status_bar_throughput import _coerce_finite_rate
+
+        last_call_tps = _coerce_finite_rate(getattr(agent, "_last_call_tps", None))
+        if last_call_tps is not None:
+            usage["last_call_tps"] = last_call_tps
+    except Exception:
+        pass
+
     return usage
