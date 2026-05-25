@@ -25,6 +25,19 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 
 ## Dagelijks gebruik
 
+### Klassieke CLI — prompt-wachtrij (`/queue`)
+
+Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
+
+| Commando | Gedrag |
+| -------- | ------ |
+| `/queue <prompt>` of `/q <prompt>` | FIFO-wachtrij; ack `[N] Queued: …` |
+| `/queue` of `/queue list` | Genummerde lijst in transcript |
+| `/queue pop` | Eerste item verwijderen (FIFO) |
+| `/queue clear` | Hele wachtrij legen |
+
+**Zichtbaar:** compact paneel boven de invoer (`queued (N)` + max. 2 previews) en `queue:N` in de statusbalk. De TUI heeft een rijkere queue-UI (`ui-tui/README.md`).
+
 | Taak | Script |
 | ---- | ------ |
 | Hermes starten | `launch_hermes.bat` / `run_hermes.ps1` (bootstrap + SOUL anatomy + institutioneel + **pending trust-nazorg** indien stamp) |
