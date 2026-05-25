@@ -40,7 +40,7 @@ Assert-Equal 'Stap 7 van 7 - E2E' (Format-HermesStepLabel -Step 7 -Total 7 -Suff
 # --- Format-HermesStepLabel (edge / negatief) ---
 Assert-Throws { Format-HermesStepLabel -Step 0 -Total 3 -Suffix 'x' } 'Step 0 rejected'
 Assert-Throws { Format-HermesStepLabel -Step 4 -Total 3 -Suffix 'x' } 'Step > Total rejected'
-Assert-Throws { Format-HermesStepLabel -Step 1 -Total 0 -Suffix 'x' } 'Total 0 rejected by ValidateRange'
+Assert-Throws { Format-HermesStepLabel -Step 1 -Total 0 -Suffix 'x' } 'Total 0 rejected'
 
 # --- Join-HermesRepoPath ---
 $repo = (Resolve-Path (Join-Path $windowsRoot '..')).Path
@@ -68,8 +68,8 @@ try {
 
 # --- Write-HermesTag: geen bracket-tags (PSES) ---
 $commonText = Read-HermesRepoText -Path $joined
-Assert-True ($commonText -notmatch "Write-HermesTag '\[INFO\]") 'no bracket INFO tag in source'
-Assert-True ($commonText -match "Write-HermesTag 'INFO: '") 'INFO colon tag in source'
+Assert-True ($commonText -notmatch 'Write-HermesTag ''\[INFO\]') 'no bracket INFO tag in source'
+Assert-True ($commonText -match "-Tag 'INFO '") 'INFO tag in source'
 
 if ($script:UnitFailed -gt 0) {
     Write-Host ("Unit tests FAILED: $script:UnitFailed") -ForegroundColor Red

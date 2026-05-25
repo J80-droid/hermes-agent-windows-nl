@@ -54,8 +54,8 @@ $apiOk = ($common -match 'function Write-HermesInfo') -and
     ($common -match 'function Format-HermesStepLabel') -and
     ($common -match 'function Invoke-GitCommand') -and
     ($common -match 'function Test-NativeCommandFailed') -and
-    ($common.IndexOf("'INFO: '") -ge 0) -and
-    ($common.IndexOf("'OK: '") -ge 0)
+    ($common.IndexOf("-Tag 'INFO '") -ge 0) -and
+    ($common.IndexOf("-Tag 'OK '") -ge 0)
 Add-StepResult '2/7 HermesShellCommon API + PSES tags' $apiOk
 
 # --- 3 Runtime helpers ---

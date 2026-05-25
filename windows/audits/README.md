@@ -21,7 +21,7 @@ Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Develope
 - `/` in **dubbele** aanhalingstekens (`"upstream/main"`, `"miniconda3/anaconda3"`) → zelfde tokenizer-bug; gebruik enkelvoudige quotes of concatenatie
 - `[TAG]` in strings (`'[ERROR]'`, `"[OK]"`) → type-literal; gebruik `OK:` / `ERROR:` of `-join '[', 'OK', ']'`
 
-**IDE:** na wijzigingen: PowerShell: Restart Session + Developer: Reload Window. Verifieer met `windows\tests\Test-PsesTokenizer.ps1` (AST), `windows\tests\HermesShellCommon.Unit.Tests.ps1` (helpers), `RUN_HERMES_SHELL_COMMON_E2E.bat` (PSES-poort) en `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
+**IDE:** na wijzigingen: PowerShell: Restart Session + Developer: Reload Window. Verifieer met `windows\tests\Test-PsesTokenizer.ps1` (AST), `windows\tests\HermesShellCommon.Unit.Tests.ps1` (helpers), `RUN_HERMES_SHELL_COMMON_E2E.bat` (PSES-poort) en `VALIDATE_AUDIT_PS1_SYNTAX.bat`. Logging-tags in `HermesShellCommon.ps1` gebruiken `INFO ` / `OK ` (spatie, geen dubbele punt — PSES-tokenizer).
 
 Runtime/AST: vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
 

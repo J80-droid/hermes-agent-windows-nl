@@ -61,9 +61,9 @@ def check_shell_common_api(failures: list[str]) -> None:
         "function Format-HermesStepLabel",
         "function Invoke-GitCommand",
         "function Test-NativeCommandFailed",
-        "'INFO: '",
-        "'OK: '",
-        "ValidateRange(1, [int]::MaxValue)",
+        "-Tag 'INFO '",
+        "-Tag 'OK '",
+        "Total moet minimaal 1 zijn",
     ]
     for needle in required:
         if needle not in common:
