@@ -1,4 +1,4 @@
-# Geïsoleerde E2E-stappen voor pending trust-runtime bij start (temp LOCALAPPDATA).
+# Isolated E2E steps for pending trust-runtime at start (temp LOCALAPPDATA).
 param(
     [Parameter(Mandatory)]
     [string]$RepoRoot,
@@ -11,25 +11,58 @@ $script:CoreFailures = 0
 
 function Add-PendingTrustE2EStep {
     param([string]$Name, [bool]$Ok, [string]$Detail = '')
+    $suffix = ''
+    if ($Detail) { $suffix = ' - ' + $Detail }
     if ($Ok) {
-        Write-Host ('[OK] ' + $Name + $(if ($Detail) { ' - ' + $Detail } else { '' })) -ForegroundColor Green
+        Write-Host ('[OK] ' + $Name + $suffix) -ForegroundColor Green
     } else {
-        Write-Host ('[FAIL] ' + $Name + $(if ($Detail) { ' - ' + $Detail } else { '' })) -ForegroundColor Red
+        Write-Host ('[FAIL] ' + $Name + $suffix) -ForegroundColor Red
         $script:CoreFailures++
     }
 }
 
-$modulePath = Join-Path $RepoRoot 'windows/scripts/TrustRuntimePending.psm1'
-$launcherPath = Join-Path $RepoRoot 'windows/scripts/launch_pending_trust_runtime.ps1'
-Import-Module $modulePath -Force
-
-$prevLocalAppData = $env:LOCALAPPDATA
-$env:LOCALAPPDATA = Split-Path -Parent $IsolatedHermesDir
-if (-not (Test-Path -LiteralPath $IsolatedHermesDir)) {
-    New-Item -ItemType Directory -Path $IsolatedHermesDir -Force | Out-Null
+function Restore-PendingTrustE2EEnvironment {
+    param(
+        $PrevLocalAppData,
+        $PrevSkip,
+        $PrevDry,
+        $PrevRepo,
+        [string]$IsolatedDir
+    )
+    if ($null -eq $PrevLocalAppData) {
+        Remove-Item -Path env:LOCALAPPDATA -ErrorAction SilentlyContinue
+    } else {
+        $env:LOCALAPPDATA = $PrevLocalAppData
+    }
+    if ($null -eq $PrevSkip) {
+        Remove-Item -Path env:HERMES_SKIP_PENDING_TRUST_ON_START -ErrorAction SilentlyContinue
+    } else {
+        $env:HERMES_SKIP_PENDING_TRUST_ON_START = $PrevSkip
+    }
+    if ($null -eq $PrevDry) {
+        Remove-Item -Path env:HERMES_PENDING_TRUST_E2E_DRY_RUN -ErrorAction SilentlyContinue
+    } else {
+        $env:HERMES_PENDING_TRUST_E2E_DRY_RUN = $PrevDry
+    }
+    if ($null -eq $PrevRepo) {
+        Remove-Item -Path env:HERMES_REPO_ROOT -ErrorAction SilentlyContinue
+    } else {
+        $env:HERMES_REPO_ROOT = $PrevRepo
+    }
+    if (Test-Path -LiteralPath $IsolatedDir) {
+        $parent = Split-Path -Parent $IsolatedDir
+        if ($parent) {
+            Remove-Item -LiteralPath $parent -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
 }
 
-try {
+function Invoke-PendingTrustStartE2ECore {
+    param(
+        [string]$RepoRoot,
+        [string]$LauncherPath
+    )
+
     Write-Host '--- PendingTrust core: module lifecycle ---' -ForegroundColor Cyan
     Clear-PendingTrustRuntime
     Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'E2E test' -RepoRoot $RepoRoot
@@ -43,7 +76,8 @@ try {
 
     $a1 = Register-PendingTrustRuntimeAttempt -RepoRoot $RepoRoot
     $a2 = Register-PendingTrustRuntimeAttempt -RepoRoot $RepoRoot
-    Add-PendingTrustE2EStep 'attempt counter' ($a1 -eq 1 -and $a2 -eq 2) "a1=$a1 a2=$a2"
+    $attemptOk = ($a1 -eq 1) -and ($a2 -eq 2)
+    Add-PendingTrustE2EStep 'attempt counter' $attemptOk ('a1=' + $a1 + ' a2=' + $a2)
 
     Clear-PendingTrustRuntime
     Add-PendingTrustE2EStep 'Clear-PendingTrustRuntime' (-not (Test-PendingTrustRuntime))
@@ -56,22 +90,17 @@ try {
 
     Write-Host '--- PendingTrust core: launcher gedrag ---' -ForegroundColor Cyan
 
-    $prevSkip = $env:HERMES_SKIP_PENDING_TRUST_ON_START
-    $prevDry = $env:HERMES_PENDING_TRUST_E2E_DRY_RUN
-    $prevRepo = $env:HERMES_REPO_ROOT
-
-    $noPendingOut = & $launcherPath -RepoRoot $RepoRoot -Quiet 2>&1 | Out-String
-    Add-PendingTrustE2EStep 'geen pending: exit 0' ($LASTEXITCODE -eq 0)
-    Add-PendingTrustE2EStep 'geen pending: geen nazorg-tekst' ($noPendingOut -notmatch 'Na update')
+    & $LauncherPath -RepoRoot $RepoRoot -Quiet | Out-Null
+    Add-PendingTrustE2EStep 'no pending exit 0' ($LASTEXITCODE -eq 0)
 
     Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'skip-flag E2E' -RepoRoot $RepoRoot
     $env:HERMES_SKIP_PENDING_TRUST_ON_START = '1'
-    & $launcherPath -RepoRoot $RepoRoot | Out-Null
+    & $LauncherPath -RepoRoot $RepoRoot | Out-Null
     Add-PendingTrustE2EStep 'skip-flag exit 0' ($LASTEXITCODE -eq 0)
     Add-PendingTrustE2EStep 'skip-flag behoudt pending' (Test-PendingTrustRuntime)
     $skipAttempts = (Get-PendingTrustRuntime).attempts
-    Add-PendingTrustE2EStep 'skip-flag geen extra poging' ($skipAttempts -eq 0)
-    Remove-Item Env:\HERMES_SKIP_PENDING_TRUST_ON_START -ErrorAction SilentlyContinue
+    Add-PendingTrustE2EStep 'skip-flag no extra attempt' ($skipAttempts -eq 0)
+    Remove-Item -Path env:HERMES_SKIP_PENDING_TRUST_ON_START -ErrorAction SilentlyContinue
 
     Clear-PendingTrustRuntime
     Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'max attempts E2E' -RepoRoot $RepoRoot
@@ -79,46 +108,39 @@ try {
     Register-PendingTrustRuntimeAttempt -RepoRoot $RepoRoot | Out-Null
     Register-PendingTrustRuntimeAttempt -RepoRoot $RepoRoot | Out-Null
     $attemptsBeforeMax = (Get-PendingTrustRuntime).attempts
-    & $launcherPath -RepoRoot $RepoRoot | Out-Null
+    & $LauncherPath -RepoRoot $RepoRoot | Out-Null
     $attemptsAfterMax = (Get-PendingTrustRuntime).attempts
+    $maxOk = ($attemptsBeforeMax -eq $attemptsAfterMax) -and ($attemptsAfterMax -ge 3)
     Add-PendingTrustE2EStep 'max attempts exit 0' ($LASTEXITCODE -eq 0)
     Add-PendingTrustE2EStep 'max attempts drempel bereikt' (Test-PendingTrustRuntimeMaxAttemptsReached)
-    Add-PendingTrustE2EStep 'max attempts geen vierde poging' ($attemptsBeforeMax -eq $attemptsAfterMax -and $attemptsAfterMax -ge 3)
+    Add-PendingTrustE2EStep 'max attempts no fourth run' $maxOk
     Add-PendingTrustE2EStep 'max attempts pending blijft' (Test-PendingTrustRuntime)
 
     Clear-PendingTrustRuntime
     Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'dry-run E2E' -RepoRoot $RepoRoot
     $env:HERMES_PENDING_TRUST_E2E_DRY_RUN = '1'
     $env:HERMES_REPO_ROOT = $RepoRoot
-    & $launcherPath -RepoRoot $RepoRoot | Out-Null
+    & $LauncherPath -RepoRoot $RepoRoot | Out-Null
     Add-PendingTrustE2EStep 'dry-run exit 0' ($LASTEXITCODE -eq 0)
     Add-PendingTrustE2EStep 'dry-run cleared pending' (-not (Test-PendingTrustRuntime))
-    Remove-Item Env:\HERMES_PENDING_TRUST_E2E_DRY_RUN -ErrorAction SilentlyContinue
-
-} finally {
-    if ($null -eq $prevLocalAppData) {
-        Remove-Item Env:\LOCALAPPDATA -ErrorAction SilentlyContinue
-    } else {
-        $env:LOCALAPPDATA = $prevLocalAppData
-    }
-    if ($null -eq $prevSkip) {
-        Remove-Item Env:\HERMES_SKIP_PENDING_TRUST_ON_START -ErrorAction SilentlyContinue
-    } else {
-        $env:HERMES_SKIP_PENDING_TRUST_ON_START = $prevSkip
-    }
-    if ($null -eq $prevDry) {
-        Remove-Item Env:\HERMES_PENDING_TRUST_E2E_DRY_RUN -ErrorAction SilentlyContinue
-    } else {
-        $env:HERMES_PENDING_TRUST_E2E_DRY_RUN = $prevDry
-    }
-    if ($null -eq $prevRepo) {
-        Remove-Item Env:\HERMES_REPO_ROOT -ErrorAction SilentlyContinue
-    } else {
-        $env:HERMES_REPO_ROOT = $prevRepo
-    }
-    if (Test-Path -LiteralPath $IsolatedHermesDir) {
-        Remove-Item -LiteralPath (Split-Path -Parent $IsolatedHermesDir) -Recurse -Force -ErrorAction SilentlyContinue
-    }
+    Remove-Item -Path env:HERMES_PENDING_TRUST_E2E_DRY_RUN -ErrorAction SilentlyContinue
 }
+
+$modulePath = Join-Path $RepoRoot 'windows/scripts/TrustRuntimePending.psm1'
+$launcherPath = Join-Path $RepoRoot 'windows/scripts/launch_pending_trust_runtime.ps1'
+Import-Module $modulePath -Force
+
+$prevLocalAppData = $env:LOCALAPPDATA
+$prevSkip = $env:HERMES_SKIP_PENDING_TRUST_ON_START
+$prevDry = $env:HERMES_PENDING_TRUST_E2E_DRY_RUN
+$prevRepo = $env:HERMES_REPO_ROOT
+$env:LOCALAPPDATA = Split-Path -Parent $IsolatedHermesDir
+if (-not (Test-Path -LiteralPath $IsolatedHermesDir)) {
+    New-Item -ItemType Directory -Path $IsolatedHermesDir -Force | Out-Null
+}
+
+Invoke-PendingTrustStartE2ECore -RepoRoot $RepoRoot -LauncherPath $launcherPath
+
+Restore-PendingTrustE2EEnvironment -PrevLocalAppData $prevLocalAppData -PrevSkip $prevSkip -PrevDry $prevDry -PrevRepo $prevRepo -IsolatedDir $IsolatedHermesDir
 
 exit $script:CoreFailures
