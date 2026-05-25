@@ -17,6 +17,7 @@ const buildUiState = (): UiState => ({
   info: null,
   inlineDiffs: true,
   mouseTracking: MOUSE_TRACKING,
+  pasteCollapseLines: 5,
   sections: {},
   costBarMode: 'rich' as CostBarMode,
   showCost: true,
