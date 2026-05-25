@@ -2,6 +2,10 @@
 # Dot-source: . (Join-Path $PSScriptRoot 'HermesShellCommon.ps1')
 # Of vanaf scripts/audits: . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 #
+# Logging (PSES): Write-HermesInfo/Ok/Warn/Fail/Err/Skip — prefix INFO:/OK:/ (geen [TAG] in quotes).
+# Voortgang: Format-HermesStepLabel -Step N -Total M -Suffix '...' (geen "$step/$total" in double quotes).
+# Git: Invoke-GitCommand of ErrorActionPreference Continue + Test-NativeCommandFailed (geen 2>&1/2>$null).
+#
 # Pad-helpers: Join-HermesRepoPath (OS-native separators) + Read-HermesRepoText (UTF-8).
 #
 # Conventie:

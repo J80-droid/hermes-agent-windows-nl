@@ -29,7 +29,9 @@
 - [x] Upstream-update keten: `windows/upstream_sync.ps1`, `UPDATE_HERMES.bat`, `UPSTREAM_SYNC.md` (+ post-merge institutional runtime, git-inspectie + rooktest-matrix)
 - [x] Upstream merge 2026-05-23: 58 Nous-commits, 1 conflict (CI tests.yml), E2E PASS — `windows/audits/UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md`
 - [x] Upstream merge 2026-05-25: 87+17 Nous (`82e92a08b`, `9e49dbd85`); `upstream_sync.ps1` merge vóór `hermes update`; `cwdReserve`+`statusRuleWidths`; E2E `RUN_UPSTREAM_MERGE_INTEGRATION_E2E` 10/10
-- [x] Upstream sync fase 2 hardening (2026-05-25): preflight fetch-dedup, `pip install -e .` na merge, TUI `statusRuleMinLeftWidth`+`leftWidth`; E2E `RUN_UPSTREAM_SYNC_PHASE2_E2E` 8/8; vitest usageCostBar 63 tests
+- [x] Upstream sync fase 2 hardening (2026-05-25): preflight fetch-dedup, `$upstreamRef`, `pip install -e .` na merge, TUI `statusRuleMinLeftWidth`+`leftWidth`; E2E `RUN_UPSTREAM_SYNC_PHASE2_E2E` 8/8; vitest usageCostBar 63 tests
+- [x] PSES-safe PowerShell (2026-05-25): `HermesShellCommon` INFO:/OK:/WARN: tags, `Format-HermesStepLabel`, `Invoke-GitCommand`; 12-script AST gate; unit tests + `RUN_HERMES_SHELL_COMMON_E2E` 7/7; merge conflict `core.ts` (/cost + /queue)
+- [x] UPDATE_HERMES keten (2026-05-25): 2 Nous-commits auto-merge (paste collapse thresholds TUI+CLI); post-merge trust/RAG/team display OK; taakbalk-icoon refresh (optionele git dirty op PNG/ICO)
 - [x] `MERGE_UPSTREAM.bat` + IDE-prompt (`merge_upstream_fork.ps1`); default IDE-guided, `-AutoResolve` opt-in
 - [x] Merge `-PromptOnly`: git-diff snippets per conflict (`Get-ConflictSnippetForPrompt`, `Get-ConflictSnippetFromGitDiff`)
 - [x] LanceDB onderhoud: `scripts/rag_pipeline/lancedb_maintenance.py`, `windows/LANCEDB_MAINTENANCE.bat` (list/inspect/init-missing/compact/benchmark)

@@ -148,13 +148,15 @@ powershell -File windows\upstream_sync.ps1 -Phase Preflight
 
 **Fase 2 in `upstream_sync.ps1` (`UPDATE_HERMES.bat`)** doet expliciet:
 
-1. **`Invoke-UpstreamGitMergeIfBehind`** — na preflight (die al `git fetch upstream` deed) wordt fetch overgeslagen (`$script:UpstreamPreflightFetched`); anders `git fetch upstream`. Controleert `upstream/main`, telt achterstand, merge met `--no-edit` of stopt bij conflicten (exit 6/7).
+1. **`Invoke-UpstreamGitMergeIfBehind`** — na preflight (die al `git fetch upstream` deed) wordt fetch overgeslagen (`$script:UpstreamPreflightFetched`); anders `git fetch upstream`. Git-ref in variabele `$upstreamRef = 'upstream/main'` (PSES-safe; geen `2>$null`/`2>&1` in expressies). Telt achterstand via `'HEAD..' + $upstreamRef`, merge met `--no-edit` of stopt bij conflicten (exit 6/7).
 2. **`pip install -e .`** via conda `hermes-env` wanneer er commits zijn gemerged (`Install-HermesEditablePythonAfterUpstreamMerge`) — **vóór** `hermes update`, omdat `hermes update` pip kan overslaan als `origin` al up-to-date is terwijl `pyproject.toml` net van upstream kwam.
 3. **`hermes update -y`** — pip/uv, Node UI, skills (pullt `origin`; merge staat al op HEAD)
 
 `HERMES_UPDATE_FROM_UPSTREAM=1` is een marker voor logging; de merge gebeurt in PowerShell, niet in `hermes_cli/main.py` (die pullt alleen `origin`).
 
 **E2E na wijzigingen aan fase 2:** `windows\audits\RUN_UPSTREAM_SYNC_PHASE2_E2E.bat` (8 stappen: wiring, volgorde, TUI, vitest, harness).
+
+**PSES / PowerShell IDE:** logging via `HermesShellCommon.ps1` (`INFO:`/`OK:`/`WARN:` — geen `[TAG]` in strings). Verificatie: `windows\tests\Test-PsesTokenizer.ps1`, `windows\tests\HermesShellCommon.Unit.Tests.ps1`, `windows\audits\RUN_HERMES_SHELL_COMMON_E2E.bat`. Zie `windows\audits\README.md` (PSES-valkuilen).
 
 Alleen `hermes update` **zonder** `UPDATE_HERMES.bat` haalt **geen** Nous-merge binnen — gebruik altijd het batchbestand op deze fork.
 
@@ -230,6 +232,7 @@ Bij merge van Nous in jouw fork botsen vaak **jouw fork-only** paden met upstrea
 | `tui_gateway/server.py` | `_get_usage` → delegatie naar `build_session_usage_snapshot` |
 | `ui-tui/src/domain/usageCostBar.ts` | **Behoud fork** — responsive formatter + `statusRuleColumns` + `statusRuleMinLeftWidth` + `resolveStatusRuleLayout` (`cwdReserve` + optionele `leftWidth` van `statusRuleWidths`; niet-eindige cols/breakdown genegeerd) |
 | `ui-tui/src/components/appChrome.tsx` | **Combineer:** upstream `statusRuleWidths` + fork cost inline; `cwdReserve: rightWidth + separatorWidth` |
+| `ui-tui/src/app/slash/commands/core.ts` | **Combineer beide:** fork `/cost` (statusbalk) **én** upstream `/queue` (alias `/q`) — geen `<<<<<<<`; beide command-objecten in de array |
 | `hermes_cli/profiles.py` | **Combineer:** `strip_model_block_from_profile_config` vóór `_maybe_register_gateway_service` (s6 container) |
 | `ui-tui/src/app/createGatewayEventHandler.ts` | turn/tool client-side hooks + live `~NK tok` fallback |
 | `hermes_cli/config.py` | **Behoud fork** — `show_cost: true`, `cost_bar_mode: rich` defaults |
