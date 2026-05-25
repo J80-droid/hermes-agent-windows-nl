@@ -85,11 +85,11 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 
 ### Normalizer + pariteit
 
-- **Python (canonical):** `hermes_cli/markdown_output_normalize.py` — outline, institutional_check, tighten kop–tabel, NFR prose→tabel, **pseudo-tabel/underscore vs→markdown** (`ensure_markdown_table_dividers`, `normalize_pseudo_tables_to_markdown`; contextafhankelijk 2–6 kolommen voor vs, Cloud/Lokaal, auxiliary-overzichten)
+- **Python (canonical):** `hermes_cli/markdown_output_normalize.py` — outline, institutional_check, tighten kop–tabel, NFR prose→tabel, **pseudo-tabel/underscore vs→markdown** (`ensure_markdown_table_dividers`, `normalize_pseudo_tables_to_markdown`; contextafhankelijk 2–6 kolommen voor vs, Cloud/Lokaal, auxiliary-overzichten); **collapsed records** (`_discover_repeated_field_keys`, `_parse_collapsed_record_rows`, `_collapsed_record_layout_eligible`; routing ná pipe-header in `_parse_collapsed_overview_body`; TS-pariteit in `institutionalMarkdown.ts`)
 - **Web:** `web/src/lib/institutionalMarkdown.ts` + `Markdown.tsx` (`toRenderUnits` = TightHeadingBody-equivalent)
 - **Ink:** re-export Web normalizer (`ui-tui/src/lib/institutionalMarkdownNormalize.ts`) + compacte Controle-regel in `markdown.tsx`
 
-Defaults: `windows/team_display.defaults`; toepassen: `APPLY_INSTITUTIONAL_RUNTIME.bat`. Audit: `RUN_INSTITUTIONAL_E2E.ps1` (11 stappen + 2f + 2g + **2h pseudo-tabel**); dedicated overview: `RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat` (12 stappen).
+Defaults: `windows/team_display.defaults`; toepassen: `APPLY_INSTITUTIONAL_RUNTIME.bat`. Audit: `RUN_INSTITUTIONAL_E2E.ps1` (11 stappen + 2f + 2g + **2h pseudo-tabel**); dedicated overview: `RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat` (10 stappen); collapsed record: `audits/RUN_COLLAPSED_RECORD_PSEUDO_TABLE_E2E.bat` (10/10); unit `tests/hermes_cli/test_collapsed_record_pseudo_table.py`.
 
 ## Windows split-home (config single-source)
 

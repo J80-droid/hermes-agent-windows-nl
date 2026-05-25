@@ -72,3 +72,7 @@ Dedicated audit voor ingeklapte `Component`/`Keuze`/`Status`-regels met em-dash 
 ```bat
 audits\RUN_COLLAPSED_RECORD_PSEUDO_TABLE_E2E.bat
 ```
+
+Unit tests (geen live API): `pytest tests/hermes_cli/test_collapsed_record_pseudo_table.py` — happy path, edge cases (pipe in cel, dedupe, eligibility), negatieve input; mocks op interne helpers waar nodig.
+
+Uitvoeren vanuit repo-root `hermes-agent\` (zelfde patroon als andere `audits\RUN_*` runners).

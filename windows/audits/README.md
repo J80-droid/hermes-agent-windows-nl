@@ -79,6 +79,7 @@ Runtime/AST: vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
 | **`RUN_PARETO_E2E.bat`** | OpenRouter Pareto Code router: model-gate, transport/summary parity, pytest, verify script |
 | **`RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat`** | Pseudo-tabel normalizer: underscore/vs→markdown, pytest + TS parity + diagnose/score (10 stappen) |
 | **`RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat`** | Context-aware overview (2-6 kolommen): grouped/collapsed auxiliary, Component/Keuze/Status em-dash, intent routing, TS parity (10 stappen) |
+| **`..\audits\RUN_COLLAPSED_RECORD_PSEUDO_TABLE_E2E.bat`** | Dedicated collapsed-record parser: eligibility, pipe-escape, architectuur-probe, TS parity (10 stappen; harness in `audits/`) |
 | **`RUN_WINDOWS_PLATFORM_HARDENING_E2E.bat`** | Platform hardening: filesystem sandbox, hardware backend (CUDA/DirectML/CPU), LanceDB storage lifecycle (10 stappen) |
 | **`RUN_PLATFORM_HARDENING_REGRESSION_E2E.bat`** | Regressie: review-fixes, PS1 Join-HermesRepoPath, footguns PS1-regel (**10 stappen**) |
 | **`RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat`** | Gecombineerd: beide platform E2E's + pytest subset + `footguns --all` |
@@ -164,6 +165,22 @@ Dedicated audit naast `RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat` (basis vs/underscore
 | 11–12 | `py_compile` + vs/Cloud-Lokaal regressie |
 
 Rapport: `CONTEXT_AWARE_PSEUDO_TABLE_E2E_REPORT_*.md`.
+
+## Collapsed record pseudo-tabel E2E
+
+```text
+audits\RUN_COLLAPSED_RECORD_PSEUDO_TABLE_E2E.bat
+```
+
+Dedicated audit voor ingeklapte `Component`/`Keuze`/`Status`-regels (em-dash op één regel, multi-line anchor-split, eligibility zodat `**Groep**`+Provider/Model auxiliary blijft). Zie ook `audits/README.md` (scenario-tabel E1–E10).
+
+| Stap | Controle |
+| ---- | -------- |
+| 1–6 | Harness `CollapsedRecordPseudoTableE2E.harness.py` (em-dash, multi-line, Groep-guard, pipe-escape) |
+| 7–8 | `verify_pseudo_table_normalizer.py` architectuur-probe; pytest `test_collapsed_record_pseudo_table.py` |
+| 9–10 | Volledige pipeline + TS parity via `scripts/normalize_assistant_markdown_ts_runner.ts` |
+
+Unit tests (los): `pytest tests/hermes_cli/test_collapsed_record_pseudo_table.py` (48 scenario's, happy path + edge/negatief).
 
 ## Windows platform hardening E2E
 

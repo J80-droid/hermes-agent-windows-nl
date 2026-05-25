@@ -1,4 +1,13 @@
-"""Normalize assistant markdown for institutional layout (headings, labels, lists)."""
+"""Normalize assistant markdown for institutional layout (headings, labels, lists, tables).
+
+Pipeline highlights (see ``normalize_assistant_markdown``):
+- Outline / ``**Label:**`` / ``<institutional_check>`` layout fixes
+- NFR prose and comparison pseudo-layout (underscore, vs, em-dash) → markdown tables
+- Context-aware overview tables (2–6 columns; auxiliary ``**Groep**`` blocks)
+- Collapsed record rows: dense ``Component: … Keuze: … Status: … ——————`` on one line
+  → ``_parse_collapsed_record_rows`` (after inline pipe-header in ``_parse_collapsed_overview_body``;
+  eligibility guard skips ``**Groep**`` + one-key-per-line auxiliary blocks)
+"""
 
 from __future__ import annotations
 
@@ -465,6 +474,7 @@ _OVERVIEW_HEADING_HINT_RE = re.compile(
     r"samenvatting|implementatie|testresultaten|poc)\b",
 )
 _OVERVIEW_FIELD_LINE_RE = re.compile(r"^([^:|]{1,48}):\s*(.+)$", re.IGNORECASE)
+# Keys for collapsed records: no spaces in label (avoids "Inter-agent communicatie Keuze" false keys).
 _FIELD_KEY_TOKEN_RE = re.compile(r"(?i)\b([A-Za-z][A-Za-z0-9\-]{0,39}):\s")
 _FIELD_REPEAT_GATE_RE = re.compile(
     r"(?i)(?:component|keuze|status|categorie|eis|meetmethode)\s*:"
@@ -509,6 +519,7 @@ def _strip_orphan_trailing_pipe(line: str) -> str:
 
 
 def _sanitize_table_cell(text: str) -> str:
+    """Normalize cell text; pipes become `` / `` so markdown tables stay valid."""
     cell = re.sub(r"\s+", " ", (text or "").strip())
     cell = re.sub(r"_{2,}", " ", cell)
     cell = cell.replace("|", " / ")
@@ -850,6 +861,7 @@ def _parse_collapsed_overview_body(
             if len(rows) >= 2:
                 return headers[:_MAX_COMPARISON_COLUMNS], rows
 
+    # Record parser runs after pipe-header match so inline ``A | B | C`` grids stay intact.
     record_parsed = _parse_collapsed_record_rows(body_lines)
     if record_parsed:
         return record_parsed
