@@ -4,6 +4,12 @@ function Get-HermesObsidianVaultPath {
     param([string]$RepoRoot = '')
     $keys = @('OBSIDIAN_VAULT_PATH', 'WIKI_PATH', 'KNOWLEDGE_BASE_PATH')
     $envFiles = @()
+    if ($RepoRoot) {
+        $repoEnv = Join-Path $RepoRoot '.env'
+        if (Test-Path -LiteralPath $repoEnv) {
+            $envFiles += $repoEnv
+        }
+    }
     $localHermes = Join-Path $env:LOCALAPPDATA 'hermes'
     if (Test-Path -LiteralPath (Join-Path $localHermes '.env')) {
         $envFiles += Join-Path $localHermes '.env'
@@ -40,9 +46,12 @@ function Get-ObsidianExecutablePath {
 }
 
 function Start-HermesObsidianVault {
+    [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Low')]
     param(
         [Parameter(Mandatory)][string]$VaultPath,
         [Parameter(Mandatory)][string]$ObsidianExe
     )
-    Start-Process -FilePath $ObsidianExe -ArgumentList "`"$VaultPath`"" | Out-Null
+    if ($PSCmdlet.ShouldProcess($VaultPath, 'Open Obsidian vault')) {
+        Start-Process -FilePath $ObsidianExe -ArgumentList "`"$VaultPath`"" | Out-Null
+    }
 }

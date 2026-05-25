@@ -81,18 +81,22 @@ function Get-DynamicEnvKeysFromConfig {
     $keys = [System.Collections.Generic.List[string]]::new()
     $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
     if (-not (Test-Path -LiteralPath $conda)) { return @() }
-    $repoRoot = (Resolve-Path (Join-Path $scriptDir '..')).Path
+    $env:HERMES_REPO_ROOT = (Resolve-Path (Join-Path $scriptDir '..')).Path
     $py = Join-Path $scriptDir 'scripts\collect_env_sync_keys.py'
     if (-not (Test-Path -LiteralPath $py)) { return @() }
     $prevHome = $env:HERMES_HOME
+    $prevEap = $ErrorActionPreference
     try {
         $env:HERMES_HOME = $RuntimeRoot
-        $out = & $conda run -n hermes-env --no-capture-output python $py 2>$null
+        $ErrorActionPreference = 'Continue'
+        $out = & $conda run -n hermes-env --no-capture-output python $py
+        if (Test-NativeCommandFailed) { return @() }
         foreach ($line in ($out -split "`n")) {
             $k = $line.Trim()
             if ($k) { $keys.Add($k) }
         }
     } finally {
+        $ErrorActionPreference = $prevEap
         if ($null -ne $prevHome) { $env:HERMES_HOME = $prevHome } else { Remove-Item Env:HERMES_HOME -ErrorAction SilentlyContinue }
     }
     return $keys

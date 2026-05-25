@@ -26,7 +26,7 @@ function Get-HermesAuditPython {
     }
     $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
     if (Test-Path -LiteralPath $conda) {
-        $out = & $conda run -n hermes-env python -c "import sys; print(sys.executable)" 2>$null
+        $out = & $conda run -n hermes-env python -c 'import sys; print(sys.executable)'
         if ($LASTEXITCODE -eq 0 -and $out) {
             return ($out | Select-Object -Last 1).ToString().Trim()
         }
@@ -41,9 +41,9 @@ function Add-StepResult {
     $steps.Add([pscustomobject]@{ Step = $Name; Ok = $Ok; Detail = $Detail })
     $suffix = if ($Detail) { ' - ' + $Detail } else { '' }
     if ($Ok) {
-        Write-Host ('[OK] ' + $Name + $suffix) -ForegroundColor Green
+        Write-HermesOk ($Name + $suffix)
     } else {
-        Write-Host ('[FAIL] ' + $Name + $suffix) -ForegroundColor Red
+        Write-HermesFail ($Name + $suffix)
         $script:failures++
     }
 }
@@ -55,7 +55,7 @@ function Invoke-AuditCommand {
     )
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
-    $out = & $Exe @ArgumentList 2>&1
+    $out = & $Exe @ArgumentList
     $ok = ($LASTEXITCODE -eq 0)
     $ErrorActionPreference = $prevEap
     foreach ($line in @($out)) {
@@ -66,14 +66,14 @@ function Invoke-AuditCommand {
     return $ok
 }
 
-function Ensure-HermesInkBuilt {
+function Initialize-HermesInkDist {
     param([string]$UiRoot)
     $inkDist = Join-Path $UiRoot 'packages/hermes-ink/dist/entry-exports.js'
     if (Test-Path -LiteralPath $inkDist) { return $true }
-    Write-Host '[INFO] @hermes/ink dist ontbreekt — build...' -ForegroundColor Cyan
+    Write-HermesInfo 'hermes-ink dist ontbreekt - build...'
     Push-Location (Join-Path $UiRoot 'packages/hermes-ink')
     try {
-        & npm run build 2>&1 | Out-Host
+        & npm run build | Out-Host
         return ($LASTEXITCODE -eq 0) -and (Test-Path -LiteralPath $inkDist)
     } finally {
         Pop-Location
@@ -81,7 +81,7 @@ function Ensure-HermesInkBuilt {
 }
 
 Write-Host '=== Upstream Merge Integration E2E ===' -ForegroundColor Cyan
-Write-Host "[INFO] Repo: $RepoRoot" -ForegroundColor Cyan
+Write-HermesInfo ('Repo: ' + $RepoRoot)
 $python = Get-HermesAuditPython
 $env:PYTHONPATH = $RepoRoot
 
@@ -127,7 +127,7 @@ Add-StepResult '3/10 merge/docs guardrails' $docsOk
 
 if (-not $SkipVitest) {
     $uiRoot = Join-Path $RepoRoot 'ui-tui'
-    $inkOk = Ensure-HermesInkBuilt -UiRoot $uiRoot
+    $inkOk = Initialize-HermesInkDist -UiRoot $uiRoot
     if (-not $inkOk) {
         Add-StepResult '4/10 vitest statusRule + usageCostBar' $false 'hermes-ink build mislukt'
     } else {
@@ -135,7 +135,7 @@ if (-not $SkipVitest) {
         try {
             $prevEap = $ErrorActionPreference
             $ErrorActionPreference = 'Continue'
-            & npx vitest run statusRule usageCostBar 2>&1 | Out-Host
+            & npx vitest run statusRule usageCostBar | Out-Host
             $vitestOk = ($LASTEXITCODE -eq 0)
             $ErrorActionPreference = $prevEap
         } finally {
@@ -181,7 +181,7 @@ $profilesCompile = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes
 & $python -m py_compile $profilesCompile 2>$null
 Add-StepResult '8/10 py_compile profiles.py' ($LASTEXITCODE -eq 0)
 
-$mergeHead = git -C $RepoRoot merge-base --is-ancestor upstream/main HEAD 2>$null
+$null = git -C $RepoRoot merge-base --is-ancestor upstream/main HEAD 2>$null
 $syncOk = ($LASTEXITCODE -eq 0)
 if (-not $syncOk) {
     git -C $RepoRoot fetch upstream --quiet 2>$null

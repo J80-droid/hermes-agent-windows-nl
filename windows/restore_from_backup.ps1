@@ -171,7 +171,7 @@ if ($RestoreRuntimeFull -or $RestoreRuntimePersonas) {
 
 if ($RestoreRuntimeFull -or $RestoreRuntimePersonas -or $RestoreLegacyProfile -or $RestoreUserProfile) {
   . (Join-HermesRepoPath -RepoRoot $PSScriptRoot -RelativePath 'scripts/HermesHomeCommon.ps1')
-  $postRoot = Ensure-UserHermesHomeRoot -FixUserEnv -Quiet
+  $postRoot = Initialize-UserHermesHomeRoot -FixUserEnv -Quiet
   Write-Host ('[INFO] Post-restore HERMES_HOME = ' + $postRoot) -ForegroundColor Cyan
   $syncBat = Join-Path $PSScriptRoot 'SYNC_HERMES_API_ENV.bat'
   if (Test-Path -LiteralPath $syncBat) {

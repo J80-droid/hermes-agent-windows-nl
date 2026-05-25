@@ -1,6 +1,8 @@
 # Gedeelde Hermes Windows home-paden (runtime vs legacy split-home).
 # Dot-source: . (Join-Path $PSScriptRoot 'HermesHomeCommon.ps1')
 
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
+
 function Test-HermesProfileSubdirPath {
     param([string]$Path)
     if (-not $Path) { return $false }
@@ -84,7 +86,7 @@ function Test-HermesConfigDrift {
 
     if ($issues.Count -eq 0) {
         if (-not $Quiet) {
-            Write-Host '[OK] Geen config drift (split-home)' -ForegroundColor Green
+            Write-HermesOk 'Geen config drift (split-home)'
         }
         Test-HermesAuxiliaryPresetDrift -Quiet:$Quiet | Out-Null
         return $true
@@ -92,7 +94,7 @@ function Test-HermesConfigDrift {
 
     foreach ($issue in $issues) {
         if (-not $Quiet) {
-            Write-Host ('[FAIL] ' + $issue) -ForegroundColor Red
+            Write-HermesFail $issue
         }
     }
     return $false
@@ -116,7 +118,7 @@ function Test-HermesProfileGlobalConfigBlocks {
     }
     if ($issues.Count -gt 0 -and -not $Quiet) {
         foreach ($issue in $issues) {
-            Write-Host ('[FAIL] ' + $issue) -ForegroundColor Red
+            Write-HermesFail $issue
         }
     }
     return @($issues)
@@ -140,12 +142,12 @@ function Test-HermesVeniceProviderConfigured {
     $legacyRaw = Get-Content -LiteralPath $best -Raw -Encoding UTF8
     if ($legacyRaw -notmatch '(?m)^providers:\s*\r?\n\s+venice:') { return $true }
     if (-not $Quiet) {
-        Write-Host '[WARN] Venice provider ontbreekt in runtime config - run merge_legacy_providers_config.py' -ForegroundColor Yellow
+        Write-HermesWarn 'Venice provider ontbreekt in runtime config - run merge_legacy_providers_config.py'
     }
     return $false
 }
 
-function Ensure-UserHermesHomeRoot {
+function Initialize-UserHermesHomeRoot {
     param(
         [switch]$FixUserEnv,
         [switch]$Quiet
@@ -156,7 +158,7 @@ function Ensure-UserHermesHomeRoot {
     $userHome = [Environment]::GetEnvironmentVariable('HERMES_HOME', 'User')
     if ($userHome -and (Test-HermesProfileSubdirPath $userHome)) {
         if (-not $Quiet) {
-            Write-Host ('[WARN] User HERMES_HOME wijst naar profielmap: ' + $userHome) -ForegroundColor Yellow
+            Write-HermesWarn ('User HERMES_HOME wijst naar profielmap: ' + $userHome)
         }
         if ($FixUserEnv) {
             [Environment]::SetEnvironmentVariable('HERMES_HOME', $root, 'User')
@@ -167,7 +169,7 @@ function Ensure-UserHermesHomeRoot {
             [Environment]::SetEnvironmentVariable('HERMES_HOME', $root, 'User')
             $changed = $true
         } elseif (-not $Quiet -and -not $userHome) {
-            Write-Host ('[INFO] User HERMES_HOME niet gezet — runtime root: ' + $root) -ForegroundColor Cyan
+            Write-HermesInfo ('User HERMES_HOME niet gezet — runtime root: ' + $root)
         }
     }
 
@@ -183,7 +185,7 @@ function Ensure-UserHermesHomeRoot {
     }
 
     if ($changed -and -not $Quiet) {
-        Write-Host ('[OK] HERMES_HOME = ' + $root) -ForegroundColor Green
+        Write-HermesOk ('HERMES_HOME = ' + $root)
     }
     return $root
 }
@@ -231,12 +233,12 @@ function Test-HermesGatewayHomeAlignment {
         }
     }
     if ($misaligned.Count -eq 0) {
-        if (-not $Quiet) { Write-Host '[OK] Gateway gateway.cmd HERMES_HOME aligned' -ForegroundColor Green }
+        if (-not $Quiet) { Write-HermesOk 'Gateway gateway.cmd HERMES_HOME aligned' }
         return $true
     }
     foreach ($item in $misaligned) {
         if (-not $Quiet) {
-            Write-Host ('[WARN] Gateway HERMES_HOME mismatch in ' + $item.Path) -ForegroundColor Yellow
+            Write-HermesWarn ('Gateway HERMES_HOME mismatch in ' + $item.Path)
             Write-Host ('       found: ' + $item.Found + ' expected: ' + $item.Expected) -ForegroundColor Yellow
             Write-Host '       Fix: hermes gateway restart (of hermes gateway install)' -ForegroundColor Yellow
         }
@@ -272,7 +274,7 @@ function Test-HermesAuxiliaryPresetDrift {
     if ($autoTasks.Count -eq 0) { return $false }
     $msg = 'Auxiliary preset drift: tekst-taken nog op provider auto: ' + ($autoTasks -join ', ')
     if (-not $Quiet) {
-        Write-Host ('[WARN] ' + $msg) -ForegroundColor Yellow
+        Write-HermesWarn $msg
         Write-Host '       Fix: windows\APPLY_AUXILIARY_HYBRID_PRESET.bat' -ForegroundColor Yellow
     }
     return $true

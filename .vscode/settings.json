@@ -9,7 +9,7 @@
   },
   "powershell.scriptAnalysis.enable": true,
   "powershell.scriptAnalysis.settingsPath": "${workspaceFolder}/windows/PSScriptAnalyzerSettings.psd1",
-  "powershell.analyzeOnlyOpenDocuments": true,
+  "powershell.analyzeOnlyOpenDocuments": false,
   "powershell.scriptAnalysis.useScriptPath": true,
   "powershell.scriptAnalysis.excludeRules": [
     "PSUseDeclaredVarsMoreThanAssignments"

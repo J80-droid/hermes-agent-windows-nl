@@ -70,7 +70,7 @@ function Split-MemoryMarkdownSections {
     )
 }
 
-function Normalize-MemorySectionEntry {
+function ConvertTo-MemorySectionNormalized {
     param([string]$Text)
     $lonelyC2 = [string][char]0x00C2
     $mojibakeLine = '(?m)^\s*' + [regex]::Escape($lonelyC2) + '\s*$'
@@ -124,14 +124,14 @@ function Initialize-PendingHermesConfigSections {
 function Add-PendingHermesConfigSection {
     param([string]$Text)
     if ([string]::IsNullOrWhiteSpace($Text)) { return }
-    $norm = Normalize-MemorySectionEntry -Text $Text
+    $norm = ConvertTo-MemorySectionNormalized -Text $Text
     foreach ($existing in $script:PendingHermesConfigSections) {
-        if ((Normalize-MemorySectionEntry -Text $existing) -eq $norm) { return }
+        if ((ConvertTo-MemorySectionNormalized -Text $existing) -eq $norm) { return }
     }
     [void]$script:PendingHermesConfigSections.Add($Text)
 }
 
-function Flush-PendingHermesConfigToCore {
+function Export-PendingHermesConfigToCore {
     param(
         [Parameter(Mandatory)][string]$HermesRoot,
         [Parameter(Mandatory)][string]$RepoRoot,
@@ -141,7 +141,7 @@ function Flush-PendingHermesConfigToCore {
     $coreMemPath = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath 'profiles/core/memories/MEMORY.md'
     if (-not (Test-Path -LiteralPath (Split-Path -Parent $coreMemPath))) { return }
     $memorySeed = Get-HermesMemorySeedEntries -RepoRoot $RepoRoot -SectionName 'MEMORY.md'
-    Write-Host "[INFO] $($script:PendingHermesConfigSections.Count) Hermes-config sectie(s) naar core" -ForegroundColor Cyan
+    Write-HermesInfo ($script:PendingHermesConfigSections.Count.ToString() + ' Hermes-config sectie(s) naar core')
     if (-not $DryRun) {
         Merge-MemoryFile -FilePath $coreMemPath -SeedEntries $memorySeed -ExtraExisting $script:PendingHermesConfigSections.ToArray()
     }
@@ -175,7 +175,7 @@ function Invoke-RebalanceHermesConfigToCore {
             }
         }
         if ($profileToCore.Count -eq 0) { return }
-        Write-Host "[INFO] $($_.Name): $($profileToCore.Count) Hermes-config sectie(s) -> core" -ForegroundColor Cyan
+        Write-HermesInfo ($_.Name + ': ' + $profileToCore.Count.ToString() + ' Hermes-config sectie(s) -> core')
         if (-not $DryRun) {
             $delim = Get-MemorySectionDelimiterChar
             $out = ($keep -join "`n$delim`n") + "`n"
@@ -212,7 +212,7 @@ function Merge-MemoryFile {
     $seenBuckets = @{}
 
     foreach ($e in $SeedEntries) {
-        $norm = Normalize-MemorySectionEntry -Text $e
+        $norm = ConvertTo-MemorySectionNormalized -Text $e
         if (-not $norm -or $seenNorms.ContainsKey($norm)) { continue }
         $seenNorms[$norm] = $true
         $bucket = Get-MemoryPolicyBucket -Norm $norm
@@ -220,7 +220,7 @@ function Merge-MemoryFile {
         [void]$merged.Add($e)
     }
     foreach ($e in $existing) {
-        $norm = Normalize-MemorySectionEntry -Text $e
+        $norm = ConvertTo-MemorySectionNormalized -Text $e
         if (-not $norm) { continue }
         if ($seenNorms.ContainsKey($norm)) { continue }
         if (Test-MemoryRuntimeSection -Text $e) {
@@ -264,5 +264,5 @@ function Merge-MemoryFile {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
     Set-Content -LiteralPath $FilePath -Value $out -Encoding UTF8 -NoNewline
-    Write-Host ('[OK] ' + $FilePath) -ForegroundColor Green
+    Write-HermesOk $FilePath
 }

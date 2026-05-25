@@ -16,7 +16,7 @@ $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyI
 $repoRoot = (Resolve-Path (Join-Path $scriptDir '..\..')).Path
 $pyScript = Join-Path $scriptDir 'apply_auxiliary_hybrid_preset.py'
 
-Ensure-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
+Initialize-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
 
 $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
 if (-not (Test-Path -LiteralPath $conda)) {

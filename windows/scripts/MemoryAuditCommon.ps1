@@ -266,7 +266,7 @@ function Test-MemoryConsolidationLayout {
         [void]$failures.Add("root: $($rootSections.Count) MEMORY-secties (verwacht seed-only ~3)")
     }
     foreach ($sec in $rootSections) {
-        $norm = Normalize-MemorySectionEntry -Text $sec
+        $norm = ConvertTo-MemorySectionNormalized -Text $sec
         if (Get-MemoryPolicyBucket -Norm $norm) { continue }
         if (Test-MemoryLegalDomainSection -Text $sec) {
             [void]$failures.Add('root: legal-domein in legacy memories/')
@@ -287,7 +287,7 @@ function Test-MemoryConsolidationLayout {
 
     $legalMemPath = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath 'profiles/legal/memories/MEMORY.md'
     foreach ($sec in (Get-MemoryMarkdownSectionsFromFile -FilePath $legalMemPath)) {
-        $norm = Normalize-MemorySectionEntry -Text $sec
+        $norm = ConvertTo-MemorySectionNormalized -Text $sec
         if (Get-MemoryPolicyBucket -Norm $norm) { continue }
         if ((Test-MemoryHermesConfigSection -Text $sec) -and -not (Test-MemoryLegalDomainSection -Text $sec)) {
             [void]$failures.Add('legal: misplaatste Hermes-config')
@@ -302,7 +302,7 @@ function Test-MemoryConsolidationLayout {
         } | ForEach-Object {
             $memPath = Join-Path $_.FullName 'memories/MEMORY.md'
             foreach ($sec in (Get-MemoryMarkdownSectionsFromFile -FilePath $memPath)) {
-                $norm = Normalize-MemorySectionEntry -Text $sec
+                $norm = ConvertTo-MemorySectionNormalized -Text $sec
                 if (Get-MemoryPolicyBucket -Norm $norm) { continue }
                 if (Test-MemoryLegalDomainSection -Text $sec) {
                     [void]$failures.Add("$($_.Name): legal-domein in niet-legal profiel")

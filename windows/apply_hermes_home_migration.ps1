@@ -16,6 +16,7 @@ param(
 . (Join-Path $PSScriptRoot 'HermesShellCommon.ps1')
 
 $ErrorActionPreference = 'Stop'
+$useCopyAuxiliaryOnly = [bool]$NoCopyAuxiliaryOnly
 $windowsRoot = if ($PSScriptRoot) { (Resolve-Path $PSScriptRoot).Path } else {
     Split-Path -Parent $MyInvocation.MyCommand.Path
 }
@@ -23,8 +24,8 @@ $repoRoot = (Resolve-Path (Join-Path $windowsRoot '..')).Path
 Set-Location $repoRoot
 
 Write-Host '=== Hermes split-home migratie (automatisch) ===' -ForegroundColor Cyan
-Write-Host "[INFO] Repo: $repoRoot" -ForegroundColor Cyan
-Write-Host '[INFO] Keten: backup -> deprecate -> providers -> preset -> strip -> env -> E2E' -ForegroundColor Cyan
+Write-HermesInfo ('Repo: ' + $repoRoot)
+Write-HermesInfo 'Keten: backup -> deprecate -> providers -> preset -> strip -> env -> E2E'
 Write-Host ''
 
 function Invoke-Step {
@@ -32,13 +33,13 @@ function Invoke-Step {
         [Parameter(Mandatory)][string]$Name,
         [Parameter(Mandatory)][scriptblock]$Action
     )
-    Write-Host "--- $Name ---" -ForegroundColor Cyan
+    Write-Host ('--- ' + $Name + ' ---') -ForegroundColor Cyan
     & $Action
     if (Test-NativeCommandFailed) {
-        Write-Host "[FAIL] Stap mislukt: $Name" -ForegroundColor Red
+        Write-HermesFail ('Stap mislukt: ' + $Name)
         exit $LASTEXITCODE
     }
-    Write-Host "[OK] $Name" -ForegroundColor Green
+    Write-HermesOk $Name
     Write-Host ''
 }
 
@@ -46,74 +47,74 @@ $step = 1
 $total = 7
 
 if (-not $SkipBackup) {
-    Invoke-Step -Name "$step/$total Backup (MANAGE_BACKUPS)" -Action {
+    Invoke-Step -Name (Format-HermesStepLabel -Step $step -Total $total -Suffix 'Backup (MANAGE_BACKUPS)') -Action {
         $env:HERMES_BACKUP_NONINTERACTIVE = '1'
         & (Join-Path $windowsRoot 'backup_hermes.ps1') -SkipPause
     }
 } else {
-    Write-Host "[SKIP] $step/$total Backup (-SkipBackup)" -ForegroundColor Yellow
+    Write-HermesSkip (Format-HermesStepLabel -Step $step -Total $total -Suffix 'Backup (-SkipBackup)')
     Write-Host ''
 }
 $step++
 
 if (-not $SkipDeprecate) {
-    Invoke-Step -Name "$step/$total Deprecate legacy config" -Action {
-        if (-not $NoCopyAuxiliaryOnly) {
+    Invoke-Step -Name (Format-HermesStepLabel -Step $step -Total $total -Suffix 'Deprecate legacy config') -Action {
+        if (-not $useCopyAuxiliaryOnly) {
             & (Join-Path $windowsRoot 'scripts\deprecate_legacy_config.ps1') -CopyAuxiliaryOnly
         } else {
             & (Join-Path $windowsRoot 'scripts\deprecate_legacy_config.ps1')
         }
     }
 } else {
-    Write-Host "[SKIP] $step/$total Deprecate (-SkipDeprecate)" -ForegroundColor Yellow
+    Write-HermesSkip (Format-HermesStepLabel -Step $step -Total $total -Suffix 'Deprecate (-SkipDeprecate)')
     Write-Host ''
 }
 $step++
 
 if (-not $SkipAuxiliary) {
-    Invoke-Step -Name "$step/$total Auxiliary hybrid preset + strip profiles" -Action {
+    Invoke-Step -Name (Format-HermesStepLabel -Step $step -Total $total -Suffix 'Auxiliary hybrid preset + strip profiles') -Action {
         & (Join-Path $windowsRoot 'scripts\apply_auxiliary_hybrid_preset.ps1')
     }
 } else {
-    Write-Host "[SKIP] $step/$total Auxiliary (-SkipAuxiliary)" -ForegroundColor Yellow
+    Write-HermesSkip (Format-HermesStepLabel -Step $step -Total $total -Suffix 'Auxiliary (-SkipAuxiliary)')
     Write-Host ''
 }
 $step++
 
 if (-not $SkipProviders) {
-    Invoke-Step -Name "$step/$total Merge legacy providers (Venice)" -Action {
+    Invoke-Step -Name (Format-HermesStepLabel -Step $step -Total $total -Suffix 'Merge legacy providers (Venice)') -Action {
         $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
         & $conda run -n hermes-env --no-capture-output python (Join-Path $windowsRoot 'scripts\merge_legacy_providers_config.py')
     }
 } else {
-    Write-Host "[SKIP] $step/$total Providers (-SkipProviders)" -ForegroundColor Yellow
+    Write-HermesSkip (Format-HermesStepLabel -Step $step -Total $total -Suffix 'Providers (-SkipProviders)')
     Write-Host ''
 }
 $step++
 
-Invoke-Step -Name "$step/$total Strip profile global blocks" -Action {
+Invoke-Step -Name (Format-HermesStepLabel -Step $step -Total $total -Suffix 'Strip profile global blocks') -Action {
     $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
     & $conda run -n hermes-env --no-capture-output python (Join-Path $windowsRoot 'scripts\strip_profile_global_config_blocks.py')
 }
 $step++
 
 if (-not $SkipEnvSync) {
-    Invoke-Step -Name "$step/$total Sync API env (legacy -> runtime)" -Action {
+    Invoke-Step -Name (Format-HermesStepLabel -Step $step -Total $total -Suffix 'Sync API env (legacy -> runtime)') -Action {
         $env:HERMES_SKIP_PAUSE = '1'
         & (Join-Path $windowsRoot 'sync_hermes_api_env.ps1')
     }
 } else {
-    Write-Host "[SKIP] $step/$total Env sync (-SkipEnvSync)" -ForegroundColor Yellow
+    Write-HermesSkip (Format-HermesStepLabel -Step $step -Total $total -Suffix 'Env sync (-SkipEnvSync)')
     Write-Host ''
 }
 $step++
 
 if (-not $SkipE2E) {
-    Invoke-Step -Name "$step/$total HermesHome E2E" -Action {
+    Invoke-Step -Name (Format-HermesStepLabel -Step $step -Total $total -Suffix 'HermesHome E2E') -Action {
         & (Join-Path $windowsRoot 'audits\RUN_HERMES_HOME_E2E.ps1') -RepoRoot $repoRoot
     }
 } else {
-    Write-Host "[SKIP] $step/$total E2E (-SkipE2E)" -ForegroundColor Yellow
+    Write-HermesSkip (Format-HermesStepLabel -Step $step -Total $total -Suffix 'E2E (-SkipE2E)')
     Write-Host ''
 }
 

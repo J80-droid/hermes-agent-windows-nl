@@ -377,7 +377,7 @@ FOOTGUNS: list[Footgun] = [
             "Use active_profile + profile-scoped paths instead."
         ),
         fix=(
-            "Ensure-UserHermesHomeRoot (HermesHomeCommon.psm1) or "
+            "Initialize-UserHermesHomeRoot (HermesHomeCommon.ps1) or "
             "apply_team_display_profiles.py --profile <name> without changing HERMES_HOME."
         ),
         path_allowlist=(

@@ -24,11 +24,44 @@ function Write-HermesTag {
     Write-Host ($Tag + $Message) -ForegroundColor $Color
 }
 
-function Write-HermesInfo { param([string]$Message) Write-HermesTag '[INFO] ' $Message Cyan }
-function Write-HermesOk { param([string]$Message) Write-HermesTag '[OK] ' $Message Green }
-function Write-HermesWarn { param([string]$Message) Write-HermesTag '[WARN] ' $Message Yellow }
-function Write-HermesFail { param([string]$Message) Write-HermesTag '[FAIL] ' $Message Red }
-function Write-HermesErr { param([string]$Message) Write-HermesTag '[ERROR] ' $Message Red }
+function Write-HermesInfo { param([string]$Message) Write-HermesTag 'INFO: ' $Message Cyan }
+function Write-HermesOk { param([string]$Message) Write-HermesTag 'OK: ' $Message Green }
+function Write-HermesWarn { param([string]$Message) Write-HermesTag 'WARN: ' $Message Yellow }
+function Write-HermesFail { param([string]$Message) Write-HermesTag 'FAIL: ' $Message Red }
+function Write-HermesErr { param([string]$Message) Write-HermesTag 'ERROR: ' $Message Red }
+function Write-HermesSkip { param([string]$Message) Write-HermesTag 'SKIP: ' $Message Yellow }
+
+function Format-HermesStepLabel {
+    param(
+        [Parameter(Mandatory)][int]$Step,
+        [Parameter(Mandatory)][int]$Total,
+        [Parameter(Mandatory)][string]$Suffix
+    )
+    return ('Stap {0} van {1} - {2}' -f $Step, $Total, $Suffix)
+}
+
+function Invoke-GitCommand {
+    <#
+    .SYNOPSIS
+    Run git without 2>&1/2>$null (PSES-safe). Returns exit code; optional captured output.
+    #>
+    param(
+        [Parameter(Mandatory)][string[]]$Arguments,
+        [switch]$CaptureOutput
+    )
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        if ($CaptureOutput) {
+            $out = & git @Arguments
+            return [pscustomobject]@{ ExitCode = [int]$LASTEXITCODE; Output = $out }
+        }
+        & git @Arguments | Out-Null
+        return [int]$LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prev
+    }
+}
 
 function Join-HermesRepoPath {
     <#

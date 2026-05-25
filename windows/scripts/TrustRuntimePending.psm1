@@ -47,6 +47,7 @@ function Test-PendingTrustRuntime {
 }
 
 function Set-PendingTrustRuntime {
+    [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Low')]
     param(
         [string]$Source = 'UPDATE_HERMES',
         [string]$Reason = 'Trust runtime nog niet afgerond',
@@ -67,6 +68,9 @@ function Set-PendingTrustRuntime {
         reason     = $Reason
         attempts   = $attempts
         repo_root  = $RepoRoot
+    }
+    if ($PSCmdlet -and -not $PSCmdlet.ShouldProcess($path, 'Write pending trust runtime')) {
+        return
     }
     $utf8 = [System.Text.UTF8Encoding]::new($false)
     try {

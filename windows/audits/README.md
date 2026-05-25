@@ -12,7 +12,18 @@ windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat
 
 Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Developer: Reload Window`.
 
-**PSES-valkuil:** in single-quoted strings faalt de IDE-parser soms op paden met extensie (bijv. `'README.md'` → `.md` buiten de string). Gebruik dubbele quotes (`"README.md"`) of concatenatie (`'README' + '.md'`). Runtime/AST is dan wél correct — vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
+**PSES-valkuil:** de IDE-parser (niet de runtime) faalt soms op:
+- paden met extensie in single quotes (`'README.md'`) → gebruik `"README.md"` of `'README' + '.md'`
+- type-literals in strings (`'[rag]'`, `"[OK]"`) → gebruik `-join '[', 'rag', ']'` of string-concatenatie
+- `-e` als los token in single quotes (`'pip install -e .'`) → zet `-e` in een variabele (`$pipEditableFlag = '-e'`)
+- `upstream/main` in here-strings → spreekbaar herschrijven (`upstream main`) of variabele
+- ongequote git-refs (`git merge upstream/main`) → PSES ziet `/` als deling; altijd `'upstream/main'` en `'HEAD..upstream/main'`
+- `/` in **dubbele** aanhalingstekens (`"upstream/main"`, `"miniconda3/anaconda3"`) → zelfde tokenizer-bug; gebruik enkelvoudige quotes of concatenatie
+- `[TAG]` in strings (`'[ERROR]'`, `"[OK]"`) → type-literal; gebruik `OK:` / `ERROR:` of `-join '[', 'OK', ']'`
+
+**IDE:** na wijzigingen: PowerShell: Restart Session + Developer: Reload Window. Verifieer met `windows\tests\Test-PsesTokenizer.ps1` (AST) en `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
+
+Runtime/AST: vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
 
 **Trust E2E:** `RUN_TRUST_FORENSIC_E2E.ps1` is alleen een launcher; logica staat in `TrustForensicE2E.core.ps1` (dot-source naar `HermesTrustForensicPatterns.ps1`, `HermesTrustForensicProfileChecks.ps1`, `MemoryAuditCommon.ps1`). BAT en `RUN_AUDITS` blijven de launcher aanroepen.
 

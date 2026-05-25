@@ -52,7 +52,7 @@ function Test-HermesPythonHasPip {
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'SilentlyContinue'
     try {
-        $null = & $PythonExe -m pip --version 2>&1
+        $null = & $PythonExe -m pip --version
         return ($LASTEXITCODE -eq 0)
     } catch {
         return $false
@@ -280,7 +280,7 @@ function Sync-HermesLaunchBootstrapStamp {
         try {
             Move-Item -LiteralPath $legacy -Destination $canonical -Force -ErrorAction Stop
         } catch {
-            # Legacy stamp locked or race — canonical pad blijft leidend bij volgende run.
+            Write-Verbose ("Legacy launch_bootstrap.stamp niet verplaatst: {0}" -f $_.Exception.Message)
         }
     }
     return $canonical
@@ -338,6 +338,7 @@ function Test-HermesRepoDotVenvPresent {
 }
 
 function Update-HermesVscodeInterpreterPath {
+    [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Low')]
     <#
     .SYNOPSIS
         Zet python.defaultInterpreterPath in .vscode/settings.json (canoniek conda pad).
@@ -390,7 +391,7 @@ function Update-HermesVscodeInterpreterPath {
     $updated = [regex]::Replace($raw, $pattern, $replacement, 1)
     $changed = ($updated -ne $raw)
 
-    if ($changed) {
+    if ($changed -and $PSCmdlet.ShouldProcess($settingsPath, 'Update python.defaultInterpreterPath')) {
         Set-Content -LiteralPath $settingsPath -Value $updated -Encoding UTF8
     }
 

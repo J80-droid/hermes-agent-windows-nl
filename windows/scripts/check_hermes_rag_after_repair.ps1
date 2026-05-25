@@ -1,4 +1,4 @@
-# Na REPAIR_PYTHON: controleer RAG [rag]-deps (niet-blokkerend).
+# Na REPAIR_PYTHON: controleer RAG extras (pip extra rag) - niet-blokkerend.
 # NonInteractive: -NonInteractive, HERMES_NONINTERACTIVE=1, of redirected stdin (geen Read-Host hang).
 param(
     [string]$RepoRoot = '',
@@ -18,20 +18,20 @@ if (-not $RepoRoot) {
 $py = Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip
 if (-not $py) {
     if (-not $Quiet) {
-        Write-Host '[ERROR] Geen conda hermes-env na repair.' -ForegroundColor Red
+        Write-Host 'ERROR: Geen conda hermes-env na repair.' -ForegroundColor Red
     }
     exit 1
 }
 
 if (Test-HermesRagExtrasInstalled -PythonExe $py) {
     if (-not $Quiet) {
-        Write-Host '[OK] RAG-deps ([rag]) geinstalleerd.' -ForegroundColor Green
+        Write-Host 'OK: RAG pip extras (rag) geinstalleerd.' -ForegroundColor Green
     }
     exit 0
 }
 
 if (-not $Quiet) {
-    Write-Host '[WARN] RAG-deps ([rag]) ontbreken — vereist voor update_knowledge / search_knowledge.' -ForegroundColor Yellow
+    Write-Host 'WARN: RAG pip extras (rag) ontbreken - vereist voor update_knowledge en search_knowledge.' -ForegroundColor Yellow
     Write-Host '  Automatisch bij start/setup, of handmatig:' -ForegroundColor DarkYellow
     Write-Host '    powershell -File windows/scripts/install_rag_extras.ps1' -ForegroundColor DarkYellow
     $autoSkip = $NonInteractive.IsPresent -or ($env:HERMES_NONINTERACTIVE -eq '1') -or [Console]::IsInputRedirected

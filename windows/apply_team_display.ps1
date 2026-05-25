@@ -98,7 +98,7 @@ if ($ActiveProfileOnly) {
         New-Item -ItemType Directory -Path $profileHome -Force | Out-Null
     }
     . (Join-Path $scriptDir 'scripts\HermesHomeCommon.ps1')
-    Ensure-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
+    Initialize-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
     Write-Host ('[INFO] ' + 'Profiel display patch: ' + $activeProfile + ' (HERMES_HOME blijft root)') -ForegroundColor Cyan
     & $condaExe run -n hermes-env --no-capture-output python (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/apply_team_display_profiles.py') --profile $activeProfile
     if (Test-NativeCommandFailed) { exit $LASTEXITCODE }

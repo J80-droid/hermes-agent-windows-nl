@@ -13,7 +13,7 @@ $ErrorActionPreference = 'Stop'
 $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
 . (Join-Path $scriptDir 'HermesHomeCommon.ps1')
 
-Ensure-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
+Initialize-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
 
 if (Test-HermesGatewayHomeAlignment -Quiet:$Quiet) {
     if (-not $Quiet) {

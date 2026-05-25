@@ -105,7 +105,7 @@ $inventory = Join-HermesRepoPath -RepoRoot $windowsRoot -RelativePath 'scripts/i
 & $inventory -Quiet
 Add-StepResult '6/14 inventory_hermes_home -Quiet' ($LASTEXITCODE -eq 0)
 
-Ensure-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
+Initialize-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
 $env:HERMES_HOME = (Get-HermesRuntimeRoot).TrimEnd('\')
 
 $verifyHome = Join-HermesRepoPath -RepoRoot $windowsRoot -RelativePath 'scripts/verify_hermes_home.ps1'
@@ -117,9 +117,9 @@ $verifyDrift = Join-HermesRepoPath -RepoRoot $windowsRoot -RelativePath 'scripts
 Add-StepResult '8/14 verify_hermes_config_drift' ($LASTEXITCODE -eq 0)
 
 $expected = (Get-HermesRuntimeRoot).TrimEnd('\')
-Ensure-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
+Initialize-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
 $procHome = if ($env:HERMES_HOME) { $env:HERMES_HOME.TrimEnd('\') } else { '' }
-Add-StepResult '9/14 Ensure-UserHermesHomeRoot proces-env' ($procHome -eq $expected) $procHome
+Add-StepResult '9/14 Initialize-UserHermesHomeRoot proces-env' ($procHome -eq $expected) $procHome
 
 $userHome = [Environment]::GetEnvironmentVariable('HERMES_HOME', 'User')
 $userOk = $true
@@ -176,7 +176,7 @@ if (Test-Path -LiteralPath $runtimeCfg) {
                     Add-StepResult 'profile core inherits auxiliary.compression=custom' ($compVal -eq 'custom') $compVal
                 }
                 if ($prevHome) { $env:HERMES_HOME = $prevHome } else { Remove-Item Env:HERMES_HOME -ErrorAction SilentlyContinue }
-                Ensure-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
+                Initialize-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
             }
         } else {
             Add-StepResult 'auxiliary.vision.provider=gemini' $false 'CLI exit non-zero'

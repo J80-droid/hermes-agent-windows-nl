@@ -12,7 +12,7 @@ $ErrorActionPreference = 'Stop'
 $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
 . (Join-Path $scriptDir 'HermesHomeCommon.ps1')
 
-$root = Ensure-UserHermesHomeRoot -FixUserEnv:$FixUserEnv
+$root = Initialize-UserHermesHomeRoot -FixUserEnv:$FixUserEnv
 Write-Host ('[INFO] HERMES_HOME=' + $root) -ForegroundColor Cyan
 
 if (-not $SkipVerify) {

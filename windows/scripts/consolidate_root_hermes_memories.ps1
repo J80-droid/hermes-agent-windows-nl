@@ -34,7 +34,7 @@ $legalMigrate = [System.Collections.Generic.List[string]]::new()
 $coreMigrate = [System.Collections.Generic.List[string]]::new()
 
 foreach ($sec in $rootSections) {
-    if (Get-MemoryPolicyBucket -Norm (Normalize-MemorySectionEntry -Text $sec)) {
+    if (Get-MemoryPolicyBucket -Norm (ConvertTo-MemorySectionNormalized -Text $sec)) {
         continue
     }
     if (Test-MemoryLegalDomainSection -Text $sec) {

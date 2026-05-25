@@ -137,7 +137,7 @@ print(cfg.get('auxiliary', {}).get('compression', {}).get('provider', ''))
 "@ 2>&1
         $compVal = ($compOut | Select-Object -Last 1).ToString().Trim().ToLower()
         if ($prevHome) { $env:HERMES_HOME = $prevHome } else { Remove-Item Env:HERMES_HOME -ErrorAction SilentlyContinue }
-        Ensure-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
+        Initialize-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
         Add-StepResult '8/10 live: core profiel erft auxiliary.compression' ($compVal -eq 'custom') $compVal
     } else {
         Add-StepResult '8/10 live: core profiel erft auxiliary.compression' $true 'profiles/core ontbreekt - skip'

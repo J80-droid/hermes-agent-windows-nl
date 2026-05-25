@@ -41,7 +41,7 @@ foreach ($t in $targets) {
 
 if (-not $DryRun) {
     Invoke-RebalanceHermesConfigToCore -HermesRoot $root -RepoRoot $RepoRoot
-    Flush-PendingHermesConfigToCore -HermesRoot $root -RepoRoot $RepoRoot -DryRun:$DryRun
+    Export-PendingHermesConfigToCore -HermesRoot $root -RepoRoot $RepoRoot -DryRun:$DryRun
     $restorePs1 = Join-Path $PSScriptRoot 'restore_core_hermes_config_memory.ps1'
     if (Test-Path -LiteralPath $restorePs1) {
         & $restorePs1 -RepoRoot $RepoRoot -HermesRoot $root

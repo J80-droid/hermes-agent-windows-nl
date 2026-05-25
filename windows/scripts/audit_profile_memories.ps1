@@ -5,6 +5,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$script:AuditFixEncoding = [bool]$FixEncoding
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 . (Join-Path $PSScriptRoot 'MemoryAuditCommon.ps1')
 
@@ -18,7 +19,7 @@ if (-not $HermesRoot) {
 $issues = 0
 $profilesDir = Join-Path $HermesRoot 'profiles'
 if (-not (Test-Path -LiteralPath $profilesDir)) {
-    Write-Host "[FAIL] profiles map ontbreekt: $profilesDir" -ForegroundColor Red
+    Write-HermesFail ('profiles map ontbreekt: ' + $profilesDir)
     exit 1
 }
 
@@ -31,7 +32,7 @@ function Test-AuditMemoryFile {
         [int]$UserLimit
     )
     if (-not (Test-Path -LiteralPath $Path)) {
-        Write-Host "  [WARN] $File ontbreekt" -ForegroundColor Yellow
+        Write-HermesWarn ('  ' + $File + ' ontbreekt')
         return
     }
     $raw = Get-Content -LiteralPath $Path -Raw -Encoding UTF8
@@ -40,12 +41,13 @@ function Test-AuditMemoryFile {
     $status = if ($len -le $cap) { 'OK' } else { 'OVER' }
     $color = if ($len -le $cap) { 'Green' } else { 'Red' }
     if ($len -gt $cap) { $script:issues++ }
-    Write-Host "  [$status] $File : $len / $cap" -ForegroundColor $color
+    $who = if ($Label) { "$Label/" } else { '' }
+    Write-Host "  [$who$status] $File : $len / $cap" -ForegroundColor $color
 
     if (Test-MemoryDoubleEncoding -Text $raw) {
-        Write-Host '  [FAIL] double-encoding section marker' -ForegroundColor Red
+        Write-HermesFail '  double-encoding section marker'
         $script:issues++
-        if ($FixEncoding) {
+        if ($script:AuditFixEncoding) {
             $bad = Get-MemoryDoubleEncodedSectionMarker
             $good = Get-MemorySectionMarker
             $fixed = $raw.Replace($bad, $good)
@@ -56,14 +58,14 @@ function Test-AuditMemoryFile {
 
     $leaks = $null
     if (Test-MemoryFileIdentityLeaks -FilePath $Path -LeakLines ([ref]$leaks)) {
-        Write-Host "  [FAIL] identiteitslek ($($leaks.Count) regel(s))" -ForegroundColor Red
+        Write-HermesFail ('  identiteitslek (' + $leaks.Count + ' regel(s))')
         $script:issues++
     }
 
     if ($File -eq 'MEMORY.md') {
         $dups = Get-DuplicateMemorySections -FilePath $Path
         if ($dups.Count -gt 0) {
-            Write-Host "  [WARN] dubbele §-secties: $($dups.Count)" -ForegroundColor Yellow
+            Write-HermesWarn ('  dubbele secties: ' + $dups.Count)
             foreach ($d in $dups | Select-Object -First 2) {
                 Write-Host "         $d" -ForegroundColor DarkYellow
             }
