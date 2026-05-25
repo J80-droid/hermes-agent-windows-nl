@@ -99,11 +99,14 @@ Add-StepResult '3/10 isolated inheritance harness (8 scenario''s)' ($LASTEXITCOD
 $inhPy = Get-Content -LiteralPath (Join-Path $RepoRoot 'hermes_cli/profile_model_inheritance.py') -Raw -Encoding UTF8
 $cfgPy = Get-Content -LiteralPath (Join-Path $RepoRoot 'hermes_cli/config.py') -Raw -Encoding UTF8
 $collectScript = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows/scripts/collect_env_sync_keys.py') -Raw -Encoding UTF8
+& $python -m py_compile (Join-Path $RepoRoot 'windows/scripts/collect_env_sync_keys.py') 2>$null
+$collectCompileOk = ($LASTEXITCODE -eq 0)
 $wiringOk = ($inhPy -match 'root_user = _read_yaml\(root_config_path\(\)\)') -and
     ($inhPy -match 'def bust_config_caches') -and
     ($inhPy -match 'clear_all = not paths or any') -and
     ($cfgPy -match 'incoming_keys = set\(config\.keys\(\)\)') -and
-    ($collectScript -match 'root_config_path')
+    ($collectScript -match 'root_config_path') -and
+    $collectCompileOk
 Add-StepResult '4/10 code wiring review fixes aanwezig' $wiringOk
 
 $profileIssues = Test-HermesProfileGlobalConfigBlocks -Quiet

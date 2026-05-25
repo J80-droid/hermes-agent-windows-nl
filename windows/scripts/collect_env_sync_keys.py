@@ -2,7 +2,8 @@
 """Collect env var names to sync from runtime root config (providers, auxiliary).
 
 Leest altijd ``root_config_path()`` — ook wanneer ``HERMES_HOME`` een profielsubmap is.
-"""from __future__ import annotations
+"""
+from __future__ import annotations
 
 import sys
 from pathlib import Path
