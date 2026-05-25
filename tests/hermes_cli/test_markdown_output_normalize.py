@@ -461,6 +461,23 @@ def test_discover_keys_from_multi_label_line():
     assert keys == ["Component", "Keuze", "Status"]
 
 
+def test_architecture_multi_line_without_emdash():
+    raw = (
+        "### Architectuursamenvatting\n\n"
+        "Component: Inter-agent communicatie Keuze: FastAPI Status: operationeel\n"
+        "Component: Datamodel Keuze: Pydantic Status: geimplementeerd\n"
+    )
+    out = normalize_pseudo_tables_to_markdown(raw)
+    assert "| Component | Keuze | Status |" in out
+    assert "| Datamodel | Pydantic | geimplementeerd |" in out
+
+
+def test_sanitize_table_cell_escapes_pipe_in_value():
+    from hermes_cli.markdown_output_normalize import _sanitize_table_cell
+
+    assert "|" not in _sanitize_table_cell("foo | bar")
+
+
 def test_collapsed_record_idempotent_on_valid_table():
     raw = (
         "### Architectuursamenvatting\n"

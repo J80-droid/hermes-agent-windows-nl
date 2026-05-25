@@ -511,6 +511,7 @@ def _strip_orphan_trailing_pipe(line: str) -> str:
 def _sanitize_table_cell(text: str) -> str:
     cell = re.sub(r"\s+", " ", (text or "").strip())
     cell = re.sub(r"_{2,}", " ", cell)
+    cell = cell.replace("|", " / ")
     return cell.strip()
 
 
@@ -576,7 +577,7 @@ def _discover_repeated_field_keys(text: str) -> list[str] | None:
     for match in _FIELD_KEY_TOKEN_RE.finditer(text):
         key = _normalize_field_key(match.group(1))
         low = key.lower()
-        if not key:
+        if not key or len(key) < 2:
             continue
         counts[low] = counts.get(low, 0) + 1
         if low not in seen_low:
@@ -586,6 +587,50 @@ def _discover_repeated_field_keys(text: str) -> list[str] | None:
     if len(repeated) < 2:
         return None
     return repeated[:_MAX_COMPARISON_COLUMNS]
+
+
+def _split_record_segments(
+    full: str,
+    keys: list[str],
+    line_chunks: list[str],
+) -> list[str]:
+    """Split collapsed pseudo-records on em-dash, repeated anchor key, or one record per line."""
+    segments = [p.strip() for p in _INLINE_DUAL_SPLIT_RE.split(full) if p.strip()]
+    if len(segments) >= 2:
+        return segments
+    if len(line_chunks) >= 2 and all(_FIELD_KEY_TOKEN_RE.search(ln) for ln in line_chunks):
+        return line_chunks
+    if keys:
+        anchor = keys[0]
+        parts = re.split(rf"(?i)(?=\b{re.escape(anchor)}\s*:)", full)
+        parts = [p.strip() for p in parts if p.strip()]
+        if len(parts) >= 2:
+            return parts
+    return [full] if full.strip() else []
+
+
+def _dedupe_table_rows(rows: list[list[str]]) -> list[list[str]]:
+    seen: set[tuple[str, ...]] = set()
+    unique: list[list[str]] = []
+    for row in rows:
+        key = tuple(row)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(row)
+    return unique
+
+
+def _collapsed_record_layout_eligible(chunks: list[str], full: str) -> bool:
+    """True for dense Component/Keuze/Status lines, not **Groep** + one-key-per-line blocks."""
+    if _INLINE_DUAL_SPLIT_RE.search(full):
+        return True
+    if any(len(_FIELD_KEY_TOKEN_RE.findall(ln)) >= 3 for ln in chunks):
+        return True
+    if len(chunks) >= 2 and all(_FIELD_KEY_TOKEN_RE.search(ln) for ln in chunks):
+        if not any(_BOLD_CATEGORY_LINE_RE.match(ln) for ln in chunks):
+            return True
+    return False
 
 
 def _parse_collapsed_record_rows(
@@ -604,18 +649,19 @@ def _parse_collapsed_record_rows(
     if not chunks:
         return None
     full = " ".join(chunks)
+    if not _collapsed_record_layout_eligible(chunks, full):
+        return None
     keys = field_keys or _discover_repeated_field_keys(full)
     if not keys or len(keys) < 2:
         return None
-    segments = [p.strip() for p in _INLINE_DUAL_SPLIT_RE.split(full) if p.strip()]
-    if len(segments) < 2:
-        segments = [full]
+    segments = _split_record_segments(full, keys, chunks)
     rows: list[list[str]] = []
     for segment in segments:
         values = _extract_field_values_from_text(segment, keys)
         filled = sum(1 for k in keys if (values.get(k) or "").strip())
         if filled >= 2:
             rows.append([_sanitize_table_cell(values.get(k, "-")) for k in keys])
+    rows = _dedupe_table_rows(rows)
     if len(rows) < 2:
         return None
     return keys, rows
@@ -765,10 +811,6 @@ def _parse_collapsed_overview_body(
     body_lines: list[str],
 ) -> tuple[list[str], list[list[str]]] | None:
     """Single-paragraph pseudo with embedded pipe header + Label: tokens."""
-    record_parsed = _parse_collapsed_record_rows(body_lines)
-    if record_parsed:
-        return record_parsed
-
     chunks: list[str] = []
     for line in body_lines:
         stripped = _strip_orphan_trailing_pipe(line.strip())
@@ -807,6 +849,10 @@ def _parse_collapsed_overview_body(
                         rows.append(row)
             if len(rows) >= 2:
                 return headers[:_MAX_COMPARISON_COLUMNS], rows
+
+    record_parsed = _parse_collapsed_record_rows(body_lines)
+    if record_parsed:
+        return record_parsed
 
     headers = _overview_headers_from_body(body_lines)
     if not headers:
@@ -855,10 +901,6 @@ def _parse_overview_body_to_rows(
     body_lines: list[str],
 ) -> tuple[list[str], list[list[str]]] | None:
     """Context-dependent overview/config tables (2-6 columns)."""
-    record_parsed = _parse_collapsed_record_rows(body_lines)
-    if record_parsed:
-        return record_parsed
-
     headers = _overview_headers_from_body(body_lines)
     if headers:
         rows = _parse_overview_field_rows(body_lines, headers)
