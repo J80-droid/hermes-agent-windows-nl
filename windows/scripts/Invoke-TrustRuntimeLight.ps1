@@ -1,5 +1,6 @@
 # Lichte trust-runtime (memory/dedup/limits/reminder) zonder volledige SYNC_TRUST_RUNTIME.bat.
-# Dot-source of aanroepen via launch_pending_trust_runtime.ps1
+# Standaard: SkipProductionGate; SOUL snippets overgeslagen binnen 120s na anatomy deploy (Test-SoulAnatomyDeployJustRan).
+# Bij succes: Clear-PendingTrustRuntime + /new-reminder via Invoke-MemoryTrustPostSync.ps1.
 param(
     [Parameter(Mandatory)]
     [string]$RepoRoot,

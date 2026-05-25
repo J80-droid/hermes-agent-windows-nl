@@ -75,7 +75,16 @@ function Invoke-HermesQuarantineBrokenVenv {
 
     if (-not $PSCmdlet.ShouldProcess($venvDir, 'Rename', 'Quarantine broken .venv')) { return $true }
 
-    Rename-Item -LiteralPath $venvDir -NewName (Split-Path -Leaf $dest) -Force
+    try {
+        Rename-Item -LiteralPath $venvDir -NewName (Split-Path -Leaf $dest) -Force -ErrorAction Stop
+    } catch {
+        if (-not $Quiet) {
+            $msg = $_.Exception.Message
+            Write-Host ('[WARN] Kon .venv niet hernoemen (waarschijnlijk in gebruik): ' + $msg) -ForegroundColor Yellow
+            Write-Host '[WARN] Sluit Cursor/terminals die .venv gebruiken, of verwijder handmatig; conda hermes-env blijft actief.' -ForegroundColor DarkYellow
+        }
+        return $false
+    }
     $readme = @(
         'Hermes: deze map is een gedeactiveerde .venv (geen werkende pip).'
         'Canoniek: conda env hermes-env. Zie windows/HermesPythonPolicy.ps1 en REPAIR_PYTHON.bat.'

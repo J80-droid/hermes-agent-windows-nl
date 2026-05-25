@@ -1,4 +1,6 @@
-# Pending trust-runtime na mislukte UPDATE/post-merge; wordt bij start afgehandeld door Invoke-TrustRuntimeLight.
+# Pending trust-runtime na mislukte UPDATE/post-merge.
+# Stamp: %LOCALAPPDATA%\hermes\pending_trust_runtime.json (status=required).
+# Start-hook: launch_pending_trust_runtime.ps1 -> Invoke-TrustRuntimeLight.ps1 (licht, geen production gate).
 $script:PendingTrustMaxAttempts = 3
 
 function Get-PendingTrustRuntimeAttempts {

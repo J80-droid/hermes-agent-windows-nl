@@ -26,7 +26,9 @@ $files = @(
     'windows/scripts/Invoke-TrustRuntimeLight.ps1',
     'windows/scripts/launch_pending_trust_runtime.ps1',
     'windows/audits/PendingTrustStartE2E.core.ps1',
-    'windows/audits/RUN_PENDING_TRUST_START_E2E.ps1'
+    'windows/audits/RUN_PENDING_TRUST_START_E2E.ps1',
+    'windows/audits/WindowsPlatformHardeningE2E.core.ps1',
+    'windows/audits/RUN_PLATFORM_HARDENING_PRODUCTION_GATE.ps1'
 )
 
 $failed = 0

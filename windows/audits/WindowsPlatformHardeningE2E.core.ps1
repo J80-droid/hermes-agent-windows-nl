@@ -109,19 +109,13 @@ Add-StepResult -Name '1/10 repo platform-hardening artefacten' -Ok $repoOk
 # --- 2 Filesystem sandbox wiring ---
 $fsPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/filesystem_sandbox.py')
 $fileTools = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tools/file_tools.py')
-$fsOk = ($fsPy -match 'def resolve_path_within_sandbox') -and
-    ($fsPy -match 'def has_forbidden_path_content') -and
-    ($fileTools -match 'validate_agent_path_for_task') -and
-    ($fileTools -match '_check_filesystem_sandbox')
+$fsOk = ($fsPy -match 'def resolve_path_within_sandbox') -and ($fsPy -match 'def has_forbidden_path_content') -and ($fileTools -match 'validate_agent_path_for_task') -and ($fileTools -match '_check_filesystem_sandbox')
 Add-StepResult -Name '2/10 filesystem sandbox wiring in file_tools' -Ok $fsOk
 
 # --- 3 Hardware backend + CLI startup logging ---
 $hwPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/hardware_backend.py')
 $cliPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'cli.py')
-$hwOk = ($hwPy -match 'def build_onnx_provider_attempts') -and
-    ($hwPy -match 'def load_faster_whisper_model') -and
-    ($hwPy -match 'def load_piper_voice_with_fallback') -and
-    ($cliPy -match 'log_local_inference_backends')
+$hwOk = ($hwPy -match 'def build_onnx_provider_attempts') -and ($hwPy -match 'def load_faster_whisper_model') -and ($hwPy -match 'def load_piper_voice_with_fallback') -and ($cliPy -match 'log_local_inference_backends')
 Add-StepResult -Name '3/10 hardware backend + CLI startup logging' -Ok $hwOk
 
 # --- 4 LanceDB storage wiring ---
@@ -131,23 +125,13 @@ $ldbPorts = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -
 $ldbBackend = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/lancedb_backend.py')
 $mcpPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/mcp_server.py')
 $ingestPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/ingest.py')
-$ldbOk = ($ldbLife -match 'def preflight_vector_store') -and
-    ($ldbLife -match 'def shutdown_all_lancedb_connections') -and
-    ($ldbFacade -match 'def lancedb_session') -and
-    ($ldbPorts -match 'get_vector_store_backend') -and
-    ($ldbBackend -match 'class LanceDBVectorStoreBackend') -and
-    ($mcpPy -match 'KnowledgeRepository') -and
-    ($mcpPy -match 'register_shutdown_hooks') -and
-    ($ingestPy -match 'KnowledgeRepository')
+$ldbOk = ($ldbLife -match 'def preflight_vector_store') -and ($ldbLife -match 'def shutdown_all_lancedb_connections') -and ($ldbFacade -match 'def lancedb_session') -and ($ldbPorts -match 'get_vector_store_backend') -and ($ldbBackend -match 'class LanceDBVectorStoreBackend') -and ($mcpPy -match 'KnowledgeRepository') -and ($mcpPy -match 'register_shutdown_hooks') -and ($ingestPy -match 'KnowledgeRepository')
 Add-StepResult -Name '4/10 LanceDB storage lifecycle wiring' -Ok $ldbOk
 
 # --- 5 Config + dependencies ---
 $configPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/config.py')
 $pyproject = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'pyproject.toml')
-$cfgOk = ($configPy -match '"workspace"') -and
-    ($configPy -match 'enforce_sandbox') -and
-    ($pyproject -match 'voice-windows') -and
-    ($pyproject -match 'onnxruntime-directml')
+$cfgOk = ($configPy -match '"workspace"') -and ($configPy -match 'enforce_sandbox') -and ($pyproject -match 'voice-windows') -and ($pyproject -match 'onnxruntime-directml')
 Add-StepResult -Name '5/10 config workspace + voice-windows deps' -Ok $cfgOk
 
 # --- 6 Isolated harness (12 scenario''s) ---

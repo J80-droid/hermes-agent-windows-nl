@@ -37,13 +37,13 @@ function Invoke-UpstreamPostMergeCodebaseSmoke {
     }
     $level = if ($WantE2E) { 'E2E' } else { 'Smoke' }
     $levelLabel = if ($level -eq 'E2E') { 'E2E ~45s' } else { 'smoke ~32s' }
-    Write-Step ('Codebase {0} E1/E2 geen E3...' -f $levelLabel)
+    Write-Step ('Codebase ' + $levelLabel + ' E1/E2 geen E3...')
     & $helper -RepoRoot $Repo -Level $level
     if (Test-NativeCommandFailed) {
-        Write-Err ('Codebase smoke {0} gefaald - zie rapport in windows/audits/.' -f $level)
+        Write-Err ('Codebase smoke ' + $level + ' gefaald - zie rapport in windows/audits/.')
         return 1
     }
-    Write-Ok ('Codebase smoke {0} geslaagd.' -f $level)
+    Write-Ok ('Codebase smoke ' + $level + ' geslaagd.')
     return 0
 }
 

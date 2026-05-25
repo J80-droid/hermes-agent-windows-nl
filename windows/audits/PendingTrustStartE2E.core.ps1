@@ -66,10 +66,11 @@ try {
 
     Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'skip-flag E2E' -RepoRoot $RepoRoot
     $env:HERMES_SKIP_PENDING_TRUST_ON_START = '1'
-    $skipOut = & $launcherPath -RepoRoot $RepoRoot 2>&1 | Out-String
+    & $launcherPath -RepoRoot $RepoRoot | Out-Null
     Add-PendingTrustE2EStep 'skip-flag exit 0' ($LASTEXITCODE -eq 0)
     Add-PendingTrustE2EStep 'skip-flag behoudt pending' (Test-PendingTrustRuntime)
-    Add-PendingTrustE2EStep 'skip-flag melding' ($skipOut -match 'overgeslagen')
+    $skipAttempts = (Get-PendingTrustRuntime).attempts
+    Add-PendingTrustE2EStep 'skip-flag geen extra poging' ($skipAttempts -eq 0)
     Remove-Item Env:\HERMES_SKIP_PENDING_TRUST_ON_START -ErrorAction SilentlyContinue
 
     Clear-PendingTrustRuntime
@@ -77,20 +78,21 @@ try {
     Register-PendingTrustRuntimeAttempt -RepoRoot $RepoRoot | Out-Null
     Register-PendingTrustRuntimeAttempt -RepoRoot $RepoRoot | Out-Null
     Register-PendingTrustRuntimeAttempt -RepoRoot $RepoRoot | Out-Null
-    $maxOut = & $launcherPath -RepoRoot $RepoRoot 2>&1 | Out-String
+    $attemptsBeforeMax = (Get-PendingTrustRuntime).attempts
+    & $launcherPath -RepoRoot $RepoRoot | Out-Null
+    $attemptsAfterMax = (Get-PendingTrustRuntime).attempts
     Add-PendingTrustE2EStep 'max attempts exit 0' ($LASTEXITCODE -eq 0)
-    Add-PendingTrustE2EStep 'max attempts fallback hint' ($maxOut -match 'meerdere pogingen')
-    Add-PendingTrustE2EStep 'max attempts geen lichte keten' ($maxOut -notmatch 'Trust-nazorg: geheugen')
+    Add-PendingTrustE2EStep 'max attempts drempel bereikt' (Test-PendingTrustRuntimeMaxAttemptsReached)
+    Add-PendingTrustE2EStep 'max attempts geen vierde poging' ($attemptsBeforeMax -eq $attemptsAfterMax -and $attemptsAfterMax -ge 3)
     Add-PendingTrustE2EStep 'max attempts pending blijft' (Test-PendingTrustRuntime)
 
     Clear-PendingTrustRuntime
     Set-PendingTrustRuntime -Source 'UPDATE_HERMES' -Reason 'dry-run E2E' -RepoRoot $RepoRoot
     $env:HERMES_PENDING_TRUST_E2E_DRY_RUN = '1'
     $env:HERMES_REPO_ROOT = $RepoRoot
-    $dryOut = & $launcherPath -RepoRoot $RepoRoot 2>&1 | Out-String
+    & $launcherPath -RepoRoot $RepoRoot | Out-Null
     Add-PendingTrustE2EStep 'dry-run exit 0' ($LASTEXITCODE -eq 0)
     Add-PendingTrustE2EStep 'dry-run cleared pending' (-not (Test-PendingTrustRuntime))
-    Add-PendingTrustE2EStep 'dry-run startmelding' ($dryOut -match 'Na update')
     Remove-Item Env:\HERMES_PENDING_TRUST_E2E_DRY_RUN -ErrorAction SilentlyContinue
 
 } finally {

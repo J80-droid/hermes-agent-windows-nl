@@ -1,4 +1,5 @@
 # Start-hook: lichte trust-nazorg als pending_trust_runtime.json bestaat (na mislukte UPDATE).
+# Env: HERMES_SKIP_PENDING_TRUST_ON_START=1 (overslaan); HERMES_PENDING_TRUST_E2E_DRY_RUN=1 (alleen E2E, geen memory-sync).
 
 param(
 

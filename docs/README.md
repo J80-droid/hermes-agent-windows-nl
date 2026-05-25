@@ -8,6 +8,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 |--------|----------|
 | Begrijpen: index vs. chat (twee fasen) | [RAG_TWEE_FASEN.md](RAG_TWEE_FASEN.md) |
 | Trust & Forensic (SOUL, memory, J.) | [TRUST_FORENSIC_PROTOCOL.md](TRUST_FORENSIC_PROTOCOL.md) — dagelijks: `windows/SYNC_TRUST_RUNTIME.bat` |
+| Na update: trust mislukt → start Hermes (pending nazorg) | [HERMES_START.md](HERMES_START.md) § *Na update* — stamp `pending_trust_runtime.json`; E2E: `windows/audits/RUN_PENDING_TRUST_START_E2E.bat` |
 | Memory L1–L4 (vault, geen L3) | [MEMORY_ARCHITECTURE.md](MEMORY_ARCHITECTURE.md) — E2E **18/18**: `RUN_MEMORY_ARCHITECTURE_E2E.bat` · productie: `RUN_MEMORY_PRODUCTION_GATE.bat` |
 | Obsidian vault openen (L4) | `windows/OPEN_OBSIDIAN_VAULT.bat` — taakbalk: `Hermes - Obsidian vault - naar taakbalk slepen.lnk` |
 | TUI statusbalk-kosten (rich: turn/sessie, breakdown, tools) | `windows/audits/RUN_STATUS_BAR_COST_E2E.bat` · `-ApplyDisplayFix` · `RUN_AUDITS.bat -IncludeStatusBarCostE2E` — rapport `windows/audits/STATUS_BAR_COST_E2E_REPORT_2026-05-23.md` |

@@ -10,6 +10,7 @@ param(
     [switch]$IncludeToolsetDomainE2E,
     [switch]$IncludeProvisionDomainE2E,
     [switch]$IncludeSoulDeployStartE2E,
+    [switch]$IncludePendingTrustStartE2E,
     [switch]$IncludeIdeMaintenanceE2E,
     [switch]$IncludeMemoryArchitectureE2E,
     [switch]$IncludeMemoryProductionGate,
@@ -232,6 +233,14 @@ if ($IncludeSoulDeployStartE2E -or $IncludeAllE2E) {
     $soulStartE2e = Join-Path $scriptRoot 'RUN_SOUL_DEPLOY_START_E2E.ps1'
     Invoke-Step 'soul-deploy-start-e2e' {
         & $soulStartE2e -RepoRoot $repoRoot
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludePendingTrustStartE2E -or $IncludeAllE2E) {
+    $pendingTrustE2e = Join-Path $scriptRoot 'RUN_PENDING_TRUST_START_E2E.ps1'
+    Invoke-Step 'pending-trust-start-e2e' {
+        & $pendingTrustE2e -RepoRoot $repoRoot
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }
