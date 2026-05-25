@@ -23,10 +23,11 @@ Override conda: `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV`.
 
 1. `windows\SETUP_HERMES.bat` (bestanden + wizard + RAG-deps)
 2. `windows\REPAIR_PYTHON.bat` (conda + IDE)
-3. `windows\scripts\update_knowledge.bat` (ingest)
-4. Rooktest: `scripts/rag_pipeline/ACTIVATION.md` (A+B+C)
-5. Gate: `windows\audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`
-6. Regressie (review-fixes): `windows\audits\RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.bat` (8/8)
+3. `windows\APPLY_WORKSPACE_IDE_SETTINGS.bat` (parent `Hermes_agent_WS\.vscode` — PSES uit; zie `docs/WORKSPACE_IDE_SETUP.md`)
+4. `windows\scripts\update_knowledge.bat` (ingest)
+5. Rooktest: `scripts/rag_pipeline/ACTIVATION.md` (A+B+C)
+6. Gate: `windows\audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`
+7. Regressie (review-fixes): `windows\audits\RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.bat` (8/8)
 
 ## Dagelijks
 
@@ -49,6 +50,7 @@ Override conda: `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV`.
 | `(venv)` in prompt | `REPAIR_PYTHON.bat` — niet `hermes-env` |
 | `import lancedb` faalt | `install_rag_extras.ps1` |
 | IDE verkeerde interpreter | `REPAIR_PYTHON.bat` of `sync_hermes_ide_python.ps1` |
+| Rode PSES-fouten in `.ps1` (runtime OK) | `APPLY_WORKSPACE_IDE_SETTINGS.bat` + Reload Window + Restart Session — `docs/WORKSPACE_IDE_SETUP.md` |
 | Dubbele RAG-install | Verwijder `%LOCALAPPDATA%\Hermes\rag-deps.json` of wacht op pyproject-wijziging; stamp: `%LOCALAPPDATA%\hermes\launch_bootstrap.stamp` |
 | RAG-sync mislukt bij start | Stamp niet bijgewerkt — retry bij volgende start; log in bootstrap |
 | REPAIR hangt op Read-Host | Gebruik `-NonInteractive` of `HERMES_NONINTERACTIVE=1` (automatisch in CI/audit) |

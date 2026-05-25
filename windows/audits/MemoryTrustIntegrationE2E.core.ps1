@@ -58,12 +58,16 @@ function Invoke-MemoryTrustIntegrationE2ECore {
         'windows/tests/TrustRuntimePending.Unit.Tests.ps1',
         'windows/tests/Invoke-MemoryTrustPostSync.Unit.Tests.ps1',
         'windows/audits/MemoryTrustIntegrationE2E.core.ps1',
-        'windows/audits/RUN_MEMORY_TRUST_INTEGRATION_E2E.ps1'
+        'windows/audits/RUN_MEMORY_TRUST_INTEGRATION_E2E.ps1',
+        'docs/templates/Hermes_agent_WS.vscode.settings.json',
+        'windows/scripts/Apply-HermesWorkspaceIdeSettings.ps1',
+        'windows/APPLY_WORKSPACE_IDE_SETTINGS.bat',
+        'docs/WORKSPACE_IDE_SETUP.md'
     )
     $missing = @($artifacts | Where-Object {
         -not (Test-Path -LiteralPath (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $_))
     })
-    Add-MemoryTrustIntegrationStep '1/8 repo-artefacten' ($missing.Count -eq 0) $(if ($missing.Count) { $missing -join ', ' } else { "$($artifacts.Count) bestanden" })
+    Add-MemoryTrustIntegrationStep '1/10 repo-artefacten' ($missing.Count -eq 0) $(if ($missing.Count) { $missing -join ', ' } else { "$($artifacts.Count) bestanden" })
 
     $wsSettings = Join-HermesRepoPath -RepoRoot (Split-Path -Parent $RepoRoot) -RelativePath '.vscode/settings.json'
     if (-not (Test-Path -LiteralPath $wsSettings)) {
@@ -75,7 +79,11 @@ function Invoke-MemoryTrustIntegrationE2ECore {
         $settingsOk = ($settingsText -match 'powershell\.scriptAnalysis\.enable"\s*:\s*false') -and
             ($settingsText -match 'powershell\.project\.enable"\s*:\s*false')
     }
-    Add-MemoryTrustIntegrationStep '2/8 workspace PSES analyse uit' $settingsOk $wsSettings
+    $templatePath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'docs/templates/Hermes_agent_WS.vscode.settings.json'
+    $templateOk = Test-Path -LiteralPath $templatePath
+    Add-MemoryTrustIntegrationStep '2/10 workspace template in repo' $templateOk $templatePath
+
+    Add-MemoryTrustIntegrationStep '3/10 workspace PSES analyse uit' $settingsOk $wsSettings
 
     $postSyncPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/Invoke-MemoryTrustPostSync.ps1'
     $postSyncText = Read-HermesRepoText -Path $postSyncPath
@@ -83,14 +91,14 @@ function Invoke-MemoryTrustIntegrationE2ECore {
         ($postSyncText -match 'institutional_new_chat_required\.json') -and
         ($postSyncText -match 'HERMES_SKIP_RUNTIME_IDENTITY_SCRUB') -and
         ($postSyncText -notmatch 'function Write-MemoryTrustNewChatReminder')
-    Add-MemoryTrustIntegrationStep '3/8 Invoke-MemoryTrustPostSync wiring' $postSyncWiring
+    Add-MemoryTrustIntegrationStep '4/10 Invoke-MemoryTrustPostSync wiring' $postSyncWiring
 
     $trustPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/TrustRuntimePending.psm1'
     $trustText = Read-HermesRepoText -Path $trustPath
     $trustWiring = ($trustText -match 'function Register-PendingTrustRuntimeRequired') -and
         ($trustText -match 'function Clear-PendingTrustRuntime') -and
         ($trustText -match 'function Test-PendingTrustRuntimeMaxAttemptsReached')
-    Add-MemoryTrustIntegrationStep '4/8 TrustRuntimePending API' $trustWiring
+    Add-MemoryTrustIntegrationStep '5/10 TrustRuntimePending API' $trustWiring
 
     $isoParent = Join-Path $env:TEMP ('mem_trust_int_e2e_' + [Guid]::NewGuid().ToString('n'))
     New-Item -ItemType Directory -Path $isoParent -Force | Out-Null
@@ -134,7 +142,7 @@ function Invoke-MemoryTrustIntegrationE2ECore {
             Remove-Item -LiteralPath $isoParent -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
-    Add-MemoryTrustIntegrationStep '5/8 post-sync geïsoleerd (mock runtime)' ($postSyncOk -and $noticeOk)
+    Add-MemoryTrustIntegrationStep '6/10 post-sync geïsoleerd (mock runtime)' ($postSyncOk -and $noticeOk)
 
     $pendingOk = $false
     $isoTrust = Join-Path $env:TEMP ('pending_trust_int_' + [Guid]::NewGuid().ToString('n'))
@@ -163,7 +171,7 @@ function Invoke-MemoryTrustIntegrationE2ECore {
         }
         Remove-Module TrustRuntimePending -ErrorAction SilentlyContinue
     }
-    Add-MemoryTrustIntegrationStep '6/8 pending trust stamp (geïsoleerd)' $pendingOk
+    Add-MemoryTrustIntegrationStep '7/10 pending trust stamp (geïsoleerd)' $pendingOk
 
     $tokenizerPs1 = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/tests/Test-PsesTokenizer.ps1'
     $prevEap = $ErrorActionPreference
@@ -171,7 +179,7 @@ function Invoke-MemoryTrustIntegrationE2ECore {
     & $tokenizerPs1 | Out-Null
     $astOk = ($LASTEXITCODE -eq 0)
     $ErrorActionPreference = $prevEap
-    Add-MemoryTrustIntegrationStep '7/8 Test-PsesTokenizer AST' $astOk
+    Add-MemoryTrustIntegrationStep '8/10 Test-PsesTokenizer AST' $astOk
 
     $unitScripts = @(
         'windows/tests/HermesShellCommon.Unit.Tests.ps1',
@@ -191,7 +199,16 @@ function Invoke-MemoryTrustIntegrationE2ECore {
             $unitFail += $rel
         }
     }
-    Add-MemoryTrustIntegrationStep '8/8 unit tests (4 runners)' ($unitFail.Count -eq 0) $(if ($unitFail.Count) { $unitFail -join ', ' } else { 'PASS' })
+    Add-MemoryTrustIntegrationStep '9/10 unit tests (4 runners)' ($unitFail.Count -eq 0) $(if ($unitFail.Count) { $unitFail -join ', ' } else { 'PASS' })
+
+    $applyPs1 = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/Apply-HermesWorkspaceIdeSettings.ps1'
+    $applyOk = $false
+    if (Test-Path -LiteralPath $applyPs1) {
+        $wsParent = (Resolve-Path (Join-Path $RepoRoot '..')).Path
+        & $applyPs1 -WorkspaceRoot $wsParent -Quiet
+        $applyOk = ($LASTEXITCODE -eq 0)
+    }
+    Add-MemoryTrustIntegrationStep '10/10 Apply-HermesWorkspaceIdeSettings' $applyOk
 
     return $script:CoreFailures
 }

@@ -1,0 +1,31 @@
+{
+  "files.associations": {
+    "*.ps1": "powershell",
+    "*.psm1": "powershell",
+    "*.psd1": "powershell",
+    "**/rag_ingest_run.log": "log"
+  },
+  "[log]": {
+    "files.encoding": "utf8"
+  },
+  "files.autoGuessEncoding": false,
+  "powershell.scriptAnalysis.enable": false,
+  "powershell.scriptAnalysis.settingsPath": "${workspaceFolder}/hermes-agent/windows/PSScriptAnalyzerSettings.psd1",
+  "powershell.analyzeOnlyOpenDocuments": true,
+  "powershell.project.enable": false,
+  "powershell.scriptAnalysis.useScriptPath": true,
+  "powershell.scriptAnalysis.excludeRules": [
+    "PSUseDeclaredVarsMoreThanAssignments"
+  ],
+  "powershell.promptToUpdatePowerShell": false,
+  "powershell.powerShellDefaultVersion": "Windows PowerShell (x64)",
+  "markdownlint.configFile": "${workspaceFolder}/.markdownlint.json",
+  "markdownlint.ignore": [
+    "**/AppData/Local/hermes/**",
+    "**/.hermes/**"
+  ],
+  "files.watcherExclude": {
+    "**/venv/**": true,
+    "**/.git/objects/**": true
+  }
+}

@@ -10,7 +10,7 @@ windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat
 
 **Pad-conventie (verplicht voor nieuwe audits):** dot-source `HermesShellCommon.ps1` en gebruik altijd `Join-HermesRepoPath` + `Read-HermesRepoText` voor repo-paden (forward slashes). Geen `$rel -replace '/', '\'` of `Join-Path $repoRoot 'mixed\paths'`. Navigatie naar repo-root vanuit een audit-runner: `Join-Path $PSScriptRoot '..\..'`. Zie `docs/WINDOWS_PLATFORM_HARDENING.md` en `HermesShellCommon.ps1`. `check-windows-footguns.py` flagt legacy PS1-padpatronen onder `windows/`.
 
-Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Developer: Reload Window`.
+Parent workspace (buiten repo): `windows\APPLY_WORKSPACE_IDE_SETTINGS.bat` — zie `docs/WORKSPACE_IDE_SETUP.md`. Daarna in Cursor: Command Palette → `PowerShell: Restart Session` en `Developer: Reload Window`.
 
 **PSES-valkuil:** de IDE-parser (niet de runtime) faalt soms op:
 - paden met extensie in single quotes (`'README.md'`) → gebruik `"README.md"` of `'README' + '.md'`
@@ -49,7 +49,8 @@ Runtime/AST: vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
 | **`RUN_AUDITS.bat -IncludeAllE2E`** | Institutioneel + legal + profielwissel + toolset + SOUL deploy-start + memory + statusbalk + **Hermes split-home** + … |
 | **`RUN_SOUL_DEPLOY_START_E2E.bat`** | Stamp/startketen: launch_hermes, POST_GIT_PULL, upstream SkipSoul, anatomy subset |
 | **`RUN_MEMORY_IDENTITY_REPAIR_E2E.bat`** | Runtime identity scrub (pre-audit), post-sync integratie, skip-flag, unit + pytest (**PASS**) |
-| **`RUN_MEMORY_TRUST_INTEGRATION_E2E.bat`** | Geïntegreerde poort: post-sync notice, pending trust, PSES AST, 4 unit runners (**8 stappen**) |
+| **`RUN_MEMORY_TRUST_INTEGRATION_E2E.bat`** | Geïntegreerde poort: post-sync, pending trust, workspace template/apply, PSES AST, unit tests (**10 stappen**) |
+| **`APPLY_WORKSPACE_IDE_SETTINGS.bat`** | Parent `Hermes_agent_WS\.vscode\settings.json` vanuit template (PSES uit); zie `docs/WORKSPACE_IDE_SETUP.md` |
 | **`RUN_PENDING_TRUST_START_E2E.bat`** | Pending trust bij start: stamp, post-merge, launcher (skip/max/dry-run), pytest wiring |
 | **`RUN_AUDITS.bat -IncludePendingTrustStartE2E`** | Zelfde pending-trust E2E in gecombineerde audit |
 | **`RUN_AUDITS.bat -IncludeSoulDeployStartE2E`** | Alleen SOUL deploy-start E2E |
