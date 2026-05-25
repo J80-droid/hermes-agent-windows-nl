@@ -107,7 +107,7 @@ function Invoke-PendingTrustStartE2ECore {
     $runtimeLine = 'Runtime: ' + (Join-Path $env:LOCALAPPDATA 'hermes')
     $leakLine = 'Note from Jamel about strategy.'
     Set-Content -LiteralPath $idMemPath -Value @($runtimeLine, $leakLine) -Encoding UTF8
-    $memAuditCommon = Join-Path $RepoRoot 'windows\scripts\MemoryAuditCommon.ps1'
+    $memAuditCommon = Join-Path $RepoRoot 'windows/scripts/MemoryAuditCommon.ps1'
     . $memAuditCommon
     $leaksPre = Get-MemoryFileIdentityLeakLines -FilePath $idMemPath
     Add-PendingTrustE2EStep 'identity mock has leak' ($leaksPre.Count -ge 1) ('count=' + $leaksPre.Count)
@@ -154,8 +154,8 @@ function Invoke-PendingTrustStartE2ECore {
     Remove-Item -Path env:HERMES_PENDING_TRUST_E2E_DRY_RUN -ErrorAction SilentlyContinue
 }
 
-$modulePath = Join-Path $RepoRoot 'windows\scripts\TrustRuntimePending.psm1'
-$launcherPath = Join-Path $RepoRoot 'windows\scripts\launch_pending_trust_runtime.ps1'
+$modulePath = Join-Path $RepoRoot 'windows/scripts/TrustRuntimePending.psm1'
+$launcherPath = Join-Path $RepoRoot 'windows/scripts/launch_pending_trust_runtime.ps1'
 Import-Module $modulePath -Force
 
 $prevLocalAppData = $env:LOCALAPPDATA

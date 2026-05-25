@@ -58,13 +58,13 @@ Write-HermesSection '=== SOUL Deploy Start E2E ==='
 
 Write-HermesSection '--- 1/8 repo-keten ---'
 $required = @(
-    'windows\scripts\launch_soul_anatomy_deploy.ps1',
-    'windows\scripts\launch_institutional_runtime.ps1',
-    'windows\scripts\sync_all_domain_souls_from_templates.ps1',
-    'windows\scripts\SyncSoulSnippet.psm1',
-    'windows\POST_GIT_PULL.bat',
-    'windows\APPLY_SOUL_ANATOMY_RUNTIME.bat',
-    'windows\launch_hermes.bat',
+    'windows/scripts/launch_soul_anatomy_deploy.ps1',
+    'windows/scripts/launch_institutional_runtime.ps1',
+    'windows/scripts/sync_all_domain_souls_from_templates.ps1',
+    'windows/scripts/SyncSoulSnippet.psm1',
+    'windows/POST_GIT_PULL.bat',
+    'windows/APPLY_SOUL_ANATOMY_RUNTIME.bat',
+    'windows/launch_hermes.bat',
     'docs\SOUL_ANATOMY_SPEC.md'
 )
 foreach ($rel in $required) {
@@ -81,14 +81,14 @@ if (Test-Path -LiteralPath $analystTpl) {
     Step-Ok 'geen SOUL_ANALYST_DOMAIN.md'
 }
 
-Assert-FileContains 'windows\launch_hermes.bat' @(
+Assert-FileContains 'windows/launch_hermes.bat' @(
     'launch_soul_anatomy_deploy.ps1',
     'launch_institutional_runtime.ps1',
     'launch_pending_trust_runtime.ps1',
     'HERMES_SKIP_SOUL_DEPLOY_ON_START',
     'HERMES_SKIP_PENDING_TRUST_ON_START'
 )
-$launchBat = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows\launch_hermes.bat')
+$launchBat = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/launch_hermes.bat')
 $soulIdx = $launchBat.IndexOf('launch_soul_anatomy_deploy.ps1')
 $instIdx = $launchBat.IndexOf('launch_institutional_runtime.ps1')
 $pendingIdx = $launchBat.IndexOf('launch_pending_trust_runtime.ps1')
@@ -103,12 +103,12 @@ if ($pendingIdx -lt 0 -or $instIdx -lt 0 -or $pendingIdx -le $instIdx) {
     Step-Ok 'launch_hermes.bat volgorde pending trust na institutional'
 }
 
-Assert-FileContains 'windows\POST_GIT_PULL.bat' @('launch_soul_anatomy_deploy.ps1', '-Force')
-Assert-FileContains 'windows\APPLY_SOUL_ANATOMY_RUNTIME.bat' @('-UpdateDeployStamp')
-Assert-FileContains 'windows\scripts\sync_all_domain_souls_from_templates.ps1' @('UpdateDeployStamp', 'Set-SoulAnatomyDeployStamp')
+Assert-FileContains 'windows/POST_GIT_PULL.bat' @('launch_soul_anatomy_deploy.ps1', '-Force')
+Assert-FileContains 'windows/APPLY_SOUL_ANATOMY_RUNTIME.bat' @('-UpdateDeployStamp')
+Assert-FileContains 'windows/scripts/sync_all_domain_souls_from_templates.ps1' @('UpdateDeployStamp', 'Set-SoulAnatomyDeployStamp')
 
-$postMerge = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows\scripts\Invoke-UpstreamPostMerge.ps1'
-$upstream = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows\upstream_sync.ps1'
+$postMerge = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/Invoke-UpstreamPostMerge.ps1'
+$upstream = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/upstream_sync.ps1'
 if (-not (Test-Path -LiteralPath $postMerge)) {
     Step-Fail 'Invoke-UpstreamPostMerge.ps1' 'ontbreekt'
 } else {
@@ -134,7 +134,7 @@ if (Test-Path -LiteralPath $upstream) {
 }
 
 Write-HermesSection '--- 2/8 stamp/watch (psm1) ---'
-Import-Module (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows\scripts\SyncSoulSnippet.psm1') -Force
+Import-Module (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/SyncSoulSnippet.psm1') -Force
 $profiles = Get-DomainSoulProfileNames
 if ($profiles.Count -ne 13) {
     Step-Fail 'Get-DomainSoulProfileNames' "verwacht 13, got $($profiles.Count)"
@@ -185,7 +185,7 @@ try {
 }
 
 Write-HermesSection '--- 4/8 launch_soul skip-flag ---'
-$launchSoul = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows\scripts\launch_soul_anatomy_deploy.ps1'
+$launchSoul = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/launch_soul_anatomy_deploy.ps1'
 $prevSkip = $env:HERMES_SKIP_SOUL_DEPLOY_ON_START
 $env:HERMES_SKIP_SOUL_DEPLOY_ON_START = '1'
 try {
@@ -224,7 +224,7 @@ if (Test-Path -LiteralPath $prodStamp) {
 }
 
 Write-HermesSection '--- 6/8 institutional scheiding ---'
-$instPs1 = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows\scripts\launch_institutional_runtime.ps1')
+$instPs1 = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/launch_institutional_runtime.ps1')
 if ($instPs1 -match 'SOUL_SHARED') {
     Step-Fail 'launch_institutional_runtime.ps1' 'SOUL_SHARED hoort niet in institutional watch'
 } elseif ($instPs1 -notmatch 'Test-SoulAnatomyDeployJustRan') {
@@ -234,7 +234,7 @@ if ($instPs1 -match 'SOUL_SHARED') {
 }
 
 Write-HermesSection '--- 7/8 sync_all -UpdateDeployStamp ---'
-$syncText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows\scripts\sync_all_domain_souls_from_templates.ps1')
+$syncText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/sync_all_domain_souls_from_templates.ps1')
 $syncHasFailedProfiles = $syncText -match 'failedProfiles'
 $syncHasNativeExitTest = $syncText -match 'Test-NativeCommandFailed'
 if (-not $syncHasFailedProfiles) {

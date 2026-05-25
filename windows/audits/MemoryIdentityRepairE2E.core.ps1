@@ -5,8 +5,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-. (Join-Path $RepoRoot 'windows\HermesShellCommon.ps1')
-. (Join-Path $RepoRoot 'windows\scripts\MemoryAuditCommon.ps1')
+. (Join-Path $RepoRoot 'windows/HermesShellCommon.ps1')
+. (Join-Path $RepoRoot 'windows/scripts/MemoryAuditCommon.ps1')
 
 $script:CoreFailures = 0
 
@@ -44,22 +44,22 @@ function Invoke-MemoryIdentityRepairE2ECore {
 
 Write-HermesSection '--- MemoryIdentityRepair core: repo keten ---'
 $required = @(
-    'windows\scripts\MemoryAuditCommon.ps1',
-    'windows\scripts\repair_runtime_identity.ps1',
-    'windows\scripts\Invoke-MemoryTrustPostSync.ps1',
-    'windows\scripts\audit_profile_memories.ps1',
-    'windows\SYNC_TRUST_PROTOCOL.bat'
+    'windows/scripts/MemoryAuditCommon.ps1',
+    'windows/scripts/repair_runtime_identity.ps1',
+    'windows/scripts/Invoke-MemoryTrustPostSync.ps1',
+    'windows/scripts/audit_profile_memories.ps1',
+    'windows/SYNC_TRUST_PROTOCOL.bat'
 )
 foreach ($rel in $required) {
     $full = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $rel
     Add-IdentityE2EStep $rel (Test-Path -LiteralPath $full)
 }
 
-$postSyncText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows\scripts\Invoke-MemoryTrustPostSync.ps1')
+$postSyncText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/Invoke-MemoryTrustPostSync.ps1')
 Add-IdentityE2EStep 'post-sync pre-audit scrub' ($postSyncText -match 'Repair-HermesRuntimeIdentity')
 Add-IdentityE2EStep 'post-sync audit HermesRoot' ($postSyncText -match 'HermesRuntimeRoot')
 
-$protocolText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows\SYNC_TRUST_PROTOCOL.bat')
+$protocolText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/SYNC_TRUST_PROTOCOL.bat')
 Add-IdentityE2EStep 'protocol pre-runtime scrub' ($protocolText -match 'repair_runtime_identity')
 
 Write-HermesSection '--- MemoryIdentityRepair core: line repair ---'
@@ -100,7 +100,7 @@ try {
     $env:HERMES_SKIP_PAUSE = '1'
     Remove-Item Env:\HERMES_SKIP_RUNTIME_IDENTITY_SCRUB -ErrorAction SilentlyContinue
     try {
-        $postPs1 = Join-Path $RepoRoot 'windows\scripts\Invoke-MemoryTrustPostSync.ps1'
+        $postPs1 = Join-Path $RepoRoot 'windows/scripts/Invoke-MemoryTrustPostSync.ps1'
         & $postPs1 -RepoRoot $RepoRoot -HermesRuntimeRoot $mockRoot2 -SkipProductionGate -Quiet
         $postRc = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
         Add-IdentityE2EStep 'post-sync PASS na scrub' ($postRc -eq 0)
