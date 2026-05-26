@@ -1,0 +1,41 @@
+# Fork-only: institutional repo-hygiene + legal skills E2E (PowerShell, geen live HTTP).
+name: Fork Windows Institutional
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: fork-windows-institutional-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  hardening:
+    if: github.repository == 'J80-droid/hermes-agent-windows-nl'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install package (dev)
+        run: python -m pip install --upgrade pip && pip install -e ".[dev]"
+
+      - name: Institutional hardening E2E (H1–H14, incl. legal pytest)
+        env:
+          HERMES_SKIP_PAUSE_AFTER_UPDATE: '1'
+          OPENROUTER_API_KEY: ''
+          OPENAI_API_KEY: ''
+          NOUS_API_KEY: ''
+        run: audits\RUN_INSTITUTIONAL_HARDENING_E2E.bat

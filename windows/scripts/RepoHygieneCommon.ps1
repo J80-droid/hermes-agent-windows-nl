@@ -2,7 +2,7 @@
 
 function Get-HermesRepoRootAllowlist {
     return @(
-        '.gitignore', '.cursorrules', '.env', 'pyproject.toml', 'package.json',
+        '.gitignore', '.cursorrules', '.env', '.pre-commit-config.yaml', 'pyproject.toml', 'package.json',
         'uv.lock', 'README.md', 'README-FORK.md', 'README.zh-CN.md',
         'AGENTS.md', 'cli.py', 'run_agent.py', 'model_tools.py', 'toolsets.py',
         'hermes_state.py', 'hermes_constants.py', 'hermes_logging.py',

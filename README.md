@@ -187,6 +187,8 @@ Deze checkout is een **Windows NL-fork** met extra institutioneel onderhoud (RAG
 | E2E poort (repo-hygiene) | `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14) |
 | Productie-poort (gecombineerd) | `windows/audits/RUN_INSTITUTIONAL_PRODUCTION_GATE.bat` (Python + platform + hardening 14/14) |
 | Pytest repo-hygiene (Windows) | `pytest tests/windows/test_repo_hygiene_institutional_e2e.py -m e2e` |
+| CI (fork, Windows) | `.github/workflows/fork-windows-institutional.yml` |
+| RUN_AUDITS (snelle poort) | `windows/audits/RUN_AUDITS.bat -IncludeInstitutionalHardeningE2E` |
 
 Bij rommel in de repo-root vóór update: `windows\UPDATE_HERMES.bat -QuickFix` (alleen opruimen; geen upstream). Optioneel: `set HERMES_SKIP_PAUSE_AFTER_UPDATE=1`.
 

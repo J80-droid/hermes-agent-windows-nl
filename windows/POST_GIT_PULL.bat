@@ -5,6 +5,8 @@ chcp 65001 >nul
 
 set "HERMES_CODEBASE_SMOKE_MODE=none"
 set "HERMES_AUTO_REPAIR_MODEL=0"
+set "HERMES_POST_PULL_QUICKFIX=0"
+set "HERMES_WIN=%~dp0"
 :parse_post_pull_args
 if /I "%~1"=="-AutoRepairModelProvider" (
   set "HERMES_AUTO_REPAIR_MODEL=1"
@@ -18,6 +20,11 @@ if /I "%~1"=="-IncludeCodebaseSmokeE2E" (
 )
 if /I "%~1"=="-IncludeCodebaseSmoke" (
   if /I not "!HERMES_CODEBASE_SMOKE_MODE!"=="e2e" set "HERMES_CODEBASE_SMOKE_MODE=smoke"
+  shift
+  goto parse_post_pull_args
+)
+if /I "%~1"=="-QuickFix" (
+  set "HERMES_POST_PULL_QUICKFIX=1"
   shift
   goto parse_post_pull_args
 )
@@ -41,12 +48,25 @@ if /I "!HERMES_CODEBASE_SMOKE_MODE!"=="e2e" (
 if "!HERMES_AUTO_REPAIR_MODEL!"=="1" (
   echo [INFO] Optie: -AutoRepairModelProvider ^(herstelt auth/config split-brain bij drift^)
 )
+echo [INFO] Optioneel: -QuickFix ^(verplaatst ongetrackte root-bestanden naar output/research/^)
 echo.
 
 set "POST_PULL_ERR=0"
 
+if "!HERMES_POST_PULL_QUICKFIX!"=="1" (
+  echo [INFO] QuickFix repo-hygiene ^(voor verify^)...
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%HERMES_WIN%scripts\quick_fix_repo_hygiene.ps1" -RepoRoot "%CD%" -NonInteractive
+  if errorlevel 1 (
+    echo [ERROR] QuickFix mislukt — zie docs\WORKSPACE_CONVENTIONS.md
+    set "POST_PULL_ERR=1"
+  ) else (
+    echo [OK] QuickFix klaar.
+  )
+  echo.
+)
+
 echo [INFO] Windows script-keten verify ^(geen pause^)...
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0verify_windows_script_chain.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%HERMES_WIN%verify_windows_script_chain.ps1"
 if errorlevel 1 (
   echo [ERROR] verify_windows_script_chain.ps1 gefaald
   set "POST_PULL_ERR=1"

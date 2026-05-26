@@ -57,8 +57,23 @@ Drie skills onder `skills/legal/`, geregistreerd in `docs/domain_toolsets.yaml` 
 | `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` | Geïntegreerde poort QuickFix + pytest + preflight-log (14 scenario's) |
 | `pytest tests/windows/test_repo_hygiene_institutional_e2e.py` | Zelfde harnesses als CI/pytest (Windows); legal unit: `tests/skills/test_*_legal*.py` |
 
-**Testpiramide (institutioneel):** Python-skills = pytest unit (gemockt). PowerShell guard/QuickFix = subprocess in `audits/*E2E.harness.py`, aangeroepen via `.bat` én `tests/windows/test_repo_hygiene_institutional_e2e.py`. Geen Pester (tweede framework = drift). Renderer-prompt (`docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md`) = handmatige rooktest, geen unit test.
 | `audits/RUN_LEGAL_SKILLS_ROOKTEST.bat` | Snelle pytest-rooktest legal skills |
+| `windows/audits/RUN_AUDITS.bat -IncludeInstitutionalHardeningE2E` | Zelfde poort via gecombineerde audit |
+| `windows/audits/RUN_AUDITS.bat -IncludeRepoHygieneE2E` | Alleen repo-hygiene 9/9 |
+| `windows/audits/RUN_AUDITS.bat -IncludeUpdateHermesIntegrationE2E` | UPDATE/QuickFix wiring 12/12 |
+
+**Testpiramide (institutioneel):** Python-skills = pytest unit (gemockt). PowerShell guard/QuickFix = subprocess in `audits/*E2E.harness.py`, aangeroepen via `.bat`, `RUN_AUDITS`-vlaggen en `tests/windows/test_repo_hygiene_institutional_e2e.py` (`pytest -m e2e` op Windows). Geen Pester. Renderer-prompt = handmatige rooktest.
+
+**CI (fork):** `.github/workflows/fork-windows-institutional.yml` op `windows-latest` (geen paths-ignore op docs).
+
+**Pre-commit (optioneel, lokaal):**
+
+```text
+pip install pre-commit
+pre-commit install
+```
+
+Hook `hermes-repo-hygiene-guard` roept `guard_git_clean.ps1` aan (warn-only, geen `-Strict`). Alternatief vóór commit: `powershell -File windows/scripts/health_check_repo.ps1`.
 
 ## Automatische controle
 

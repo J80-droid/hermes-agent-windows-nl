@@ -18,7 +18,8 @@ Instructions for AI coding assistants and developers working on the hermes-agent
 - Legal fork-skills (zoeken, parseren, web): `skills/legal/` + `tests/skills/test_*_skill.py` (101 pytest, gemockte HTTP).
 - Preflight guard: `windows/scripts/guard_git_clean.ps1` (via `UPDATE_HERMES.bat` / `upstream_sync.ps1`).
 - **QuickFix alleen:** `windows/UPDATE_HERMES.bat -QuickFix` (stopt na opruimen; `HERMES_WIN` voorkomt pad-bug na `shift`). Volledige update: zelfde `.bat` zonder `-QuickFix`.
-- **E2E / CI:** `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14); pytest `tests/windows/test_repo_hygiene_institutional_e2e.py -m e2e`; productie-poort `windows/audits/RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`.
+- **E2E / CI:** `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14); `windows/audits/RUN_AUDITS.bat -IncludeInstitutionalHardeningE2E` (of `-IncludeRepoHygieneE2E` / `-IncludeUpdateHermesIntegrationE2E`); pytest `tests/windows/test_repo_hygiene_institutional_e2e.py -m e2e`; CI `.github/workflows/fork-windows-institutional.yml`; productie-poort `windows/audits/RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`.
+- **Na pull:** `windows/POST_GIT_PULL.bat -QuickFix` (optioneel, vóór verify).
 
 ## Development Environment
 

@@ -46,7 +46,11 @@ Runtime/AST: vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
 | **`RUN_AUDITS.bat`** | Gecombineerd: `verify_hermes_home`, PSScriptAnalyzer (SKIP indien ontbreekt), `check-windows-footguns.py`, ruff (SKIP), pytest profiel-subset |
 | **`RUN_AUDITS.bat -IncludeProfileE2E`** | Bovenstaande + profielwissel E2E |
 | **`RUN_AUDITS.bat -IncludeInstitutionalE2E`** | Bovenstaande + landkaart/SOUL-backup/templates E2E |
-| **`RUN_AUDITS.bat -IncludeAllE2E`** | Institutioneel + legal + profielwissel + toolset + SOUL deploy-start + memory + statusbalk + **Hermes split-home** + … |
+| **`RUN_AUDITS.bat -IncludeRepoHygieneE2E`** | Repo-root guard/gitignore/skills (~10s): `audits\RUN_REPO_HYGIENE_E2E.bat` |
+| **`RUN_AUDITS.bat -IncludeInstitutionalHardeningE2E`** | Geïntegreerde poort H1–H14 (~20s): QuickFix, legal pytest, preflight-log |
+| **`RUN_AUDITS.bat -IncludeUpdateHermesIntegrationE2E`** | UPDATE/QuickFix wiring (~7s): `audits\RUN_UPDATE_HERMES_INTEGRATION_E2E.bat` (12/12) |
+| **`RUN_AUDITS.bat -IncludeInstitutionalProductionGate`** | Zware poort (~2+ min): Python + platform + hardening 14/14 + wiring |
+| **`RUN_AUDITS.bat -IncludeAllE2E`** | Institutioneel + legal + profiel + toolset + SOUL + memory + statusbalk + split-home + **hardening 14/14** (niet `-IncludeInstitutionalProductionGate`) |
 | **`RUN_SOUL_DEPLOY_START_E2E.bat`** | Stamp/startketen: launch_hermes, POST_GIT_PULL, upstream SkipSoul, anatomy subset |
 | **`RUN_MEMORY_IDENTITY_REPAIR_E2E.bat`** | Runtime identity scrub (pre-audit), post-sync integratie, skip-flag, unit + pytest (**PASS**) |
 | **`RUN_MEMORY_TRUST_INTEGRATION_E2E.bat`** | Geïntegreerde poort: post-sync, pending trust, workspace template/apply, PSES AST, unit tests (**10 stappen**) |
@@ -327,6 +331,7 @@ windows\audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat
 | 3 | `RUN_PLATFORM_HARDENING_PRODUCTION_GATE` |
 | 4 | `..\audits\RUN_INSTITUTIONAL_HARDENING_E2E` (14/14 — repo-hygiene, QuickFix, legal pytest) |
 | 5 | `validate_windows_python_wiring.ps1` |
+| RUN_AUDITS | `-IncludeInstitutionalHardeningE2E` / `-IncludeRepoHygieneE2E` / `-IncludeUpdateHermesIntegrationE2E` (los van productie-poort) |
 | Optioneel | `-IncludeMemoryGate` → memory production gate |
 
 Pytest-equivalent (Windows): `pytest tests\windows\test_repo_hygiene_institutional_e2e.py -m e2e`

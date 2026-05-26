@@ -1,5 +1,7 @@
 # Hermes Windows fork — gecombineerde kwaliteitspoort (geen volledige upstream-kloon).
 # PSScriptAnalyzer: SKIP als module ontbreekt (geen PSGallery-hang). Streng: -RequirePSScriptAnalyzer
+# Repo-hygiene E2E (audits/): -IncludeRepoHygieneE2E, -IncludeInstitutionalHardeningE2E (+IncludeAllE2E),
+#   -IncludeUpdateHermesIntegrationE2E (apart). Productie-poort: -IncludeInstitutionalProductionGate (~2+ min).
 param(
     [switch]$RequirePSScriptAnalyzer,
     [switch]$IncludeProfileE2E,
@@ -23,6 +25,9 @@ param(
     [switch]$IncludeModelProviderHardeningE2E,
     [switch]$IncludePythonInstitutionalE2E,
     [switch]$IncludeInstitutionalProductionGate,
+    [switch]$IncludeRepoHygieneE2E,
+    [switch]$IncludeInstitutionalHardeningE2E,
+    [switch]$IncludeUpdateHermesIntegrationE2E,
     [switch]$IncludeCodebaseSmoke,
     [switch]$IncludeCodebaseSmokeE2E,
     [switch]$SkipPytest,
@@ -311,6 +316,30 @@ if ($IncludePythonInstitutionalE2E -or $IncludeAllE2E) {
     $pyInst = Join-Path $scriptRoot 'RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.ps1'
     Invoke-Step 'hermes-python-institutional-e2e' {
         & $pyInst -RepoRoot $repoRoot
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeRepoHygieneE2E) {
+    $repoHygieneBat = Join-Path $repoRoot 'audits\RUN_REPO_HYGIENE_E2E.bat'
+    Invoke-Step 'repo-hygiene-e2e' {
+        cmd /c "`"$repoHygieneBat`""
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeInstitutionalHardeningE2E -or $IncludeAllE2E) {
+    $instHardeningBat = Join-Path $repoRoot 'audits\RUN_INSTITUTIONAL_HARDENING_E2E.bat'
+    Invoke-Step 'institutional-hardening-e2e' {
+        cmd /c "`"$instHardeningBat`""
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeUpdateHermesIntegrationE2E) {
+    $updateIntBat = Join-Path $repoRoot 'audits\RUN_UPDATE_HERMES_INTEGRATION_E2E.bat'
+    Invoke-Step 'update-hermes-integration-e2e' {
+        cmd /c "`"$updateIntBat`""
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

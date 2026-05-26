@@ -109,7 +109,7 @@ windows\UPDATE_HERMES.bat -IncludeCodebaseSmoke
 windows\UPDATE_HERMES.bat -IncludeCodebaseSmokeE2E
 ```
 
-Na gewone `git pull`: `windows\POST_GIT_PULL.bat -IncludeCodebaseSmoke` (~32s) of `-IncludeCodebaseSmokeE2E` (~45s, E2E-poort). Runner: `windows\scripts\Invoke-PostSyncCodebaseSmoke.ps1`. Zie `docs/CODEBASE_AUDIT_EVIDENCE.md`.
+Na gewone `git pull`: `windows\POST_GIT_PULL.bat` (trust + SOUL). Optioneel rommel in root: `-QuickFix` vóór verify. Optioneel smoke: `-IncludeCodebaseSmoke` (~32s) of `-IncludeCodebaseSmokeE2E` (~45s). Runner: `windows\scripts\Invoke-PostSyncCodebaseSmoke.ps1`. Zie `docs/CODEBASE_AUDIT_EVIDENCE.md`.
 
 ### Merge mislukt (conflicten)? Gebruik `MERGE_UPSTREAM.bat`
 

@@ -1,0 +1,10 @@
+# Optioneel: pip install pre-commit && pre-commit install (Windows dev)
+# Guard zonder -Strict: waarschuwt bij rommel in repo-root, blokkeert niet.
+repos:
+  - repo: local
+    hooks:
+      - id: hermes-repo-hygiene-guard
+        name: Hermes repo-root hygiene (warn)
+        entry: powershell -NoProfile -ExecutionPolicy Bypass -File windows/scripts/guard_git_clean.ps1 -RepoRoot .
+        language: system
+        pass_filenames: false

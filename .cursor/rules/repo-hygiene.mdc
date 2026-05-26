@@ -24,6 +24,7 @@ alwaysApply: true
 3. **`_`-prefix in root** = tijdelijk, moet naar `output/`. Uitzondering: `_extract_*.py` en `_tmp_*.py` zijn verboden in root (`.gitignore` gepatched).
 4. **Nieuwe skills** volgen AGENTS.md hardline-regels: `SKILL.md` met frontmatter, `description` ≤ 60 chars, `platforms`-gating, modern section order.
 5. **Repository schoon houden** voor upstream-sync: `guard_git_clean.ps1` draait in `upstream_sync.ps1` preflight.
+6. **Vóór commit (optioneel):** `pre-commit install` (`.pre-commit-config.yaml`, warn-only) of `windows/scripts/health_check_repo.ps1`.
 
 ## Verwijzingen
 

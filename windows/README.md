@@ -77,6 +77,8 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 | QuickFix vóór update | `UPDATE_HERMES.bat -QuickFix` · `scripts\quick_fix_repo_hygiene.ps1` |
 | Repo health check | `scripts\health_check_repo.ps1` · `-Strict` voor CI |
 | Repo-hygiene E2E | `..\audits\RUN_REPO_HYGIENE_E2E.bat` (9/9) · integratie: `RUN_UPDATE_HERMES_INTEGRATION_E2E.bat` (12/12) |
+| RUN_AUDITS repo-hygiene | `audits\RUN_AUDITS.bat -IncludeInstitutionalHardeningE2E` · `-IncludeRepoHygieneE2E` · `-IncludeUpdateHermesIntegrationE2E` |
+| POST_GIT_PULL QuickFix | `POST_GIT_PULL.bat -QuickFix` (vóór verify) |
 | Legal skills pytest (101) | `pytest tests\skills\test_*_skill.py` · `..\audits\RUN_LEGAL_SKILLS_ROOKTEST.bat` |
 | Institutioneel hardening E2E | `..\audits\RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14) |
 | Gedeelde hygiene helpers | `scripts\RepoHygieneCommon.ps1` |

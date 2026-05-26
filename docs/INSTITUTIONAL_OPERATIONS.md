@@ -37,6 +37,7 @@ Override conda: `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV`.
 ## Na git pull
 
 - `windows\POST_GIT_PULL.bat` (verify + trust + SOUL)
+- Optioneel rommel in root: `windows\POST_GIT_PULL.bat -QuickFix`
 - Bij pyproject-wijziging: bootstrap installeert RAG-deps opnieuw
 
 ## Na upstream merge
