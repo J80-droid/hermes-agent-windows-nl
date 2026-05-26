@@ -83,6 +83,14 @@ docs/superpowers/*
 .hermes_windows_tinker_install_fail
 .hermeslocal/
 output/
+
+# Ad-hoc research workspace (lokaal)
+_research/
+_workspace/
+*_research/
+**/_extract_*.py
+**/_tmp_*.py
+
 tests/cli/test_cli_config_profile_root_merge.py
 hermes_launch.log
 hermes_runtime.log
