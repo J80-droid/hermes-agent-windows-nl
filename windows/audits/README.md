@@ -325,8 +325,11 @@ windows\audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat
 | 1 | `RUN_HERMES_PYTHON_INSTITUTIONAL_E2E` (8/8) |
 | 2 | `RUN_KNOWLEDGE_REPOSITORY_E2E` (8/8) |
 | 3 | `RUN_PLATFORM_HARDENING_PRODUCTION_GATE` |
-| 4 | `validate_windows_python_wiring.ps1` |
+| 4 | `..\audits\RUN_INSTITUTIONAL_HARDENING_E2E` (14/14 — repo-hygiene, QuickFix, legal pytest) |
+| 5 | `validate_windows_python_wiring.ps1` |
 | Optioneel | `-IncludeMemoryGate` → memory production gate |
+
+Pytest-equivalent (Windows): `pytest tests\windows\test_repo_hygiene_institutional_e2e.py -m e2e`
 
 Optioneel: `-SkipPytest` op onderliggende E2E's.
 

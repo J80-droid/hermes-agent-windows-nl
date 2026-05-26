@@ -15,8 +15,10 @@ Instructions for AI coding assistants and developers working on the hermes-agent
 
 - **Geen** nieuwe `.py`-scripts of data in de **repo-root** — gebruik `output/research/` (gitignored) of een skill onder `skills/<categorie>/<naam>/scripts/`.
 - Canonical layout en QuickFix: `docs/WORKSPACE_CONVENTIONS.md`.
-- Legal fork-skills (zoeken, parseren, web): `skills/legal/` + `tests/skills/test_*_skill.py`.
+- Legal fork-skills (zoeken, parseren, web): `skills/legal/` + `tests/skills/test_*_skill.py` (101 pytest, gemockte HTTP).
 - Preflight guard: `windows/scripts/guard_git_clean.ps1` (via `UPDATE_HERMES.bat` / `upstream_sync.ps1`).
+- **QuickFix alleen:** `windows/UPDATE_HERMES.bat -QuickFix` (stopt na opruimen; `HERMES_WIN` voorkomt pad-bug na `shift`). Volledige update: zelfde `.bat` zonder `-QuickFix`.
+- **E2E / CI:** `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14); pytest `tests/windows/test_repo_hygiene_institutional_e2e.py -m e2e`; productie-poort `windows/audits/RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`.
 
 ## Development Environment
 

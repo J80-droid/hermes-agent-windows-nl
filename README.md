@@ -185,8 +185,10 @@ Deze checkout is een **Windows NL-fork** met extra institutioneel onderhoud (RAG
 | Legal skills + RAG | [docs/LEGAL_DOMAIN_ARCHITECTURE.md](docs/LEGAL_DOMAIN_ARCHITECTURE.md) |
 | Upstream ↔ fork | [windows/UPSTREAM_SYNC.md](windows/UPSTREAM_SYNC.md) |
 | E2E poort (repo-hygiene) | `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14) |
+| Productie-poort (gecombineerd) | `windows/audits/RUN_INSTITUTIONAL_PRODUCTION_GATE.bat` (Python + platform + hardening 14/14) |
+| Pytest repo-hygiene (Windows) | `pytest tests/windows/test_repo_hygiene_institutional_e2e.py -m e2e` |
 
-Bij rommel in de repo-root vóór update: `windows\UPDATE_HERMES.bat -QuickFix`.
+Bij rommel in de repo-root vóór update: `windows\UPDATE_HERMES.bat -QuickFix` (alleen opruimen; geen upstream). Optioneel: `set HERMES_SKIP_PAUSE_AFTER_UPDATE=1`.
 
 Upstream Hermes-documentatie blijft op [hermes-agent.nousresearch.com/docs](https://hermes-agent.nousresearch.com/docs/).
 

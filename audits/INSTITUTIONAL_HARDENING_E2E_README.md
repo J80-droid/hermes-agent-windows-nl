@@ -18,8 +18,10 @@ Geïntegreerde poort voor repo-hygiene + QuickFix + legal skills (post code-revi
 | H10 | `parse_uitspraak.fetch_ecli` weigert ongeldig ECLI |
 | H11 | Zoekscripts: response size limit (`MAX_HTML_BYTES`) |
 | H12 | `docs/WORKSPACE_CONVENTIONS.md` + `INSTITUTIONAL_OPERATIONS.md` repo-hygiene |
-| H13 | `UPDATE_HERMES.bat -QuickFix` keten aanwezig |
+| H13 | `UPDATE_HERMES.bat -QuickFix` (HERMES_WIN shift-safe; alleen `-QuickFix` stopt vóór upstream) |
 | H14 | Opruimen: geen test-artefacten in repo-root |
+
+Onderdeel van `windows\audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat` (stap 4). Pytest: `tests/windows/test_repo_hygiene_institutional_e2e.py` (`-m e2e`).
 
 ## Draaien
 

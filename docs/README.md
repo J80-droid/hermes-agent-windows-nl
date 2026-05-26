@@ -30,8 +30,10 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Orchestrator routing (core) | [ORCHESTRATOR_ROUTING.md](ORCHESTRATOR_ROUTING.md) |
 | Legal domein (lenzen, één bucket) | [LEGAL_DOMAIN_ARCHITECTURE.md](LEGAL_DOMAIN_ARCHITECTURE.md), [LEGAL_TAXONOMY.md](LEGAL_TAXONOMY.md), [LEGAL_ROLLOUT_CHECKLIST.md](LEGAL_ROLLOUT_CHECKLIST.md) |
 | Legal fork-skills (zoeken, parseren, web) | `skills/legal/` — [WORKSPACE_CONVENTIONS.md](WORKSPACE_CONVENTIONS.md); pytest `tests/skills/test_*_skill.py` |
-| Repo-hygiene (geen rommel in root) | [WORKSPACE_CONVENTIONS.md](WORKSPACE_CONVENTIONS.md) · QuickFix: `UPDATE_HERMES.bat -QuickFix` · E2E: `RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14), `RUN_REPO_HYGIENE_E2E.bat`, `RUN_UPDATE_HERMES_INTEGRATION_E2E.bat` |
+| Repo-hygiene (geen rommel in root) | [WORKSPACE_CONVENTIONS.md](WORKSPACE_CONVENTIONS.md) · QuickFix: `UPDATE_HERMES.bat -QuickFix` · E2E: `RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14), `RUN_REPO_HYGIENE_E2E.bat`, `RUN_UPDATE_HERMES_INTEGRATION_E2E.bat` (12/12) |
 | Legal skills unit tests | `pytest tests/skills/test_*_skill.py` (101 tests, gemockte HTTP) |
+| Repo-hygiene pytest (Windows) | `pytest tests/windows/test_repo_hygiene_institutional_e2e.py` (`-m e2e` voor harness) |
+| Institutionele productie-poort | `windows/audits/RUN_INSTITUTIONAL_PRODUCTION_GATE.bat` · [INSTITUTIONAL_OPERATIONS.md](INSTITUTIONAL_OPERATIONS.md) |
 | Landkaart / volledige lijsten | skill `landkaart` (`/landkaart`) |
 | Domeinen toevoegen (`domains.yaml`) | [domains.yaml.example](domains.yaml.example) + [DOMAIN_BLUEPRINT.md](DOMAIN_BLUEPRINT.md) |
 | RAG env-defaults (stale, torch-ruis) | [RAG_INSTITUTIONAL_ENV.md](RAG_INSTITUTIONAL_ENV.md) |

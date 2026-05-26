@@ -76,7 +76,7 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 | Repo-hygiene (schone root) | `docs\WORKSPACE_CONVENTIONS.md` · preflight: `scripts\guard_git_clean.ps1` · log: `_upstream_sync_guard.log` |
 | QuickFix vóór update | `UPDATE_HERMES.bat -QuickFix` · `scripts\quick_fix_repo_hygiene.ps1` |
 | Repo health check | `scripts\health_check_repo.ps1` · `-Strict` voor CI |
-| Repo-hygiene E2E | `..\audits\RUN_REPO_HYGIENE_E2E.bat` · integratie: `RUN_UPDATE_HERMES_INTEGRATION_E2E.bat` |
+| Repo-hygiene E2E | `..\audits\RUN_REPO_HYGIENE_E2E.bat` (9/9) · integratie: `RUN_UPDATE_HERMES_INTEGRATION_E2E.bat` (12/12) |
 | Legal skills pytest (101) | `pytest tests\skills\test_*_skill.py` · `..\audits\RUN_LEGAL_SKILLS_ROOKTEST.bat` |
 | Institutioneel hardening E2E | `..\audits\RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14) |
 | Gedeelde hygiene helpers | `scripts\RepoHygieneCommon.ps1` |
@@ -123,7 +123,7 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 | Platform hardening regressie E2E | `audits\RUN_PLATFORM_HARDENING_REGRESSION_E2E.bat` |
 | Python institutioneel E2E | `audits\RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.bat` · zie `docs\HERMES_START.md` |
 | Python institutional regressie E2E | `audits\RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.bat` (review-fixes, 8/8) |
-| Institutional productie-poort | `audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat` · `docs\INSTITUTIONAL_OPERATIONS.md` |
+| Institutional productie-poort | `audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat` (Python + KnowledgeRepository + platform + **hardening 14/14** + wiring) · `docs\INSTITUTIONAL_OPERATIONS.md` |
 | Codebase smoke E2E (E1/E2) | `audits\RUN_CODEBASE_SMOKE_E2E.bat` · `RUN_AUDITS.bat -IncludeCodebaseSmokeE2E` · `-IncludeAllE2E` |
 | Codebase smoke (snel) | `audits\RUN_CODEBASE_SMOKE_AUDIT.bat` · `RUN_AUDITS.bat -IncludeCodebaseSmoke` |
 | Na pull/update (optioneel) | `POST_GIT_PULL.bat -IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E` / `-AutoRepairModelProvider` · `UPDATE_HERMES.bat` (zelfde vlaggen waar van toepassing) |
@@ -148,6 +148,14 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 ```
 
 Mocks: `urllib.request.urlopen`, `time.sleep`, optionele imports (`docx`, `fitz`). Dekking: happy path, edge cases (ongeldige ECLI, lege query, response-truncatie, URL-dedupe), negatieve scenario's (netwerk/import).
+
+**Repo-hygiene + PowerShell E2E (Windows, opt-in via marker `e2e`):**
+
+```cmd
+pytest tests\windows\test_repo_hygiene_institutional_e2e.py -m e2e -q
+```
+
+Wiring-regressie (snel, standaard pytest): `pytest tests\windows\test_repo_hygiene_institutional_e2e.py -q` (zonder `-m e2e`). Zelfde scenario's als `audits\RUN_*_E2E.bat`.
 
 | Check | Script |
 | ----- | ------ |

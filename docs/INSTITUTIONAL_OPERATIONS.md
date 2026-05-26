@@ -70,7 +70,7 @@ Override conda: `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV`.
 | RAG-sync mislukt bij start | Stamp niet bijgewerkt — retry bij volgende start; log in bootstrap |
 | REPAIR hangt op Read-Host | Gebruik `-NonInteractive` of `HERMES_NONINTERACTIVE=1` (automatisch in CI/audit) |
 | UPDATE stopt op dirty repo (exit 2) | `UPDATE_HERMES.bat -QuickFix` of commit/stash; alleen iconen: branding-waarschuwing OK |
-| Rommel in repo-root | `docs/WORKSPACE_CONVENTIONS.md`, `guard_git_clean.ps1`, E2E `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14) |
+| Rommel in repo-root | `docs/WORKSPACE_CONVENTIONS.md`, `guard_git_clean.ps1`, E2E `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14); gecombineerd in `RUN_INSTITUTIONAL_PRODUCTION_GATE.bat` |
 | Legacy `.venv` | Quarantaine via `ensure_hermes_python.ps1`; niet productie-default |
 
 ## Pre-release (handmatig)

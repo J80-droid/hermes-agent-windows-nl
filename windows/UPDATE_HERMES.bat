@@ -1,4 +1,8 @@
 @echo off
+REM UPDATE_HERMES.bat — upstream sync + post-merge (conda hermes-env).
+REM -QuickFix: alleen repo-hygiene (quick_fix + guard); stopt als enige arg (geen upstream).
+REM HERMES_WIN: pad naar windows\ (vast vóór shift; voorkomt %%~dp0-bug na -QuickFix).
+REM HERMES_SKIP_PAUSE_AFTER_UPDATE=1: geen pause aan het einde (CI/automation).
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0\.."
 set "HERMES_WIN=%~dp0"

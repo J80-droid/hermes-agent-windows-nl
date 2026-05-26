@@ -78,6 +78,8 @@ E2E (geen netwerk): `audits\RUN_REPO_HYGIENE_E2E.bat`.
 windows\UPDATE_HERMES.bat -QuickFix
 ```
 
+Alleen `-QuickFix` als enige argument: de keten stopt na opruimen (geen upstream sync). Intern gebruikt de `.bat` `HERMES_WIN` (pad naar `windows\`) zodat `shift` het scriptpad niet breekt. CI/automation: `set HERMES_SKIP_PAUSE_AFTER_UPDATE=1`.
+
 Of alleen opruimen zonder update:
 
 ```cmd

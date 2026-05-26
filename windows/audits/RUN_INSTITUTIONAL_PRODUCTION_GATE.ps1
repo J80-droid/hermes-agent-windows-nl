@@ -1,4 +1,5 @@
-# Gecombineerde institutioneel productie-poort: Python + KnowledgeRepository + platform hardening.
+# Gecombineerde institutioneel productie-poort: Python + KnowledgeRepository + platform hardening
+# + repo-hygiene hardening (audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat, 14/14) + python wiring.
 param(
     [string]$RepoRoot = '',
     [switch]$SkipPytest,
