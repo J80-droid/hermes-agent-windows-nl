@@ -32,7 +32,7 @@ Operationele handleiding voor J.'s Hermes Windows NL fork: verifieerbaar gedrag 
 
 ## Geheugenlimieten (runtime)
 
-**Root én alle 13 profielen** (`profiles/*/config.yaml`) moeten hetzelfde blok hebben — upstream erft `memory` niet automatisch van root.
+**Root én alle 14 profielen** (`profiles/*/config.yaml`) moeten hetzelfde blok hebben — upstream erft `memory` niet automatisch van root.
 
 ```yaml
 memory:

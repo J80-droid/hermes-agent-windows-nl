@@ -1,5 +1,5 @@
 # Institutioneel runtime vóór Hermes-chat: display (alle profielen) + SOUL-snippet-sync indien nodig.
-# Volledige SOUL anatomy (13 templates) gebeurt in launch_soul_anatomy_deploy.ps1.
+# Volledige SOUL anatomy (14 templates) gebeurt in launch_soul_anatomy_deploy.ps1.
 # E2E alleen met -RunE2E of HERMES_INSTITUTIONAL_E2E_ON_START=1 (traag; niet standaard).
 param(
     [string]$RepoRoot = '',

@@ -190,7 +190,7 @@ if (-not (Test-Path -LiteralPath $snippetPath)) {
     Step-Fail 'SOUL tool governance template' 'docs/templates/SOUL_SHARED_TOOL_GOVERNANCE.md ontbreekt'
 }
 $missingSoul = @()
-foreach ($name in @('core', 'legal', 'ict', 'security', 'dev', 'data')) {
+foreach ($name in @('core', 'legal', 'ict', 'security', 'dev', 'data', 'creative')) {
     $soul = Join-Path $hermes "profiles\$name\SOUL.md"
     if (-not (Test-Path -LiteralPath $soul)) {
         $missingSoul += "${name}: SOUL ontbreekt"
@@ -205,7 +205,7 @@ if ($missingSoul.Count -gt 0) {
     $msg = ($missingSoul -join '; ') + ' - draai SYNC_TRUST_RUNTIME.bat of SYNC_SOUL_SNIPPETS.bat'
     Step-Fail 'soul-governance' $msg
 } else {
-    Step-Ok 'soul-governance' 'alle profielen (core, legal, ict, security, dev, data) bevatten tool-governance'
+    Step-Ok 'soul-governance' 'alle profielen (core, legal, ict, security, dev, data, creative) bevatten tool-governance'
 }
 
 $reportLines += ''

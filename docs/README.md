@@ -27,6 +27,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Security domein (pentest, compliance, incident, forensics) | `docs/10_Security/`, `docs/templates/SOUL_SECURITY_DOMAIN.md` |
 | Development domein (backend, frontend, architecture, quality) | `docs/11_Development/`, `docs/templates/SOUL_DEV_DOMAIN.md` |
 | Data domein (database, analytics, pipeline, governance) | `docs/12_Data/`, `docs/templates/SOUL_DATA_DOMAIN.md` |
+| Creative domein (visual, motion, interactive, writing) | `docs/13_Creative/`, `docs/templates/SOUL_CREATIVE_DOMAIN.md` |
 | Orchestrator routing (core) | [ORCHESTRATOR_ROUTING.md](ORCHESTRATOR_ROUTING.md) |
 | Legal domein (lenzen, één bucket) | [LEGAL_DOMAIN_ARCHITECTURE.md](LEGAL_DOMAIN_ARCHITECTURE.md), [LEGAL_TAXONOMY.md](LEGAL_TAXONOMY.md), [LEGAL_ROLLOUT_CHECKLIST.md](LEGAL_ROLLOUT_CHECKLIST.md) |
 | Legal fork-skills (zoeken, parseren, web) | `skills/legal/` — [WORKSPACE_CONVENTIONS.md](WORKSPACE_CONVENTIONS.md); pytest `tests/skills/test_*_skill.py` |
@@ -92,7 +93,7 @@ flowchart TB
 - **Windows script-keten (handmatig):** `windows\VERIFY_WINDOWS_CHAIN.bat` — dubbelklik; controleert setup wrapper, `.bat`→`.ps1`, taakbalk-`.lnk` (eindigt met pause)
 - **IDE-onderhoud (alle commando's op één plek):** [IDE_MAINTENANCE.md](IDE_MAINTENANCE.md) — `LANCEDB_MAINTENANCE.bat` + `RUN_IDE_MAINTENANCE_E2E.bat`
 - **Skill/docs drift (fork):** `python scripts\audit_skill_drift.py` → `windows\audits\SKILL_DRIFT_AUDIT_*.md`
-- **Na `git pull`:** `windows/POST_GIT_PULL.bat` (verify + trust + **SOUL anatomy 13 profielen** + domein-toolsets + taakbalk-iconen); optioneel `-IncludeCodebaseSmoke` (~32s) of `-IncludeCodebaseSmokeE2E` (~45s)
+- **Na `git pull`:** `windows/POST_GIT_PULL.bat` (verify + trust + **SOUL anatomy 14 profielen** + domein-toolsets + taakbalk-iconen); optioneel `-IncludeCodebaseSmoke` (~32s) of `-IncludeCodebaseSmokeE2E` (~45s)
 - **Nous upstream-update:** `windows\UPDATE_HERMES.bat` — preflight + merge + trust + toolsets + RAG + verify (zie [UPSTREAM_SYNC.md](../windows/UPSTREAM_SYNC.md))
 - **Setup (dubbelklik):** `windows\SETUP_HERMES.bat` (standaard wizard); `OPEN_SETUP.bat` alleen wizard; `--files-only` zonder wizard
 - **Taakbalk-iconen:** `python windows/tools/generate_colored_hermes_icons.py` → `windows\FIX_TASKBAR_ICONS.bat` → F5; pin via `.lnk`, niet `.bat`
@@ -113,7 +114,7 @@ flowchart TB
 - **SOUL sync + presentatie (10/10):** `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` (display + SOUL + E2E); docs [INSTITUTIONAL_PRESENTATION.md](INSTITUTIONAL_PRESENTATION.md), porting [INSTITUTIONAL_PORTING_GUIDE.md](INSTITUTIONAL_PORTING_GUIDE.md); rooktest [templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md); verify: `python scripts/diagnose_renderer.py --verify`, `python scripts/score_institutional_render.py --verify`, `python scripts/verify_pseudo_table_normalizer.py --verify` (incl. architectuur-probe); guard vóór commit: `python scripts/verify_institutional_guard.py`; pariteit: `pytest tests/hermes_cli/test_normalizer_ts_parity.py`; score-unit: `pytest tests/scripts/test_score_institutional_render.py`; collapsed record: `pytest tests/hermes_cli/test_collapsed_record_pseudo_table.py`, E2E `audits\RUN_COLLAPSED_RECORD_PSEUDO_TABLE_E2E.bat`
 - **Statusbalk throughput (tok/s):** `display.show_status_bar_tps` (default aan); classic CLI + TUI na cost-segment; `/tps`; module `hermes_cli/status_bar_throughput.py` + `ui-tui/src/domain/statusBarThroughput.ts`; E2E `audits\RUN_STATUS_BAR_THROUGHPUT_E2E.bat` (14 stappen); unit `pytest tests/hermes_cli/test_status_bar_throughput.py`
 - **Prompt-timer zonder emoji:** `display.show_prompt_timer_emoji` (default uit); `/timer-emoji`; fork-module `hermes_cli/status_bar_prompt_elapsed.py` (finite guards, geen ⏱/⏲ in statusbalk); cli-delegatie in `_format_prompt_elapsed`; team-default `windows/team_display.defaults`; E2E **`audits/RUN_PROMPT_TIMER_DISPLAY_E2E.bat`** (10/10); unit **`pytest tests/hermes_cli/test_status_bar_prompt_elapsed.py`** (72 tests); na upstream-merge: **`python scripts/verify_fork_status_bar_display.py`**
-- **SOUL anatomy (10 secties, 13 domeinprofielen):** [SOUL_ANATOMY_SPEC.md](SOUL_ANATOMY_SPEC.md) — bij start: `launch_soul_anatomy_deploy.ps1` (stamp); runtime: `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat`; na pull: `windows\POST_GIT_PULL.bat`; validatie: `windows\audits\RUN_SOUL_ANATOMY_E2E.ps1`, `windows\audits\RUN_SOUL_DEPLOY_START_E2E.ps1`
+- **SOUL anatomy (10 secties, 14 domeinprofielen):** [SOUL_ANATOMY_SPEC.md](SOUL_ANATOMY_SPEC.md) — bij start: `launch_soul_anatomy_deploy.ps1` (stamp); runtime: `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat`; na pull: `windows\POST_GIT_PULL.bat`; validatie: `windows\audits\RUN_SOUL_ANATOMY_E2E.ps1`, `windows\audits\RUN_SOUL_DEPLOY_START_E2E.ps1`
 - **Core SOUL referentie (repo):** `docs/templates/SOUL_CORE_ORCHESTRATOR.md` — runtime: `%LOCALAPPDATA%\hermes\profiles\core\SOUL.md`
 
 ## Memory bank (agent-context)

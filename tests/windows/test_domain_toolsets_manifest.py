@@ -20,6 +20,7 @@ REQUIRED_PROFILES = {
     "security",
     "dev",
     "data",
+    "creative",
 }
 
 REQUIRED_BASE = {"mcp", "file", "memory", "skills", "clarify"}
@@ -106,11 +107,30 @@ def test_data_has_lenses():
     assert "pipeline" in lenses
 
 
+def test_creative_has_lenses():
+    data = _load()
+    creative = (data.get("profiles") or {}).get("creative") or {}
+    lenses = creative.get("creative_lenses") or {}
+    assert "visual" in lenses
+    assert "motion" in lenses
+    assert "interactive" in lenses
+    assert "writing" in lenses
+
+
+def test_creative_fork_skills():
+    data = _load()
+    creative = (data.get("profiles") or {}).get("creative") or {}
+    skills = creative.get("fork_creative_skills") or {}
+    assert "manim_video" in skills
+    assert "hyperframes" in skills
+
+
 def test_soul_templates_exist():
     assert (REPO / "docs/templates/SOUL_ICT_DOMAIN.md").is_file()
     assert (REPO / "docs/templates/SOUL_SECURITY_DOMAIN.md").is_file()
     assert (REPO / "docs/templates/SOUL_DEV_DOMAIN.md").is_file()
     assert (REPO / "docs/templates/SOUL_DATA_DOMAIN.md").is_file()
+    assert (REPO / "docs/templates/SOUL_CREATIVE_DOMAIN.md").is_file()
 
 
 def test_sync_scripts_exist():

@@ -75,7 +75,7 @@ Dat controleert `%LOCALAPPDATA%\hermes\profiles\*\SOUL.md`, niet de repo-templat
 
 | Maatregel | Hoe |
 |-----------|-----|
-| **Deploy na pull** | `POST_GIT_PULL.bat` pusht alle 13 domein-templates; daarna `/new` |
+| **Deploy na pull** | `POST_GIT_PULL.bat` pusht alle 14 domein-templates; daarna `/new` |
 | **Deploy bij start** | `start_hermes.bat` → `launch_soul_anatomy_deploy.ps1` (stamp; geen werk als up-to-date) |
 | **Volledige keten** | `APPLY_SOUL_ANATOMY_RUNTIME.bat` (templates + snippets + E2E) na grote SOUL-wijzigingen |
 | **Backup** | `MANAGE_BACKUPS.bat` (persona's in `localappdata_hermes/`) — periodiek |
@@ -175,7 +175,7 @@ Na elke sync: **nieuwe chat** (`/new`). Runtime-bestanden worden zonder UTF-8 BO
 | Snippet-orchestrator | `sync_soul_anatomy_snippets.ps1` roept zeven snippets aan, `exit 0` bij succes; `-Quiet` zet `HERMES_SUPPRESS_SOUL_REMINDER` |
 | Trust-runtime | `SYNC_TRUST_RUNTIME.bat` → anatomy snippets vóór memories/limits |
 
-**Profielen in repo:** 13 domeinen (zie `docs/domain_toolsets.yaml` + `Get-DomainSoulProfileNames` in `SyncSoulSnippet.psm1`). Geen apart `analyst`-domein — dat is upstream/Kanban-rolnaam of een orphan CLI-wrapper, geen RAG-profiel.
+**Profielen in repo:** 14 domeinen (zie `docs/domain_toolsets.yaml` + `Get-DomainSoulProfileNames` in `SyncSoulSnippet.psm1`). Geen apart `analyst`-domein — dat is upstream/Kanban-rolnaam of een orphan CLI-wrapper, geen RAG-profiel.
 
 **Root `%LOCALAPPDATA%\hermes\SOUL.md`:** legacy fallback bij chat zonder `-p <profiel>`. Template: `docs/templates/SOUL_ROOT_FALLBACK.md`. Deploy: `sync_root_soul_fallback.ps1` (automatisch na `sync_all_domain_souls_from_templates.ps1` / `APPLY_SOUL_ANATOMY_RUNTIME.bat`). Gebruik bij voorkeur altijd een domeinprofiel.
 

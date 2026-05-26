@@ -4,7 +4,7 @@ Elk RAG-domein heeft een **Hermes-profiel** met eigen persona (`SOUL.md`), MCP (
 
 **Git bevat de templates en sync-scripts; de actieve SOUL staat op schijf in `%LOCALAPPDATA%\hermes`.** Na elke repo-update: `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat`, daarna `/new`. Zie [SOUL_ANATOMY_SPEC.md](SOUL_ANATOMY_SPEC.md) § Repo versus runtime.
 
-**Anatomy (canoniek):** alle SOUL-bestanden volgen [SOUL_ANATOMY_SPEC.md](SOUL_ANATOMY_SPEC.md) (Identity → Example Interaction). Repo-templates: `docs/templates/SOUL_*_DOMAIN.md` (13 domeinen + `SOUL_CORE_ORCHESTRATOR.md`).
+**Anatomy (canoniek):** alle SOUL-bestanden volgen [SOUL_ANATOMY_SPEC.md](SOUL_ANATOMY_SPEC.md) (Identity → Example Interaction). Repo-templates: `docs/templates/SOUL_*_DOMAIN.md` (14 domeinen + `SOUL_CORE_ORCHESTRATOR.md`).
 
 **Governance (2026-05):** zekerheidspercentages, gaps per strategie, ga-door bij 1/N, tool-retry-limiet — zie [SOUL_GOVERNANCE.md](SOUL_GOVERNANCE.md).
 
@@ -42,7 +42,7 @@ Uit `%USERPROFILE%\data\domains.yaml` (veld `profile_name`):
 
 RAG-bronnen staan apart onder `%USERPROFILE%\data\raw_source_files\<source_dir>\`.
 
-**Geen `analyst`-domein:** de naam `analyst` komt in upstream voor (Kanban-subagent, orphan `hermes-analyst` wrapper). Hermes-domeinen staan in `domain_toolsets.yaml` (13 profielen). Een map `profiles\analyst\` op disk is geen officieel domein — niet meenemen in `APPLY_SOUL_ANATOMY_RUNTIME.bat`.
+**Geen `analyst`-domein:** de naam `analyst` komt in upstream voor (Kanban-subagent, orphan `hermes-analyst` wrapper). Hermes-domeinen staan in `domain_toolsets.yaml` (14 profielen). Een map `profiles\analyst\` op disk is geen officieel domein — niet meenemen in `APPLY_SOUL_ANATOMY_RUNTIME.bat`.
 
 ## Bewerken en starten
 
@@ -100,7 +100,7 @@ notepad %LOCALAPPDATA%\hermes\profiles\mijn-domein\SOUL.md
 | Root legacy SOUL | `windows\scripts\sync_root_soul_fallback.ps1`; template [SOUL_ROOT_FALLBACK.md](templates/SOUL_ROOT_FALLBACK.md) |
 | Snippet-sync (één script) | `windows\scripts\sync_soul_anatomy_snippets.ps1 -Force` |
 | Volledige template push per profiel | `windows\scripts\sync_domain_soul_from_template.ps1 -ProfileName <naam>` |
-| **Alles in één keer (aanbevolen)** | `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat` (13 domeinen + snippets + E2E) |
+| **Alles in één keer (aanbevolen)** | `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat` (14 domeinen + snippets + E2E) |
 | Presentatie (kleur + structuur) | `docs/INSTITUTIONAL_PRESENTATION.md` |
 | Core SOUL referentie in repo | `docs/templates/SOUL_CORE_ORCHESTRATOR.md` |
 | Runtime SOUL + config in backup | `MANAGE_BACKUPS.bat` → `backup_soul_profiles` (schema v3: `localappdata_hermes/`; volledige runtime: `runtime_hermes/`) |

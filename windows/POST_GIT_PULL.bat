@@ -107,7 +107,7 @@ if errorlevel 1 (
 )
 set "HERMES_SKIP_PAUSE="
 echo.
-echo [INFO] SOUL anatomy deploy (13 profielen + snippets, stamp bijwerken)...
+echo [INFO] SOUL anatomy deploy (14 profielen + snippets, stamp bijwerken)...
 set "HERMES_SKIP_PAUSE=1"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\launch_soul_anatomy_deploy.ps1" -RepoRoot "%CD%" -Force -Quiet
 if errorlevel 1 (

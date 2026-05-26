@@ -167,6 +167,7 @@ function Get-HermesCriticalWindowsRepoPathList {
     'docs/templates/SOUL_SECURITY_DOMAIN.md',
     'docs/templates/SOUL_DEV_DOMAIN.md',
     'docs/templates/SOUL_DATA_DOMAIN.md',
+    'docs/templates/SOUL_CREATIVE_DOMAIN.md',
     'scripts/windows/setup_hermes_windows.ps1',
     'scripts/rag_pipeline/lancedb_maintenance.py',
     'scripts/audit_skill_drift.py',

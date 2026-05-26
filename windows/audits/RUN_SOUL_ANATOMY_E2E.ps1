@@ -63,6 +63,8 @@ $requiredTemplates = @(
 
     'docs/templates/SOUL_ICT_DOMAIN.md',
 
+    'docs/templates/SOUL_CREATIVE_DOMAIN.md',
+
     'docs/SOUL_ANATOMY_SPEC.md'
 
 )

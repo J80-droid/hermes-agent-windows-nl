@@ -1,4 +1,4 @@
-# Stamp-gestuurde SOUL anatomy deploy bij Hermes-start (13 domein-templates + snippets).
+# Stamp-gestuurde SOUL anatomy deploy bij Hermes-start (14 domein-templates + snippets).
 param(
     [string]$RepoRoot = '',
     [switch]$Force,
@@ -38,7 +38,7 @@ if (-not $needRun) {
 }
 
 if (-not $Quiet) {
-    Write-Host '[INFO] SOUL anatomy deploy (13 domein-templates + snippets)...' -ForegroundColor Cyan
+    Write-Host '[INFO] SOUL anatomy deploy (14 domein-templates + snippets)...' -ForegroundColor Cyan
 }
 
 & (Join-Path $PSScriptRoot 'sync_all_domain_souls_from_templates.ps1') -RepoRoot $RepoRoot

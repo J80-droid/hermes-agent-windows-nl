@@ -1,13 +1,13 @@
 # SOUL governance (trust, zekerheid, output)
 
-Gedeelde gedragsregels voor **alle 13 profielen** + root fallback. Bron: `docs/templates/SOUL_SHARED_*.md`, `SOUL_CORE_ORCHESTRATOR.md`, `MEMORY_CANONICAL_SEED.md`.
+Gedeelde gedragsregels voor **alle 14 profielen** + root fallback. Bron: `docs/templates/SOUL_SHARED_*.md`, `SOUL_CORE_ORCHESTRATOR.md`, `MEMORY_CANONICAL_SEED.md`.
 
 ## Deploy
 
 | Actie | Commando |
 |-------|----------|
 | Shared snippets → runtime profielen | `windows\SYNC_SOUL_SNIPPETS.bat -Force` (incl. root via `-SnippetsOnly`) |
-| Volledige keten (13 domeinen + root) | `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat` |
+| Volledige keten (14 domeinen + root) | `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat` |
 | Trust + memories + snippets | `windows\SYNC_TRUST_RUNTIME.bat` |
 | Alleen root legacy SOUL | `windows\scripts\sync_root_soul_fallback.ps1` |
 

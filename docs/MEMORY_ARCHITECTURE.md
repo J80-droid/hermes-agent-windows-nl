@@ -53,7 +53,7 @@ windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat
 |------|----------|
 | 1/18 | Repo: trust-sync, `HermesMemoryMergeCommon`, consolidate-root, rebalance |
 | 2–7 | Vault-env sync, profiel-.env, vault-structuur, geen L3, KANBAN + core MEMORY |
-| 8–10 | Obsidian skill, config-limits 4000/1800 (root + 13 profielen) |
+| 8–10 | Obsidian skill, config-limits 4000/1800 (root + 14 profielen) |
 | 11–13 | core MEMORY-grootte, UTF-8 §-encoding |
 | 14/18 | **Alle profielen + legacy root:** MEMORY/USER binnen limiet, geen dubbele §, geen mojibake |
 | 15/18 | `deduplicate_memories.py` (incl. legacy `memories/`), post-sync, notice-module |

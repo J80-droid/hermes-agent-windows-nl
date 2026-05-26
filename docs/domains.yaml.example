@@ -5,13 +5,13 @@
 # Model (alle profielen): docs/PROFILE_MODEL_INHERITANCE.md — NIET in profiel-yaml
 # Kopieer naar: %USERPROFILE%\data\domains.yaml
 #
-# Nieuw domein toevoegen:
-#   1. Kopieer het blok onder "Sjabloon nieuw domein" naar domains:
+# Nieuw domein toevoegen: zie docs/DOMAIN_BLUEPRINT.md
+#   1. Kopieer domeinblok naar domains: (onderstaand sjabloon of bestaand voorbeeld, bv. creative)
 #   2. Maak raw_source_files\<source_dir>\ met bronbestanden
-#   3. Maak Hermes-profiel %LOCALAPPDATA%\hermes\profiles\<profile_name>\
-#      MCP: run sync_profile_mcp_from_domains.py (schrijft mcp_servers: — geen handmatig mcp.servers)
-#      Toolsets: windows\SYNC_DOMAIN_TOOLSETS.bat (docs/domain_toolsets.yaml → platform_toolsets.cli)
-#      Geen model: in config — model komt uit ~/.hermes/config.yaml (docs/PROFILE_MODEL_INHERITANCE.md)
+#   3. set HERMES_HOME=%LOCALAPPDATA%\hermes
+#      windows\SYNC_DOMAIN_TOOLSETS.bat --create-missing
+#      python scripts\rag_pipeline\sync_profile_mcp_from_domains.py
+#      Geen model: in profiel-config — model komt uit root config (docs/PROFILE_MODEL_INHERITANCE.md)
 #   4. update_knowledge.bat --list  (moet het nieuwe domein tonen)
 #   5. update_knowledge.bat <naam>  of update_knowledge.bat (alle domeinen)
 #
@@ -137,6 +137,13 @@ domains:
     lancedb_path: ~/data/lancedb/data
     mcp_name: lancedb-data
     profile_name: data
+
+  - name: creative
+    source_dir: 13_Creative
+    description: Visual design, motion, interactive media, creative writing
+    lancedb_path: ~/data/lancedb/creative
+    mcp_name: lancedb-creative
+    profile_name: creative
 
 # --- Sjabloon nieuw domein (uncomment + invullen) ---
 #  - name: mijn_domein

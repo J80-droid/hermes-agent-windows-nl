@@ -10,7 +10,7 @@ Canonieke operationele docs staan onder **`%USERPROFILE%\data\`** en in profiele
 | `%USERPROFILE%\data\RECOVERY.md` | Herstel, upstream update, taakbalk |
 | `%LOCALAPPDATA%\hermes\profiles\core\KANBAN_WORKFLOWS.md` | Kanban-orchestratie (profiel core); sectie *Geheugen (L1–L4)* |
 | `Documents\Hermes Knowledge\README.md` | Layer 4 vault (Obsidian); zie [MEMORY_ARCHITECTURE.md](MEMORY_ARCHITECTURE.md) |
-| `%LOCALAPPDATA%\hermes\profiles\<naam>\SOUL.md` | Persona per profiel (13 domeinen; deploy uit repo, niet in git) |
+| `%LOCALAPPDATA%\hermes\profiles\<naam>\SOUL.md` | Persona per profiel (14 domeinen; deploy uit repo, niet in git) |
 
 Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTREAM_SYNC.md`: controleer of bovenstaande bestanden dezelfde paden tonen.
 
@@ -19,7 +19,7 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 | Taak | Commando |
 | ---- | -------- |
 | Upstream / fork update | `windows\UPDATE_HERMES.bat` (verify in keten via `.ps1`, geen pause — zie `windows\UPSTREAM_SYNC.md`) |
-| Na `git pull` (andere machine of na grote wijziging) | `windows\POST_GIT_PULL.bat` (trust + **SOUL templates 13 profielen** + toolsets); optioneel `-IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E` — zie `docs/CODEBASE_AUDIT_EVIDENCE.md` |
+| Na `git pull` (andere machine of na grote wijziging) | `windows\POST_GIT_PULL.bat` (trust + **SOUL templates 14 profielen** + toolsets); optioneel `-IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E` — zie `docs/CODEBASE_AUDIT_EVIDENCE.md` |
 | Hermes starten (stamp SOUL deploy) | `start_hermes.bat` → `launch_soul_anatomy_deploy.ps1` (automatisch indien repo bron gewijzigd); overslaan: `HERMES_SKIP_SOUL_DEPLOY_ON_START=1` |
 | SOUL startketen valideren | `windows\audits\RUN_SOUL_DEPLOY_START_E2E.bat` |
 | SOUL Interaction + Outputformaat naar alle profielen | `windows\SYNC_SOUL_SNIPPETS.bat` |

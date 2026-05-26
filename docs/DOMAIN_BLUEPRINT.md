@@ -1,6 +1,6 @@
 # Blauwdruk: nieuw domein toevoegen aan Hermes-agent (Windows NL fork)
 
-> **Doel:** stap-voor-stap instructie om een nieuw profiel + domein + RAG + SOUL + audit toe te voegen, consistent met de bestaande 13 profielen.
+> **Doel:** stap-voor-stap instructie om een nieuw profiel + domein + RAG + SOUL + audit toe te voegen, consistent met de bestaande 14 profielen (laatste toegevoegd: `creative`, map `13_Creative`).
 
 ## Overzicht
 
@@ -162,9 +162,9 @@ def test_soul_templates_exist():
 
 - Voeg `docs/templates/SOUL_<NAAM>_DOMAIN.md` toe aan `$requiredRepo`
 
-### `windows/WindowsLocalAssetsManifest.ps1`
+### `windows/HermesCriticalWindowsRepoPaths.ps1`
 
-- Voeg toe aan `Get-HermesCriticalWindowsRepoPath`
+- Voeg toe aan `Get-HermesCriticalWindowsRepoPaths`
 
 ---
 

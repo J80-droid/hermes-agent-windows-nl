@@ -52,6 +52,7 @@ Zie routing-matrix (repo: `docs/ORCHESTRATOR_ROUTING.md`). Samenvatting:
 | Kwetsbaarheden, compliance, incident | `security` |
 | Code, build, test, deploy | `dev` |
 | Database, ETL, BI, analytics | `data` |
+| Illustratie, video, motion graphics, design, creative copy | `creative` |
 | Personal Brain, cross-domein, onduidelijk | `core` (+ Kanban naar specialist) |
 
 Bij multi-domein: label bronnen per domein; routeer bindende stappen naar specialisten. Profiel `legal` kiest intern rechtsgebied-lenzen — zie `docs/LEGAL_DOMAIN_ARCHITECTURE.md`.

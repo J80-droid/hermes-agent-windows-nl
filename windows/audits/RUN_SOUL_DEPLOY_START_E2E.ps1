@@ -137,9 +137,9 @@ Write-HermesSection '--- 2/8 stamp/watch (psm1) ---'
 Import-Module (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/SyncSoulSnippet.psm1') -Force
 $profiles = Get-DomainSoulProfileNames
 if ($profiles.Count -ne 13) {
-    Step-Fail 'Get-DomainSoulProfileNames' "verwacht 13, got $($profiles.Count)"
+    Step-Fail 'Get-DomainSoulProfileNames' "verwacht 14, got $($profiles.Count)"
 } else {
-    Step-Ok '13 domeinprofielen'
+    Step-Ok '14 domeinprofielen'
 }
 
 $watch = Get-SoulAnatomyWatchPaths -RepoRoot $RepoRoot

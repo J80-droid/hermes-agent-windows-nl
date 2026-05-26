@@ -34,7 +34,7 @@ function Get-DomainSoulProfileNames {
     #>
     return @(
         'core', 'legal', 'academics', 'operations', 'trading', 'gaming',
-        'philosophy', 'logistics', 'ventures', 'ict', 'security', 'dev', 'data'
+        'philosophy', 'logistics', 'ventures', 'ict', 'security', 'dev', 'data', 'creative'
     )
 }
 

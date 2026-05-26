@@ -268,6 +268,9 @@ function Get-HermesPersonaRelativePaths {
             if ($name -eq 'legal') {
                 [void]$paths.Add('profiles/legal/LEGAL_ACTIVE_MATTERS.md')
             }
+            if ($name -eq 'creative') {
+                [void]$paths.Add('profiles/creative/CREATIVE_ACTIVE_MATTERS.md')
+            }
         }
     }
     return @($paths | Select-Object -Unique)

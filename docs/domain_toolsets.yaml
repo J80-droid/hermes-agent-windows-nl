@@ -359,3 +359,42 @@ profiles:
       analytics: "browser voor BI dashboards; web voor reporting standards."
       pipeline: "code_execution voor ETL tests; terminal voor pipeline debug."
       governance: "file voor data classification docs; web voor privacy regels."
+
+  creative:
+    platform_toolsets:
+      cli:
+        - mcp
+        - file
+        - memory
+        - skills
+        - clarify
+        - web
+        - browser
+        - terminal
+    optional_toolsets:
+      - image_gen
+      - vision
+      - code_execution
+    never_default:
+      - moa
+      - cronjob
+      - delegation
+      - homeassistant
+    max_tools: 24
+    ask_triggers:
+      image_gen: "Nieuwe illustratie, concept art of social asset genereren."
+      vision: "Screenshot/mockup analyseren; layout of kleur feedback op design."
+      code_execution: "p5js/comfy pipeline testen in sandbox; geen productie-GPU zonder J."
+    fork_creative_skills:
+      manim_video: "skills/creative/manim-video/ - bundled; wiskundige/geometrische video (3B1B-stijl)."
+      hyperframes: "optional-skills/creative/hyperframes/ - install: hermes skills install official/creative/hyperframes; HTML/GSAP naar MP4."
+      comfyui: "skills/creative/comfyui/ - generatieve image workflows (GPU)."
+      touchdesigner_mcp: "skills/creative/touchdesigner-mcp/ - realtime/installatie."
+      excalidraw: "skills/creative/excalidraw/ - diagrammen en whiteboards."
+      baoyu_article_illustrator: "skills/creative/baoyu-article-illustrator/ - artikel-illustraties."
+      creative_ideation: "skills/creative/creative-ideation/ - brainstorm en concepten."
+    creative_lenses:
+      visual: "image_gen voor nieuwe assets; vision bij mockups; file + RAG voor style guides."
+      motion: "manim-video voor math/video; hyperframes voor motion-graphics/HTML-naar-MP4 (terminal vereist)."
+      interactive: "touchdesigner-mcp, p5js; terminal voor lokale dev-servers."
+      writing: "creative-ideation, humanizer; web voor referenties; geen bindende publicatie zonder J."

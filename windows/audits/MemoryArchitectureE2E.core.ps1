@@ -239,7 +239,7 @@ Add-StepResult -Name '10/18 obsidian skill fallback' -Ok $skillOk -Detail 'fork 
 
 $configFails = Test-AllProfileMemoryConfigLimits -HermesRoot $hermesRoot
 $step11Ok = ($configFails.Count -eq 0)
-$step11Detail = if ($step11Ok) { 'root + 13 profielen' } else { ($configFails -join '; ') }
+$step11Detail = if ($step11Ok) { 'root + 14 profielen' } else { ($configFails -join '; ') }
 Add-StepResult -Name '11/18 profiel memory limits' -Ok $step11Ok -Detail $step11Detail
 
 # --- 12 core MEMORY.md lengte vs limit ---

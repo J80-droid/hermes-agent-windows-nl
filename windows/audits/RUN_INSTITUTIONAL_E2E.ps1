@@ -71,6 +71,7 @@ $requiredRepo = @(
     'docs/templates/SOUL_SECURITY_DOMAIN.md',
     'docs/templates/SOUL_DEV_DOMAIN.md',
     'docs/templates/SOUL_DATA_DOMAIN.md',
+    'docs/templates/SOUL_CREATIVE_DOMAIN.md',
     'skills/productivity/landkaart/SKILL.md',
     'skills/productivity/landkaart/scripts/inventory_landkaart.py',
     'windows/backup_soul_profiles.ps1',

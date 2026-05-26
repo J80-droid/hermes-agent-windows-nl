@@ -9,7 +9,7 @@ Gebruik deze skill als **checklist** wanneer J. een nieuw domeinprofiel wil. Sch
 
 ## Bron van waarheid
 
-1. [DOMAIN_BLUEPRINT.md](../../../docs/DOMAIN_BLUEPRINT.md) — volledige 12-stappen flow
+1. [DOMAIN_BLUEPRINT.md](../../../docs/DOMAIN_BLUEPRINT.md) — volledige 12-stappen flow (14 domeinprofielen)
 2. [domain_toolsets.yaml](../../../docs/domain_toolsets.yaml) — toolsets per profiel
 3. [DOMAIN_TOOLSET_AUDIT.md](../../../docs/DOMAIN_TOOLSET_AUDIT.md) — opt-in / never_default
 

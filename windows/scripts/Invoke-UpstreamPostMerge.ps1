@@ -185,7 +185,7 @@ function Invoke-UpstreamPostMerge {
     if ($exitCode -eq 0) {
         $launchSoul = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/scripts/launch_soul_anatomy_deploy.ps1'
         if (Test-Path -LiteralPath $launchSoul) {
-            Write-Step 'SOUL anatomy deploy 13 templates + snippets...'
+            Write-Step 'SOUL anatomy deploy 14 templates + snippets...'
             $env:HERMES_SKIP_PAUSE = '1'
             & $launchSoul -RepoRoot $Repo -Force -Quiet
             if (Test-NativeCommandFailed) {

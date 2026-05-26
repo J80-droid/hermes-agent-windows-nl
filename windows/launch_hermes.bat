@@ -190,7 +190,7 @@ if !errorLevel! neq 0 (
 
 :after_setup
 
-rem --- SOUL anatomy deploy (13 templates + snippets wanneer repo bron nieuwer dan stamp) ---
+rem --- SOUL anatomy deploy (14 templates + snippets wanneer repo bron nieuwer dan stamp) ---
 if not defined HERMES_SKIP_SOUL_DEPLOY_ON_START (
   set "HERMES_REPO_ROOT=!REPO_ROOT!"
   powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/scripts/launch_soul_anatomy_deploy.ps1" -RepoRoot "!REPO_ROOT!"

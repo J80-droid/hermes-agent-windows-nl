@@ -147,7 +147,7 @@ Bij onbekend palet: automatische fallback naar `demo` + warning in log.
 
 **Automatisch (aanbevolen):** `windows\APPLY_INSTITUTIONAL_RUNTIME.bat` — display op **alle** profielen, SOUL-sync, E2E-audit.
 
-**Bij start:** `launch_hermes.bat` roept eerst `launch_soul_anatomy_deploy.ps1` aan (13 domein-templates + snippets wanneer repo-SOUL nieuwer dan `%LOCALAPPDATA%\hermes\soul_anatomy_deploy.stamp`), daarna `launch_institutional_runtime.ps1` (team display; snippets overgeslagen als anatomy net liep). Geen E2E bij elke start. Overslaan: `set HERMES_SKIP_SOUL_DEPLOY_ON_START=1` en/of `set HERMES_SKIP_INSTITUTIONAL_RUNTIME=1`. Geforceerd: `set HERMES_FORCE_SOUL_DEPLOY=1`. E2E bij start: `start_hermes.bat --institutional-e2e` of `set HERMES_INSTITUTIONAL_E2E_ON_START=1`.
+**Bij start:** `launch_hermes.bat` roept eerst `launch_soul_anatomy_deploy.ps1` aan (14 domein-templates + snippets wanneer repo-SOUL nieuwer dan `%LOCALAPPDATA%\hermes\soul_anatomy_deploy.stamp`), daarna `launch_institutional_runtime.ps1` (team display; snippets overgeslagen als anatomy net liep). Geen E2E bij elke start. Overslaan: `set HERMES_SKIP_SOUL_DEPLOY_ON_START=1` en/of `set HERMES_SKIP_INSTITUTIONAL_RUNTIME=1`. Geforceerd: `set HERMES_FORCE_SOUL_DEPLOY=1`. E2E bij start: `start_hermes.bat --institutional-e2e` of `set HERMES_INSTITUTIONAL_E2E_ON_START=1`.
 
 Los: `APPLY_TEAM_DISPLAY.bat`, `SYNC_SOUL_SNIPPETS.bat`. Na `UPDATE_HERMES.bat` wordt display al toegepast.
 

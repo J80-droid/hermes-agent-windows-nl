@@ -18,6 +18,7 @@ Canonieke matrix voor `profiles/core/SOUL.md`. Domeinnamen komen uit [`domains.y
 | Kwetsbaarheden, compliance, incident, forensics | `security` | `lancedb-security` |
 | Code, build, test, deploy, architecture | `dev` | `lancedb-dev` |
 | Database, ETL, BI, analytics, data governance | `data` | `lancedb-data` |
+| Illustratie, motion graphics, video/HTML-render, design, generatieve media | `creative` | `lancedb-creative` |
 | Personal Brain, cross-domein, onduidelijk domein | `core` | `lancedb-core` (+ Kanban naar specialist) |
 
 ## Multi-domein

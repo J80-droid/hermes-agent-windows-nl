@@ -1,7 +1,7 @@
 # IDE-onderhoud — commando's (fork)
 
 **Repo:** `hermes-agent` (dev: `D:\A.I\APPS\Hermes_agent_WS\hermes-agent`)  
-**Config:** `%USERPROFILE%\data\domains.yaml` (13 domeinen incl. `ict`, `security`, `dev`, `data`)
+**Config:** `%USERPROFILE%\data\domains.yaml` (14 domeinen incl. `ict`, `security`, `dev`, `data`, `creative`)
 
 ## Snel (dagelijks / na wijziging)
 

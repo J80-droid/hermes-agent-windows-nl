@@ -3,7 +3,7 @@
 **Pad:** `C:/Users/jamel/Documents/Hermes Knowledge`  
 **Env:** `OBSIDIAN_VAULT_PATH`, `WIKI_PATH`, `KNOWLEDGE_BASE_PATH` (alle drie gelijk).
 
-**Sync:** na wijziging in `~/.hermes/.env` → `windows\SYNC_HERMES_API_ENV.bat` (alle 13 profiel-`.env` bestanden).
+**Sync:** na wijziging in `~/.hermes/.env` → `windows\SYNC_HERMES_API_ENV.bat` (alle 14 profiel-`.env` bestanden).
 
 Dit is Layer 4 (Obsidian-skill): gestructureerde markdown met `[[wikilinks]]`. Open deze map in Obsidian via *Open folder as vault*.
 

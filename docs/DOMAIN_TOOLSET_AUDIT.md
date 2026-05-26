@@ -262,6 +262,21 @@ Altijd `HERMES_HOME` op root (`%LOCALAPPDATA%\hermes`), niet `profiles\legal`.
 
 Verwacht: agent noemt alleen ingeschakelde tools; bij ontbrekende optionele tool → korte instructie `hermes -p legal tools` + nieuwe chat.
 
+## Profiel: creative
+
+| Standaard | Optioneel | Uit |
+|-----------|-----------|-----|
+| mcp, file, memory, skills, clarify, web, browser, **terminal** | image_gen, vision, code_execution | moa, cronjob, delegation, homeassistant |
+
+**Lenzen:** visual, motion, interactive, writing (`creative_lenses` in manifest).
+
+**Skills:** `fork_creative_skills` — o.a. manim-video (bundled), hyperframes (optional install), comfyui, excalidraw. Hyperframes vereist `terminal` + `hermes skills install official/creative/hyperframes`.
+
+**Vraag optioneel wanneer:**
+- `image_gen`: nieuwe illustratie of social asset
+- `vision`: mockup/screenshot feedback
+- `code_execution`: p5js/comfy test in sandbox
+
 ## Token-impact (indicatief)
 
 | Setup | Schema-tokens/turn (ruw) |

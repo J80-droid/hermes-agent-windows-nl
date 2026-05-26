@@ -29,7 +29,7 @@ Zie `docs/PROFILE_MODEL_INHERITANCE.md`.
 - `domains.yaml` en LanceDB buiten de repo (geen secrets, geen bulk-data in git).
 - Live ingest-status en eindrapporten voor vertrouwen ("is legal klaar?").
 
-## Team (13 profielen)
+## Team (14 profielen)
 
 | Team | Profielen |
 |------|-----------|
@@ -39,6 +39,7 @@ Zie `docs/PROFILE_MODEL_INHERITANCE.md`.
 | Security | `security` (pentest, compliance, incident, forensics) |
 | Development | `dev` (backend, frontend, architecture, quality) |
 | Data | `data` (database, analytics, pipeline, governance) |
+| Creative | `creative` (visual, motion, interactive, writing) |
 | Business | `operations`, `logistics`, `trading`, `ventures` |
 | Kennis | `academics`, `philosophy`, `gaming` |
 
