@@ -85,6 +85,37 @@ function Test-HermesUpstreamDirtyOnlyBranding {
     return $true
 }
 
+function Write-RepoHygieneGuardLog {
+    param(
+        [Parameter(Mandatory)][string]$Repo,
+        [Parameter(Mandatory)][int]$ExitCode,
+        [string]$Output = ''
+    )
+    $logPath = Join-Path $PSScriptRoot '_upstream_sync_guard.log'
+    $maxBytes = 512KB
+    try {
+        if (Test-Path -LiteralPath $logPath) {
+            $len = (Get-Item -LiteralPath $logPath).Length
+            if ($len -gt $maxBytes) {
+                $tail = Get-Content -LiteralPath $logPath -Tail 200 -Encoding utf8 -ErrorAction SilentlyContinue
+                if ($tail) {
+                    Set-Content -LiteralPath $logPath -Encoding utf8 -Value $tail
+                    Add-Content -LiteralPath $logPath -Encoding utf8 -Value '... log getrimd (laatste 200 regels behouden) ...'
+                }
+            }
+        }
+        $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+        $header = "=== $ts exit=$ExitCode repo=$Repo ==="
+        Add-Content -LiteralPath $logPath -Encoding utf8 -Value $header
+        if ($Output) {
+            Add-Content -LiteralPath $logPath -Encoding utf8 -Value $Output
+        }
+        Add-Content -LiteralPath $logPath -Encoding utf8 -Value ''
+    } catch {
+        Write-HermesWarn ('Guard-log schrijven mislukt: ' + $_.Exception.Message)
+    }
+}
+
 function Show-GitHardResetWarning {
     if ($env:HERMES_SKIP_RESET_WARNING -eq '1') { return }
     if (Test-Path (Join-Path $PSScriptRoot 'SKIP_HARD_RESET_WARNING')) { return }
@@ -115,20 +146,27 @@ function Invoke-UpstreamPreflight {
         )
     }
 
-    # Repo-hygiene: guard_git_clean.ps1 (standaard -Quiet, exit 0 + waarschuwing; -Strict → exit 2)
+    # Repo-hygiene: guard_git_clean.ps1 (log: windows/_upstream_sync_guard.log)
     if (-not $SkipGuard) {
         $guardScript = Join-Path $PSScriptRoot 'scripts\guard_git_clean.ps1'
         if (Test-Path -LiteralPath $guardScript) {
-            & $guardScript -RepoRoot $Repo -Quiet
-            $guardCode = $LASTEXITCODE
+            $guardStrict = ($env:HERMES_REPO_GUARD_STRICT -eq '1')
+            $guardParams = @{ RepoRoot = $Repo; Quiet = $true }
+            if ($guardStrict) { $guardParams['Strict'] = $true }
+            $guardCaptured = @(& $guardScript @guardParams 2>&1)
+            if ($null -eq $LASTEXITCODE) { $guardCode = 0 } else { $guardCode = [int]$LASTEXITCODE }
+            $guardText = ($guardCaptured | Out-String).Trim()
+            Write-RepoHygieneGuardLog -Repo $Repo -ExitCode $guardCode -Output $guardText
+            foreach ($line in $guardCaptured) {
+                if ($line) { Write-Host $line }
+            }
             if ($guardCode -ne 0) {
                 Write-HermesWarn 'Repo-hygiene guard: onverwachte bestanden in repo-root gedetecteerd.'
                 if (-not $AllowDirty) {
-                    Write-HermesInfo 'Verplaats ad-hoc scripts en data naar output/research/ of skills/.'
+                    Write-HermesInfo 'QuickFix: windows\UPDATE_HERMES.bat -QuickFix'
                     Write-HermesInfo 'Zie docs/WORKSPACE_CONVENTIONS.md | Overslaan: -SkipGuard of -AllowDirty'
                 }
             }
-            # guardCode 2 alleen bij guard -Strict; preflight blokkeert upstream niet (waarschuwing)
         }
     }
 

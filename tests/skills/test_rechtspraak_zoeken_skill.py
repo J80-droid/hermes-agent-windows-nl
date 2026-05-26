@@ -42,6 +42,40 @@ def _mock_urlopen(html: str):
     return resp
 
 
+class TestClampMaxResults:
+    @pytest.mark.parametrize(
+        "value,expected",
+        [
+            (0, 8),
+            (-3, 8),
+            (1, 1),
+            (25, 25),
+            (100, 25),
+        ],
+    )
+    def test_clamps_bounds(self, value, expected):
+        assert mod._clamp_max_results(value) == expected
+
+
+class TestReadResponseText:
+    def test_decodes_utf8(self):
+        resp = mock.MagicMock()
+        resp.read.return_value = "café".encode("utf-8")
+        assert "café" in mod._read_response_text(resp)
+
+    def test_truncates_oversized_payload(self):
+        resp = mock.MagicMock()
+        resp.read.return_value = b"x" * (mod.MAX_HTML_BYTES + 500)
+        text = mod._read_response_text(resp)
+        assert len(text.encode("utf-8")) <= mod.MAX_HTML_BYTES
+
+    def test_replace_invalid_bytes(self):
+        resp = mock.MagicMock()
+        resp.read.return_value = b"\xff\xfe ok"
+        text = mod._read_response_text(resp)
+        assert "ok" in text
+
+
 class TestExtractEcli:
     def test_happy_path_rvs(self):
         assert mod.extract_ecli("https://uitspraken.rechtspraak.nl/ECLI:NL:RVS:2019:899") == "ECLI:NL:RVS:2019:899"
@@ -219,6 +253,31 @@ class TestMainCli:
         out = capsys.readouterr().out
         assert "Falling back" in out
         mock_google.assert_called_once()
+        fallback_query = mock_google.call_args[0][0]
+        assert "site:rechtspraak.nl" in fallback_query
+
+    @mock.patch("search_rechtspraak.format_results")
+    @mock.patch("search_rechtspraak.search_google")
+    @mock.patch("search_rechtspraak.search_duckduckgo", side_effect=RuntimeError("ddg"))
+    def test_ddg_fallback_custom_site(self, mock_ddg, mock_google, mock_fmt):
+        mock_google.return_value = [{"title": "t", "url": "https://x.nl", "snippet": "", "engine": "google"}]
+        with mock.patch.object(
+            sys,
+            "argv",
+            ["search_rechtspraak.py", "--site", "wetten.nl", "query"],
+        ):
+            mod.main()
+        assert "site:wetten.nl" in mock_google.call_args[0][0]
+
+    @mock.patch("search_rechtspraak.format_results")
+    @mock.patch("search_rechtspraak.search_duckduckgo")
+    def test_max_zero_clamped_in_cli(self, mock_ddg, _fmt):
+        mock_ddg.return_value = [
+            {"title": "t", "url": "https://a.nl", "snippet": "", "engine": "duckduckgo"}
+        ]
+        with mock.patch.object(sys, "argv", ["search_rechtspraak.py", "--max", "0", "q"]):
+            mod.main()
+        assert mock_ddg.call_args[0][2] == 8
 
     @mock.patch("search_rechtspraak.search_duckduckgo", return_value=[])
     def test_no_results_exits_zero(self, _ddg, capsys):

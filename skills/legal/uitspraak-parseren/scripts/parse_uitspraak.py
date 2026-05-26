@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Parseer rechtspraak.nl XML naar leesbare tekst.
 
+ECLI wordt gevalideerd (ECLI_PATTERN) vóór fetch; respons max 2MB.
+
 Gebruik:
     # Van stdin
     cat uitspraak.xml | python parse_uitspraak.py
@@ -12,6 +14,10 @@ import sys
 import re
 import html
 import os
+import urllib.parse
+import urllib.request
+
+ECLI_PATTERN = re.compile(r"^ECLI:NL:[A-Z]{2,10}:\d{4}:\d+$", re.IGNORECASE)
 
 
 def strip_xml(text: str) -> str:
@@ -50,10 +56,18 @@ def split_rechtsoverwegingen(text: str) -> list[tuple[str, str]]:
 
 def fetch_ecli(ecli: str) -> str:
     """Haal XML op van rechtspraak.nl API."""
-    import urllib.request
-    url = f"https://data.rechtspraak.nl/uitspraken/content?id={ecli}"
+    ecli = ecli.strip()
+    if not ECLI_PATTERN.match(ecli):
+        raise ValueError(f"Ongeldig ECLI-formaat: {ecli}")
+    url = (
+        "https://data.rechtspraak.nl/uitspraken/content?id="
+        + urllib.parse.quote(ecli, safe=":")
+    )
     with urllib.request.urlopen(url, timeout=15) as resp:
-        return resp.read().decode('utf-8', errors='replace')
+        data = resp.read(2_000_000 + 1)
+        if len(data) > 2_000_000:
+            data = data[:2_000_000]
+        return data.decode("utf-8", errors="replace")
 
 
 def main():

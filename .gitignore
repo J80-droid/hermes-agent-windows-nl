@@ -83,6 +83,7 @@ docs/superpowers/*
 .hermes_windows_tinker_install_fail
 .hermeslocal/
 output/
+# output/** — volledige lokale workspace (research, legal, exports, logs)
 
 # Ad-hoc research workspace (lokaal)
 _research/

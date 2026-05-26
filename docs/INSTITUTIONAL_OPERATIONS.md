@@ -41,7 +41,22 @@ Override conda: `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV`.
 
 ## Na upstream merge
 
-- `windows\UPDATE_HERMES.bat` → RAG extras + trust sync
+- `windows\UPDATE_HERMES.bat` → preflight (guard + upstream) + `hermes update` + post-merge (trust, toolsets, RAG)
+- Guard-log: `windows\_upstream_sync_guard.log` (laatste preflight-resultaten)
+
+## Repo-hygiene (institutioneel)
+
+| Situatie | Actie |
+|----------|--------|
+| Ongetrackte scripts/data in repo-root | `windows\UPDATE_HERMES.bat -QuickFix` of `windows\scripts\quick_fix_repo_hygiene.ps1` |
+| Dagelijkse controle | `powershell -File windows\scripts\health_check_repo.ps1` |
+| Strikte poort (CI) | `health_check_repo.ps1 -Strict` of `$env:HERMES_REPO_GUARD_STRICT=1` vóór update |
+| Herbruikbare tooling | Migreer naar `skills/<categorie>/<naam>/` (AGENTS.md) |
+| Alleen onderzoek | `output/research/{scripts,data,reports}/` — zie `docs/WORKSPACE_CONVENTIONS.md` |
+
+**Skill-levenscyclus:** ad-hoc script in `output/research/scripts/` → skill in `skills/` + pytest in `tests/skills/` → vermelding in `docs/domain_toolsets.yaml` → `SYNC_DOMAIN_TOOLSETS.bat`.
+
+**Upstream-cyclus (aanbevolen):** wekelijks `UPDATE_HERMES.bat` → controleer guard-log → na merge `POST_GIT_PULL.bat` of rooktest institutional → `/new` in actief profiel.
 
 ## Troubleshooting
 
@@ -54,12 +69,15 @@ Override conda: `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV`.
 | Dubbele RAG-install | Verwijder `%LOCALAPPDATA%\Hermes\rag-deps.json` of wacht op pyproject-wijziging; stamp: `%LOCALAPPDATA%\hermes\launch_bootstrap.stamp` |
 | RAG-sync mislukt bij start | Stamp niet bijgewerkt — retry bij volgende start; log in bootstrap |
 | REPAIR hangt op Read-Host | Gebruik `-NonInteractive` of `HERMES_NONINTERACTIVE=1` (automatisch in CI/audit) |
+| UPDATE stopt op dirty repo (exit 2) | `UPDATE_HERMES.bat -QuickFix` of commit/stash; alleen iconen: branding-waarschuwing OK |
+| Rommel in repo-root | `docs/WORKSPACE_CONVENTIONS.md`, `guard_git_clean.ps1`, E2E `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14) |
 | Legacy `.venv` | Quarantaine via `ensure_hermes_python.ps1`; niet productie-default |
 
 ## Pre-release (handmatig)
 
 1. `RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`
-2. `POST_GIT_PULL.bat` of dry-run UPDATE
-3. ACTIVATION rooktest op legal-profiel
+2. `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` (repo-hygiene + legal pytest, geen netwerk)
+3. `POST_GIT_PULL.bat` of dry-run UPDATE
+4. ACTIVATION rooktest op legal-profiel
 
 Zie ook: `docs/HERMES_START.md`, `windows/INSTITUTIONAL.md`.

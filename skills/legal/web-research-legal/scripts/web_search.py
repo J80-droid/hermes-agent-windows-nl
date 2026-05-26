@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Zoek juridische bronnen via Google web search.
 
+Beperkingen: rate limit 3s; HTML max 2MB; URL-deduplicatie; max_results 1–25.
+
 Gebruik:
     python web_search.py "artikel 7:10 Awb termijnverlenging"
     python web_search.py --site wetten.nl "Awb titel 4.1"
@@ -14,7 +16,21 @@ import urllib.request
 import urllib.parse
 
 RATE_LIMIT_SEC = 3.0
+MAX_HTML_BYTES = 2_000_000
 _last_req_time: float = 0.0
+
+
+def _clamp_max_results(n: int, default: int = 10, upper: int = 25) -> int:
+    if n < 1:
+        return default
+    return min(n, upper)
+
+
+def _read_response_text(resp, limit: int = MAX_HTML_BYTES) -> str:
+    data = resp.read(limit + 1)
+    if len(data) > limit:
+        data = data[:limit]
+    return data.decode("utf-8", errors="replace")
 
 
 def _respect_rate_limit() -> None:
@@ -35,18 +51,24 @@ def search_google(query: str, max_results: int = 10) -> list[dict]:
         "Accept": "text/html,application/xhtml+xml"
     })
     with urllib.request.urlopen(req, timeout=15) as resp:
-        data = resp.read().decode('utf-8', errors='replace')
+        data = _read_response_text(resp)
 
     urls = re.findall(r'href="/url\?q=(https?://[^&"\']+)', data)
     results = []
-    for raw_url in urls[:max_results]:
-        clean = html.unescape(raw_url)
-        # Filter alleen HTTP(S) URLs
-        if clean.startswith(("http://", "https://")):
-            results.append({
-                "url": clean,
-                "type": classify_url(clean)
-            })
+    seen: set[str] = set()
+    for raw_url in urls:
+        if len(results) >= max_results:
+            break
+        clean = html.unescape(urllib.parse.unquote(raw_url))
+        if not clean.startswith(("http://", "https://")):
+            continue
+        if clean in seen:
+            continue
+        seen.add(clean)
+        results.append({
+            "url": clean,
+            "type": classify_url(clean)
+        })
     return results
 
 
@@ -74,8 +96,12 @@ def main():
     parser.add_argument("--sites", help="Meerdere sites comma-gescheiden")
     parser.add_argument("--max", type=int, default=10, dest="max_results", help="Max resultaten")
     args = parser.parse_args()
+    args.max_results = _clamp_max_results(args.max_results)
 
     query = " ".join(args.query)
+    if not query.strip():
+        print("[ERROR] Lege zoekterm.", file=sys.stderr)
+        sys.exit(1)
 
     if args.sites:
         site_filter = " OR ".join(f"site:{s.strip()}" for s in args.sites.split(","))

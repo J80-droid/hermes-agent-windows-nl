@@ -71,6 +71,20 @@ class TestSplitRechtsoverwegingen:
 
 
 class TestFetchEcli:
+  @pytest.mark.parametrize(
+    "bad_ecli",
+    [
+      "",
+      "not-an-ecli",
+      "ECLI:NL:RVS:2019",  # ontbreekt segment
+      "ECLI:NL:RVS:ABCD:899",  # jaar geen cijfers
+      "ECLI:NL:RVS:2019:XX",  # nummer geen cijfers
+    ],
+  )
+  def test_invalid_ecli_raises_value_error(self, bad_ecli):
+    with pytest.raises(ValueError, match="Ongeldig ECLI"):
+      parse_uitspraak.fetch_ecli(bad_ecli)
+
   @mock.patch("urllib.request.urlopen")
   def test_happy_path(self, mock_open):
     resp = mock.MagicMock()
@@ -89,6 +103,16 @@ class TestFetchEcli:
   def test_network_failure(self, _open):
     with pytest.raises(OSError, match="timeout"):
       parse_uitspraak.fetch_ecli("ECLI:NL:RVS:2019:899")
+
+  @mock.patch("urllib.request.urlopen")
+  def test_response_truncated_at_limit(self, mock_open):
+    resp = mock.MagicMock()
+    resp.read.return_value = b"<x>" + b"y" * 3_000_000
+    resp.__enter__ = mock.Mock(return_value=resp)
+    resp.__exit__ = mock.Mock(return_value=False)
+    mock_open.return_value = resp
+    data = parse_uitspraak.fetch_ecli("ECLI:NL:RVS:2019:899")
+    assert len(data.encode("utf-8")) <= 2_000_000
 
 
 class TestParseUitspraakMain:
@@ -163,9 +187,8 @@ class TestExtractDocx:
       return real_import(name, *args, **kwargs)
 
     with mock.patch("builtins.__import__", side_effect=fake_import):
-      with pytest.raises(SystemExit) as exc:
+      with pytest.raises(FileNotFoundError):
         extract_docx.extract_docx("/nope.docx")
-    assert exc.value.code == 1
 
   def test_import_error_exits(self):
     real_import = __import__
@@ -176,9 +199,8 @@ class TestExtractDocx:
       return real_import(name, *args, **kwargs)
 
     with mock.patch("builtins.__import__", side_effect=fake_import):
-      with pytest.raises(SystemExit) as exc:
+      with pytest.raises(ImportError, match="python-docx"):
         extract_docx.extract_docx("x.docx")
-    assert exc.value.code == 1
 
 
 class TestExtractDocxMain:
@@ -187,6 +209,22 @@ class TestExtractDocxMain:
       with pytest.raises(SystemExit) as exc:
         extract_docx.main()
     assert exc.value.code == 1
+
+  @mock.patch("extract_docx.extract_docx", return_value=["Alinea"])
+  def test_happy_path_prints(self, _extract, capsys):
+    with mock.patch.object(sys, "argv", ["extract_docx.py", "doc.docx"]):
+      extract_docx.main()
+    out = capsys.readouterr().out
+    assert "1 paragrafen" in out
+    assert "Alinea" in out
+
+  @mock.patch("extract_docx.extract_docx", side_effect=RuntimeError("corrupt"))
+  def test_extract_failure_exits_one(self, _extract, capsys):
+    with mock.patch.object(sys, "argv", ["extract_docx.py", "bad.docx"]):
+      with pytest.raises(SystemExit) as exc:
+        extract_docx.main()
+    assert exc.value.code == 1
+    assert "mislukt" in capsys.readouterr().err
 
 
 # --- extract_pdf ---
@@ -229,9 +267,8 @@ class TestExtractPdf:
     pymupdf = mock.MagicMock()
     with mock.patch.dict(sys.modules, {"pymupdf": pymupdf}):
       with mock.patch("builtins.__import__", side_effect=lambda name, *a, **k: pymupdf if name == "pymupdf" else __import__(name, *a, **k)):
-        with pytest.raises(SystemExit) as exc:
+        with pytest.raises(FileNotFoundError):
           extract_pdf.extract_pdf("/missing.pdf")
-    assert exc.value.code == 1
 
   def test_import_error_exits(self):
     real_import = __import__
@@ -242,14 +279,27 @@ class TestExtractPdf:
       return real_import(name, *args, **kwargs)
 
     with mock.patch("builtins.__import__", side_effect=fake_import):
-      with pytest.raises(SystemExit) as exc:
+      with pytest.raises(ImportError, match="pymupdf"):
         extract_pdf.extract_pdf("a.pdf")
-    assert exc.value.code == 1
-
 
 class TestExtractPdfMain:
   def test_missing_argv_exits(self):
     with mock.patch.object(sys, "argv", ["extract_pdf.py"]):
+      with pytest.raises(SystemExit) as exc:
+        extract_pdf.main()
+    assert exc.value.code == 1
+
+  @mock.patch("extract_pdf.extract_pdf", return_value=(2, ["p1", "p2"]))
+  def test_happy_path_prints_pages(self, _extract, capsys):
+    with mock.patch.object(sys, "argv", ["extract_pdf.py", "a.pdf"]):
+      extract_pdf.main()
+    out = capsys.readouterr().out
+    assert "2 paginas" in out
+    assert "Pagina 1" in out
+
+  @mock.patch("extract_pdf.extract_pdf", side_effect=ImportError("pymupdf"))
+  def test_main_import_error(self, _extract):
+    with mock.patch.object(sys, "argv", ["extract_pdf.py", "a.pdf"]):
       with pytest.raises(SystemExit) as exc:
         extract_pdf.main()
     assert exc.value.code == 1

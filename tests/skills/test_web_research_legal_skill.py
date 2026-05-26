@@ -36,6 +36,22 @@ def _mock_urlopen(html: str):
     return resp
 
 
+class TestClampMaxResults:
+    @pytest.mark.parametrize(
+        "value,expected",
+        [(0, 10), (-1, 10), (10, 10), (99, 25)],
+    )
+    def test_clamps(self, value, expected):
+        assert mod._clamp_max_results(value) == expected
+
+
+class TestReadResponseText:
+    def test_truncates_large_response(self):
+        resp = mock.MagicMock()
+        resp.read.return_value = b"y" * (mod.MAX_HTML_BYTES + 1)
+        assert len(mod._read_response_text(resp).encode("utf-8")) <= mod.MAX_HTML_BYTES
+
+
 class TestClassifyUrl:
     @pytest.mark.parametrize(
         "url,expected",
@@ -91,6 +107,23 @@ class TestSearchGoogle:
 
     @mock.patch("web_search.urllib.request.urlopen")
     @mock.patch("web_search._respect_rate_limit")
+    def test_duplicate_urls_deduped(self, _rate, mock_open):
+        dup = '<a href="/url?q=https://wetten.nl/x&amp;sa=U">a</a>' * 3
+        mock_open.return_value = _mock_urlopen(dup)
+        results = mod.search_google("q", max_results=10)
+        assert len(results) == 1
+        assert results[0]["url"] == "https://wetten.nl/x"
+
+    @mock.patch("web_search.urllib.request.urlopen")
+    @mock.patch("web_search._respect_rate_limit")
+    def test_url_percent_decoded(self, _rate, mock_open):
+        html = '<a href="/url?q=https://wetten.nl/path%20with%20spaces">x</a>'
+        mock_open.return_value = _mock_urlopen(html)
+        results = mod.search_google("q", max_results=5)
+        assert results[0]["url"] == "https://wetten.nl/path with spaces"
+
+    @mock.patch("web_search.urllib.request.urlopen")
+    @mock.patch("web_search._respect_rate_limit")
     def test_network_error(self, _rate, mock_open):
         from urllib.error import URLError
 
@@ -139,6 +172,19 @@ class TestMainCli:
                 mod.main()
         assert exc.value.code == 1
         assert "failed" in capsys.readouterr().err.lower()
+
+    def test_empty_query_exits_one(self):
+        with mock.patch.object(sys, "argv", ["web_search.py", "   "]):
+            with pytest.raises(SystemExit) as exc:
+                mod.main()
+        assert exc.value.code == 1
+
+    @mock.patch("web_search.search_google", return_value=[])
+    def test_max_results_clamped(self, mock_search):
+        with mock.patch.object(sys, "argv", ["web_search.py", "--max", "0", "q"]):
+            with pytest.raises(SystemExit):
+                mod.main()
+        assert mock_search.call_args[0][1] == 10
 
     @mock.patch("web_search.search_google")
     def test_happy_path_prints_results(self, mock_search, capsys):

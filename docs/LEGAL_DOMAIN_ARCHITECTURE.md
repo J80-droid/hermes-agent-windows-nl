@@ -99,7 +99,7 @@ Naast RAG (`search_knowledge` op `lancedb-legal`) zijn drie **CLI-skills** besch
 
 Manifest: `docs/domain_toolsets.yaml` → `legal.fork_legal_skills`. Conventies voor scripts/data: [WORKSPACE_CONVENTIONS.md](WORKSPACE_CONVENTIONS.md).
 
-**Unit tests:** `pytest tests/skills/test_rechtspraak_zoeken_skill.py tests/skills/test_uitspraak_parseren_skill.py tests/skills/test_web_research_legal_skill.py`
+**Unit tests:** `pytest tests/skills/test_rechtspraak_zoeken_skill.py tests/skills/test_uitspraak_parseren_skill.py tests/skills/test_web_research_legal_skill.py` (101 tests, gemockte HTTP)
 
 ## Audits
 
@@ -108,6 +108,7 @@ Manifest: `docs/domain_toolsets.yaml` → `legal.fork_legal_skills`. Conventies 
 | `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat` | Taxonomie, SOUL-structuur, submappen, rooktest |
 | `windows\audits\RUN_AUDITS.bat -IncludeLegalDomainE2E` | Gecombineerde poort |
 | `audits\RUN_REPO_HYGIENE_E2E.bat` | Guard, skills importeerbaar, `fork_legal_skills` in manifest |
+| `audits\RUN_INSTITUTIONAL_HARDENING_E2E.bat` | Geïntegreerde poort: QuickFix-flow + pytest + preflight guard-log (14/14) |
 
 ## Zie ook
 

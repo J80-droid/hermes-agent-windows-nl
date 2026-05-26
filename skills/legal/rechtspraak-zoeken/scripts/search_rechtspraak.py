@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Doorzoek rechtspraak.nl via DuckDuckGo en Google search engines.
 
+Beperkingen: rate limit 3s tussen requests; HTML-respons max MAX_HTML_BYTES (2MB);
+max_results wordt begrensd (1–25). Geen API-key.
+
 Gebruik:
     python search_rechtspraak.py "artikel 7:10 Awb termijnverlenging"
     python search_rechtspraak.py --google "Awb bezwaar ABRvS"
@@ -14,7 +17,21 @@ import urllib.request
 import urllib.parse
 
 RATE_LIMIT_SEC = 3.0  # seconde tussen requests naar rechtspraak.nl
+MAX_HTML_BYTES = 2_000_000
 _last_req_time: float = 0.0
+
+
+def _clamp_max_results(n: int, default: int = 8, upper: int = 25) -> int:
+    if n < 1:
+        return default
+    return min(n, upper)
+
+
+def _read_response_text(resp, limit: int = MAX_HTML_BYTES) -> str:
+    data = resp.read(limit + 1)
+    if len(data) > limit:
+        data = data[:limit]
+    return data.decode("utf-8", errors="replace")
 
 
 def _respect_rate_limit() -> None:
@@ -25,7 +42,7 @@ def _respect_rate_limit() -> None:
     _last_req_time = time.time()
 
 
-def search_duckduckgo(query: str, site: str = None, max_results: int = 8) -> list[dict]:
+def search_duckduckgo(query: str, site: str | None = None, max_results: int = 8) -> list[dict]:
     """Doorzoek via DuckDuckGo HTML API."""
     if site:
         query = f"site:{site} {query}"
@@ -36,7 +53,7 @@ def search_duckduckgo(query: str, site: str = None, max_results: int = 8) -> lis
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     })
     with urllib.request.urlopen(req, timeout=15) as resp:
-        data = resp.read().decode('utf-8', errors='replace')
+        data = _read_response_text(resp)
 
     raw_results = re.findall(
         r'class="result__a"[^>]*href="([^"]+)"[^>]*>([^<]+)</a>',
@@ -70,7 +87,7 @@ def search_google(query: str, max_results: int = 8) -> list[dict]:
         "Accept": "text/html,application/xhtml+xml"
     })
     with urllib.request.urlopen(req, timeout=15) as resp:
-        data = resp.read().decode('utf-8', errors='replace')
+        data = _read_response_text(resp)
 
     urls = re.findall(
         r'href="/url\?q=(https?://[^&"\']+)',
@@ -116,6 +133,7 @@ def main():
     parser.add_argument("--site", default="rechtspraak.nl", help="Site-scope (default: rechtspraak.nl)")
     parser.add_argument("--max", type=int, default=8, dest="max_results", help="Max resultaten")
     args = parser.parse_args()
+    args.max_results = _clamp_max_results(args.max_results)
 
     query = " ".join(args.query)
     results = []
@@ -135,7 +153,8 @@ def main():
             print(f"[WARN] DuckDuckGo failed: {e}")
             print("[INFO] Falling back to Google...")
             try:
-                results = search_google(query, args.max_results)
+                fallback_q = f"site:{args.site} {query}" if args.site else query
+                results = search_google(fallback_q, args.max_results)
             except Exception as e2:
                 print(f"[ERROR] Google fallback also failed: {e2}")
                 sys.exit(1)

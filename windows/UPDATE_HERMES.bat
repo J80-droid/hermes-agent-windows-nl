@@ -14,7 +14,18 @@ echo        1. Preflight     — git vs Nous upstream ^(ahead/behind, optioneel 
 echo        2. hermes update — merge Nous + Python/npm + skills
 echo        3. Post-merge    — trust + API/vault-env sync, toolsets, institutional runtime, RAG, verify, taakbalk
 echo [INFO] Optioneel: -IncludeCodebaseSmoke ^(~32s^) of -IncludeCodebaseSmokeE2E ^(~45s E2E; geen E3^)
+echo [INFO] Rommel in repo-root: -QuickFix ^(verplaatst untracked naar output/research/^)
 echo.
+if /I "%~1"=="-QuickFix" (
+  echo [INFO] QuickFix repo-hygiene...
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\quick_fix_repo_hygiene.ps1" -RepoRoot "%CD%"
+  if errorlevel 1 (
+    echo [ERROR] QuickFix mislukt — los handmatig op of zie docs\WORKSPACE_CONVENTIONS.md
+    pause
+    exit /b 1
+  )
+  shift
+)
 echo [INFO] Uitleg bij cijfers en vragen staat in het PowerShell-venster ^(grijs^).
 echo        Verify in de keten: .ps1 ^(geen pause^). Einde .bat: pause ^(overslaan: HERMES_SKIP_PAUSE_AFTER_UPDATE=1^).
 echo.

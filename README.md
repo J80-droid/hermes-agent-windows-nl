@@ -184,6 +184,9 @@ Deze checkout is een **Windows NL-fork** met extra institutioneel onderhoud (RAG
 | Workspace / repo-hygiene | [docs/WORKSPACE_CONVENTIONS.md](docs/WORKSPACE_CONVENTIONS.md) |
 | Legal skills + RAG | [docs/LEGAL_DOMAIN_ARCHITECTURE.md](docs/LEGAL_DOMAIN_ARCHITECTURE.md) |
 | Upstream ↔ fork | [windows/UPSTREAM_SYNC.md](windows/UPSTREAM_SYNC.md) |
+| E2E poort (repo-hygiene) | `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14) |
+
+Bij rommel in de repo-root vóór update: `windows\UPDATE_HERMES.bat -QuickFix`.
 
 Upstream Hermes-documentatie blijft op [hermes-agent.nousresearch.com/docs](https://hermes-agent.nousresearch.com/docs/).
 

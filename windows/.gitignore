@@ -1,5 +1,6 @@
 # Lokaal / gegenereerd — niet versioneren
 *.lnk
+_upstream_sync_guard.log
 *_last_run.log
 rag_ingest_run.log
 last_pytest_run.log

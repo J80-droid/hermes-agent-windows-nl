@@ -13,9 +13,26 @@ Institutionele afspraken voor **waar** werk hoort: repo-root blijft upstream-syn
 | RAG-bronnen (productie) | `%USERPROFILE%\data\raw_source_files\` | Nee (user data) |
 | Juridische index (LanceDB) | `%USERPROFILE%\data\lancedb\legal\` | Nee |
 
+## `output/` structuur (aanbevolen)
+
+Alles onder `output/` wordt door git genegeerd (`.gitignore` regel `output/`). QuickFix en handmatig werk gebruiken deze indeling:
+
+```
+output/
+├── research/              # Ad-hoc onderzoek (niet in skills)
+│   ├── scripts/           # Tijdelijke .py/.ps1 tot migratie naar skills/
+│   ├── data/              # XML, HTML, PDF, JSON downloads
+│   └── reports/           # TXT, JSON, MD tussenrapporten
+├── legal/                 # Zaakdocumenten (bezwaar, concepten, AVG)
+├── exports/               # Data-exports (CSV, dumps)
+└── logs/                  # Extra lokale logs (naast Hermes runtime logs)
+```
+
+**Productie-RAG** gebruikt nooit `output/` als bronmap — alleen `%USERPROFILE%\data\raw_source_files\<domein>\`.
+
 ## Repo-root
 
-**Geen** ad-hoc `.py`/`.ps1`/data in de repo-root. Legitieme root-bestanden staan op een allowlist in `windows/scripts/guard_git_clean.ps1` (o.a. `cli.py`, `pyproject.toml`, `README.md`).
+**Geen** ad-hoc `.py`/`.ps1`/data in de repo-root. Legitieme root-bestanden staan op een gedeelde allowlist in `windows/scripts/RepoHygieneCommon.ps1` (gebruikt door `guard_git_clean.ps1` en `quick_fix_repo_hygiene.ps1`).
 
 Verboden patronen in root (`.gitignore`): `_research/`, `_workspace/`, `*_research/`, `**/_extract_*.py`, `**/_tmp_*.py`.
 
@@ -25,13 +42,20 @@ Drie skills onder `skills/legal/`, geregistreerd in `docs/domain_toolsets.yaml` 
 
 | Skill | Script(s) | Doel |
 |-------|-----------|------|
-| `rechtspraak-zoeken` | `scripts/search_rechtspraak.py` | Zoeken op rechtspraak.nl via DuckDuckGo/Google (fallback), rate limit 3s |
-| `uitspraak-parseren` | `parse_uitspraak.py`, `extract_docx.py`, `extract_pdf.py` | XML/ECLI, DOCX, PDF → leesbare tekst |
-| `web-research-legal` | `scripts/web_search.py` | Google site-scope (wetten.nl, rechtspraak.nl, …) |
+| `rechtspraak-zoeken` | `scripts/search_rechtspraak.py` | Zoeken op rechtspraak.nl via DuckDuckGo/Google (fallback + site-scope), rate limit 3s, response cap 2MB |
+| `uitspraak-parseren` | `parse_uitspraak.py`, `extract_docx.py`, `extract_pdf.py` | XML/ECLI (validatie + URL-encoding), DOCX, PDF → leesbare tekst |
+| `web-research-legal` | `scripts/web_search.py` | Google site-scope (wetten.nl, rechtspraak.nl, …), URL-deduplicatie |
 
-**Tests:** `pytest tests/skills/test_*_skill.py` (mocks op `urllib`; geen live API).
+**Unit tests:** `pytest tests/skills/test_*_skill.py` — **101 tests**, gemockte `urllib` (geen live API).
 
-**E2E repo-hygiene:** `audits/RUN_REPO_HYGIENE_E2E.bat` — zie `audits/REPO_HYGIENE_E2E_README.md`.
+**E2E-audits (geen netwerk):**
+
+| Script | Doel |
+|--------|------|
+| `audits/RUN_REPO_HYGIENE_E2E.bat` | Guard, gitignore, skills import (9 scenario's) |
+| `audits/RUN_UPDATE_HERMES_INTEGRATION_E2E.bat` | QuickFix, health_check, guard-log wiring |
+| `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` | Geïntegreerde poort QuickFix + pytest + preflight-log (14 scenario's) |
+| `audits/RUN_LEGAL_SKILLS_ROOKTEST.bat` | Snelle pytest-rooktest legal skills |
 
 ## Automatische controle
 
@@ -41,7 +65,11 @@ Drie skills onder `skills/legal/`, geregistreerd in `docs/domain_toolsets.yaml` 
 | `guard_git_clean.ps1 -Strict` | Exit code **2** → blokkeert (CI/strikte poort) |
 | Standaard (geen `-Strict`) | Exit **0** met waarschuwingen (upstream kan doorgaan met `-AllowDirty`) |
 
-Overslaan: `upstream_sync.ps1 -SkipGuard`. Zie [UPSTREAM_SYNC.md](../windows/UPSTREAM_SYNC.md).
+| `windows\UPDATE_HERMES.bat -QuickFix` | Verplaatst **ongetrackte** root-bestanden naar `output/research/` (of `output/legal/`) |
+| `windows\scripts\health_check_repo.ps1` | Handmatige/dagelijkse check; `-Strict` = zelfde exit 2 als guard |
+| Logbestand | `windows\_upstream_sync_guard.log` (lokaal, gitignored) |
+
+Overslaan guard: `upstream_sync.ps1 -SkipGuard`. Strikte CI: `$env:HERMES_REPO_GUARD_STRICT=1`. Zie [UPSTREAM_SYNC.md](../windows/UPSTREAM_SYNC.md).
 
 ## Cursor / IDE
 

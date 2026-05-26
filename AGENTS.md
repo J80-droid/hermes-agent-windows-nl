@@ -11,6 +11,13 @@ Instructions for AI coding assistants and developers working on the hermes-agent
 - **Windows split-home (2026-05-23+):** `HermesHomeCommon.ps1`, drift verify, deprecate legacy config, auxiliary hybrid preset, Venice merge, root inheritance E2E, doctor + `HERMES_WIN_PREFER_LOCALAPPDATA`, runbook `docs/HERMES_HOME_WINDOWS.md`.
 - Citatieregels: `.cursorrules` + `LANCEDB_RAG_STRICT_CITATION_GUIDANCE` in `agent/prompt_builder.py` (actief wanneer tool `search_knowledge` geladen is).
 
+### Ad-hoc werk & repo-hygiene (deze fork)
+
+- **Geen** nieuwe `.py`-scripts of data in de **repo-root** — gebruik `output/research/` (gitignored) of een skill onder `skills/<categorie>/<naam>/scripts/`.
+- Canonical layout en QuickFix: `docs/WORKSPACE_CONVENTIONS.md`.
+- Legal fork-skills (zoeken, parseren, web): `skills/legal/` + `tests/skills/test_*_skill.py`.
+- Preflight guard: `windows/scripts/guard_git_clean.ps1` (via `UPDATE_HERMES.bat` / `upstream_sync.ps1`).
+
 ## Development Environment
 
 ```bash

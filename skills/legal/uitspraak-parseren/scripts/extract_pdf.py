@@ -15,13 +15,13 @@ def extract_pdf(path: str) -> tuple[int, list[str]]:
     except ImportError:
         try:
             import fitz as pymupdf
-        except ImportError:
-            print("[ERROR] pymupdf niet geinstalleerd. Installeer met: pip install pymupdf", file=sys.stderr)
-            sys.exit(1)
+        except ImportError as exc:
+            raise ImportError(
+                "pymupdf niet geinstalleerd. Installeer met: pip install pymupdf"
+            ) from exc
 
     if not os.path.isfile(path):
-        print(f"[ERROR] Bestand niet gevonden: {path}", file=sys.stderr)
-        sys.exit(1)
+        raise FileNotFoundError(path)
 
     doc = pymupdf.open(path)
     try:
@@ -42,7 +42,17 @@ def main():
         sys.exit(1)
 
     path = sys.argv[1]
-    page_count, pages = extract_pdf(path)
+    try:
+        page_count, pages = extract_pdf(path)
+    except ImportError as e:
+        print(f"[ERROR] {e}", file=sys.stderr)
+        sys.exit(1)
+    except FileNotFoundError:
+        print(f"[ERROR] Bestand niet gevonden: {path}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"[ERROR] PDF lezen mislukt: {e}", file=sys.stderr)
+        sys.exit(1)
 
     print(f"[INFO] {page_count} paginas uit {path}")
     for i, text in enumerate(pages):

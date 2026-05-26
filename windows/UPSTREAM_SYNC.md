@@ -72,6 +72,24 @@ powershell -NoProfile -File windows\scripts\guard_git_clean.ps1 -Strict
 
 E2E (geen netwerk): `audits\RUN_REPO_HYGIENE_E2E.bat`.
 
+### QuickFix (rommel in repo-root)
+
+```cmd
+windows\UPDATE_HERMES.bat -QuickFix
+```
+
+Of alleen opruimen zonder update:
+
+```cmd
+powershell -NoProfile -File windows\scripts\quick_fix_repo_hygiene.ps1
+```
+
+Verplaatst **ongetrackte** bestanden uit de root naar `output/research/` (scripts/data/reports) of `output/legal/`. Optioneel `git stash` voor overige wijzigingen. Daarna normale update zonder `-QuickFix`.
+
+**Guard-log:** `windows\_upstream_sync_guard.log` (gitignored) — elke preflight append een blok met timestamp en guard-output.
+
+**Dagelijkse check:** `powershell -File windows\scripts\health_check_repo.ps1`
+
 ---
 
 ## Standaard sync: `windows\UPDATE_HERMES.bat` of `hermes_update.bat`

@@ -2,7 +2,8 @@
 
 ## Code (P2 + institutioneel)
 
-- [x] Repo-hygiene + legal fork-skills (2026-05-26): `guard_git_clean.ps1`, upstream preflight, `docs/WORKSPACE_CONVENTIONS.md`, 3× `skills/legal/*`, `fork_legal_skills` in `domain_toolsets.yaml`, pytest 72/72, E2E repo-hygiene 9/9
+- [x] Repo-hygiene + legal fork-skills (2026-05-26): `RepoHygieneCommon.ps1`, guard/QuickFix/health_check, guard-log trim, 3× `skills/legal/*`, code-review (ECLI, 2MB cap, dedupe), pytest **101/101**, E2E **14/14** `RUN_INSTITUTIONAL_HARDENING_E2E` + repo-hygiene 9/9 + update-integratie 10/10
+- [x] Institutioneel hardening docs (2026-05-26): `WORKSPACE_CONVENTIONS`, `INSTITUTIONAL_OPERATIONS`, `AGENTS.md`, README fork-sectie, audit READMEs, memory bank
 - [x] Performance-architectuur (2026-05-25): RAG lifecycle/scan/MCP/orphan/bootstrap; `ingest_chunking`, `document_converter`, `config_snapshot`, `review_snapshot`; runtime pipe/Whisper/config caps; `process_registry` Windows PTY + detached kill; refactor ingest_handlers/bootstrap/ingest; unit tests RAG +83 + `test_process_registry`; E2E `RUN_PERFORMANCE_ARCHITECTURE_E2E` 10/10 (pytest incl. process_registry); `*_PRODUCTION_GATE_REPORT_*.md` gitignored
 - [x] `pyproject.toml` extra `[rag]` (+ faster-whisper)
 - [x] pytest `tests/rag_pipeline/` + integratie `rag_integration`

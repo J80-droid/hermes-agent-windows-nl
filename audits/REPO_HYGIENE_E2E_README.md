@@ -2,6 +2,14 @@
 
 Geïsoleerde E2E voor repo-hygiene guard, .gitignore, cursor rules, skill imports en domein-manifest. Geen live API, geen netwerk.
 
+Gerelateerde poorten (fase 5–6):
+
+| Script | Doel |
+|--------|------|
+| `RUN_UPDATE_HERMES_INTEGRATION_E2E.bat` | QuickFix, health_check, guard-log wiring |
+| `RUN_LEGAL_SKILLS_ROOKTEST.bat` | pytest legal skills (101 unit tests) |
+| `RUN_INSTITUTIONAL_HARDENING_E2E.bat` | Geïntegreerde poort H1–H14 (aanbevolen) |
+
 | ID | Scenario | Verwachting |
 |----|----------|-------------|
 | E1 | Guard script clean | `guard_git_clean.ps1` met schone repo geeft exit 0, OK |

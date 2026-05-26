@@ -12,13 +12,13 @@ def extract_docx(path: str) -> list[str]:
     """Lees alle paragrafen uit een DOCX bestand."""
     try:
         from docx import Document
-    except ImportError:
-        print("[ERROR] python-docx niet geinstalleerd. Installeer met: pip install python-docx", file=sys.stderr)
-        sys.exit(1)
+    except ImportError as exc:
+        raise ImportError(
+            "python-docx niet geinstalleerd. Installeer met: pip install python-docx"
+        ) from exc
 
     if not os.path.isfile(path):
-        print(f"[ERROR] Bestand niet gevonden: {path}", file=sys.stderr)
-        sys.exit(1)
+        raise FileNotFoundError(path)
 
     doc = Document(path)
     return [p.text for p in doc.paragraphs if p.text.strip()]
@@ -31,7 +31,17 @@ def main():
         sys.exit(1)
 
     path = sys.argv[1]
-    paragraphs = extract_docx(path)
+    try:
+        paragraphs = extract_docx(path)
+    except ImportError as e:
+        print(f"[ERROR] {e}", file=sys.stderr)
+        sys.exit(1)
+    except FileNotFoundError:
+        print(f"[ERROR] Bestand niet gevonden: {path}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"[ERROR] DOCX lezen mislukt: {e}", file=sys.stderr)
+        sys.exit(1)
 
     print(f"[INFO] {len(paragraphs)} paragrafen uit {path}")
     print()

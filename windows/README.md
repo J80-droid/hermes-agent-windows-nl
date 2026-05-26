@@ -73,7 +73,13 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 | Core routing / landkaart | `docs\ORCHESTRATOR_ROUTING.md`, skill `landkaart` (`/landkaart`) |
 | Legal lenzen (één bucket) | `docs\LEGAL_DOMAIN_ARCHITECTURE.md`, `docs\LEGAL_TAXONOMY.md`, `MIGRATE_LEGAL_LAYOUT.bat` |
 | Legal fork-skills (zoek/parse/web) | `skills\legal\` — `rechtspraak-zoeken`, `uitspraak-parseren`, `web-research-legal`; sync manifest: `SYNC_DOMAIN_TOOLSETS.bat` |
-| Repo-hygiene (schone root) | `docs\WORKSPACE_CONVENTIONS.md` · preflight: `scripts\guard_git_clean.ps1` (in `upstream_sync.ps1`) · E2E: `..\audits\RUN_REPO_HYGIENE_E2E.bat` |
+| Repo-hygiene (schone root) | `docs\WORKSPACE_CONVENTIONS.md` · preflight: `scripts\guard_git_clean.ps1` · log: `_upstream_sync_guard.log` |
+| QuickFix vóór update | `UPDATE_HERMES.bat -QuickFix` · `scripts\quick_fix_repo_hygiene.ps1` |
+| Repo health check | `scripts\health_check_repo.ps1` · `-Strict` voor CI |
+| Repo-hygiene E2E | `..\audits\RUN_REPO_HYGIENE_E2E.bat` · integratie: `RUN_UPDATE_HERMES_INTEGRATION_E2E.bat` |
+| Legal skills pytest (101) | `pytest tests\skills\test_*_skill.py` · `..\audits\RUN_LEGAL_SKILLS_ROOKTEST.bat` |
+| Institutioneel hardening E2E | `..\audits\RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14) |
+| Gedeelde hygiene helpers | `scripts\RepoHygieneCommon.ps1` |
 | **Update fork (Nous upstream)** | `UPDATE_HERMES.bat` of `hermes_update.bat` (zelfde keten) |
 | Alleen upstream-status | `powershell -File windows\upstream_sync.ps1 -Phase Preflight` |
 
@@ -135,13 +141,13 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 
 `tests/RUN_PYTEST.bat`, `tests/RUN_PSScriptAnalyzer.bat` — logs staan in `.gitignore`.
 
-**Legal fork-skills (unit, geen netwerk):**
+**Legal fork-skills (unit, geen netwerk, 101 tests):**
 
 ```cmd
 %USERPROFILE%\miniconda3\envs\hermes-env\python.exe -m pytest tests\skills\test_rechtspraak_zoeken_skill.py tests\skills\test_uitspraak_parseren_skill.py tests\skills\test_web_research_legal_skill.py -q
 ```
 
-Mocks: `urllib.request.urlopen`, `time.sleep`, optionele imports (`docx`, `fitz`).
+Mocks: `urllib.request.urlopen`, `time.sleep`, optionele imports (`docx`, `fitz`). Dekking: happy path, edge cases (ongeldige ECLI, lege query, response-truncatie, URL-dedupe), negatieve scenario's (netwerk/import).
 
 | Check | Script |
 | ----- | ------ |
