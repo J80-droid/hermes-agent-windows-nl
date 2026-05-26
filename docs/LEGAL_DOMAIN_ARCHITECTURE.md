@@ -87,12 +87,27 @@ Optioneel later (fase 2b): metadata `legal_lens` in ingest — alleen als mappen
 | `profiles\legal\SOUL.md` | Runtime (buiten git) |
 | `profiles\legal\LEGAL_ACTIVE_MATTERS.md` | Lopende dossiers (buiten git) |
 
+## Fork-skills (web + parsing, in repo)
+
+Naast RAG (`search_knowledge` op `lancedb-legal`) zijn drie **CLI-skills** beschikbaar voor live zoeken en documentextractie (geen API-key voor rechtspraak.nl HTML):
+
+| Skill | Pad | Typisch gebruik |
+|-------|-----|-----------------|
+| `rechtspraak-zoeken` | `skills/legal/rechtspraak-zoeken/` | Uitspraken vinden, ECLI/URL uit resultaten |
+| `uitspraak-parseren` | `skills/legal/uitspraak-parseren/` | XML via ECLI of stdin; DOCX/PDF lokaal |
+| `web-research-legal` | `skills/legal/web-research-legal/` | `site:wetten.nl` / meerdere sites via Google HTML |
+
+Manifest: `docs/domain_toolsets.yaml` → `legal.fork_legal_skills`. Conventies voor scripts/data: [WORKSPACE_CONVENTIONS.md](WORKSPACE_CONVENTIONS.md).
+
+**Unit tests:** `pytest tests/skills/test_rechtspraak_zoeken_skill.py tests/skills/test_uitspraak_parseren_skill.py tests/skills/test_web_research_legal_skill.py`
+
 ## Audits
 
 | Script | Doel |
 |--------|------|
 | `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat` | Taxonomie, SOUL-structuur, submappen, rooktest |
 | `windows\audits\RUN_AUDITS.bat -IncludeLegalDomainE2E` | Gecombineerde poort |
+| `audits\RUN_REPO_HYGIENE_E2E.bat` | Guard, skills importeerbaar, `fork_legal_skills` in manifest |
 
 ## Zie ook
 

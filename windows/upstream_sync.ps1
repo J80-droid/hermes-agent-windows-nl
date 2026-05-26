@@ -100,10 +100,11 @@ function Invoke-UpstreamPreflight {
         [string]$Repo,
         [int]$WarnBehind,
         [switch]$Force,
-        [switch]$AllowDirty,
-        [switch]$PromptOnLargeBehind,
-        [switch]$ShowResetWarning
-    )
+[switch]$AllowDirty,
+    [switch]$SkipGuard,
+    [switch]$PromptOnLargeBehind,
+    [switch]$ShowResetWarning
+)
 
     if ($ShowResetWarning) { Show-GitHardResetWarning }
 
@@ -112,6 +113,23 @@ function Invoke-UpstreamPreflight {
             'Fase 1/3 - Preflight: controleert git en vergelijkt jouw fork met Nous (upstream).'
             'Geen code gewijzigd; alleen fetch + tellen hoeveel commits je voor/achter loopt.'
         )
+    }
+
+    # Repo-hygiene: guard_git_clean.ps1 (standaard -Quiet, exit 0 + waarschuwing; -Strict → exit 2)
+    if (-not $SkipGuard) {
+        $guardScript = Join-Path $PSScriptRoot 'scripts\guard_git_clean.ps1'
+        if (Test-Path -LiteralPath $guardScript) {
+            & $guardScript -RepoRoot $Repo -Quiet
+            $guardCode = $LASTEXITCODE
+            if ($guardCode -ne 0) {
+                Write-HermesWarn 'Repo-hygiene guard: onverwachte bestanden in repo-root gedetecteerd.'
+                if (-not $AllowDirty) {
+                    Write-HermesInfo 'Verplaats ad-hoc scripts en data naar output/research/ of skills/.'
+                    Write-HermesInfo 'Zie docs/WORKSPACE_CONVENTIONS.md | Overslaan: -SkipGuard of -AllowDirty'
+                }
+            }
+            # guardCode 2 alleen bij guard -Strict; preflight blokkeert upstream niet (waarschuwing)
+        }
     }
 
     Write-HermesInfo ('Repo: ' + $Repo)

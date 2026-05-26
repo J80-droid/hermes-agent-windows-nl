@@ -72,6 +72,8 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 | Institutionele presentatie | `docs\INSTITUTIONAL_PRESENTATION.md` |
 | Core routing / landkaart | `docs\ORCHESTRATOR_ROUTING.md`, skill `landkaart` (`/landkaart`) |
 | Legal lenzen (één bucket) | `docs\LEGAL_DOMAIN_ARCHITECTURE.md`, `docs\LEGAL_TAXONOMY.md`, `MIGRATE_LEGAL_LAYOUT.bat` |
+| Legal fork-skills (zoek/parse/web) | `skills\legal\` — `rechtspraak-zoeken`, `uitspraak-parseren`, `web-research-legal`; sync manifest: `SYNC_DOMAIN_TOOLSETS.bat` |
+| Repo-hygiene (schone root) | `docs\WORKSPACE_CONVENTIONS.md` · preflight: `scripts\guard_git_clean.ps1` (in `upstream_sync.ps1`) · E2E: `..\audits\RUN_REPO_HYGIENE_E2E.bat` |
 | **Update fork (Nous upstream)** | `UPDATE_HERMES.bat` of `hermes_update.bat` (zelfde keten) |
 | Alleen upstream-status | `powershell -File windows\upstream_sync.ps1 -Phase Preflight` |
 
@@ -126,11 +128,20 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 | Taakbalk-snelkoppelingen vernieuwen | `REFRESH_TASKBAR_SHORTCUTS.bat` (`windows\*.lnk` = `cmd /c` + gekleurd `.ico`) |
 | Taakbalk-icoon herstellen | `FIX_TASKBAR_ICONS.bat` |
 | Nous upstream-merge (uitleg) | `UPSTREAM_SYNC.md` |
+| Repo-hygiene E2E | `..\audits\RUN_REPO_HYGIENE_E2E.bat` · `..\audits\REPO_HYGIENE_E2E_README.md` |
 | Sentence-transformers cache warmen | `scripts/warm_sentence_transformers_cache.bat` |
 
 ## Tests
 
 `tests/RUN_PYTEST.bat`, `tests/RUN_PSScriptAnalyzer.bat` — logs staan in `.gitignore`.
+
+**Legal fork-skills (unit, geen netwerk):**
+
+```cmd
+%USERPROFILE%\miniconda3\envs\hermes-env\python.exe -m pytest tests\skills\test_rechtspraak_zoeken_skill.py tests\skills\test_uitspraak_parseren_skill.py tests\skills\test_web_research_legal_skill.py -q
+```
+
+Mocks: `urllib.request.urlopen`, `time.sleep`, optionele imports (`docx`, `fitz`).
 
 | Check | Script |
 | ----- | ------ |

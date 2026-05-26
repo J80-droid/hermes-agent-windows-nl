@@ -29,6 +29,8 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Data domein (database, analytics, pipeline, governance) | `docs/12_Data/`, `docs/templates/SOUL_DATA_DOMAIN.md` |
 | Orchestrator routing (core) | [ORCHESTRATOR_ROUTING.md](ORCHESTRATOR_ROUTING.md) |
 | Legal domein (lenzen, één bucket) | [LEGAL_DOMAIN_ARCHITECTURE.md](LEGAL_DOMAIN_ARCHITECTURE.md), [LEGAL_TAXONOMY.md](LEGAL_TAXONOMY.md), [LEGAL_ROLLOUT_CHECKLIST.md](LEGAL_ROLLOUT_CHECKLIST.md) |
+| Legal fork-skills (zoeken, parseren, web) | `skills/legal/` — [WORKSPACE_CONVENTIONS.md](WORKSPACE_CONVENTIONS.md); pytest `tests/skills/test_*_skill.py` |
+| Repo-hygiene (geen rommel in root) | [WORKSPACE_CONVENTIONS.md](WORKSPACE_CONVENTIONS.md) · guard: `windows/scripts/guard_git_clean.ps1` · E2E: `audits/RUN_REPO_HYGIENE_E2E.bat` |
 | Landkaart / volledige lijsten | skill `landkaart` (`/landkaart`) |
 | Domeinen toevoegen (`domains.yaml`) | [domains.yaml.example](domains.yaml.example) + [DOMAIN_BLUEPRINT.md](DOMAIN_BLUEPRINT.md) |
 | RAG env-defaults (stale, torch-ruis) | [RAG_INSTITUTIONAL_ENV.md](RAG_INSTITUTIONAL_ENV.md) |

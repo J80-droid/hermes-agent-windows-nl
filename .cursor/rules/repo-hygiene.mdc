@@ -1,0 +1,33 @@
+---
+description: Repo-hygiene — geen ad-hoc scripts/data in root, output/ of skills/ als canonical workspace
+globs: hermes-agent/**/*
+alwaysApply: true
+---
+
+# Repo-hygiene (institutioneel)
+
+## Canonical workspace
+
+| Soort werk | Waar | Genegeerd door git? |
+|------------|------|---------------------|
+| Herbruikbare tool (skill) | `skills/<categorie>/<naam>/` | Nee (in repo) |
+| Ad-hoc script (tijdelijk) | `output/research/scripts/` | Ja (`output/`) |
+| Data-bestanden (XML, HTML, PDF) | `output/research/data/` | Ja (`output/`) |
+| Rapportages (TXT, JSON, MD) | `output/research/reports/` | Ja (`output/`) |
+| RAG bronbestanden | `%USERPROFILE%\data\raw_source_files\` | Ja (buiten repo) |
+| Juridische documenten | `output/legal/` of `docs/legal/` | Ja/Nee |
+
+## Regels
+
+1. **Geen `.py`-scripts in de repo-root** — maak een skill (`skills/<categorie>/<naam>/scripts/`) of plaats in `output/research/scripts/`.
+2. **Geen data-bestanden in de repo-root** — XML, HTML, PDF, JSON, TXT, CSV altijd naar `output/research/`.
+3. **`_`-prefix in root** = tijdelijk, moet naar `output/`. Uitzondering: `_extract_*.py` en `_tmp_*.py` zijn verboden in root (`.gitignore` gepatched).
+4. **Nieuwe skills** volgen AGENTS.md hardline-regels: `SKILL.md` met frontmatter, `description` ≤ 60 chars, `platforms`-gating, modern section order.
+5. **Repository schoon houden** voor upstream-sync: `guard_git_clean.ps1` draait in `upstream_sync.ps1` preflight.
+
+## Verwijzingen
+
+- AGENTS.md — volledige skill authoring standards
+- docs/WORKSPACE_CONVENTIONS.md — data-architectuur conventies
+- windows/scripts/guard_git_clean.ps1 — geautomatiseerde hygiene-check
+- windows/UPSTREAM_SYNC.md — upstream sync documentatie

@@ -2,6 +2,8 @@
 
 ## Focus
 
+**Institutionele hardening — repo-hygiene + legal fork-skills (2026-05-26, PASS):** Ad-hoc root opgeruimd naar `output/research/`; `guard_git_clean.ps1` + preflight in `upstream_sync.ps1`; `.cursor/rules/repo-hygiene.mdc`; skills `skills/legal/{rechtspraak-zoeken,uitspraak-parseren,web-research-legal}`; manifest `fork_legal_skills` in `domain_toolsets.yaml`; pytest **72** (`tests/skills/test_*_skill.py`); E2E **9/9** `audits/RUN_REPO_HYGIENE_E2E.bat`. Docs: `docs/WORKSPACE_CONVENTIONS.md`, README fork-sectie, `windows/README.md`, `UPSTREAM_SYNC.md`.
+
 **Performance-architectuur RAG + runtime (2026-05-25, PASS):** LanceDB via `KnowledgeRepository.session()` (schema_migrate, bootstrap); enkelvoudige `collect_indexed_files`; `ingest_chunking` + `document_converter`; MCP `_ensure_mcp_knowledge`; batched orphan cleanup; `config_snapshot` + gateway/sandbox mtime-cache; `review_snapshot` (`HERMES_BG_REVIEW_MAX_MESSAGES`); Whisper-cache; `process_registry` pipe-close + Windows PTY fixes (`_pty_spawn_argv`, winpty str-write, detached taskkill, PTY reconcile); mcp stderr-log close. Unit tests RAG +83; `test_process_registry` 60 passed / 6 skipped (Windows). E2E **10/10** `RUN_PERFORMANCE_ARCHITECTURE_E2E.bat` (pytest incl. process_registry). Gate-rapporten `*_PRODUCTION_GATE_REPORT_*.md` gitignored. Refactor: `ingest_handlers`, `bootstrap_ingest_state`, `ingest._plan_incremental_ingest`.
 
 **Platform hardening 10/10 (2026-05-25):** VectorStore-laag (`vector_store_*`, `lancedb_backend`), `KnowledgeRepository` (47 unit tests), regression E2E **10/10**, dedicated `RUN_KNOWLEDGE_REPOSITORY_E2E.bat` **8/8**, productie-poort `RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat`. Sandbox env-cache bust; hardware `reset_hardware_backend_cache()`; `patch_tool` her-propageert `PermissionError`. Docs: `docs/WINDOWS_PLATFORM_HARDENING.md`.
@@ -69,6 +71,9 @@
 | Domein-toolsets | `docs/DOMAIN_TOOLSET_AUDIT.md`, `docs/domain_toolsets.yaml` |
 | Core routing / orchestrator | `docs/ORCHESTRATOR_ROUTING.md` |
 | Legal architectuur / taxonomie | `docs/LEGAL_DOMAIN_ARCHITECTURE.md`, `docs/LEGAL_TAXONOMY.md` |
+| Workspace / repo-hygiene | `docs/WORKSPACE_CONVENTIONS.md`, `windows/scripts/guard_git_clean.ps1` |
+| Legal fork-skills + pytest | `skills/legal/`, `tests/skills/test_*_skill.py` |
+| Repo-hygiene E2E | `audits/RUN_REPO_HYGIENE_E2E.bat`, `audits/REPO_HYGIENE_E2E_README.md` |
 | Landkaart (volledige lijsten) | skill `landkaart`, `/landkaart` |
 | RAG twee fasen | `docs/RAG_TWEE_FASEN.md` |
 | Presentatie (kleur + structuur) | `docs/INSTITUTIONAL_PRESENTATION.md`, `docs/INSTITUTIONAL_PORTING_GUIDE.md` |

@@ -52,6 +52,28 @@ Taakbalk-.lnk: update = `hermes_logo_update.ico` (wit/zilver). Gebruik **niet** 
 
 **Git dirty na update:** icoon-generator kan `assets/Hermes_logo.png` en `windows/hermes_logo.ico` wijzigen. Dat is normaal — `git restore` die bestanden of doe een branding-commit; preflight laat alleen branding door.
 
+## Repo-hygiene preflight (fork)
+
+`upstream_sync.ps1` roept vóór fetch/merge **`windows\scripts\guard_git_clean.ps1`** aan (`-Quiet`), tenzij `-SkipGuard`.
+
+| Exit | Betekenis |
+|------|-----------|
+| `0` | Geen onverwachte bestanden in repo-root, of alleen waarschuwingen (standaardmodus) |
+| `2` | Repo-root niet schoon in **`-Strict`** (blokkeert bewust) |
+
+Bij rommel in de root: verplaats scripts naar `output/research/scripts/` of `skills/<categorie>/<naam>/scripts/`; data naar `output/research/data/` of `%USERPROFILE%\data\raw_source_files\`. Details: [docs/WORKSPACE_CONVENTIONS.md](../docs/WORKSPACE_CONVENTIONS.md).
+
+Handmatig controleren:
+
+```powershell
+powershell -NoProfile -File windows\scripts\guard_git_clean.ps1
+powershell -NoProfile -File windows\scripts\guard_git_clean.ps1 -Strict
+```
+
+E2E (geen netwerk): `audits\RUN_REPO_HYGIENE_E2E.bat`.
+
+---
+
 ## Standaard sync: `windows\UPDATE_HERMES.bat` of `hermes_update.bat`
 
 **Eén commando** — preflight zit **in** `upstream_sync.ps1` (`-Phase Update`, default):

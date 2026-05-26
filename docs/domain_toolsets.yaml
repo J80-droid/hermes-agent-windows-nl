@@ -78,6 +78,10 @@ profiles:
       vision: "Gescande PDF/VSO/GCR zonder bruikbare tekstlaag; foto-bewijs."
       session_search: "Eerdere legal-strategie-chats terugvinden."
       todo: "Meerstaps VSO/GCR-planning met expliciete checklist."
+    fork_legal_skills:
+      rechtspraak_zoeken: "skills/legal/rechtspraak-zoeken/ - doorzoek rechtspraak.nl via DuckDuckGo/Google."
+      uitspraak_parseren: "skills/legal/uitspraak-parseren/ - parseer XML/DOCX/PDF rechtspraak."
+      web_research_legal: "skills/legal/web-research-legal/ - juridische web search (Google)."
     legal_lenses:
       arb: "vision bij scan; session_search voor eerdere GCR-strategie."
       bbk: "web_extract voor overheidsbesluit-URL (web staat aan)."

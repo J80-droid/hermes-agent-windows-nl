@@ -173,6 +173,22 @@ See `hermes claw migrate --help` for all options, or use the `openclaw-migration
 
 ---
 
+## Windows NL fork (J.)
+
+Deze checkout is een **Windows NL-fork** met extra institutioneel onderhoud (RAG multi-domein, trust/SOUL, upstream-sync). Fork-specifieke documentatie:
+
+| Onderwerp | Document |
+|-----------|----------|
+| Documentatie-index | [docs/README.md](docs/README.md) |
+| Windows-toolkit (bat/ps1, updates) | [windows/README.md](windows/README.md) |
+| Workspace / repo-hygiene | [docs/WORKSPACE_CONVENTIONS.md](docs/WORKSPACE_CONVENTIONS.md) |
+| Legal skills + RAG | [docs/LEGAL_DOMAIN_ARCHITECTURE.md](docs/LEGAL_DOMAIN_ARCHITECTURE.md) |
+| Upstream ↔ fork | [windows/UPSTREAM_SYNC.md](windows/UPSTREAM_SYNC.md) |
+
+Upstream Hermes-documentatie blijft op [hermes-agent.nousresearch.com/docs](https://hermes-agent.nousresearch.com/docs/).
+
+---
+
 ## Contributing
 
 We welcome contributions! See the [Contributing Guide](https://hermes-agent.nousresearch.com/docs/developer-guide/contributing) for development setup, code style, and PR process.
