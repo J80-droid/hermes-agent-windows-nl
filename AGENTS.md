@@ -14,12 +14,11 @@ Instructions for AI coding assistants and developers working on the hermes-agent
 ### Ad-hoc werk & repo-hygiene (deze fork)
 
 - **Geen** nieuwe `.py`-scripts of data in de **repo-root** — gebruik `output/research/` (gitignored) of een skill onder `skills/<categorie>/<naam>/scripts/`.
-- Canonical layout en QuickFix: `docs/WORKSPACE_CONVENTIONS.md`.
+- Canonical layout: `docs/WORKSPACE_CONVENTIONS.md`. **Alle handige commando's (één cheat sheet):** `docs/INSTITUTIONAL_OPERATIONS.md#handige-commandos-fork`.
 - Legal fork-skills (zoeken, parseren, web): `skills/legal/` + `tests/skills/test_*_skill.py` (101 pytest, gemockte HTTP).
 - Preflight guard: `windows/scripts/guard_git_clean.ps1` (via `UPDATE_HERMES.bat` / `upstream_sync.ps1`).
-- **QuickFix alleen:** `windows/UPDATE_HERMES.bat -QuickFix` (stopt na opruimen; `HERMES_WIN` voorkomt pad-bug na `shift`). Volledige update: zelfde `.bat` zonder `-QuickFix`.
-- **E2E / CI:** `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14); `windows/audits/RUN_AUDITS.bat -IncludeInstitutionalHardeningE2E` (of `-IncludeRepoHygieneE2E` / `-IncludeUpdateHermesIntegrationE2E`); pytest `tests/windows/test_repo_hygiene_institutional_e2e.py -m e2e`; CI `.github/workflows/fork-windows-institutional.yml`; productie-poort `windows/audits/RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`.
-- **Na pull:** `windows/POST_GIT_PULL.bat -QuickFix` (optioneel, vóór verify).
+- **QuickFix:** `windows/UPDATE_HERMES.bat -QuickFix` of `windows/POST_GIT_PULL.bat -QuickFix` (`HERMES_WIN` op UPDATE voorkomt pad-bug na `shift`).
+- **E2E / CI:** zie cheat sheet — o.a. `RUN_AUDITS -IncludeInstitutionalHardeningE2E`, `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat`, pytest `-m e2e`, `fork-windows-institutional.yml`, `RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`.
 
 ## Development Environment
 

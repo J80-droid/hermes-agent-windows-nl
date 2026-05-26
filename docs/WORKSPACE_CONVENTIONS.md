@@ -2,6 +2,8 @@
 
 Institutionele afspraken voor **waar** werk hoort: repo-root blijft upstream-syncbaar; ad-hoc onderzoek en data leven buiten git of in skills.
 
+**Handige commando's:** canonical cheat sheet in [`INSTITUTIONAL_OPERATIONS.md`](INSTITUTIONAL_OPERATIONS.md#handige-commandos-fork) (dagelijks, hygiene, upstream, RAG, poorten, pytest). Onderstaande E2E-tabel is detail; voeg nieuwe `.bat`-poorten daar én in de cheat sheet toe.
+
 ## Overzicht
 
 | Soort | Locatie | In git? |

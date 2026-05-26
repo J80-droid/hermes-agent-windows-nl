@@ -188,9 +188,10 @@ Deze checkout is een **Windows NL-fork** met extra institutioneel onderhoud (RAG
 | Productie-poort (gecombineerd) | `windows/audits/RUN_INSTITUTIONAL_PRODUCTION_GATE.bat` (Python + platform + hardening 14/14) |
 | Pytest repo-hygiene (Windows) | `pytest tests/windows/test_repo_hygiene_institutional_e2e.py -m e2e` |
 | CI (fork, Windows) | `.github/workflows/fork-windows-institutional.yml` |
+| **Handige commando's (cheat sheet)** | [`docs/INSTITUTIONAL_OPERATIONS.md`](docs/INSTITUTIONAL_OPERATIONS.md#handige-commandos-fork) — dagelijks, hygiene, upstream, RAG, poorten, pytest |
 | RUN_AUDITS (snelle poort) | `windows/audits/RUN_AUDITS.bat -IncludeInstitutionalHardeningE2E` |
 
-Bij rommel in de repo-root vóór update: `windows\UPDATE_HERMES.bat -QuickFix` (alleen opruimen; geen upstream). Optioneel: `set HERMES_SKIP_PAUSE_AFTER_UPDATE=1`.
+Bij rommel in de repo-root: `windows\UPDATE_HERMES.bat -QuickFix` of `windows\POST_GIT_PULL.bat -QuickFix` (alleen opruimen). Optioneel: `set HERMES_SKIP_PAUSE_AFTER_UPDATE=1`.
 
 Upstream Hermes-documentatie blijft op [hermes-agent.nousresearch.com/docs](https://hermes-agent.nousresearch.com/docs/).
 

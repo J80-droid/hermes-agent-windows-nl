@@ -2,6 +2,104 @@
 
 Runbook voor dagelijks gebruik, recovery en release-validatie.
 
+## Handige commando's (fork)
+
+**Canonical cheat sheet** — alle paden vanuit repo-root `hermes-agent\`. Uitgebreide tabellen per domein: [`windows/README.md`](../windows/README.md), documentatie-index [`docs/README.md`](README.md).
+
+### Dagelijks & na `git pull`
+
+```cmd
+windows\launch_hermes.bat
+windows\POST_GIT_PULL.bat
+windows\POST_GIT_PULL.bat -QuickFix
+windows\SYNC_TRUST_RUNTIME.bat
+```
+
+`-QuickFix` op `POST_GIT_PULL` ruimt ongetrackte root-rommel op **vóór** verify (zelfde logica als `UPDATE_HERMES -QuickFix`). Optioneel na pull: `-IncludeCodebaseSmoke` (~32s), `-IncludeCodebaseSmokeE2E` (~45s), `-AutoRepairModelProvider`.
+
+### Repo-hygiene & snelle poorten
+
+```cmd
+windows\UPDATE_HERMES.bat -QuickFix
+windows\scripts\health_check_repo.ps1
+powershell -NoProfile -File windows\scripts\guard_git_clean.ps1 -Strict
+
+windows\audits\RUN_AUDITS.bat -IncludeInstitutionalHardeningE2E
+audits\RUN_INSTITUTIONAL_HARDENING_E2E.bat
+
+pip install pre-commit
+pre-commit install
+```
+
+| Commando | Duur / scope |
+|----------|----------------|
+| `-IncludeInstitutionalHardeningE2E` | ~20s — QuickFix + legal pytest + preflight-log (**14/14**) |
+| `-IncludeRepoHygieneE2E` | ~10s — guard, gitignore, skills (**9/9**) |
+| `-IncludeUpdateHermesIntegrationE2E` | ~7s — UPDATE/QuickFix wiring (**12/12**) |
+| `audits\RUN_LEGAL_SKILLS_ROOKTEST.bat` | Snelle legal-skills pytest |
+| `pytest tests\windows\test_repo_hygiene_institutional_e2e.py -m e2e -q` | Zelfde E2E via pytest (Windows) |
+
+Guard-log (lokaal): `windows\_upstream_sync_guard.log`. CI op push: `.github/workflows/fork-windows-institutional.yml`.
+
+### Upstream (Nous → fork)
+
+```cmd
+windows\UPDATE_HERMES.bat
+windows\hermes_update.bat
+windows\POST_GIT_PULL.bat
+windows\MERGE_UPSTREAM.bat -PromptOnly
+powershell -NoProfile -File windows\upstream_sync.ps1 -Phase Preflight
+```
+
+Automation: `set HERMES_SKIP_PAUSE_AFTER_UPDATE=1` (geen pause na UPDATE). Alleen `-QuickFix` als enig argument op `UPDATE_HERMES.bat`: stopt na opruimen (`HERMES_WIN` voorkomt pad-bug na `shift`). Zie [`windows/UPSTREAM_SYNC.md`](../windows/UPSTREAM_SYNC.md).
+
+### Release & zware poorten
+
+```cmd
+windows\audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat
+windows\audits\RUN_AUDITS.bat -IncludeInstitutionalProductionGate
+windows\audits\RUN_AUDITS.bat -IncludeAllE2E
+windows\VERIFY_WINDOWS_CHAIN.bat
+```
+
+`-IncludeAllE2E` bevat hardening **14/14**, maar **niet** de zware productie-poort (~2+ min).
+
+### RAG, legal & domeinen
+
+```cmd
+windows\scripts\update_knowledge.bat legal
+windows\scripts\institutional_p0_p1.bat --ingest-remaining
+windows\SYNC_DOMAIN_TOOLSETS.bat
+windows\SYNC_DOMAIN_TOOLSETS.bat --create-missing
+```
+
+Legal E2E: `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat` · `RUN_AUDITS.bat -IncludeLegalDomainE2E`.
+
+### Runtime, SOUL & presentatie
+
+```cmd
+windows\APPLY_INSTITUTIONAL_RUNTIME.bat
+windows\APPLY_SOUL_ANATOMY_RUNTIME.bat
+windows\DIAGNOSE_RENDERER.bat
+```
+
+Na deploy: Hermes/gateway herstart + `/new` · rooktest: [`templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md`](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md).
+
+### Python & IDE (herstel)
+
+```cmd
+windows\REPAIR_PYTHON.bat
+windows\REPAIR_MODEL_PROVIDER.bat
+windows\APPLY_WORKSPACE_IDE_SETTINGS.bat
+windows\DOCTOR_FIX.bat
+```
+
+Legal pytest (**101**, gemockt):
+
+```cmd
+%USERPROFILE%\miniconda3\envs\hermes-env\python.exe -m pytest tests\skills\test_rechtspraak_zoeken_skill.py tests\skills\test_uitspraak_parseren_skill.py tests\skills\test_web_research_legal_skill.py -q
+```
+
 ## Drie lagen (Python → RAG-deps → index)
 
 | Laag | Doel | Commando |

@@ -2,6 +2,8 @@
 
 Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan uit van **conda `hermes-env`** en repo-root `hermes-agent`.
 
+**Handige commando's (fork, cheat sheet):** [`docs/INSTITUTIONAL_OPERATIONS.md`](../docs/INSTITUTIONAL_OPERATIONS.md#handige-commandos-fork) — dagelijks, repo-hygiene, upstream, RAG, audits, pytest. Onderstaande tabellen zijn per domein; dupliceer geen losse `.bat`-lijsten elders zonder link naar die sectie.
+
 ## Python (institutioneel)
 
 | Regel | Detail |

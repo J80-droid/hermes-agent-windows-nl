@@ -28,6 +28,7 @@ alwaysApply: true
 
 ## Verwijzingen
 
+- docs/INSTITUTIONAL_OPERATIONS.md#handige-commandos-fork — canonical cheat sheet (QuickFix, RUN_AUDITS, pre-commit, upstream)
 - AGENTS.md — volledige skill authoring standards
 - docs/WORKSPACE_CONVENTIONS.md — data-architectuur conventies
 - windows/scripts/guard_git_clean.ps1 — geautomatiseerde hygiene-check

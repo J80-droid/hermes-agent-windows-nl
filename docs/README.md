@@ -88,6 +88,7 @@ flowchart TB
 
 ## Onderhoud
 
+- **Handige commando's (fork, cheat sheet):** [INSTITUTIONAL_OPERATIONS.md § Handige commando's](INSTITUTIONAL_OPERATIONS.md#handige-commandos-fork) — dagelijks, repo-hygiene, upstream, RAG, audits, pytest (canonical; onderstaande bullets zijn detail per onderwerp)
 - **Windows script-keten (handmatig):** `windows\VERIFY_WINDOWS_CHAIN.bat` — dubbelklik; controleert setup wrapper, `.bat`→`.ps1`, taakbalk-`.lnk` (eindigt met pause)
 - **IDE-onderhoud (alle commando's op één plek):** [IDE_MAINTENANCE.md](IDE_MAINTENANCE.md) — `LANCEDB_MAINTENANCE.bat` + `RUN_IDE_MAINTENANCE_E2E.bat`
 - **Skill/docs drift (fork):** `python scripts\audit_skill_drift.py` → `windows\audits\SKILL_DRIFT_AUDIT_*.md`
