@@ -93,6 +93,9 @@ function Invoke-GitCommand {
     }
 }
 
+# Repo-pad conventie (docs/WINDOWS_PLATFORM_HARDENING.md):
+# - Join-HermesRepoPath / Read-HermesRepoText voor bestanden onder RepoRoot
+# - Navigatie t.o.v. het script: Join-Path $PSScriptRoot '..\..' — geen Join-HermesRepoPath met ../..
 function Join-HermesRepoPath {
     param(
         [Parameter(Mandatory)]
