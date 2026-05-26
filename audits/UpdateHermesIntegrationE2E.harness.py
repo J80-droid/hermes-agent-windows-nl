@@ -31,6 +31,11 @@ def main() -> int:
     update_bat = _read("windows/UPDATE_HERMES.bat")
     _step("UPDATE_HERMES.bat roept upstream_sync aan", "upstream_sync.ps1" in update_bat)
     _step("UPDATE_HERMES.bat heeft -QuickFix", "-QuickFix" in update_bat)
+    _step(
+        "UPDATE_HERMES.bat HERMES_WIN (shift-safe)",
+        'set "HERMES_WIN=%~dp0"' in update_bat and "%HERMES_WIN%upstream_sync.ps1" in update_bat,
+    )
+    _step("UPDATE_HERMES.bat QuickFix-only exit", 'if "%~2"==""' in update_bat and "Alleen QuickFix" in update_bat)
     _step("quick_fix_repo_hygiene.ps1 bestaat", (REPO / "windows/scripts/quick_fix_repo_hygiene.ps1").is_file())
     _step("health_check_repo.ps1 bestaat", (REPO / "windows/scripts/health_check_repo.ps1").is_file())
 
@@ -56,7 +61,7 @@ def main() -> int:
     )
     _step("health_check_repo exit 0 op schone repo", proc.returncode == 0, f"exit={proc.returncode}")
 
-  # QuickFix dry: geen untracked rommel, moet exit 0
+    # QuickFix dry: geen untracked rommel, moet exit 0
     qf = subprocess.run(
         [
             "powershell", "-NoProfile",

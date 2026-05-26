@@ -26,7 +26,7 @@ Override conda: `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV`.
 3. `windows\APPLY_WORKSPACE_IDE_SETTINGS.bat` (parent `Hermes_agent_WS\.vscode` — PSES uit; zie `docs/WORKSPACE_IDE_SETUP.md`)
 4. `windows\scripts\update_knowledge.bat` (ingest)
 5. Rooktest: `scripts/rag_pipeline/ACTIVATION.md` (A+B+C)
-6. Gate: `windows\audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`
+6. Gate: `windows\audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat` (incl. `audits\RUN_INSTITUTIONAL_HARDENING_E2E.bat` 14/14)
 7. Regressie (review-fixes): `windows\audits\RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.bat` (8/8)
 
 ## Dagelijks
@@ -75,8 +75,8 @@ Override conda: `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV`.
 
 ## Pre-release (handmatig)
 
-1. `RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`
-2. `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` (repo-hygiene + legal pytest, geen netwerk)
+1. `RUN_INSTITUTIONAL_PRODUCTION_GATE.bat` (Python + platform + repo-hygiene hardening)
+2. Optioneel los: `pytest tests/windows/test_repo_hygiene_institutional_e2e.py -m e2e`
 3. `POST_GIT_PULL.bat` of dry-run UPDATE
 4. ACTIVATION rooktest op legal-profiel
 

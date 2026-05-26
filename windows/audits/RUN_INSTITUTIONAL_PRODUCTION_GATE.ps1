@@ -24,6 +24,8 @@ $steps = @(
     @{ Name = 'RUN_KNOWLEDGE_REPOSITORY_E2E'; Script = 'RUN_KNOWLEDGE_REPOSITORY_E2E.ps1' },
     @{ Name = 'RUN_PLATFORM_HARDENING_PRODUCTION_GATE'; Script = 'RUN_PLATFORM_HARDENING_PRODUCTION_GATE.ps1' }
 )
+# Repo-hygiene + legal skills (audits/ — geen netwerk)
+$repoHardeningBat = Join-Path $RepoRoot 'audits\RUN_INSTITUTIONAL_HARDENING_E2E.bat'
 if ($IncludeMemoryGate) {
     $steps += @{ Name = 'RUN_MEMORY_PRODUCTION_GATE'; Script = 'RUN_MEMORY_PRODUCTION_GATE.ps1' }
 }
@@ -47,6 +49,18 @@ foreach ($step in $steps) {
     if (-not $ok) { $failures++ }
     $results.Add([pscustomobject]@{ Step = $step.Name; Ok = $ok })
 }
+
+Write-Host '--- RUN_INSTITUTIONAL_HARDENING_E2E ---' -ForegroundColor Cyan
+$hardeningOk = $false
+if (-not (Test-Path -LiteralPath $repoHardeningBat)) {
+    Write-Host ('[FAIL] ontbreekt: ' + $repoHardeningBat) -ForegroundColor Red
+} else {
+    cmd /c "`"$repoHardeningBat`""
+    if ($LASTEXITCODE -eq 0) { $hardeningOk = $true }
+    else { Write-Host ('[FAIL] RUN_INSTITUTIONAL_HARDENING_E2E exit ' + $LASTEXITCODE) -ForegroundColor Red }
+}
+if (-not $hardeningOk) { $failures++ }
+$results.Add([pscustomobject]@{ Step = 'RUN_INSTITUTIONAL_HARDENING_E2E'; Ok = $hardeningOk })
 
 $wiring = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/validate_windows_python_wiring.ps1'
 Write-Host '--- validate_windows_python_wiring ---' -ForegroundColor Cyan

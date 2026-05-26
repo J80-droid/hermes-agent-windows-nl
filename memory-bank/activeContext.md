@@ -2,7 +2,7 @@
 
 ## Focus
 
-**Institutionele hardening — productieniveau (2026-05-26, PASS):** `RepoHygieneCommon.ps1`; guard + QuickFix + health check; guard-log met trim; legal skills (rate limit, 2MB response cap, ECLI-validatie); pytest **101**; E2E **14/14** `RUN_INSTITUTIONAL_HARDENING_E2E.bat`, **9/9** repo-hygiene, update-integratie **10/10**. Docs: `WORKSPACE_CONVENTIONS.md`, `INSTITUTIONAL_OPERATIONS.md`, `AGENTS.md`.
+**Institutionele hardening — productieniveau (2026-05-26, PASS):** `RepoHygieneCommon.ps1`; guard + QuickFix + health check; `UPDATE_HERMES.bat -QuickFix` (HERMES_WIN shift-safe); guard-log met trim; legal skills (rate limit, 2MB cap, ECLI); pytest **101** + `tests/windows/test_repo_hygiene_institutional_e2e.py` (e2e marker); E2E **14/14** hardening, **9/9** repo-hygiene, update-integratie **12/12**; productie-poort incl. hardening E2E. Docs: `WORKSPACE_CONVENTIONS.md`, `INSTITUTIONAL_OPERATIONS.md`.
 
 **Performance-architectuur RAG + runtime (2026-05-25, PASS):** LanceDB via `KnowledgeRepository.session()` (schema_migrate, bootstrap); enkelvoudige `collect_indexed_files`; `ingest_chunking` + `document_converter`; MCP `_ensure_mcp_knowledge`; batched orphan cleanup; `config_snapshot` + gateway/sandbox mtime-cache; `review_snapshot` (`HERMES_BG_REVIEW_MAX_MESSAGES`); Whisper-cache; `process_registry` pipe-close + Windows PTY fixes (`_pty_spawn_argv`, winpty str-write, detached taskkill, PTY reconcile); mcp stderr-log close. Unit tests RAG +83; `test_process_registry` 60 passed / 6 skipped (Windows). E2E **10/10** `RUN_PERFORMANCE_ARCHITECTURE_E2E.bat` (pytest incl. process_registry). Gate-rapporten `*_PRODUCTION_GATE_REPORT_*.md` gitignored. Refactor: `ingest_handlers`, `bootstrap_ingest_state`, `ingest._plan_incremental_ingest`.
 
@@ -73,7 +73,7 @@
 | Legal architectuur / taxonomie | `docs/LEGAL_DOMAIN_ARCHITECTURE.md`, `docs/LEGAL_TAXONOMY.md` |
 | Workspace / repo-hygiene | `docs/WORKSPACE_CONVENTIONS.md`, `windows/scripts/guard_git_clean.ps1` |
 | Legal fork-skills + pytest | `skills/legal/`, `tests/skills/test_*_skill.py` |
-| Repo-hygiene E2E | `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14), `RUN_REPO_HYGIENE_E2E.bat`, `REPO_HYGIENE_E2E_README.md` |
+| Repo-hygiene E2E | `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14); pytest `tests/windows/test_repo_hygiene_institutional_e2e.py` (`-m e2e`) |
 | Landkaart (volledige lijsten) | skill `landkaart`, `/landkaart` |
 | RAG twee fasen | `docs/RAG_TWEE_FASEN.md` |
 | Presentatie (kleur + structuur) | `docs/INSTITUTIONAL_PRESENTATION.md`, `docs/INSTITUTIONAL_PORTING_GUIDE.md` |

@@ -55,6 +55,9 @@ Drie skills onder `skills/legal/`, geregistreerd in `docs/domain_toolsets.yaml` 
 | `audits/RUN_REPO_HYGIENE_E2E.bat` | Guard, gitignore, skills import (9 scenario's) |
 | `audits/RUN_UPDATE_HERMES_INTEGRATION_E2E.bat` | QuickFix, health_check, guard-log wiring |
 | `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` | Geïntegreerde poort QuickFix + pytest + preflight-log (14 scenario's) |
+| `pytest tests/windows/test_repo_hygiene_institutional_e2e.py` | Zelfde harnesses als CI/pytest (Windows); legal unit: `tests/skills/test_*_legal*.py` |
+
+**Testpiramide (institutioneel):** Python-skills = pytest unit (gemockt). PowerShell guard/QuickFix = subprocess in `audits/*E2E.harness.py`, aangeroepen via `.bat` én `tests/windows/test_repo_hygiene_institutional_e2e.py`. Geen Pester (tweede framework = drift). Renderer-prompt (`docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md`) = handmatige rooktest, geen unit test.
 | `audits/RUN_LEGAL_SKILLS_ROOKTEST.bat` | Snelle pytest-rooktest legal skills |
 
 ## Automatische controle

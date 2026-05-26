@@ -1,6 +1,7 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0\.."
+set "HERMES_WIN=%~dp0"
 chcp 65001 >nul
 
 set "ESC= "
@@ -18,11 +19,17 @@ echo [INFO] Rommel in repo-root: -QuickFix ^(verplaatst untracked naar output/re
 echo.
 if /I "%~1"=="-QuickFix" (
   echo [INFO] QuickFix repo-hygiene...
-  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\quick_fix_repo_hygiene.ps1" -RepoRoot "%CD%"
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%HERMES_WIN%scripts\quick_fix_repo_hygiene.ps1" -RepoRoot "%CD%"
   if errorlevel 1 (
     echo [ERROR] QuickFix mislukt — los handmatig op of zie docs\WORKSPACE_CONVENTIONS.md
     pause
     exit /b 1
+  )
+  if "%~2"=="" (
+    echo [OK] Alleen QuickFix — volledige update overgeslagen. Draai zonder -QuickFix voor upstream sync.
+    if "%HERMES_SKIP_PAUSE_AFTER_UPDATE%"=="1" exit /b 0
+    pause
+    exit /b 0
   )
   shift
 )
@@ -30,7 +37,7 @@ echo [INFO] Uitleg bij cijfers en vragen staat in het PowerShell-venster ^(grijs
 echo        Verify in de keten: .ps1 ^(geen pause^). Einde .bat: pause ^(overslaan: HERMES_SKIP_PAUSE_AFTER_UPDATE=1^).
 echo.
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0upstream_sync.ps1" -Phase Update %*
+powershell -NoProfile -ExecutionPolicy Bypass -File "%HERMES_WIN%upstream_sync.ps1" -Phase Update %*
 set "ERR=!ERRORLEVEL!"
 if not "!ERR!"=="0" (
   echo.
@@ -43,17 +50,17 @@ if not "!ERR!"=="0" (
 echo.
 echo [OK] Update-keten geslaagd.
 echo [INFO] Taakbalk-icoon UPDATE vernieuwen...
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0fix_hermes_taskbar_pins.ps1" -RepoRoot "%CD%" -Quiet
+powershell -NoProfile -ExecutionPolicy Bypass -File "%HERMES_WIN%fix_hermes_taskbar_pins.ps1" -RepoRoot "%CD%" -Quiet
 if errorlevel 1 echo [WARN] fix_hermes_taskbar_pins.ps1 - draai handmatig FIX_TASKBAR_ICONS.bat
 goto :team_display
 
 :team_display
 echo.
-if exist "%~dp0SKIP_TEAM_DISPLAY_AFTER_UPDATE" (
+if exist "%HERMES_WIN%SKIP_TEAM_DISPLAY_AFTER_UPDATE" (
   echo [INFO] SKIP_TEAM_DISPLAY_AFTER_UPDATE - team display overgeslagen.
 ) else (
   echo [INFO] Team display-defaults toepassen...
-  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0apply_team_display.ps1"
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%HERMES_WIN%apply_team_display.ps1"
   if errorlevel 1 echo [WARN] apply_team_display.ps1 - controleer handmatig.
 )
 
