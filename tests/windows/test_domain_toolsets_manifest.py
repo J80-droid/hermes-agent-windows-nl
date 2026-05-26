@@ -1,10 +1,14 @@
-"""Validate docs/domain_toolsets.yaml structure."""
+"""Validate docs/domain_toolsets.yaml structure (alle 14 profielen incl. creative).
+
+Creative-specifiek: ``test_creative_*``; volledige E2E-poort: ``audits/RUN_CREATIVE_DOMAIN_E2E.bat``.
+"""
 from pathlib import Path
 
 import yaml
 
 REPO = Path(__file__).resolve().parents[2]
 MANIFEST = REPO / "docs" / "domain_toolsets.yaml"
+_MANIFEST_CACHE: dict | None = None
 
 REQUIRED_PROFILES = {
     "core",
@@ -27,9 +31,12 @@ REQUIRED_BASE = {"mcp", "file", "memory", "skills", "clarify"}
 
 
 def _load():
-    data = yaml.safe_load(MANIFEST.read_text(encoding="utf-8"))
-    assert isinstance(data, dict)
-    return data
+    global _MANIFEST_CACHE
+    if _MANIFEST_CACHE is None:
+        data = yaml.safe_load(MANIFEST.read_text(encoding="utf-8"))
+        assert isinstance(data, dict)
+        _MANIFEST_CACHE = data
+    return _MANIFEST_CACHE
 
 
 def test_manifest_exists():
@@ -123,6 +130,32 @@ def test_creative_fork_skills():
     skills = creative.get("fork_creative_skills") or {}
     assert "manim_video" in skills
     assert "hyperframes" in skills
+
+
+def test_creative_ask_triggers_cover_optional():
+    data = _load()
+    creative = (data.get("profiles") or {}).get("creative") or {}
+    optional = set(creative.get("optional_toolsets") or [])
+    triggers = set((creative.get("ask_triggers") or {}).keys())
+    missing = optional - triggers
+    assert not missing, f"creative: optional zonder ask_trigger: {missing}"
+
+
+def test_creative_cli_includes_terminal_for_hyperframes():
+    data = _load()
+    creative = (data.get("profiles") or {}).get("creative") or {}
+    cli = set((creative.get("platform_toolsets") or {}).get("cli") or [])
+    assert "terminal" in cli
+
+
+def test_creative_max_tools_covers_worst_case():
+    """cli + alle optional mag binnen max_tools blijven (geen stille truncation)."""
+    data = _load()
+    creative = (data.get("profiles") or {}).get("creative") or {}
+    cli = (creative.get("platform_toolsets") or {}).get("cli") or []
+    optional = creative.get("optional_toolsets") or []
+    max_tools = int(creative.get("max_tools") or 0)
+    assert max_tools >= len(cli) + len(optional)
 
 
 def test_soul_templates_exist():

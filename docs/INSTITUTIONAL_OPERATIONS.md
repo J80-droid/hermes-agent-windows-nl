@@ -34,9 +34,11 @@ pre-commit install
 | Commando | Duur / scope |
 |----------|----------------|
 | `-IncludeInstitutionalHardeningE2E` | ~20s — QuickFix + legal pytest + preflight-log (**14/14**) |
-| `-IncludeRepoHygieneE2E` | ~10s — guard, gitignore, skills (**9/9**) |
+| `-IncludeRepoHygieneE2E` | ~10s — guard, gitignore, skills + fork keys legal/creative (**9/9**) |
 | `-IncludeUpdateHermesIntegrationE2E` | ~7s — UPDATE/QuickFix wiring (**12/12**) |
+| `audits\RUN_CREATIVE_DOMAIN_E2E.bat` | ~10s — creative domein manifest/docs/SOUL/provision (**11/11**) |
 | `audits\RUN_LEGAL_SKILLS_ROOKTEST.bat` | Snelle legal-skills pytest |
+| `pytest tests\audits\test_creative_domain_e2e_harness.py -q` | Unit + mocks voor creative E2E-harness |
 | `pytest tests\windows\test_repo_hygiene_institutional_e2e.py -m e2e -q` | Zelfde E2E via pytest (Windows) |
 
 Guard-log (lokaal): `windows\_upstream_sync_guard.log`. CI op push: `.github/workflows/fork-windows-institutional.yml`.
@@ -74,6 +76,8 @@ windows\SYNC_DOMAIN_TOOLSETS.bat --create-missing
 ```
 
 Legal E2E: `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat` · `RUN_AUDITS.bat -IncludeLegalDomainE2E`.
+
+Creative (14e profiel) E2E: `audits\RUN_CREATIVE_DOMAIN_E2E.bat` · provision: `windows\SYNC_DOMAIN_TOOLSETS.bat --create-missing` · toolset-drift (alle profielen): `windows\audits\RUN_TOOLSET_DOMAIN_E2E.bat`.
 
 ### Runtime, SOUL & presentatie
 

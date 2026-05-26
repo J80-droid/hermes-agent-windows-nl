@@ -45,7 +45,7 @@ def test_provision_creates_profile_with_soul_and_config(tmp_path):
     assert soul.is_file()
     text = soul.read_text(encoding="utf-8")
     assert "## Interaction met J." in text
-    assert "Outputformaat" in text
+    assert "Output conventions (institutional)" in text
 
     assert mod._sync_profile(hermes, "data", spec, dry_run=False, check=False)
     cfg = yaml.safe_load((prof_dir / "config.yaml").read_text(encoding="utf-8"))
@@ -119,6 +119,25 @@ def test_resolve_soul_template_ict():
     p = mod._resolve_soul_template(REPO, "ict")
     assert p is not None
     assert p.name == "SOUL_ICT_DOMAIN.md"
+
+
+def test_resolve_soul_template_creative():
+    mod = _load_sync_module()
+    p = mod._resolve_soul_template(REPO, "creative")
+    assert p is not None
+    assert p.name == "SOUL_CREATIVE_DOMAIN.md"
+
+
+def test_provision_creative_syncs_cli(tmp_path):
+    mod = _load_sync_module()
+    hermes = _hermes_fixture(tmp_path)
+    manifest = yaml.safe_load(MANIFEST.read_text(encoding="utf-8"))
+    spec = manifest["profiles"]["creative"]
+    assert mod._provision_profile(hermes, REPO, "creative", inject_soul=False)
+    assert mod._sync_profile(hermes, "creative", spec, dry_run=False, check=False)
+    cfg = yaml.safe_load((hermes / "profiles" / "creative" / "config.yaml").read_text(encoding="utf-8"))
+    cli = (cfg.get("platform_toolsets") or {}).get("cli") or []
+    assert "terminal" in cli
 
 
 def test_clone_from_fallback_soul(tmp_path):

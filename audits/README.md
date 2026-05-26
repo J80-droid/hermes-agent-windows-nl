@@ -1,3 +1,29 @@
+# Creative domain E2E
+
+Geïsoleerde E2E voor profiel `creative` (14e domein): manifest, `13_Creative/`, SOUL, fork-skills, provision, pytest-subset. Geen live API.
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| C1 | Repo-artefacten | Manifest, SOUL, docs, sync-scripts, tests |
+| C2 | Manifest-contract | Lenzen, `terminal`, fork_skills, ask_triggers, max_tools |
+| C3 | Fork-skills op schijf | `skills/` + `optional-skills/creative/hyperframes` |
+| C4 | `domains.yaml.example` | `13_Creative`, `lancedb-creative` |
+| C5 | Orchestrator-routing | `ORCHESTRATOR_ROUTING`, blueprint |
+| C6 | `SyncSoulSnippet` | 14 profielen incl. `creative` |
+| C7 | Backup | `CREATIVE_ACTIVE_MATTERS.md` in `HermesBackupCommon.ps1` |
+| C8 | SOUL-template | Lenzen, trust, hyperframes/manim |
+| C9 | pytest subset | creative manifest/docs/provision tests |
+| C10 | Temp provision | Geïsoleerde `HERMES_HOME`, geen trust-memory side-effect |
+| C11 | Runtime drift | Optioneel: `--profile creative --check` |
+
+```bat
+audits\RUN_CREATIVE_DOMAIN_E2E.bat
+```
+
+Unit tests: `pytest tests/audits/test_creative_domain_e2e_harness.py -q` (mocks; `-m e2e` = volledige harness). Zie `audits/CREATIVE_DOMAIN_E2E_README.md`.
+
+---
+
 # Prompt timer display (geen emoji) E2E
 
 Geïsoleerde E2E voor `display.show_prompt_timer_emoji` (default **uit**), fork-module `status_bar_prompt_elapsed.py`, cli-delegatie en upstream-verify. Geen live API.

@@ -5,6 +5,7 @@ Operators draaien dezelfde logica via ``audits/RUN_*_E2E.bat``.
 
 Piramide:
   - Unit: ``tests/skills/test_*_legal*.py`` (101 tests, gemockte HTTP)
+  - Unit: ``tests/audits/test_creative_domain_e2e_harness.py`` (creative E2E-harness, mocks)
   - Integratie (hier): harness via pytest — guard, QuickFix, preflight-log
   - Geen Pester: één stack (pytest), minder drift tussen PS1 en testframework
 """
@@ -58,6 +59,13 @@ def test_update_hermes_integration_e2e_harness() -> None:
 def test_institutional_hardening_e2e_harness() -> None:
     """audits/InstitutionalHardeningE2E.harness.py — geïntegreerde poort H1–H14."""
     proc = _run_harness("InstitutionalHardeningE2E.harness.py", timeout=300)
+    assert proc.returncode == 0, (proc.stderr or proc.stdout)[-4000:]
+
+
+@pytest.mark.e2e
+def test_creative_domain_e2e_harness() -> None:
+    """audits/CreativeDomainE2E.harness.py — creative profiel C1–C11."""
+    proc = _run_harness("CreativeDomainE2E.harness.py", timeout=180)
     assert proc.returncode == 0, (proc.stderr or proc.stdout)[-4000:]
 
 

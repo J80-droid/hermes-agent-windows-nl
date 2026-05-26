@@ -20,7 +20,7 @@ Gerelateerde poorten (fase 5–6):
 | E6 | `.gitignore` rules | Versterkte regels (research uitsluitingen) aanwezig |
 | E7 | `.cursor/rules/repo-hygiene.mdc` | Bestaat met inhoud |
 | E8 | Skill imports | 3 legal skills scripts importeerbaar |
-| E9 | Domein-manifest | `fork_legal_skills` entries in `domain_toolsets.yaml` |
+| E9 | Domein-manifest | `fork_legal_skills` + `fork_creative_skills` / `creative_lenses` in `domain_toolsets.yaml` |
 
 ```bat
 audits\RUN_REPO_HYGIENE_E2E.bat

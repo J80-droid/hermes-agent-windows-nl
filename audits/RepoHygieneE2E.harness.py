@@ -160,17 +160,24 @@ def test_e8_skill_imports() -> None:
 
 
 def test_e9_domain_manifest() -> None:
-    """fork_legal_skills entries in domain_toolsets.yaml."""
+    """fork_*_skills + creative_lenses in domain_toolsets.yaml (legal + creative)."""
     content = _read("docs/domain_toolsets.yaml")
-    checks = [
+    legal_checks = [
         "fork_legal_skills" in content,
         "rechtspraak_zoeken" in content,
         "uitspraak_parseren" in content,
         "web_research_legal" in content,
     ]
-    ok = all(checks)
-    detail = "4/4 keys" if ok else "ontbrekende manifest-keys"
-    _step("domein-manifest fork_legal_skills", ok, detail)
+    creative_checks = [
+        "fork_creative_skills" in content,
+        "manim_video" in content,
+        "hyperframes" in content,
+        "creative_lenses" in content,
+    ]
+    ok = all(legal_checks) and all(creative_checks)
+    n_ok = sum(legal_checks) + sum(creative_checks)
+    detail = f"{n_ok}/8 keys" if ok else "ontbrekende manifest-keys"
+    _step("domein-manifest fork skills (legal+creative)", ok, detail)
 
 
 def main() -> None:
