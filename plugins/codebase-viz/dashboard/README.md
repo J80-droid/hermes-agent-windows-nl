@@ -32,10 +32,42 @@ pip install watchdog radon psutil
 | `CODEBASE_VIZ_REPO` | bundled `hermes-agent` root (`.git`) | Scan-doel |
 | `CODEBASE_VIZ_TTL` | `60` | Response-cache (s) |
 | `CODEBASE_VIZ_DEBOUNCE` | `2.0` | Watcher batch-interval |
-| `CODEBASE_VIZ_PYGOUNT_TIMEOUT` | `30` | `pygount` subprocess timeout |
+| `CODEBASE_VIZ_PYGOUNT_TIMEOUT` | `120` | `pygount` subprocess timeout (grote repo's) |
 | `CODEBASE_VIZ_MAX_MEMORY_MB` | `500` | RSS-drempel; boven limiet → stale cache of `memory_pressure` |
 
 `REPO_PATH` wordt bij module-import bepaald; na env-wijziging dashboard herstarten.
+
+### Scan-snelheid & cache
+
+| Situatie | Verwachting |
+|----------|-------------|
+| **Eerste load** (Sunburst) | Normaal **10–30 s** op een grote repo — één `pygount`-run over alle bronnen |
+| **Herladen binnen TTL** | **< 1 s** — resultaat uit server-cache (`CODEBASE_VIZ_TTL`, default **60 s**) |
+| **Tab wisselen** (Metrics, Treemap) | Vaak snel: deelt dezelfde `pygount`-cache |
+| **Force Scan / `r`** | Cache geleegd → opnieuw volledige scan |
+
+**Gedeelde telemetry (server-cache):**
+
+| Sleutel | Gebruikt door |
+|---------|----------------|
+| `pygount` | Sunburst, Treemap, Metrics (LOC) |
+| `import_edges` | Force Graph, Metrics, Dependencies, Dead Imports |
+| `structure` / `summary` / `dependencies` | Per-tab endpoint (bouwen op bovenstaande) |
+| `churn`, `todos`, `blame`, … | Aparte git/radon-scans (eigen TTL, niet pygount) |
+
+Voortgang in de UI: `GET /scan-status` (phase, elapsed, pseudo-progress) + progress bar tijdens laden.
+
+Lang scannen is dus **normaal** bij de eerste request na start of na `force-scan`. Daarna is het gecached.
+
+Sneller op grote repos (PowerShell, vóór dashboard-start):
+
+```powershell
+$env:CODEBASE_VIZ_TTL = "300"
+$env:CODEBASE_VIZ_PYGOUNT_TIMEOUT = "60"
+$env:CODEBASE_VIZ_REPO = "D:\pad\naar\kleinere-repo"   # optioneel: alleen submap
+```
+
+Controle: `GET /api/plugins/codebase-viz/health` → `pygount_cached: true` na eerste succesvolle scan.
 
 ## Endpoints
 
@@ -56,12 +88,59 @@ Pygount timeouts worden als `RuntimeError` / `fallback` afgehandeld (geen 500).
 ## Tests
 
 ```bash
-pytest tests/plugins/test_codebase_viz_plugin.py -q
-audits/RUN_CODEBASE_VIZ_E2E.bat
-audits/RUN_CODEBASE_VIZ_SPRINT4_E2E.bat
+# Altijd vanaf hermes-agent repo-root, met Hermes-venv (fastapi in .[web]):
+cd path/to/hermes-agent
+pip install -e ".[web]"
+pytest tests/plugins/test_codebase_viz_plugin.py -q -o "addopts="
 ```
 
-Unit tests mocken `subprocess`, `asyncio.create_subprocess_exec` en pygount-fouten; geen live dashboard-browser in pytest.
+Windows (aanbevolen):
+
+```bat
+audits\RUN_CODEBASE_VIZ_UNIT_TESTS.bat
+audits\RUN_CODEBASE_VIZ_E2E.bat
+audits\RUN_CODEBASE_VIZ_SPRINT4_E2E.bat
+audits\RUN_CODEBASE_VIZ_LAUNCH_E2E.bat
+```
+
+Niet vanuit `plugins/codebase-viz/dashboard` draaien — dan ontbreekt vaak `fastapi` en collection faalt.
+
+### App starten (aanbevolen)
+
+Gebruik het normale Windows-startscript — die regelt automatisch workspace-plugins, `pip install -e .[web]` en opent de browser op Codebase Viz:
+
+```bat
+start_hermes.bat
+```
+
+Alleen dashboard (geen TUI):
+
+```bat
+audits\RUN_DASHBOARD_WS_DEV.bat
+```
+
+`launch_dashboard_on_start.ps1` zet bij een workspace met `plugins/codebase-viz`:
+
+- `HERMES_BUNDLED_PLUGINS` → `<repo>\plugins`
+- `pip install -e .[web]` (fastapi/uvicorn in conda `hermes-env`)
+- oude user-plugins `%LOCALAPPDATA%\hermes\plugins\codebase-viz` → `.bak`
+- browser → `/codebase-viz` (uit te zetten: `HERMES_SKIP_DASHBOARD_BROWSER=1`)
+
+Controle in browser → Network → `GET /api/plugins/codebase-viz/health`:
+
+- `version`: `2.5.0`
+- `pygount_timeout_sec`: **120** (niet 30)
+- `plugin_api_path`: pad onder deze repo
+
+### Scan-voortgang (UI)
+
+- Eén progress bar tijdens laden (geen dubbele `<progress>` + custom bar).
+- Oude backend zonder `pygount_timeout_sec`: gele hint + lokale timer (geen `/scan-status` spam).
+- Nieuwe backend: polling `GET /scan-status` + server elapsed/progress.
+
+Console (filter `[codebase-viz]`): `scan gestart`, `fetch start/ok`; bij oude API één regel `voortgang via lokale timer`.
+
+Unit tests mocken `subprocess` en gebruiken een **kleine temp-repo** — die slagen ook als pygount op de echte `hermes-agent` root **>120s** nodig heeft.
 
 ## Rooktest (dashboard)
 

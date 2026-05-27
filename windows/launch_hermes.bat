@@ -223,7 +223,9 @@ if not defined HERMES_SKIP_PENDING_TRUST_ON_START (
   )
 )
 
-rem --- Web dashboard op 9119 (geen browser-tab); uit: HERMES_SKIP_DASHBOARD_ON_START=1 ---
+rem --- Web dashboard op 9119; browser-tab: HERMES_DASHBOARD_OPEN_PATH (default codebase-viz) ---
+if not defined HERMES_DASHBOARD_OPEN_PATH set "HERMES_DASHBOARD_OPEN_PATH=/codebase-viz"
+rem --- Uit: HERMES_SKIP_DASHBOARD_ON_START=1 of HERMES_SKIP_DASHBOARD_BROWSER=1 ---
 if not defined HERMES_SKIP_DASHBOARD_ON_START (
   set "HERMES_REPO_ROOT=!REPO_ROOT!"
   set "HERMES_LAUNCH_LOG=!LAUNCH_LOG!"

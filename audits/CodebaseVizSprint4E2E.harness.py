@@ -29,8 +29,12 @@ FAILURES = 0
 STEP = 0
 
 PY = Path.home() / "miniconda3/envs/hermes-env/python.exe"
-if not PY.is_file():
-    PY = Path(sys.executable)
+_candidates = [
+    PY,
+    REPO.parent / "Hermes_agent_Windows" / ".venv" / "Scripts" / "python.exe",
+    Path(sys.executable),
+]
+PY = next((p for p in _candidates if p.is_file()), Path(sys.executable))
 
 SPRINT4_SOURCES = (
     "plugins/codebase-viz/dashboard/src/useKeyboardShortcuts.js",

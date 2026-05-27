@@ -76,10 +76,29 @@ def _resolve_repo_path() -> Path | None:
 REPO_PATH = _resolve_repo_path()
 CODEBASE_VIZ_TTL = float(os.environ.get("CODEBASE_VIZ_TTL", "60"))
 CODEBASE_VIZ_DEBOUNCE = float(os.environ.get("CODEBASE_VIZ_DEBOUNCE", "2.0"))
-PYGOUNT_TIMEOUT = int(os.environ.get("CODEBASE_VIZ_PYGOUNT_TIMEOUT", "30"))
+PYGOUNT_TIMEOUT = int(os.environ.get("CODEBASE_VIZ_PYGOUNT_TIMEOUT", "120"))
 
 _cache_lock = asyncio.Lock()
 _cache: dict[str, tuple[float, object]] = {}
+_inflight: dict[str, asyncio.Task] = {}
+_scan_state: dict[str, Any] = {"phase": "idle", "detail": "", "started_at": None}
+
+_SCAN_LABELS: dict[str, str] = {
+    "pygount": "LOC tellen (pygount)",
+    "import_edges": "Python-imports analyseren",
+    "structure": "Directorystructuur opbouwen",
+    "summary": "Metrics samenstellen",
+    "dependencies": "Dependency-graaf bouwen",
+    "doctor": "hermes doctor uitvoeren",
+    "churn": "Git churn",
+    "age-map": "Git age map",
+    "complexity": "Complexity (radon)",
+    "todos": "TODO/FIXME scan",
+    "blame": "Git blame",
+    "coverage": "Coverage inschatten",
+    "history": "Git history",
+    "timeline": "Timeline",
+}
 
 _initialized = False
 _lazy_lock = asyncio.Lock()
@@ -150,7 +169,20 @@ def _with_memory_pressure_flag(value: object) -> object:
     return value
 
 
+async def _run_factory_and_store(key: str, factory) -> object:
+    try:
+        result = await factory()
+    except Exception:
+        log.exception("codebase_viz_compute_failed", extra={"cache_key": key})
+        raise
+    async with _cache_lock:
+        _cache[key] = (time.monotonic(), result)
+        _inflight.pop(key, None)
+    return result
+
+
 async def _get_or_compute(key: str, ttl: float, factory):
+    """Cache-aside + singleflight; factory runs outside lock (safe for nested pygount)."""
     cached = await _cached(key, ttl)
     if cached is not None:
         return cached
@@ -167,13 +199,12 @@ async def _get_or_compute(key: str, ttl: float, factory):
         entry = _cache.get(key)
         if entry and time.monotonic() - entry[0] < ttl:
             return entry[1]
-        try:
-            result = await factory()
-        except Exception:
-            log.exception("codebase_viz_compute_failed", extra={"cache_key": key})
-            raise
-        _cache[key] = (time.monotonic(), result)
-        return result
+        task = _inflight.get(key)
+        if task is None:
+            task = asyncio.create_task(_run_factory_and_store(key, factory))
+            _inflight[key] = task
+
+    return await task
 
 
 def _empty_tree() -> dict[str, Any]:
@@ -194,9 +225,56 @@ async def _api_error_payload(exc: Exception, **extra: Any) -> dict[str, Any]:
     return payload
 
 
+def _scan_start(phase: str, detail: str = "") -> None:
+    _scan_state["phase"] = phase
+    _scan_state["detail"] = detail or _SCAN_LABELS.get(phase, phase)
+    _scan_state["started_at"] = time.monotonic()
+
+
+def _scan_end() -> None:
+    _scan_state["phase"] = "idle"
+    _scan_state["detail"] = ""
+    _scan_state["started_at"] = None
+
+
+async def _async_scan_status_payload() -> dict[str, Any]:
+    async with _cache_lock:
+        inflight = list(_inflight.keys())
+        pygount_cached = "pygount" in _cache
+        import_cached = "import_edges" in _cache
+    phase = _scan_state.get("phase") or "idle"
+    started = _scan_state.get("started_at")
+    elapsed = round(time.monotonic() - started, 1) if started else 0.0
+    if phase == "idle" and inflight:
+        primary = inflight[0]
+        phase = primary
+        detail = _SCAN_LABELS.get(primary, f"Bezig: {primary}")
+    else:
+        detail = _scan_state.get("detail") or ""
+    busy = phase != "idle" or bool(inflight)
+    # Pseudo-progress: rises with time so UI never looks frozen (cap 92% until done).
+    progress = 0
+    if busy:
+        progress = min(92, int(12 + elapsed * 5))
+    elif pygount_cached:
+        progress = 100
+    return {
+        "busy": busy,
+        "phase": phase,
+        "detail": detail,
+        "elapsed_sec": elapsed,
+        "progress": progress,
+        "pygount_cached": pygount_cached,
+        "import_edges_cached": import_cached,
+        "inflight": inflight,
+    }
+
+
 async def _invalidate_cache() -> None:
     async with _cache_lock:
         _cache.clear()
+        _inflight.clear()
+    _scan_end()
 
 
 def _parse_pygount_json(stdout: str) -> tuple[list[dict], list[dict]]:
@@ -227,26 +305,10 @@ def _path_under_root(fpath: str | Path, root: Path) -> bool:
         return False
 
 
-def _sync_pygount_scan(target: str) -> dict[str, Any]:
-    cmd = [
-        "pygount",
-        "--format=json",
-        f"--folders-to-skip={DEFAULT_SKIP}",
-        target,
-    ]
-    try:
-        proc = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=PYGOUNT_TIMEOUT,
-        )
-    except subprocess.TimeoutExpired as exc:
-        raise RuntimeError(
-            f"pygount timed out after {PYGOUNT_TIMEOUT}s",
-        ) from exc
-    if proc.returncode != 0:
-        raise RuntimeError(
-            f"pygount failed (exit {proc.returncode}): {proc.stderr[:500]}",
-        )
-    file_rows, lang_rows = _parse_pygount_json(proc.stdout)
+def _summary_from_pygount_rows(
+    file_rows: list[dict],
+    lang_rows: list[dict],
+) -> dict[str, Any]:
     total_code = 0
     total_files = 0
     languages: dict[str, dict[str, int]] = {}
@@ -281,51 +343,9 @@ def _sync_pygount_scan(target: str) -> dict[str, Any]:
     }
 
 
-def _sync_import_analysis(target: str) -> list[dict[str, str]]:
+def _tree_from_pygount_rows(file_rows: list[dict], target: str) -> dict[str, Any]:
+    """Build directory tree from cached pygount file rows (no second subprocess)."""
     root = Path(target).resolve()
-    edges: list[dict[str, str]] = []
-    skip = {
-        ".git", "node_modules", "venv", ".venv", "__pycache__",
-        "dist", "build", ".next", ".cache", ".tox", ".eggs",
-        ".mypy_cache", "output", ".hermes",
-    }
-    for py_file in root.rglob("*.py"):
-        if any(part in skip for part in py_file.parts):
-            continue
-        rel = os.path.relpath(str(py_file), str(root))
-        source_mod = rel.replace(os.sep, ".").replace(".py", "").replace(".__init__", "")
-        try:
-            source = py_file.read_text(errors="replace")
-        except OSError:
-            continue
-        try:
-            tree = ast.parse(source, filename=str(py_file))
-        except SyntaxError:
-            continue
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    target_mod = alias.name.split(".")[0]
-                    edges.append({
-                        "source": source_mod,
-                        "target": target_mod,
-                        "type": "import",
-                    })
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                target_mod = node.module.split(".")[0]
-                edges.append({
-                    "source": source_mod,
-                    "target": target_mod,
-                    "type": "from_import",
-                })
-    return edges
-
-
-def _sync_directory_tree(target: str) -> dict[str, Any]:
-    root = Path(target).resolve()
-    if not root.is_dir():
-        return {"name": "unknown", "path": target, "type": "dir", "loc": 0, "children": []}
-
     tree: dict[str, Any] = {
         "name": root.name,
         "path": str(root),
@@ -333,20 +353,10 @@ def _sync_directory_tree(target: str) -> dict[str, Any]:
         "loc": 0,
         "children": [],
     }
+    if not root.is_dir():
+        return tree
+
     dir_map: dict[str, list] = {str(root): tree["children"]}
-
-    cmd = ["pygount", "--format=json", f"--folders-to-skip={DEFAULT_SKIP}", str(root)]
-    try:
-        proc = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=PYGOUNT_TIMEOUT,
-        )
-    except subprocess.TimeoutExpired:
-        log.warning("pygount_tree_timeout", extra={"target": target})
-        return tree
-    if proc.returncode != 0:
-        return tree
-    file_rows, _lang_rows = _parse_pygount_json(proc.stdout)
-
     for row in file_rows:
         lang = row.get("language", "")
         if lang.startswith("__"):
@@ -394,34 +404,177 @@ def _sync_directory_tree(target: str) -> dict[str, Any]:
     return tree
 
 
-async def _run_pygount() -> dict[str, Any]:
+def _sync_pygount_bundle(target: str) -> dict[str, Any]:
+    """Single pygount run — summary + file rows for tree (shared cache key ``pygount``)."""
+    cmd = [
+        "pygount",
+        "--format=json",
+        f"--folders-to-skip={DEFAULT_SKIP}",
+        target,
+    ]
+    try:
+        proc = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=PYGOUNT_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        log.warning("pygount_timeout", extra={"target": target, "timeout": PYGOUNT_TIMEOUT})
+        return {
+            "summary": {"total_files": 0, "total_code": 0, "languages": {}},
+            "file_rows": [],
+            "error": (
+                f"pygount timeout na {PYGOUNT_TIMEOUT}s — verklein CODEBASE_VIZ_REPO "
+                "of verhoog CODEBASE_VIZ_PYGOUNT_TIMEOUT"
+            ),
+            "fallback": True,
+        }
+    if proc.returncode != 0:
+        return {
+            "summary": {"total_files": 0, "total_code": 0, "languages": {}},
+            "file_rows": [],
+            "error": f"pygount failed (exit {proc.returncode}): {proc.stderr[:200]}",
+            "fallback": True,
+        }
+    file_rows, lang_rows = _parse_pygount_json(proc.stdout)
+    return {
+        "summary": _summary_from_pygount_rows(file_rows, lang_rows),
+        "file_rows": file_rows,
+    }
+
+
+def _sync_pygount_scan(target: str) -> dict[str, Any]:
+    return _sync_pygount_bundle(target)["summary"]
+
+
+def _sync_import_analysis(target: str) -> list[dict[str, str]]:
+    root = Path(target).resolve()
+    edges: list[dict[str, str]] = []
+    skip = {
+        ".git", "node_modules", "venv", ".venv", "__pycache__",
+        "dist", "build", ".next", ".cache", ".tox", ".eggs",
+        ".mypy_cache", "output", ".hermes",
+    }
+    for py_file in root.rglob("*.py"):
+        if any(part in skip for part in py_file.parts):
+            continue
+        rel = os.path.relpath(str(py_file), str(root))
+        source_mod = rel.replace(os.sep, ".").replace(".py", "").replace(".__init__", "")
+        try:
+            source = py_file.read_text(errors="replace")
+        except OSError:
+            continue
+        try:
+            tree = ast.parse(source, filename=str(py_file))
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    target_mod = alias.name.split(".")[0]
+                    edges.append({
+                        "source": source_mod,
+                        "target": target_mod,
+                        "type": "import",
+                    })
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                target_mod = node.module.split(".")[0]
+                edges.append({
+                    "source": source_mod,
+                    "target": target_mod,
+                    "type": "from_import",
+                })
+    return edges
+
+
+def _sync_directory_tree(target: str) -> dict[str, Any]:
+    """Legacy path: one pygount run (prefer cached ``_get_pygount_bundle`` in async routes)."""
+    root = Path(target).resolve()
+    if not root.is_dir():
+        return {"name": "unknown", "path": target, "type": "dir", "loc": 0, "children": []}
+    try:
+        bundle = _sync_pygount_bundle(target)
+        return _tree_from_pygount_rows(bundle["file_rows"], target)
+    except RuntimeError:
+        log.warning("pygount_tree_failed", extra={"target": target})
+        return {
+            "name": root.name,
+            "path": str(root),
+            "type": "dir",
+            "loc": 0,
+            "children": [],
+        }
+
+
+async def _fetch_pygount_bundle() -> dict[str, Any]:
     if REPO_PATH is None:
-        return {"total_files": 0, "total_code": 0, "languages": {}}
+        return {
+            "summary": {"total_files": 0, "total_code": 0, "languages": {}},
+            "file_rows": [],
+        }
     if not _memory_ok():
         raise RuntimeError("memory_pressure")
-    return await asyncio.to_thread(_sync_pygount_scan, str(REPO_PATH))
+    _scan_start("pygount")
+    try:
+        return await asyncio.to_thread(_sync_pygount_bundle, str(REPO_PATH))
+    finally:
+        _scan_end()
+
+
+async def _fetch_import_edges() -> list[dict[str, str]]:
+    if REPO_PATH is None:
+        return []
+    _scan_start("import_edges")
+    try:
+        return await asyncio.to_thread(_sync_import_analysis, str(REPO_PATH))
+    finally:
+        _scan_end()
+
+
+async def _get_import_edges() -> list[dict[str, str]]:
+    """Cached AST import scan — gedeeld door summary, dependencies, dead-imports."""
+    return await _get_or_compute("import_edges", CODEBASE_VIZ_TTL, _fetch_import_edges)
+
+
+async def _get_pygount_bundle() -> dict[str, Any]:
+    """Cached pygount result (default TTL 60s) — one scan serves structure + summary."""
+    return await _get_or_compute("pygount", CODEBASE_VIZ_TTL, _fetch_pygount_bundle)
+
+
+async def _run_pygount() -> dict[str, Any]:
+    bundle = await _get_pygount_bundle()
+    return bundle["summary"]
 
 
 async def _run_import_analysis() -> list[dict[str, str]]:
-    if REPO_PATH is None:
-        return []
-    return await asyncio.to_thread(_sync_import_analysis, str(REPO_PATH))
+    return await _get_import_edges()
 
 
 async def _build_directory_tree() -> dict[str, Any]:
     if REPO_PATH is None:
         return {"name": "unknown", "path": "", "type": "dir", "loc": 0, "children": []}
-    return await asyncio.to_thread(_sync_directory_tree, str(REPO_PATH))
+    bundle = await _get_pygount_bundle()
+    return await asyncio.to_thread(
+        _tree_from_pygount_rows,
+        bundle["file_rows"],
+        str(REPO_PATH),
+    )
 
 
 async def _build_structure():
-    tree = await _build_directory_tree()
-    summary = await _run_pygount()
-    return {"tree": tree, "summary": summary}
+    bundle = await _get_pygount_bundle()
+    tree = await asyncio.to_thread(
+        _tree_from_pygount_rows,
+        bundle["file_rows"],
+        str(REPO_PATH),
+    )
+    out: dict[str, Any] = {"tree": tree, "summary": bundle["summary"]}
+    if bundle.get("error"):
+        out["error"] = bundle["error"]
+        out["fallback"] = bool(bundle.get("fallback", True))
+    return out
 
 
 async def _build_deps():
-    edges = await _run_import_analysis()
+    edges = await _get_import_edges()
     all_mods: set[str] = set()
     for e in edges:
         all_mods.add(e["source"])
@@ -432,44 +585,48 @@ async def _build_deps():
 
 
 async def _build_summary():
-    summary = await _run_pygount()
-    edges = await _run_import_analysis()
-    tree = await _build_directory_tree()
+    _scan_start("summary")
+    try:
+        summary = await _run_pygount()
+        edges = await _get_import_edges()
+        tree = await _build_directory_tree()
 
-    all_files: list[dict] = []
+        all_files: list[dict] = []
 
-    def _collect(n: dict) -> None:
-        if n.get("type") == "file":
-            all_files.append(n)
-        for c in n.get("children", []):
-            _collect(c)
+        def _collect(n: dict) -> None:
+            if n.get("type") == "file":
+                all_files.append(n)
+            for c in n.get("children", []):
+                _collect(c)
 
-    _collect(tree)
+        _collect(tree)
 
-    test_code = sum(
-        f.get("loc", 0) for f in all_files if "test" in f.get("name", "").lower()
-    )
-    prod_code = max(0, summary.get("total_code", 0) - test_code)
-    top_files = sorted(all_files, key=lambda x: x.get("loc", 0), reverse=True)[:10]
+        test_code = sum(
+            f.get("loc", 0) for f in all_files if "test" in f.get("name", "").lower()
+        )
+        prod_code = max(0, summary.get("total_code", 0) - test_code)
+        top_files = sorted(all_files, key=lambda x: x.get("loc", 0), reverse=True)[:10]
 
-    import_count: dict[str, int] = {}
-    for e in edges:
-        import_count[e["target"]] = import_count.get(e["target"], 0) + 1
-    top_modules = sorted(import_count.items(), key=lambda x: x[1], reverse=True)[:10]
+        import_count: dict[str, int] = {}
+        for e in edges:
+            import_count[e["target"]] = import_count.get(e["target"], 0) + 1
+        top_modules = sorted(import_count.items(), key=lambda x: x[1], reverse=True)[:10]
 
-    return {
-        "total_loc": summary.get("total_code", 0),
-        "total_files": summary.get("total_files", 0),
-        "test_code": test_code,
-        "production_code": prod_code,
-        "ratio": round(prod_code / max(test_code, 1), 2),
-        "languages": summary.get("languages", {}),
-        "language_count": len(summary.get("languages", {})),
-        "module_count": len({e["source"] for e in edges}),
-        "edge_count": len(edges),
-        "top_files": top_files,
-        "top_modules": [{"module": m, "count": c} for m, c in top_modules],
-    }
+        return {
+            "total_loc": summary.get("total_code", 0),
+            "total_files": summary.get("total_files", 0),
+            "test_code": test_code,
+            "production_code": prod_code,
+            "ratio": round(prod_code / max(test_code, 1), 2),
+            "languages": summary.get("languages", {}),
+            "language_count": len(summary.get("languages", {})),
+            "module_count": len({e["source"] for e in edges}),
+            "edge_count": len(edges),
+            "top_files": top_files,
+            "top_modules": [{"module": m, "count": c} for m, c in top_modules],
+        }
+    finally:
+        _scan_end()
 
 
 async def _run_doctor():
@@ -663,6 +820,9 @@ def _check_ws_token(provided: str | None) -> bool:
 async def health():
     await _ensure_started()
     mem = _memory_status()
+    async with _cache_lock:
+        pygount_cached = "pygount" in _cache
+        cache_keys = list(_cache.keys())
     return {
         "status": "ok" if not mem.get("pressure") else "degraded",
         "plugin": "codebase-viz",
@@ -673,7 +833,19 @@ async def health():
         ),
         "watchdog_available": WATCHDOG_AVAILABLE,
         "memory": mem,
+        "cache_ttl_sec": CODEBASE_VIZ_TTL,
+        "pygount_timeout_sec": PYGOUNT_TIMEOUT,
+        "pygount_cached": pygount_cached,
+        "cache_keys": cache_keys,
+        "plugin_api_path": str(Path(__file__).resolve()),
     }
+
+
+@router.get("/scan-status")
+async def get_scan_status():
+    """Lightweight poll endpoint for loading UI (phase, pseudo-progress, cache hits)."""
+    await _ensure_started()
+    return await _async_scan_status_payload()
 
 
 @router.get("/structure")
@@ -927,8 +1099,8 @@ async def force_scan():
     await _ensure_started()
     await _invalidate_cache()
     try:
-        summary = await _run_pygount()
-        await _set_cache("summary", summary)
+        bundle = await _fetch_pygount_bundle()
+        await _set_cache("pygount", bundle)
         return {"status": "ok", "scan_complete": True}
     except RuntimeError as exc:
         return {"status": "cached_invalidated", "scan_error": str(exc)}

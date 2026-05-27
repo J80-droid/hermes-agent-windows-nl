@@ -29,6 +29,11 @@ def test_ps1_exists_and_has_no_open(ps1_text: str) -> None:
 def test_ps1_skip_env_flags(ps1_text: str) -> None:
     assert "HERMES_SKIP_DASHBOARD_ON_START" in ps1_text
     assert "HERMES_DASHBOARD_ON_START" in ps1_text
+    assert "HERMES_BUNDLED_PLUGINS" in ps1_text
+    assert "HERMES_DASHBOARD_OPEN_PATH" in ps1_text
+    assert "Initialize-WorkspaceDashboardPlugins" in ps1_text
+    assert "Install-HermesWebDashboardPackage" in ps1_text
+    assert "[web]" in ps1_text
 
 
 def test_ps1_port_validation(ps1_text: str) -> None:
@@ -56,6 +61,7 @@ def test_launch_hermes_bat_wires_script() -> None:
     assert "launch_dashboard_on_start.ps1" in bat
     assert "HERMES_SKIP_DASHBOARD_ON_START" in bat
     assert "HERMES_LAUNCH_LOG" in bat
+    assert "HERMES_DASHBOARD_OPEN_PATH" in bat
 
 
 def test_skip_env_exits_zero_quickly() -> None:

@@ -15,8 +15,17 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
+
+try:
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+except ImportError as exc:
+    pytest.skip(
+        "fastapi ontbreekt in deze Python — run vanaf repo-root met Hermes-venv: "
+        'pip install -e ".[web]"  of  audits\\RUN_CODEBASE_VIZ_UNIT_TESTS.bat  '
+        f"({exc})",
+        allow_module_level=True,
+    )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PLUGIN_API = REPO_ROOT / "plugins" / "codebase-viz" / "dashboard" / "plugin_api.py"
@@ -153,8 +162,9 @@ def test_sync_pygount_scan_timeout(plugin_module, monkeypatch):
         raise subprocess.TimeoutExpired(cmd="pygount", timeout=1)
 
     monkeypatch.setattr(plugin_module.subprocess, "run", _timeout)
-    with pytest.raises(RuntimeError, match="timed out"):
-        plugin_module._sync_pygount_scan(str(Path(".")))
+    result = plugin_module._sync_pygount_bundle(str(Path(".")))
+    assert result.get("fallback") is True
+    assert "timeout" in result.get("error", "").lower()
 
 
 # --- HTTP endpoints (happy path) ---
@@ -166,7 +176,16 @@ def test_health_returns_ok(client, plugin_module, tiny_repo):
     body = resp.json()
     assert body["status"] == "ok"
     assert body["plugin"] == "codebase-viz"
-    assert body["version"] == "2.5.0"
+    assert body["version"] == plugin_module.PLUGIN_VERSION
+    assert body["pygount_timeout_sec"] == plugin_module.PYGOUNT_TIMEOUT
+    assert "plugin_api_path" in body
+    assert body["plugin_api_path"].endswith("plugin_api.py")
+    manifest = json.loads(
+        (REPO_ROOT / "plugins/codebase-viz/dashboard/manifest.json").read_text(
+            encoding="utf-8",
+        ),
+    )
+    assert body["version"] == manifest["version"]
     assert Path(body["repo_path"]).resolve() == tiny_repo.resolve()
 
 
@@ -308,7 +327,12 @@ def test_run_pygount_mocked(plugin_module, monkeypatch):
     def _fake_scan(_target):
         return fake
 
-    monkeypatch.setattr(plugin_module, "_sync_pygount_scan", _fake_scan)
+    monkeypatch.setattr(
+        plugin_module,
+        "_sync_pygount_bundle",
+        lambda _t: {"summary": fake, "file_rows": []},
+    )
+    asyncio.run(plugin_module._invalidate_cache())
     out = asyncio.run(plugin_module._run_pygount())
     assert out["total_code"] == 42
 
@@ -317,7 +341,7 @@ def test_force_scan_pygount_error(client, plugin_module):
     def _fail(_target):
         raise RuntimeError("pygount down")
 
-    with patch.object(plugin_module, "_sync_pygount_scan", _fail):
+    with patch.object(plugin_module, "_sync_pygount_bundle", _fail):
         resp = client.post("/api/plugins/codebase-viz/force-scan")
     body = resp.json()
     assert body["status"] == "cached_invalidated"
@@ -517,6 +541,23 @@ def test_sprint3_module_on_disk():
     assert "sync_churn" in text and "MAX_TODO_FILES" in text
 
 
+def test_build_structure_single_pygount_bundle(plugin_module, monkeypatch):
+    calls = {"n": 0}
+
+    async def fake_bundle():
+        calls["n"] += 1
+        return {
+            "summary": {"total_files": 1, "total_code": 5, "languages": {}},
+            "file_rows": [],
+        }
+
+    monkeypatch.setattr(plugin_module, "_get_pygount_bundle", fake_bundle)
+    result = asyncio.run(plugin_module._build_structure())
+    assert calls["n"] == 1
+    assert result["tree"]["type"] == "dir"
+    assert result["summary"]["total_code"] == 5
+
+
 def test_thundering_herd_summary_single_pygount(plugin_module, monkeypatch):
     """10 parallel cache misses → exactly one pygount run (asyncio.Lock)."""
     calls = {"n": 0}
@@ -532,7 +573,15 @@ def test_thundering_herd_summary_single_pygount(plugin_module, monkeypatch):
     async def no_edges():
         return []
 
-    monkeypatch.setattr(plugin_module, "_run_pygount", slow_pygount)
+    async def slow_bundle():
+        calls["n"] += 1
+        await asyncio.sleep(0.03)
+        return {
+            "summary": {"total_files": 2, "total_code": 42, "languages": {"Python": 42}},
+            "file_rows": [],
+        }
+
+    monkeypatch.setattr(plugin_module, "_get_pygount_bundle", slow_bundle)
     monkeypatch.setattr(plugin_module, "_build_directory_tree", empty_tree)
     monkeypatch.setattr(plugin_module, "_run_import_analysis", no_edges)
     asyncio.run(plugin_module._invalidate_cache())
@@ -587,6 +636,34 @@ def test_memory_guard_serves_stale_cache(plugin_module, monkeypatch):
     )
     assert result.get("total_loc") == 99
     assert result.get("memory_pressure") is True
+
+
+def test_scan_status_endpoint(client):
+    body = client.get("/api/plugins/codebase-viz/scan-status").json()
+    assert "busy" in body
+    assert "progress" in body
+    assert "phase" in body
+    assert "detail" in body
+
+
+def test_import_edges_shared_cache(plugin_module, monkeypatch):
+    calls = {"n": 0}
+
+    async def fake_edges():
+        calls["n"] += 1
+        return [{"source": "a", "target": "b", "type": "import"}]
+
+    monkeypatch.setattr(plugin_module, "_fetch_import_edges", fake_edges)
+    asyncio.run(plugin_module._invalidate_cache())
+
+    async def run():
+        await asyncio.gather(
+            plugin_module._get_import_edges(),
+            plugin_module._get_import_edges(),
+        )
+
+    asyncio.run(run())
+    assert calls["n"] == 1
 
 
 def test_health_includes_memory(client):

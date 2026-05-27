@@ -9,6 +9,7 @@ import SearchTab from './SearchTab';
 import TimelineTab from './TimelineTab';
 import { usePluginFetch, postForceScan, useD3Loader } from './usePluginFetch';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
+import ScanProgress from './ScanProgress';
 
 const h = React.createElement;
 
@@ -189,15 +190,39 @@ function CategoryNav({ categories, tab, setTab, menuOpen, setMenuOpen }) {
 }
 
 function parseFetchError(err) {
-  if (!err) return 'Onbekende fout';
-  const msg = String(err.message || err);
+  if (!err) return '';
+  const msg = String(err.message || err.name || err);
+  if (!msg || msg === '[object Object]') {
+    try {
+      return JSON.stringify(err);
+    } catch (_e) {
+      return 'Netwerkfout — open DevTools → Network';
+    }
+  }
   const m = msg.match(/^\d{3}:\s*(.*)$/s);
   if (!m) return msg;
   try {
     const body = JSON.parse(m[1]);
     if (body && typeof body.detail === 'string') return body.detail;
+    if (body && typeof body.error === 'string') return body.error;
   } catch (_e) { /* not JSON */ }
   return m[1] || msg;
+}
+
+function WarningBanner({ message, onRetry }) {
+  const SDK = window.__HERMES_PLUGIN_SDK__;
+  const { Button } = SDK?.components || {};
+  return h(
+    'div',
+    { className: 'codebase-viz-warn-banner', role: 'alert' },
+    h('p', null, message),
+    Button &&
+      h(
+        Button,
+        { variant: 'outline', size: 'sm', onClick: onRetry },
+        'Opnieuw proberen',
+      ),
+  );
 }
 
 export default function App() {
@@ -246,12 +271,12 @@ export default function App() {
     return shell(h(SearchTab));
   }
 
-  if (error || data?.fallback) {
+  if (error) {
     return shell(
       h(
         'div',
         { className: 'codebase-viz-error' },
-        h('p', null, parseFetchError(error) || data?.error || 'Scan mislukt'),
+        h('p', null, parseFetchError(error) || 'Scan mislukt (netwerk of server)'),
         h(
           Button,
           {
@@ -268,13 +293,9 @@ export default function App() {
   if (loading || !data) {
     return shell(
       h(
-        'p',
-        { className: 'codebase-viz-loading' },
-        tab === 'sunburst' || tab === 'treemap'
-          ? 'Scannen... (pygount)'
-          : tab === 'force-graph'
-            ? 'Analyseer imports...'
-            : 'Laden...',
+        'div',
+        { className: 'codebase-viz-loading-panel' },
+        h(ScanProgress, { active: true, tab }),
       ),
     );
   }
@@ -284,15 +305,26 @@ export default function App() {
       h(
         'div',
         { className: 'codebase-viz-empty' },
-        h('p', null, 'Geen bestanden gevonden in de repo.'),
+        data?.error &&
+          h(WarningBanner, { message: data.error, onRetry: onRefresh }),
         h(
           'p',
-          { className: 'codebase-viz-hint' },
-          'Zet CODEBASE_VIZ_REPO naar je git-root en herstart het dashboard.',
+          null,
+          data?.error
+            ? 'Scan afgebroken of geen resultaat.'
+            : 'Geen bestanden gevonden in de repo.',
         ),
+        !data?.error &&
+          h(
+            'p',
+            { className: 'codebase-viz-hint' },
+            'Zet CODEBASE_VIZ_REPO naar je git-root en herstart het dashboard.',
+          ),
       ),
     );
   }
+
+  const warnMsg = data?.error || (data?.fallback ? 'Gedeeltelijke data (fallback)' : null);
 
   let content;
   switch (tab) {
@@ -342,5 +374,12 @@ export default function App() {
     }
   }
 
-  return shell(content);
+  return shell(
+    h(
+      'div',
+      { className: 'codebase-viz-tab-body' },
+      warnMsg && h(WarningBanner, { message: warnMsg, onRetry: onRefresh }),
+      content,
+    ),
+  );
 }

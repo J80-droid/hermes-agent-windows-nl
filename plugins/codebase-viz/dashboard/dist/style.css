@@ -6,6 +6,114 @@
   min-height: 0;
 }
 
+.codebase-viz-loading-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  min-height: 12rem;
+  padding: 1.5rem 1rem;
+  gap: 0.75rem;
+}
+
+.codebase-viz-scan-progress {
+  width: 100%;
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+.codebase-viz-warn-banner {
+  margin-bottom: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.35rem;
+  border: 1px solid hsl(45 90% 45% / 0.5);
+  background: hsl(45 90% 45% / 0.12);
+  color: hsl(var(--foreground));
+  font-size: 0.85rem;
+}
+
+.codebase-viz-warn-banner p {
+  margin: 0 0 0.5rem;
+}
+
+.codebase-viz-tab-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.codebase-viz-legacy-hint {
+  margin: 0 0 0.65rem;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  border-radius: 0.35rem;
+  border: 1px solid hsl(45 90% 45% / 0.45);
+  background: hsl(45 90% 45% / 0.1);
+  color: hsl(var(--foreground));
+}
+
+.codebase-viz-legacy-hint code {
+  font-size: 0.72rem;
+  word-break: break-all;
+}
+
+.codebase-viz-api-path {
+  display: block;
+  margin-top: 0.35rem;
+}
+
+.codebase-viz-progress-track {
+  height: 10px;
+  background: #1e293b;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid #4ade80;
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+.codebase-viz-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+  border-radius: 999px;
+  transition: width 0.45s ease;
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.65);
+}
+
+.codebase-viz-progress-bar.indeterminate {
+  width: 38% !important;
+  animation: codebase-viz-progress-slide 1.4s ease-in-out infinite;
+}
+
+@keyframes codebase-viz-progress-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+.codebase-viz-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.codebase-viz-progress-detail {
+  flex: 1;
+}
+
+.codebase-viz-progress-elapsed {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.9;
+}
+
 .codebase-viz-shortcuts-hint {
   flex-shrink: 0;
   margin-top: 0.35rem;

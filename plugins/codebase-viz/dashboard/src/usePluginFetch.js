@@ -1,6 +1,7 @@
 import React from 'react';
 
 const API = '/api/plugins/codebase-viz';
+const LOG = '[codebase-viz]';
 
 export function usePluginFetch(path, deps = [], refreshToken = 0) {
   const SDK = window.__HERMES_PLUGIN_SDK__;
@@ -13,12 +14,24 @@ export function usePluginFetch(path, deps = [], refreshToken = 0) {
     const ac = new AbortController();
     setLoading(true);
     setError(null);
-    SDK.fetchJSON(`${API}${path}`, { signal: ac.signal })
+    const url = `${API}${path}`;
+    console.info(LOG, 'fetch start', url);
+    SDK.fetchJSON(url, { signal: ac.signal })
       .then((body) => {
-        if (!ac.signal.aborted) setData(body);
+        if (!ac.signal.aborted) {
+          console.info(LOG, 'fetch ok', url, {
+            fallback: body?.fallback,
+            error: body?.error,
+            keys: body && typeof body === 'object' ? Object.keys(body) : [],
+          });
+          setData(body);
+        }
       })
       .catch((err) => {
-        if (err?.name !== 'AbortError' && !ac.signal.aborted) setError(err);
+        if (err?.name !== 'AbortError' && !ac.signal.aborted) {
+          console.error(LOG, 'fetch fail', url, err);
+          setError(err);
+        }
       })
       .finally(() => {
         if (!ac.signal.aborted) setLoading(false);

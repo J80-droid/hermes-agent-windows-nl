@@ -32,8 +32,12 @@ FAILURES = 0
 STEP = 0
 
 PY = Path.home() / "miniconda3/envs/hermes-env/python.exe"
-if not PY.is_file():
-    PY = Path(sys.executable)
+_candidates = [
+    PY,
+    REPO.parent / "Hermes_agent_Windows" / ".venv" / "Scripts" / "python.exe",
+    Path(sys.executable),
+]
+PY = next((p for p in _candidates if p.is_file()), Path(sys.executable))
 
 SPRINT3_ARTEFACTS = (
     "plugins/codebase-viz/dashboard/plugin_api_sprint3.py",
@@ -358,6 +362,8 @@ def test_v11_pytest_unit_gate() -> None:
                 "tests/plugins/test_codebase_viz_plugin.py",
                 "-q",
                 "--tb=short",
+                '-o',
+                'addopts=',
             ],
             cwd=str(REPO),
             capture_output=True,

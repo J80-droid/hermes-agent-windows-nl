@@ -97,6 +97,7 @@ var CodebaseVizPlugin = (() => {
 
   // src/usePluginFetch.js
   var API = "/api/plugins/codebase-viz";
+  var LOG = "[codebase-viz]";
   function usePluginFetch(path, deps = [], refreshToken = 0) {
     const SDK2 = window.__HERMES_PLUGIN_SDK__;
     const [data, setData] = react_shim_default.useState(null);
@@ -107,10 +108,22 @@ var CodebaseVizPlugin = (() => {
       const ac = new AbortController();
       setLoading(true);
       setError(null);
-      SDK2.fetchJSON(`${API}${path}`, { signal: ac.signal }).then((body) => {
-        if (!ac.signal.aborted) setData(body);
+      const url = `${API}${path}`;
+      console.info(LOG, "fetch start", url);
+      SDK2.fetchJSON(url, { signal: ac.signal }).then((body) => {
+        if (!ac.signal.aborted) {
+          console.info(LOG, "fetch ok", url, {
+            fallback: body?.fallback,
+            error: body?.error,
+            keys: body && typeof body === "object" ? Object.keys(body) : []
+          });
+          setData(body);
+        }
       }).catch((err) => {
-        if (err?.name !== "AbortError" && !ac.signal.aborted) setError(err);
+        if (err?.name !== "AbortError" && !ac.signal.aborted) {
+          console.error(LOG, "fetch fail", url, err);
+          setError(err);
+        }
       }).finally(() => {
         if (!ac.signal.aborted) setLoading(false);
       });
@@ -1053,8 +1066,185 @@ ${d.value} LOC`;
     }, [setTab, onRefresh]);
   }
 
-  // src/App.jsx
+  // src/useScanProgress.js
+  var API2 = "/api/plugins/codebase-viz";
+  var LOG2 = "[codebase-viz]";
+  function tabDetail(tab) {
+    if (tab === "sunburst" || tab === "treemap") return "LOC tellen (pygount)\u2026";
+    if (tab === "force-graph" || tab === "dependencies") return "Python-imports analyseren\u2026";
+    if (tab === "metrics" || tab === "summary") return "Metrics samenstellen\u2026";
+    return "Gegevens laden\u2026";
+  }
+  function isScanStatusPayload(body) {
+    return body && typeof body === "object" && typeof body.progress === "number" && "phase" in body;
+  }
+  function useScanProgress(active, tab) {
+    const SDK2 = window.__HERMES_PLUGIN_SDK__;
+    const startRef = react_shim_default.useRef(0);
+    const [elapsedSec, setElapsedSec] = react_shim_default.useState(0);
+    const [serverStatus, setServerStatus] = react_shim_default.useState(null);
+    const [useLocalOnly, setUseLocalOnly] = react_shim_default.useState(false);
+    const [legacyBackend, setLegacyBackend] = react_shim_default.useState(false);
+    const [apiPath, setApiPath] = react_shim_default.useState("");
+    const [serverVersion, setServerVersion] = react_shim_default.useState("");
+    const warnedRef = react_shim_default.useRef(false);
+    const sdkRef = react_shim_default.useRef(SDK2);
+    sdkRef.current = SDK2;
+    react_shim_default.useEffect(() => {
+      if (!active) {
+        startRef.current = 0;
+        setElapsedSec(0);
+        setServerStatus(null);
+        setUseLocalOnly(false);
+        setLegacyBackend(false);
+        setApiPath("");
+        setServerVersion("");
+        warnedRef.current = false;
+        return void 0;
+      }
+      startRef.current = Date.now();
+      const tick = window.setInterval(() => {
+        setElapsedSec(Math.floor((Date.now() - startRef.current) / 1e3));
+      }, 1e3);
+      return () => window.clearInterval(tick);
+    }, [active, tab]);
+    react_shim_default.useEffect(() => {
+      const fetchJSON = sdkRef.current?.fetchJSON;
+      if (!active || !fetchJSON) return void 0;
+      let cancelled = false;
+      let pollId = null;
+      const stopPolling = () => {
+        if (pollId != null) {
+          window.clearInterval(pollId);
+          pollId = null;
+        }
+      };
+      const enableLocal = (reason) => {
+        stopPolling();
+        if (!warnedRef.current) {
+          warnedRef.current = true;
+          console.info(
+            LOG2,
+            "voortgang via lokale timer",
+            reason || "(herstart dashboard met nieuwste plugin_api voor server-status)"
+          );
+        }
+        setUseLocalOnly(true);
+      };
+      const pollScanStatus = () => {
+        fetchJSON(`${API2}/scan-status`).then((body) => {
+          if (cancelled) return;
+          if (isScanStatusPayload(body)) {
+            setServerStatus(body);
+          } else {
+            enableLocal("scan-status antwoord ongeldig");
+          }
+        }).catch((err) => {
+          if (!cancelled) enableLocal(err?.message || String(err));
+        });
+      };
+      fetchJSON(`${API2}/health`).then((health) => {
+        if (cancelled) return;
+        if (typeof health?.version === "string") {
+          setServerVersion(health.version);
+        }
+        if (typeof health?.plugin_api_path === "string") {
+          setApiPath(health.plugin_api_path);
+        }
+        if (typeof health?.pygount_timeout_sec === "number") {
+          setLegacyBackend(false);
+          pollScanStatus();
+          pollId = window.setInterval(pollScanStatus, 800);
+        } else {
+          setLegacyBackend(true);
+          enableLocal("oude plugin_api (geen pygount_timeout_sec in /health)");
+        }
+      }).catch(() => {
+        if (!cancelled) enableLocal("health niet bereikbaar");
+      });
+      return () => {
+        cancelled = true;
+        stopPolling();
+      };
+    }, [active, tab]);
+    const detail = useLocalOnly ? tabDetail(tab) : serverStatus?.detail || tabDetail(tab);
+    const progress = useLocalOnly ? Math.min(90, 10 + elapsedSec * 4) : typeof serverStatus?.progress === "number" ? serverStatus.progress : Math.min(90, 10 + elapsedSec * 4);
+    const elapsed = !useLocalOnly && serverStatus?.elapsed_sec != null ? `${serverStatus.elapsed_sec}s` : elapsedSec > 0 ? `${elapsedSec}s` : "";
+    return {
+      detail,
+      progress,
+      elapsed,
+      busy: useLocalOnly ? elapsedSec < 600 : serverStatus?.busy !== false,
+      legacyApi: legacyBackend,
+      apiPath,
+      serverVersion
+    };
+  }
+
+  // src/ScanProgress.jsx
   var h10 = react_shim_default.createElement;
+  var LOG3 = "[codebase-viz]";
+  function ScanProgress({ active, tab }) {
+    const { detail, progress, elapsed, busy, legacyApi, apiPath, serverVersion } = useScanProgress(active, tab);
+    const pct = busy ? Math.max(12, Math.min(98, progress)) : 100;
+    const loggedRef = react_shim_default.useRef(false);
+    react_shim_default.useEffect(() => {
+      if (active && !loggedRef.current) {
+        loggedRef.current = true;
+        console.info(LOG3, "scan gestart", { tab, detail });
+      }
+      if (!active) loggedRef.current = false;
+    }, [active, tab, detail]);
+    return h10(
+      "div",
+      { className: "codebase-viz-scan-progress", role: "status", "aria-live": "polite" },
+      legacyApi ? h10(
+        "p",
+        { className: "codebase-viz-legacy-hint" },
+        apiPath ? [
+          "Verouderde plugin-backend (pygount stopt na 30s). Geladen vanaf: ",
+          h10("code", { className: "codebase-viz-api-path", key: "api" }, apiPath),
+          " \u2014 verwijder of update die installatie, of start via ",
+          h10("code", { key: "bat" }, "start_hermes.bat"),
+          " en hard-refresh (Ctrl+Shift+R)."
+        ] : [
+          "Verouderde plugin-backend",
+          serverVersion ? ` (v${serverVersion})` : "",
+          " \u2014 pygount stopt na 30s (verwacht v2.5.0 / 120s). Controleer ",
+          h10("code", { key: "w1" }, "%LOCALAPPDATA%\\hermes\\plugins\\codebase-viz"),
+          " of ",
+          h10("code", { key: "w2" }, "%USERPROFILE%\\.hermes\\plugins\\codebase-viz"),
+          ", of voer ",
+          h10("code", { key: "fix" }, "start_hermes.bat"),
+          " uit en hard-refresh."
+        ]
+      ) : null,
+      h10(
+        "div",
+        {
+          className: "codebase-viz-progress-track",
+          role: "progressbar",
+          "aria-valuemin": 0,
+          "aria-valuemax": 100,
+          "aria-valuenow": pct,
+          "aria-label": detail
+        },
+        h10("div", {
+          className: "codebase-viz-progress-bar" + (busy && pct < 90 ? " indeterminate" : ""),
+          style: { width: `${pct}%` }
+        })
+      ),
+      h10(
+        "div",
+        { className: "codebase-viz-progress-meta" },
+        h10("span", { className: "codebase-viz-progress-detail" }, detail),
+        elapsed ? h10("span", { className: "codebase-viz-progress-elapsed" }, `${elapsed}`) : busy ? h10("span", { className: "codebase-viz-progress-elapsed" }, "\u2026") : null
+      )
+    );
+  }
+
+  // src/App.jsx
+  var h11 = react_shim_default.createElement;
   var CATEGORIES = [
     {
       id: "visuals",
@@ -1189,11 +1379,11 @@ ${d.value} LOC`;
     }
   };
   function CategoryNav({ categories, tab, setTab, menuOpen, setMenuOpen }) {
-    return h10(
+    return h11(
       "div",
       { className: "codebase-viz-tabs" },
       categories.map(
-        (cat) => h10(
+        (cat) => h11(
           "div",
           {
             key: cat.id,
@@ -1201,12 +1391,12 @@ ${d.value} LOC`;
             onMouseEnter: () => setMenuOpen(cat.id),
             onMouseLeave: () => setMenuOpen(null)
           },
-          h10("span", { className: "codebase-viz-category-label" }, cat.label, " \u25BE"),
-          menuOpen === cat.id && h10(
+          h11("span", { className: "codebase-viz-category-label" }, cat.label, " \u25BE"),
+          menuOpen === cat.id && h11(
             "div",
             { className: "codebase-viz-dropdown" },
             cat.tabs.map(
-              (t) => h10(
+              (t) => h11(
                 "button",
                 {
                   key: t.id,
@@ -1226,21 +1416,43 @@ ${d.value} LOC`;
     );
   }
   function parseFetchError(err) {
-    if (!err) return "Onbekende fout";
-    const msg = String(err.message || err);
+    if (!err) return "";
+    const msg = String(err.message || err.name || err);
+    if (!msg || msg === "[object Object]") {
+      try {
+        return JSON.stringify(err);
+      } catch (_e) {
+        return "Netwerkfout \u2014 open DevTools \u2192 Network";
+      }
+    }
     const m = msg.match(/^\d{3}:\s*(.*)$/s);
     if (!m) return msg;
     try {
       const body = JSON.parse(m[1]);
       if (body && typeof body.detail === "string") return body.detail;
+      if (body && typeof body.error === "string") return body.error;
     } catch (_e) {
     }
     return m[1] || msg;
   }
+  function WarningBanner({ message, onRetry }) {
+    const SDK2 = window.__HERMES_PLUGIN_SDK__;
+    const { Button } = SDK2?.components || {};
+    return h11(
+      "div",
+      { className: "codebase-viz-warn-banner", role: "alert" },
+      h11("p", null, message),
+      Button && h11(
+        Button,
+        { variant: "outline", size: "sm", onClick: onRetry },
+        "Opnieuw proberen"
+      )
+    );
+  }
   function App() {
     const SDK2 = window.__HERMES_PLUGIN_SDK__;
     if (!SDK2?.fetchJSON || !SDK2?.components) {
-      return h10("div", { className: "codebase-viz-error" }, "Hermes Plugin SDK niet beschikbaar.");
+      return h11("div", { className: "codebase-viz-error" }, "Hermes Plugin SDK niet beschikbaar.");
     }
     const { Button } = SDK2.components;
     const [tab, setTab] = react_shim_default.useState("sunburst");
@@ -1257,28 +1469,28 @@ ${d.value} LOC`;
     const { data, error, loading } = usePluginFetch(path, [tab], refreshToken);
     const currentCat = CATEGORIES.find((c) => c.tabs.some((t) => t.id === tab));
     const activeLabel = currentCat ? `${currentCat.label} \u203A ${currentCat.tabs.find((t) => t.id === tab)?.label}` : tab;
-    const shell = (content2) => h10(
+    const shell = (content2) => h11(
       "div",
       { className: "codebase-viz-container" },
-      h10(CategoryNav, { categories: CATEGORIES, tab, setTab, menuOpen, setMenuOpen }),
-      h10("div", { className: "codebase-viz-active-label" }, activeLabel),
-      h10("div", { className: "codebase-viz-content" }, content2),
-      h10(
+      h11(CategoryNav, { categories: CATEGORIES, tab, setTab, menuOpen, setMenuOpen }),
+      h11("div", { className: "codebase-viz-active-label" }, activeLabel),
+      h11("div", { className: "codebase-viz-content" }, content2),
+      h11(
         "div",
         { className: "codebase-viz-shortcuts-hint", title: "Sneltoetsen" },
         "1\u20139 tabs \xB7 0 coverage \xB7 r ververs \xB7 Esc sluit inspector"
       )
     );
     if (tab === "search") {
-      return shell(h10(SearchTab));
+      return shell(h11(SearchTab));
     }
-    if (error || data?.fallback) {
+    if (error) {
       return shell(
-        h10(
+        h11(
           "div",
           { className: "codebase-viz-error" },
-          h10("p", null, parseFetchError(error) || data?.error || "Scan mislukt"),
-          h10(
+          h11("p", null, parseFetchError(error) || "Scan mislukt (netwerk of server)"),
+          h11(
             Button,
             {
               variant: "outline",
@@ -1292,20 +1504,25 @@ ${d.value} LOC`;
     }
     if (loading || !data) {
       return shell(
-        h10(
-          "p",
-          { className: "codebase-viz-loading" },
-          tab === "sunburst" || tab === "treemap" ? "Scannen... (pygount)" : tab === "force-graph" ? "Analyseer imports..." : "Laden..."
+        h11(
+          "div",
+          { className: "codebase-viz-loading-panel" },
+          h11(ScanProgress, { active: true, tab })
         )
       );
     }
     if (tab === "sunburst" && data.tree && !data.tree.children?.length) {
       return shell(
-        h10(
+        h11(
           "div",
           { className: "codebase-viz-empty" },
-          h10("p", null, "Geen bestanden gevonden in de repo."),
-          h10(
+          data?.error && h11(WarningBanner, { message: data.error, onRetry: onRefresh }),
+          h11(
+            "p",
+            null,
+            data?.error ? "Scan afgebroken of geen resultaat." : "Geen bestanden gevonden in de repo."
+          ),
+          !data?.error && h11(
             "p",
             { className: "codebase-viz-hint" },
             "Zet CODEBASE_VIZ_REPO naar je git-root en herstart het dashboard."
@@ -1313,52 +1530,60 @@ ${d.value} LOC`;
         )
       );
     }
+    const warnMsg = data?.error || (data?.fallback ? "Gedeeltelijke data (fallback)" : null);
     let content;
     switch (tab) {
       case "sunburst":
-        content = !d3Ready ? h10("p", { className: "codebase-viz-loading" }, "D3 laden...") : h10(SunburstChart, { data });
+        content = !d3Ready ? h11("p", { className: "codebase-viz-loading" }, "D3 laden...") : h11(SunburstChart, { data });
         break;
       case "force-graph":
         if (!d3Ready) {
-          content = h10("p", { className: "codebase-viz-loading" }, "D3 laden...");
+          content = h11("p", { className: "codebase-viz-loading" }, "D3 laden...");
         } else if (!data.nodes?.length) {
-          content = h10("p", { className: "codebase-viz-empty" }, "Geen Python modules gevonden.");
+          content = h11("p", { className: "codebase-viz-empty" }, "Geen Python modules gevonden.");
         } else {
-          content = h10(ForceGraph, { data });
+          content = h11(ForceGraph, { data });
         }
         break;
       case "treemap":
         if (!d3Ready) {
-          content = h10("p", { className: "codebase-viz-loading" }, "D3 laden...");
+          content = h11("p", { className: "codebase-viz-loading" }, "D3 laden...");
         } else if (!data.tree?.children?.length) {
-          content = h10("p", { className: "codebase-viz-empty" }, "Geen bestanden voor treemap.");
+          content = h11("p", { className: "codebase-viz-empty" }, "Geen bestanden voor treemap.");
         } else {
-          content = h10(TreemapChart, { data });
+          content = h11(TreemapChart, { data });
         }
         break;
       case "metrics":
-        content = h10(MetricsTab, { data });
+        content = h11(MetricsTab, { data });
         break;
       case "health":
-        content = h10(HealthTab, { data });
+        content = h11(HealthTab, { data });
         break;
       case "timeline":
-        content = h10(TimelineTab, { data });
+        content = h11(TimelineTab, { data });
         break;
       default: {
         const spec = TABLE_TABS[tab];
         if (spec) {
-          content = h10(DataTableTab, {
+          content = h11(DataTableTab, {
             data,
             title: spec.title,
             columns: spec.columns
           });
         } else {
-          content = h10("p", null, "Tab nog niet ge\xEFmplementeerd.");
+          content = h11("p", null, "Tab nog niet ge\xEFmplementeerd.");
         }
       }
     }
-    return shell(content);
+    return shell(
+      h11(
+        "div",
+        { className: "codebase-viz-tab-body" },
+        warnMsg && h11(WarningBanner, { message: warnMsg, onRetry: onRefresh }),
+        content
+      )
+    );
   }
 
   // src/index.jsx
