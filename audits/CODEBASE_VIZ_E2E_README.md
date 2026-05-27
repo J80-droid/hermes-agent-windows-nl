@@ -14,7 +14,7 @@ Of handmatig vanaf repo-root:
 python audits\CodebaseVizE2E.harness.py
 ```
 
-## Scenario's (V1–V15)
+## Scenario's (V1–V18)
 
 | Stap | Onderwerp |
 |------|-----------|
@@ -32,6 +32,9 @@ python audits\CodebaseVizE2E.harness.py
 | V13 | `dist/index.js` bevat Sprint 2 markers + session token patroon |
 | V14 | `GET /dependencies` met nodes op tiny repo |
 | V15 | `wsAuth.js` kanban-token patroon |
+| V16 | `/dependencies` bij `no_repo` → lege graaf |
+| V17 | Pygount JSON type-guard (ongeldige `files`/`languages`) |
+| V18 | Pygount subprocess timeout → `RuntimeError` |
 | V11 | `pytest tests/plugins/test_codebase_viz_plugin.py` |
 
 ## Omgevingsvariabelen

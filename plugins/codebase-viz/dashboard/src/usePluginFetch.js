@@ -14,11 +14,15 @@ export function usePluginFetch(path, deps = []) {
     setLoading(true);
     setError(null);
     SDK.fetchJSON(`${API}${path}`, { signal: ac.signal })
-      .then(setData)
-      .catch((err) => {
-        if (err?.name !== 'AbortError') setError(err);
+      .then((body) => {
+        if (!ac.signal.aborted) setData(body);
       })
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (err?.name !== 'AbortError' && !ac.signal.aborted) setError(err);
+      })
+      .finally(() => {
+        if (!ac.signal.aborted) setLoading(false);
+      });
     return () => ac.abort();
   }, [path, ...deps]);
 

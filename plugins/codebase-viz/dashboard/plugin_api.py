@@ -1,6 +1,10 @@
 """Codebase Viz dashboard plugin — backend API routes.
 
-Mounted at /api/plugins/codebase-viz/ by the dashboard plugin system.
+Mounted at ``/api/plugins/codebase-viz/`` by the dashboard plugin system.
+All data routes call ``_ensure_started()`` (lazy watchdog + WS flush loop).
+
+Error policy: HTTP 200 with ``error`` / ``fallback: true`` for missing repo
+or scan failures; WebSocket rejects invalid ``?token=`` with close 4001.
 """
 
 from __future__ import annotations
@@ -135,7 +139,12 @@ def _parse_pygount_json(stdout: str) -> tuple[list[dict], list[dict]]:
         log.warning("pygount_json_parse_failed: %s", exc)
         return [], []
     if isinstance(data, dict):
-        return data.get("files") or [], data.get("languages") or []
+        files = data.get("files")
+        langs = data.get("languages")
+        return (
+            files if isinstance(files, list) else [],
+            langs if isinstance(langs, list) else [],
+        )
     if isinstance(data, list):
         return data, []
     return [], []
@@ -155,9 +164,14 @@ def _sync_pygount_scan(target: str) -> dict[str, Any]:
         f"--folders-to-skip={DEFAULT_SKIP}",
         target,
     ]
-    proc = subprocess.run(
-        cmd, capture_output=True, text=True, timeout=PYGOUNT_TIMEOUT,
-    )
+    try:
+        proc = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=PYGOUNT_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            f"pygount timed out after {PYGOUNT_TIMEOUT}s",
+        ) from exc
     if proc.returncode != 0:
         raise RuntimeError(
             f"pygount failed (exit {proc.returncode}): {proc.stderr[:500]}",
@@ -252,7 +266,13 @@ def _sync_directory_tree(target: str) -> dict[str, Any]:
     dir_map: dict[str, list] = {str(root): tree["children"]}
 
     cmd = ["pygount", "--format=json", f"--folders-to-skip={DEFAULT_SKIP}", str(root)]
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=PYGOUNT_TIMEOUT)
+    try:
+        proc = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=PYGOUNT_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        log.warning("pygount_tree_timeout", extra={"target": target})
+        return tree
     if proc.returncode != 0:
         return tree
     file_rows, _lang_rows = _parse_pygount_json(proc.stdout)

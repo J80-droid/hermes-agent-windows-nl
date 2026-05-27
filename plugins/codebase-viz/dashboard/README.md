@@ -41,12 +41,16 @@ Artefacten in `dist/`: `index.js`, `style.css`, `d3.v7.min.js`.
 
 Bij `no_repo` of compute-fouten: HTTP 200 met `error` / `fallback: true` en lege structuren.
 
+Pygount timeouts worden als `RuntimeError` / `fallback` afgehandeld (geen 500).
+
 ## Tests
 
 ```bash
 pytest tests/plugins/test_codebase_viz_plugin.py -q
 audits/RUN_CODEBASE_VIZ_E2E.bat
 ```
+
+Unit tests mocken `subprocess`, `asyncio.create_subprocess_exec` en pygount-fouten; geen live dashboard-browser in pytest.
 
 ## Rooktest (dashboard)
 

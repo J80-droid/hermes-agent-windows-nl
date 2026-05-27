@@ -23,13 +23,14 @@ function pathToModuleId(filePath, nodeIds) {
 }
 
 function buildGraph(data, search) {
+  const allEdges = Array.isArray(data?.edges) ? data.edges : [];
   const edges = search
-    ? data.edges.filter(
+    ? allEdges.filter(
         (e) =>
           e.source.toLowerCase().includes(search.toLowerCase()) ||
           e.target.toLowerCase().includes(search.toLowerCase()),
       )
-    : data.edges;
+    : allEdges;
 
   const nodeSet = new Set();
   edges.forEach((e) => {
@@ -171,14 +172,13 @@ export default function ForceGraph({ data }) {
       .attr('dy', 3)
       .attr('fill', 'hsl(var(--foreground) / 0.8)');
 
-    if (ripple?.path) {
+    function drawRipplePulse() {
+      if (!ripple?.path) return;
       const targetId = pathToModuleId(
         ripple.path,
         nodes.map((n) => n.id),
       );
-      const target = targetId
-        ? nodes.find((n) => n.id === targetId)
-        : null;
+      const target = targetId ? nodes.find((n) => n.id === targetId) : null;
       const cx = target?.x ?? width / 2;
       const cy = target?.y ?? height / 2;
       g.append('circle')
@@ -193,6 +193,10 @@ export default function ForceGraph({ data }) {
         .attr('r', 40)
         .attr('stroke-width', 0)
         .remove();
+    }
+
+    if (ripple?.path) {
+      simulation.on('end', drawRipplePulse);
     }
 
     simulation.on('tick', () => {
@@ -211,11 +215,12 @@ export default function ForceGraph({ data }) {
     };
   }, [data, search, ripple, size]);
 
+  const edgeList = Array.isArray(data?.edges) ? data.edges : [];
   const inEdges = inspector
-    ? data.edges.filter((e) => e.target === inspector).slice(0, 20)
+    ? edgeList.filter((e) => e.target === inspector).slice(0, 20)
     : [];
   const outEdges = inspector
-    ? data.edges.filter((e) => e.source === inspector).slice(0, 20)
+    ? edgeList.filter((e) => e.source === inspector).slice(0, 20)
     : [];
 
   return h(

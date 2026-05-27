@@ -268,6 +268,43 @@ def test_v14_dependencies_api() -> None:
     _step("api_dependencies", ok, f"nodes={len(body.get('nodes', []))}")
 
 
+def test_v16_dependencies_no_repo() -> None:
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    mod = _load_plugin_api()
+    mod.REPO_PATH = None
+    mod._initialized = False
+    app = FastAPI()
+    app.include_router(mod.router, prefix="/api/plugins/codebase-viz")
+    client = TestClient(app)
+    body = client.get("/api/plugins/codebase-viz/dependencies").json()
+    ok = body.get("error") == "no_repo" and body.get("nodes") == []
+    _step("dependencies_no_repo", ok)
+
+
+def test_v17_pygount_json_type_guard() -> None:
+    mod = _load_plugin_api()
+    files, langs = mod._parse_pygount_json('{"files": "bad", "languages": 1}')
+    _step("pygount_json_type_guard", files == [] and langs == [])
+
+
+def test_v18_pygount_timeout_raises() -> None:
+    mod = _load_plugin_api()
+    import subprocess as sp
+
+    def _timeout(*_a, **_k):
+        raise sp.TimeoutExpired(cmd="pygount", timeout=1)
+
+    with patch.object(mod.subprocess, "run", _timeout):
+        try:
+            mod._sync_pygount_scan(str(REPO))
+            ok = False
+        except RuntimeError as exc:
+            ok = "timed out" in str(exc).lower()
+    _step("pygount_timeout_runtime_error", ok)
+
+
 def test_v15_ws_auth_helper() -> None:
     text = (REPO / "plugins/codebase-viz/dashboard/src/wsAuth.js").read_text(
         encoding="utf-8",
@@ -322,6 +359,9 @@ def main() -> int:
     test_v13_dist_sprint2_bundle()
     test_v14_dependencies_api()
     test_v15_ws_auth_helper()
+    test_v16_dependencies_no_repo()
+    test_v17_pygount_json_type_guard()
+    test_v18_pygount_timeout_raises()
     if FAILURES:
         print(f"=== HARNESS: FAIL ({FAILURES}) ===", file=sys.stderr)
         return 1

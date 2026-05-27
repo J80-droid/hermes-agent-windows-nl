@@ -59,6 +59,7 @@ Geïsoleerde E2E voor bundled plugin `codebase-viz` (structuur, metrics, doctor,
 | V7–V9 | API | health, structure, summary, force-scan |
 | V10 | WebSocket | Ongeldig token geweigerd |
 | V12–V15 | Sprint 2 | bron + dist markers + `/dependencies` + `wsAuth` |
+| V16–V18 | Hardening | `no_repo` deps, JSON type-guard, pygount timeout |
 | V11 | pytest gate | `tests/plugins/test_codebase_viz_plugin.py` |
 
 ```bat

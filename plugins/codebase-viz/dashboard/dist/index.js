@@ -219,9 +219,13 @@ var CodebaseVizPlugin = (() => {
       const ac = new AbortController();
       setLoading(true);
       setError(null);
-      SDK.fetchJSON(`${API}${path}`, { signal: ac.signal }).then(setData).catch((err) => {
-        if (err?.name !== "AbortError") setError(err);
-      }).finally(() => setLoading(false));
+      SDK.fetchJSON(`${API}${path}`, { signal: ac.signal }).then((body) => {
+        if (!ac.signal.aborted) setData(body);
+      }).catch((err) => {
+        if (err?.name !== "AbortError" && !ac.signal.aborted) setError(err);
+      }).finally(() => {
+        if (!ac.signal.aborted) setLoading(false);
+      });
       return () => ac.abort();
     }, [path, ...deps]);
     return { data, error, loading };
@@ -464,9 +468,10 @@ var CodebaseVizPlugin = (() => {
     return null;
   }
   function buildGraph(data, search) {
-    const edges = search ? data.edges.filter(
+    const allEdges = Array.isArray(data?.edges) ? data.edges : [];
+    const edges = search ? allEdges.filter(
       (e) => e.source.toLowerCase().includes(search.toLowerCase()) || e.target.toLowerCase().includes(search.toLowerCase())
-    ) : data.edges;
+    ) : allEdges;
     const nodeSet = /* @__PURE__ */ new Set();
     edges.forEach((e) => {
       nodeSet.add(e.source);
@@ -551,7 +556,8 @@ var CodebaseVizPlugin = (() => {
         })
       ).on("click", (_event, d) => setInspector(d.id));
       const label = g.append("g").selectAll("text").data(nodes).join("text").text((d) => d.id.split(".").pop()).attr("font-size", "10px").attr("dx", 8).attr("dy", 3).attr("fill", "hsl(var(--foreground) / 0.8)");
-      if (ripple?.path) {
+      function drawRipplePulse() {
+        if (!ripple?.path) return;
         const targetId = pathToModuleId(
           ripple.path,
           nodes.map((n) => n.id)
@@ -560,6 +566,9 @@ var CodebaseVizPlugin = (() => {
         const cx = target?.x ?? width / 2;
         const cy = target?.y ?? height / 2;
         g.append("circle").attr("cx", cx).attr("cy", cy).attr("r", 6).attr("fill", "none").attr("stroke", "#22c55e").attr("stroke-width", 2).transition().duration(1e3).attr("r", 40).attr("stroke-width", 0).remove();
+      }
+      if (ripple?.path) {
+        simulation.on("end", drawRipplePulse);
       }
       simulation.on("tick", () => {
         link.attr("x1", (d) => d.source.x).attr("y1", (d) => d.source.y).attr("x2", (d) => d.target.x).attr("y2", (d) => d.target.y);
@@ -571,8 +580,9 @@ var CodebaseVizPlugin = (() => {
         simRef.current = null;
       };
     }, [data, search, ripple, size]);
-    const inEdges = inspector ? data.edges.filter((e) => e.target === inspector).slice(0, 20) : [];
-    const outEdges = inspector ? data.edges.filter((e) => e.source === inspector).slice(0, 20) : [];
+    const edgeList = Array.isArray(data?.edges) ? data.edges : [];
+    const inEdges = inspector ? edgeList.filter((e) => e.target === inspector).slice(0, 20) : [];
+    const outEdges = inspector ? edgeList.filter((e) => e.source === inspector).slice(0, 20) : [];
     return h4(
       "div",
       { style: { display: "flex", flexDirection: "column", height: "100%" } },

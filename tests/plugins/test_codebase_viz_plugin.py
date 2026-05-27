@@ -1,13 +1,18 @@
-"""Tests for codebase-viz dashboard plugin API."""
+"""Tests for codebase-viz dashboard plugin API.
+
+Covers Sprint 1 (structure, summary, doctor) and Sprint 2 artefact checks.
+External tools (pygount, hermes CLI) are mocked in failure-path tests.
+"""
 
 from __future__ import annotations
 
 import asyncio
 import importlib.util
 import json
+import subprocess
 import sys
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi import FastAPI
@@ -95,6 +100,17 @@ def test_parse_pygount_json_empty_stdout(plugin_module):
     assert files == [] and langs == []
 
 
+def test_parse_pygount_json_wrong_top_level_type(plugin_module):
+    files, langs = plugin_module._parse_pygount_json('"just a string"')
+    assert files == [] and langs == []
+
+
+def test_parse_pygount_json_dict_with_non_list_files(plugin_module):
+    raw = json.dumps({"files": "nope", "languages": 42})
+    files, langs = plugin_module._parse_pygount_json(raw)
+    assert files == [] and langs == []
+
+
 def test_path_under_root_accepts_child(plugin_module, tiny_repo):
     child = tiny_repo / "pkg" / "a.py"
     assert plugin_module._path_under_root(child, tiny_repo)
@@ -112,14 +128,33 @@ def test_sync_import_analysis_skips_syntax_error(plugin_module, tiny_repo):
 
 
 def test_sync_import_analysis_read_error_skipped(plugin_module, tiny_repo, monkeypatch):
-    py = tiny_repo / "pkg" / "a.py"
+    target = tiny_repo / "pkg" / "a.py"
+    original = Path.read_text
 
-    def _boom(_self, *args, **kwargs):
-        raise OSError("denied")
+    def _read_text(self, *args, **kwargs):
+        if self == target:
+            raise OSError("denied")
+        return original(self, *args, **kwargs)
 
-    monkeypatch.setattr(Path, "read_text", _boom)
+    monkeypatch.setattr(Path, "read_text", _read_text)
     edges = plugin_module._sync_import_analysis(str(tiny_repo))
     assert isinstance(edges, list)
+    assert any(e["source"] == "pkg.b" for e in edges)
+
+
+def test_sync_directory_tree_invalid_target(plugin_module):
+    tree = plugin_module._sync_directory_tree("/nonexistent/path/xyz")
+    assert tree["type"] == "dir"
+    assert tree["children"] == []
+
+
+def test_sync_pygount_scan_timeout(plugin_module, monkeypatch):
+    def _timeout(*_a, **_k):
+        raise subprocess.TimeoutExpired(cmd="pygount", timeout=1)
+
+    monkeypatch.setattr(plugin_module.subprocess, "run", _timeout)
+    with pytest.raises(RuntimeError, match="timed out"):
+        plugin_module._sync_pygount_scan(str(Path(".")))
 
 
 # --- HTTP endpoints (happy path) ---
@@ -199,7 +234,38 @@ def test_summary_no_repo_zeros(monkeypatch, tmp_path):
     assert data["total_loc"] == 0
 
 
+def test_dependencies_no_repo_empty_graph(monkeypatch, tmp_path):
+    mod = _load_plugin_module(monkeypatch, None, env_value=str(tmp_path / "nope"))
+    mod.REPO_PATH = None
+    app = FastAPI()
+    app.include_router(mod.router, prefix="/api/plugins/codebase-viz")
+    c = TestClient(app)
+    data = c.get("/api/plugins/codebase-viz/dependencies").json()
+    assert data.get("error") == "no_repo"
+    assert data["nodes"] == [] and data["edges"] == []
+
+
+def test_health_includes_watcher_flags(client):
+    body = client.get("/api/plugins/codebase-viz/health").json()
+    assert "watchdog_available" in body
+    assert "watcher_active" in body
+    assert isinstance(body["watcher_active"], bool)
+
+
 # --- mocked failures ---
+
+
+def test_dependencies_compute_failure_returns_fallback(client, plugin_module):
+    async def _boom():
+        raise RuntimeError("import scan failed")
+
+    with patch.object(plugin_module, "_build_deps", _boom):
+        asyncio.run(plugin_module._invalidate_cache())
+        resp = client.get("/api/plugins/codebase-viz/dependencies")
+    data = resp.json()
+    assert resp.status_code == 200
+    assert data.get("fallback") is True
+    assert data["nodes"] == []
 
 
 def test_structure_pygount_failure_returns_fallback(client, plugin_module):
@@ -219,6 +285,21 @@ def test_doctor_cli_not_found(plugin_module):
     with patch("asyncio.create_subprocess_exec", side_effect=FileNotFoundError):
         result = asyncio.run(plugin_module._run_doctor())
     assert "not found" in result.get("error", "").lower()
+
+
+def test_doctor_timeout(plugin_module):
+    async def _slow(*_a, **_k):
+        raise asyncio.TimeoutError()
+
+    with patch("asyncio.create_subprocess_exec", return_value=MagicMock()):
+        with patch("asyncio.wait_for", side_effect=asyncio.TimeoutError):
+            result = asyncio.run(plugin_module._run_doctor())
+    assert "timed out" in result.get("error", "").lower()
+
+
+def test_check_ws_token_import_failure_allows(plugin_module):
+    with patch.dict(sys.modules, {"hermes_cli": None}):
+        assert plugin_module._check_ws_token("any-token") is True
 
 
 def test_run_pygount_mocked(plugin_module, monkeypatch):
@@ -302,3 +383,20 @@ def test_ws_auth_prefers_injected_token():
     )
     assert "__HERMES_SESSION_TOKEN__" in text
     assert "hermes_session_token" in text
+
+
+def test_dependencies_tiny_repo_has_pkg_edges(client):
+    data = client.get("/api/plugins/codebase-viz/dependencies").json()
+    assert len(data.get("nodes", [])) >= 2
+    assert any(e.get("source") == "pkg.b" for e in data.get("edges", []))
+
+
+def test_force_scan_no_repo_still_invalidates(monkeypatch, tmp_path):
+    mod = _load_plugin_module(monkeypatch, None, env_value=str(tmp_path / "nope"))
+    mod.REPO_PATH = None
+    app = FastAPI()
+    app.include_router(mod.router, prefix="/api/plugins/codebase-viz")
+    c = TestClient(app)
+    resp = c.post("/api/plugins/codebase-viz/force-scan")
+    assert resp.status_code == 200
+    assert resp.json().get("status") == "ok"
