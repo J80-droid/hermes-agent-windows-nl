@@ -1,7 +1,7 @@
 {
   "name": "codebase-viz",
   "private": true,
-  "version": "2.3.0",
+  "version": "2.4.0",
   "scripts": {
     "build": "node esbuild.config.mjs",
     "watch": "node esbuild.config.mjs --watch"

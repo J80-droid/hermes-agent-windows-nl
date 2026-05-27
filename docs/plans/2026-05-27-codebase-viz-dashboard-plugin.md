@@ -1,6 +1,6 @@
 # Codebase Viz — Hermes Dashboard Plugin v2
 
-> **Status:** Sprint 1 ✅ · Sprint 2 ✅ (2026-05-27) · Sprint 3+ **open**  
+> **Status:** Sprint 1 ✅ · Sprint 2 ✅ · Sprint 3 ✅ (2026-05-27) · Sprint 4 **open**  
 > **Versie:** 2.3.0 · **Commit:** `feat(codebase-viz): add dashboard plugin MVP with E2E audit and tests`  
 > **Voor Hermes:** `subagent-driven-development` skill per taak (aanbevolen voor Sprint 2).  
 > **Schatting resterend:** Sprint 2 ~2–3 u · Sprint 3 ~4–5 u · Sprint 4 ~1–2 u
@@ -39,15 +39,16 @@
 
 **Nog optioneel (Sprint 2+):** hover ripple op edges, autocomplete fly-to, aparte `Inspector.jsx`.
 
-### Sprint 3 — Uitbreidingen (fase 10) 🔲
+### Sprint 3 — Uitbreidingen (fase 10) ✅ (2026-05-27)
 
 | Gebied | Endpoints / tabs | Status |
 |--------|------------------|--------|
-| A | churn, age-map, complexity, todos, blame, coverage | 🔲 |
-| B | search, dead-imports | 🔲 |
-| C | config-drift, session-stats | 🔲 |
-| E | timeline | 🔲 |
-| — | `/history` + Metrics history chart | 🔲 |
+| A | churn, age-map, complexity, todos, blame, coverage | ✅ |
+| B | search, dead-imports | ✅ |
+| C | config-drift, session-stats | ✅ |
+| E | timeline | ✅ |
+| — | `/history` + Metrics history chart | ✅ |
+| — | `plugin_api_sprint3.py`, `DataTableTab`, E2E V19–V20 | ✅ |
 
 ### Sprint 4 — Hardening 🔲
 
@@ -218,7 +219,7 @@ Of documenteer in fork-runbook / `docs/INSTITUTIONAL_OPERATIONS.md`. Zonder env:
 |--------|-------|---------------|
 | **1 — MVP** ✅ | 0, 1, 9, 2, 5 (zonder history-chart), 6 | **Gedaan** — zie § Implementatiestatus |
 | **2 — Core viz** ✅ | 3, 4, 7 | Force graph + treemap; WS live met token |
-| **3 — Uitbreidingen** | 10a–10f | Alle endpoints in tabel hieronder; per task curl-test |
+| **3 — Uitbreidingen** ✅ | 10a–10f | 12 endpoints + tabs; v2.4.0 |
 | **4 — Hardening** | 8 | pytest; thundering herd; graceful degradation |
 
 **Niet in MVP:** fase 10 (churn, timeline, …), history-chart, profile diff UI.

@@ -166,7 +166,7 @@ def test_health_returns_ok(client, plugin_module, tiny_repo):
     body = resp.json()
     assert body["status"] == "ok"
     assert body["plugin"] == "codebase-viz"
-    assert body["version"] == "2.3.0"
+    assert body["version"] == "2.4.0"
     assert Path(body["repo_path"]).resolve() == tiny_repo.resolve()
 
 
@@ -389,6 +389,43 @@ def test_dependencies_tiny_repo_has_pkg_edges(client):
     data = client.get("/api/plugins/codebase-viz/dependencies").json()
     assert len(data.get("nodes", [])) >= 2
     assert any(e.get("source") == "pkg.b" for e in data.get("edges", []))
+
+
+def test_churn_endpoint(client, plugin_module, monkeypatch):
+    fake = {"items": [{"file": "a.py", "commits": 3}], "total": 1}
+    monkeypatch.setattr(plugin_module._s3, "sync_churn", lambda _repo: fake)
+    asyncio.run(plugin_module._invalidate_cache())
+    resp = client.get("/api/plugins/codebase-viz/churn")
+    assert resp.status_code == 200
+    assert resp.json()["items"][0]["commits"] == 3
+
+
+def test_todos_finds_marker(plugin_module, tiny_repo):
+    (tiny_repo / "pkg" / "a.py").write_text("# TODO: fix later\n", encoding="utf-8")
+    result = plugin_module._s3.sync_todos(tiny_repo)
+    assert result["total"] >= 1
+    assert any("TODO" in str(i) or i.get("todo", 0) > 0 for i in result["items"])
+
+
+def test_dead_imports_structure(plugin_module):
+    edges = [{"source": "pkg.a", "target": "os", "type": "import"}]
+    nodes = ["pkg.a", "os", "orphan"]
+    result = plugin_module._s3.sync_dead_imports(edges, nodes)
+    mods = {i["module"] for i in result["items"]}
+    assert "orphan" in mods or "pkg.a" in mods
+
+
+def test_search_short_query(plugin_module, tiny_repo):
+    result = plugin_module._s3.sync_search(tiny_repo, "a")
+    assert result["items"] == []
+
+
+def test_history_git_missing_graceful(plugin_module, tmp_path):
+    (tmp_path / ".git").mkdir(exist_ok=True)
+    try:
+        plugin_module._s3.sync_history(tmp_path)
+    except RuntimeError:
+        pass
 
 
 def test_force_scan_no_repo_still_invalidates(monkeypatch, tmp_path):

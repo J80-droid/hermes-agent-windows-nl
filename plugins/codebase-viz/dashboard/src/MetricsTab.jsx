@@ -1,4 +1,6 @@
 import React from 'react';
+import { usePluginFetch } from './usePluginFetch';
+import HistoryChart from './HistoryChart';
 
 const h = React.createElement;
 
@@ -11,6 +13,7 @@ function ratioClass(ratio) {
 export default function MetricsTab({ data }) {
   if (!data) return null;
 
+  const { data: history } = usePluginFetch('/history', []);
   const { Card, CardHeader, CardTitle, CardContent } =
     window.__HERMES_PLUGIN_SDK__.components;
 
@@ -64,6 +67,14 @@ export default function MetricsTab({ data }) {
         ),
       ),
     ),
+    history?.points?.length
+      ? h(
+          Card,
+          null,
+          h(CardHeader, null, h(CardTitle, null, 'LOC trend (commits)')),
+          h(CardContent, null, h(HistoryChart, { data: history })),
+        )
+      : null,
     data.top_files?.length
       ? h(
           Card,

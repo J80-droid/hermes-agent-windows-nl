@@ -69,6 +69,25 @@ Unit tests mocken `subprocess`, `asyncio.create_subprocess_exec` en pygount-fout
 
 Bij problemen: `pip install watchdog` (live watcher); `pygount` op PATH; dashboard **herstarten** na env-wijziging.
 
+## Sprint 3 — Analysis & tools (v2.4.0)
+
+| Tab | Endpoint |
+|-----|----------|
+| Churn | `GET /churn` |
+| Age Map | `GET /age-map` |
+| Complexity | `GET /complexity` (radon) |
+| TODO/FIXME | `GET /todos` |
+| Blame | `GET /blame` |
+| Coverage | `GET /coverage` |
+| Dead Imports | `GET /dead-imports` |
+| Config Drift | `GET /config-drift` |
+| Session Stats | `GET /session-stats` |
+| Search | `GET /search?q=` |
+| Timeline | `GET /timeline` |
+| Metrics history chart | `GET /history` |
+
+Backend: `plugin_api_sprint3.py` · Frontend: `DataTableTab`, `SearchTab`, `TimelineTab`, `HistoryChart`.
+
 ## Sprint 2 — Core viz (geleverd)
 
 - **Force Graph** — `/dependencies`, drag/zoom, zoekfilter, inspector (in/out imports), Live-badge via WebSocket

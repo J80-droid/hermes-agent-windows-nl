@@ -35,6 +35,12 @@ PY = Path.home() / "miniconda3/envs/hermes-env/python.exe"
 if not PY.is_file():
     PY = Path(sys.executable)
 
+SPRINT3_ARTEFACTS = (
+    "plugins/codebase-viz/dashboard/plugin_api_sprint3.py",
+    "plugins/codebase-viz/dashboard/src/DataTableTab.jsx",
+    "plugins/codebase-viz/dashboard/src/SearchTab.jsx",
+)
+
 REQUIRED_ARTEFACTS = (
     "plugins/codebase-viz/dashboard/manifest.json",
     "plugins/codebase-viz/dashboard/plugin_api.py",
@@ -98,7 +104,7 @@ def test_v1_required_artefacts() -> None:
 
 def test_v2_manifest_version() -> None:
     data = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    ok = data.get("name") == "codebase-viz" and data.get("version") == "2.3.0"
+    ok = data.get("name") == "codebase-viz" and data.get("version") == "2.4.0"
     _step("manifest_id_version", ok, str(data.get("version")))
 
 
@@ -289,6 +295,33 @@ def test_v17_pygount_json_type_guard() -> None:
     _step("pygount_json_type_guard", files == [] and langs == [])
 
 
+def test_v19_sprint3_artefacts() -> None:
+    missing = [a for a in SPRINT3_ARTEFACTS if not (REPO / a).is_file()]
+    _step("sprint3_artefacts", not missing, ", ".join(missing) if missing else "")
+
+
+def test_v20_churn_endpoint_mocked() -> None:
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from unittest.mock import patch
+
+    tiny = _tiny_repo()
+    os.environ["CODEBASE_VIZ_REPO"] = str(tiny)
+    mod = _load_plugin_api()
+    asyncio.run(mod._invalidate_cache())
+    mod._initialized = False
+    mod.REPO_PATH = mod._resolve_repo_path()
+
+    fake = {"items": [{"file": "x.py", "commits": 1}], "total": 1}
+    app = FastAPI()
+    app.include_router(mod.router, prefix="/api/plugins/codebase-viz")
+    client = TestClient(app)
+    with patch.object(mod._s3, "sync_churn", lambda _r: fake):
+        body = client.get("/api/plugins/codebase-viz/churn").json()
+    ok = body.get("items") and body["items"][0]["commits"] == 1
+    _step("churn_endpoint_mocked", ok)
+
+
 def test_v18_pygount_timeout_raises() -> None:
     mod = _load_plugin_api()
     import subprocess as sp
@@ -362,6 +395,8 @@ def main() -> int:
     test_v16_dependencies_no_repo()
     test_v17_pygount_json_type_guard()
     test_v18_pygount_timeout_raises()
+    test_v19_sprint3_artefacts()
+    test_v20_churn_endpoint_mocked()
     if FAILURES:
         print(f"=== HARNESS: FAIL ({FAILURES}) ===", file=sys.stderr)
         return 1

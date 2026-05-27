@@ -20,12 +20,24 @@ import time
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+import importlib.util
+
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
+
+_s3_spec = importlib.util.spec_from_file_location(
+    "plugin_api_sprint3",
+    Path(__file__).resolve().parent / "plugin_api_sprint3.py",
+)
+_s3 = importlib.util.module_from_spec(_s3_spec)
+assert _s3_spec.loader is not None
+_s3_spec.loader.exec_module(_s3)
+
+GIT_CACHE_TTL = float(os.environ.get("CODEBASE_VIZ_GIT_TTL", "300"))
 
 log = logging.getLogger(__name__)
 router = APIRouter()
 
-PLUGIN_VERSION = "2.3.0"
+PLUGIN_VERSION = "2.4.0"
 DEFAULT_SKIP = (
     ".git,node_modules,venv,.venv,__pycache__,dist,build,.next,.cache,"
     ".tox,.eggs,.mypy_cache,output,.hermes"
@@ -354,7 +366,9 @@ async def _build_deps():
     for e in edges:
         all_mods.add(e["source"])
         all_mods.add(e["target"])
-    return {"nodes": sorted(all_mods), "edges": edges}
+    nodes = sorted(all_mods)
+    cycles = await asyncio.to_thread(_s3.sync_dependency_cycles, edges)
+    return {"nodes": nodes, "edges": edges, "cycles": cycles}
 
 
 async def _build_summary():
@@ -664,6 +678,186 @@ async def get_doctor():
             sections=[],
             summary={"overall": "unknown", "score": 0, "ok": 0, "warnings": 0, "errors": 0, "total": 0},
         )
+
+
+def _require_repo() -> Path | None:
+    return REPO_PATH
+
+
+@router.get("/churn")
+async def get_churn():
+    await _ensure_started()
+    repo = _require_repo()
+    if repo is None:
+        return {"items": [], "error": "no_repo", "total": 0}
+    try:
+        return await _get_or_compute(
+            "churn", GIT_CACHE_TTL,
+            lambda: asyncio.to_thread(_s3.sync_churn, repo),
+        )
+    except Exception as exc:
+        return await _api_error_payload(exc, items=[], total=0)
+
+
+@router.get("/age-map")
+async def get_age_map():
+    await _ensure_started()
+    repo = _require_repo()
+    if repo is None:
+        return {"items": [], "error": "no_repo", "total": 0}
+    try:
+        return await _get_or_compute(
+            "age_map", GIT_CACHE_TTL * 2,
+            lambda: asyncio.to_thread(_s3.sync_age_map, repo),
+        )
+    except Exception as exc:
+        return await _api_error_payload(exc, items=[], total=0)
+
+
+@router.get("/complexity")
+async def get_complexity():
+    await _ensure_started()
+    repo = _require_repo()
+    if repo is None:
+        return {"items": [], "error": "no_repo", "total": 0}
+    try:
+        return await _get_or_compute(
+            "complexity", GIT_CACHE_TTL,
+            lambda: asyncio.to_thread(_s3.sync_complexity, repo),
+        )
+    except Exception as exc:
+        return await _api_error_payload(exc, items=[], total=0)
+
+
+@router.get("/todos")
+async def get_todos():
+    await _ensure_started()
+    repo = _require_repo()
+    if repo is None:
+        return {"items": [], "error": "no_repo", "total": 0}
+    try:
+        return await _get_or_compute(
+            "todos", CODEBASE_VIZ_TTL,
+            lambda: asyncio.to_thread(_s3.sync_todos, repo),
+        )
+    except Exception as exc:
+        return await _api_error_payload(exc, items=[], total=0)
+
+
+@router.get("/blame")
+async def get_blame():
+    await _ensure_started()
+    repo = _require_repo()
+    if repo is None:
+        return {"items": [], "error": "no_repo", "total": 0}
+    try:
+        return await _get_or_compute(
+            "blame", GIT_CACHE_TTL,
+            lambda: asyncio.to_thread(_s3.sync_blame, repo),
+        )
+    except Exception as exc:
+        return await _api_error_payload(exc, items=[], total=0)
+
+
+@router.get("/coverage")
+async def get_coverage():
+    await _ensure_started()
+    repo = _require_repo()
+    if repo is None:
+        return {"items": [], "error": "no_repo", "total": 0, "coverage_pct": 0}
+    try:
+        return await _get_or_compute(
+            "coverage", CODEBASE_VIZ_TTL,
+            lambda: asyncio.to_thread(_s3.sync_coverage, repo),
+        )
+    except Exception as exc:
+        return await _api_error_payload(exc, items=[], total=0, coverage_pct=0)
+
+
+@router.get("/search")
+async def search(q: str = Query("", min_length=0)):
+    await _ensure_started()
+    repo = _require_repo()
+    if repo is None:
+        return {"items": [], "error": "no_repo", "total": 0, "query": q}
+    try:
+        return await asyncio.to_thread(_s3.sync_search, repo, q)
+    except Exception as exc:
+        return await _api_error_payload(exc, items=[], total=0, query=q)
+
+
+@router.get("/dead-imports")
+async def get_dead_imports():
+    await _ensure_started()
+    if REPO_PATH is None:
+        return {"items": [], "error": "no_repo", "total": 0}
+    try:
+        deps = await _get_or_compute("dependencies", CODEBASE_VIZ_TTL, _build_deps)
+        return await asyncio.to_thread(
+            _s3.sync_dead_imports,
+            deps.get("edges", []),
+            deps.get("nodes", []),
+        )
+    except Exception as exc:
+        return await _api_error_payload(exc, items=[], total=0)
+
+
+@router.get("/config-drift")
+async def get_config_drift():
+    await _ensure_started()
+    repo = _require_repo()
+    if repo is None:
+        return {"items": [], "error": "no_repo", "total": 0}
+    try:
+        return await _get_or_compute(
+            "config_drift", GIT_CACHE_TTL,
+            lambda: asyncio.to_thread(_s3.sync_config_drift, repo),
+        )
+    except Exception as exc:
+        return await _api_error_payload(exc, items=[], total=0)
+
+
+@router.get("/session-stats")
+async def get_session_stats():
+    await _ensure_started()
+    try:
+        return await _get_or_compute(
+            "session_stats", 30.0,
+            lambda: asyncio.to_thread(_s3.sync_session_stats),
+        )
+    except Exception as exc:
+        return await _api_error_payload(exc, items=[], total=0)
+
+
+@router.get("/timeline")
+async def timeline(speed: int = Query(5, ge=1, le=60)):
+    await _ensure_started()
+    repo = _require_repo()
+    if repo is None:
+        return {"frames": [], "error": "no_repo", "total": 0}
+    try:
+        key = f"timeline_{speed}"
+        return await _get_or_compute(
+            key, GIT_CACHE_TTL,
+            lambda: asyncio.to_thread(_s3.sync_timeline, repo, min(speed * 20, 200)),
+        )
+    except Exception as exc:
+        return await _api_error_payload(exc, frames=[], total=0)
+
+
+@router.get("/history")
+async def get_history():
+    await _ensure_started()
+    repo = _require_repo()
+    if repo is None:
+        return {"points": [], "error": "no_repo", "total": 0}
+    try:
+        return await _get_or_compute(
+            "history", GIT_CACHE_TTL,
+            lambda: asyncio.to_thread(_s3.sync_history, repo),
+        )
+    except Exception as exc:
+        return await _api_error_payload(exc, points=[], total=0)
 
 
 @router.post("/force-scan")

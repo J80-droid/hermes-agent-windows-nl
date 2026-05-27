@@ -84,6 +84,14 @@
   overflow: auto;
   min-height: 0;
 }
+.codebase-viz-virtual-scroll {
+  overflow-y: auto;
+  contain: content;
+  max-height: 55vh;
+}
+.codebase-viz-table-tab .codebase-viz-table {
+  width: 100%;
+}
 
 .status-ok {
   color: #22c55e;

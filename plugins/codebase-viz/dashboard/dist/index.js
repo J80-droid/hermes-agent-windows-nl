@@ -29,7 +29,7 @@ var CodebaseVizPlugin = (() => {
   ));
 
   // src/App.jsx
-  var import_react8 = __toESM(__require("react"));
+  var import_react12 = __toESM(__require("react"));
 
   // src/SunburstChart.jsx
   var import_react = __toESM(__require("react"));
@@ -112,109 +112,17 @@ var CodebaseVizPlugin = (() => {
   }
 
   // src/MetricsTab.jsx
-  var import_react2 = __toESM(__require("react"));
-  var h = import_react2.default.createElement;
-  function ratioClass(ratio) {
-    if (ratio >= 1 && ratio <= 3) return "status-ok";
-    if (ratio > 3) return "status-warn";
-    return "status-err";
-  }
-  function MetricsTab({ data }) {
-    if (!data) return null;
-    const { Card, CardHeader, CardTitle, CardContent } = window.__HERMES_PLUGIN_SDK__.components;
-    const langs = Object.entries(data.languages || {}).sort(
-      (a, b) => (b[1].code || 0) - (a[1].code || 0)
-    );
-    return h(
-      "div",
-      { className: "codebase-viz-metrics" },
-      h(
-        "div",
-        { className: "codebase-viz-metrics-grid" },
-        h(MetricCard, { label: "Total LOC", value: data.total_loc }),
-        h(MetricCard, { label: "Files", value: data.total_files }),
-        h(MetricCard, { label: "Languages", value: data.language_count }),
-        h(MetricCard, {
-          label: "Prod : Test",
-          value: `${data.ratio}:1`,
-          valueClass: ratioClass(data.ratio)
-        })
-      ),
-      h(
-        Card,
-        null,
-        h(CardHeader, null, h(CardTitle, null, "Languages")),
-        h(
-          CardContent,
-          null,
-          h(
-            "table",
-            { className: "codebase-viz-table" },
-            h(
-              "thead",
-              null,
-              h("tr", null, h("th", null, "Language"), h("th", null, "Files"), h("th", null, "LOC"))
-            ),
-            h(
-              "tbody",
-              null,
-              ...langs.map(
-                ([name, stats]) => h(
-                  "tr",
-                  { key: name },
-                  h("td", null, name),
-                  h("td", null, stats.files),
-                  h("td", null, stats.code)
-                )
-              )
-            )
-          )
-        )
-      ),
-      data.top_files?.length ? h(
-        Card,
-        null,
-        h(CardHeader, null, h(CardTitle, null, "Top files by LOC")),
-        h(
-          CardContent,
-          null,
-          h(
-            "ul",
-            { className: "codebase-viz-list" },
-            ...data.top_files.map(
-              (f) => h("li", { key: f.path }, `${f.name} \u2014 ${f.loc} (${f.language || "?"})`)
-            )
-          )
-        )
-      ) : null
-    );
-  }
-  function MetricCard({ label, value, valueClass }) {
-    const { Card, CardContent } = window.__HERMES_PLUGIN_SDK__.components;
-    return h(
-      Card,
-      null,
-      h(
-        CardContent,
-        { className: "codebase-viz-metric-card" },
-        h("div", { className: "codebase-viz-metric-label" }, label),
-        h("div", { className: `codebase-viz-metric-value ${valueClass || ""}` }, value)
-      )
-    );
-  }
-
-  // src/HealthTab.jsx
   var import_react4 = __toESM(__require("react"));
 
   // src/usePluginFetch.js
-  var import_react3 = __toESM(__require("react"));
+  var import_react2 = __toESM(__require("react"));
   var API = "/api/plugins/codebase-viz";
   function usePluginFetch(path, deps = []) {
     const SDK = window.__HERMES_PLUGIN_SDK__;
-    const [data, setData] = import_react3.default.useState(null);
-    const [error, setError] = import_react3.default.useState(null);
-    const [loading, setLoading] = import_react3.default.useState(true);
-    import_react3.default.useEffect(() => {
+    const [data, setData] = import_react2.default.useState(null);
+    const [error, setError] = import_react2.default.useState(null);
+    const [loading, setLoading] = import_react2.default.useState(true);
+    import_react2.default.useEffect(() => {
       if (!SDK?.fetchJSON || !path) return void 0;
       const ac = new AbortController();
       setLoading(true);
@@ -236,8 +144,8 @@ var CodebaseVizPlugin = (() => {
     await SDK.fetchJSON(`${API}/force-scan`, { method: "POST" });
   }
   function useD3Loader() {
-    const [ready, setReady] = import_react3.default.useState(!!window.d3);
-    import_react3.default.useEffect(() => {
+    const [ready, setReady] = import_react2.default.useState(!!window.d3);
+    import_react2.default.useEffect(() => {
       if (window.d3) {
         setReady(true);
         return void 0;
@@ -261,34 +169,161 @@ var CodebaseVizPlugin = (() => {
     return ready;
   }
 
-  // src/HealthTab.jsx
+  // src/HistoryChart.jsx
+  var import_react3 = __toESM(__require("react"));
+  var h = import_react3.default.createElement;
+  function HistoryChart({ data }) {
+    const svgRef = import_react3.default.useRef(null);
+    const points = data?.points || [];
+    import_react3.default.useEffect(() => {
+      if (!svgRef.current || !points.length || !window.d3) return void 0;
+      const d3 = window.d3;
+      const svg = d3.select(svgRef.current);
+      svg.selectAll("*").remove();
+      const width = svgRef.current.clientWidth || 600;
+      const height = 180;
+      svg.attr("width", width).attr("height", height);
+      const xs = points.map((_, i) => i);
+      const ys = points.map((p) => p.loc || 0);
+      const x = d3.scaleLinear().domain([0, Math.max(xs.length - 1, 1)]).range([40, width - 10]);
+      const y = d3.scaleLinear().domain([0, d3.max(ys) || 1]).nice().range([height - 20, 10]);
+      const line = d3.line().x((_, i) => x(i)).y((_, i) => y(ys[i]));
+      svg.append("path").datum(points).attr("fill", "none").attr("stroke", "hsl(var(--primary))").attr("stroke-width", 2).attr("d", line);
+      return void 0;
+    }, [points]);
+    if (!points.length) {
+      return h("p", { className: "codebase-viz-empty" }, "Geen history-data.");
+    }
+    return h("svg", { ref: svgRef, style: { width: "100%", minHeight: "180px" } });
+  }
+
+  // src/MetricsTab.jsx
   var h2 = import_react4.default.createElement;
+  function ratioClass(ratio) {
+    if (ratio >= 1 && ratio <= 3) return "status-ok";
+    if (ratio > 3) return "status-warn";
+    return "status-err";
+  }
+  function MetricsTab({ data }) {
+    if (!data) return null;
+    const { data: history } = usePluginFetch("/history", []);
+    const { Card, CardHeader, CardTitle, CardContent } = window.__HERMES_PLUGIN_SDK__.components;
+    const langs = Object.entries(data.languages || {}).sort(
+      (a, b) => (b[1].code || 0) - (a[1].code || 0)
+    );
+    return h2(
+      "div",
+      { className: "codebase-viz-metrics" },
+      h2(
+        "div",
+        { className: "codebase-viz-metrics-grid" },
+        h2(MetricCard, { label: "Total LOC", value: data.total_loc }),
+        h2(MetricCard, { label: "Files", value: data.total_files }),
+        h2(MetricCard, { label: "Languages", value: data.language_count }),
+        h2(MetricCard, {
+          label: "Prod : Test",
+          value: `${data.ratio}:1`,
+          valueClass: ratioClass(data.ratio)
+        })
+      ),
+      h2(
+        Card,
+        null,
+        h2(CardHeader, null, h2(CardTitle, null, "Languages")),
+        h2(
+          CardContent,
+          null,
+          h2(
+            "table",
+            { className: "codebase-viz-table" },
+            h2(
+              "thead",
+              null,
+              h2("tr", null, h2("th", null, "Language"), h2("th", null, "Files"), h2("th", null, "LOC"))
+            ),
+            h2(
+              "tbody",
+              null,
+              ...langs.map(
+                ([name, stats]) => h2(
+                  "tr",
+                  { key: name },
+                  h2("td", null, name),
+                  h2("td", null, stats.files),
+                  h2("td", null, stats.code)
+                )
+              )
+            )
+          )
+        )
+      ),
+      history?.points?.length ? h2(
+        Card,
+        null,
+        h2(CardHeader, null, h2(CardTitle, null, "LOC trend (commits)")),
+        h2(CardContent, null, h2(HistoryChart, { data: history }))
+      ) : null,
+      data.top_files?.length ? h2(
+        Card,
+        null,
+        h2(CardHeader, null, h2(CardTitle, null, "Top files by LOC")),
+        h2(
+          CardContent,
+          null,
+          h2(
+            "ul",
+            { className: "codebase-viz-list" },
+            ...data.top_files.map(
+              (f) => h2("li", { key: f.path }, `${f.name} \u2014 ${f.loc} (${f.language || "?"})`)
+            )
+          )
+        )
+      ) : null
+    );
+  }
+  function MetricCard({ label, value, valueClass }) {
+    const { Card, CardContent } = window.__HERMES_PLUGIN_SDK__.components;
+    return h2(
+      Card,
+      null,
+      h2(
+        CardContent,
+        { className: "codebase-viz-metric-card" },
+        h2("div", { className: "codebase-viz-metric-label" }, label),
+        h2("div", { className: `codebase-viz-metric-value ${valueClass || ""}` }, value)
+      )
+    );
+  }
+
+  // src/HealthTab.jsx
+  var import_react5 = __toESM(__require("react"));
+  var h3 = import_react5.default.createElement;
   function StatusBadge({ status }) {
-    if (status === "error") return h2("span", { className: "status-err" }, "Error");
-    if (status === "warning") return h2("span", { className: "status-warn" }, "Warning");
-    return h2("span", { className: "status-ok" }, "OK");
+    if (status === "error") return h3("span", { className: "status-err" }, "Error");
+    if (status === "warning") return h3("span", { className: "status-warn" }, "Warning");
+    return h3("span", { className: "status-ok" }, "OK");
   }
   function HealthSection({ section }) {
     const errors = section.checks.filter((c) => c.status === "error");
     const warnings = section.checks.filter((c) => c.status === "warning");
-    return h2(
+    return h3(
       "div",
       { className: "codebase-viz-health-section" },
-      h2("div", { className: "codebase-viz-health-section-title" }, section.name),
+      h3("div", { className: "codebase-viz-health-section-title" }, section.name),
       ...errors.map(
-        (c) => h2(
+        (c) => h3(
           "div",
           { key: c.text, className: "codebase-viz-health-line" },
-          h2(StatusBadge, { status: "error" }),
+          h3(StatusBadge, { status: "error" }),
           " ",
           c.text
         )
       ),
       ...warnings.map(
-        (c) => h2(
+        (c) => h3(
           "div",
           { key: c.text, className: "codebase-viz-health-line" },
-          h2(StatusBadge, { status: "warning" }),
+          h3(StatusBadge, { status: "warning" }),
           " ",
           c.text
         )
@@ -297,26 +332,26 @@ var CodebaseVizPlugin = (() => {
   }
   function HealthTab({ data }) {
     if (!data?.sections) {
-      return h2("p", null, data?.error || "Geen doctor-data.");
+      return h3("p", null, data?.error || "Geen doctor-data.");
     }
     const { Button } = window.__HERMES_PLUGIN_SDK__.components;
     const { summary } = data;
     const score = summary?.score || 0;
     const overallClass = score >= 90 ? "status-ok" : score >= 70 ? "status-warn" : "status-err";
-    return h2(
+    return h3(
       "div",
       { className: "codebase-viz-health" },
-      h2(
+      h3(
         "div",
         { className: "codebase-viz-health-header" },
-        h2("span", { className: overallClass }, `Health: ${summary.overall}`),
+        h3("span", { className: overallClass }, `Health: ${summary.overall}`),
         ` (${score}%) \u2014 `,
-        h2("span", { className: "status-ok" }, `${summary.ok} OK`),
+        h3("span", { className: "status-ok" }, `${summary.ok} OK`),
         " ",
-        h2("span", { className: "status-warn" }, `${summary.warnings} warnings`),
+        h3("span", { className: "status-warn" }, `${summary.warnings} warnings`),
         " ",
-        h2("span", { className: "status-err" }, `${summary.errors} errors`),
-        h2(
+        h3("span", { className: "status-err" }, `${summary.errors} errors`),
+        h3(
           Button,
           {
             variant: "outline",
@@ -327,27 +362,27 @@ var CodebaseVizPlugin = (() => {
           "Refresh"
         )
       ),
-      h2(
+      h3(
         "div",
         { className: "codebase-viz-health-grid" },
         ...data.sections.map(
-          (section) => h2(HealthSection, { key: section.name, section })
+          (section) => h3(HealthSection, { key: section.name, section })
         )
       ),
-      h2(
+      h3(
         "details",
         { style: { marginTop: "1rem" } },
-        h2("summary", null, "Raw doctor output"),
-        h2("pre", { className: "codebase-viz-raw" }, data.raw)
+        h3("summary", null, "Raw doctor output"),
+        h3("pre", { className: "codebase-viz-raw" }, data.raw)
       )
     );
   }
 
   // src/ForceGraph.jsx
-  var import_react6 = __toESM(__require("react"));
+  var import_react7 = __toESM(__require("react"));
 
   // src/useFileWatcher.js
-  var import_react5 = __toESM(__require("react"));
+  var import_react6 = __toESM(__require("react"));
 
   // src/wsAuth.js
   function getSessionToken() {
@@ -365,13 +400,13 @@ var CodebaseVizPlugin = (() => {
   }
 
   // src/useFileWatcher.js
-  var h3 = import_react5.default.createElement;
+  var h4 = import_react6.default.createElement;
   function useFileWatcher(opts = {}) {
     const { onEvent, reconnectDelay = 3e3 } = opts;
-    const [connected, setConnected] = import_react5.default.useState(false);
-    const [lastEvent, setLastEvent] = import_react5.default.useState(null);
-    const [reconnect, setReconnect] = import_react5.default.useState(0);
-    import_react5.default.useEffect(() => {
+    const [connected, setConnected] = import_react6.default.useState(false);
+    const [lastEvent, setLastEvent] = import_react6.default.useState(null);
+    const [reconnect, setReconnect] = import_react6.default.useState(0);
+    import_react6.default.useEffect(() => {
       const token = getSessionToken();
       if (!token) return void 0;
       const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -428,7 +463,7 @@ var CodebaseVizPlugin = (() => {
     return { connected, lastEvent, reconnect };
   }
   function FileWatcherIndicator({ connected }) {
-    return h3(
+    return h4(
       "span",
       {
         className: connected ? "status-ok" : "status-err",
@@ -438,8 +473,8 @@ var CodebaseVizPlugin = (() => {
     );
   }
   function useRippleAnimation(lastEvent) {
-    const [ripple, setRipple] = import_react5.default.useState(null);
-    import_react5.default.useEffect(() => {
+    const [ripple, setRipple] = import_react6.default.useState(null);
+    import_react6.default.useEffect(() => {
       if (!lastEvent) return void 0;
       if (lastEvent.is_directory || lastEvent.type !== "modified" && lastEvent.type !== "created") {
         return void 0;
@@ -452,7 +487,7 @@ var CodebaseVizPlugin = (() => {
   }
 
   // src/ForceGraph.jsx
-  var h4 = import_react6.default.createElement;
+  var h5 = import_react7.default.createElement;
   var MAX_NODES = 500;
   function pathToModuleId(filePath, nodeIds) {
     if (!filePath || !nodeIds?.length) return null;
@@ -503,15 +538,15 @@ var CodebaseVizPlugin = (() => {
     };
   }
   function ForceGraph({ data }) {
-    const svgRef = import_react6.default.useRef(null);
-    const containerRef = import_react6.default.useRef(null);
-    const simRef = import_react6.default.useRef(null);
-    const [search, setSearch] = import_react6.default.useState("");
-    const [inspector, setInspector] = import_react6.default.useState(null);
-    const [size, setSize] = import_react6.default.useState({ w: 0, h: 0 });
+    const svgRef = import_react7.default.useRef(null);
+    const containerRef = import_react7.default.useRef(null);
+    const simRef = import_react7.default.useRef(null);
+    const [search, setSearch] = import_react7.default.useState("");
+    const [inspector, setInspector] = import_react7.default.useState(null);
+    const [size, setSize] = import_react7.default.useState({ w: 0, h: 0 });
     const { connected, lastEvent } = useFileWatcher();
     const ripple = useRippleAnimation(lastEvent);
-    import_react6.default.useEffect(() => {
+    import_react7.default.useEffect(() => {
       const container = containerRef.current;
       if (!container) return void 0;
       const ro = new ResizeObserver(() => {
@@ -521,7 +556,7 @@ var CodebaseVizPlugin = (() => {
       setSize({ w: container.clientWidth, h: Math.max(container.clientHeight, 400) });
       return () => ro.disconnect();
     }, []);
-    import_react6.default.useEffect(() => {
+    import_react7.default.useEffect(() => {
       const svg = svgRef.current;
       if (!svg || !data?.nodes?.length || size.w < 10) return void 0;
       const d3 = window.d3;
@@ -583,10 +618,10 @@ var CodebaseVizPlugin = (() => {
     const edgeList = Array.isArray(data?.edges) ? data.edges : [];
     const inEdges = inspector ? edgeList.filter((e) => e.target === inspector).slice(0, 20) : [];
     const outEdges = inspector ? edgeList.filter((e) => e.source === inspector).slice(0, 20) : [];
-    return h4(
+    return h5(
       "div",
       { style: { display: "flex", flexDirection: "column", height: "100%" } },
-      h4(
+      h5(
         "div",
         {
           style: {
@@ -597,7 +632,7 @@ var CodebaseVizPlugin = (() => {
             flexShrink: 0
           }
         },
-        h4("input", {
+        h5("input", {
           type: "text",
           placeholder: "Zoek module...",
           value: search,
@@ -612,14 +647,14 @@ var CodebaseVizPlugin = (() => {
             color: "hsl(var(--foreground))"
           }
         }),
-        h4(FileWatcherIndicator, { connected })
+        h5(FileWatcherIndicator, { connected })
       ),
-      capped && h4(
+      capped && h5(
         "p",
         { className: "codebase-viz-hint", style: { margin: "0 0 0.25rem" } },
         `Grafiek beperkt tot ${MAX_NODES} modules (meest verbonden eerst).`
       ),
-      inspector && h4(
+      inspector && h5(
         "div",
         {
           className: "codebase-viz-inspector",
@@ -632,11 +667,11 @@ var CodebaseVizPlugin = (() => {
             flexShrink: 0
           }
         },
-        h4(
+        h5(
           "div",
           { style: { display: "flex", justifyContent: "space-between", marginBottom: "0.35rem" } },
-          h4("strong", null, inspector),
-          h4(
+          h5("strong", null, inspector),
+          h5(
             "button",
             {
               type: "button",
@@ -653,30 +688,30 @@ var CodebaseVizPlugin = (() => {
             "Sluiten"
           )
         ),
-        h4("div", null, h4("span", { className: "status-ok" }, "Uit "), `${outEdges.length} imports`),
-        outEdges.length > 0 && h4(
+        h5("div", null, h5("span", { className: "status-ok" }, "Uit "), `${outEdges.length} imports`),
+        outEdges.length > 0 && h5(
           "ul",
           { style: { margin: "0.2rem 0 0.4rem", paddingLeft: "1.2rem" } },
-          outEdges.map((e) => h4("li", { key: e.target + e.type }, e.target))
+          outEdges.map((e) => h5("li", { key: e.target + e.type }, e.target))
         ),
-        h4("div", null, h4("span", { className: "status-err" }, "In "), `${inEdges.length} imports`),
-        inEdges.length > 0 && h4(
+        h5("div", null, h5("span", { className: "status-err" }, "In "), `${inEdges.length} imports`),
+        inEdges.length > 0 && h5(
           "ul",
           { style: { margin: "0.2rem 0", paddingLeft: "1.2rem" } },
-          inEdges.map((e) => h4("li", { key: e.source + e.type }, e.source))
+          inEdges.map((e) => h5("li", { key: e.source + e.type }, e.source))
         )
       ),
-      h4("div", {
+      h5("div", {
         ref: containerRef,
         style: { flex: 1, minHeight: 0, overflow: "hidden" },
-        children: h4("svg", { ref: svgRef, style: { width: "100%", height: "100%" } })
+        children: h5("svg", { ref: svgRef, style: { width: "100%", height: "100%" } })
       })
     );
   }
 
   // src/TreemapChart.jsx
-  var import_react7 = __toESM(__require("react"));
-  var h5 = import_react7.default.createElement;
+  var import_react8 = __toESM(__require("react"));
+  var h6 = import_react8.default.createElement;
   var LANG_COLORS = {
     python: "#3776AB",
     javascript: "#F7DF1E",
@@ -727,9 +762,9 @@ var CodebaseVizPlugin = (() => {
     })).filter((c) => c.loc > 0);
   }
   function TreemapChart({ data }) {
-    const svgRef = import_react7.default.useRef(null);
-    const containerRef = import_react7.default.useRef(null);
-    const [zoomStack, setZoomStack] = import_react7.default.useState([]);
+    const svgRef = import_react8.default.useRef(null);
+    const containerRef = import_react8.default.useRef(null);
+    const [zoomStack, setZoomStack] = import_react8.default.useState([]);
     const treeData = data?.tree || { name: "root", children: [], loc: 0 };
     const currentData = zoomStack.length > 0 ? zoomStack[zoomStack.length - 1] : treeData;
     function zoomTo(node) {
@@ -738,7 +773,7 @@ var CodebaseVizPlugin = (() => {
     function zoomOut() {
       setZoomStack((prev) => prev.length > 1 ? prev.slice(0, -1) : []);
     }
-    import_react7.default.useEffect(() => {
+    import_react8.default.useEffect(() => {
       const container = containerRef.current;
       const svg = svgRef.current;
       if (!container || !svg) return void 0;
@@ -797,10 +832,10 @@ ${d.value} LOC`;
       return void 0;
     }, [currentData]);
     const crumbs = zoomStack.length ? zoomStack : [treeData];
-    return h5(
+    return h6(
       "div",
       { style: { display: "flex", flexDirection: "column", height: "100%" } },
-      h5(
+      h6(
         "div",
         {
           style: {
@@ -813,7 +848,7 @@ ${d.value} LOC`;
             flexWrap: "wrap"
           }
         },
-        h5(
+        h6(
           "button",
           {
             type: "button",
@@ -832,7 +867,7 @@ ${d.value} LOC`;
           "\u2190 Terug"
         ),
         crumbs.map(
-          (node, i) => h5(
+          (node, i) => h6(
             "span",
             { key: `${node.path || node.name}-${i}`, style: { color: "hsl(var(--muted-foreground))" } },
             i === 0 ? "" : " \u203A ",
@@ -840,16 +875,144 @@ ${d.value} LOC`;
           )
         )
       ),
-      h5("div", {
+      h6("div", {
         ref: containerRef,
         style: { flex: 1, minHeight: 0, overflow: "hidden" },
-        children: h5("svg", { ref: svgRef, style: { width: "100%", height: "100%" } })
+        children: h6("svg", { ref: svgRef, style: { width: "100%", height: "100%" } })
       })
     );
   }
 
+  // src/DataTableTab.jsx
+  var import_react9 = __toESM(__require("react"));
+  var h7 = import_react9.default.createElement;
+  function DataTableTab({ data, columns, title, hint }) {
+    const { Card, CardHeader, CardTitle, CardContent } = window.__HERMES_PLUGIN_SDK__.components;
+    const items = data?.items || data?.frames || data?.points || [];
+    const err = data?.error;
+    if (err && !items.length) {
+      return h7("div", { className: "codebase-viz-empty" }, h7("p", null, err));
+    }
+    if (!items.length) {
+      return h7("div", { className: "codebase-viz-empty" }, h7("p", null, "Geen resultaten."));
+    }
+    return h7(
+      "div",
+      { className: "codebase-viz-table-tab" },
+      hint && h7("p", { className: "codebase-viz-hint" }, hint),
+      data?.coverage_pct != null && h7("p", null, `Geschatte dekking: ${data.coverage_pct}% (${data.covered}/${data.total})`),
+      data?.total != null && h7("p", { className: "codebase-viz-hint" }, `Totaal: ${data.total}`),
+      h7(
+        Card,
+        null,
+        h7(CardHeader, null, h7(CardTitle, null, title || "Resultaten")),
+        h7(
+          CardContent,
+          null,
+          h7(
+            "div",
+            { className: "codebase-viz-virtual-scroll" },
+            h7(
+              "table",
+              { className: "codebase-viz-table" },
+              h7(
+                "thead",
+                null,
+                h7("tr", null, ...columns.map((c) => h7("th", { key: c.key }, c.label)))
+              ),
+              h7(
+                "tbody",
+                null,
+                ...items.map(
+                  (row, i) => h7(
+                    "tr",
+                    { key: row.file || row.module || row.author || row.sha || i },
+                    ...columns.map(
+                      (c) => h7("td", { key: c.key }, c.render ? c.render(row) : String(row[c.key] ?? ""))
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    );
+  }
+
+  // src/SearchTab.jsx
+  var import_react10 = __toESM(__require("react"));
+  var h8 = import_react10.default.createElement;
+  function SearchTab() {
+    const [query, setQuery] = import_react10.default.useState("");
+    const path = query.length >= 2 ? `/search?q=${encodeURIComponent(query)}` : null;
+    const { data, error, loading } = usePluginFetch(path, [query]);
+    return h8(
+      "div",
+      null,
+      h8("input", {
+        type: "search",
+        placeholder: "Zoek in codebase (min. 2 tekens)...",
+        value: query,
+        onChange: (e) => setQuery(e.target.value),
+        style: {
+          width: "100%",
+          padding: "0.5rem",
+          marginBottom: "0.75rem",
+          fontSize: "0.85rem",
+          borderRadius: "0.25rem",
+          border: "1px solid hsl(var(--border))",
+          background: "hsl(var(--input))",
+          color: "hsl(var(--foreground))"
+        }
+      }),
+      query.length < 2 && h8("p", { className: "codebase-viz-hint" }, "Typ minimaal 2 tekens."),
+      loading && query.length >= 2 && h8("p", { className: "codebase-viz-loading" }, "Zoeken..."),
+      error && h8("p", { className: "codebase-viz-error" }, error.message || "Zoekfout"),
+      data && h8(DataTableTab, {
+        data,
+        title: `Zoekresultaten voor "${query}"`,
+        columns: [
+          { key: "file", label: "Bestand" },
+          { key: "line", label: "Regel" },
+          { key: "text", label: "Context" }
+        ]
+      })
+    );
+  }
+
+  // src/TimelineTab.jsx
+  var import_react11 = __toESM(__require("react"));
+  var h9 = import_react11.default.createElement;
+  function TimelineTab({ data }) {
+    const frames = data?.frames || [];
+    if (!frames.length) {
+      return h9("p", { className: "codebase-viz-empty" }, "Geen commit-geschiedenis.");
+    }
+    return h9(
+      "div",
+      { className: "codebase-viz-timeline" },
+      h9("p", { className: "codebase-viz-hint" }, `${frames.length} commits (oud \u2192 nieuw)`),
+      h9(
+        "ol",
+        { style: { fontSize: "0.8rem", maxHeight: "70vh", overflow: "auto", paddingLeft: "1.2rem" } },
+        ...frames.map(
+          (f) => h9(
+            "li",
+            { key: f.sha + f.date, style: { marginBottom: "0.35rem" } },
+            h9("code", null, f.sha),
+            " \u2014 ",
+            f.date,
+            " \u2014 ",
+            f.message
+          )
+        )
+      )
+    );
+  }
+
   // src/App.jsx
-  var h6 = import_react8.default.createElement;
+  var h10 = import_react12.default.createElement;
   var CATEGORIES = [
     {
       id: "visuals",
@@ -862,9 +1025,34 @@ ${d.value} LOC`;
       ]
     },
     {
+      id: "analysis",
+      label: "Analysis",
+      tabs: [
+        { id: "churn", label: "Churn" },
+        { id: "age-map", label: "Age Map" },
+        { id: "complexity", label: "Complexity" },
+        { id: "todos", label: "TODO/FIXME" },
+        { id: "blame", label: "Blame" },
+        { id: "coverage", label: "Coverage" },
+        { id: "dead-imports", label: "Dead Imports" }
+      ]
+    },
+    {
       id: "hermes",
       label: "Hermes",
-      tabs: [{ id: "health", label: "Health" }]
+      tabs: [
+        { id: "health", label: "Health" },
+        { id: "config-drift", label: "Config Drift" },
+        { id: "session-stats", label: "Session Stats" }
+      ]
+    },
+    {
+      id: "tools",
+      label: "Tools",
+      tabs: [
+        { id: "search", label: "Search" },
+        { id: "timeline", label: "Timeline" }
+      ]
     }
   ];
   var TAB_MAP = {
@@ -872,14 +1060,98 @@ ${d.value} LOC`;
     "force-graph": "/dependencies",
     treemap: "/structure",
     metrics: "/summary",
-    health: "/doctor"
+    churn: "/churn",
+    "age-map": "/age-map",
+    complexity: "/complexity",
+    todos: "/todos",
+    blame: "/blame",
+    coverage: "/coverage",
+    "dead-imports": "/dead-imports",
+    health: "/doctor",
+    "config-drift": "/config-drift",
+    "session-stats": "/session-stats",
+    timeline: "/timeline"
+  };
+  var TABLE_TABS = {
+    churn: {
+      title: "Churn (laatste jaar)",
+      columns: [
+        { key: "file", label: "Bestand" },
+        { key: "commits", label: "Commits" }
+      ]
+    },
+    "age-map": {
+      title: "Age map",
+      columns: [
+        { key: "file", label: "Bestand" },
+        { key: "last_modified", label: "Laatst gewijzigd" },
+        { key: "loc", label: "LOC" }
+      ]
+    },
+    complexity: {
+      title: "Complexity (radon)",
+      columns: [
+        { key: "file", label: "Bestand" },
+        { key: "avg_complexity", label: "Gem." },
+        { key: "max", label: "Max" },
+        { key: "blocks", label: "Blocks" }
+      ]
+    },
+    todos: {
+      title: "TODO / FIXME",
+      columns: [
+        { key: "file", label: "Bestand" },
+        { key: "todo", label: "TODO" },
+        { key: "fixme", label: "FIXME" },
+        { key: "total", label: "Totaal" }
+      ]
+    },
+    blame: {
+      title: "Contributors",
+      columns: [
+        { key: "author", label: "Auteur" },
+        { key: "commits", label: "Commits" }
+      ]
+    },
+    coverage: {
+      title: "Test coverage (indicatief)",
+      columns: [
+        { key: "module", label: "Module" },
+        {
+          key: "has_test",
+          label: "Test",
+          render: (r) => r.has_test ? "ja" : "nee"
+        }
+      ]
+    },
+    "dead-imports": {
+      title: "Modules zonder inkomende imports",
+      columns: [
+        { key: "module", label: "Module" },
+        { key: "incoming", label: "Incoming" }
+      ]
+    },
+    "config-drift": {
+      title: "Config bestanden",
+      columns: [
+        { key: "path", label: "Pad" },
+        { key: "size", label: "Bytes" }
+      ]
+    },
+    "session-stats": {
+      title: "Session DB",
+      columns: [
+        { key: "table", label: "Tabel" },
+        { key: "rows", label: "Rijen" }
+      ]
+    }
   };
   function CategoryNav({ categories, tab, setTab, menuOpen, setMenuOpen }) {
-    return h6(
+    return h10(
       "div",
       { className: "codebase-viz-tabs" },
       categories.map(
-        (cat) => h6(
+        (cat) => h10(
           "div",
           {
             key: cat.id,
@@ -887,12 +1159,12 @@ ${d.value} LOC`;
             onMouseEnter: () => setMenuOpen(cat.id),
             onMouseLeave: () => setMenuOpen(null)
           },
-          h6("span", { className: "codebase-viz-category-label" }, cat.label, " \u25BE"),
-          menuOpen === cat.id && h6(
+          h10("span", { className: "codebase-viz-category-label" }, cat.label, " \u25BE"),
+          menuOpen === cat.id && h10(
             "div",
             { className: "codebase-viz-dropdown" },
             cat.tabs.map(
-              (t) => h6(
+              (t) => h10(
                 "button",
                 {
                   key: t.id,
@@ -926,30 +1198,34 @@ ${d.value} LOC`;
   function App() {
     const SDK = window.__HERMES_PLUGIN_SDK__;
     if (!SDK?.fetchJSON || !SDK?.components) {
-      return h6("div", { className: "codebase-viz-error" }, "Hermes Plugin SDK niet beschikbaar.");
+      return h10("div", { className: "codebase-viz-error" }, "Hermes Plugin SDK niet beschikbaar.");
     }
     const { Button } = SDK.components;
-    const [tab, setTab] = import_react8.default.useState("sunburst");
-    const [menuOpen, setMenuOpen] = import_react8.default.useState(null);
+    const [tab, setTab] = import_react12.default.useState("sunburst");
+    const [menuOpen, setMenuOpen] = import_react12.default.useState(null);
     const d3Ready = useD3Loader();
-    const path = TAB_MAP[tab] || "/structure";
+    const isSearch = tab === "search";
+    const path = isSearch ? null : TAB_MAP[tab] || "/structure";
     const { data, error, loading } = usePluginFetch(path, [tab]);
     const currentCat = CATEGORIES.find((c) => c.tabs.some((t) => t.id === tab));
     const activeLabel = currentCat ? `${currentCat.label} \u203A ${currentCat.tabs.find((t) => t.id === tab)?.label}` : tab;
-    const shell = (content2) => h6(
+    const shell = (content2) => h10(
       "div",
       { className: "codebase-viz-container" },
-      h6(CategoryNav, { categories: CATEGORIES, tab, setTab, menuOpen, setMenuOpen }),
-      h6("div", { className: "codebase-viz-active-label" }, activeLabel),
-      h6("div", { className: "codebase-viz-content" }, content2)
+      h10(CategoryNav, { categories: CATEGORIES, tab, setTab, menuOpen, setMenuOpen }),
+      h10("div", { className: "codebase-viz-active-label" }, activeLabel),
+      h10("div", { className: "codebase-viz-content" }, content2)
     );
+    if (tab === "search") {
+      return shell(h10(SearchTab));
+    }
     if (error || data?.fallback) {
       return shell(
-        h6(
+        h10(
           "div",
           { className: "codebase-viz-error" },
-          h6("p", null, parseFetchError(error) || data?.error || "Scan mislukt"),
-          h6(
+          h10("p", null, parseFetchError(error) || data?.error || "Scan mislukt"),
+          h10(
             Button,
             {
               variant: "outline",
@@ -963,7 +1239,7 @@ ${d.value} LOC`;
     }
     if (loading || !data) {
       return shell(
-        h6(
+        h10(
           "p",
           { className: "codebase-viz-loading" },
           tab === "sunburst" || tab === "treemap" ? "Scannen... (pygount)" : tab === "force-graph" ? "Analyseer imports..." : "Laden..."
@@ -972,11 +1248,11 @@ ${d.value} LOC`;
     }
     if (tab === "sunburst" && data.tree && !data.tree.children?.length) {
       return shell(
-        h6(
+        h10(
           "div",
           { className: "codebase-viz-empty" },
-          h6("p", null, "Geen bestanden gevonden in de repo."),
-          h6(
+          h10("p", null, "Geen bestanden gevonden in de repo."),
+          h10(
             "p",
             { className: "codebase-viz-hint" },
             "Zet CODEBASE_VIZ_REPO naar je git-root en herstart het dashboard."
@@ -987,38 +1263,47 @@ ${d.value} LOC`;
     let content;
     switch (tab) {
       case "sunburst":
-        if (!d3Ready) {
-          content = h6("p", { className: "codebase-viz-loading" }, "D3 laden...");
-        } else {
-          content = h6(SunburstChart, { data });
-        }
+        content = !d3Ready ? h10("p", { className: "codebase-viz-loading" }, "D3 laden...") : h10(SunburstChart, { data });
         break;
       case "force-graph":
         if (!d3Ready) {
-          content = h6("p", { className: "codebase-viz-loading" }, "D3 laden...");
+          content = h10("p", { className: "codebase-viz-loading" }, "D3 laden...");
         } else if (!data.nodes?.length) {
-          content = h6("p", { className: "codebase-viz-empty" }, "Geen Python modules gevonden om te analyseren.");
+          content = h10("p", { className: "codebase-viz-empty" }, "Geen Python modules gevonden.");
         } else {
-          content = h6(ForceGraph, { data });
+          content = h10(ForceGraph, { data });
         }
         break;
       case "treemap":
         if (!d3Ready) {
-          content = h6("p", { className: "codebase-viz-loading" }, "D3 laden...");
+          content = h10("p", { className: "codebase-viz-loading" }, "D3 laden...");
         } else if (!data.tree?.children?.length) {
-          content = h6("p", { className: "codebase-viz-empty" }, "Geen bestanden voor treemap.");
+          content = h10("p", { className: "codebase-viz-empty" }, "Geen bestanden voor treemap.");
         } else {
-          content = h6(TreemapChart, { data });
+          content = h10(TreemapChart, { data });
         }
         break;
       case "metrics":
-        content = h6(MetricsTab, { data });
+        content = h10(MetricsTab, { data });
         break;
       case "health":
-        content = h6(HealthTab, { data });
+        content = h10(HealthTab, { data });
         break;
-      default:
-        content = h6("p", null, "Tab nog niet ge\xEFmplementeerd.");
+      case "timeline":
+        content = h10(TimelineTab, { data });
+        break;
+      default: {
+        const spec = TABLE_TABS[tab];
+        if (spec) {
+          content = h10(DataTableTab, {
+            data,
+            title: spec.title,
+            columns: spec.columns
+          });
+        } else {
+          content = h10("p", null, "Tab nog niet ge\xEFmplementeerd.");
+        }
+      }
     }
     return shell(content);
   }

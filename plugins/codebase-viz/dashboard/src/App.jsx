@@ -4,6 +4,9 @@ import MetricsTab from './MetricsTab';
 import HealthTab from './HealthTab';
 import ForceGraph from './ForceGraph';
 import TreemapChart from './TreemapChart';
+import DataTableTab from './DataTableTab';
+import SearchTab from './SearchTab';
+import TimelineTab from './TimelineTab';
 import { usePluginFetch, postForceScan, useD3Loader } from './usePluginFetch';
 
 const h = React.createElement;
@@ -20,9 +23,34 @@ const CATEGORIES = [
     ],
   },
   {
+    id: 'analysis',
+    label: 'Analysis',
+    tabs: [
+      { id: 'churn', label: 'Churn' },
+      { id: 'age-map', label: 'Age Map' },
+      { id: 'complexity', label: 'Complexity' },
+      { id: 'todos', label: 'TODO/FIXME' },
+      { id: 'blame', label: 'Blame' },
+      { id: 'coverage', label: 'Coverage' },
+      { id: 'dead-imports', label: 'Dead Imports' },
+    ],
+  },
+  {
     id: 'hermes',
     label: 'Hermes',
-    tabs: [{ id: 'health', label: 'Health' }],
+    tabs: [
+      { id: 'health', label: 'Health' },
+      { id: 'config-drift', label: 'Config Drift' },
+      { id: 'session-stats', label: 'Session Stats' },
+    ],
+  },
+  {
+    id: 'tools',
+    label: 'Tools',
+    tabs: [
+      { id: 'search', label: 'Search' },
+      { id: 'timeline', label: 'Timeline' },
+    ],
   },
 ];
 
@@ -31,7 +59,92 @@ const TAB_MAP = {
   'force-graph': '/dependencies',
   treemap: '/structure',
   metrics: '/summary',
+  churn: '/churn',
+  'age-map': '/age-map',
+  complexity: '/complexity',
+  todos: '/todos',
+  blame: '/blame',
+  coverage: '/coverage',
+  'dead-imports': '/dead-imports',
   health: '/doctor',
+  'config-drift': '/config-drift',
+  'session-stats': '/session-stats',
+  timeline: '/timeline',
+};
+
+const TABLE_TABS = {
+  churn: {
+    title: 'Churn (laatste jaar)',
+    columns: [
+      { key: 'file', label: 'Bestand' },
+      { key: 'commits', label: 'Commits' },
+    ],
+  },
+  'age-map': {
+    title: 'Age map',
+    columns: [
+      { key: 'file', label: 'Bestand' },
+      { key: 'last_modified', label: 'Laatst gewijzigd' },
+      { key: 'loc', label: 'LOC' },
+    ],
+  },
+  complexity: {
+    title: 'Complexity (radon)',
+    columns: [
+      { key: 'file', label: 'Bestand' },
+      { key: 'avg_complexity', label: 'Gem.' },
+      { key: 'max', label: 'Max' },
+      { key: 'blocks', label: 'Blocks' },
+    ],
+  },
+  todos: {
+    title: 'TODO / FIXME',
+    columns: [
+      { key: 'file', label: 'Bestand' },
+      { key: 'todo', label: 'TODO' },
+      { key: 'fixme', label: 'FIXME' },
+      { key: 'total', label: 'Totaal' },
+    ],
+  },
+  blame: {
+    title: 'Contributors',
+    columns: [
+      { key: 'author', label: 'Auteur' },
+      { key: 'commits', label: 'Commits' },
+    ],
+  },
+  coverage: {
+    title: 'Test coverage (indicatief)',
+    columns: [
+      { key: 'module', label: 'Module' },
+      {
+        key: 'has_test',
+        label: 'Test',
+        render: (r) => (r.has_test ? 'ja' : 'nee'),
+      },
+    ],
+  },
+  'dead-imports': {
+    title: 'Modules zonder inkomende imports',
+    columns: [
+      { key: 'module', label: 'Module' },
+      { key: 'incoming', label: 'Incoming' },
+    ],
+  },
+  'config-drift': {
+    title: 'Config bestanden',
+    columns: [
+      { key: 'path', label: 'Pad' },
+      { key: 'size', label: 'Bytes' },
+    ],
+  },
+  'session-stats': {
+    title: 'Session DB',
+    columns: [
+      { key: 'table', label: 'Tabel' },
+      { key: 'rows', label: 'Rijen' },
+    ],
+  },
 };
 
 function CategoryNav({ categories, tab, setTab, menuOpen, setMenuOpen }) {
@@ -96,7 +209,8 @@ export default function App() {
   const [menuOpen, setMenuOpen] = React.useState(null);
   const d3Ready = useD3Loader();
 
-  const path = TAB_MAP[tab] || '/structure';
+  const isSearch = tab === 'search';
+  const path = isSearch ? null : TAB_MAP[tab] || '/structure';
   const { data, error, loading } = usePluginFetch(path, [tab]);
 
   const currentCat = CATEGORIES.find((c) => c.tabs.some((t) => t.id === tab));
@@ -112,6 +226,10 @@ export default function App() {
       h('div', { className: 'codebase-viz-active-label' }, activeLabel),
       h('div', { className: 'codebase-viz-content' }, content),
     );
+
+  if (tab === 'search') {
+    return shell(h(SearchTab));
+  }
 
   if (error || data?.fallback) {
     return shell(
@@ -137,17 +255,16 @@ export default function App() {
       h(
         'p',
         { className: 'codebase-viz-loading' },
-        tab === 'sunburst' || tab === 'treemap' ? 'Scannen... (pygount)' :
-        tab === 'force-graph' ? 'Analyseer imports...' : 'Laden...',
+        tab === 'sunburst' || tab === 'treemap'
+          ? 'Scannen... (pygount)'
+          : tab === 'force-graph'
+            ? 'Analyseer imports...'
+            : 'Laden...',
       ),
     );
   }
 
-  if (
-    tab === 'sunburst' &&
-    data.tree &&
-    !data.tree.children?.length
-  ) {
+  if (tab === 'sunburst' && data.tree && !data.tree.children?.length) {
     return shell(
       h(
         'div',
@@ -165,17 +282,15 @@ export default function App() {
   let content;
   switch (tab) {
     case 'sunburst':
-      if (!d3Ready) {
-        content = h('p', { className: 'codebase-viz-loading' }, 'D3 laden...');
-      } else {
-        content = h(SunburstChart, { data });
-      }
+      content = !d3Ready
+        ? h('p', { className: 'codebase-viz-loading' }, 'D3 laden...')
+        : h(SunburstChart, { data });
       break;
     case 'force-graph':
       if (!d3Ready) {
         content = h('p', { className: 'codebase-viz-loading' }, 'D3 laden...');
       } else if (!data.nodes?.length) {
-        content = h('p', { className: 'codebase-viz-empty' }, 'Geen Python modules gevonden om te analyseren.');
+        content = h('p', { className: 'codebase-viz-empty' }, 'Geen Python modules gevonden.');
       } else {
         content = h(ForceGraph, { data });
       }
@@ -195,8 +310,21 @@ export default function App() {
     case 'health':
       content = h(HealthTab, { data });
       break;
-    default:
-      content = h('p', null, 'Tab nog niet geïmplementeerd.');
+    case 'timeline':
+      content = h(TimelineTab, { data });
+      break;
+    default: {
+      const spec = TABLE_TABS[tab];
+      if (spec) {
+        content = h(DataTableTab, {
+          data,
+          title: spec.title,
+          columns: spec.columns,
+        });
+      } else {
+        content = h('p', null, 'Tab nog niet geïmplementeerd.');
+      }
+    }
   }
 
   return shell(content);
