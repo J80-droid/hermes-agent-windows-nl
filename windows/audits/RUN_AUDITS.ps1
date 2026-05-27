@@ -20,6 +20,7 @@ param(
     [switch]$IncludeClassicCliStatusBarCostE2E,
     [switch]$IncludeParetoE2E,
     [switch]$IncludePseudoTableNormalizerE2E,
+    [switch]$IncludeInstitutionalPipelineE2E,
     [switch]$IncludeHermesHomeE2E,
     [switch]$IncludeModelProviderCoherenceE2E,
     [switch]$IncludeModelProviderHardeningE2E,
@@ -284,6 +285,14 @@ if ($IncludePseudoTableNormalizerE2E -or $IncludeAllE2E) {
     $pseudoE2e = Join-Path $scriptRoot 'RUN_PSEUDO_TABLE_NORMALIZER_E2E.ps1'
     Invoke-Step 'pseudo-table-normalizer-e2e' {
         & $pseudoE2e -RepoRoot $repoRoot
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeInstitutionalPipelineE2E -or $IncludeAllE2E) {
+    $pipelineE2e = Join-Path $repoRoot 'audits\InstitutionalPipelineE2E.core.ps1'
+    Invoke-Step 'institutional-pipeline-e2e' {
+        & $pipelineE2e -RepoRoot $repoRoot
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

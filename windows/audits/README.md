@@ -94,6 +94,7 @@ Runtime/AST: vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
 | **`RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.bat`** | Regressie review-fixes: bootstrap stamp guard, RAG-manifest fast-path, non-interactive REPAIR, pytest (8 stappen) |
 | **`RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`** | Gecombineerd: Python E2E + KnowledgeRepository + platform gate + wiring-check |
 | **`RUN_AUDITS.bat -IncludePseudoTableNormalizerE2E`** | Bovenstaande pseudo-tabel E2E in gecombineerde poort |
+| **`RUN_AUDITS.bat -IncludeInstitutionalPipelineE2E`** | Institutional pipeline E2E (`audits/InstitutionalPipelineE2E.core.ps1`, 11 stappen) in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeMemoryArchitectureE2E`** | Bovenstaande memory E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeStatusBarCostE2E`** | Bovenstaande statusbalk-kosten E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E`** | Klassieke CLI statusbalk-kosten E2E in gecombineerde poort |

@@ -526,6 +526,10 @@ def pytest_configure(config):  # noqa: D401 — pytest hook
         "(only for tests that genuinely need real os.kill / subprocess "
         "behaviour — e.g. PTY tests that signal their own child).",
     )
+    config.addinivalue_line(
+        "markers",
+        "timeout(duration): per-test timeout override (pytest-timeout plugin).",
+    )
 
 
 @pytest.fixture(autouse=True)
