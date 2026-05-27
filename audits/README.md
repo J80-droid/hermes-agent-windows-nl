@@ -46,6 +46,28 @@ Unit tests: `pytest tests/audits/test_creative_domain_e2e_harness.py -q` (mocks;
 
 ---
 
+# Codebase Viz dashboard E2E
+
+Geïsoleerde E2E voor bundled plugin `codebase-viz` (structuur, metrics, doctor, parsers). Geen browser; wel TestClient + tiny repo.
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| V1 | Repo-artefacten | manifest, `plugin_api.py`, `dist/*`, unit tests |
+| V2 | Manifest | id `codebase-viz`, versie 2.3.0 |
+| V3–V5 | Parsers/paden | Pygount 3.x, invalid JSON, `_path_under_root` |
+| V6 | Env | Ongeldige `CODEBASE_VIZ_REPO` → None |
+| V7–V9 | API | health, structure, summary, force-scan |
+| V10 | WebSocket | Ongeldig token geweigerd |
+| V11 | pytest gate | `tests/plugins/test_codebase_viz_plugin.py` |
+
+```bat
+audits\RUN_CODEBASE_VIZ_E2E.bat
+```
+
+Zie `audits/CODEBASE_VIZ_E2E_README.md` en `plugins/codebase-viz/dashboard/README.md`.
+
+---
+
 # Prompt timer display (geen emoji) E2E
 
 Geïsoleerde E2E voor `display.show_prompt_timer_emoji` (default **uit**), fork-module `status_bar_prompt_elapsed.py`, cli-delegatie en upstream-verify. Geen live API.
