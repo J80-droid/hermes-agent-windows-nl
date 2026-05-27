@@ -166,7 +166,7 @@ def test_health_returns_ok(client, plugin_module, tiny_repo):
     body = resp.json()
     assert body["status"] == "ok"
     assert body["plugin"] == "codebase-viz"
-    assert body["version"] == "2.4.0"
+    assert body["version"] == "2.5.0"
     assert Path(body["repo_path"]).resolve() == tiny_repo.resolve()
 
 
@@ -421,11 +421,11 @@ def test_search_short_query(plugin_module, tiny_repo):
 
 
 def test_history_git_missing_graceful(plugin_module, tmp_path):
+    """Non-git folder: sync_history returns empty points (no uncaught exception)."""
     (tmp_path / ".git").mkdir(exist_ok=True)
-    try:
-        plugin_module._s3.sync_history(tmp_path)
-    except RuntimeError:
-        pass
+    result = plugin_module._s3.sync_history(tmp_path)
+    assert result.get("points") == []
+    assert "error" in result or result.get("total") == 0
 
 
 def test_history_per_commit_loc_not_cumulative(plugin_module):
@@ -515,6 +515,165 @@ def test_sprint3_module_on_disk():
     assert path.is_file()
     text = path.read_text(encoding="utf-8")
     assert "sync_churn" in text and "MAX_TODO_FILES" in text
+
+
+def test_thundering_herd_summary_single_pygount(plugin_module, monkeypatch):
+    """10 parallel cache misses → exactly one pygount run (asyncio.Lock)."""
+    calls = {"n": 0}
+
+    async def slow_pygount():
+        calls["n"] += 1
+        await asyncio.sleep(0.03)
+        return {"total_files": 2, "total_code": 42, "languages": {"Python": 42}}
+
+    async def empty_tree():
+        return {"name": "root", "path": "", "type": "dir", "loc": 0, "children": []}
+
+    async def no_edges():
+        return []
+
+    monkeypatch.setattr(plugin_module, "_run_pygount", slow_pygount)
+    monkeypatch.setattr(plugin_module, "_build_directory_tree", empty_tree)
+    monkeypatch.setattr(plugin_module, "_run_import_analysis", no_edges)
+    asyncio.run(plugin_module._invalidate_cache())
+
+    async def parallel():
+        return await asyncio.gather(
+            *[
+                plugin_module._get_or_compute(
+                    "summary",
+                    plugin_module.CODEBASE_VIZ_TTL,
+                    plugin_module._build_summary,
+                )
+                for _ in range(10)
+            ],
+        )
+
+    results = asyncio.run(parallel())
+    assert calls["n"] == 1
+    assert all(r.get("total_loc") == results[0].get("total_loc") for r in results)
+
+
+def test_memory_guard_pressure_flag(plugin_module, monkeypatch):
+    monkeypatch.setattr(plugin_module, "_memory_ok", lambda: False)
+    asyncio.run(plugin_module._invalidate_cache())
+    with pytest.raises(RuntimeError, match="memory_pressure"):
+        asyncio.run(
+            plugin_module._get_or_compute(
+                "summary",
+                plugin_module.CODEBASE_VIZ_TTL,
+                plugin_module._build_summary,
+            ),
+        )
+
+
+def test_memory_guard_serves_stale_cache(plugin_module, monkeypatch):
+    import time
+
+    stale = {"total_loc": 99, "total_files": 1, "languages": {}}
+
+    async def _seed_expired():
+        async with plugin_module._cache_lock:
+            plugin_module._cache["summary"] = (time.monotonic() - 9999, stale)
+
+    asyncio.run(_seed_expired())
+    monkeypatch.setattr(plugin_module, "_memory_ok", lambda: False)
+    result = asyncio.run(
+        plugin_module._get_or_compute(
+            "summary",
+            plugin_module.CODEBASE_VIZ_TTL,
+            plugin_module._build_summary,
+        ),
+    )
+    assert result.get("total_loc") == 99
+    assert result.get("memory_pressure") is True
+
+
+def test_health_includes_memory(client):
+    body = client.get("/api/plugins/codebase-viz/health").json()
+    assert "memory" in body
+    assert "max_mb" in body["memory"]
+
+
+def test_memory_status_psutil_failure(plugin_module, monkeypatch):
+    pytest.importorskip("psutil")
+    import psutil
+
+    class _BrokenProcess:
+        def memory_info(self):
+            raise OSError("access denied")
+
+    monkeypatch.setattr(psutil, "Process", lambda: _BrokenProcess())
+    status = plugin_module._memory_status()
+    assert status.get("pressure") is False
+    assert status.get("psutil_available") is False
+    assert "error" in status
+
+
+def test_with_memory_pressure_flag_non_dict(plugin_module):
+    assert plugin_module._with_memory_pressure_flag(["a"]) == ["a"]
+
+
+def test_health_degraded_when_memory_pressure(client, plugin_module, monkeypatch):
+    monkeypatch.setattr(
+        plugin_module,
+        "_memory_status",
+        lambda: {
+            "rss_mb": 900.0,
+            "max_mb": 500.0,
+            "pressure": True,
+            "psutil_available": True,
+        },
+    )
+    body = client.get("/api/plugins/codebase-viz/health").json()
+    assert body.get("status") == "degraded"
+    assert body["memory"]["pressure"] is True
+
+
+def test_run_pygount_raises_on_memory_pressure(plugin_module, monkeypatch):
+    monkeypatch.setattr(plugin_module, "_memory_ok", lambda: False)
+    with pytest.raises(RuntimeError, match="memory_pressure"):
+        asyncio.run(plugin_module._run_pygount())
+
+
+def test_dist_bundle_no_dynamic_react_require():
+    dist = (REPO_ROOT / "plugins/codebase-viz/dashboard/dist/index.js").read_text(
+        encoding="utf-8",
+    )
+    assert 'require("react")' not in dist
+    assert "Hermes Plugin SDK React" in dist
+    assert "codebase-viz-shortcuts-hint" in dist
+    assert "Sneltoetsen" in dist
+
+
+def test_sprint4_keyboard_shortcuts_source_exists():
+    path = REPO_ROOT / "plugins/codebase-viz/dashboard/src/useKeyboardShortcuts.js"
+    text = path.read_text(encoding="utf-8")
+    assert "SHORTCUT_TABS" in text
+    assert "codebase-viz:escape" in text
+
+
+def test_example_plugin_dist_registered():
+    dist = REPO_ROOT / "plugins/example-dashboard/dashboard/dist/index.js"
+    assert dist.is_file()
+    assert "__HERMES_PLUGINS__" in dist.read_text(encoding="utf-8")
+
+
+def test_get_or_compute_returns_fresh_after_ttl(plugin_module, monkeypatch):
+    calls = {"n": 0}
+
+    async def factory():
+        calls["n"] += 1
+        return {"v": calls["n"]}
+
+    asyncio.run(plugin_module._invalidate_cache())
+    first = asyncio.run(plugin_module._get_or_compute("k", 0.01, factory))
+    import time
+
+    time.sleep(0.02)
+    second = asyncio.run(plugin_module._get_or_compute("k", 0.01, factory))
+    assert first["v"] == 1
+    assert second["v"] == 2
 
 
 def test_force_scan_no_repo_still_invalidates(monkeypatch, tmp_path):

@@ -37,7 +37,8 @@ GIT_CACHE_TTL = float(os.environ.get("CODEBASE_VIZ_GIT_TTL", "300"))
 log = logging.getLogger(__name__)
 router = APIRouter()
 
-PLUGIN_VERSION = "2.4.0"
+PLUGIN_VERSION = "2.5.0"
+CODEBASE_VIZ_MAX_MEMORY_MB = float(os.environ.get("CODEBASE_VIZ_MAX_MEMORY_MB", "500"))
 DEFAULT_SKIP = (
     ".git,node_modules,venv,.venv,__pycache__,dist,build,.next,.cache,"
     ".tox,.eggs,.mypy_cache,output,.hermes"
@@ -100,10 +101,67 @@ async def _set_cache(key: str, data: object) -> None:
         _cache[key] = (time.monotonic(), data)
 
 
+def _memory_status() -> dict[str, Any]:
+    """RSS vs CODEBASE_VIZ_MAX_MEMORY_MB (default 500). Requires optional psutil."""
+    max_mb = CODEBASE_VIZ_MAX_MEMORY_MB
+    try:
+        import psutil
+
+        rss_mb = psutil.Process().memory_info().rss / (1024 * 1024)
+        pressure = rss_mb > max_mb
+        if pressure:
+            log.warning(
+                "codebase_viz_memory_high",
+                extra={"rss_mb": round(rss_mb, 1), "max_mb": max_mb},
+            )
+        return {
+            "rss_mb": round(rss_mb, 1),
+            "max_mb": max_mb,
+            "pressure": pressure,
+            "psutil_available": True,
+        }
+    except ImportError:
+        return {
+            "rss_mb": None,
+            "max_mb": max_mb,
+            "pressure": False,
+            "psutil_available": False,
+        }
+    except Exception as exc:
+        log.debug("codebase_viz_psutil_unavailable: %s", exc)
+        return {
+            "rss_mb": None,
+            "max_mb": max_mb,
+            "pressure": False,
+            "psutil_available": False,
+            "error": str(exc)[:120],
+        }
+
+
+def _memory_ok() -> bool:
+    return not _memory_status().get("pressure", False)
+
+
+def _with_memory_pressure_flag(value: object) -> object:
+    if isinstance(value, dict):
+        out = dict(value)
+        out["memory_pressure"] = True
+        return out
+    return value
+
+
 async def _get_or_compute(key: str, ttl: float, factory):
     cached = await _cached(key, ttl)
     if cached is not None:
         return cached
+
+    if not _memory_ok():
+        async with _cache_lock:
+            entry = _cache.get(key)
+            if entry is not None:
+                log.warning("codebase_viz_stale_cache", extra={"cache_key": key})
+                return _with_memory_pressure_flag(entry[1])
+        raise RuntimeError("memory_pressure")
 
     async with _cache_lock:
         entry = _cache.get(key)
@@ -339,6 +397,8 @@ def _sync_directory_tree(target: str) -> dict[str, Any]:
 async def _run_pygount() -> dict[str, Any]:
     if REPO_PATH is None:
         return {"total_files": 0, "total_code": 0, "languages": {}}
+    if not _memory_ok():
+        raise RuntimeError("memory_pressure")
     return await asyncio.to_thread(_sync_pygount_scan, str(REPO_PATH))
 
 
@@ -602,8 +662,9 @@ def _check_ws_token(provided: str | None) -> bool:
 @router.get("/health")
 async def health():
     await _ensure_started()
+    mem = _memory_status()
     return {
-        "status": "ok",
+        "status": "ok" if not mem.get("pressure") else "degraded",
         "plugin": "codebase-viz",
         "version": PLUGIN_VERSION,
         "repo_path": str(REPO_PATH) if REPO_PATH else None,
@@ -611,6 +672,7 @@ async def health():
             _observer is not None and getattr(_observer, "is_alive", lambda: False)(),
         ),
         "watchdog_available": WATCHDOG_AVAILABLE,
+        "memory": mem,
     }
 
 

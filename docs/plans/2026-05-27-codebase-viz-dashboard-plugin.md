@@ -1,6 +1,6 @@
 # Codebase Viz — Hermes Dashboard Plugin v2
 
-> **Status:** Sprint 1 ✅ · Sprint 2 ✅ · Sprint 3 ✅ (2026-05-27) · Sprint 4 **open**  
+> **Status:** Sprint 1 ✅ · Sprint 2 ✅ · Sprint 3 ✅ · Sprint 4 ✅ (2026-05-27, v2.5.0)  
 > **Versie:** 2.3.0 · **Commit:** `feat(codebase-viz): add dashboard plugin MVP with E2E audit and tests`  
 > **Voor Hermes:** `subagent-driven-development` skill per taak (aanbevolen voor Sprint 2).  
 > **Schatting resterend:** Sprint 2 ~2–3 u · Sprint 3 ~4–5 u · Sprint 4 ~1–2 u
@@ -54,10 +54,11 @@
 
 | Onderdeel | Status |
 |-----------|--------|
-| Thundering herd verificatie onder load | 🔲 deels (lock aanwezig, geen load-test) |
-| Memory guard (`psutil`) | 🔲 |
-| Keyboard shortcuts | 🔲 |
-| Full gate checklist (plan § Verificatie) | 🔲 |
+| Thundering herd verificatie onder load | ✅ pytest parallel cache miss |
+| Memory guard (`psutil`) | ✅ `/health` + stale cache |
+| Keyboard shortcuts | ✅ 1–9, 0, r, Esc |
+| Full gate checklist (plan § Verificatie) | ✅ `docs/checklists/codebase-viz-sprint4-full-gate.md` |
+| Polish (hover ripple, fly-to) | ✅ ForceGraph |
 
 ### Bestanden (Sprint 1 — aanwezig)
 

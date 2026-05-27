@@ -2,7 +2,8 @@
 
 Bundled Hermes-dashboardtab voor repo-structuur, LOC-metrics, import-afhankelijkheden en `hermes doctor`.
 
-- **Plan:** `docs/plans/2026-05-27-codebase-viz-dashboard-plugin.md` (v2.3)
+- **Plan:** `docs/plans/2026-05-27-codebase-viz-dashboard-plugin.md` (v2.5.0)
+- **Versie:** `2.5.0` (manifest + `/health`)
 - **API-prefix:** `/api/plugins/codebase-viz/`
 - **Frontend:** React via `window.__HERMES_PLUGIN_SDK__` (`fetchJSON`, geen `useApi`)
 
@@ -16,6 +17,14 @@ npm run build
 
 Artefacten in `dist/`: `index.js`, `style.css`, `d3.v7.min.js`.
 
+React komt uit `window.__HERMES_PLUGIN_SDK__` via `src/react-shim.js` (esbuild alias) — **niet** `external: ['react']` met `require()` in de browser.
+
+Optionele Python-tools (in dezelfde venv als Hermes):
+
+```bash
+pip install watchdog radon psutil
+```
+
 ## Configuratie
 
 | Env | Default | Beschrijving |
@@ -24,6 +33,7 @@ Artefacten in `dist/`: `index.js`, `style.css`, `d3.v7.min.js`.
 | `CODEBASE_VIZ_TTL` | `60` | Response-cache (s) |
 | `CODEBASE_VIZ_DEBOUNCE` | `2.0` | Watcher batch-interval |
 | `CODEBASE_VIZ_PYGOUNT_TIMEOUT` | `30` | `pygount` subprocess timeout |
+| `CODEBASE_VIZ_MAX_MEMORY_MB` | `500` | RSS-drempel; boven limiet → stale cache of `memory_pressure` |
 
 `REPO_PATH` wordt bij module-import bepaald; na env-wijziging dashboard herstarten.
 
@@ -31,7 +41,7 @@ Artefacten in `dist/`: `index.js`, `style.css`, `d3.v7.min.js`.
 
 | Methode | Pad | Beschrijving |
 |---------|-----|--------------|
-| GET | `/health` | Status, repo, watcher |
+| GET | `/health` | Status, repo, watcher, `memory` (RSS / pressure) |
 | GET | `/structure` | Directory tree + LOC summary |
 | GET | `/dependencies` | Import-graaf (nodes/edges) |
 | GET | `/summary` | Aggregaten + top files/modules |
@@ -48,6 +58,7 @@ Pygount timeouts worden als `RuntimeError` / `fallback` afgehandeld (geen 500).
 ```bash
 pytest tests/plugins/test_codebase_viz_plugin.py -q
 audits/RUN_CODEBASE_VIZ_E2E.bat
+audits/RUN_CODEBASE_VIZ_SPRINT4_E2E.bat
 ```
 
 Unit tests mocken `subprocess`, `asyncio.create_subprocess_exec` en pygount-fouten; geen live dashboard-browser in pytest.
@@ -65,9 +76,26 @@ Unit tests mocken `subprocess`, `asyncio.create_subprocess_exec` en pygount-fout
 6. **Health:** score + secties met groen/geel/rood labels (geen emoji).
 7. **Force Scan** (indien knop): geen crash; data ververst.
 8. **D3:** DevTools → Network → `d3.v7.min.js` → status 200.
-9. **API (optioneel):** `GET /api/plugins/codebase-viz/health` → `repo_path`, `version` `2.3.0`.
+9. **API (optioneel):** `GET /api/plugins/codebase-viz/health` → `repo_path`, `version` `2.5.0`, `memory`.
 
-Bij problemen: `pip install watchdog` (live watcher); `pygount` op PATH; dashboard **herstarten** na env-wijziging.
+Bij problemen: `pip install watchdog radon`; `pygount` op PATH; dashboard **herstarten** na env-wijziging.
+
+**Console: `example/dist/index.js` 404** — herstart dashboard na `git pull`; bundled `plugins/example-dashboard/dashboard/dist/index.js` hoort aanwezig te zijn. Optioneel tab verbergen:
+
+```yaml
+dashboard:
+  hidden_plugins:
+    - example
+```
+
+## Sprint 4 — Hardening (v2.5.0)
+
+| Feature | Details |
+|---------|---------|
+| Thundering herd | `asyncio.Lock` + pytest parallel cache miss |
+| Memory guard | `CODEBASE_VIZ_MAX_MEMORY_MB` (default 500), `pip install psutil` |
+| Shortcuts | `1`–`9` tabs, `0` coverage, `r` force-scan+refresh, `Esc` inspector |
+| Checklist | `docs/checklists/codebase-viz-sprint4-full-gate.md` |
 
 ## Sprint 3 — Analysis & tools (v2.4.0)
 

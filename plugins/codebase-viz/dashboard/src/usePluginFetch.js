@@ -2,7 +2,7 @@ import React from 'react';
 
 const API = '/api/plugins/codebase-viz';
 
-export function usePluginFetch(path, deps = []) {
+export function usePluginFetch(path, deps = [], refreshToken = 0) {
   const SDK = window.__HERMES_PLUGIN_SDK__;
   const [data, setData] = React.useState(null);
   const [error, setError] = React.useState(null);
@@ -24,7 +24,7 @@ export function usePluginFetch(path, deps = []) {
         if (!ac.signal.aborted) setLoading(false);
       });
     return () => ac.abort();
-  }, [path, ...deps]);
+  }, [path, refreshToken, ...deps]);
 
   return { data, error, loading };
 }

@@ -8,6 +8,7 @@ import DataTableTab from './DataTableTab';
 import SearchTab from './SearchTab';
 import TimelineTab from './TimelineTab';
 import { usePluginFetch, postForceScan, useD3Loader } from './usePluginFetch';
+import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 
 const h = React.createElement;
 
@@ -207,11 +208,20 @@ export default function App() {
   const { Button } = SDK.components;
   const [tab, setTab] = React.useState('sunburst');
   const [menuOpen, setMenuOpen] = React.useState(null);
+  const [refreshToken, setRefreshToken] = React.useState(0);
   const d3Ready = useD3Loader();
+
+  const onRefresh = React.useCallback(() => {
+    postForceScan()
+      .catch(() => {})
+      .finally(() => setRefreshToken((n) => n + 1));
+  }, []);
+
+  useKeyboardShortcuts({ setTab, onRefresh });
 
   const isSearch = tab === 'search';
   const path = isSearch ? null : TAB_MAP[tab] || '/structure';
-  const { data, error, loading } = usePluginFetch(path, [tab]);
+  const { data, error, loading } = usePluginFetch(path, [tab], refreshToken);
 
   const currentCat = CATEGORIES.find((c) => c.tabs.some((t) => t.id === tab));
   const activeLabel = currentCat
@@ -225,6 +235,11 @@ export default function App() {
       h(CategoryNav, { categories: CATEGORIES, tab, setTab, menuOpen, setMenuOpen }),
       h('div', { className: 'codebase-viz-active-label' }, activeLabel),
       h('div', { className: 'codebase-viz-content' }, content),
+      h(
+        'div',
+        { className: 'codebase-viz-shortcuts-hint', title: 'Sneltoetsen' },
+        '1–9 tabs · 0 coverage · r ververs · Esc sluit inspector',
+      ),
     );
 
   if (tab === 'search') {
@@ -242,7 +257,7 @@ export default function App() {
           {
             variant: 'outline',
             size: 'sm',
-            onClick: () => postForceScan().then(() => window.location.reload()),
+            onClick: onRefresh,
           },
           'Opnieuw proberen',
         ),

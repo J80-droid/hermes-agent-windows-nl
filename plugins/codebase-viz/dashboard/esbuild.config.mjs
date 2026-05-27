@@ -1,6 +1,6 @@
 import * as esbuild from 'esbuild';
 import { copyFileSync, existsSync } from 'fs';
-import { dirname } from 'path';
+import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -18,7 +18,9 @@ async function build() {
     jsx: 'transform',
     jsxFactory: 'React.createElement',
     jsxFragment: 'React.Fragment',
-    external: ['react'],
+    alias: {
+      react: join(__dirname, 'src/react-shim.js'),
+    },
     minify: false,
     sourcemap: watch ? 'inline' : false,
   };

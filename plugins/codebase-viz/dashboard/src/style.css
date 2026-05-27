@@ -6,6 +6,16 @@
   min-height: 0;
 }
 
+.codebase-viz-shortcuts-hint {
+  flex-shrink: 0;
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid hsl(var(--border) / 0.5);
+  font-size: 0.7rem;
+  color: hsl(var(--muted-foreground));
+  opacity: 0.85;
+}
+
 .codebase-viz-tabs {
   display: flex;
   gap: 0;
@@ -21,6 +31,7 @@
   cursor: pointer;
   border-bottom: 2px solid transparent;
   transition: all 0.15s ease;
+  -webkit-user-select: none;
   user-select: none;
 }
 

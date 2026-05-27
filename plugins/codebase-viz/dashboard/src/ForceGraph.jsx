@@ -73,12 +73,19 @@ export default function ForceGraph({ data }) {
   const svgRef = React.useRef(null);
   const containerRef = React.useRef(null);
   const simRef = React.useRef(null);
+  const zoomBehaviorRef = React.useRef(null);
   const [search, setSearch] = React.useState('');
   const [inspector, setInspector] = React.useState(null);
   const [size, setSize] = React.useState({ w: 0, h: 0 });
 
   const { connected, lastEvent } = useFileWatcher();
   const ripple = useRippleAnimation(lastEvent);
+
+  React.useEffect(() => {
+    const onEscape = () => setInspector(null);
+    window.addEventListener('codebase-viz:escape', onEscape);
+    return () => window.removeEventListener('codebase-viz:escape', onEscape);
+  }, []);
 
   React.useEffect(() => {
     const container = containerRef.current;
@@ -111,6 +118,7 @@ export default function ForceGraph({ data }) {
     const zoom = d3.zoom().scaleExtent([0.1, 4]).on('zoom', (event) => {
       g.attr('transform', event.transform);
     });
+    zoomBehaviorRef.current = zoom;
     d3.select(svg).call(zoom);
 
     const simulation = d3
@@ -159,7 +167,24 @@ export default function ForceGraph({ data }) {
             d.fy = null;
           }),
       )
-      .on('click', (_event, d) => setInspector(d.id));
+      .on('click', (_event, d) => setInspector(d.id))
+      .on('mouseenter', function (_event, d) {
+        if (d.x == null || d.y == null) return;
+        g.append('circle')
+          .attr('class', 'codebase-viz-hover-pulse')
+          .attr('cx', d.x)
+          .attr('cy', d.y)
+          .attr('r', 6)
+          .attr('fill', 'none')
+          .attr('stroke', 'hsl(var(--primary))')
+          .attr('stroke-width', 1.5)
+          .attr('opacity', 0.85)
+          .transition()
+          .duration(450)
+          .attr('r', 22)
+          .attr('opacity', 0)
+          .remove();
+      });
 
     const label = g
       .append('g')
@@ -199,6 +224,26 @@ export default function ForceGraph({ data }) {
       simulation.on('end', drawRipplePulse);
     }
 
+    const flyToSearchMatch = () => {
+      const q = search.trim().toLowerCase();
+      if (!q || !zoomBehaviorRef.current) return;
+      const match = nodes.find((n) => n.id.toLowerCase().includes(q));
+      if (!match || match.x == null || match.y == null) return;
+      const scale = 1.75;
+      const transform = d3.zoomIdentity
+        .translate(width / 2 - match.x * scale, height / 2 - match.y * scale)
+        .scale(scale);
+      d3.select(svg)
+        .transition()
+        .duration(650)
+        .call(zoomBehaviorRef.current.transform, transform);
+    };
+
+    if (search.trim()) {
+      simulation.on('end.fly', flyToSearchMatch);
+      if (simulation.alpha() < 0.05) flyToSearchMatch();
+    }
+
     simulation.on('tick', () => {
       link
         .attr('x1', (d) => d.source.x)
@@ -210,8 +255,10 @@ export default function ForceGraph({ data }) {
     });
 
     return () => {
+      simulation.on('end.fly', null);
       simulation.stop();
       simRef.current = null;
+      zoomBehaviorRef.current = null;
     };
   }, [data, search, ripple, size]);
 

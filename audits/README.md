@@ -76,6 +76,12 @@ audits\RUN_CODEBASE_VIZ_E2E.bat
 
 Zie `audits/CODEBASE_VIZ_E2E_README.md` en `plugins/codebase-viz/dashboard/README.md`.
 
+```bat
+audits\RUN_CODEBASE_VIZ_SPRINT4_E2E.bat
+```
+
+Zie `audits/CODEBASE_VIZ_SPRINT4_E2E_README.md` (H1–H9: memory guard, thundering herd, dist markers, example dist).
+
 ---
 
 # Prompt timer display (geen emoji) E2E

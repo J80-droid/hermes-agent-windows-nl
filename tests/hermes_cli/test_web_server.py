@@ -2441,6 +2441,13 @@ class TestDashboardPluginStaticAssetAllowlist:
         body = resp.json()
         assert body.get("name") == "example"
 
+    def test_bundled_entry_js_served(self):
+        """Example plugin ships dist/index.js so the dashboard loader does not 404."""
+        resp = self.client.get("/dashboard-plugins/example/dist/index.js")
+        assert resp.status_code == 200
+        assert "application/javascript" in resp.headers.get("content-type", "")
+        assert "__HERMES_PLUGINS__" in resp.text
+
     def test_unknown_plugin_is_404(self):
         """Existing behaviour preserved: nonexistent plugin name → 404."""
         resp = self.client.get(

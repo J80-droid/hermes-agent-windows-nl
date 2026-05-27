@@ -1,38 +1,22 @@
 var CodebaseVizPlugin = (() => {
-  var __create = Object.create;
-  var __defProp = Object.defineProperty;
-  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-  var __getOwnPropNames = Object.getOwnPropertyNames;
-  var __getProtoOf = Object.getPrototypeOf;
-  var __hasOwnProp = Object.prototype.hasOwnProperty;
-  var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
-    get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
-  }) : x)(function(x) {
-    if (typeof require !== "undefined") return require.apply(this, arguments);
-    throw Error('Dynamic require of "' + x + '" is not supported');
-  });
-  var __copyProps = (to, from, except, desc) => {
-    if (from && typeof from === "object" || typeof from === "function") {
-      for (let key of __getOwnPropNames(from))
-        if (!__hasOwnProp.call(to, key) && key !== except)
-          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  // src/react-shim.js
+  function getSDK() {
+    const SDK2 = typeof window !== "undefined" ? window.__HERMES_PLUGIN_SDK__ : null;
+    if (!SDK2?.React) {
+      throw new Error("Hermes Plugin SDK React is not available");
     }
-    return to;
-  };
-  var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-    // If the importer is in node compatibility mode or this is not an ESM
-    // file that has been converted to a CommonJS file using a Babel-
-    // compatible transform (i.e. "__esModule" has not been set), then set
-    // "default" to the CommonJS "module.exports" for node compatibility.
-    isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-    mod
-  ));
-
-  // src/App.jsx
-  var import_react12 = __toESM(__require("react"));
+    if (!SDK2.hooks?.useEffect || !SDK2.hooks?.useRef) {
+      throw new Error("Hermes Plugin SDK hooks are not available");
+    }
+    return SDK2;
+  }
+  var SDK = getSDK();
+  var React = SDK.React;
+  var react_shim_default = React;
+  var useEffect = SDK.hooks.useEffect;
+  var useRef = SDK.hooks.useRef;
 
   // src/SunburstChart.jsx
-  var import_react = __toESM(__require("react"));
   var COLOR_MAP = {
     Python: "#3572A5",
     TypeScript: "#3178C6",
@@ -47,8 +31,8 @@ var CodebaseVizPlugin = (() => {
   };
   var COLOR_DEFAULT = "#6B7280";
   function SunburstChart({ data }) {
-    const svgRef = (0, import_react.useRef)(null);
-    (0, import_react.useEffect)(() => {
+    const svgRef = useRef(null);
+    useEffect(() => {
       if (!data?.tree || !svgRef.current || !window.d3) return;
       const d3 = window.d3;
       const svg = d3.select(svgRef.current);
@@ -104,30 +88,26 @@ var CodebaseVizPlugin = (() => {
         paths.transition().duration(750).attr("d", arc);
       });
     }, [data]);
-    return import_react.default.createElement("svg", {
+    return react_shim_default.createElement("svg", {
       ref: svgRef,
       className: "codebase-viz-sunburst",
       style: { width: "100%", height: "100%", minHeight: "480px" }
     });
   }
 
-  // src/MetricsTab.jsx
-  var import_react4 = __toESM(__require("react"));
-
   // src/usePluginFetch.js
-  var import_react2 = __toESM(__require("react"));
   var API = "/api/plugins/codebase-viz";
-  function usePluginFetch(path, deps = []) {
-    const SDK = window.__HERMES_PLUGIN_SDK__;
-    const [data, setData] = import_react2.default.useState(null);
-    const [error, setError] = import_react2.default.useState(null);
-    const [loading, setLoading] = import_react2.default.useState(true);
-    import_react2.default.useEffect(() => {
-      if (!SDK?.fetchJSON || !path) return void 0;
+  function usePluginFetch(path, deps = [], refreshToken = 0) {
+    const SDK2 = window.__HERMES_PLUGIN_SDK__;
+    const [data, setData] = react_shim_default.useState(null);
+    const [error, setError] = react_shim_default.useState(null);
+    const [loading, setLoading] = react_shim_default.useState(true);
+    react_shim_default.useEffect(() => {
+      if (!SDK2?.fetchJSON || !path) return void 0;
       const ac = new AbortController();
       setLoading(true);
       setError(null);
-      SDK.fetchJSON(`${API}${path}`, { signal: ac.signal }).then((body) => {
+      SDK2.fetchJSON(`${API}${path}`, { signal: ac.signal }).then((body) => {
         if (!ac.signal.aborted) setData(body);
       }).catch((err) => {
         if (err?.name !== "AbortError" && !ac.signal.aborted) setError(err);
@@ -135,17 +115,17 @@ var CodebaseVizPlugin = (() => {
         if (!ac.signal.aborted) setLoading(false);
       });
       return () => ac.abort();
-    }, [path, ...deps]);
+    }, [path, refreshToken, ...deps]);
     return { data, error, loading };
   }
   async function postForceScan() {
-    const SDK = window.__HERMES_PLUGIN_SDK__;
-    if (!SDK?.fetchJSON) return;
-    await SDK.fetchJSON(`${API}/force-scan`, { method: "POST" });
+    const SDK2 = window.__HERMES_PLUGIN_SDK__;
+    if (!SDK2?.fetchJSON) return;
+    await SDK2.fetchJSON(`${API}/force-scan`, { method: "POST" });
   }
   function useD3Loader() {
-    const [ready, setReady] = import_react2.default.useState(!!window.d3);
-    import_react2.default.useEffect(() => {
+    const [ready, setReady] = react_shim_default.useState(!!window.d3);
+    react_shim_default.useEffect(() => {
       if (window.d3) {
         setReady(true);
         return void 0;
@@ -170,12 +150,11 @@ var CodebaseVizPlugin = (() => {
   }
 
   // src/HistoryChart.jsx
-  var import_react3 = __toESM(__require("react"));
-  var h = import_react3.default.createElement;
+  var h = react_shim_default.createElement;
   function HistoryChart({ data }) {
-    const svgRef = import_react3.default.useRef(null);
+    const svgRef = react_shim_default.useRef(null);
     const points = data?.points || [];
-    import_react3.default.useEffect(() => {
+    react_shim_default.useEffect(() => {
       if (!svgRef.current || !points.length || !window.d3) return void 0;
       const d3 = window.d3;
       const svg = d3.select(svgRef.current);
@@ -198,7 +177,7 @@ var CodebaseVizPlugin = (() => {
   }
 
   // src/MetricsTab.jsx
-  var h2 = import_react4.default.createElement;
+  var h2 = react_shim_default.createElement;
   function ratioClass(ratio) {
     if (ratio >= 1 && ratio <= 3) return "status-ok";
     if (ratio > 3) return "status-warn";
@@ -296,8 +275,7 @@ var CodebaseVizPlugin = (() => {
   }
 
   // src/HealthTab.jsx
-  var import_react5 = __toESM(__require("react"));
-  var h3 = import_react5.default.createElement;
+  var h3 = react_shim_default.createElement;
   function StatusBadge({ status }) {
     if (status === "error") return h3("span", { className: "status-err" }, "Error");
     if (status === "warning") return h3("span", { className: "status-warn" }, "Warning");
@@ -378,12 +356,6 @@ var CodebaseVizPlugin = (() => {
     );
   }
 
-  // src/ForceGraph.jsx
-  var import_react7 = __toESM(__require("react"));
-
-  // src/useFileWatcher.js
-  var import_react6 = __toESM(__require("react"));
-
   // src/wsAuth.js
   function getSessionToken() {
     if (typeof window !== "undefined" && window.__HERMES_SESSION_TOKEN__) {
@@ -400,13 +372,13 @@ var CodebaseVizPlugin = (() => {
   }
 
   // src/useFileWatcher.js
-  var h4 = import_react6.default.createElement;
+  var h4 = react_shim_default.createElement;
   function useFileWatcher(opts = {}) {
     const { onEvent, reconnectDelay = 3e3 } = opts;
-    const [connected, setConnected] = import_react6.default.useState(false);
-    const [lastEvent, setLastEvent] = import_react6.default.useState(null);
-    const [reconnect, setReconnect] = import_react6.default.useState(0);
-    import_react6.default.useEffect(() => {
+    const [connected, setConnected] = react_shim_default.useState(false);
+    const [lastEvent, setLastEvent] = react_shim_default.useState(null);
+    const [reconnect, setReconnect] = react_shim_default.useState(0);
+    react_shim_default.useEffect(() => {
       const token = getSessionToken();
       if (!token) return void 0;
       const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -473,8 +445,8 @@ var CodebaseVizPlugin = (() => {
     );
   }
   function useRippleAnimation(lastEvent) {
-    const [ripple, setRipple] = import_react6.default.useState(null);
-    import_react6.default.useEffect(() => {
+    const [ripple, setRipple] = react_shim_default.useState(null);
+    react_shim_default.useEffect(() => {
       if (!lastEvent) return void 0;
       if (lastEvent.is_directory || lastEvent.type !== "modified" && lastEvent.type !== "created") {
         return void 0;
@@ -487,7 +459,7 @@ var CodebaseVizPlugin = (() => {
   }
 
   // src/ForceGraph.jsx
-  var h5 = import_react7.default.createElement;
+  var h5 = react_shim_default.createElement;
   var MAX_NODES = 500;
   function pathToModuleId(filePath, nodeIds) {
     if (!filePath || !nodeIds?.length) return null;
@@ -538,15 +510,21 @@ var CodebaseVizPlugin = (() => {
     };
   }
   function ForceGraph({ data }) {
-    const svgRef = import_react7.default.useRef(null);
-    const containerRef = import_react7.default.useRef(null);
-    const simRef = import_react7.default.useRef(null);
-    const [search, setSearch] = import_react7.default.useState("");
-    const [inspector, setInspector] = import_react7.default.useState(null);
-    const [size, setSize] = import_react7.default.useState({ w: 0, h: 0 });
+    const svgRef = react_shim_default.useRef(null);
+    const containerRef = react_shim_default.useRef(null);
+    const simRef = react_shim_default.useRef(null);
+    const zoomBehaviorRef = react_shim_default.useRef(null);
+    const [search, setSearch] = react_shim_default.useState("");
+    const [inspector, setInspector] = react_shim_default.useState(null);
+    const [size, setSize] = react_shim_default.useState({ w: 0, h: 0 });
     const { connected, lastEvent } = useFileWatcher();
     const ripple = useRippleAnimation(lastEvent);
-    import_react7.default.useEffect(() => {
+    react_shim_default.useEffect(() => {
+      const onEscape = () => setInspector(null);
+      window.addEventListener("codebase-viz:escape", onEscape);
+      return () => window.removeEventListener("codebase-viz:escape", onEscape);
+    }, []);
+    react_shim_default.useEffect(() => {
       const container = containerRef.current;
       if (!container) return void 0;
       const ro = new ResizeObserver(() => {
@@ -556,7 +534,7 @@ var CodebaseVizPlugin = (() => {
       setSize({ w: container.clientWidth, h: Math.max(container.clientHeight, 400) });
       return () => ro.disconnect();
     }, []);
-    import_react7.default.useEffect(() => {
+    react_shim_default.useEffect(() => {
       const svg = svgRef.current;
       if (!svg || !data?.nodes?.length || size.w < 10) return void 0;
       const d3 = window.d3;
@@ -572,6 +550,7 @@ var CodebaseVizPlugin = (() => {
       const zoom = d3.zoom().scaleExtent([0.1, 4]).on("zoom", (event) => {
         g.attr("transform", event.transform);
       });
+      zoomBehaviorRef.current = zoom;
       d3.select(svg).call(zoom);
       const simulation = d3.forceSimulation(nodes).force("link", d3.forceLink(links).id((d) => d.id).distance(80)).force("charge", d3.forceManyBody().strength(-200)).force("center", d3.forceCenter(width / 2, height / 2)).force("collision", d3.forceCollide().radius(20));
       simRef.current = simulation;
@@ -589,7 +568,10 @@ var CodebaseVizPlugin = (() => {
           d.fx = null;
           d.fy = null;
         })
-      ).on("click", (_event, d) => setInspector(d.id));
+      ).on("click", (_event, d) => setInspector(d.id)).on("mouseenter", function(_event, d) {
+        if (d.x == null || d.y == null) return;
+        g.append("circle").attr("class", "codebase-viz-hover-pulse").attr("cx", d.x).attr("cy", d.y).attr("r", 6).attr("fill", "none").attr("stroke", "hsl(var(--primary))").attr("stroke-width", 1.5).attr("opacity", 0.85).transition().duration(450).attr("r", 22).attr("opacity", 0).remove();
+      });
       const label = g.append("g").selectAll("text").data(nodes).join("text").text((d) => d.id.split(".").pop()).attr("font-size", "10px").attr("dx", 8).attr("dy", 3).attr("fill", "hsl(var(--foreground) / 0.8)");
       function drawRipplePulse() {
         if (!ripple?.path) return;
@@ -605,14 +587,29 @@ var CodebaseVizPlugin = (() => {
       if (ripple?.path) {
         simulation.on("end", drawRipplePulse);
       }
+      const flyToSearchMatch = () => {
+        const q = search.trim().toLowerCase();
+        if (!q || !zoomBehaviorRef.current) return;
+        const match = nodes.find((n) => n.id.toLowerCase().includes(q));
+        if (!match || match.x == null || match.y == null) return;
+        const scale = 1.75;
+        const transform = d3.zoomIdentity.translate(width / 2 - match.x * scale, height / 2 - match.y * scale).scale(scale);
+        d3.select(svg).transition().duration(650).call(zoomBehaviorRef.current.transform, transform);
+      };
+      if (search.trim()) {
+        simulation.on("end.fly", flyToSearchMatch);
+        if (simulation.alpha() < 0.05) flyToSearchMatch();
+      }
       simulation.on("tick", () => {
         link.attr("x1", (d) => d.source.x).attr("y1", (d) => d.source.y).attr("x2", (d) => d.target.x).attr("y2", (d) => d.target.y);
         node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
         label.attr("x", (d) => d.x).attr("y", (d) => d.y);
       });
       return () => {
+        simulation.on("end.fly", null);
         simulation.stop();
         simRef.current = null;
+        zoomBehaviorRef.current = null;
       };
     }, [data, search, ripple, size]);
     const edgeList = Array.isArray(data?.edges) ? data.edges : [];
@@ -710,8 +707,7 @@ var CodebaseVizPlugin = (() => {
   }
 
   // src/TreemapChart.jsx
-  var import_react8 = __toESM(__require("react"));
-  var h6 = import_react8.default.createElement;
+  var h6 = react_shim_default.createElement;
   var LANG_COLORS = {
     python: "#3776AB",
     javascript: "#F7DF1E",
@@ -762,9 +758,9 @@ var CodebaseVizPlugin = (() => {
     })).filter((c) => c.loc > 0);
   }
   function TreemapChart({ data }) {
-    const svgRef = import_react8.default.useRef(null);
-    const containerRef = import_react8.default.useRef(null);
-    const [zoomStack, setZoomStack] = import_react8.default.useState([]);
+    const svgRef = react_shim_default.useRef(null);
+    const containerRef = react_shim_default.useRef(null);
+    const [zoomStack, setZoomStack] = react_shim_default.useState([]);
     const treeData = data?.tree || { name: "root", children: [], loc: 0 };
     const currentData = zoomStack.length > 0 ? zoomStack[zoomStack.length - 1] : treeData;
     function zoomTo(node) {
@@ -773,7 +769,7 @@ var CodebaseVizPlugin = (() => {
     function zoomOut() {
       setZoomStack((prev) => prev.length > 1 ? prev.slice(0, -1) : []);
     }
-    import_react8.default.useEffect(() => {
+    react_shim_default.useEffect(() => {
       const container = containerRef.current;
       const svg = svgRef.current;
       if (!container || !svg) return void 0;
@@ -884,8 +880,7 @@ ${d.value} LOC`;
   }
 
   // src/DataTableTab.jsx
-  var import_react9 = __toESM(__require("react"));
-  var h7 = import_react9.default.createElement;
+  var h7 = react_shim_default.createElement;
   function DataTableTab({ data, columns, title, hint }) {
     const { Card, CardHeader, CardTitle, CardContent } = window.__HERMES_PLUGIN_SDK__.components;
     const items = data?.items || data?.frames || data?.points || [];
@@ -941,10 +936,9 @@ ${d.value} LOC`;
   }
 
   // src/SearchTab.jsx
-  var import_react10 = __toESM(__require("react"));
-  var h8 = import_react10.default.createElement;
+  var h8 = react_shim_default.createElement;
   function SearchTab() {
-    const [query, setQuery] = import_react10.default.useState("");
+    const [query, setQuery] = react_shim_default.useState("");
     const path = query.length >= 2 ? `/search?q=${encodeURIComponent(query)}` : null;
     const { data, error, loading } = usePluginFetch(path, [query]);
     return h8(
@@ -982,8 +976,7 @@ ${d.value} LOC`;
   }
 
   // src/TimelineTab.jsx
-  var import_react11 = __toESM(__require("react"));
-  var h9 = import_react11.default.createElement;
+  var h9 = react_shim_default.createElement;
   function TimelineTab({ data }) {
     const frames = data?.frames || [];
     if (!frames.length) {
@@ -1011,8 +1004,57 @@ ${d.value} LOC`;
     );
   }
 
+  // src/useKeyboardShortcuts.js
+  var SHORTCUT_TABS = [
+    "sunburst",
+    "force-graph",
+    "treemap",
+    "metrics",
+    "churn",
+    "age-map",
+    "complexity",
+    "todos",
+    "blame",
+    "coverage"
+  ];
+  function isTypingTarget(target) {
+    if (!target) return false;
+    const tag = target.tagName;
+    return tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable;
+  }
+  function useKeyboardShortcuts({ setTab, onRefresh }) {
+    react_shim_default.useEffect(() => {
+      const handler = (e) => {
+        if (isTypingTarget(e.target)) return;
+        if (e.key >= "1" && e.key <= "9") {
+          const tab = SHORTCUT_TABS[parseInt(e.key, 10) - 1];
+          if (tab) {
+            e.preventDefault();
+            setTab(tab);
+          }
+          return;
+        }
+        if (e.key === "0") {
+          e.preventDefault();
+          setTab("coverage");
+          return;
+        }
+        if (e.key === "Escape") {
+          window.dispatchEvent(new CustomEvent("codebase-viz:escape"));
+          return;
+        }
+        if (e.key === "r" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault();
+          onRefresh();
+        }
+      };
+      window.addEventListener("keydown", handler);
+      return () => window.removeEventListener("keydown", handler);
+    }, [setTab, onRefresh]);
+  }
+
   // src/App.jsx
-  var h10 = import_react12.default.createElement;
+  var h10 = react_shim_default.createElement;
   var CATEGORIES = [
     {
       id: "visuals",
@@ -1196,17 +1238,23 @@ ${d.value} LOC`;
     return m[1] || msg;
   }
   function App() {
-    const SDK = window.__HERMES_PLUGIN_SDK__;
-    if (!SDK?.fetchJSON || !SDK?.components) {
+    const SDK2 = window.__HERMES_PLUGIN_SDK__;
+    if (!SDK2?.fetchJSON || !SDK2?.components) {
       return h10("div", { className: "codebase-viz-error" }, "Hermes Plugin SDK niet beschikbaar.");
     }
-    const { Button } = SDK.components;
-    const [tab, setTab] = import_react12.default.useState("sunburst");
-    const [menuOpen, setMenuOpen] = import_react12.default.useState(null);
+    const { Button } = SDK2.components;
+    const [tab, setTab] = react_shim_default.useState("sunburst");
+    const [menuOpen, setMenuOpen] = react_shim_default.useState(null);
+    const [refreshToken, setRefreshToken] = react_shim_default.useState(0);
     const d3Ready = useD3Loader();
+    const onRefresh = react_shim_default.useCallback(() => {
+      postForceScan().catch(() => {
+      }).finally(() => setRefreshToken((n) => n + 1));
+    }, []);
+    useKeyboardShortcuts({ setTab, onRefresh });
     const isSearch = tab === "search";
     const path = isSearch ? null : TAB_MAP[tab] || "/structure";
-    const { data, error, loading } = usePluginFetch(path, [tab]);
+    const { data, error, loading } = usePluginFetch(path, [tab], refreshToken);
     const currentCat = CATEGORIES.find((c) => c.tabs.some((t) => t.id === tab));
     const activeLabel = currentCat ? `${currentCat.label} \u203A ${currentCat.tabs.find((t) => t.id === tab)?.label}` : tab;
     const shell = (content2) => h10(
@@ -1214,7 +1262,12 @@ ${d.value} LOC`;
       { className: "codebase-viz-container" },
       h10(CategoryNav, { categories: CATEGORIES, tab, setTab, menuOpen, setMenuOpen }),
       h10("div", { className: "codebase-viz-active-label" }, activeLabel),
-      h10("div", { className: "codebase-viz-content" }, content2)
+      h10("div", { className: "codebase-viz-content" }, content2),
+      h10(
+        "div",
+        { className: "codebase-viz-shortcuts-hint", title: "Sneltoetsen" },
+        "1\u20139 tabs \xB7 0 coverage \xB7 r ververs \xB7 Esc sluit inspector"
+      )
     );
     if (tab === "search") {
       return shell(h10(SearchTab));
@@ -1230,7 +1283,7 @@ ${d.value} LOC`;
             {
               variant: "outline",
               size: "sm",
-              onClick: () => postForceScan().then(() => window.location.reload())
+              onClick: onRefresh
             },
             "Opnieuw proberen"
           )

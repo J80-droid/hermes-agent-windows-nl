@@ -104,7 +104,7 @@ def test_v1_required_artefacts() -> None:
 
 def test_v2_manifest_version() -> None:
     data = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    ok = data.get("name") == "codebase-viz" and data.get("version") == "2.4.0"
+    ok = data.get("name") == "codebase-viz" and data.get("version") == "2.5.0"
     _step("manifest_id_version", ok, str(data.get("version")))
 
 
