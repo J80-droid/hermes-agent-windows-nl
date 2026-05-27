@@ -75,6 +75,9 @@ def test_launch_hermes_bat_wires_script() -> None:
     assert "launch_dashboard_on_start.ps1" in bat
     assert "HERMES_SKIP_DASHBOARD_ON_START" in bat
     assert "HERMES_LAUNCH_LOG" in bat
+    assert 'if defined NO_COLOR set "NO_COLOR="' in bat
+    assert 'if /I "%TERM%"=="dumb" set "TERM="' in bat
+    assert 'if /I "%FORCE_COLOR%"=="0" set "FORCE_COLOR=1"' in bat
     assert 'set "HERMES_DASHBOARD_OPEN_PATH=/codebase-viz"' not in bat
 
 

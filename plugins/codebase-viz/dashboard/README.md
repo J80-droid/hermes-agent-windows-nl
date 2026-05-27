@@ -35,6 +35,7 @@ pip install pygount watchdog radon psutil
 | `CODEBASE_VIZ_TTL` | `60` | Response-cache (s) |
 | `CODEBASE_VIZ_DEBOUNCE` | `2.0` | Watcher batch-interval |
 | `CODEBASE_VIZ_PYGOUNT_TIMEOUT` | `240` | `pygount` subprocess timeout (volledige fork-repo); ongeldige waarde → fallback 240 |
+| `CODEBASE_VIZ_SCAN_MODE` | `incremental` | Productiepad: `incremental` (SWR + delta-refresh) of `full` |
 | `CODEBASE_VIZ_MAX_MEMORY_MB` | `500` | RSS-drempel; boven limiet → stale cache of `memory_pressure` |
 
 `REPO_PATH` wordt bij module-import bepaald; na env-wijziging dashboard herstarten.
@@ -57,7 +58,12 @@ pip install pygount watchdog radon psutil
 | `structure` / `summary` / `dependencies` | Per-tab endpoint (bouwen op bovenstaande) |
 | `churn`, `todos`, `blame`, … | Aparte git/radon-scans (eigen TTL, niet pygount) |
 
-Voortgang in de UI: `GET /scan-status` (phase, `repo_label`, elapsed/max timeout, pseudo-progress) + progress bar. Tijdens laden zie je subtiel **Scan: …/hermes-agent** (live fase-wissel).
+Voortgang in de UI: `GET /scan-status` (phase, `repo_label`, elapsed/max timeout, pseudo-progress, `scan_mode`, `refresh`) + progress bar. Tijdens laden zie je subtiel **Scan: …/hermes-agent** (live fase-wissel).
+
+In `incremental` mode zijn `/structure`, `/summary` en `/dependencies` **stale-while-revalidate**:
+- direct gecachte response (`served_from_cache`)
+- daarna background refresh (`refresh_in_background`)
+- response metadata: `last_updated_at`, `stale_age_sec`, `scan_mode`
 
 Lang scannen is dus **normaal** bij de eerste request na start of na `force-scan`. Daarna is het gecached.
 

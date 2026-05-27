@@ -1082,10 +1082,19 @@ ${d.value} LOC`;
     const next = { ...prev };
     if (health?.repo_path) next.repoPath = health.repo_path;
     if (health?.pygount_timeout_sec != null) next.timeoutSec = health.pygount_timeout_sec;
+    if (health?.scan_mode) next.scanMode = health.scan_mode;
     if (body?.repo_path) next.repoPath = body.repo_path;
     if (body?.repo_label) next.repoLabel = body.repo_label;
     if (body?.timeout_sec != null) next.timeoutSec = body.timeout_sec;
     if (body?.phase) next.phase = body.phase;
+    if (body?.scan_mode) next.scanMode = body.scan_mode;
+    if (typeof body?.served_from_cache === "boolean") next.servedFromCache = body.served_from_cache;
+    if (typeof body?.stale_age_sec === "number") next.staleAgeSec = body.stale_age_sec;
+    if (typeof body?.refresh_in_background === "boolean") {
+      next.refreshInBackground = body.refresh_in_background;
+    } else if (typeof body?.refresh?.running === "boolean") {
+      next.refreshInBackground = body.refresh.running;
+    }
     return next;
   }
   function useScanProgress(active, tab) {
@@ -1101,7 +1110,11 @@ ${d.value} LOC`;
       repoPath: "",
       repoLabel: "",
       timeoutSec: null,
-      phase: ""
+      phase: "",
+      scanMode: "",
+      servedFromCache: null,
+      staleAgeSec: null,
+      refreshInBackground: false
     });
     const warnedRef = react_shim_default.useRef(false);
     const sdkRef = react_shim_default.useRef(SDK2);
@@ -1115,7 +1128,16 @@ ${d.value} LOC`;
         setLegacyBackend(false);
         setApiPath("");
         setServerVersion("");
-        setScanContext({ repoPath: "", repoLabel: "", timeoutSec: null, phase: "" });
+        setScanContext({
+          repoPath: "",
+          repoLabel: "",
+          timeoutSec: null,
+          phase: "",
+          scanMode: "",
+          servedFromCache: null,
+          staleAgeSec: null,
+          refreshInBackground: false
+        });
         warnedRef.current = false;
         return void 0;
       }
@@ -1202,7 +1224,11 @@ ${d.value} LOC`;
       repoPath: scanContext.repoPath,
       repoLabel: scanContext.repoLabel || scanContext.repoPath,
       timeoutSec: scanContext.timeoutSec,
-      phase: scanContext.phase || serverStatus?.phase || ""
+      phase: scanContext.phase || serverStatus?.phase || "",
+      scanMode: scanContext.scanMode,
+      servedFromCache: scanContext.servedFromCache,
+      staleAgeSec: scanContext.staleAgeSec,
+      refreshInBackground: scanContext.refreshInBackground
     };
   }
 
@@ -1221,7 +1247,11 @@ ${d.value} LOC`;
       repoPath,
       repoLabel,
       timeoutSec,
-      phase
+      phase,
+      scanMode,
+      servedFromCache,
+      staleAgeSec,
+      refreshInBackground
     } = useScanProgress(active, tab);
     const pct = busy ? Math.max(12, Math.min(98, progress)) : 100;
     const loggedRef = react_shim_default.useRef(false);
@@ -1283,6 +1313,18 @@ ${d.value} LOC`;
         { className: "codebase-viz-progress-meta", key: phaseKey },
         h10("span", { className: "codebase-viz-progress-detail" }, detail),
         elapsed ? h10("span", { className: "codebase-viz-progress-elapsed" }, elapsed) : busy ? h10("span", { className: "codebase-viz-progress-elapsed" }, "\u2026") : null
+      ),
+      h10(
+        "div",
+        { className: "codebase-viz-swr-meta" },
+        scanMode ? h10("span", { className: "codebase-viz-swr-pill" }, `mode:${scanMode}`) : null,
+        typeof servedFromCache === "boolean" ? h10(
+          "span",
+          { className: "codebase-viz-swr-pill" },
+          servedFromCache ? "cached" : "live"
+        ) : null,
+        typeof staleAgeSec === "number" ? h10("span", { className: "codebase-viz-swr-pill" }, `stale:${staleAgeSec}s`) : null,
+        refreshInBackground ? h10("span", { className: "codebase-viz-swr-pill codebase-viz-swr-pill--active" }, "refreshing") : null
       ),
       scanTarget ? h10(
         "p",

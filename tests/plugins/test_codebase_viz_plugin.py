@@ -344,8 +344,8 @@ def test_force_scan_pygount_error(client, plugin_module):
     with patch.object(plugin_module, "_sync_pygount_bundle", _fail):
         resp = client.post("/api/plugins/codebase-viz/force-scan")
     body = resp.json()
-    assert body["status"] == "cached_invalidated"
-    assert "pygount down" in body.get("scan_error", "")
+    assert body["status"] == "ok"
+    assert body.get("refresh_started") is True
 
 
 def test_ws_invalid_token_rejected(plugin_module):
@@ -645,6 +645,8 @@ def test_scan_status_endpoint(client, plugin_module):
     assert "phase" in body
     assert "detail" in body
     assert body.get("timeout_sec") == plugin_module.PYGOUNT_TIMEOUT
+    assert body.get("scan_mode") in {"incremental", "full"}
+    assert isinstance(body.get("refresh"), dict)
     assert "phase_label" in body
     if plugin_module.REPO_PATH is not None:
         assert body.get("repo_path") == str(plugin_module.REPO_PATH)
@@ -661,6 +663,18 @@ def test_pygount_timeout_zero_uses_fallback(monkeypatch, tiny_repo):
     monkeypatch.setenv("CODEBASE_VIZ_PYGOUNT_TIMEOUT", "0")
     mod = _load_plugin_module(monkeypatch, tiny_repo)
     assert mod.PYGOUNT_TIMEOUT == 240
+
+
+def test_scan_mode_invalid_env_uses_incremental(monkeypatch, tiny_repo):
+    monkeypatch.setenv("CODEBASE_VIZ_SCAN_MODE", "unexpected")
+    mod = _load_plugin_module(monkeypatch, tiny_repo)
+    assert mod.CODEBASE_VIZ_SCAN_MODE == "incremental"
+
+
+def test_scan_mode_full_from_env(monkeypatch, tiny_repo):
+    monkeypatch.setenv("CODEBASE_VIZ_SCAN_MODE", "full")
+    mod = _load_plugin_module(monkeypatch, tiny_repo)
+    assert mod.CODEBASE_VIZ_SCAN_MODE == "full"
 
 
 def test_repo_scan_label_two_segments(plugin_module, tiny_repo):
@@ -740,6 +754,8 @@ def test_health_includes_memory(client):
     body = client.get("/api/plugins/codebase-viz/health").json()
     assert "memory" in body
     assert "max_mb" in body["memory"]
+    assert body.get("scan_mode") in {"incremental", "full"}
+    assert body.get("snapshot_state_path")
 
 
 def test_memory_status_psutil_failure(plugin_module, monkeypatch):
@@ -833,3 +849,59 @@ def test_force_scan_no_repo_still_invalidates(monkeypatch, tmp_path):
     resp = c.post("/api/plugins/codebase-viz/force-scan")
     assert resp.status_code == 200
     assert resp.json().get("status") == "ok"
+    assert resp.json().get("refresh_started") is True
+
+
+def test_structure_returns_swr_metadata_when_cached(client, plugin_module):
+    payload = {
+        "tree": {"name": "x", "children": []},
+        "summary": {"total_files": 1, "total_code": 10, "languages": {}},
+    }
+
+    async def seed():
+        await plugin_module._set_cache("structure", payload)
+
+    asyncio.run(seed())
+    body = client.get("/api/plugins/codebase-viz/structure").json()
+    assert body.get("served_from_cache") is True
+    assert body.get("scan_mode") in {"incremental", "full"}
+    assert "refresh_in_background" in body
+
+
+def test_set_cache_updates_snapshot_data_hash(plugin_module):
+    payload = {"x": 1, "y": [1, 2, 3]}
+
+    async def run():
+        await plugin_module._set_cache("summary", payload)
+        async with plugin_module._snapshot_lock:
+            return dict(plugin_module._snapshot_state.get("data_hashes", {}))
+
+    hashes = asyncio.run(run())
+    assert isinstance(hashes.get("summary"), str)
+    assert len(hashes.get("summary", "")) == 40
+
+
+def test_background_refresh_signature_delta_refreshes_core_sets(plugin_module, monkeypatch):
+    plugin_module.CODEBASE_VIZ_SCAN_MODE = "incremental"
+    plugin_module.REPO_PATH = None
+    plugin_module._snapshot_state["repo_signature"] = "old-signature"
+    plugin_module._pending_changed_paths.clear()
+
+    monkeypatch.setattr(plugin_module, "_compute_repo_signature", lambda _repo: "new-signature")
+    monkeypatch.setattr(plugin_module, "_broadcast_message", lambda *_a, **_k: asyncio.sleep(0))
+    monkeypatch.setattr(plugin_module, "_persist_snapshot_state", lambda: asyncio.sleep(0))
+
+    calls = []
+
+    async def fake_get_or_compute(key, ttl, factory):
+        calls.append(key)
+        return {}
+
+    monkeypatch.setattr(plugin_module, "_get_pygount_bundle", lambda: asyncio.sleep(0))
+    monkeypatch.setattr(plugin_module, "_get_import_edges", lambda: asyncio.sleep(0))
+    monkeypatch.setattr(plugin_module, "_get_or_compute", fake_get_or_compute)
+
+    asyncio.run(plugin_module._background_refresh_job(force_full=False))
+    assert "summary" in calls
+    assert "structure" in calls
+    assert "dependencies" in calls

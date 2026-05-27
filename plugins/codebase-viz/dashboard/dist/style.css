@@ -171,6 +171,29 @@
   opacity: 0.9;
 }
 
+.codebase-viz-swr-meta {
+  margin-top: 0.35rem;
+  display: flex;
+  gap: 0.35rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.codebase-viz-swr-pill {
+  font-size: 0.68rem;
+  line-height: 1.2;
+  border: 1px solid hsl(var(--border) / 0.7);
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--accent) / 0.2);
+}
+
+.codebase-viz-swr-pill--active {
+  color: #22c55e;
+  border-color: hsl(142 76% 45% / 0.55);
+}
+
 .codebase-viz-shortcuts-hint {
   flex-shrink: 0;
   margin-top: 0.35rem;

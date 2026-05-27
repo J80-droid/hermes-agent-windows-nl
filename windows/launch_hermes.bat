@@ -27,6 +27,10 @@ if defined HERMES_PYTHON set "HERMES_PYTHON_ENV=!HERMES_PYTHON!"
 rem --- Forceer UTF-8 codering voor moderne weergave ---
 chcp 65001 >nul
 set "PYTHONIOENCODING=utf-8"
+rem Herstel kleurweergave: externe shells zetten soms NO_COLOR/TERM=dumb/FORCE_COLOR=0.
+if defined NO_COLOR set "NO_COLOR="
+if /I "%TERM%"=="dumb" set "TERM="
+if /I "%FORCE_COLOR%"=="0" set "FORCE_COLOR=1"
 
 rem --- Genereer ESC karakter voor kleuren ---
 for /F "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do set "ESC=%%b"

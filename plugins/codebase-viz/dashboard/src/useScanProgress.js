@@ -18,10 +18,19 @@ function mergeScanContext(prev, body, health) {
   const next = { ...prev };
   if (health?.repo_path) next.repoPath = health.repo_path;
   if (health?.pygount_timeout_sec != null) next.timeoutSec = health.pygount_timeout_sec;
+  if (health?.scan_mode) next.scanMode = health.scan_mode;
   if (body?.repo_path) next.repoPath = body.repo_path;
   if (body?.repo_label) next.repoLabel = body.repo_label;
   if (body?.timeout_sec != null) next.timeoutSec = body.timeout_sec;
   if (body?.phase) next.phase = body.phase;
+  if (body?.scan_mode) next.scanMode = body.scan_mode;
+  if (typeof body?.served_from_cache === 'boolean') next.servedFromCache = body.served_from_cache;
+  if (typeof body?.stale_age_sec === 'number') next.staleAgeSec = body.stale_age_sec;
+  if (typeof body?.refresh_in_background === 'boolean') {
+    next.refreshInBackground = body.refresh_in_background;
+  } else if (typeof body?.refresh?.running === 'boolean') {
+    next.refreshInBackground = body.refresh.running;
+  }
   return next;
 }
 
@@ -43,6 +52,10 @@ export function useScanProgress(active, tab) {
     repoLabel: '',
     timeoutSec: null,
     phase: '',
+    scanMode: '',
+    servedFromCache: null,
+    staleAgeSec: null,
+    refreshInBackground: false,
   });
   const warnedRef = React.useRef(false);
   const sdkRef = React.useRef(SDK);
@@ -57,7 +70,16 @@ export function useScanProgress(active, tab) {
       setLegacyBackend(false);
       setApiPath('');
       setServerVersion('');
-      setScanContext({ repoPath: '', repoLabel: '', timeoutSec: null, phase: '' });
+      setScanContext({
+        repoPath: '',
+        repoLabel: '',
+        timeoutSec: null,
+        phase: '',
+        scanMode: '',
+        servedFromCache: null,
+        staleAgeSec: null,
+        refreshInBackground: false,
+      });
       warnedRef.current = false;
       return undefined;
     }
@@ -179,5 +201,9 @@ export function useScanProgress(active, tab) {
     repoLabel: scanContext.repoLabel || scanContext.repoPath,
     timeoutSec: scanContext.timeoutSec,
     phase: scanContext.phase || serverStatus?.phase || '',
+    scanMode: scanContext.scanMode,
+    servedFromCache: scanContext.servedFromCache,
+    staleAgeSec: scanContext.staleAgeSec,
+    refreshInBackground: scanContext.refreshInBackground,
   };
 }

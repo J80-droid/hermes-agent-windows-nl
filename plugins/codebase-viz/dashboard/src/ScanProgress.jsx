@@ -17,6 +17,10 @@ export default function ScanProgress({ active, tab }) {
     repoLabel,
     timeoutSec,
     phase,
+    scanMode,
+    servedFromCache,
+    staleAgeSec,
+    refreshInBackground,
   } = useScanProgress(active, tab);
   const pct = busy ? Math.max(12, Math.min(98, progress)) : 100;
   const loggedRef = React.useRef(false);
@@ -90,6 +94,24 @@ export default function ScanProgress({ active, tab }) {
         : busy
           ? h('span', { className: 'codebase-viz-progress-elapsed' }, '…')
           : null,
+    ),
+    h(
+      'div',
+      { className: 'codebase-viz-swr-meta' },
+      scanMode ? h('span', { className: 'codebase-viz-swr-pill' }, `mode:${scanMode}`) : null,
+      typeof servedFromCache === 'boolean'
+        ? h(
+            'span',
+            { className: 'codebase-viz-swr-pill' },
+            servedFromCache ? 'cached' : 'live',
+          )
+        : null,
+      typeof staleAgeSec === 'number'
+        ? h('span', { className: 'codebase-viz-swr-pill' }, `stale:${staleAgeSec}s`)
+        : null,
+      refreshInBackground
+        ? h('span', { className: 'codebase-viz-swr-pill codebase-viz-swr-pill--active' }, 'refreshing')
+        : null,
     ),
     scanTarget
       ? h(

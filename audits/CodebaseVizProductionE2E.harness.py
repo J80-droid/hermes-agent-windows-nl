@@ -42,14 +42,16 @@ def test_p1_plugin_api_timeout_default_and_parser() -> None:
     ok = (
         '_parse_pygount_timeout' in text
         and 'PYGOUNT_TIMEOUT = _parse_pygount_timeout()' in text
+        and "_parse_scan_mode" in text
+        and 'CODEBASE_VIZ_SCAN_MODE = _parse_scan_mode()' in text
         and '"240"' in text
     )
-    _step("plugin_api 240s + parser", ok)
+    _step("plugin_api 240s + parser + scan_mode", ok)
 
 
 def test_p2_scan_status_fields_in_source() -> None:
     text = PLUGIN_API.read_text(encoding="utf-8")
-    fields = ["repo_path", "repo_label", "timeout_sec", "phase_label"]
+    fields = ["repo_path", "repo_label", "timeout_sec", "phase_label", "scan_mode", "refresh"]
     ok = all(f'"{f}"' in text for f in fields) and "_repo_scan_label" in text
     _step("scan-status telemetry fields", ok, ",".join(fields))
 
@@ -84,6 +86,7 @@ def test_p5_launch_ps1_production_wiring() -> None:
     ps1 = PS1.read_text(encoding="utf-8")
     checks = [
         "'240'" in ps1 or '"240"' in ps1,
+        "Import-HermesPythonPolicy" in ps1,
         "pip install pygount" in ps1,
         "Test-CodebaseVizHealth" in ps1,
         "verify_codebase_viz_health.py" in ps1,

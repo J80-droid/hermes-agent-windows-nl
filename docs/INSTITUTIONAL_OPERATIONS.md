@@ -28,6 +28,7 @@ Bundled tab **Codebase Viz** op `/codebase-viz` (na Skills). Bij workspace-start
 | `HERMES_BUNDLED_PLUGINS` | `<repo>\plugins` | Workspace `plugin_api.py` v2.5.0 (geen oude user-kopie) |
 | `CODEBASE_VIZ_PYGOUNT_TIMEOUT` | `240` | pygount subprocess-timeout (volledige repo) |
 | `CODEBASE_VIZ_REPO` | hermes-agent root | Optioneel: ander scan-doel |
+| `CODEBASE_VIZ_SCAN_MODE` | `incremental` | Productie: stale-while-revalidate + delta-refresh; `full` voor expliciete full rebuilds |
 
 **Na start controleren:**
 
@@ -36,6 +37,8 @@ audits\verify_codebase_viz_health.py
 ```
 
 Verwacht: `version=2.5.0`, `pygount_timeout_sec=240`, `plugin_api_path` onder deze repo.
+
+Bij `scan_mode=incremental` serveert de plugin direct gecachte payloads (`/structure`, `/summary`, `/dependencies`) en start daarna background refresh met delta-detectie. UI/WS tonen refresh-events (`refresh_started`, `delta_detected`, `refresh_done`).
 
 **Herstart alleen dashboard:**
 

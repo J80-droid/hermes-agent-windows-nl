@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import ast
 import asyncio
+import hashlib
 import hmac
 import json
 import logging
@@ -91,6 +92,17 @@ CODEBASE_VIZ_TTL = float(os.environ.get("CODEBASE_VIZ_TTL", "60"))
 CODEBASE_VIZ_DEBOUNCE = float(os.environ.get("CODEBASE_VIZ_DEBOUNCE", "2.0"))
 PYGOUNT_TIMEOUT = _parse_pygount_timeout()
 
+
+def _parse_scan_mode() -> str:
+    raw = os.environ.get("CODEBASE_VIZ_SCAN_MODE", "incremental").strip().lower()
+    if raw in {"incremental", "full"}:
+        return raw
+    log.warning("invalid CODEBASE_VIZ_SCAN_MODE=%r, using incremental", raw)
+    return "incremental"
+
+
+CODEBASE_VIZ_SCAN_MODE = _parse_scan_mode()
+
 _cache_lock = asyncio.Lock()
 _cache: dict[str, tuple[float, object]] = {}
 _inflight: dict[str, asyncio.Task] = {}
@@ -118,6 +130,35 @@ _lazy_lock = asyncio.Lock()
 _event_queue: asyncio.Queue = asyncio.Queue()
 _observer: Any = None
 _ws_clients: set[WebSocket] = set()
+_refresh_task: asyncio.Task | None = None
+_refresh_status: dict[str, Any] = {
+    "running": False,
+    "reason": "",
+    "started_at": None,
+    "last_completed_at": None,
+    "last_error": "",
+    "last_event_count": 0,
+}
+_snapshot_lock = asyncio.Lock()
+_pending_changed_paths: set[str] = set()
+_RECENT_EVENT_LIMIT = 200
+_recent_events: list[dict[str, Any]] = []
+_state_paths = {
+    "snapshot": (
+        Path(os.environ.get("CODEBASE_VIZ_SNAPSHOT_PATH", "")).resolve()
+        if os.environ.get("CODEBASE_VIZ_SNAPSHOT_PATH")
+        else Path(__file__).resolve().parents[3] / "output" / "research" / "codebase_viz_snapshot_state.json"
+    ),
+}
+_snapshot_state: dict[str, Any] = {
+    "snapshot_version": 1,
+    "scan_mode": CODEBASE_VIZ_SCAN_MODE,
+    "repo_signature": "",
+    "last_checkpoint": "",
+    "last_full_scan_at": None,
+    "data_hashes": {},
+    "datasets": {},
+}
 
 
 async def _cached(key: str, ttl: float = 60.0) -> object | None:
@@ -128,9 +169,113 @@ async def _cached(key: str, ttl: float = 60.0) -> object | None:
     return None
 
 
+async def _cached_any(key: str) -> object | None:
+    async with _cache_lock:
+        entry = _cache.get(key)
+        if entry:
+            return entry[1]
+    return None
+
+
 async def _set_cache(key: str, data: object) -> None:
     async with _cache_lock:
         _cache[key] = (time.monotonic(), data)
+    await _mark_dataset_updated(key, data)
+
+
+def _snapshot_file() -> Path:
+    return _state_paths["snapshot"]
+
+
+def _safe_repo_file_iter(root: Path):
+    skip = {
+        ".git", "node_modules", "venv", ".venv", "__pycache__",
+        "dist", "build", ".next", ".cache", ".tox", ".eggs",
+        ".mypy_cache", "output", ".hermes",
+    }
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        if any(part in skip for part in path.parts):
+            continue
+        yield path
+
+
+def _compute_repo_signature(repo: Path | None) -> str:
+    if repo is None or not repo.is_dir():
+        return ""
+    digest = hashlib.sha1()
+    sample = 0
+    for path in _safe_repo_file_iter(repo):
+        rel = str(path.relative_to(repo)).replace("\\", "/")
+        try:
+            st = path.stat()
+        except OSError:
+            continue
+        digest.update(rel.encode("utf-8", errors="ignore"))
+        digest.update(str(st.st_size).encode("ascii", errors="ignore"))
+        digest.update(str(st.st_mtime_ns).encode("ascii", errors="ignore"))
+        sample += 1
+        if sample >= 4000:
+            break
+    return digest.hexdigest()
+
+
+async def _load_snapshot_state() -> None:
+    path = _snapshot_file()
+    if not path.is_file():
+        return
+    try:
+        raw = await asyncio.to_thread(path.read_text, encoding="utf-8")
+        data = json.loads(raw)
+    except Exception as exc:
+        log.warning("codebase_viz_snapshot_load_failed: %s", exc)
+        return
+    if not isinstance(data, dict):
+        return
+    async with _snapshot_lock:
+        _snapshot_state.update(data)
+        _snapshot_state["scan_mode"] = CODEBASE_VIZ_SCAN_MODE
+
+
+async def _persist_snapshot_state() -> None:
+    path = _snapshot_file()
+    try:
+        await asyncio.to_thread(path.parent.mkdir, parents=True, exist_ok=True)
+        async with _snapshot_lock:
+            payload = dict(_snapshot_state)
+            payload["scan_mode"] = CODEBASE_VIZ_SCAN_MODE
+        blob = json.dumps(payload, ensure_ascii=False, indent=2)
+        await asyncio.to_thread(path.write_text, blob, encoding="utf-8")
+    except Exception as exc:
+        log.warning("codebase_viz_snapshot_persist_failed: %s", exc)
+
+
+def _stable_data_hash(data: object) -> str:
+    try:
+        blob = json.dumps(data, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    except TypeError:
+        blob = repr(data)
+    return hashlib.sha1(blob.encode("utf-8", errors="ignore")).hexdigest()
+
+
+async def _mark_dataset_updated(key: str, data: object | None = None) -> None:
+    if key not in {
+        "pygount", "summary", "structure", "dependencies", "import_edges",
+    }:
+        return
+    now = int(time.time())
+    async with _snapshot_lock:
+        datasets = _snapshot_state.setdefault("datasets", {})
+        ds = datasets.setdefault(key, {})
+        ds["updated_at"] = now
+        ds["has_data"] = True
+        if data is not None:
+            data_hashes = _snapshot_state.setdefault("data_hashes", {})
+            data_hashes[key] = _stable_data_hash(data)
+        if key == "pygount":
+            _snapshot_state["last_full_scan_at"] = now
+    await _persist_snapshot_state()
 
 
 def _memory_status() -> dict[str, Any]:
@@ -191,6 +336,7 @@ async def _run_factory_and_store(key: str, factory) -> object:
     async with _cache_lock:
         _cache[key] = (time.monotonic(), result)
         _inflight.pop(key, None)
+    await _mark_dataset_updated(key, result)
     return result
 
 
@@ -247,6 +393,29 @@ def _repo_scan_label() -> str:
     return REPO_PATH.name or str(REPO_PATH)
 
 
+async def _dataset_updated_at(key: str) -> int | None:
+    async with _snapshot_lock:
+        datasets = _snapshot_state.get("datasets", {})
+        ds = datasets.get(key, {})
+        value = ds.get("updated_at")
+        return int(value) if isinstance(value, (int, float)) else None
+
+
+async def _with_swr_meta(payload: dict[str, Any], *, cache_key: str, served_from_cache: bool) -> dict[str, Any]:
+    out = dict(payload)
+    updated_at = await _dataset_updated_at(cache_key)
+    now = int(time.time())
+    stale_age = (now - updated_at) if updated_at else None
+    async with _snapshot_lock:
+        refresh_running = bool(_refresh_status.get("running"))
+    out["served_from_cache"] = served_from_cache
+    out["refresh_in_background"] = refresh_running
+    out["last_updated_at"] = updated_at
+    out["stale_age_sec"] = stale_age
+    out["scan_mode"] = CODEBASE_VIZ_SCAN_MODE
+    return out
+
+
 def _scan_start(phase: str, detail: str = "") -> None:
     label = _repo_scan_label()
     base = detail or _SCAN_LABELS.get(phase, phase)
@@ -287,6 +456,9 @@ async def _async_scan_status_payload() -> dict[str, Any]:
     phase_label = _SCAN_LABELS.get(phase, phase) if phase != "idle" else ""
     repo_path_str = str(REPO_PATH) if REPO_PATH else None
     repo_label = _repo_scan_label() or None
+    async with _snapshot_lock:
+        refresh = dict(_refresh_status)
+        pending_count = len(_pending_changed_paths)
     return {
         "busy": busy,
         "phase": phase,
@@ -300,6 +472,9 @@ async def _async_scan_status_payload() -> dict[str, Any]:
         "repo_path": repo_path_str,
         "repo_label": repo_label,
         "timeout_sec": PYGOUNT_TIMEOUT,
+        "scan_mode": CODEBASE_VIZ_SCAN_MODE,
+        "refresh": refresh,
+        "pending_changed_paths": pending_count,
     }
 
 
@@ -308,6 +483,117 @@ async def _invalidate_cache() -> None:
         _cache.clear()
         _inflight.clear()
     _scan_end()
+
+
+def _classify_impacted_datasets(paths: set[str]) -> set[str]:
+    if not paths:
+        return set()
+    impacted: set[str] = {"summary", "structure"}
+    for p in paths:
+        p_lower = p.lower()
+        if p_lower.endswith(".py"):
+            impacted.update({"dependencies", "import_edges", "pygount"})
+        elif p_lower.endswith((".js", ".jsx", ".ts", ".tsx", ".json", ".yaml", ".yml", ".toml", ".md")):
+            impacted.add("pygount")
+    return impacted
+
+
+async def _schedule_refresh(reason: str, changed_paths: set[str] | None = None, force_full: bool = False) -> None:
+    global _refresh_task
+    changed_paths = changed_paths or set()
+    async with _snapshot_lock:
+        _pending_changed_paths.update(changed_paths)
+        _refresh_status["reason"] = reason
+        _refresh_status["last_event_count"] = len(_pending_changed_paths)
+    if _refresh_task and not _refresh_task.done():
+        return
+    _refresh_task = asyncio.create_task(_background_refresh_job(force_full=force_full))
+
+
+async def _broadcast_message(msg: dict[str, Any]) -> None:
+    global _ws_clients
+    if not _ws_clients:
+        return
+    dead: set[WebSocket] = set()
+    for ws in _ws_clients:
+        try:
+            await ws.send_json(msg)
+        except Exception:
+            dead.add(ws)
+    _ws_clients -= dead
+
+
+async def _background_refresh_job(force_full: bool = False) -> None:
+    async with _snapshot_lock:
+        _refresh_status["running"] = True
+        _refresh_status["started_at"] = time.time()
+        _refresh_status["last_error"] = ""
+        changed_paths = set(_pending_changed_paths)
+        _pending_changed_paths.clear()
+    await _broadcast_message({
+        "type": "refresh_started",
+        "scan_mode": CODEBASE_VIZ_SCAN_MODE,
+        "reason": _refresh_status.get("reason", ""),
+    })
+    try:
+        repo_signature = _compute_repo_signature(REPO_PATH)
+        async with _snapshot_lock:
+            prev_signature = _snapshot_state.get("repo_signature", "")
+            _snapshot_state["repo_signature"] = repo_signature
+        has_delta = bool(changed_paths) or (repo_signature != prev_signature)
+        if CODEBASE_VIZ_SCAN_MODE == "full" or force_full:
+            impacted = {"pygount", "summary", "structure", "dependencies", "import_edges"}
+        elif has_delta:
+            impacted = _classify_impacted_datasets(changed_paths)
+            if repo_signature != prev_signature:
+                # Missed-event fallback: unknown delta -> refresh full core sets.
+                impacted.update({"pygount", "summary", "structure", "dependencies", "import_edges"})
+        else:
+            impacted = set()
+
+        await _broadcast_message({
+            "type": "delta_detected",
+            "changed_paths": sorted(changed_paths)[:200],
+            "has_delta": bool(impacted),
+            "impacted": sorted(impacted),
+        })
+        if not impacted:
+            return
+        async with _cache_lock:
+            for key in impacted:
+                _cache.pop(key, None)
+        # Rebuild minimal impacted sets in dependency order.
+        if "pygount" in impacted:
+            await _get_pygount_bundle()
+        if "import_edges" in impacted:
+            await _get_import_edges()
+        if "dependencies" in impacted:
+            await _get_or_compute("dependencies", CODEBASE_VIZ_TTL, _build_deps)
+        if "structure" in impacted:
+            await _get_or_compute("structure", CODEBASE_VIZ_TTL, _build_structure)
+        if "summary" in impacted:
+            await _get_or_compute("summary", CODEBASE_VIZ_TTL, _build_summary)
+        async with _snapshot_lock:
+            _snapshot_state["last_checkpoint"] = str(int(time.time()))
+        await _persist_snapshot_state()
+        await _broadcast_message({
+            "type": "refresh_done",
+            "scan_mode": CODEBASE_VIZ_SCAN_MODE,
+            "impacted": sorted(impacted),
+        })
+    except Exception as exc:
+        log.warning("codebase_viz_refresh_failed: %s", exc)
+        async with _snapshot_lock:
+            _refresh_status["last_error"] = str(exc)
+        await _broadcast_message({
+            "type": "refresh_failed",
+            "error": str(exc),
+        })
+    finally:
+        async with _snapshot_lock:
+            _refresh_status["running"] = False
+            _refresh_status["last_completed_at"] = time.time()
+        await _persist_snapshot_state()
 
 
 def _parse_pygount_json(stdout: str) -> tuple[list[dict], list[dict]]:
@@ -792,16 +1078,8 @@ def _start_watcher(path: str | None = None) -> Any:
 
 
 async def _broadcast_events(events: list[dict]) -> None:
-    if not _ws_clients:
-        return
     msg = {"type": "changes", "events": events, "count": len(events)}
-    dead: set[WebSocket] = set()
-    for ws in _ws_clients:
-        try:
-            await ws.send_json(msg)
-        except Exception:
-            dead.add(ws)
-    _ws_clients -= dead
+    await _broadcast_message(msg)
 
 
 async def _event_flush_loop() -> None:
@@ -814,8 +1092,18 @@ async def _event_flush_loop() -> None:
             except asyncio.QueueEmpty:
                 break
         if batch:
+            changed_paths = {
+                str(evt.get("path", ""))
+                for evt in batch
+                if evt.get("path")
+            }
+            _recent_events.extend(batch)
+            if len(_recent_events) > _RECENT_EVENT_LIMIT:
+                del _recent_events[0 : len(_recent_events) - _RECENT_EVENT_LIMIT]
             await _broadcast_events(batch)
-            await _invalidate_cache()
+            if CODEBASE_VIZ_SCAN_MODE == "full":
+                await _invalidate_cache()
+            await _schedule_refresh("watchdog_events", changed_paths=changed_paths)
 
 
 async def _ensure_started() -> None:
@@ -825,6 +1113,7 @@ async def _ensure_started() -> None:
     async with _lazy_lock:
         if _initialized:
             return
+        await _load_snapshot_state()
         if REPO_PATH is not None and WATCHDOG_AVAILABLE:
             try:
                 _start_watcher(str(REPO_PATH))
@@ -832,6 +1121,7 @@ async def _ensure_started() -> None:
                 log.warning("file_watcher_start_failed: %s", exc)
         if WATCHDOG_AVAILABLE:
             asyncio.create_task(_event_flush_loop())
+        await _schedule_refresh("startup", force_full=(CODEBASE_VIZ_SCAN_MODE == "full"))
         _initialized = True
         log.info("codebase_viz_lazy_started", extra={"repo": str(REPO_PATH)})
 
@@ -868,9 +1158,11 @@ async def health():
         "memory": mem,
         "cache_ttl_sec": CODEBASE_VIZ_TTL,
         "pygount_timeout_sec": PYGOUNT_TIMEOUT,
+        "scan_mode": CODEBASE_VIZ_SCAN_MODE,
         "pygount_cached": pygount_cached,
         "cache_keys": cache_keys,
         "plugin_api_path": str(Path(__file__).resolve()),
+        "snapshot_state_path": str(_snapshot_file()),
     }
 
 
@@ -887,7 +1179,14 @@ async def get_structure():
     if REPO_PATH is None:
         return {"tree": _empty_tree(), "summary": _empty_summary(), "error": "no_repo"}
     try:
-        return await _get_or_compute("structure", CODEBASE_VIZ_TTL, _build_structure)
+        cached = await _cached_any("structure")
+        if isinstance(cached, dict):
+            await _schedule_refresh("structure_poll")
+            return await _with_swr_meta(cached, cache_key="structure", served_from_cache=True)
+        data = await _get_or_compute("structure", CODEBASE_VIZ_TTL, _build_structure)
+        if isinstance(data, dict):
+            return await _with_swr_meta(data, cache_key="structure", served_from_cache=False)
+        return data
     except Exception as exc:
         return await _api_error_payload(exc, tree=_empty_tree(), summary=_empty_summary())
 
@@ -898,7 +1197,14 @@ async def get_dependencies():
     if REPO_PATH is None:
         return {"nodes": [], "edges": [], "error": "no_repo"}
     try:
-        return await _get_or_compute("dependencies", CODEBASE_VIZ_TTL, _build_deps)
+        cached = await _cached_any("dependencies")
+        if isinstance(cached, dict):
+            await _schedule_refresh("dependencies_poll")
+            return await _with_swr_meta(cached, cache_key="dependencies", served_from_cache=True)
+        data = await _get_or_compute("dependencies", CODEBASE_VIZ_TTL, _build_deps)
+        if isinstance(data, dict):
+            return await _with_swr_meta(data, cache_key="dependencies", served_from_cache=False)
+        return data
     except Exception as exc:
         return await _api_error_payload(exc, nodes=[], edges=[])
 
@@ -922,7 +1228,14 @@ async def get_summary():
             "error": "no_repo",
         }
     try:
-        return await _get_or_compute("summary", CODEBASE_VIZ_TTL, _build_summary)
+        cached = await _cached_any("summary")
+        if isinstance(cached, dict):
+            await _schedule_refresh("summary_poll")
+            return await _with_swr_meta(cached, cache_key="summary", served_from_cache=True)
+        data = await _get_or_compute("summary", CODEBASE_VIZ_TTL, _build_summary)
+        if isinstance(data, dict):
+            return await _with_swr_meta(data, cache_key="summary", served_from_cache=False)
+        return data
     except Exception as exc:
         return await _api_error_payload(
             exc,
@@ -1132,9 +1445,8 @@ async def force_scan():
     await _ensure_started()
     await _invalidate_cache()
     try:
-        bundle = await _fetch_pygount_bundle()
-        await _set_cache("pygount", bundle)
-        return {"status": "ok", "scan_complete": True}
+        await _schedule_refresh("force_scan", force_full=True)
+        return {"status": "ok", "scan_complete": False, "refresh_started": True}
     except RuntimeError as exc:
         return {"status": "cached_invalidated", "scan_error": str(exc)}
 
@@ -1151,6 +1463,7 @@ async def ws_events(websocket: WebSocket):
     await websocket.send_json({
         "type": "connected",
         "message": "Watching for file changes...",
+        "scan_mode": CODEBASE_VIZ_SCAN_MODE,
     })
     try:
         while True:
