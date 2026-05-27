@@ -29,7 +29,7 @@ var CodebaseVizPlugin = (() => {
   ));
 
   // src/App.jsx
-  var import_react5 = __toESM(__require("react"));
+  var import_react8 = __toESM(__require("react"));
 
   // src/SunburstChart.jsx
   var import_react = __toESM(__require("react"));
@@ -339,14 +339,515 @@ var CodebaseVizPlugin = (() => {
     );
   }
 
-  // src/App.jsx
+  // src/ForceGraph.jsx
+  var import_react6 = __toESM(__require("react"));
+
+  // src/useFileWatcher.js
+  var import_react5 = __toESM(__require("react"));
+
+  // src/wsAuth.js
+  function getSessionToken() {
+    if (typeof window !== "undefined" && window.__HERMES_SESSION_TOKEN__) {
+      return String(window.__HERMES_SESSION_TOKEN__);
+    }
+    try {
+      const cookie = document.cookie.split("; ").find((r) => r.startsWith("hermes_session_token="));
+      if (cookie) {
+        return decodeURIComponent(cookie.split("=").slice(1).join("="));
+      }
+    } catch (_e) {
+    }
+    return "";
+  }
+
+  // src/useFileWatcher.js
   var h3 = import_react5.default.createElement;
+  function useFileWatcher(opts = {}) {
+    const { onEvent, reconnectDelay = 3e3 } = opts;
+    const [connected, setConnected] = import_react5.default.useState(false);
+    const [lastEvent, setLastEvent] = import_react5.default.useState(null);
+    const [reconnect, setReconnect] = import_react5.default.useState(0);
+    import_react5.default.useEffect(() => {
+      const token = getSessionToken();
+      if (!token) return void 0;
+      const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const wsUrl = `${proto}//${window.location.host}/api/plugins/codebase-viz/events?token=${encodeURIComponent(token)}`;
+      let ws;
+      let reconnectTimer;
+      let destroyed = false;
+      function connect() {
+        if (destroyed) return;
+        ws = new WebSocket(wsUrl);
+        ws.onopen = () => {
+          if (!destroyed) setConnected(true);
+        };
+        ws.onclose = () => {
+          if (destroyed) return;
+          setConnected(false);
+          reconnectTimer = setTimeout(() => {
+            setReconnect((n) => n + 1);
+            connect();
+          }, reconnectDelay);
+        };
+        ws.onmessage = (evt) => {
+          if (destroyed) return;
+          try {
+            const msg = JSON.parse(evt.data);
+            if (msg.type === "changes" && Array.isArray(msg.events)) {
+              msg.events.forEach((event) => {
+                setLastEvent(event);
+                if (typeof onEvent === "function") onEvent(event);
+              });
+            } else if (msg.type === "connected") {
+              setConnected(true);
+            } else if (msg.type === "ping") {
+              if (ws?.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: "pong" }));
+              }
+            }
+          } catch (_e) {
+          }
+        };
+        ws.onerror = () => {
+        };
+      }
+      connect();
+      return () => {
+        destroyed = true;
+        clearTimeout(reconnectTimer);
+        if (ws) {
+          ws.onclose = null;
+          ws.close();
+        }
+      };
+    }, [reconnectDelay]);
+    return { connected, lastEvent, reconnect };
+  }
+  function FileWatcherIndicator({ connected }) {
+    return h3(
+      "span",
+      {
+        className: connected ? "status-ok" : "status-err",
+        style: { fontSize: "0.75rem", whiteSpace: "nowrap" }
+      },
+      connected ? "Live" : "Offline"
+    );
+  }
+  function useRippleAnimation(lastEvent) {
+    const [ripple, setRipple] = import_react5.default.useState(null);
+    import_react5.default.useEffect(() => {
+      if (!lastEvent) return void 0;
+      if (lastEvent.is_directory || lastEvent.type !== "modified" && lastEvent.type !== "created") {
+        return void 0;
+      }
+      setRipple({ path: lastEvent.path, time: Date.now() });
+      const timer = setTimeout(() => setRipple(null), 2e3);
+      return () => clearTimeout(timer);
+    }, [lastEvent]);
+    return ripple;
+  }
+
+  // src/ForceGraph.jsx
+  var h4 = import_react6.default.createElement;
+  var MAX_NODES = 500;
+  function pathToModuleId(filePath, nodeIds) {
+    if (!filePath || !nodeIds?.length) return null;
+    const norm = String(filePath).replace(/\\/g, "/");
+    const base = norm.split("/").pop() || "";
+    const stem = base.replace(/\.py$/i, "").replace(/\.__init__$/, "");
+    const candidates = /* @__PURE__ */ new Set([stem, stem.replace(/\//g, ".")]);
+    for (const id of nodeIds) {
+      if (candidates.has(id) || id.endsWith(`.${stem}`) || id.split(".").pop() === stem) {
+        return id;
+      }
+    }
+    return null;
+  }
+  function buildGraph(data, search) {
+    const edges = search ? data.edges.filter(
+      (e) => e.source.toLowerCase().includes(search.toLowerCase()) || e.target.toLowerCase().includes(search.toLowerCase())
+    ) : data.edges;
+    const nodeSet = /* @__PURE__ */ new Set();
+    edges.forEach((e) => {
+      nodeSet.add(e.source);
+      nodeSet.add(e.target);
+    });
+    let nodes = Array.from(nodeSet).map((id) => ({ id }));
+    if (nodes.length > MAX_NODES) {
+      const degree = {};
+      edges.forEach((e) => {
+        degree[e.source] = (degree[e.source] || 0) + 1;
+        degree[e.target] = (degree[e.target] || 0) + 1;
+      });
+      nodes = nodes.sort((a, b) => (degree[b.id] || 0) - (degree[a.id] || 0)).slice(0, MAX_NODES);
+      const allowed = new Set(nodes.map((n) => n.id));
+      return {
+        nodes,
+        links: edges.filter((e) => allowed.has(e.source) && allowed.has(e.target)).map((e) => ({ source: e.source, target: e.target, type: e.type })),
+        capped: true
+      };
+    }
+    return {
+      nodes,
+      links: edges.map((e) => ({
+        source: e.source,
+        target: e.target,
+        type: e.type
+      })),
+      capped: false
+    };
+  }
+  function ForceGraph({ data }) {
+    const svgRef = import_react6.default.useRef(null);
+    const containerRef = import_react6.default.useRef(null);
+    const simRef = import_react6.default.useRef(null);
+    const [search, setSearch] = import_react6.default.useState("");
+    const [inspector, setInspector] = import_react6.default.useState(null);
+    const [size, setSize] = import_react6.default.useState({ w: 0, h: 0 });
+    const { connected, lastEvent } = useFileWatcher();
+    const ripple = useRippleAnimation(lastEvent);
+    import_react6.default.useEffect(() => {
+      const container = containerRef.current;
+      if (!container) return void 0;
+      const ro = new ResizeObserver(() => {
+        setSize({ w: container.clientWidth, h: Math.max(container.clientHeight, 400) });
+      });
+      ro.observe(container);
+      setSize({ w: container.clientWidth, h: Math.max(container.clientHeight, 400) });
+      return () => ro.disconnect();
+    }, []);
+    import_react6.default.useEffect(() => {
+      const svg = svgRef.current;
+      if (!svg || !data?.nodes?.length || size.w < 10) return void 0;
+      const d3 = window.d3;
+      if (!d3) return void 0;
+      const { nodes, links, capped: capped2 } = buildGraph(data, search);
+      if (!nodes.length) return void 0;
+      const width = size.w;
+      const height = size.h;
+      svg.setAttribute("width", width);
+      svg.setAttribute("height", height);
+      svg.innerHTML = "";
+      const g = d3.select(svg).append("g");
+      const zoom = d3.zoom().scaleExtent([0.1, 4]).on("zoom", (event) => {
+        g.attr("transform", event.transform);
+      });
+      d3.select(svg).call(zoom);
+      const simulation = d3.forceSimulation(nodes).force("link", d3.forceLink(links).id((d) => d.id).distance(80)).force("charge", d3.forceManyBody().strength(-200)).force("center", d3.forceCenter(width / 2, height / 2)).force("collision", d3.forceCollide().radius(20));
+      simRef.current = simulation;
+      const link = g.append("g").selectAll("line").data(links).join("line").attr("stroke", "hsl(var(--muted-foreground) / 0.3)").attr("stroke-width", 1).attr("stroke-dasharray", (d) => d.type === "from_import" ? "3,2" : "0");
+      const node = g.append("g").selectAll("circle").data(nodes).join("circle").attr("r", 6).attr("fill", "hsl(var(--primary))").attr("stroke", "hsl(var(--border))").attr("stroke-width", 1).style("cursor", "pointer").call(
+        d3.drag().on("start", (event, d) => {
+          if (!event.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x;
+          d.fy = d.y;
+        }).on("drag", (event, d) => {
+          d.fx = event.x;
+          d.fy = event.y;
+        }).on("end", (event, d) => {
+          if (!event.active) simulation.alphaTarget(0);
+          d.fx = null;
+          d.fy = null;
+        })
+      ).on("click", (_event, d) => setInspector(d.id));
+      const label = g.append("g").selectAll("text").data(nodes).join("text").text((d) => d.id.split(".").pop()).attr("font-size", "10px").attr("dx", 8).attr("dy", 3).attr("fill", "hsl(var(--foreground) / 0.8)");
+      if (ripple?.path) {
+        const targetId = pathToModuleId(
+          ripple.path,
+          nodes.map((n) => n.id)
+        );
+        const target = targetId ? nodes.find((n) => n.id === targetId) : null;
+        const cx = target?.x ?? width / 2;
+        const cy = target?.y ?? height / 2;
+        g.append("circle").attr("cx", cx).attr("cy", cy).attr("r", 6).attr("fill", "none").attr("stroke", "#22c55e").attr("stroke-width", 2).transition().duration(1e3).attr("r", 40).attr("stroke-width", 0).remove();
+      }
+      simulation.on("tick", () => {
+        link.attr("x1", (d) => d.source.x).attr("y1", (d) => d.source.y).attr("x2", (d) => d.target.x).attr("y2", (d) => d.target.y);
+        node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
+        label.attr("x", (d) => d.x).attr("y", (d) => d.y);
+      });
+      return () => {
+        simulation.stop();
+        simRef.current = null;
+      };
+    }, [data, search, ripple, size]);
+    const inEdges = inspector ? data.edges.filter((e) => e.target === inspector).slice(0, 20) : [];
+    const outEdges = inspector ? data.edges.filter((e) => e.source === inspector).slice(0, 20) : [];
+    return h4(
+      "div",
+      { style: { display: "flex", flexDirection: "column", height: "100%" } },
+      h4(
+        "div",
+        {
+          style: {
+            display: "flex",
+            gap: "0.5rem",
+            alignItems: "center",
+            padding: "0.5rem 0",
+            flexShrink: 0
+          }
+        },
+        h4("input", {
+          type: "text",
+          placeholder: "Zoek module...",
+          value: search,
+          onChange: (e) => setSearch(e.target.value),
+          style: {
+            flex: 1,
+            padding: "0.3rem 0.5rem",
+            fontSize: "0.8rem",
+            background: "hsl(var(--input))",
+            border: "1px solid hsl(var(--border))",
+            borderRadius: "0.25rem",
+            color: "hsl(var(--foreground))"
+          }
+        }),
+        h4(FileWatcherIndicator, { connected })
+      ),
+      capped && h4(
+        "p",
+        { className: "codebase-viz-hint", style: { margin: "0 0 0.25rem" } },
+        `Grafiek beperkt tot ${MAX_NODES} modules (meest verbonden eerst).`
+      ),
+      inspector && h4(
+        "div",
+        {
+          className: "codebase-viz-inspector",
+          style: {
+            padding: "0.5rem",
+            background: "hsl(var(--accent) / 0.2)",
+            borderRadius: "0.25rem",
+            fontSize: "0.8rem",
+            marginBottom: "0.25rem",
+            flexShrink: 0
+          }
+        },
+        h4(
+          "div",
+          { style: { display: "flex", justifyContent: "space-between", marginBottom: "0.35rem" } },
+          h4("strong", null, inspector),
+          h4(
+            "button",
+            {
+              type: "button",
+              onClick: () => setInspector(null),
+              style: {
+                background: "transparent",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "0.25rem",
+                cursor: "pointer",
+                fontSize: "0.75rem",
+                padding: "0.15rem 0.4rem"
+              }
+            },
+            "Sluiten"
+          )
+        ),
+        h4("div", null, h4("span", { className: "status-ok" }, "Uit "), `${outEdges.length} imports`),
+        outEdges.length > 0 && h4(
+          "ul",
+          { style: { margin: "0.2rem 0 0.4rem", paddingLeft: "1.2rem" } },
+          outEdges.map((e) => h4("li", { key: e.target + e.type }, e.target))
+        ),
+        h4("div", null, h4("span", { className: "status-err" }, "In "), `${inEdges.length} imports`),
+        inEdges.length > 0 && h4(
+          "ul",
+          { style: { margin: "0.2rem 0", paddingLeft: "1.2rem" } },
+          inEdges.map((e) => h4("li", { key: e.source + e.type }, e.source))
+        )
+      ),
+      h4("div", {
+        ref: containerRef,
+        style: { flex: 1, minHeight: 0, overflow: "hidden" },
+        children: h4("svg", { ref: svgRef, style: { width: "100%", height: "100%" } })
+      })
+    );
+  }
+
+  // src/TreemapChart.jsx
+  var import_react7 = __toESM(__require("react"));
+  var h5 = import_react7.default.createElement;
+  var LANG_COLORS = {
+    python: "#3776AB",
+    javascript: "#F7DF1E",
+    typescript: "#3178C6",
+    jsx: "#61DAFB",
+    tsx: "#3178C6",
+    markdown: "#083FA1",
+    json: "#292929",
+    yaml: "#6CB2E6",
+    html: "#E34F26",
+    css: "#1572B6",
+    shell: "#4EAA25",
+    powershell: "#012456",
+    sql: "#E38C00",
+    dockerfile: "#2496ED",
+    makefile: "#427819",
+    rust: "#DEA584",
+    go: "#00ADD8",
+    "c#": "#178600",
+    ruby: "#CC342D",
+    php: "#777BB4",
+    java: "#ED8B00",
+    kotlin: "#7F52FF",
+    scala: "#DC322F",
+    swift: "#F05138"
+  };
+  function subtreeLoc(node) {
+    if (!node) return 0;
+    if (node.type === "file") return node.loc || 0;
+    return (node.children || []).reduce((sum, ch) => sum + subtreeLoc(ch), 0);
+  }
+  function getColor(lang, d3) {
+    if (!lang) return "hsl(var(--primary))";
+    const base = LANG_COLORS[lang.toLowerCase()];
+    if (base) return base;
+    if (!d3) return "hsl(var(--primary))";
+    const hue = lang.split("").reduce((a, c) => a + c.charCodeAt(0), 0) * 13.7 % 360;
+    return d3.hsl(hue, 0.5, 0.5).formatHex();
+  }
+  function immediateChildren(treeNode) {
+    return (treeNode.children || []).map((c) => ({
+      name: c.name,
+      type: c.type,
+      language: c.language,
+      loc: c.type === "file" ? c.loc || 0 : subtreeLoc(c),
+      children: c.children,
+      _raw: c
+    })).filter((c) => c.loc > 0);
+  }
+  function TreemapChart({ data }) {
+    const svgRef = import_react7.default.useRef(null);
+    const containerRef = import_react7.default.useRef(null);
+    const [zoomStack, setZoomStack] = import_react7.default.useState([]);
+    const treeData = data?.tree || { name: "root", children: [], loc: 0 };
+    const currentData = zoomStack.length > 0 ? zoomStack[zoomStack.length - 1] : treeData;
+    function zoomTo(node) {
+      setZoomStack((prev) => [...prev, node]);
+    }
+    function zoomOut() {
+      setZoomStack((prev) => prev.length > 1 ? prev.slice(0, -1) : []);
+    }
+    import_react7.default.useEffect(() => {
+      const container = containerRef.current;
+      const svg = svgRef.current;
+      if (!container || !svg) return void 0;
+      const d3 = window.d3;
+      if (!d3) return void 0;
+      const width = container.clientWidth;
+      const height = Math.max(container.clientHeight, 400);
+      svg.setAttribute("width", width);
+      svg.setAttribute("height", height);
+      svg.innerHTML = "";
+      const items = immediateChildren(currentData);
+      if (!items.length) {
+        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        label.setAttribute("x", String(width / 2));
+        label.setAttribute("y", String(height / 2));
+        label.setAttribute("text-anchor", "middle");
+        label.setAttribute("fill", "hsl(var(--muted-foreground))");
+        label.setAttribute("font-size", "14");
+        label.textContent = "Geen data voor deze directory";
+        svg.appendChild(label);
+        return void 0;
+      }
+      const root = d3.hierarchy({ name: "root", children: items }).sum((d) => d.loc || 0).sort((a, b) => (b.value || 0) - (a.value || 0));
+      d3.treemap().size([width, height]).paddingOuter(2).paddingInner(1).round(true)(root);
+      const cells = root.children || [];
+      if (!cells.length) return void 0;
+      const g = d3.select(svg).append("g");
+      g.selectAll("rect").data(cells).join("rect").attr("x", (d) => d.x0).attr("y", (d) => d.y0).attr("width", (d) => Math.max(0, d.x1 - d.x0)).attr("height", (d) => Math.max(0, d.y1 - d.y0)).attr(
+        "fill",
+        (d) => d.data.type === "dir" ? "hsl(var(--muted-foreground) / 0.25)" : getColor(d.data.language, d3)
+      ).attr("stroke", "hsl(var(--background))").attr("stroke-width", 1).style(
+        "cursor",
+        (d) => d.data.type === "dir" && d.data._raw?.children?.length ? "pointer" : "default"
+      ).on("click", (_event, d) => {
+        if (d.data.type === "dir" && d.data._raw?.children?.length) {
+          zoomTo(d.data._raw);
+        }
+      }).append("title").text((d) => {
+        const kind = d.data.type === "dir" ? "map" : d.data.language || "?";
+        return `${d.data.name}
+${kind}
+${d.value} LOC`;
+      });
+      g.selectAll("text.label").data(cells).join("text").attr("class", "label").attr("x", (d) => d.x0 + 3).attr("y", (d) => d.y0 + 12).attr("font-size", "10px").attr("fill", (d) => d.data.type === "dir" ? "hsl(var(--foreground))" : "#fff").style("pointer-events", "none").style(
+        "text-shadow",
+        (d) => d.data.type === "dir" ? "none" : "0 1px 2px rgba(0,0,0,0.6)"
+      ).text((d) => {
+        const w = d.x1 - d.x0;
+        if (w < 40) return "";
+        const label = d.data.type === "dir" ? `${d.data.name}/` : d.data.name;
+        return label.length * 7 > w ? `${label.substring(0, Math.floor(w / 7))}\u2026` : label;
+      }).style("opacity", (d) => {
+        const area = (d.x1 - d.x0) * (d.y1 - d.y0);
+        return area < 600 ? 0 : 1;
+      });
+      return void 0;
+    }, [currentData]);
+    const crumbs = zoomStack.length ? zoomStack : [treeData];
+    return h5(
+      "div",
+      { style: { display: "flex", flexDirection: "column", height: "100%" } },
+      h5(
+        "div",
+        {
+          style: {
+            display: "flex",
+            gap: "0.25rem",
+            alignItems: "center",
+            padding: "0.5rem 0",
+            flexShrink: 0,
+            fontSize: "0.8rem",
+            flexWrap: "wrap"
+          }
+        },
+        h5(
+          "button",
+          {
+            type: "button",
+            onClick: zoomOut,
+            disabled: !zoomStack.length,
+            style: {
+              background: "transparent",
+              border: "1px solid hsl(var(--border))",
+              borderRadius: "0.25rem",
+              cursor: zoomStack.length ? "pointer" : "default",
+              fontSize: "0.75rem",
+              padding: "0.15rem 0.4rem",
+              opacity: zoomStack.length ? 1 : 0.4
+            }
+          },
+          "\u2190 Terug"
+        ),
+        crumbs.map(
+          (node, i) => h5(
+            "span",
+            { key: `${node.path || node.name}-${i}`, style: { color: "hsl(var(--muted-foreground))" } },
+            i === 0 ? "" : " \u203A ",
+            node.name || "root"
+          )
+        )
+      ),
+      h5("div", {
+        ref: containerRef,
+        style: { flex: 1, minHeight: 0, overflow: "hidden" },
+        children: h5("svg", { ref: svgRef, style: { width: "100%", height: "100%" } })
+      })
+    );
+  }
+
+  // src/App.jsx
+  var h6 = import_react8.default.createElement;
   var CATEGORIES = [
     {
       id: "visuals",
       label: "Visuals",
       tabs: [
         { id: "sunburst", label: "Sunburst" },
+        { id: "force-graph", label: "Force Graph" },
+        { id: "treemap", label: "Treemap" },
         { id: "metrics", label: "Metrics" }
       ]
     },
@@ -356,17 +857,19 @@ var CodebaseVizPlugin = (() => {
       tabs: [{ id: "health", label: "Health" }]
     }
   ];
-  var TAB_ENDPOINTS = {
+  var TAB_MAP = {
     sunburst: "/structure",
+    "force-graph": "/dependencies",
+    treemap: "/structure",
     metrics: "/summary",
     health: "/doctor"
   };
   function CategoryNav({ categories, tab, setTab, menuOpen, setMenuOpen }) {
-    return h3(
+    return h6(
       "div",
       { className: "codebase-viz-tabs" },
       categories.map(
-        (cat) => h3(
+        (cat) => h6(
           "div",
           {
             key: cat.id,
@@ -374,12 +877,12 @@ var CodebaseVizPlugin = (() => {
             onMouseEnter: () => setMenuOpen(cat.id),
             onMouseLeave: () => setMenuOpen(null)
           },
-          h3("span", { className: "codebase-viz-category-label" }, cat.label, " \u25BE"),
-          menuOpen === cat.id && h3(
+          h6("span", { className: "codebase-viz-category-label" }, cat.label, " \u25BE"),
+          menuOpen === cat.id && h6(
             "div",
             { className: "codebase-viz-dropdown" },
             cat.tabs.map(
-              (t) => h3(
+              (t) => h6(
                 "button",
                 {
                   key: t.id,
@@ -413,30 +916,30 @@ var CodebaseVizPlugin = (() => {
   function App() {
     const SDK = window.__HERMES_PLUGIN_SDK__;
     if (!SDK?.fetchJSON || !SDK?.components) {
-      return h3("div", { className: "codebase-viz-error" }, "Hermes Plugin SDK niet beschikbaar.");
+      return h6("div", { className: "codebase-viz-error" }, "Hermes Plugin SDK niet beschikbaar.");
     }
     const { Button } = SDK.components;
-    const [tab, setTab] = import_react5.default.useState("sunburst");
-    const [menuOpen, setMenuOpen] = import_react5.default.useState(null);
+    const [tab, setTab] = import_react8.default.useState("sunburst");
+    const [menuOpen, setMenuOpen] = import_react8.default.useState(null);
     const d3Ready = useD3Loader();
-    const path = TAB_ENDPOINTS[tab] || "/structure";
+    const path = TAB_MAP[tab] || "/structure";
     const { data, error, loading } = usePluginFetch(path, [tab]);
     const currentCat = CATEGORIES.find((c) => c.tabs.some((t) => t.id === tab));
     const activeLabel = currentCat ? `${currentCat.label} \u203A ${currentCat.tabs.find((t) => t.id === tab)?.label}` : tab;
-    const shell = (content2) => h3(
+    const shell = (content2) => h6(
       "div",
       { className: "codebase-viz-container" },
-      h3(CategoryNav, { categories: CATEGORIES, tab, setTab, menuOpen, setMenuOpen }),
-      h3("div", { className: "codebase-viz-active-label" }, activeLabel),
-      h3("div", { className: "codebase-viz-content" }, content2)
+      h6(CategoryNav, { categories: CATEGORIES, tab, setTab, menuOpen, setMenuOpen }),
+      h6("div", { className: "codebase-viz-active-label" }, activeLabel),
+      h6("div", { className: "codebase-viz-content" }, content2)
     );
     if (error || data?.fallback) {
       return shell(
-        h3(
+        h6(
           "div",
           { className: "codebase-viz-error" },
-          h3("p", null, parseFetchError(error) || data?.error || "Scan mislukt"),
-          h3(
+          h6("p", null, parseFetchError(error) || data?.error || "Scan mislukt"),
+          h6(
             Button,
             {
               variant: "outline",
@@ -450,20 +953,20 @@ var CodebaseVizPlugin = (() => {
     }
     if (loading || !data) {
       return shell(
-        h3(
+        h6(
           "p",
           { className: "codebase-viz-loading" },
-          tab === "sunburst" ? "Scannen... (pygount)" : "Laden..."
+          tab === "sunburst" || tab === "treemap" ? "Scannen... (pygount)" : tab === "force-graph" ? "Analyseer imports..." : "Laden..."
         )
       );
     }
     if (tab === "sunburst" && data.tree && !data.tree.children?.length) {
       return shell(
-        h3(
+        h6(
           "div",
           { className: "codebase-viz-empty" },
-          h3("p", null, "Geen bestanden gevonden in de repo."),
-          h3(
+          h6("p", null, "Geen bestanden gevonden in de repo."),
+          h6(
             "p",
             { className: "codebase-viz-hint" },
             "Zet CODEBASE_VIZ_REPO naar je git-root en herstart het dashboard."
@@ -475,19 +978,37 @@ var CodebaseVizPlugin = (() => {
     switch (tab) {
       case "sunburst":
         if (!d3Ready) {
-          content = h3("p", { className: "codebase-viz-loading" }, "D3 laden...");
+          content = h6("p", { className: "codebase-viz-loading" }, "D3 laden...");
         } else {
-          content = h3(SunburstChart, { data });
+          content = h6(SunburstChart, { data });
+        }
+        break;
+      case "force-graph":
+        if (!d3Ready) {
+          content = h6("p", { className: "codebase-viz-loading" }, "D3 laden...");
+        } else if (!data.nodes?.length) {
+          content = h6("p", { className: "codebase-viz-empty" }, "Geen Python modules gevonden om te analyseren.");
+        } else {
+          content = h6(ForceGraph, { data });
+        }
+        break;
+      case "treemap":
+        if (!d3Ready) {
+          content = h6("p", { className: "codebase-viz-loading" }, "D3 laden...");
+        } else if (!data.tree?.children?.length) {
+          content = h6("p", { className: "codebase-viz-empty" }, "Geen bestanden voor treemap.");
+        } else {
+          content = h6(TreemapChart, { data });
         }
         break;
       case "metrics":
-        content = h3(MetricsTab, { data });
+        content = h6(MetricsTab, { data });
         break;
       case "health":
-        content = h3(HealthTab, { data });
+        content = h6(HealthTab, { data });
         break;
       default:
-        content = h3("p", null, "Tab nog niet ge\xEFmplementeerd (Sprint 2+).");
+        content = h6("p", null, "Tab nog niet ge\xEFmplementeerd.");
     }
     return shell(content);
   }

@@ -2,6 +2,8 @@ import React from 'react';
 import SunburstChart from './SunburstChart';
 import MetricsTab from './MetricsTab';
 import HealthTab from './HealthTab';
+import ForceGraph from './ForceGraph';
+import TreemapChart from './TreemapChart';
 import { usePluginFetch, postForceScan, useD3Loader } from './usePluginFetch';
 
 const h = React.createElement;
@@ -12,6 +14,8 @@ const CATEGORIES = [
     label: 'Visuals',
     tabs: [
       { id: 'sunburst', label: 'Sunburst' },
+      { id: 'force-graph', label: 'Force Graph' },
+      { id: 'treemap', label: 'Treemap' },
       { id: 'metrics', label: 'Metrics' },
     ],
   },
@@ -22,8 +26,10 @@ const CATEGORIES = [
   },
 ];
 
-const TAB_ENDPOINTS = {
+const TAB_MAP = {
   sunburst: '/structure',
+  'force-graph': '/dependencies',
+  treemap: '/structure',
   metrics: '/summary',
   health: '/doctor',
 };
@@ -90,7 +96,7 @@ export default function App() {
   const [menuOpen, setMenuOpen] = React.useState(null);
   const d3Ready = useD3Loader();
 
-  const path = TAB_ENDPOINTS[tab] || '/structure';
+  const path = TAB_MAP[tab] || '/structure';
   const { data, error, loading } = usePluginFetch(path, [tab]);
 
   const currentCat = CATEGORIES.find((c) => c.tabs.some((t) => t.id === tab));
@@ -131,7 +137,8 @@ export default function App() {
       h(
         'p',
         { className: 'codebase-viz-loading' },
-        tab === 'sunburst' ? 'Scannen... (pygount)' : 'Laden...',
+        tab === 'sunburst' || tab === 'treemap' ? 'Scannen... (pygount)' :
+        tab === 'force-graph' ? 'Analyseer imports...' : 'Laden...',
       ),
     );
   }
@@ -164,6 +171,24 @@ export default function App() {
         content = h(SunburstChart, { data });
       }
       break;
+    case 'force-graph':
+      if (!d3Ready) {
+        content = h('p', { className: 'codebase-viz-loading' }, 'D3 laden...');
+      } else if (!data.nodes?.length) {
+        content = h('p', { className: 'codebase-viz-empty' }, 'Geen Python modules gevonden om te analyseren.');
+      } else {
+        content = h(ForceGraph, { data });
+      }
+      break;
+    case 'treemap':
+      if (!d3Ready) {
+        content = h('p', { className: 'codebase-viz-loading' }, 'D3 laden...');
+      } else if (!data.tree?.children?.length) {
+        content = h('p', { className: 'codebase-viz-empty' }, 'Geen bestanden voor treemap.');
+      } else {
+        content = h(TreemapChart, { data });
+      }
+      break;
     case 'metrics':
       content = h(MetricsTab, { data });
       break;
@@ -171,7 +196,7 @@ export default function App() {
       content = h(HealthTab, { data });
       break;
     default:
-      content = h('p', null, 'Tab nog niet geïmplementeerd (Sprint 2+).');
+      content = h('p', null, 'Tab nog niet geïmplementeerd.');
   }
 
   return shell(content);

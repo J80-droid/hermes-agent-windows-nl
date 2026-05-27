@@ -44,7 +44,18 @@ REQUIRED_ARTEFACTS = (
     "plugins/codebase-viz/dashboard/dist/style.css",
     "plugins/codebase-viz/dashboard/dist/d3.v7.min.js",
     "plugins/codebase-viz/dashboard/src/App.jsx",
+    "plugins/codebase-viz/dashboard/src/ForceGraph.jsx",
+    "plugins/codebase-viz/dashboard/src/TreemapChart.jsx",
+    "plugins/codebase-viz/dashboard/src/useFileWatcher.js",
+    "plugins/codebase-viz/dashboard/src/wsAuth.js",
     "tests/plugins/test_codebase_viz_plugin.py",
+)
+
+SPRINT2_DIST_MARKERS = (
+    "ForceGraph",
+    "TreemapChart",
+    "__HERMES_SESSION_TOKEN__",
+    "force-graph",
 )
 
 
@@ -209,6 +220,62 @@ def test_v10_ws_token_check() -> None:
     _step("ws_rejects_bad_token", rejected)
 
 
+def test_v12_sprint2_sources() -> None:
+    missing = [
+        a
+        for a in (
+            "plugins/codebase-viz/dashboard/src/ForceGraph.jsx",
+            "plugins/codebase-viz/dashboard/src/TreemapChart.jsx",
+            "plugins/codebase-viz/dashboard/src/useFileWatcher.js",
+            "plugins/codebase-viz/dashboard/src/wsAuth.js",
+        )
+        if not (REPO / a).is_file()
+    ]
+    _step("sprint2_source_files", not missing, ", ".join(missing) if missing else "")
+
+
+def test_v13_dist_sprint2_bundle() -> None:
+    dist = (REPO / "plugins/codebase-viz/dashboard/dist/index.js").read_text(
+        encoding="utf-8",
+        errors="replace",
+    )
+    missing = [m for m in SPRINT2_DIST_MARKERS if m not in dist]
+    _step("dist_sprint2_markers", not missing, ", ".join(missing) if missing else "")
+
+
+def test_v14_dependencies_api() -> None:
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    tiny = _tiny_repo()
+    os.environ["CODEBASE_VIZ_REPO"] = str(tiny)
+    mod = _load_plugin_api()
+    asyncio.run(mod._invalidate_cache())
+    mod._initialized = False
+    mod.REPO_PATH = mod._resolve_repo_path()
+
+    app = FastAPI()
+    app.include_router(mod.router, prefix="/api/plugins/codebase-viz")
+    client = TestClient(app)
+    r = client.get("/api/plugins/codebase-viz/dependencies")
+    body = r.json()
+    ok = (
+        r.status_code == 200
+        and "nodes" in body
+        and "edges" in body
+        and len(body.get("nodes", [])) >= 1
+    )
+    _step("api_dependencies", ok, f"nodes={len(body.get('nodes', []))}")
+
+
+def test_v15_ws_auth_helper() -> None:
+    text = (REPO / "plugins/codebase-viz/dashboard/src/wsAuth.js").read_text(
+        encoding="utf-8",
+    )
+    ok = "__HERMES_SESSION_TOKEN__" in text and "hermes_session_token" in text
+    _step("ws_auth_kanban_pattern", ok)
+
+
 def test_v11_pytest_unit_gate() -> None:
     env = os.environ.copy()
     env["CODEBASE_VIZ_REPO"] = ""
@@ -251,6 +318,10 @@ def main() -> int:
     test_v9_force_scan_invalidates()
     test_v10_ws_token_check()
     test_v11_pytest_unit_gate()
+    test_v12_sprint2_sources()
+    test_v13_dist_sprint2_bundle()
+    test_v14_dependencies_api()
+    test_v15_ws_auth_helper()
     if FAILURES:
         print(f"=== HARNESS: FAIL ({FAILURES}) ===", file=sys.stderr)
         return 1

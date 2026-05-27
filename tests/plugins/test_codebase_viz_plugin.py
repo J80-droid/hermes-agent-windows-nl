@@ -276,3 +276,29 @@ def test_invalidate_cache_clears(plugin_module):
     asyncio.run(plugin_module._set_cache("x", {"a": 1}))
     asyncio.run(plugin_module._invalidate_cache())
     assert asyncio.run(plugin_module._cached("x", 60.0)) is None
+
+
+def test_sprint2_source_files_exist():
+    paths = [
+        REPO_ROOT / "plugins/codebase-viz/dashboard/src/ForceGraph.jsx",
+        REPO_ROOT / "plugins/codebase-viz/dashboard/src/TreemapChart.jsx",
+        REPO_ROOT / "plugins/codebase-viz/dashboard/src/useFileWatcher.js",
+        REPO_ROOT / "plugins/codebase-viz/dashboard/src/wsAuth.js",
+    ]
+    assert all(p.is_file() for p in paths)
+
+
+def test_sprint2_dist_contains_markers():
+    dist = (REPO_ROOT / "plugins/codebase-viz/dashboard/dist/index.js").read_text(
+        encoding="utf-8",
+    )
+    assert "ForceGraph" in dist
+    assert "__HERMES_SESSION_TOKEN__" in dist
+
+
+def test_ws_auth_prefers_injected_token():
+    text = (REPO_ROOT / "plugins/codebase-viz/dashboard/src/wsAuth.js").read_text(
+        encoding="utf-8",
+    )
+    assert "__HERMES_SESSION_TOKEN__" in text
+    assert "hermes_session_token" in text

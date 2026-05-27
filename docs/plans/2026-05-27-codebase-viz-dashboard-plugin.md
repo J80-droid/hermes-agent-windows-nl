@@ -1,8 +1,96 @@
 # Codebase Viz — Hermes Dashboard Plugin v2
 
-> **Status:** Implementatieplan · **Versie:** 2.3.0  
-> **Voor Hermes:** `subagent-driven-development` skill gebruiken per taak.  
-> **Schatting:** ~80 taken · **~9–10 uur** realistisch · **~12 uur** incl. debug-buffer.
+> **Status:** Sprint 1 ✅ · Sprint 2 ✅ (2026-05-27) · Sprint 3+ **open**  
+> **Versie:** 2.3.0 · **Commit:** `feat(codebase-viz): add dashboard plugin MVP with E2E audit and tests`  
+> **Voor Hermes:** `subagent-driven-development` skill per taak (aanbevolen voor Sprint 2).  
+> **Schatting resterend:** Sprint 2 ~2–3 u · Sprint 3 ~4–5 u · Sprint 4 ~1–2 u
+
+---
+
+## Implementatiestatus (bron van waarheid)
+
+### Sprint 1 — MVP ✅ (geleverd)
+
+| Fase | Onderdeel | Status | Opmerking |
+|------|-----------|--------|-----------|
+| 0 | Scaffold (manifest, esbuild, D3 lokaal, `plugin_api` basis) | ✅ | `plugins/codebase-viz/dashboard/` |
+| 1 | Backend: `/structure`, `/dependencies`, `/summary`, cache, pygount 3.x JSON | ✅ | Graceful `no_repo` + `fallback` |
+| 2 | Sunburst tab + D3 partition | ✅ | `SunburstChart.jsx`, `loadD3.js` |
+| 5 | Metrics tab (zonder history-chart) | ✅ | `MetricsTab.jsx` → `/summary` |
+| 6 | Health tab (doctor) | ✅ | `HealthTab.jsx`, CSS status-spans |
+| 9 | D3 static serve | ✅ | `/dashboard-plugins/codebase-viz/dist/d3.v7.min.js` |
+| — | `usePluginFetch`, SDK guard, `parseFetchError` | ✅ | Geen `useApi` |
+| — | WebSocket backend + token check | ✅ **backend** | Frontend WS-client + animaties **nog niet** |
+| — | Watchdog watcher (optioneel) | ⚠️ | Alleen als `watchdog` geïnstalleerd |
+| 8 | Tests + E2E (deels) | ✅ | 24 pytest + `audits/CodebaseVizE2E.harness.py` (11 stappen) |
+| — | Docs | ✅ | Plugin README, E2E README, `audits/README.md` |
+
+**Niet in Sprint 1 (bewust uitgesteld):** Force graph, Treemap, live WS-animaties, history-chart, fase 10-tabs, volledige hardening (memory guard, shortcuts).
+
+### Sprint 2 — Core viz ✅ (2026-05-27)
+
+| Fase | Onderdeel | Status | Opmerking |
+|------|-----------|--------|-----------|
+| 3 | `ForceGraph.jsx` | ✅ | `useFileWatcher`, inspector in/out, node-cap 500, ripple op module |
+| 4 | `TreemapChart.jsx` | ✅ | Drill-down op **directe kinderen** (dirs + files) |
+| 7 | `useFileWatcher.js` + `wsAuth.js` | ✅ | Token: `__HERMES_SESSION_TOKEN__` + cookie-fallback |
+| — | `App.jsx` tabs + `TAB_MAP` | ✅ | |
+| — | E2E V12–V15 | ✅ | `audits/CodebaseVizE2E.harness.py` |
+
+**Nog optioneel (Sprint 2+):** hover ripple op edges, autocomplete fly-to, aparte `Inspector.jsx`.
+
+### Sprint 3 — Uitbreidingen (fase 10) 🔲
+
+| Gebied | Endpoints / tabs | Status |
+|--------|------------------|--------|
+| A | churn, age-map, complexity, todos, blame, coverage | 🔲 |
+| B | search, dead-imports | 🔲 |
+| C | config-drift, session-stats | 🔲 |
+| E | timeline | 🔲 |
+| — | `/history` + Metrics history chart | 🔲 |
+
+### Sprint 4 — Hardening 🔲
+
+| Onderdeel | Status |
+|-----------|--------|
+| Thundering herd verificatie onder load | 🔲 deels (lock aanwezig, geen load-test) |
+| Memory guard (`psutil`) | 🔲 |
+| Keyboard shortcuts | 🔲 |
+| Full gate checklist (plan § Verificatie) | 🔲 |
+
+### Bestanden (Sprint 1 — aanwezig)
+
+```
+plugins/codebase-viz/dashboard/
+├── manifest.json, package.json, esbuild.config.mjs, plugin_api.py
+├── src/ App.jsx, SunburstChart.jsx, MetricsTab.jsx, HealthTab.jsx,
+│        usePluginFetch.js, loadD3.js, index.jsx, style.css
+├── dist/ index.js, style.css, d3.v7.min.js
+└── README.md
+tests/plugins/test_codebase_viz_plugin.py
+audits/CodebaseVizE2E.harness.py, RUN_CODEBASE_VIZ_E2E.bat
+```
+
+### Bestanden (nog te maken — Sprint 2+)
+
+```
+src/ForceGraph.jsx, TreemapChart.jsx, useFileWatcher.js, Inspector.jsx
+(+ Sprint 3: ChurnTab, AgeMapTab, … — zie layout § Plugin directory)
+```
+
+### Opdrachttekst Sprint 2 (copy-paste voor Hermes)
+
+```
+Implementeer Sprint 2 van docs/plans/2026-05-27-codebase-viz-dashboard-plugin.md:
+- Fase 3: ForceGraph.jsx (D3 force, /dependencies), search, inspector
+- Fase 4: TreemapChart.jsx (/structure)
+- Fase 7: useFileWatcher.js + live animaties op ForceGraph
+- App.jsx: tabs toevoegen; npm run build; dist committen
+- tests + audits/CodebaseVizE2E uitbreiden; rooktest-documentatie bijwerken
+Gebruik subagent-driven-development per component. Geen fase 10 endpoints.
+```
+
+---
 
 ### Changelog v2.3 (ten opzichte van v2.2)
 
@@ -128,8 +216,8 @@ Of documenteer in fork-runbook / `docs/INSTITUTIONAL_OPERATIONS.md`. Zonder env:
 
 | Sprint | Fasen | Exit-criteria |
 |--------|-------|---------------|
-| **1 — MVP** | 0, 1, 9, 2, 5 (zonder history-chart), 6 | Tab zichtbaar; sunburst + metrics + health; D3 laadt; `repo_path` in `/health` |
-| **2 — Core viz** | 3, 4, 7 | Force graph + treemap; WS live met token |
+| **1 — MVP** ✅ | 0, 1, 9, 2, 5 (zonder history-chart), 6 | **Gedaan** — zie § Implementatiestatus |
+| **2 — Core viz** ✅ | 3, 4, 7 | Force graph + treemap; WS live met token |
 | **3 — Uitbreidingen** | 10a–10f | Alle endpoints in tabel hieronder; per task curl-test |
 | **4 — Hardening** | 8 | pytest; thundering herd; graceful degradation |
 

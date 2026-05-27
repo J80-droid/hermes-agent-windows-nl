@@ -14,7 +14,7 @@ Of handmatig vanaf repo-root:
 python audits\CodebaseVizE2E.harness.py
 ```
 
-## Scenario's (V1–V11)
+## Scenario's (V1–V15)
 
 | Stap | Onderwerp |
 |------|-----------|
@@ -28,6 +28,10 @@ python audits\CodebaseVizE2E.harness.py
 | V8 | Summary endpoint |
 | V9 | `POST /force-scan` |
 | V10 | WebSocket token-afwijzing |
+| V12 | Sprint 2 bronbestanden (ForceGraph, Treemap, useFileWatcher, wsAuth) |
+| V13 | `dist/index.js` bevat Sprint 2 markers + session token patroon |
+| V14 | `GET /dependencies` met nodes op tiny repo |
+| V15 | `wsAuth.js` kanban-token patroon |
 | V11 | `pytest tests/plugins/test_codebase_viz_plugin.py` |
 
 ## Omgevingsvariabelen
