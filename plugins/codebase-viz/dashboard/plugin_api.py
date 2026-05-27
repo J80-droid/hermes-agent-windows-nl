@@ -73,10 +73,23 @@ def _resolve_repo_path() -> Path | None:
     return None
 
 
+def _parse_pygount_timeout() -> int:
+    raw = os.environ.get("CODEBASE_VIZ_PYGOUNT_TIMEOUT", "240").strip()
+    try:
+        value = int(raw)
+    except ValueError:
+        log.warning("invalid CODEBASE_VIZ_PYGOUNT_TIMEOUT=%r, using 240", raw)
+        return 240
+    if value < 1:
+        log.warning("CODEBASE_VIZ_PYGOUNT_TIMEOUT=%s too low, using 240", value)
+        return 240
+    return value
+
+
 REPO_PATH = _resolve_repo_path()
 CODEBASE_VIZ_TTL = float(os.environ.get("CODEBASE_VIZ_TTL", "60"))
 CODEBASE_VIZ_DEBOUNCE = float(os.environ.get("CODEBASE_VIZ_DEBOUNCE", "2.0"))
-PYGOUNT_TIMEOUT = int(os.environ.get("CODEBASE_VIZ_PYGOUNT_TIMEOUT", "120"))
+PYGOUNT_TIMEOUT = _parse_pygount_timeout()
 
 _cache_lock = asyncio.Lock()
 _cache: dict[str, tuple[float, object]] = {}
@@ -225,9 +238,22 @@ async def _api_error_payload(exc: Exception, **extra: Any) -> dict[str, Any]:
     return payload
 
 
+def _repo_scan_label() -> str:
+    if REPO_PATH is None:
+        return ""
+    parts = REPO_PATH.parts
+    if len(parts) >= 2:
+        return "/".join(parts[-2:])
+    return REPO_PATH.name or str(REPO_PATH)
+
+
 def _scan_start(phase: str, detail: str = "") -> None:
+    label = _repo_scan_label()
+    base = detail or _SCAN_LABELS.get(phase, phase)
+    if label and phase == "pygount" and not detail:
+        base = f"{base} — {label}"
     _scan_state["phase"] = phase
-    _scan_state["detail"] = detail or _SCAN_LABELS.get(phase, phase)
+    _scan_state["detail"] = base
     _scan_state["started_at"] = time.monotonic()
 
 
@@ -258,15 +284,22 @@ async def _async_scan_status_payload() -> dict[str, Any]:
         progress = min(92, int(12 + elapsed * 5))
     elif pygount_cached:
         progress = 100
+    phase_label = _SCAN_LABELS.get(phase, phase) if phase != "idle" else ""
+    repo_path_str = str(REPO_PATH) if REPO_PATH else None
+    repo_label = _repo_scan_label() or None
     return {
         "busy": busy,
         "phase": phase,
+        "phase_label": phase_label,
         "detail": detail,
         "elapsed_sec": elapsed,
         "progress": progress,
         "pygount_cached": pygount_cached,
         "import_edges_cached": import_cached,
         "inflight": inflight,
+        "repo_path": repo_path_str,
+        "repo_label": repo_label,
+        "timeout_sec": PYGOUNT_TIMEOUT,
     }
 
 

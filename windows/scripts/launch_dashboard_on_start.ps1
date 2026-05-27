@@ -92,11 +92,61 @@ function Initialize-WorkspaceDashboardPlugins {
 
     $env:HERMES_BUNDLED_PLUGINS = $pluginsRoot
     Write-DashLog "[INFO] HERMES_BUNDLED_PLUGINS=$pluginsRoot" -Color DarkGray
+    if (-not $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT) {
+        $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT = '240'
+    }
 
     Move-AsideStaleCodebaseVizUserPlugin -Label 'profile' -PluginDir (Join-Path $env:USERPROFILE '.hermes\plugins\codebase-viz')
     if ($env:LOCALAPPDATA) {
         Move-AsideStaleCodebaseVizUserPlugin -Label 'localappdata' -PluginDir (Join-Path $env:LOCALAPPDATA 'hermes\plugins\codebase-viz')
     }
+}
+
+function New-CondaDashboardRunArgs {
+    param([string[]]$PythonArgs)
+    # Geen ``conda run -e`` — veel Windows-conda builds ondersteunen dat niet.
+    # Zet HERMES_BUNDLED_PLUGINS / CODEBASE_VIZ_PYGOUNT_TIMEOUT op $env: vóór aanroep;
+    # ``conda run`` erft de shell-omgeving.
+    $runArgs = @('run', '-n', 'hermes-env', '--no-capture-output', 'python', '-m', 'hermes_cli.main')
+    $runArgs += $PythonArgs
+    return $runArgs
+}
+
+function Get-DashboardPythonExe {
+    param([string]$RepoRoot)
+    $py = Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip
+    if ($py) { return $py }
+    $fallback = Join-Path $env:USERPROFILE 'miniconda3\envs\hermes-env\python.exe'
+    if (Test-Path -LiteralPath $fallback) { return $fallback }
+    return $null
+}
+
+function New-HermesDashboardCliArgs {
+    param([string[]]$PythonArgs)
+    $cli = @('-m', 'hermes_cli.main')
+    $cli += $PythonArgs
+    return $cli
+}
+
+function Stop-HermesDashboardProcess {
+    param([string]$CondaExe)
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    $stopArgs = New-CondaDashboardRunArgs -PythonArgs @('dashboard', '--stop')
+    try {
+        $null = & $CondaExe @stopArgs 2>&1
+    } catch { }
+    $py = Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip
+    if ($py) {
+        try {
+            $null = & $py -m hermes_cli.main dashboard --stop 2>&1
+        } catch { }
+    }
+    try {
+        $null = & $CondaExe run -n hermes-env --no-capture-output python -m hermes_cli.main dashboard --stop 2>&1
+    } catch { }
+    $ErrorActionPreference = $prevEap
+    Start-Sleep -Seconds 3
 }
 
 function Install-HermesWebDashboardPackage {
@@ -107,22 +157,80 @@ function Install-HermesWebDashboardPackage {
     $editable = "${RepoRoot}[web]"
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
+    $py = Get-DashboardPythonExe -RepoRoot $RepoRoot
     try {
-        if ($CondaExe) {
-            $null = & $CondaExe run -n hermes-env --no-capture-output python -m pip install -e $editable -q 2>&1
-        } else {
-            $py = Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip
-            if (-not $py) {
-                Write-DashLog '[WARN] Geen Python voor pip install -e [web].' -Color Yellow
-                return
-            }
+        if ($py) {
             $null = & $py -m pip install -e $editable -q 2>&1
+            if ($env:HERMES_BUNDLED_PLUGINS) {
+                $null = & $py -m pip install pygount -q 2>&1
+            }
+        } elseif ($CondaExe) {
+            $null = & $CondaExe run -n hermes-env --no-capture-output python -m pip install -e $editable -q 2>&1
+            if ($env:HERMES_BUNDLED_PLUGINS) {
+                $null = & $CondaExe run -n hermes-env --no-capture-output python -m pip install pygount -q 2>&1
+            }
+        } else {
+            Write-DashLog '[WARN] Geen Python voor pip install -e [web].' -Color Yellow
+            return
         }
-        Write-DashLog '[INFO] Dashboard-deps bijgewerkt (editable + web).' -Color DarkGray
+        Write-DashLog '[INFO] Dashboard-deps bijgewerkt (editable + web + pygount).' -Color DarkGray
     } catch {
         Write-DashLog "[WARN] pip install -e [web] mislukt: $($_.Exception.Message)" -Color Yellow
     } finally {
         $ErrorActionPreference = $prevEap
+    }
+}
+
+function Test-CodebaseVizHealth {
+    param(
+        [string]$RepoRoot,
+        [string]$PythonExe,
+        [string]$BindHost,
+        [int]$BindPort,
+        [int]$MaxWaitSec = 40
+    )
+    if (-not $env:HERMES_BUNDLED_PLUGINS) { return $true }
+    $connectHost = Get-DashboardConnectHost -BindHost $BindHost
+    $url = "http://${connectHost}:${BindPort}/codebase-viz"
+    $deadline = (Get-Date).AddSeconds($MaxWaitSec)
+    while ((Get-Date) -lt $deadline) {
+        if (Test-DashboardPortInUse -BindHost $BindHost -BindPort $BindPort) {
+            try {
+                $r = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
+                if ($r.StatusCode -eq 200) { break }
+            } catch { }
+        }
+        Start-Sleep -Seconds 2
+    }
+    if (-not (Test-DashboardPortInUse -BindHost $BindHost -BindPort $BindPort)) {
+        Write-DashLog '[WARN] Codebase Viz health: dashboard-poort niet bereikbaar.' -Color Yellow
+        return $false
+    }
+    $verify = Join-Path $RepoRoot 'audits\verify_codebase_viz_health.py'
+    if (-not (Test-Path -LiteralPath $verify)) {
+        Write-DashLog '[WARN] Codebase Viz health: verify-script ontbreekt.' -Color Yellow
+        return $false
+    }
+    $hadTimeout = $null -ne $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT
+    $prevTimeout = $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT
+    if (-not $hadTimeout) { $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT = '240' }
+    try {
+        & $PythonExe $verify 2>&1 | ForEach-Object { Write-LaunchLogAppend $_ }
+        if ($LASTEXITCODE -eq 0) {
+            Write-DashLog '[OK] Codebase Viz /health verify geslaagd.' -Color Green
+            return $true
+        }
+        Write-DashLog '[WARN] Codebase Viz /health verify mislukt (exit ' + $LASTEXITCODE + '). Zie audits\RESTART_CODEBASE_VIZ_DASHBOARD.bat' -Color Yellow
+        return $false
+    } catch {
+        Write-DashLog "[WARN] Codebase Viz verify: $($_.Exception.Message)" -Color Yellow
+        return $false
+    } finally {
+        if ($hadTimeout) {
+            $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT = $prevTimeout
+        } else {
+            Remove-Item Env:CODEBASE_VIZ_PYGOUNT_TIMEOUT -ErrorAction SilentlyContinue
+        }
     }
 }
 
@@ -189,25 +297,33 @@ function Test-DashboardPortInUse {
     return $false
 }
 
-if (Test-DashboardPortInUse -BindHost $hostAddr -BindPort $port) {
-    Write-DashLog ("[OK] Dashboard al bereikbaar op http://${hostAddr}:${port}/sessions") -Color Green
-    Open-DashboardBrowserIfRequested -BindHost $hostAddr -BindPort $port
-    exit 0
-}
+$workspacePlugins = [bool]$env:HERMES_BUNDLED_PLUGINS
 
-$prevEap = $ErrorActionPreference
-$ErrorActionPreference = 'Continue'
-try {
-    $statusOut = & $condaExe run -n hermes-env --no-capture-output python -m hermes_cli.main dashboard --status 2>&1 | Out-String
-    if ($statusOut -match 'dashboard process\(es\) running') {
-        Write-DashLog ("[OK] Dashboard-proces al actief - open http://${hostAddr}:${port}/sessions") -Color Green
+if ($workspacePlugins) {
+    Write-DashLog '[INFO] Workspace plugins: dashboard herstarten (voorkomt oude 30s pygount-cache).' -Color DarkGray
+    Stop-HermesDashboardProcess -CondaExe $condaExe
+} else {
+    if (Test-DashboardPortInUse -BindHost $hostAddr -BindPort $port) {
+        Write-DashLog ("[OK] Dashboard al bereikbaar op http://${hostAddr}:${port}/sessions") -Color Green
         Open-DashboardBrowserIfRequested -BindHost $hostAddr -BindPort $port
         exit 0
     }
-} catch {
-    Write-DashLog '[WARN] dashboard --status mislukt - probeer toch te starten.' -Color Yellow
-} finally {
-    $ErrorActionPreference = $prevEap
+
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $statusArgs = New-CondaDashboardRunArgs -PythonArgs @('dashboard', '--status')
+        $statusOut = & $condaExe @statusArgs 2>&1 | Out-String
+        if ($statusOut -match 'dashboard process\(es\) running') {
+            Write-DashLog ("[OK] Dashboard-proces al actief - open http://${hostAddr}:${port}/sessions") -Color Green
+            Open-DashboardBrowserIfRequested -BindHost $hostAddr -BindPort $port
+            exit 0
+        }
+    } catch {
+        Write-DashLog '[WARN] dashboard --status mislukt - probeer toch te starten.' -Color Yellow
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
 }
 
 Install-HermesWebDashboardPackage -RepoRoot $RepoRoot -CondaExe $condaExe
@@ -219,20 +335,25 @@ if (-not (Test-Path -LiteralPath $logDir)) {
 $dashLog = Join-Path $logDir 'hermes_dashboard.log'
 $errLog = "${dashLog}.err"
 
-$argList = @(
-    'run', '-n', 'hermes-env', '--no-capture-output',
-    'python', '-m', 'hermes_cli.main', 'dashboard',
-    '--no-open', '--host', $hostAddr, '--port', "$port"
+$dashPythonArgs = @(
+    'dashboard', '--no-open', '--host', $hostAddr, '--port', "$port"
 )
 if ($env:HERMES_DASHBOARD_SKIP_BUILD -eq '1') {
-    $argList += '--skip-build'
+    $dashPythonArgs += '--skip-build'
 }
+$dashPy = Get-DashboardPythonExe -RepoRoot $RepoRoot
+if (-not $dashPy) {
+    Write-DashLog '[WARN] Dashboard niet gestart: geen hermes-env python.exe.' -Color Yellow
+    exit 0
+}
+$argList = New-HermesDashboardCliArgs -PythonArgs $dashPythonArgs
 
 Write-DashLog "[INFO] Dashboard starten (geen browser): http://${hostAddr}:${port}/sessions" -Color Cyan
+Write-DashLog ("[INFO] Python: $dashPy") -Color DarkGray
 Write-DashLog ("[INFO] Log: $dashLog") -Color DarkGray
 
 try {
-    $proc = Start-Process -FilePath $condaExe `
+    $proc = Start-Process -FilePath $dashPy `
         -ArgumentList $argList `
         -WorkingDirectory $RepoRoot `
         -WindowStyle Minimized `
@@ -251,11 +372,13 @@ if ($proc.HasExited -and $proc.ExitCode -ne 0) {
 }
 if (Test-DashboardPortInUse -BindHost $hostAddr -BindPort $port) {
     Write-DashLog '[OK] Dashboard op de achtergrond.' -Color Green
+    $null = Test-CodebaseVizHealth -RepoRoot $RepoRoot -PythonExe $dashPy -BindHost $hostAddr -BindPort $port
     Open-DashboardBrowserIfRequested -BindHost $hostAddr -BindPort $port
     exit 0
 }
 if (-not $proc.HasExited) {
     Write-DashLog '[OK] Dashboard start (build kan even duren).' -Color Green
+    $null = Test-CodebaseVizHealth -RepoRoot $RepoRoot -PythonExe $dashPy -BindHost $hostAddr -BindPort $port
     Open-DashboardBrowserIfRequested -BindHost $hostAddr -BindPort $port
     exit 0
 }

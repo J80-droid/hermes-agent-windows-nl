@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import urllib.error
@@ -10,7 +11,14 @@ from typing import Any
 
 DEFAULT_BASE = "http://127.0.0.1:9119"
 SESSION_TOKEN_RE = re.compile(r'__HERMES_SESSION_TOKEN__="([^"]+)"')
-EXPECTED_PYGOUNT_TIMEOUT_SEC = 120
+INSTITUTIONAL_DEFAULT_PYGOUNT_TIMEOUT_SEC = 240
+
+
+def expected_pygount_timeout_sec() -> int:
+    raw = os.environ.get("CODEBASE_VIZ_PYGOUNT_TIMEOUT", "").strip()
+    if raw.isdigit():
+        return int(raw)
+    return INSTITUTIONAL_DEFAULT_PYGOUNT_TIMEOUT_SEC
 
 
 def extract_session_token(html: str) -> str | None:
@@ -37,10 +45,11 @@ def fetch_plugin_health(
 
 def validate_health_body(body: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    if body.get("pygount_timeout_sec") != EXPECTED_PYGOUNT_TIMEOUT_SEC:
+    expected = expected_pygount_timeout_sec()
+    if body.get("pygount_timeout_sec") != expected:
         errors.append(
             f"pygount_timeout_sec={body.get('pygount_timeout_sec')!r}, "
-            f"verwacht {EXPECTED_PYGOUNT_TIMEOUT_SEC}",
+            f"verwacht {expected}",
         )
     if not body.get("plugin"):
         errors.append("ontbrekend veld: plugin")

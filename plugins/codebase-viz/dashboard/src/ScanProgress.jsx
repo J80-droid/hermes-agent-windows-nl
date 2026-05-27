@@ -5,29 +5,49 @@ const h = React.createElement;
 const LOG = '[codebase-viz]';
 
 export default function ScanProgress({ active, tab }) {
-  const { detail, progress, elapsed, busy, legacyApi, apiPath, serverVersion } =
-    useScanProgress(active, tab);
+  const {
+    detail,
+    progress,
+    elapsed,
+    busy,
+    legacyApi,
+    apiPath,
+    serverVersion,
+    repoPath,
+    repoLabel,
+    timeoutSec,
+    phase,
+  } = useScanProgress(active, tab);
   const pct = busy ? Math.max(12, Math.min(98, progress)) : 100;
   const loggedRef = React.useRef(false);
+  const expectedHint = timeoutSec != null ? `v2.5.0 / ${timeoutSec}s` : 'v2.5.0';
 
   React.useEffect(() => {
     if (active && !loggedRef.current) {
       loggedRef.current = true;
-      console.info(LOG, 'scan gestart', { tab, detail });
+      console.info(LOG, 'scan gestart', { tab, detail, repoLabel, repoPath });
     }
     if (!active) loggedRef.current = false;
-  }, [active, tab, detail]);
+  }, [active, tab, detail, repoLabel, repoPath]);
+
+  const scanTarget = repoLabel || repoPath;
+  const phaseKey = phase || detail;
 
   return h(
     'div',
-    { className: 'codebase-viz-scan-progress', role: 'status', 'aria-live': 'polite' },
+    {
+      className:
+        'codebase-viz-scan-progress' + (busy ? ' codebase-viz-scan-progress--busy' : ''),
+      role: 'status',
+      'aria-live': 'polite',
+    },
     legacyApi
       ? h(
           'p',
           { className: 'codebase-viz-legacy-hint' },
           apiPath
             ? [
-                'Verouderde plugin-backend (pygount stopt na 30s). Geladen vanaf: ',
+                'Verouderde plugin-backend (pygount stopt te vroeg). Geladen vanaf: ',
                 h('code', { className: 'codebase-viz-api-path', key: 'api' }, apiPath),
                 ' — verwijder of update die installatie, of start via ',
                 h('code', { key: 'bat' }, 'start_hermes.bat'),
@@ -36,7 +56,7 @@ export default function ScanProgress({ active, tab }) {
             : [
                 'Verouderde plugin-backend',
                 serverVersion ? ` (v${serverVersion})` : '',
-                ' — pygount stopt na 30s (verwacht v2.5.0 / 120s). Controleer ',
+                ` — verwacht ${expectedHint}. Controleer `,
                 h('code', { key: 'w1' }, '%LOCALAPPDATA%\\hermes\\plugins\\codebase-viz'),
                 ' of ',
                 h('code', { key: 'w2' }, '%USERPROFILE%\\.hermes\\plugins\\codebase-viz'),
@@ -63,13 +83,25 @@ export default function ScanProgress({ active, tab }) {
     ),
     h(
       'div',
-      { className: 'codebase-viz-progress-meta' },
+      { className: 'codebase-viz-progress-meta', key: phaseKey },
       h('span', { className: 'codebase-viz-progress-detail' }, detail),
       elapsed
-        ? h('span', { className: 'codebase-viz-progress-elapsed' }, `${elapsed}`)
+        ? h('span', { className: 'codebase-viz-progress-elapsed' }, elapsed)
         : busy
           ? h('span', { className: 'codebase-viz-progress-elapsed' }, '…')
           : null,
     ),
+    scanTarget
+      ? h(
+          'p',
+          {
+            className: 'codebase-viz-scan-target',
+            title: repoPath || scanTarget,
+          },
+          busy ? h('span', { className: 'codebase-viz-scan-pulse', 'aria-hidden': true }) : null,
+          'Scan: ',
+          h('code', null, scanTarget),
+        )
+      : null,
   );
 }

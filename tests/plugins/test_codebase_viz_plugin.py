@@ -638,12 +638,82 @@ def test_memory_guard_serves_stale_cache(plugin_module, monkeypatch):
     assert result.get("memory_pressure") is True
 
 
-def test_scan_status_endpoint(client):
+def test_scan_status_endpoint(client, plugin_module):
     body = client.get("/api/plugins/codebase-viz/scan-status").json()
     assert "busy" in body
     assert "progress" in body
     assert "phase" in body
     assert "detail" in body
+    assert body.get("timeout_sec") == plugin_module.PYGOUNT_TIMEOUT
+    assert "phase_label" in body
+    if plugin_module.REPO_PATH is not None:
+        assert body.get("repo_path") == str(plugin_module.REPO_PATH)
+        assert body.get("repo_label")
+
+
+def test_pygount_timeout_invalid_env_uses_fallback(monkeypatch, tiny_repo):
+    monkeypatch.setenv("CODEBASE_VIZ_PYGOUNT_TIMEOUT", "not-a-number")
+    mod = _load_plugin_module(monkeypatch, tiny_repo)
+    assert mod.PYGOUNT_TIMEOUT == 240
+
+
+def test_pygount_timeout_zero_uses_fallback(monkeypatch, tiny_repo):
+    monkeypatch.setenv("CODEBASE_VIZ_PYGOUNT_TIMEOUT", "0")
+    mod = _load_plugin_module(monkeypatch, tiny_repo)
+    assert mod.PYGOUNT_TIMEOUT == 240
+
+
+def test_repo_scan_label_two_segments(plugin_module, tiny_repo):
+    nested = tiny_repo / "outer" / "inner"
+    nested.mkdir(parents=True)
+    (nested / ".git").mkdir()
+    plugin_module.REPO_PATH = nested.resolve()
+    assert plugin_module._repo_scan_label() == "outer/inner"
+
+
+def test_repo_scan_label_empty_without_repo(plugin_module):
+    plugin_module.REPO_PATH = None
+    assert plugin_module._repo_scan_label() == ""
+
+
+def test_scan_start_enriches_pygount_detail(plugin_module, tiny_repo):
+    plugin_module.REPO_PATH = tiny_repo.resolve()
+    plugin_module._scan_start("pygount")
+    assert "pygount" in plugin_module._scan_state["detail"].lower()
+    assert plugin_module._repo_scan_label() in plugin_module._scan_state["detail"]
+
+
+async def _scan_status_payload(plugin_module):
+    return await plugin_module._async_scan_status_payload()
+
+
+def test_scan_status_reflects_inflight_phase(plugin_module):
+    plugin_module._scan_end()
+
+    async def run():
+        task = asyncio.create_task(asyncio.sleep(0.2))
+        async with plugin_module._cache_lock:
+            plugin_module._inflight["pygount"] = task
+        body = await plugin_module._async_scan_status_payload()
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        return body
+
+    body = asyncio.run(run())
+    assert body["phase"] == "pygount"
+    assert body["busy"] is True
+    assert body["progress"] > 0
+
+
+def test_scan_status_payload_defaults_when_idle(plugin_module, monkeypatch):
+    monkeypatch.delenv("CODEBASE_VIZ_PYGOUNT_TIMEOUT", raising=False)
+    plugin_module.PYGOUNT_TIMEOUT = 240
+    plugin_module._scan_end()
+    body = asyncio.run(_scan_status_payload(plugin_module))
+    assert body["phase"] == "idle"
+    assert body["busy"] is False
+    assert body.get("timeout_sec") == 240
 
 
 def test_import_edges_shared_cache(plugin_module, monkeypatch):
@@ -720,6 +790,7 @@ def test_dist_bundle_no_dynamic_react_require():
     assert 'require("react")' not in dist
     assert "Hermes Plugin SDK React" in dist
     assert "codebase-viz-shortcuts-hint" in dist
+    assert "codebase-viz-scan-target" in dist
     assert "Sneltoetsen" in dist
 
 

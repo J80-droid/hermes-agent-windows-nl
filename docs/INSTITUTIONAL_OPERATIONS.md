@@ -19,6 +19,41 @@ windows\SYNC_TRUST_RUNTIME.bat
 
 `-QuickFix` op `POST_GIT_PULL` ruimt ongetrackte root-rommel op **vóór** verify (zelfde logica als `UPDATE_HERMES -QuickFix`). Optioneel na pull: `-IncludeCodebaseSmoke` (~32s), `-IncludeCodebaseSmokeE2E` (~45s), `-AutoRepairModelProvider`.
 
+### Codebase Viz (dashboard-plugin)
+
+Bundled tab **Codebase Viz** op `/codebase-viz` (na Skills). Bij workspace-start zet `windows\scripts\launch_dashboard_on_start.ps1`:
+
+| Env | Default (fork) | Doel |
+|-----|----------------|------|
+| `HERMES_BUNDLED_PLUGINS` | `<repo>\plugins` | Workspace `plugin_api.py` v2.5.0 (geen oude user-kopie) |
+| `CODEBASE_VIZ_PYGOUNT_TIMEOUT` | `240` | pygount subprocess-timeout (volledige repo) |
+| `CODEBASE_VIZ_REPO` | hermes-agent root | Optioneel: ander scan-doel |
+
+**Na start controleren:**
+
+```cmd
+audits\verify_codebase_viz_health.py
+```
+
+Verwacht: `version=2.5.0`, `pygount_timeout_sec=240`, `plugin_api_path` onder deze repo.
+
+**Herstart alleen dashboard:**
+
+```cmd
+audits\RESTART_CODEBASE_VIZ_DASHBOARD.bat
+```
+
+**Incidenten:**
+
+| Symptoom | Actie |
+|----------|--------|
+| Fout met **30 seconds** | Oud dashboard-proces; `RESTART_CODEBASE_VIZ_DASHBOARD.bat` of Hermes volledig afsluiten |
+| **timeout na 240s** | `set CODEBASE_VIZ_PYGOUNT_TIMEOUT=300` vóór start, of tijdelijk kleinere `CODEBASE_VIZ_REPO` |
+| **pygount failed** | `conda run -n hermes-env python -m pip install pygount` (launch-script installeert dit bij workspace-plugins) |
+| Geen live file-watcher | Normaal op Windows native; WSL alleen als WS-updates productiekritisch zijn |
+
+Rooktest-checklist: [`docs/checklists/codebase-viz-sprint4-full-gate.md`](checklists/codebase-viz-sprint4-full-gate.md). Plugin-README: [`plugins/codebase-viz/dashboard/README.md`](../plugins/codebase-viz/dashboard/README.md).
+
 ### Repo-hygiene & snelle poorten
 
 ```cmd

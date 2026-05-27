@@ -23,7 +23,8 @@ def ps1_text() -> str:
 
 def test_ps1_exists_and_has_no_open(ps1_text: str) -> None:
     assert "--no-open" in ps1_text
-    assert "hermes_cli.main', 'dashboard'" in ps1_text or "hermes_cli.main dashboard" in ps1_text
+    assert "hermes_cli.main" in ps1_text
+    assert "'dashboard'" in ps1_text or '"dashboard"' in ps1_text
 
 
 def test_ps1_skip_env_flags(ps1_text: str) -> None:
@@ -34,6 +35,15 @@ def test_ps1_skip_env_flags(ps1_text: str) -> None:
     assert "Initialize-WorkspaceDashboardPlugins" in ps1_text
     assert "Install-HermesWebDashboardPackage" in ps1_text
     assert "[web]" in ps1_text
+    assert "Stop-HermesDashboardProcess" in ps1_text
+    assert "CODEBASE_VIZ_PYGOUNT_TIMEOUT" in ps1_text
+    assert "New-CondaDashboardRunArgs" in ps1_text
+    assert "Get-DashboardPythonExe" in ps1_text
+    assert "-e', \"HERMES_BUNDLED_PLUGINS" not in ps1_text
+    assert "'240'" in ps1_text or '"240"' in ps1_text
+    assert "Test-CodebaseVizHealth" in ps1_text
+    assert "pygount" in ps1_text
+    assert "verify_codebase_viz_health.py" in ps1_text
 
 
 def test_ps1_port_validation(ps1_text: str) -> None:
@@ -61,7 +71,7 @@ def test_launch_hermes_bat_wires_script() -> None:
     assert "launch_dashboard_on_start.ps1" in bat
     assert "HERMES_SKIP_DASHBOARD_ON_START" in bat
     assert "HERMES_LAUNCH_LOG" in bat
-    assert "HERMES_DASHBOARD_OPEN_PATH" in bat
+    assert 'set "HERMES_DASHBOARD_OPEN_PATH=/codebase-viz"' not in bat
 
 
 def test_skip_env_exits_zero_quickly() -> None:
@@ -140,6 +150,8 @@ def test_docs_institutional_operations_mention() -> None:
     ops = (REPO / "docs/INSTITUTIONAL_OPERATIONS.md").read_text(encoding="utf-8")
     assert "HERMES_SKIP_DASHBOARD_ON_START" in ops
     assert "9119" in ops
+    assert "Codebase Viz" in ops
+    assert "verify_codebase_viz_health" in ops
 
 
 @pytest.mark.e2e

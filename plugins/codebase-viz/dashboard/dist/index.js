@@ -1078,6 +1078,16 @@ ${d.value} LOC`;
   function isScanStatusPayload(body) {
     return body && typeof body === "object" && typeof body.progress === "number" && "phase" in body;
   }
+  function mergeScanContext(prev, body, health) {
+    const next = { ...prev };
+    if (health?.repo_path) next.repoPath = health.repo_path;
+    if (health?.pygount_timeout_sec != null) next.timeoutSec = health.pygount_timeout_sec;
+    if (body?.repo_path) next.repoPath = body.repo_path;
+    if (body?.repo_label) next.repoLabel = body.repo_label;
+    if (body?.timeout_sec != null) next.timeoutSec = body.timeout_sec;
+    if (body?.phase) next.phase = body.phase;
+    return next;
+  }
   function useScanProgress(active, tab) {
     const SDK2 = window.__HERMES_PLUGIN_SDK__;
     const startRef = react_shim_default.useRef(0);
@@ -1087,6 +1097,12 @@ ${d.value} LOC`;
     const [legacyBackend, setLegacyBackend] = react_shim_default.useState(false);
     const [apiPath, setApiPath] = react_shim_default.useState("");
     const [serverVersion, setServerVersion] = react_shim_default.useState("");
+    const [scanContext, setScanContext] = react_shim_default.useState({
+      repoPath: "",
+      repoLabel: "",
+      timeoutSec: null,
+      phase: ""
+    });
     const warnedRef = react_shim_default.useRef(false);
     const sdkRef = react_shim_default.useRef(SDK2);
     sdkRef.current = SDK2;
@@ -1099,6 +1115,7 @@ ${d.value} LOC`;
         setLegacyBackend(false);
         setApiPath("");
         setServerVersion("");
+        setScanContext({ repoPath: "", repoLabel: "", timeoutSec: null, phase: "" });
         warnedRef.current = false;
         return void 0;
       }
@@ -1136,6 +1153,7 @@ ${d.value} LOC`;
           if (cancelled) return;
           if (isScanStatusPayload(body)) {
             setServerStatus(body);
+            setScanContext((prev) => mergeScanContext(prev, body, null));
           } else {
             enableLocal("scan-status antwoord ongeldig");
           }
@@ -1151,6 +1169,7 @@ ${d.value} LOC`;
         if (typeof health?.plugin_api_path === "string") {
           setApiPath(health.plugin_api_path);
         }
+        setScanContext((prev) => mergeScanContext(prev, null, health));
         if (typeof health?.pygount_timeout_sec === "number") {
           setLegacyBackend(false);
           pollScanStatus();
@@ -1170,14 +1189,20 @@ ${d.value} LOC`;
     const detail = useLocalOnly ? tabDetail(tab) : serverStatus?.detail || tabDetail(tab);
     const progress = useLocalOnly ? Math.min(90, 10 + elapsedSec * 4) : typeof serverStatus?.progress === "number" ? serverStatus.progress : Math.min(90, 10 + elapsedSec * 4);
     const elapsed = !useLocalOnly && serverStatus?.elapsed_sec != null ? `${serverStatus.elapsed_sec}s` : elapsedSec > 0 ? `${elapsedSec}s` : "";
+    const maxSec = scanContext.timeoutSec;
+    const elapsedWithMax = elapsed && maxSec != null ? `${elapsed} / max ${maxSec}s` : elapsed;
     return {
       detail,
       progress,
-      elapsed,
-      busy: useLocalOnly ? elapsedSec < 600 : serverStatus?.busy !== false,
+      elapsed: elapsedWithMax,
+      busy: useLocalOnly ? elapsedSec < 600 : serverStatus == null ? true : serverStatus.busy !== false,
       legacyApi: legacyBackend,
       apiPath,
-      serverVersion
+      serverVersion,
+      repoPath: scanContext.repoPath,
+      repoLabel: scanContext.repoLabel || scanContext.repoPath,
+      timeoutSec: scanContext.timeoutSec,
+      phase: scanContext.phase || serverStatus?.phase || ""
     };
   }
 
@@ -1185,24 +1210,43 @@ ${d.value} LOC`;
   var h10 = react_shim_default.createElement;
   var LOG3 = "[codebase-viz]";
   function ScanProgress({ active, tab }) {
-    const { detail, progress, elapsed, busy, legacyApi, apiPath, serverVersion } = useScanProgress(active, tab);
+    const {
+      detail,
+      progress,
+      elapsed,
+      busy,
+      legacyApi,
+      apiPath,
+      serverVersion,
+      repoPath,
+      repoLabel,
+      timeoutSec,
+      phase
+    } = useScanProgress(active, tab);
     const pct = busy ? Math.max(12, Math.min(98, progress)) : 100;
     const loggedRef = react_shim_default.useRef(false);
+    const expectedHint = timeoutSec != null ? `v2.5.0 / ${timeoutSec}s` : "v2.5.0";
     react_shim_default.useEffect(() => {
       if (active && !loggedRef.current) {
         loggedRef.current = true;
-        console.info(LOG3, "scan gestart", { tab, detail });
+        console.info(LOG3, "scan gestart", { tab, detail, repoLabel, repoPath });
       }
       if (!active) loggedRef.current = false;
-    }, [active, tab, detail]);
+    }, [active, tab, detail, repoLabel, repoPath]);
+    const scanTarget = repoLabel || repoPath;
+    const phaseKey = phase || detail;
     return h10(
       "div",
-      { className: "codebase-viz-scan-progress", role: "status", "aria-live": "polite" },
+      {
+        className: "codebase-viz-scan-progress" + (busy ? " codebase-viz-scan-progress--busy" : ""),
+        role: "status",
+        "aria-live": "polite"
+      },
       legacyApi ? h10(
         "p",
         { className: "codebase-viz-legacy-hint" },
         apiPath ? [
-          "Verouderde plugin-backend (pygount stopt na 30s). Geladen vanaf: ",
+          "Verouderde plugin-backend (pygount stopt te vroeg). Geladen vanaf: ",
           h10("code", { className: "codebase-viz-api-path", key: "api" }, apiPath),
           " \u2014 verwijder of update die installatie, of start via ",
           h10("code", { key: "bat" }, "start_hermes.bat"),
@@ -1210,7 +1254,7 @@ ${d.value} LOC`;
         ] : [
           "Verouderde plugin-backend",
           serverVersion ? ` (v${serverVersion})` : "",
-          " \u2014 pygount stopt na 30s (verwacht v2.5.0 / 120s). Controleer ",
+          ` \u2014 verwacht ${expectedHint}. Controleer `,
           h10("code", { key: "w1" }, "%LOCALAPPDATA%\\hermes\\plugins\\codebase-viz"),
           " of ",
           h10("code", { key: "w2" }, "%USERPROFILE%\\.hermes\\plugins\\codebase-viz"),
@@ -1236,10 +1280,20 @@ ${d.value} LOC`;
       ),
       h10(
         "div",
-        { className: "codebase-viz-progress-meta" },
+        { className: "codebase-viz-progress-meta", key: phaseKey },
         h10("span", { className: "codebase-viz-progress-detail" }, detail),
-        elapsed ? h10("span", { className: "codebase-viz-progress-elapsed" }, `${elapsed}`) : busy ? h10("span", { className: "codebase-viz-progress-elapsed" }, "\u2026") : null
-      )
+        elapsed ? h10("span", { className: "codebase-viz-progress-elapsed" }, elapsed) : busy ? h10("span", { className: "codebase-viz-progress-elapsed" }, "\u2026") : null
+      ),
+      scanTarget ? h10(
+        "p",
+        {
+          className: "codebase-viz-scan-target",
+          title: repoPath || scanTarget
+        },
+        busy ? h10("span", { className: "codebase-viz-scan-pulse", "aria-hidden": true }) : null,
+        "Scan: ",
+        h10("code", null, scanTarget)
+      ) : null
     );
   }
 

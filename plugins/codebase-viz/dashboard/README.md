@@ -22,8 +22,10 @@ React komt uit `window.__HERMES_PLUGIN_SDK__` via `src/react-shim.js` (esbuild a
 Optionele Python-tools (in dezelfde venv als Hermes):
 
 ```bash
-pip install watchdog radon psutil
+pip install pygount watchdog radon psutil
 ```
+
+`pygount` zit niet in `[web]`; `launch_dashboard_on_start.ps1` installeert het automatisch bij workspace-plugins.
 
 ## Configuratie
 
@@ -32,7 +34,7 @@ pip install watchdog radon psutil
 | `CODEBASE_VIZ_REPO` | bundled `hermes-agent` root (`.git`) | Scan-doel |
 | `CODEBASE_VIZ_TTL` | `60` | Response-cache (s) |
 | `CODEBASE_VIZ_DEBOUNCE` | `2.0` | Watcher batch-interval |
-| `CODEBASE_VIZ_PYGOUNT_TIMEOUT` | `120` | `pygount` subprocess timeout (grote repo's) |
+| `CODEBASE_VIZ_PYGOUNT_TIMEOUT` | `240` | `pygount` subprocess timeout (volledige fork-repo); ongeldige waarde → fallback 240 |
 | `CODEBASE_VIZ_MAX_MEMORY_MB` | `500` | RSS-drempel; boven limiet → stale cache of `memory_pressure` |
 
 `REPO_PATH` wordt bij module-import bepaald; na env-wijziging dashboard herstarten.
@@ -41,7 +43,7 @@ pip install watchdog radon psutil
 
 | Situatie | Verwachting |
 |----------|-------------|
-| **Eerste load** (Sunburst) | Normaal **10–30 s** op een grote repo — één `pygount`-run over alle bronnen |
+| **Eerste load** (Sunburst) | Volledige `hermes-agent` root: tot **~240 s** (één `pygount`-run); kleine repo's vaak sneller |
 | **Herladen binnen TTL** | **< 1 s** — resultaat uit server-cache (`CODEBASE_VIZ_TTL`, default **60 s**) |
 | **Tab wisselen** (Metrics, Treemap) | Vaak snel: deelt dezelfde `pygount`-cache |
 | **Force Scan / `r`** | Cache geleegd → opnieuw volledige scan |
@@ -55,7 +57,7 @@ pip install watchdog radon psutil
 | `structure` / `summary` / `dependencies` | Per-tab endpoint (bouwen op bovenstaande) |
 | `churn`, `todos`, `blame`, … | Aparte git/radon-scans (eigen TTL, niet pygount) |
 
-Voortgang in de UI: `GET /scan-status` (phase, elapsed, pseudo-progress) + progress bar tijdens laden.
+Voortgang in de UI: `GET /scan-status` (phase, `repo_label`, elapsed/max timeout, pseudo-progress) + progress bar. Tijdens laden zie je subtiel **Scan: …/hermes-agent** (live fase-wissel).
 
 Lang scannen is dus **normaal** bij de eerste request na start of na `force-scan`. Daarna is het gecached.
 
@@ -63,7 +65,7 @@ Sneller op grote repos (PowerShell, vóór dashboard-start):
 
 ```powershell
 $env:CODEBASE_VIZ_TTL = "300"
-$env:CODEBASE_VIZ_PYGOUNT_TIMEOUT = "60"
+$env:CODEBASE_VIZ_PYGOUNT_TIMEOUT = "300"   # als 240s nog te krap
 $env:CODEBASE_VIZ_REPO = "D:\pad\naar\kleinere-repo"   # optioneel: alleen submap
 ```
 
@@ -124,23 +126,25 @@ audits\RUN_DASHBOARD_WS_DEV.bat
 - `HERMES_BUNDLED_PLUGINS` → `<repo>\plugins`
 - `pip install -e .[web]` (fastapi/uvicorn in conda `hermes-env`)
 - oude user-plugins `%LOCALAPPDATA%\hermes\plugins\codebase-viz` → `.bak`
-- browser → `/codebase-viz` (uit te zetten: `HERMES_SKIP_DASHBOARD_BROWSER=1`)
+- geen automatische browser-tab bij `start_hermes.bat` (optioneel: `HERMES_DASHBOARD_OPEN_PATH=/codebase-viz`)
 
 Controle in browser → Network → `GET /api/plugins/codebase-viz/health`:
 
 - `version`: `2.5.0`
-- `pygount_timeout_sec`: **120** (niet 30)
+- `pygount_timeout_sec`: **240** (niet 30)
 - `plugin_api_path`: pad onder deze repo
+
+Zie je nog **30 seconds** in de fouttekst? Er draait dan een **oud dashboard-proces**. Oplossing: `audits\RESTART_CODEBASE_VIZ_DASHBOARD.bat` of Hermes volledig afsluiten en opnieuw `start_hermes.bat`.
 
 ### Scan-voortgang (UI)
 
 - Eén progress bar tijdens laden (geen dubbele `<progress>` + custom bar).
 - Oude backend zonder `pygount_timeout_sec`: gele hint + lokale timer (geen `/scan-status` spam).
-- Nieuwe backend: polling `GET /scan-status` + server elapsed/progress.
+- Nieuwe backend: polling `GET /scan-status` + server elapsed/progress + scan-doel (`repo_label`).
 
 Console (filter `[codebase-viz]`): `scan gestart`, `fetch start/ok`; bij oude API één regel `voortgang via lokale timer`.
 
-Unit tests mocken `subprocess` en gebruiken een **kleine temp-repo** — die slagen ook als pygount op de echte `hermes-agent` root **>120s** nodig heeft.
+Unit tests mocken `subprocess` en gebruiken een **kleine temp-repo** — die slagen ook als pygount op de echte `hermes-agent` root **>240s** nodig heeft.
 
 ## Rooktest (dashboard)
 

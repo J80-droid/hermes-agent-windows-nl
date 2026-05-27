@@ -14,6 +14,17 @@ function isScanStatusPayload(body) {
   return body && typeof body === 'object' && typeof body.progress === 'number' && 'phase' in body;
 }
 
+function mergeScanContext(prev, body, health) {
+  const next = { ...prev };
+  if (health?.repo_path) next.repoPath = health.repo_path;
+  if (health?.pygount_timeout_sec != null) next.timeoutSec = health.pygount_timeout_sec;
+  if (body?.repo_path) next.repoPath = body.repo_path;
+  if (body?.repo_label) next.repoLabel = body.repo_label;
+  if (body?.timeout_sec != null) next.timeoutSec = body.timeout_sec;
+  if (body?.phase) next.phase = body.phase;
+  return next;
+}
+
 /**
  * Progress while loading. Works with or without GET /scan-status (older dashboards
  * return HTML for unknown routes — we fall back to a local elapsed timer).
@@ -27,6 +38,12 @@ export function useScanProgress(active, tab) {
   const [legacyBackend, setLegacyBackend] = React.useState(false);
   const [apiPath, setApiPath] = React.useState('');
   const [serverVersion, setServerVersion] = React.useState('');
+  const [scanContext, setScanContext] = React.useState({
+    repoPath: '',
+    repoLabel: '',
+    timeoutSec: null,
+    phase: '',
+  });
   const warnedRef = React.useRef(false);
   const sdkRef = React.useRef(SDK);
   sdkRef.current = SDK;
@@ -40,6 +57,7 @@ export function useScanProgress(active, tab) {
       setLegacyBackend(false);
       setApiPath('');
       setServerVersion('');
+      setScanContext({ repoPath: '', repoLabel: '', timeoutSec: null, phase: '' });
       warnedRef.current = false;
       return undefined;
     }
@@ -85,6 +103,7 @@ export function useScanProgress(active, tab) {
           if (cancelled) return;
           if (isScanStatusPayload(body)) {
             setServerStatus(body);
+            setScanContext((prev) => mergeScanContext(prev, body, null));
           } else {
             enableLocal('scan-status antwoord ongeldig');
           }
@@ -103,6 +122,7 @@ export function useScanProgress(active, tab) {
         if (typeof health?.plugin_api_path === 'string') {
           setApiPath(health.plugin_api_path);
         }
+        setScanContext((prev) => mergeScanContext(prev, null, health));
         if (typeof health?.pygount_timeout_sec === 'number') {
           setLegacyBackend(false);
           pollScanStatus();
@@ -139,13 +159,25 @@ export function useScanProgress(active, tab) {
         ? `${elapsedSec}s`
         : '';
 
+  const maxSec = scanContext.timeoutSec;
+  const elapsedWithMax =
+    elapsed && maxSec != null ? `${elapsed} / max ${maxSec}s` : elapsed;
+
   return {
     detail,
     progress,
-    elapsed,
-    busy: useLocalOnly ? elapsedSec < 600 : serverStatus?.busy !== false,
+    elapsed: elapsedWithMax,
+    busy: useLocalOnly
+      ? elapsedSec < 600
+      : serverStatus == null
+        ? true
+        : serverStatus.busy !== false,
     legacyApi: legacyBackend,
     apiPath,
     serverVersion,
+    repoPath: scanContext.repoPath,
+    repoLabel: scanContext.repoLabel || scanContext.repoPath,
+    timeoutSec: scanContext.timeoutSec,
+    phase: scanContext.phase || serverStatus?.phase || '',
   };
 }

@@ -67,7 +67,7 @@ Geïsoleerde E2E voor bundled plugin `codebase-viz` (structuur, metrics, doctor,
 | ID | Scenario | Verwachting |
 |----|----------|-------------|
 | V1 | Repo-artefacten | manifest, `plugin_api.py`, `dist/*`, unit tests |
-| V2 | Manifest | id `codebase-viz`, versie 2.3.0 |
+| V2 | Manifest | id `codebase-viz`, versie 2.5.0 |
 | V3–V5 | Parsers/paden | Pygount 3.x, invalid JSON, `_path_under_root` |
 | V6 | Env | Ongeldige `CODEBASE_VIZ_REPO` → None |
 | V7–V9 | API | health, structure, summary, force-scan |
@@ -89,6 +89,13 @@ audits\RUN_CODEBASE_VIZ_E2E.bat
 ```
 
 Zie `audits/CODEBASE_VIZ_E2E_README.md` en `plugins/codebase-viz/dashboard/README.md`.
+
+### Codebase Viz productie E2E
+
+| Script | Doel |
+|--------|------|
+| `RUN_CODEBASE_VIZ_PRODUCTION_E2E.bat` | 240s timeout, scan-status telemetry, launch/RESTART wiring, dist UI |
+| `RUN_CODEBASE_VIZ_LAUNCH_E2E.bat` | Dashboard launch integratie (7 checks) |
 
 ```bat
 audits\RUN_CODEBASE_VIZ_SPRINT4_E2E.bat

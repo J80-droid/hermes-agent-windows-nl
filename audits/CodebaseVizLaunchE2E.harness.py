@@ -43,16 +43,20 @@ def test_c1_launch_ps1_workspace_plugins() -> None:
         "[web]" in ps1,
         "HERMES_DASHBOARD_OPEN_PATH" in ps1,
         "Open-DashboardBrowserIfRequested" in ps1,
+        "Stop-HermesDashboardProcess" in ps1,
+        "CODEBASE_VIZ_PYGOUNT_TIMEOUT" in ps1,
+        "New-CondaDashboardRunArgs" in ps1,
     ]
     _step("launch_dashboard_on_start.ps1 contract", all(checks), f"{sum(checks)}/{len(checks)}")
 
 
-def test_c2_start_hermes_opens_codebase_viz() -> None:
-    bat = LAUNCH_BAT.read_text(encoding="utf-8")
+def test_c2_start_hermes_no_default_browser_tab() -> None:
     win = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
-    ok = "launch_dashboard_on_start.ps1" in win and "HERMES_DASHBOARD_OPEN_PATH" in win
-    ok = ok and "/codebase-viz" in win
-    _step("start_hermes.bat -> codebase-viz browser", ok)
+    ok = (
+        "launch_dashboard_on_start.ps1" in win
+        and 'set "HERMES_DASHBOARD_OPEN_PATH=/codebase-viz"' not in win
+    )
+    _step("start_hermes.bat geen default browser-tab", ok)
 
 
 def test_c3_frontend_single_progress_bar() -> None:
@@ -60,18 +64,28 @@ def test_c3_frontend_single_progress_bar() -> None:
         _step("dist single progress bar", False, "dist/index.js ontbreekt - npm run build")
         return
     js = DIST_JS.read_text(encoding="utf-8", errors="replace")
-    ok = "codebase-viz-progress-track" in js and "codebase-viz-progress-native" not in js
+    ok = (
+        "codebase-viz-progress-track" in js
+        and "codebase-viz-progress-native" not in js
+        and "codebase-viz-scan-target" in js
+    )
     _step("dist single progress bar", ok)
 
 
 def test_c4_verify_health_module() -> None:
+    os.environ["CODEBASE_VIZ_PYGOUNT_TIMEOUT"] = "240"
     sys.path.insert(0, str(REPO / "audits"))
     try:
         import verify_codebase_viz_health as v
 
         token = v.extract_session_token('x __HERMES_SESSION_TOKEN__="abc" y')
         errs = v.validate_health_body({"pygount_timeout_sec": 30, "plugin": "codebase-viz"})
-        ok = token == "abc" and errs and v.EXPECTED_PYGOUNT_TIMEOUT_SEC == 120
+        ok = (
+            token == "abc"
+            and bool(errs)
+            and v.expected_pygount_timeout_sec() == 240
+            and v.validate_health_body({"pygount_timeout_sec": 240, "plugin": "codebase-viz"}) == []
+        )
         _step("verify_codebase_viz_health helpers", ok)
     finally:
         sys.path.pop(0)
@@ -132,7 +146,7 @@ def main() -> int:
     print(flush=True)
 
     test_c1_launch_ps1_workspace_plugins()
-    test_c2_start_hermes_opens_codebase_viz()
+    test_c2_start_hermes_no_default_browser_tab()
     test_c3_frontend_single_progress_bar()
     test_c4_verify_health_module()
     test_c5_manifest_version()

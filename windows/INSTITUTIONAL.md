@@ -25,6 +25,7 @@
 | Domein-toolsets | `windows\SYNC_DOMAIN_TOOLSETS.bat` | `docs/domain_toolsets.yaml` → `platform_toolsets.cli` per profiel; audit: `docs/DOMAIN_TOOLSET_AUDIT.md` |
 | Presentatie | `docs/INSTITUTIONAL_PRESENTATION.md`, `docs/INSTITUTIONAL_PORTING_GUIDE.md` | Rich render + globale typografie; legacy `windows/scripts/institutional/` |
 | Codebase-audit | `docs/CODEBASE_AUDIT_EVIDENCE.md` | Smoke E1/E2: `RUN_CODEBASE_SMOKE_E2E.bat`; optioneel na pull/update: `-IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E`; release E3: `RUN_PYTEST.bat` / `RUN_AUDITS -IncludeAllE2E` |
+| Codebase Viz (dashboard) | `docs/INSTITUTIONAL_OPERATIONS.md` (sectie Codebase Viz) | `audits\verify_codebase_viz_health.py`, `audits\RESTART_CODEBASE_VIZ_DASHBOARD.bat`; pygount timeout 240s |
 | Core SOUL template | `docs/templates/SOUL_CORE_ORCHESTRATOR.md` | Routing/clarification/landkaart; niet overschreven door sync |
 | Restore | `windows\restore_from_backup.ps1` | **Moet in git** — `RESTORE_FROM_BACKUP.bat`; `-RestoreRuntimeFull`, `-RestoreRuntimePersonas`, `-RestoreLegacyProfile` |
 | Manifest | `windows\WindowsLocalAssetsManifest.ps1` | Enige lijst voor `_local_assets` sync/restore |

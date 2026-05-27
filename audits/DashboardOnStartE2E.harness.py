@@ -70,6 +70,8 @@ def test_d4_docs_mention() -> None:
     ok = (
         "HERMES_SKIP_DASHBOARD_ON_START" in ops
         and "9119" in ops
+        and "Codebase Viz" in ops
+        and "verify_codebase_viz_health" in ops
         and "launch_hermes.bat" in win
         and ("dashboard --no-open" in win or "9119" in win)
     )
