@@ -27,6 +27,10 @@ def test_ps1_exists_and_has_no_open(ps1_text: str) -> None:
     assert "'dashboard'" in ps1_text or '"dashboard"' in ps1_text
 
 
+def test_ps1_imports_python_policy(ps1_text: str) -> None:
+    assert "Import-HermesPythonPolicy" in ps1_text
+
+
 def test_ps1_skip_env_flags(ps1_text: str) -> None:
     assert "HERMES_SKIP_DASHBOARD_ON_START" in ps1_text
     assert "HERMES_DASHBOARD_ON_START" in ps1_text

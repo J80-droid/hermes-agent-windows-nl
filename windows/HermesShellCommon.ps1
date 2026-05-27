@@ -1,6 +1,11 @@
 # Gedeelde helpers voor windows scripts. Dot-source vanuit windows of scripts map.
 # PSES: geen kleuren-switches, geen slash in strings, geen accolade-format strings.
 
+# Vast windows/-pad (niet $PSScriptRoot van de aanroeper — die wijst vaak naar scripts/).
+if (-not $script:HermesWindowsRoot) {
+    $script:HermesWindowsRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+}
+
 function Test-NativeCommandFailed {
     return ($null -ne $LASTEXITCODE -and [int]$LASTEXITCODE -ne 0)
 }
@@ -123,17 +128,23 @@ function Get-HermesRepoRootFromShellCommon {
     return (Resolve-Path -LiteralPath $grandParent).Path
 }
 
+function Import-HermesPythonPolicy {
+    # Alleen controleren — dot-source gebeurt op scriptniveau onderaan dit bestand.
+    # Dot-sourcen binnen een functie zou Resolve-HermesPythonExe in functiescope zetten (onzichtbaar voor callers).
+    return [bool](Get-Command Resolve-HermesPythonExe -ErrorAction SilentlyContinue)
+}
+
 function Get-HermesAuditPython {
     param([string]$RepoRoot = '')
 
-    $policyPath = Join-Path $PSScriptRoot 'HermesPythonPolicy.ps1'
-    if (-not (Test-Path -LiteralPath $policyPath)) {
-        $policyPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'HermesPythonPolicy.ps1'
-    }
-    if (Test-Path -LiteralPath $policyPath) {
-        if (-not (Get-Command Resolve-HermesPythonExe -ErrorAction SilentlyContinue)) {
-            . $policyPath
+    if (-not (Import-HermesPythonPolicy)) {
+        if ($env:HERMES_PYTHON -and (Test-Path -LiteralPath $env:HERMES_PYTHON)) {
+            return $env:HERMES_PYTHON
         }
+        if ($env:HERMES_AUDIT_PYTHON -and (Test-Path -LiteralPath $env:HERMES_AUDIT_PYTHON)) {
+            return $env:HERMES_AUDIT_PYTHON
+        }
+        return 'python'
     }
 
     if ($env:HERMES_AUDIT_PYTHON -and (Test-Path -LiteralPath $env:HERMES_AUDIT_PYTHON)) {
@@ -146,5 +157,17 @@ function Get-HermesAuditPython {
 
     $py = Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip
     if ($py) { return $py }
+    if ($env:HERMES_PYTHON -and (Test-Path -LiteralPath $env:HERMES_PYTHON)) {
+        return $env:HERMES_PYTHON
+    }
     return 'python'
+}
+
+if (-not (Get-Command Resolve-HermesPythonExe -ErrorAction SilentlyContinue)) {
+    $policyPath = Join-Path $script:HermesWindowsRoot 'HermesPythonPolicy.ps1'
+    if (Test-Path -LiteralPath $policyPath) {
+        . $policyPath
+    } else {
+        Write-Warning ('HermesPythonPolicy.ps1 niet gevonden: ' + $policyPath)
+    }
 }

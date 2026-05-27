@@ -21,6 +21,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
+Import-HermesPythonPolicy
 
 function Write-LaunchLogAppend {
     param([string]$Line)
@@ -114,8 +115,17 @@ function New-CondaDashboardRunArgs {
 
 function Get-DashboardPythonExe {
     param([string]$RepoRoot)
-    $py = Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip
-    if ($py) { return $py }
+    if (-not (Import-HermesPythonPolicy)) {
+        if ($env:HERMES_PYTHON -and (Test-Path -LiteralPath $env:HERMES_PYTHON)) {
+            return $env:HERMES_PYTHON
+        }
+    } elseif (Get-Command Resolve-HermesPythonExe -ErrorAction SilentlyContinue) {
+        $py = Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip
+        if ($py) { return $py }
+    }
+    if ($env:HERMES_PYTHON -and (Test-Path -LiteralPath $env:HERMES_PYTHON)) {
+        return $env:HERMES_PYTHON
+    }
     $fallback = Join-Path $env:USERPROFILE 'miniconda3\envs\hermes-env\python.exe'
     if (Test-Path -LiteralPath $fallback) { return $fallback }
     return $null
@@ -136,7 +146,7 @@ function Stop-HermesDashboardProcess {
     try {
         $null = & $CondaExe @stopArgs 2>&1
     } catch { }
-    $py = Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip
+    $py = Get-DashboardPythonExe -RepoRoot $RepoRoot
     if ($py) {
         try {
             $null = & $py -m hermes_cli.main dashboard --stop 2>&1
