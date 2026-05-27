@@ -223,6 +223,17 @@ if not defined HERMES_SKIP_PENDING_TRUST_ON_START (
   )
 )
 
+rem --- Web dashboard op 9119 (geen browser-tab); uit: HERMES_SKIP_DASHBOARD_ON_START=1 ---
+if not defined HERMES_SKIP_DASHBOARD_ON_START (
+  set "HERMES_REPO_ROOT=!REPO_ROOT!"
+  set "HERMES_LAUNCH_LOG=!LAUNCH_LOG!"
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/scripts/launch_dashboard_on_start.ps1" -RepoRoot "!REPO_ROOT!" -Quiet
+  if !errorLevel! neq 0 (
+    echo %GOUD%[WARN] Dashboard start mislukt ^(exit !errorLevel!^) — chat start wel.%RESET%
+    echo [%DATE% %TIME%] WARN: dashboard on start exit !errorLevel! >> "%LAUNCH_LOG%"
+  )
+)
+
 echo %GROEN%[INFO] Step 2: Launching Hermes Agent...%RESET%
 echo [%DATE% %TIME%] Launching runtime wrapper... >> "%LAUNCH_LOG%"
 

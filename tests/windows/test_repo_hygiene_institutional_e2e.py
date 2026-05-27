@@ -69,6 +69,13 @@ def test_creative_domain_e2e_harness() -> None:
     assert proc.returncode == 0, (proc.stderr or proc.stdout)[-4000:]
 
 
+@pytest.mark.e2e
+def test_dashboard_on_start_e2e_harness() -> None:
+    """audits/DashboardOnStartE2E.harness.py — launch dashboard --no-open D1–D7."""
+    proc = _run_harness("DashboardOnStartE2E.harness.py", timeout=180)
+    assert proc.returncode == 0, (proc.stderr or proc.stdout)[-4000:]
+
+
 def test_update_hermes_bat_quickfix_shift_safe() -> None:
     """Regressie: shift na -QuickFix mag %%~dp0 niet breken (HERMES_WIN vastzetten)."""
     bat = (REPO / "windows/UPDATE_HERMES.bat").read_text(encoding="utf-8")

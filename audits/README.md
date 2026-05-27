@@ -20,6 +20,20 @@ Zie `audits/INSTITUTIONAL_PIPELINE_E2E_README.md`.
 
 ---
 
+# Dashboard on start E2E
+
+`launch_hermes.bat` start `hermes dashboard --no-open` op poort 9119 (geen browser-tab).
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| D1-D7 | Script, wiring, docs, skip env, pytest | Zie `audits/DASHBOARD_ON_START_E2E_README.md` |
+
+```bat
+audits\RUN_DASHBOARD_ON_START_E2E.bat
+```
+
+---
+
 # Creative domain E2E
 
 Geïsoleerde E2E voor profiel `creative` (14e domein): manifest, `13_Creative/`, SOUL, fork-skills, provision, pytest-subset. Geen live API.

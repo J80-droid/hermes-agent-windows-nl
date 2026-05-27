@@ -15,6 +15,8 @@ windows\POST_GIT_PULL.bat -QuickFix
 windows\SYNC_TRUST_RUNTIME.bat
 ```
 
+`launch_hermes.bat` start standaard ook **`hermes dashboard --no-open`** op `http://127.0.0.1:9119` (geen browser-tab; open zelf `/sessions`). Uitzetten: `set HERMES_SKIP_DASHBOARD_ON_START=1` vóór start. Log: `output\research\logs\hermes_dashboard.log`.
+
 `-QuickFix` op `POST_GIT_PULL` ruimt ongetrackte root-rommel op **vóór** verify (zelfde logica als `UPDATE_HERMES -QuickFix`). Optioneel na pull: `-IncludeCodebaseSmoke` (~32s), `-IncludeCodebaseSmokeE2E` (~45s), `-AutoRepairModelProvider`.
 
 ### Repo-hygiene & snelle poorten
@@ -37,6 +39,7 @@ pre-commit install
 | `-IncludeRepoHygieneE2E` | ~10s — guard, gitignore, skills + fork keys legal/creative (**9/9**) |
 | `-IncludeUpdateHermesIntegrationE2E` | ~7s — UPDATE/QuickFix wiring (**12/12**) |
 | `audits\RUN_CREATIVE_DOMAIN_E2E.bat` | ~10s — creative domein manifest/docs/SOUL/provision (**11/11**) |
+| `audits\RUN_DASHBOARD_ON_START_E2E.bat` | ~15s — dashboard bij launch (`--no-open`, wiring + unit tests) (**7/7**) |
 | `audits\RUN_LEGAL_SKILLS_ROOKTEST.bat` | Snelle legal-skills pytest |
 | `pytest tests\audits\test_creative_domain_e2e_harness.py -q` | Unit + mocks voor creative E2E-harness |
 | `pytest tests\windows\test_repo_hygiene_institutional_e2e.py -m e2e -q` | Zelfde E2E via pytest (Windows) |
