@@ -88,6 +88,13 @@ Bij problemen: `pip install watchdog` (live watcher); `pygount` op PATH; dashboa
 
 Backend: `plugin_api_sprint3.py` · Frontend: `DataTableTab`, `SearchTab`, `TimelineTab`, `HistoryChart`.
 
+Sprint 3 E2E (alleen phase-10): `audits/RUN_CODEBASE_VIZ_SPRINT3_E2E.bat`
+
+| Env | Default | Beschrijving |
+|-----|---------|--------------|
+| `CODEBASE_VIZ_GIT_TIMEOUT` | `15` | Git subprocess timeout (s) |
+| `CODEBASE_VIZ_MAX_TODO_FILES` | `8000` | Max bestanden voor TODO-scan |
+
 ## Sprint 2 — Core viz (geleverd)
 
 - **Force Graph** — `/dependencies`, drag/zoom, zoekfilter, inspector (in/out imports), Live-badge via WebSocket

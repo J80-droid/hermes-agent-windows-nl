@@ -428,6 +428,95 @@ def test_history_git_missing_graceful(plugin_module, tmp_path):
         pass
 
 
+def test_history_per_commit_loc_not_cumulative(plugin_module):
+    # git log is newest-first; sync_history reverses to chronological
+    fake_log = "bbb|2024-02-01\n1\t1\tg.py\n\naaa|2024-01-01\n10\t5\tf.py\n"
+    with patch.object(plugin_module._s3, "_run_git", return_value=fake_log):
+        body = plugin_module._s3.sync_history(Path("."))
+    assert len(body["points"]) == 2
+    assert body["points"][0]["loc"] == 15
+    assert body["points"][1]["loc"] == 2
+
+
+def test_run_git_timeout_sprint3(plugin_module):
+    def _timeout(*_a, **_k):
+        raise subprocess.TimeoutExpired(cmd="git", timeout=1)
+
+    with patch.object(plugin_module._s3.subprocess, "run", _timeout):
+        with pytest.raises(RuntimeError, match="timed out"):
+            plugin_module._s3._run_git(Path("."), "status")
+
+
+def test_complexity_radon_missing(plugin_module, tiny_repo):
+    with patch.object(plugin_module._s3.subprocess, "run", side_effect=FileNotFoundError):
+        result = plugin_module._s3.sync_complexity(tiny_repo)
+    assert "not installed" in result.get("error", "")
+
+
+def test_search_empty_query_whitespace(plugin_module, tiny_repo):
+    result = plugin_module._s3.sync_search(tiny_repo, "  ")
+    assert result["items"] == []
+
+
+def test_dependency_cycles_deduped(plugin_module):
+    edges = [
+        {"source": "a", "target": "b", "type": "import"},
+        {"source": "b", "target": "a", "type": "import"},
+    ]
+    cycles = plugin_module._s3.sync_dependency_cycles(edges)
+    assert len(cycles) >= 1
+
+
+def test_todos_endpoint_no_repo(monkeypatch, tmp_path):
+    mod = _load_plugin_module(monkeypatch, None, env_value=str(tmp_path / "nope"))
+    mod.REPO_PATH = None
+    app = FastAPI()
+    app.include_router(mod.router, prefix="/api/plugins/codebase-viz")
+    c = TestClient(app)
+    body = c.get("/api/plugins/codebase-viz/todos").json()
+    assert body.get("error") == "no_repo"
+
+
+def test_complexity_endpoint_mocked(client, plugin_module, monkeypatch):
+    fake = {"items": [{"file": "x.py", "avg_complexity": 9.0, "max": 12, "blocks": 2}], "total": 1}
+    monkeypatch.setattr(plugin_module._s3, "sync_complexity", lambda _r: fake)
+    asyncio.run(plugin_module._invalidate_cache())
+    resp = client.get("/api/plugins/codebase-viz/complexity")
+    assert resp.json()["items"][0]["max"] == 12
+
+
+def test_search_endpoint_mocked(client, plugin_module, monkeypatch):
+    fake = {"items": [{"file": "a.py", "line": 1, "text": "hit"}], "total": 1, "query": "hit"}
+    monkeypatch.setattr(plugin_module._s3, "sync_search", lambda _r, q: fake)
+    resp = client.get("/api/plugins/codebase-viz/search?q=hit")
+    assert resp.status_code == 200
+    assert resp.json()["total"] == 1
+
+
+def test_history_endpoint_no_repo(monkeypatch, tmp_path):
+    mod = _load_plugin_module(monkeypatch, None, env_value=str(tmp_path / "nope"))
+    mod.REPO_PATH = None
+    app = FastAPI()
+    app.include_router(mod.router, prefix="/api/plugins/codebase-viz")
+    c = TestClient(app)
+    body = c.get("/api/plugins/codebase-viz/history").json()
+    assert body.get("error") == "no_repo"
+    assert body.get("points") == []
+
+
+def test_dependencies_include_cycles_key(client):
+    data = client.get("/api/plugins/codebase-viz/dependencies").json()
+    assert "cycles" in data
+    assert isinstance(data["cycles"], list)
+
+
+def test_sprint3_module_on_disk():
+    path = REPO_ROOT / "plugins/codebase-viz/dashboard/plugin_api_sprint3.py"
+    assert path.is_file()
+    text = path.read_text(encoding="utf-8")
+    assert "sync_churn" in text and "MAX_TODO_FILES" in text
+
+
 def test_force_scan_no_repo_still_invalidates(monkeypatch, tmp_path):
     mod = _load_plugin_module(monkeypatch, None, env_value=str(tmp_path / "nope"))
     mod.REPO_PATH = None

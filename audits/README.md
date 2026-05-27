@@ -60,6 +60,14 @@ Geïsoleerde E2E voor bundled plugin `codebase-viz` (structuur, metrics, doctor,
 | V10 | WebSocket | Ongeldig token geweigerd |
 | V12–V15 | Sprint 2 | bron + dist markers + `/dependencies` + `wsAuth` |
 | V16–V18 | Hardening | `no_repo` deps, JSON type-guard, pygount timeout |
+
+### Codebase Viz Sprint 3 E2E (geïsoleerd)
+
+```bat
+audits\RUN_CODEBASE_VIZ_SPRINT3_E2E.bat
+```
+
+Zie `audits/CODEBASE_VIZ_SPRINT3_E2E_README.md` (S1–S9: todos, search, history parser, cycles, API mocks).
 | V11 | pytest gate | `tests/plugins/test_codebase_viz_plugin.py` |
 
 ```bat

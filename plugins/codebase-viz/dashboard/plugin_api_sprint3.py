@@ -1,4 +1,8 @@
-"""Sprint 3 (fase 10) sync scanners — imported by plugin_api.py."""
+"""Sprint 3 (fase 10) sync scanners — imported by plugin_api.py.
+
+All ``sync_*`` functions are synchronous and intended for ``asyncio.to_thread``.
+Git-based scanners batch subprocess calls (no per-file git) and honour timeouts.
+"""
 
 from __future__ import annotations
 
@@ -15,6 +19,7 @@ GIT_TIMEOUT = int(os.environ.get("CODEBASE_VIZ_GIT_TIMEOUT", "15"))
 GIT_LONG_TIMEOUT = int(os.environ.get("CODEBASE_VIZ_GIT_LONG_TIMEOUT", "30"))
 RADON_TIMEOUT = int(os.environ.get("CODEBASE_VIZ_RADON_TIMEOUT", "60"))
 SEARCH_TIMEOUT = int(os.environ.get("CODEBASE_VIZ_SEARCH_TIMEOUT", "15"))
+MAX_TODO_FILES = int(os.environ.get("CODEBASE_VIZ_MAX_TODO_FILES", "8000"))
 TODO_PATTERN = re.compile(r"\b(TODO|FIXME|HACK|XXX)\b", re.IGNORECASE)
 
 SKIP_PARTS = {
@@ -31,13 +36,18 @@ def _should_skip(path: Path) -> bool:
 
 
 def _run_git(repo: Path, *args: str, timeout: int = GIT_TIMEOUT) -> str:
-    proc = subprocess.run(
-        ["git", *args],
-        cwd=str(repo),
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-    )
+    try:
+        proc = subprocess.run(
+            ["git", *args],
+            cwd=str(repo),
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except FileNotFoundError as exc:
+        raise RuntimeError("git executable not found on PATH") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"git timed out after {timeout}s") from exc
     if proc.returncode != 0:
         raise RuntimeError(f"git failed ({proc.returncode}): {proc.stderr[:300]}")
     return proc.stdout
@@ -140,7 +150,16 @@ def sync_complexity(repo: Path) -> dict[str, Any]:
 
 def sync_todos(repo: Path) -> dict[str, Any]:
     items: list[dict[str, Any]] = []
+    scanned = 0
     for path in repo.rglob("*"):
+        scanned += 1
+        if scanned > MAX_TODO_FILES:
+            return {
+                "items": items[:200],
+                "total": len(items),
+                "truncated": True,
+                "error": f"scan capped at {MAX_TODO_FILES} files",
+            }
         if not path.is_file() or _should_skip(path):
             continue
         if path.suffix.lower() not in {".py", ".js", ".jsx", ".ts", ".tsx", ".md", ".yaml", ".yml"}:
@@ -339,28 +358,46 @@ def sync_timeline(repo: Path, max_commits: int = 100) -> dict[str, Any]:
 
 
 def sync_history(repo: Path, max_commits: int = 30) -> dict[str, Any]:
-    out = _run_git(
-        repo,
-        "log", f"--max-count={max_commits}", "--format=%H|%ai", "--numstat",
-        timeout=GIT_LONG_TIMEOUT,
-    )
+    try:
+        out = _run_git(
+            repo,
+            "log", f"--max-count={max_commits}", "--format=%H|%ai", "--numstat",
+            timeout=GIT_LONG_TIMEOUT,
+        )
+    except RuntimeError as exc:
+        return {"points": [], "total": 0, "error": str(exc)}
+
     points: list[dict[str, Any]] = []
-    current: dict[str, Any] | None = None
-    loc_total = 0
+    current_sha: str | None = None
+    current_date: str | None = None
+    commit_loc = 0
+
     for line in out.splitlines():
-        if "|" in line and not line[0].isdigit() and "\t" not in line[:3]:
-            if current:
-                current["loc"] = loc_total
-                points.append(current)
-            sha, date = line.split("|", 1)
-            current = {"sha": sha[:7], "date": date.strip(), "loc": loc_total}
-        elif current and "\t" in line:
-            parts = line.split("\t")
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if "|" in stripped and not stripped.split("|", 1)[0].isdigit():
+            if current_sha is not None:
+                points.append({
+                    "sha": current_sha[:7],
+                    "date": current_date or "",
+                    "loc": commit_loc,
+                })
+            sha, date = stripped.split("|", 1)
+            current_sha = sha
+            current_date = date.strip()
+            commit_loc = 0
+        elif current_sha and "\t" in stripped:
+            parts = stripped.split("\t")
             if len(parts) >= 2 and parts[0].isdigit() and parts[1].isdigit():
-                loc_total += int(parts[0]) + int(parts[1])
-    if current:
-        current["loc"] = loc_total
-        points.append(current)
+                commit_loc += int(parts[0]) + int(parts[1])
+
+    if current_sha is not None:
+        points.append({
+            "sha": current_sha[:7],
+            "date": current_date or "",
+            "loc": commit_loc,
+        })
     points.reverse()
     return {"points": points, "total": len(points)}
 
@@ -368,27 +405,29 @@ def sync_history(repo: Path, max_commits: int = 30) -> dict[str, Any]:
 def sync_dependency_cycles(edges: list[dict[str, str]]) -> list[list[str]]:
     graph: dict[str, list[str]] = {}
     for e in edges:
-        graph.setdefault(e["source"], []).append(e["target"])
+        if e.get("source") and e.get("target"):
+            graph.setdefault(e["source"], []).append(e["target"])
 
     cycles: list[list[str]] = []
-    path: list[str] = []
-    visited: set[str] = set()
+    seen: set[tuple[str, ...]] = set()
 
-    def dfs(node: str) -> None:
-        if node in path:
+    def dfs(node: str, path: list[str], stack: set[str]) -> None:
+        if node in stack:
             idx = path.index(node)
-            cycle = path[idx:] + [node]
-            if len(cycle) <= 12:
-                cycles.append(cycle)
+            cycle = tuple(path[idx:] + [node])
+            if len(cycle) <= 12 and cycle not in seen:
+                seen.add(cycle)
+                cycles.append(list(cycle))
             return
-        if node in visited:
+        if len(path) > 12:
             return
-        visited.add(node)
+        stack.add(node)
         path.append(node)
         for nxt in graph.get(node, []):
-            dfs(nxt)
+            dfs(nxt, path, stack)
         path.pop()
+        stack.discard(node)
 
     for n in list(graph.keys())[:200]:
-        dfs(n)
+        dfs(n, [], set())
     return cycles[:20]
