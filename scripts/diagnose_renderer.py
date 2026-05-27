@@ -368,7 +368,7 @@ def _print_report() -> None:
 def _show_all_palettes() -> None:
     """Print a visual panel for every registered palette using the actual renderer."""
     try:
-        from hermes_cli.institutional_render import _PALETTES, render_institutional_assistant
+        from hermes_cli.institutional_render import _PALETTES, render_institutional_from_prepared
         from hermes_cli.display_markdown import prepare_assistant_markdown_plain
         from rich.console import Console
     except Exception as exc:
@@ -393,7 +393,7 @@ def _show_all_palettes() -> None:
     print("=" * 72)
 
     for name in sorted(_PALETTES.keys()):
-        renderable = render_institutional_assistant(plain, palette=name, already_normalized=True)
+        renderable = render_institutional_from_prepared(plain, palette=name)
         print(f"\n--- Palette: {name} ---")
         console.print(renderable)
 

@@ -62,9 +62,11 @@ Alleen **LLM-antwoorden** — niet de Hermes-banner of prompt.
 
 Code: [`hermes_cli/institutional_render.py`](../hermes_cli/institutional_render.py), [`hermes_cli/display_markdown.py`](../hermes_cli/display_markdown.py), normalizer [`markdown_output_normalize.py`](../hermes_cli/markdown_output_normalize.py).
 
-**Pipeline:** `prepare_assistant_markdown_plain()` normaliseert één keer → `render_institutional_assistant(..., already_normalized=True)` splitst op `##`-koppen en `**Label:**`-blokken, voegt lege regels tussen Rich-`Group`-delen toe. Labels in sectie-body worden expliciet gepeeld (`_render_body_with_embedded_labels`) zodat ze niet via markdown op één regel vallen.
+**Pipeline (single normalize contract):** `prepare_assistant_markdown_plain()` normaliseert **één keer** (inclusief `compact_institutional_check`) → `render_institutional_from_prepared()` splitst op `##`-koppen en `**Label:**`-blokken. Geen tweede `normalize_assistant_markdown` in de renderer. Productie-guard: `HERMES_STRICT_RENDER=1` weigert `render_institutional_assistant(..., already_normalized=False)`.
 
-**`<institutional_check>`:** tags worden in de renderer niet getoond; checklist op één compacte regel (`Controle  · item · item`).
+**Streaming (finalize-only):** tijdens token-stream **geen** volledige institutional Rich/ANSI per chunk. Klassieke CLI streamt ruwe markdown (+ tabel-flush met optionele normalize op het blok); TUI/Ink gebruiken TS-incremental markdown; volledige Python-renderer alleen bij eindpaneel / `message.complete` / `format_response_ansi`.
+
+**`<institutional_check>`:** normalizer vervangt XML door één regel (`Controle  · item  · item`, pariteit Web/Ink); Rich-renderer toont dezelfde compacte checklist zonder zichtbare tags.
 
 **Kop + inhoud:** elke `#`–`######` via `TightHeadingBody` **flush** op tabel/lijst/proza. **Labels:** roze/oranje kopregel, waarde op regel eronder (`TightHeadingBody`, geen kolom-layout). **Tussen** secties één subtiele lege regel (`SectionSpacer`). Tabellen: `leading=0`, minimale cel-padding; celinhoud erft kolomkleur (CLI + Web `tableCellClass`).
 
@@ -72,7 +74,9 @@ Code: [`hermes_cli/institutional_render.py`](../hermes_cli/institutional_render.
 
 **Kleuren:** sectiekoppen (h1–h4) = niveau-gebaseerd; tabelkolommen = apart palet (`header_palette` op alle YAML-paletten, **cyaan-first** zodat `##` groen ≠ kolom `ID` cyaan).
 
-**Score (8 checks):** checklist, kop-op-inhoud, sectie-spacing, labels, NFR-tabel, **vergelijking_tabel** (pseudo-layout), kleur h2≠kolom0, render-pipeline — `python scripts/score_institutional_render.py --verify` (E2E stap 2g, drempel ≥ 9.0).
+**Score (9 checks):** checklist, kop-op-inhoud, sectie-spacing, labels, NFR-tabel, **vergelijking_tabel**, **architectuur_tabel**, kleur h2≠kolom0, render-pipeline — `python scripts/score_institutional_render.py --verify` (E2E stap 2g, drempel ≥ 9.0). Eén gedeelde ANSI-render per score-run (checklist + pipeline).
+
+**Pipeline E2E (2026-05-27):** `audits/RUN_INSTITUTIONAL_PIPELINE_E2E.bat` (11/11) — normalize-contract, compact check, streaming-invarianten, pytest `test_render_pipeline_contract.py`. Unit: `pytest tests/audits/test_institutional_pipeline_e2e_harness.py tests/hermes_cli/test_institutional_render_helpers.py -q`. Bench (lokaal): `python scripts/bench_normalize_markdown.py`.
 
 **Normalizer (fallback):** zet platte outline om naar `##`/`###`; `N Stap N:` → `## Stap N:`; inline `**Label:** waarde` → label + waarde op aparte regels; platte `Categorie: … Eis: …` en **NFR-prose** (streepjes, `**Performantie**`-blokken) → markdown-tabel; **pseudo-tabellen** (`____`, `EntiteitA: … _____ EntiteitB: …`, pipe-rijen zonder `|---|`, auxiliary-overzichten met `Provider:`/`Model:`) → markdown-tabel vóór render (turn-onafhankelijk, contextafhankelijk 2–6 kolommen); **ingeklapte records** (`Component: … Keuze: … Status: … ——————` op één regel of multi-line zonder em-dash) via `_parse_collapsed_record_rows` (≥2 unieke rijen na dedupe; `|` in cel → ` / `); intent `overview` voor koppen met `architectuur`/`poc`/…; `<institutional_check>` op eigen regels.
 

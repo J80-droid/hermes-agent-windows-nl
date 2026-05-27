@@ -114,34 +114,34 @@ class TestScoreChecklistRendered:
             "<institutional_check>\n- A: [OK]\n</institutional_check>\n\n"
             "## Projectoverzicht\nTekst."
         )
-        score_val, note = score._score_checklist_rendered(md)
+        score_val, note = score._score_checklist_rendered(md, render_cache={})
         assert score_val == 10
         assert "compact" in note.lower() or "geen xml" in note.lower()
 
     @patch("hermes_cli.display_markdown.format_response_ansi")
     def test_xml_tags_visible_in_render_low_score(self, mock_fmt: MagicMock):
         mock_fmt.return_value = "output with <institutional_check> still visible"
-        score_val, note = score._score_checklist_rendered("ignored")
+        score_val, note = score._score_checklist_rendered("ignored", render_cache={})
         assert score_val == 4
         assert "xml" in note.lower()
 
     @patch("hermes_cli.display_markdown.format_response_ansi")
     def test_missing_controle_line(self, mock_fmt: MagicMock):
         mock_fmt.return_value = "Rendered body without keyword"
-        score_val, _ = score._score_checklist_rendered("ignored")
+        score_val, _ = score._score_checklist_rendered("ignored", render_cache={})
         assert score_val == 7
 
     @patch("hermes_cli.display_markdown.format_response_ansi")
     def test_render_exception_returns_mid_score(self, mock_fmt: MagicMock):
         mock_fmt.side_effect = RuntimeError("Rich unavailable")
-        score_val, note = score._score_checklist_rendered("ignored")
+        score_val, note = score._score_checklist_rendered("ignored", render_cache={})
         assert score_val == 5
         assert "renderfout" in note.lower()
 
     @patch("hermes_cli.display_markdown.format_response_ansi")
     def test_empty_render_output_still_has_controle_when_present(self, mock_fmt: MagicMock):
         mock_fmt.return_value = ""
-        score_val, _ = score._score_checklist_rendered("ignored")
+        score_val, _ = score._score_checklist_rendered("ignored", render_cache={})
         assert score_val == 7
 
 
@@ -396,25 +396,27 @@ class TestScoreHeadingVsTableColor:
 class TestScoreRenderPipeline:
     def test_happy_path_renders_section_content(self):
         md = "## Functionele requirements\n| ID | Req |\n|---|---|\n| 1 | X |\n"
-        score_val, _ = score._score_render_pipeline(md)
+        score_val, _ = score._score_render_pipeline(md, render_cache={})
         assert score_val == 10
 
     @patch("hermes_cli.display_markdown.format_response_ansi")
     def test_empty_render_output(self, mock_fmt: MagicMock):
         mock_fmt.return_value = "   \n  "
-        score_val, note = score._score_render_pipeline("## Functionele\nTekst.")
+        score_val, note = score._score_render_pipeline("## Functionele\nTekst.", render_cache={})
         assert score_val == 5
         assert "lege" in note.lower()
 
     def test_missing_section_in_output(self):
         with patch("hermes_cli.display_markdown.format_response_ansi", return_value="zonder sectie"):
-            score_val, note = score._score_render_pipeline("## Functionele requirements\nBody.")
+            score_val, note = score._score_render_pipeline(
+                "## Functionele requirements\nBody.", render_cache={}
+            )
         assert score_val == 6
         assert "mist" in note.lower() or "sectie" in note.lower()
 
     @patch("hermes_cli.display_markdown.format_response_ansi", side_effect=OSError("terminal"))
     def test_render_exception(self, _mock_fmt: MagicMock):
-        score_val, note = score._score_render_pipeline("any")
+        score_val, note = score._score_render_pipeline("any", render_cache={})
         assert score_val == 5
         assert "renderfout" in note.lower()
 
@@ -472,6 +474,11 @@ class TestScoreMarkdown:
         mock_norm.return_value = ROOKTEST_GOLDEN
         score.score_markdown("raw input")
         mock_norm.assert_called_once_with("raw input")
+
+    @patch("hermes_cli.display_markdown.format_response_ansi", return_value="Controle ok")
+    def test_score_markdown_reuses_single_ansi_render(self, mock_fmt: MagicMock):
+        score.score_markdown(ROOKTEST_GOLDEN)
+        assert mock_fmt.call_count == 1
 
     def test_empty_string_still_returns_full_check_map(self):
         checks = score.score_markdown("")
@@ -531,12 +538,11 @@ class TestMainCli:
         )
         assert score.main() == 1
 
-    def test_main_missing_file_raises(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    def test_main_missing_file_returns_error(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         missing = tmp_path / "does_not_exist.md"
         monkeypatch.setattr(
             sys,
             "argv",
             ["score_institutional_render", "--file", str(missing)],
         )
-        with pytest.raises(FileNotFoundError):
-            score.main()
+        assert score.main() == 1

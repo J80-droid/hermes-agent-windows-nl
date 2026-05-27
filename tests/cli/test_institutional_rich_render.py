@@ -136,6 +136,17 @@ def test_section_spacer_inserts_blank_line_between_blocks():
     assert raw[tweede - 1].strip() == ""
 
 
+def test_prose_starting_with_controle_not_treated_as_checklist():
+    """Avoid false positive: normal 'Controle ...' prose must not become compact checklist."""
+    md = "## Projectoverzicht\nControle en verificatie van het plan.\n"
+    renderable = render_institutional_assistant(
+        normalize_assistant_markdown(md), already_normalized=True
+    )
+    from hermes_cli.institutional_render import RichText, _is_compact_check_block
+
+    assert not _is_compact_check_block(renderable)
+
+
 def test_single_blank_line_after_checklist_not_double():
     md = (
         "<institutional_check>\n- A: [OK]\n</institutional_check>\n\n"

@@ -1,4 +1,10 @@
-"""Shared Rich markdown rendering for classic CLI, gateway, and rich_output bridge."""
+"""Shared Rich markdown rendering for classic CLI, gateway, and rich_output bridge.
+
+Institutional end-render: ``prepare_assistant_markdown_plain()`` normalizes once,
+then ``render_institutional_from_prepared()`` (no second normalize). Streaming is
+finalize-only: ``StreamingRenderer.feed`` returns ``None``; full ANSI on
+``finish()`` / ``message.complete`` via ``format_response_ansi``.
+"""
 
 from __future__ import annotations
 
@@ -15,7 +21,7 @@ from rich.theme import Theme
 from agent.markdown_tables import realign_markdown_tables
 from hermes_cli.institutional_render import (
     assistant_markdown_theme,
-    render_institutional_assistant,
+    render_institutional_from_prepared,
 )
 from hermes_cli.markdown_output_normalize import normalize_assistant_markdown
 
@@ -209,11 +215,10 @@ def render_final_assistant_markdown(
     )
     settings = get_assistant_render_settings()
     if settings["assistant_render_style"] == "institutional_rich":
-        return render_institutional_assistant(
+        return render_institutional_from_prepared(
             plain,
             palette=settings["assistant_palette"],
             label_columns=settings["assistant_label_columns"],
-            already_normalized=True,
         )
     plain = prepare_assistant_markdown_plain(text, panel_width=width)
     return Markdown(plain)

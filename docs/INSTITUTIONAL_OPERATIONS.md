@@ -40,6 +40,11 @@ pre-commit install
 | `audits\RUN_LEGAL_SKILLS_ROOKTEST.bat` | Snelle legal-skills pytest |
 | `pytest tests\audits\test_creative_domain_e2e_harness.py -q` | Unit + mocks voor creative E2E-harness |
 | `pytest tests\windows\test_repo_hygiene_institutional_e2e.py -m e2e -q` | Zelfde E2E via pytest (Windows) |
+| `audits\RUN_INSTITUTIONAL_PIPELINE_E2E.bat` | ~12s — single-normalize, compact check, streaming, score verify (**11/11**) |
+| `pytest tests\audits\test_institutional_pipeline_e2e_harness.py -q` | Unit + mocks voor pipeline E2E-harness (`-m e2e` = volledige harness) |
+| `pytest tests\hermes_cli\test_render_pipeline_contract.py -q` | Productie-contract: 1× normalize, finalize-only stream |
+| `python scripts\score_institutional_render.py --verify` | Rooktest-score ≥ 9.0/10 |
+| `python scripts\bench_normalize_markdown.py` | Lokale normalizer-benchmark (geen CI-gate) |
 
 Guard-log (lokaal): `windows\_upstream_sync_guard.log`. CI op push: `.github/workflows/fork-windows-institutional.yml`.
 
@@ -77,13 +82,45 @@ windows\SYNC_DOMAIN_TOOLSETS.bat --create-missing
 
 Legal E2E: `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat` · `RUN_AUDITS.bat -IncludeLegalDomainE2E`.
 
-Creative (14e profiel) E2E: `audits\RUN_CREATIVE_DOMAIN_E2E.bat` · provision: `windows\SYNC_DOMAIN_TOOLSETS.bat --create-missing` · toolset-drift (alle profielen): `windows\audits\RUN_TOOLSET_DOMAIN_E2E.bat`.
+### Creative — eerste setup (14e profiel)
+
+Eenmalig na toevoegen van domein `creative` (zie [`domains.yaml.example`](domains.yaml.example) → `%USERPROFILE%\data\domains.yaml`, blueprint [`DOMAIN_BLUEPRINT.md`](DOMAIN_BLUEPRINT.md)). Detail: [`13_Creative/ONBOARDING.md`](13_Creative/ONBOARDING.md).
+
+```cmd
+set HERMES_HOME=%LOCALAPPDATA%\hermes
+windows\SYNC_DOMAIN_TOOLSETS.bat --create-missing
+python scripts\rag_pipeline\sync_profile_mcp_from_domains.py --domain creative
+windows\LANCEDB_MAINTENANCE.bat --init-missing
+windows\scripts\update_knowledge.bat creative
+windows\SYNC_SOUL_SNIPPETS.bat
+```
+
+**Hyperframes** (optional skill, motion-graphics/HTML→MP4 — niet bundled):
+
+```cmd
+hermes skills install official/creative/hyperframes
+bash optional-skills/creative/hyperframes/scripts/setup.sh
+npx hyperframes doctor
+```
+
+| Commando | Geautomatiseerd in `POST_GIT_PULL` / `UPDATE_HERMES`? |
+|----------|--------------------------------------------------------|
+| `SYNC_TRUST_RUNTIME.bat` | **Ja** (trust + memory; geen volledige SOUL-template deploy) |
+| `launch_soul_anatomy_deploy` (SOUL + snippets) | **Ja** via `POST_GIT_PULL` — niet de losse `SYNC_SOUL_SNIPPETS.bat` |
+| `SYNC_DOMAIN_TOOLSETS.bat` | **Ja** (alleen sync bestaande profielen; **geen** `--create-missing`) |
+| `SYNC_SOUL_SNIPPETS.bat` | **Nee** — handmatig of `-Force` na template-wijziging |
+| `LANCEDB_MAINTENANCE --init-missing` | **Nee** — zie ook [`IDE_MAINTENANCE.md`](IDE_MAINTENANCE.md) |
+| `update_knowledge.bat creative` | **Nee** — UPDATE draait hooguit `--mcp-test` (alle domeinen) |
+| Hyperframes install + `doctor` | **Nee** — optioneel, eenmalig |
+
+Na setup: `audits\RUN_CREATIVE_DOMAIN_E2E.bat` (11/11) · drift alle profielen: `windows\audits\RUN_TOOLSET_DOMAIN_E2E.bat`. Na SOUL/toolset-wijziging: `SYNC_DOMAIN_TOOLSETS.bat` → Hermes herstart + `/new`.
 
 ### Runtime, SOUL & presentatie
 
 ```cmd
 windows\APPLY_INSTITUTIONAL_RUNTIME.bat
 windows\APPLY_SOUL_ANATOMY_RUNTIME.bat
+windows\SYNC_SOUL_SNIPPETS.bat
 windows\DIAGNOSE_RENDERER.bat
 ```
 

@@ -216,7 +216,22 @@ def test_normalize_assistant_markdown_converts_outline_and_check():
     out = normalize_assistant_markdown(raw)
     assert "## Projectoverzicht" in out
     assert "### Team" in out
-    assert "<institutional_check>\n" in out
+    assert "<institutional_check>" not in out.lower()
+    assert "Controle" in out
+
+
+def test_compact_institutional_check_replaces_xml_block():
+    raw = (
+        "<institutional_check>\n"
+        "- Controle hyperbolen: [Uitgevoerd]\n"
+        "- Controle stelligheden: [Uitgevoerd]\n"
+        "</institutional_check>\n\n"
+        "## Projectoverzicht\n"
+    )
+    out = normalize_assistant_markdown(raw)
+    assert "Controle  ·" in out
+    assert "hyperbolen" in out
+    assert "<institutional_check>" not in out.lower()
 
 
 def test_ensure_markdown_table_dividers_inserts_separator():

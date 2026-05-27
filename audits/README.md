@@ -1,3 +1,25 @@
+# Institutional pipeline E2E
+
+Geïsoleerde E2E voor normalize → render → score hardening (single-normalize contract, `compact_institutional_check`, finalize-only streaming). Geen live API.
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| E1 | Repo-artefacten | Pipeline-modules, score/bench, contract tests, audit runners |
+| E2 | `compact_institutional_check` | XML → `Controle  · item` |
+| E3–E5 | Normalize contract | 1× normalize, `render_institutional_from_prepared`, `HERMES_STRICT_RENDER` |
+| E6–E7 | Render | Geen XML in ANSI; geen valse checklist op prose |
+| E8 | Streaming | Geen ANSI per chunk |
+| E9–E10 | Gates | `score --verify` ≥ 9.0; pytest contract |
+| E11 | TS parity | Python = Web op checklist-fixture (SKIP zonder npx) |
+
+```bat
+audits\RUN_INSTITUTIONAL_PIPELINE_E2E.bat
+```
+
+Zie `audits/INSTITUTIONAL_PIPELINE_E2E_README.md`.
+
+---
+
 # Creative domain E2E
 
 Geïsoleerde E2E voor profiel `creative` (14e domein): manifest, `13_Creative/`, SOUL, fork-skills, provision, pytest-subset. Geen live API.

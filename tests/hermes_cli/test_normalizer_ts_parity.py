@@ -95,6 +95,12 @@ PARITY_FIXTURES: list[tuple[str, str]] = [
         "Component: Datamodel Keuze: Pydantic Status: geimplementeerd\n",
     ),
     (
+        "institutional_check_compact",
+        "<institutional_check>\n- Controle hyperbolen: [Uitgevoerd]\n"
+        "- Controle stelligheden: [Uitgevoerd]\n</institutional_check>\n\n"
+        "## Projectoverzicht\nTekst.\n",
+    ),
+    (
         "resilience_laag_wat_waarom_unheaded",
         "**Veerkrachtstrategie – beknopte samenvatting:**\n\n"
         "Drie-lagen verdediging.\n\n"
@@ -136,19 +142,8 @@ def _run_ts_runner(runner: Path, text: str) -> str:
 
 
 def _normalize_for_parity(text: str) -> str:
-    """Align Python with TS: TS compacts institutional_check; strip for compare."""
-    out = normalize_assistant_markdown(text)
-    if "<institutional_check>" in text.lower():
-        # TS compacts tags; Python keeps block layout — compare without tag lines
-        lines = [
-            ln
-            for ln in out.splitlines()
-            if ln.strip()
-            and not ln.strip().lower().startswith("<institutional_check")
-            and not ln.strip().lower().startswith("</institutional_check")
-        ]
-        return "\n".join(lines)
-    return out
+    """Python and Web/Ink share the same pipeline including compact_institutional_check."""
+    return normalize_assistant_markdown(text)
 
 
 @pytest.mark.parametrize("name,text", PARITY_FIXTURES, ids=[n for n, _ in PARITY_FIXTURES])

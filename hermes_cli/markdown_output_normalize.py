@@ -12,6 +12,7 @@ Pipeline highlights (see ``normalize_assistant_markdown``):
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 
 # Heading with trailing prose on the same line (Dutch/English sentence starters).
 _HEADING_INLINE_BODY_RE = re.compile(
@@ -564,22 +565,24 @@ def _count_pseudo_table_signals(body_lines: list[str]) -> int:
         if _PSEUDO_SEPARATOR_LINE_RE.match(stripped):
             signals += 1
             continue
-        if _ORPHAN_TRAILING_PIPE_RE.search(line):
+        if "|" in line and _ORPHAN_TRAILING_PIPE_RE.search(line):
             signals += 1
-        if _BOLD_CATEGORY_INLINE_RE.match(stripped) and _INLINE_DUAL_SPLIT_RE.search(stripped):
+        if "**" in stripped and _BOLD_CATEGORY_INLINE_RE.match(
+            stripped
+        ) and _INLINE_DUAL_SPLIT_RE.search(stripped):
             signals += 1
         if _INLINE_DUAL_SPLIT_RE.search(stripped) and not stripped.startswith("|"):
             signals += 1
-        if _OVERVIEW_FIELD_LINE_RE.match(stripped):
+        if ":" in stripped and _OVERVIEW_FIELD_LINE_RE.match(stripped):
             signals += 1
-        if len(_FIELD_KEY_TOKEN_RE.findall(stripped)) >= 3:
+        if stripped.count(":") >= 3 and len(_FIELD_KEY_TOKEN_RE.findall(stripped)) >= 3:
             signals += 1
-        if _BOLD_CATEGORY_LINE_RE.match(stripped):
+        if "**" in stripped and _BOLD_CATEGORY_LINE_RE.match(stripped):
             signals += 1
     return signals
 
 
-def _discover_repeated_field_keys(text: str) -> list[str] | None:
+def _discover_repeated_field_keys_impl(text: str) -> list[str] | None:
     """Find Label: keys that repeat across em-dash-separated records (e.g. Component/Keuze/Status)."""
     if not text or not text.strip():
         return None
@@ -599,6 +602,19 @@ def _discover_repeated_field_keys(text: str) -> list[str] | None:
     if len(repeated) < 2:
         return None
     return repeated[:_MAX_COMPARISON_COLUMNS]
+
+
+@lru_cache(maxsize=256)
+def _discover_repeated_field_keys_cached(text: str) -> tuple[str, ...]:
+    if not text:
+        return ()
+    result = _discover_repeated_field_keys_impl(text)
+    return tuple(result) if result else ()
+
+
+def _discover_repeated_field_keys(text: str) -> list[str] | None:
+    keys = _discover_repeated_field_keys_cached(text)
+    return list(keys) if keys else None
 
 
 def _split_record_segments(
@@ -1188,6 +1204,50 @@ def _normalize_unheaded_collapsed_paragraphs(text: str) -> str:
     return "\n".join(out)
 
 
+def _needs_pseudo_table_normalize(text: str) -> bool:
+    """Fast pre-gate equivalent to the legacy six-regex check (cheap checks first)."""
+    if "|" in text:
+        return True
+    if "____" in text or re.search(r"_{4,}", text):
+        return True
+    if "**" in text and re.search(r"^\*\*[^*]+\*\*", text, re.MULTILINE):
+        return True
+    if re.search(
+        r"(?i)\b(versus|vs\.?|vergelijk|comparison|overzicht|auxiliary)\b", text
+    ):
+        return True
+    if re.search(r"[—–-]{4,}", text):
+        return True
+    if len(_FIELD_REPEAT_GATE_RE.findall(text)) >= 2:
+        return True
+    return False
+
+
+_INSTITUTIONAL_CHECK_COMPACT_RE = re.compile(
+    r"<institutional_check>\s*(?P<body>.*?)\s*</institutional_check>",
+    re.DOTALL | re.IGNORECASE,
+)
+_CHECKLIST_BULLET_STRIP_RE = re.compile(r"^[-*+]\s+")
+
+
+def compact_institutional_check(text: str) -> str:
+    """Compact checklist blocks (parity with Web/Ink ``compactInstitutionalCheck``)."""
+
+    def _repl(match: re.Match[str]) -> str:
+        body = match.group("body")
+        items: list[str] = []
+        for line in body.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            items.append(_CHECKLIST_BULLET_STRIP_RE.sub("", line))
+        if not items:
+            return "Controle"
+        return f"Controle  · {'  · '.join(items)}"
+
+    return _INSTITUTIONAL_CHECK_COMPACT_RE.sub(_repl, text or "")
+
+
 def normalize_pseudo_tables_to_markdown(text: str) -> str:
     """Convert pseudo-layout blocks into markdown tables (context-aware 2-6 columns).
 
@@ -1198,14 +1258,7 @@ def normalize_pseudo_tables_to_markdown(text: str) -> str:
     if not text or not text.strip():
         return text or ""
     text = text.replace("\r\n", "\n").replace("\r", "\n")
-    if not (
-        "|" in text
-        or re.search(r"_{4,}", text)
-        or re.search(r"^\*\*[^*]+\*\*", text, re.MULTILINE)
-        or re.search(r"(?i)\b(versus|vs\.?|vergelijk|comparison|overzicht|auxiliary)\b", text)
-        or re.search(r"[—–-]{4,}", text)
-        or len(_FIELD_REPEAT_GATE_RE.findall(text)) >= 2
-    ):
+    if not _needs_pseudo_table_normalize(text):
         return text
 
     lines = text.splitlines()
@@ -1268,7 +1321,9 @@ def normalize_assistant_markdown(
     """Apply institutional typography normalizers before Rich/Ink render.
 
     Normalizes Windows CRLF and legacy Mac CR to LF before parsing so pseudo-table
-    detection behaves the same on all platforms.
+    detection behaves the same on all platforms. Final step: ``compact_institutional_check``
+    (parity with Web/Ink ``compactInstitutionalCheck``). Call once per turn; the Rich
+    renderer must use ``already_normalized=True`` (see ``render_institutional_from_prepared``).
     """
     out = (text or "").replace("\r\n", "\n").replace("\r", "\n")
     out = ensure_institutional_check_block(out)
@@ -1284,4 +1339,5 @@ def normalize_assistant_markdown(
     out = tighten_heading_and_label_spacing(out)
     out = normalize_plain_nfr_rows_to_table(out)
     out = normalize_nfr_prose_section_to_table(out)
+    out = compact_institutional_check(out)
     return collapse_extra_blank_lines(out)

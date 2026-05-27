@@ -358,13 +358,21 @@ function countPseudoTableSignals(bodyLines: string[]): number {
       signals++
       continue
     }
-    if (ORPHAN_TRAILING_PIPE_RE.test(line)) signals++
-    if (BOLD_CATEGORY_INLINE_RE.test(stripped) && INLINE_DUAL_SPLIT_RE.test(stripped)) signals++
+    if (line.includes('|') && ORPHAN_TRAILING_PIPE_RE.test(line)) signals++
+    if (
+      stripped.includes('**') &&
+      BOLD_CATEGORY_INLINE_RE.test(stripped) &&
+      INLINE_DUAL_SPLIT_RE.test(stripped)
+    ) {
+      signals++
+    }
     if (INLINE_DUAL_SPLIT_RE.test(stripped) && !stripped.startsWith('|')) signals++
-    if (OVERVIEW_FIELD_LINE_RE.test(stripped)) signals++
-    const labelCount = stripped.match(FIELD_KEY_TOKEN_COUNT_RE)?.length ?? 0
+    if (stripped.includes(':') && OVERVIEW_FIELD_LINE_RE.test(stripped)) signals++
+    const labelCount = stripped.includes(':')
+      ? stripped.match(FIELD_KEY_TOKEN_COUNT_RE)?.length ?? 0
+      : 0
     if (labelCount >= 3) signals++
-    if (BOLD_CATEGORY_LINE_RE.test(stripped)) signals++
+    if (stripped.includes('**') && BOLD_CATEGORY_LINE_RE.test(stripped)) signals++
   }
   return signals
 }
@@ -969,20 +977,20 @@ function normalizeUnheadedCollapsedParagraphs(text: string): string {
   return out.join('\n')
 }
 
+function needsPseudoTableNormalize(text: string): boolean {
+  if (text.includes('|')) return true
+  if (text.includes('____') || /_{4,}/.test(text)) return true
+  if (text.includes('**') && /^\*\*[^*]+\*\*/m.test(text)) return true
+  if (/\b(versus|vs\.?|vergelijk|comparison|overzicht|auxiliary)\b/i.test(text)) return true
+  if (/[—–-]{4,}/.test(text)) return true
+  const fieldRepeatMatches = text.match(FIELD_REPEAT_GATE_RE) ?? []
+  return fieldRepeatMatches.length >= 2
+}
+
 function normalizePseudoTablesToMarkdown(text: string): string {
   if (!text?.trim()) return text || ''
   text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
-  const fieldRepeatMatches = text.match(FIELD_REPEAT_GATE_RE) ?? []
-  if (
-    !(
-      text.includes('|') ||
-      /_{4,}/.test(text) ||
-      /^\*\*[^*]+\*\*/m.test(text) ||
-      /\b(versus|vs\.?|vergelijk|comparison|overzicht|auxiliary)\b/i.test(text) ||
-      /[—–-]{4,}/.test(text) ||
-      fieldRepeatMatches.length >= 2
-    )
-  ) {
+  if (!needsPseudoTableNormalize(text)) {
     return text
   }
 

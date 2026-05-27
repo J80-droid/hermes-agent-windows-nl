@@ -1,8 +1,18 @@
-"""Institutional Rich renderer for assistant answers (demo palette, per-column tables)."""
+"""Institutional Rich renderer for assistant answers (demo palette, per-column tables).
+
+Production path: ``prepare_assistant_markdown_plain()`` (normalize once) then
+``render_institutional_from_prepared()``. Table header colors use a per-render
+``contextvars`` token (thread-safe). Compact ``Controle  · …`` lines from the
+normalizer are peeled via ``_peel_leading_compact_controle`` (middle-dot required).
+Set ``HERMES_STRICT_RENDER=1`` to reject ``render_institutional_assistant(...,
+already_normalized=False)`` in production.
+"""
 
 from __future__ import annotations
 
+import contextvars
 import logging
+import os
 import re
 from pathlib import Path
 from typing import ClassVar, Iterator
@@ -15,7 +25,10 @@ from rich.markdown import Markdown, TableElement
 from rich.table import Table
 from rich.theme import Theme
 
-from hermes_cli.markdown_output_normalize import normalize_assistant_markdown
+from hermes_cli.markdown_output_normalize import (
+    coalesce_heading_content_chunks,
+    normalize_assistant_markdown,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +41,10 @@ TABLE_HEADER_PALETTE_DEMO = (
 
 _LABEL_ONLY_LINE_RE = re.compile(r"^\*\*(?P<label>[^*\n]+?):\*\*\s*$")
 _HEADING_LINE_RE = re.compile(r"^(?P<h>(?:\s{0,3})(#{1,6})\s+[^\n]+)$")
+_CHECKLIST_BULLET_RE = re.compile(r"^[-*+]\s+")
+# Normalizer compact output: "Controle  · item  · item" (middle dot required).
+_COMPACT_CONTROLE_LEADING_RE = re.compile(r"^Controle\s+·\s+")
+_COMPACT_CONTROLE_ITEMS_RE = re.compile(r"\s+·\s+")
 
 _INSTITUTIONAL_CHECK_BLOCK_RE = re.compile(
     r"<institutional_check>\s*(?P<body>.*?)\s*</institutional_check>",
@@ -84,6 +101,11 @@ _PALETTE_REQUIRED_KEYS = frozenset(
 )
 
 _PALETTES_CACHE: dict[str, dict[str, str]] | None = None
+
+_TABLE_HEADER_PALETTE_CTX: contextvars.ContextVar[tuple[str, ...]] = contextvars.ContextVar(
+    "institutional_table_header_palette",
+    default=TABLE_HEADER_PALETTE_DEMO,
+)
 
 
 def _load_yaml_palettes() -> dict[str, dict[str, str]]:
@@ -169,6 +191,8 @@ def table_header_palette(palette: str = "demo") -> tuple[str, ...]:
 
 
 class InstitutionalTableElement(TableElement):
+    """Per-column header styles; palette comes from context (set per render call)."""
+
     header_palette: ClassVar[tuple[str, ...]] = TABLE_HEADER_PALETTE_DEMO
 
     def __rich_console__(self, console, options):
@@ -181,7 +205,9 @@ class InstitutionalTableElement(TableElement):
             leading=0,
             padding=(0, 1),
         )
-        palette = self.header_palette
+        palette = _TABLE_HEADER_PALETTE_CTX.get() or TABLE_HEADER_PALETTE_DEMO
+        if not palette:
+            palette = TABLE_HEADER_PALETTE_DEMO
 
         if self.header is not None and self.header.row is not None:
             for idx, column in enumerate(self.header.row.cells):
@@ -248,18 +274,48 @@ class TightHeadingBody:
             yield from line
 
 
-def _heading_level(line: str) -> int:
-    m = re.match(r"^(#{1,6})\s+", line.strip())
-    return len(m.group(1)) if m else 0
-
-
 def _is_heading_line(line: str) -> bool:
-    return bool(_HEADING_LINE_RE.match(line.strip()))
+    stripped = line.lstrip()
+    return bool(stripped.startswith("#") and _HEADING_LINE_RE.match(stripped))
+
+
+def _peel_leading_compact_controle(text: str) -> tuple[str | None, str]:
+    """Peel normalizer output ``Controle  · item  · item`` into synthetic checklist body."""
+    if not text or not text.strip():
+        return None, text or ""
+    lines = text.splitlines()
+    first = lines[0].strip()
+    if not _COMPACT_CONTROLE_LEADING_RE.match(first):
+        return None, text
+    tail = first[len("Controle") :].strip()
+    if tail.startswith("·"):
+        tail = tail[1:].strip()
+    items = [part.strip() for part in _COMPACT_CONTROLE_ITEMS_RE.split(tail) if part.strip()]
+    if not items:
+        return None, text
+    body = "\n".join(f"- {item}" for item in items)
+    remainder = "\n".join(lines[1:]).strip()
+    return body, remainder
+
+
+def _apply_leading_compact_controle_peel(
+    pieces: list[tuple[str, str]],
+) -> list[tuple[str, str]]:
+    if not pieces or pieces[0][0] != "text":
+        return pieces
+    body, remainder = _peel_leading_compact_controle(pieces[0][1])
+    if body is None:
+        return pieces
+    out: list[tuple[str, str]] = [("check", body)]
+    if remainder:
+        out.append(("text", remainder))
+    return out + pieces[1:]
 
 
 def _peel_institutional_checks(text: str) -> list[tuple[str, str]]:
     if not text or "<institutional_check>" not in text.lower():
-        return [("text", text)] if (text or "").strip() else []
+        pieces = [("text", text)] if (text or "").strip() else []
+        return _apply_leading_compact_controle_peel(pieces)
 
     pieces: list[tuple[str, str]] = []
     pos = 0
@@ -276,7 +332,8 @@ def _peel_institutional_checks(text: str) -> list[tuple[str, str]]:
         tail = text[pos:].strip()
         if tail:
             pieces.append(("text", tail))
-    return pieces or ([("text", text.strip())] if text.strip() else [])
+    pieces = pieces or ([("text", text.strip())] if text.strip() else [])
+    return _apply_leading_compact_controle_peel(pieces)
 
 
 def _render_institutional_check_compact(body: str, colors: dict[str, str]) -> RenderableType:
@@ -285,7 +342,7 @@ def _render_institutional_check_compact(body: str, colors: dict[str, str]) -> Re
         line = line.strip()
         if not line:
             continue
-        items.append(re.sub(r"^[-*+]\s+", "", line))
+        items.append(_CHECKLIST_BULLET_RE.sub("", line))
 
     label_style = colors.get("label", "bold #f92672")
     dim_style = "dim"
@@ -311,7 +368,10 @@ def _peel_heading_body_sections(text: str) -> list[tuple[str, str] | tuple[str, 
     n = len(lines)
     heading_idxs: list[tuple[int, str]] = []
     for idx, line in enumerate(lines):
-        hm = _HEADING_LINE_RE.match(line.strip())
+        stripped = line.lstrip()
+        if not stripped.startswith("#"):
+            continue
+        hm = _HEADING_LINE_RE.match(stripped)
         if hm:
             heading_idxs.append((idx, hm.group("h").strip()))
 
@@ -361,6 +421,21 @@ def _render_heading_body_pair(
     return TightHeadingBody(RichText(title, style=style), body_render)
 
 
+def _flush_prose_markdown(
+    prose: list[str],
+    parts: list[RenderableType],
+    *,
+    code_theme: str,
+) -> None:
+    """One Rich markdown parse for all consecutive prose lines (fewer parses)."""
+    if not prose:
+        return
+    blob = "\n".join(prose).strip()
+    prose.clear()
+    if blob:
+        parts.append(InstitutionalMarkdown(blob, code_theme=code_theme))
+
+
 def _render_body_with_embedded_labels(
     body_md: str,
     colors: dict[str, str],
@@ -377,11 +452,7 @@ def _render_body_with_embedded_labels(
         stripped = lines[idx].strip()
         label_m = _LABEL_ONLY_LINE_RE.match(stripped)
         if label_m:
-            if prose:
-                blob = "\n".join(prose).strip()
-                if blob:
-                    parts.append(InstitutionalMarkdown(blob, code_theme=code_theme))
-                prose = []
+            _flush_prose_markdown(prose, parts, code_theme=code_theme)
             # Zichtbare witregel vóór label na voorafgaande content
             if parts:
                 parts.append(SectionSpacer(lines=2))
@@ -409,10 +480,7 @@ def _render_body_with_embedded_labels(
             continue
         prose.append(lines[idx])
         idx += 1
-    if prose:
-        blob = "\n".join(prose).strip()
-        if blob:
-            parts.append(InstitutionalMarkdown(blob, code_theme=code_theme))
+    _flush_prose_markdown(prose, parts, code_theme=code_theme)
     if not parts:
         return RichText("")
     if len(parts) == 1:
@@ -447,8 +515,6 @@ def _render_label_block(
 
 
 def _iter_content_blocks(text: str) -> Iterator[tuple[str, str, str]]:
-    from hermes_cli.markdown_output_normalize import coalesce_heading_content_chunks
-
     raw_chunks = [c for c in re.split(r"\n{2,}", text.strip()) if c.strip()]
     chunks = coalesce_heading_content_chunks(raw_chunks)
     for chunk in chunks:
@@ -480,6 +546,104 @@ def _assemble_with_section_spacing(blocks: list[RenderableType]) -> RenderableTy
     return Group(*spaced)
 
 
+def _append_coalesced_md_chunk(
+    blocks: list[RenderableType],
+    md_text: str,
+    colors: dict[str, str],
+    code_theme: str,
+    *,
+    label_columns: bool,
+) -> None:
+    """Render one or more coalesced markdown paragraphs."""
+    combined = md_text.strip()
+    if not combined:
+        return
+    if _HEADING_LINE_RE.search(combined):
+        for sub in _peel_heading_body_sections(combined):
+            if sub[0] == "heading_body":
+                _, h_line, body = sub
+                blocks.append(
+                    _render_heading_body_pair(
+                        h_line,
+                        body,
+                        colors,
+                        code_theme,
+                        label_columns=label_columns,
+                    )
+                )
+            else:
+                blob = sub[1]
+                if blob.strip():
+                    blocks.append(
+                        InstitutionalMarkdown(blob, code_theme=code_theme)
+                    )
+    else:
+        blocks.append(InstitutionalMarkdown(combined, code_theme=code_theme))
+
+
+def _append_md_blob_blocks(
+    blocks: list[RenderableType],
+    md_blob: str,
+    colors: dict[str, str],
+    code_theme: str,
+    *,
+    label_columns: bool,
+) -> None:
+    """Split paragraph blocks; peel headings only when present (avoids redundant scans)."""
+    md_run: list[str] = []
+
+    def flush_md_run() -> None:
+        if not md_run:
+            return
+        combined = "\n\n".join(md_run)
+        md_run.clear()
+        _append_coalesced_md_chunk(
+            blocks,
+            combined,
+            colors,
+            code_theme,
+            label_columns=label_columns,
+        )
+
+    for kind, a, b in _iter_content_blocks(md_blob):
+        if kind == "label":
+            flush_md_run()
+            blocks.append(
+                _render_label_block(
+                    a, b, colors, code_theme, label_columns=label_columns
+                )
+            )
+            continue
+        md_run.append(a.strip())
+    flush_md_run()
+
+
+def _strict_render_contract_enabled() -> bool:
+    return os.environ.get("HERMES_STRICT_RENDER", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
+def render_institutional_from_prepared(
+    plain: str,
+    *,
+    palette: str = "demo",
+    label_columns: bool = True,
+    code_theme: str = "monokai",
+) -> RenderableType:
+    """Render markdown already normalized via ``prepare_assistant_markdown_plain``."""
+    return render_institutional_assistant(
+        plain,
+        palette=palette,
+        label_columns=label_columns,
+        code_theme=code_theme,
+        already_normalized=True,
+    )
+
+
 def render_institutional_assistant(
     text: str,
     *,
@@ -490,63 +654,58 @@ def render_institutional_assistant(
 ) -> RenderableType:
     plain = text or ""
     if not already_normalized:
+        if _strict_render_contract_enabled():
+            raise ValueError(
+                "render_institutional_assistant requires already_normalized=True in "
+                "production; normalize via prepare_assistant_markdown_plain first"
+            )
+        logger.debug(
+            "render_institutional_assistant normalizing inline; prefer "
+            "prepare_assistant_markdown_plain + already_normalized=True"
+        )
         plain = normalize_assistant_markdown(plain)
     if not plain.strip():
         return RichText("")
 
     palette_key = (palette or "demo").strip().lower()
     all_palettes = _get_all_palettes()
-    colors = all_palettes.get(palette_key, all_palettes["demo"])
-    InstitutionalTableElement.header_palette = table_header_palette(palette_key)
+    demo_colors = all_palettes.get("demo") or _BUILTIN_PALETTES["demo"]
+    colors = all_palettes.get(palette_key) or demo_colors
+    header_palette = table_header_palette(palette_key)
+    if not header_palette:
+        header_palette = TABLE_HEADER_PALETTE_DEMO
+    palette_token = _TABLE_HEADER_PALETTE_CTX.set(header_palette)
 
     blocks: list[RenderableType] = []
-
-    for segment_kind, segment_text in _peel_institutional_checks(plain):
-        if segment_kind == "check":
-            blocks.append(_render_institutional_check_compact(segment_text, colors))
-            continue
-
-        for section in _peel_heading_body_sections(segment_text):
-            if section[0] == "heading_body":
-                _, heading_line, body_md = section
-                blocks.append(
-                    _render_heading_body_pair(
-                        heading_line,
-                        body_md,
-                        colors,
-                        code_theme,
-                        label_columns=label_columns,
-                    )
-                )
+    try:
+        for segment_kind, segment_text in _peel_institutional_checks(plain):
+            if segment_kind == "check":
+                blocks.append(_render_institutional_check_compact(segment_text, colors))
                 continue
 
-            md_blob = section[1]
-            for kind, a, b in _iter_content_blocks(md_blob):
-                if kind == "label":
+            for section in _peel_heading_body_sections(segment_text):
+                if section[0] == "heading_body":
+                    _, heading_line, body_md = section
                     blocks.append(
-                        _render_label_block(
-                            a, b, colors, code_theme, label_columns=label_columns
+                        _render_heading_body_pair(
+                            heading_line,
+                            body_md,
+                            colors,
+                            code_theme,
+                            label_columns=label_columns,
                         )
                     )
-                else:
-                    for sub in _peel_heading_body_sections(a):
-                        if sub[0] == "heading_body":
-                            _, h_line, body = sub
-                            blocks.append(
-                                _render_heading_body_pair(
-                                    h_line,
-                                    body,
-                                    colors,
-                                    code_theme,
-                                    label_columns=label_columns,
-                                )
-                            )
-                        else:
-                            blob = sub[1]
-                            if blob.strip():
-                                blocks.append(
-                                    InstitutionalMarkdown(blob, code_theme=code_theme)
-                                )
+                    continue
+
+                _append_md_blob_blocks(
+                    blocks,
+                    section[1],
+                    colors,
+                    code_theme,
+                    label_columns=label_columns,
+                )
+    finally:
+        _TABLE_HEADER_PALETTE_CTX.reset(palette_token)
 
     if not blocks:
         return InstitutionalMarkdown(plain, code_theme=code_theme)

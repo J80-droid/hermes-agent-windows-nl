@@ -63,7 +63,7 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 ## Institutionele presentatie (drie lagen)
 
 1. **SOUL** — typografie/structuur (`docs/templates/SOUL_SHARED_*.md` → `SyncSoulSnippet.psm1` → alle profielen). Gebruikt centrale PowerShell-module met `--force` (altijd overschrijven) en `--verify` (check-only).
-2. **Assistant** — `display.assistant_render_style=institutional_rich`; pipeline: `markdown_output_normalize.py` → `institutional_render.py` (`TightHeadingBody`, `SectionSpacer`, `InstitutionalTableElement`). Theme via `get_assistant_console_theme()` (CLI `ChatConsole`, gateway `rich_output.py`). Config **live** via `load_config_readonly`.
+2. **Assistant** — `display.assistant_render_style=institutional_rich`; pipeline: `prepare_assistant_markdown_plain()` (één normalize, incl. `compact_institutional_check`) → `render_institutional_from_prepared()` (`TightHeadingBody`, `SectionSpacer`, `InstitutionalTableElement` met `contextvars` tabelpalet). **Finalize-only streaming:** geen volledige Rich per token; ANSI/eindpaneel via `format_response_ansi` / `message.complete`. Contract-tests: `tests/hermes_cli/test_render_pipeline_contract.py`. Theme via `get_assistant_console_theme()` (CLI `ChatConsole`, gateway `rich_output.py`). Config **live** via `load_config_readonly`.
 3. **UI** — `display.skin=default` (goud); banners/prompt, niet LLM-antwoordtekst.
 
 ### SOUL Sync (centraal, niet per profiel)
@@ -85,7 +85,7 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 
 ### Normalizer + pariteit
 
-- **Python (canonical):** `hermes_cli/markdown_output_normalize.py` — outline, institutional_check, tighten kop–tabel, NFR prose→tabel, **pseudo-tabel/underscore vs→markdown** (`ensure_markdown_table_dividers`, `normalize_pseudo_tables_to_markdown`; contextafhankelijk 2–6 kolommen voor vs, Cloud/Lokaal, auxiliary-overzichten); **collapsed records** (`_discover_repeated_field_keys`, `_parse_collapsed_record_rows`, `_collapsed_record_layout_eligible`; routing ná pipe-header in `_parse_collapsed_overview_body`; TS-pariteit in `institutionalMarkdown.ts`)
+- **Python (canonical):** `hermes_cli/markdown_output_normalize.py` — outline, institutional_check, tighten kop–tabel, NFR prose→tabel, **pseudo-tabel** (`_needs_pseudo_table_normalize` pre-gate, `normalize_pseudo_tables_to_markdown`; `_discover_repeated_field_keys` LRU-cache); **collapsed records**; pipeline eindigt met `compact_institutional_check` (pariteit TS). Bench (lokaal): `scripts/bench_normalize_markdown.py`. TS-pariteit: `institutionalMarkdown.ts` + `pytest tests/hermes_cli/test_normalizer_ts_parity.py` (vereist `npx tsx`).
 - **Web:** `web/src/lib/institutionalMarkdown.ts` + `Markdown.tsx` (`toRenderUnits` = TightHeadingBody-equivalent)
 - **Ink:** re-export Web normalizer (`ui-tui/src/lib/institutionalMarkdownNormalize.ts`) + compacte Controle-regel in `markdown.tsx`
 

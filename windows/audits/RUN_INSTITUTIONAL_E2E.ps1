@@ -134,6 +134,7 @@ Write-Host '=== 2b/11 pytest presentatie (markdown + rich_output) ===' -Foregrou
     tests/cli/test_skin_markdown_theme.py `
     tests/cli/test_cli_markdown_rendering.py `
     tests/hermes_cli/test_markdown_output_normalize.py `
+    tests/hermes_cli/test_render_pipeline_contract.py `
     tests/agent/test_rich_output.py `
     tests/windows/test_team_display_defaults.py `
     -q --tb=short
@@ -158,6 +159,14 @@ if (Test-NativeCommandFailed) {
     exit 1
 }
 Write-Host '[OK] diagnose_renderer institutional_rich + demo geverifieerd' -ForegroundColor Green
+
+Write-Host '=== 2j/11 pytest normalizer TS parity (optioneel zonder npx) ===' -ForegroundColor Cyan
+& $python -m pytest tests/hermes_cli/test_normalizer_ts_parity.py -q --tb=short
+if (Test-NativeCommandFailed) {
+    Write-Host '[WARN] normalizer TS parity overgeslagen of gefaald (npx tsx vereist voor volledige pariteit)' -ForegroundColor Yellow
+} else {
+    Write-Host '[OK] normalizer Python ↔ Web/Ink parity' -ForegroundColor Green
+}
 
 Write-Host '=== 2g/11 institutional render score (10/10 checklist) ===' -ForegroundColor Cyan
 $score = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'scripts/score_institutional_render.py'

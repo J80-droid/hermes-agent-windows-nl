@@ -2,7 +2,8 @@
 """Score institutional renderer output against the 10/10 rooktest checklist.
 
 Maps to ``docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md``. Nine checks
-after ``normalize_assistant_markdown``; ``--verify`` exits 0 when average ≥ 9.0.
+after ``normalize_assistant_markdown``; checklist and render-pipeline share one
+``format_response_ansi`` call per run. ``--verify`` exits 0 when average ≥ 9.0.
 
 Unit tests: ``pytest tests/scripts/test_score_institutional_render.py``.
 """
@@ -12,7 +13,11 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from collections.abc import Iterator
 from pathlib import Path
+from re import Pattern
+
+_HEADING_LINE_SCORE_RE = re.compile(r"^#{1,6}\s+", re.MULTILINE)
 
 ROOKTEST_PATH = (
     Path(__file__).resolve().parent.parent
@@ -22,11 +27,19 @@ ROOKTEST_PATH = (
 )
 
 
-def _score_checklist_rendered(md: str) -> tuple[int, str]:
-    try:
+def _render_ansi_cached(md: str, cache: dict[str, str]) -> str:
+    """One Rich render per score run (checklist + pipeline share the same output)."""
+    key = "ansi"
+    if key not in cache:
         from hermes_cli.display_markdown import format_response_ansi
 
-        out = format_response_ansi(md, cols=100) or ""
+        cache[key] = format_response_ansi(md, cols=100) or ""
+    return cache[key]
+
+
+def _score_checklist_rendered(md: str, *, render_cache: dict[str, str]) -> tuple[int, str]:
+    try:
+        out = _render_ansi_cached(md, render_cache)
         if "institutional_check" in out.lower():
             return 4, "XML-tags zichtbaar in render"
         if "Controle" not in out:
@@ -63,18 +76,35 @@ def _score_heading_table_tight(md: str) -> tuple[int, str]:
     return 10, "Kop direct op tabel/lijst"
 
 
+def _section_bodies(md: str, heading_re: Pattern[str]) -> Iterator[str]:
+    """Yield markdown body text after each heading matched by ``heading_re``."""
+    for m in heading_re.finditer(md):
+        tail = md[m.end() :]
+        next_h = _HEADING_LINE_SCORE_RE.search(tail)
+        body = tail[: next_h.start()] if next_h else tail
+        if body.strip():
+            yield body
+
+
+_ARCHITECTUUR_HEADING_RE = re.compile(
+    r"^#{1,6}\s+.*(?:architectuur|architectuursamenvatting|samenvatting|poc).*$",
+    re.MULTILINE | re.IGNORECASE,
+)
+_VERGELIJKING_HEADING_RE = re.compile(
+    r"^#{1,6}\s+.*(?:versus|vs\.?|vergelijk|comparison).*$",
+    re.MULTILINE | re.IGNORECASE,
+)
+_NFR_HEADING_RE = re.compile(
+    r"^#{1,6}\s+Niet-functionele\s+requirements\s*$",
+    re.MULTILINE | re.IGNORECASE,
+)
+
+
 def _score_architectuur_tabel(md: str) -> tuple[int, str]:
     """After normalize: architecture/summary sections must not keep collapsed Component/Keuze rows."""
-    for m in re.finditer(
-        r"^#{1,6}\s+.*(?:architectuur|architectuursamenvatting|samenvatting|poc).*$",
-        md,
-        re.MULTILINE | re.IGNORECASE,
-    ):
-        tail = md[m.end() :]
-        next_h = re.search(r"^#{1,6}\s+", tail, re.MULTILINE)
-        body = tail[: next_h.start()] if next_h else tail
-        if not body.strip():
-            continue
+    found = False
+    for body in _section_bodies(md, _ARCHITECTUUR_HEADING_RE):
+        found = True
         if re.search(r"[—–-]{4,}", body):
             return 4, "Architectuur-sectie met em-dash pseudo-layout"
         if re.search(
@@ -84,21 +114,16 @@ def _score_architectuur_tabel(md: str) -> tuple[int, str]:
             return 5, "Architectuur-sectie met Component/Keuze-dichtregel zonder tabel"
         if not re.search(r"^\|[^|\n]+\|", body, re.MULTILINE):
             return 5, "Architectuur-sectie zonder markdown-tabel"
+    if not found:
+        return 10, "Architectuur/overzicht als markdown-tabel (of n.v.t.)"
     return 10, "Architectuur/overzicht als markdown-tabel (of n.v.t.)"
 
 
 def _score_vergelijking_tabel(md: str) -> tuple[int, str]:
     """After normalize: versus/comparison sections must not keep pseudo underscores."""
-    for m in re.finditer(
-        r"^#{1,6}\s+.*(?:versus|vs\.?|vergelijk|comparison).*$",
-        md,
-        re.MULTILINE | re.IGNORECASE,
-    ):
-        tail = md[m.end() :]
-        next_h = re.search(r"^#{1,6}\s+", tail, re.MULTILINE)
-        body = tail[: next_h.start()] if next_h else tail
-        if not body.strip():
-            continue
+    found = False
+    for body in _section_bodies(md, _VERGELIJKING_HEADING_RE):
+        found = True
         if re.search(r"_{6,}", body):
             return 4, "Vergelijking met underscore-layout (pseudo-tabel)"
         if "|" in body and not re.search(r"^\|\s*[-:]+\s*\|", body, re.MULTILINE):
@@ -106,20 +131,16 @@ def _score_vergelijking_tabel(md: str) -> tuple[int, str]:
                 return 5, "Pipe-rijen zonder |---| in vergelijkings-sectie"
         if not re.search(r"^\|[^|\n]+\|", body, re.MULTILINE):
             return 5, "Vergelijking zonder markdown-tabel"
+    if not found:
+        return 10, "Vergelijkingen als markdown-tabel (of n.v.t.)"
     return 10, "Vergelijkingen als markdown-tabel (of n.v.t.)"
 
 
 def _score_nfr_table(md: str) -> tuple[int, str]:
-    m = re.search(
-        r"^#{1,6}\s+Niet-functionele\s+requirements\s*$",
-        md,
-        re.MULTILINE | re.IGNORECASE,
-    )
-    if not m:
+    bodies = list(_section_bodies(md, _NFR_HEADING_RE))
+    if not bodies:
         return 10, "Geen NFR-sectie (n.v.t.)"
-    tail = md[m.end() :]
-    next_h = re.search(r"^#{1,6}\s+", tail, re.MULTILINE)
-    body = tail[: next_h.start()] if next_h else tail
+    body = bodies[0]
     if "| Categorie |" in body or re.search(r"^\|[^|\n]+\|", body, re.MULTILINE):
         return 10, "NFR als markdown-tabel"
     if "Categorie:" in body or "—" in body or "————————" in body:
@@ -145,11 +166,9 @@ def _score_heading_vs_table_color() -> tuple[int, str]:
         return 7, f"Kleurcheck overgeslagen: {exc}"
 
 
-def _score_render_pipeline(md: str) -> tuple[int, str]:
+def _score_render_pipeline(md: str, *, render_cache: dict[str, str]) -> tuple[int, str]:
     try:
-        from hermes_cli.display_markdown import format_response_ansi
-
-        out = format_response_ansi(md, cols=100) or ""
+        out = _render_ansi_cached(md, render_cache)
         if not out.strip():
             return 5, "Renderer produceerde lege output"
         if "Functionele" in md and "Functionele" not in out:
@@ -163,8 +182,9 @@ def score_markdown(md: str) -> dict[str, tuple[int, str]]:
     from hermes_cli.markdown_output_normalize import normalize_assistant_markdown
 
     normalized = normalize_assistant_markdown(md)
+    render_cache: dict[str, str] = {}
     checks = {
-        "checklist": _score_checklist_rendered(normalized),
+        "checklist": _score_checklist_rendered(normalized, render_cache=render_cache),
         "kop_op_inhoud": _score_heading_table_tight(normalized),
         "sectie_spacing": _score_section_spacing(normalized),
         "labels": _score_labels(normalized),
@@ -172,7 +192,7 @@ def score_markdown(md: str) -> dict[str, tuple[int, str]]:
         "vergelijking_tabel": _score_vergelijking_tabel(normalized),
         "architectuur_tabel": _score_architectuur_tabel(normalized),
         "kleur_h2_kolom0": _score_heading_vs_table_color(),
-        "render_pipeline": _score_render_pipeline(normalized),
+        "render_pipeline": _score_render_pipeline(normalized, render_cache=render_cache),
     }
     return checks
 
@@ -207,7 +227,14 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.file:
-        md = args.file.read_text(encoding="utf-8")
+        try:
+            md = args.file.read_text(encoding="utf-8")
+        except OSError as exc:
+            print(f"Kan {args.file} niet lezen: {exc}", file=sys.stderr)
+            return 1
+        if not md.strip():
+            print(f"Bestand is leeg: {args.file}", file=sys.stderr)
+            return 1
     else:
         md = (
             "<institutional_check>\n- Controle hyperbolen: [Uitgevoerd]\n</institutional_check>\n\n"
