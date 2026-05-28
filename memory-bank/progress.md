@@ -21,6 +21,7 @@
 - [x] Profiel → root config overerving (`profile_model_inheritance.py`: model + auxiliary + providers; save-guard, cache-bust; docs, doctor `--fix`, tests, E2E harness 8/8 + `py_compile` guard)
 - [x] Windows chat-startfix (2026-05-27): geen `TERM=xterm-256color`; `hermes_chat.cmd`; `launch_pre_chat_orchestrator.ps1` (fasen); `maximize_console.ps1`; `Write-HermesRuntimeModelBanner`; OPEN_SETUP coherence repair; `TERMINAL_WINDOWS.md`
 - [x] Windows snelkoppelingen + onderhoud (2026-05-28): `Set-HermesStartShellShortcut`; `Invoke-HermesPostChangeMaintenance.ps1`; `HERMES_ONDERHOUD.bat` / `hermes_onderhoud.bat`; `test_hermes_shortcut_args.py`; docs START/README
+- [x] Launch-profielen default **full** (2026-05-28): `launch_profiles.ps1`, `start_hermes_minimal.bat`, `LAUNCH_PROFILES.md`, gefilterde CLI-args, docs sync
 - [x] Windows launchers (`update_knowledge.bat` / `.ps1`, `windows/scripts/rag/`)
 - [x] Noob-doc `docs/RAG_TWEE_FASEN.md` (bibliotheek vs. balie, twee fasen)
 - [x] Taakbalk RAG interactief: `RAG_KNOWLEDGE_UPDATE.bat` + `.lnk` `cmd /k` (J/N via `set /p`); nacht: `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` (`HERMES_NONINTERACTIVE=1`)

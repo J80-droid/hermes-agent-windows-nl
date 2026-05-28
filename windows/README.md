@@ -27,7 +27,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 
 ## Dagelijks gebruik
 
-**Hermes starten:** `start_hermes.bat` (repo-root) → zie **[START.md](START.md)** (keten + env-defaults). Terminal/kleuren/muisklik/exit: **[TERMINAL_WINDOWS.md](TERMINAL_WINDOWS.md)**.
+**Hermes starten:** `start_hermes.bat` (repo-root, standaard **full**) → **[START.md](START.md)**, **[LAUNCH_PROFILES.md](LAUNCH_PROFILES.md)**. Terminal/kleuren/muisklik/exit: **[TERMINAL_WINDOWS.md](TERMINAL_WINDOWS.md)**.
 
 ### Klassieke CLI — prompt-wachtrij (`/queue`)
 
@@ -46,8 +46,8 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 
 | Taak | Script |
 | ---- | ------ |
-| Hermes starten (standaard) | **`start_hermes.bat`** (minimale launch) — [START.md](START.md) |
-| Hermes starten (volledig) | `set HERMES_MINIMAL_LAUNCH=0` → `start_hermes.bat` of `launch_hermes.bat` |
+| Hermes starten (standaard, volledig) | **`start_hermes.bat`** (SOUL, Docker, dashboard) — [START.md](START.md), [launch_profiles.ps1](launch_profiles.ps1) |
+| Hermes starten (snel, alleen chat) | **`start_hermes_minimal.bat`** of `start_hermes.bat --minimal` |
 | Debug start | `start_hermes_debug.bat` |
 | Volledige setup | `SETUP_HERMES.bat` of `launch_hermes.bat --setup` |
 | RAG-index bijwerken | `scripts/update_knowledge.bat` |

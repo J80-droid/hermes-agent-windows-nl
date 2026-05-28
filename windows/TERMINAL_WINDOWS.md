@@ -65,7 +65,7 @@ Standaard skin is **`default`** (goud/kawaii). Als je **blauw/cyaan** ziet, staa
 windows\APPLY_TEAM_DISPLAY.bat
 ```
 
-**Standaard** (`HERMES_MINIMAL_LAUNCH=1` via `start_hermes.bat`): geen SOUL/institutioneel/trust bij elke start — direct chat. **Volledige start:** `set HERMES_MINIMAL_LAUNCH=0` vóór `start_hermes.bat` (dan SOUL → institutioneel → trust-nazorg → chat). Handmatig display: `APPLY_TEAM_DISPLAY.bat`.
+**Standaard** (`start_hermes.bat`, profiel **full**): SOUL → institutioneel → trust → Docker-check → dashboard → chat. **Snelle start:** `start_hermes_minimal.bat` of `start_hermes.bat --minimal` (geen pre-chat-fases). Handmatig display: `APPLY_TEAM_DISPLAY.bat`.
 
 of: `hermes config set display.skin default` — daarna Hermes opnieuw starten.
 
@@ -162,11 +162,11 @@ De fork biedt drie verschillende manieren om flexibel en robuust van profiel te 
 
 **Scherm springt omhoog bij typen / alleen `core >` bovenaan:** viewport stond midden in de scrollbuffer, of prompt_toolkit “reserve vertical space” scrollde elke toetsaanslag. **Fix in fork:** `align_win32_viewport_to_bottom()` + osd-patch ook op Win32. **Reset:** `windows\RESET_TERMINAL.bat`, alle WT-tabbladen sluiten, opnieuw `start_hermes.bat`.
 
-**Tekst overschrijft bovenaan / garbled bij start:** te veel echo vóór `cls` (Docker, SOUL, …). Gebruik standaard `HERMES_MINIMAL_LAUNCH=1` of `start_hermes.bat`. Oude “Session ended / Press any key”: nieuw WT-tab, geen `pause` na normale exit.
+**Tekst overschrijft bovenaan / garbled bij start:** veel launcher-echo vóór `cls` (normaal bij profiel **full**). Wil je alleen chat: `start_hermes_minimal.bat`. Oude “Session ended / Press any key”: nieuw WT-tab, geen `pause` na normale exit.
 
 **Scroll / plakken / kopiëren in chat:** `run_hermes_prepare.ps1` + `hermes_chat.cmd` (zelfde cmd, `TERM` leeg). **Plakken:** `Ctrl+V` (Win32-klembord). **Kopiëren invoer:** **Shift+pijlen** + **Ctrl+C** (zonder selectie = onderbreken). **Scrollback:** WT-schuifbalk of markeermodus; assistant: `/copy`. Geen `mode con: lines=9000` (zwart scherm bij scroll).
 
-**4× wslhost.exe + ollama.exe + vastlopen bij start:** `start_hermes.bat` zet standaard snelle start:
+**4× wslhost.exe + ollama.exe + vastlopen bij start:** standaard **full** start draait Docker-check. Snelle start zonder Docker/WSL-spawn: `start_hermes_minimal.bat`. Of vóór start:
 
 | Variabele | Effect |
 | --------- | ------ |
@@ -174,7 +174,7 @@ De fork biedt drie verschillende manieren om flexibel en robuust van profiel te 
 | `HERMES_SKIP_HARDWARE_PROBE=1` | Geen torch/onnx-probe bij chat-start |
 | `HERMES_NO_WAKE_LOCAL_LLM=1` | Geen HTTP naar `localhost:11434` bij agent-init (voorkomt Ollama-GUI) |
 
-Docker weer aan: `set HERMES_SKIP_DOCKER_ON_START=` vóór start. Ollama bij auxiliary-taken: start `ollama serve` in tray of verwijder `auxiliary.*` uit config. Zwart **ollama.exe**-venster = Ollama Desktop (niet Hermes); sluit via systeemvak of schakel “Launch at login” uit in Ollama.
+Ollama bij auxiliary-taken: start `ollama serve` in tray of verwijder `auxiliary.*` uit config. Zwart **ollama.exe**-venster = Ollama Desktop (niet Hermes); sluit via systeemvak of schakel “Launch at login” uit in Ollama.
 
 ## Problemen oplossen (checklist)
 

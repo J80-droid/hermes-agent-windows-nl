@@ -9,13 +9,16 @@ Runbook voor dagelijks gebruik, recovery en release-validatie.
 ### Dagelijks & na `git pull`
 
 ```cmd
+start_hermes.bat
 windows\launch_hermes.bat
 windows\POST_GIT_PULL.bat
 windows\POST_GIT_PULL.bat -QuickFix
 windows\SYNC_TRUST_RUNTIME.bat
 ```
 
-`launch_hermes.bat` start dashboard standaard (Codebase Viz warmup): **`hermes dashboard --no-open`** op `http://127.0.0.1:9119` (geen browser-tab; open zelf `/sessions`). Uitzetten: `HERMES_SKIP_DASHBOARD_ON_START=1` of `HERMES_DASHBOARD_ON_START=0`. Log: `output\research\logs\hermes_dashboard.log`.
+**Launch-profiel (Windows):** standaard **full** via `start_hermes.bat` (SOUL, institutioneel, trust, Docker, dashboard). Snel alleen chat: `start_hermes_minimal.bat`. Canoniek: [`windows/launch_profiles.ps1`](../windows/launch_profiles.ps1), [`windows/START.md`](../windows/START.md). Voorkeur opslaan: `windows\set_launch_profile.bat full|minimal`.
+
+`launch_hermes.bat` start dashboard bij profiel **full** (Codebase Viz warmup): **`hermes dashboard --no-open`** op `http://127.0.0.1:9119` (geen browser-tab; open zelf `/sessions`). Uitzetten: `HERMES_SKIP_DASHBOARD_ON_START=1` of `HERMES_DASHBOARD_ON_START=0`. Log: `output\research\logs\hermes_dashboard.log`.
 Windows Terminal is verplicht (`windows/requirements-windows.txt`; `INSTALL_WINDOWS_TERMINAL.bat`). `start_hermes.bat` zet `HERMES_AUTO_WINDOWS_TERMINAL=1` (start in `wt -M` wanneer `wt.exe` beschikbaar). Uitzetten: `HERMES_SKIP_WINDOWS_TERMINAL=1`. Console-layout: `HERMES_CONSOLE_LAYOUT=maximized` (werkgebied, geen `SW_MAXIMIZE`).
 
 `-QuickFix` op `POST_GIT_PULL` ruimt ongetrackte root-rommel op **vóór** verify (zelfde logica als `UPDATE_HERMES -QuickFix`). Optioneel na pull: `-IncludeCodebaseSmoke` (~32s), `-IncludeCodebaseSmokeE2E` (~45s), `-AutoRepairModelProvider`.

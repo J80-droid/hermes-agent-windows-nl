@@ -20,7 +20,7 @@
 
 **Windows snelkoppelingen (2026-05-28):** `Set-HermesStartShellShortcut` (WT + `start_hermes.bat`); bureaublad niet meer overschreven door logo-only launcher; `HERMES_ONDERHOUD.bat` + `hermes_onderhoud.bat` (cmd-parsefix `(exit %ERR%)`); docs `START.md` / README / `TERMINAL_WINDOWS.md`.
 
-**Launch-profielen (2026-05-28):** `windows/launch_profiles.ps1` + `start_hermes_full.bat`; resolutie via CLI, env, `%LOCALAPPDATA%\hermes\preferences\launch_profile`, `config.yaml` `windows.launch_profile`; snelkoppelingen minimal + volledig; `windows\set_launch_profile.bat`.
+**Launch-profielen (2026-05-28):** `windows/launch_profiles.ps1`; **standaard full**; `start_hermes_minimal.bat` voor snelle chat; CLI-vlaggen gefilterd vóór `hermes_cli`; docs `START.md` + `LAUNCH_PROFILES.md`.
 
 **Upstream sync fase 2 + TUI layout (2026-05-25):** `Invoke-UpstreamGitMergeIfBehind` (preflight fetch-dedup, `$upstreamRef`, rev-list exit guards); `pip install -e .` na merge vóór `hermes update`; TUI `statusRuleMinLeftWidth` + `leftWidth`; slash **`/cost`** + upstream **`/queue`**. E2E **8/8** Phase2 + **7/7** `RUN_HERMES_SHELL_COMMON_E2E` (PSES). **UPDATE 2026-05-25:** 15 commits merge (conflict `core.ts` opgelost), daarna 2 commits auto-merge + volledige keten OK. **PSES:** `HermesShellCommon` `INFO:`/`OK:` tags, `Format-HermesStepLabel`, `Test-PsesTokenizer` 12 scripts.
 
