@@ -38,6 +38,20 @@ def save_clipboard_image(dest: Path) -> bool:
     return _linux_save(dest)
 
 
+def get_clipboard_text() -> str | None:
+    """Plain text from the system clipboard (Windows: Win32 API, no subprocess)."""
+    if sys.platform == "win32":
+        return _windows_get_text()
+    return None
+
+
+def set_clipboard_text(text: str) -> bool:
+    """Write plain text to the system clipboard (Windows: Win32 API)."""
+    if not text or sys.platform != "win32":
+        return False
+    return _windows_set_text(text)
+
+
 def has_clipboard_image() -> bool:
     """Quick check: does the clipboard currently contain an image?
 
@@ -278,6 +292,75 @@ def _get_ps_exe() -> str | None:
     if _ps_exe is False:
         _ps_exe = _find_powershell()
     return _ps_exe
+
+
+def _windows_set_text(text: str) -> bool:
+    """Write CF_UNICODETEXT to the Windows clipboard."""
+    try:
+        import ctypes
+
+        CF_UNICODETEXT = 13
+        GMEM_MOVEABLE = 0x0002
+        user32 = ctypes.windll.user32
+        kernel32 = ctypes.windll.kernel32
+        if not user32.OpenClipboard(0):
+            return False
+        try:
+            if not user32.EmptyClipboard():
+                return False
+            blob = (text + "\x00").encode("utf-16-le")
+            size = len(blob)
+            handle = kernel32.GlobalAlloc(GMEM_MOVEABLE, size)
+            if not handle:
+                return False
+            ptr = kernel32.GlobalLock(handle)
+            if not ptr:
+                return False
+            try:
+                ctypes.memmove(ptr, blob, size)
+            finally:
+                kernel32.GlobalUnlock(handle)
+            if not user32.SetClipboardData(CF_UNICODETEXT, handle):
+                return False
+            return True
+        finally:
+            user32.CloseClipboard()
+    except Exception as exc:
+        logger.debug("Windows clipboard text write failed: %s", exc)
+        return False
+
+
+def _windows_get_text() -> str | None:
+    """Read CF_UNICODETEXT from the Windows clipboard."""
+    try:
+        import ctypes
+
+        CF_UNICODETEXT = 13
+        user32 = ctypes.windll.user32
+        kernel32 = ctypes.windll.kernel32
+        if not user32.OpenClipboard(0):
+            return None
+        try:
+            handle = user32.GetClipboardData(CF_UNICODETEXT)
+            if not handle:
+                return None
+            ptr = kernel32.GlobalLock(handle)
+            if not ptr:
+                return None
+            try:
+                text = ctypes.wstring_at(ptr)
+            finally:
+                kernel32.GlobalUnlock(handle)
+        finally:
+            user32.CloseClipboard()
+        if not text or not str(text).strip():
+            return None
+        if "\x00" in text:
+            return None
+        return str(text)
+    except Exception as exc:
+        logger.debug("Windows clipboard text read failed: %s", exc)
+        return None
 
 
 def _windows_has_image() -> bool:

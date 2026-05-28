@@ -65,6 +65,7 @@ from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.widgets import TextArea
 from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.keys import Keys
 from prompt_toolkit import print_formatted_text as _pt_print
 from prompt_toolkit.formatted_text import ANSI as _PT_ANSI
 try:
@@ -3493,6 +3494,10 @@ class HermesCLI:
             app.invalidate()
         except Exception:
             pass
+        try:
+            self._recover_terminal_input_modes(reason="terminal resize")
+        except Exception:
+            pass
         original_on_resize()
 
     def _schedule_resize_recovery(self, app, original_on_resize, delay: float = 0.12) -> None:
@@ -5363,7 +5368,10 @@ class HermesCLI:
 
         try:
             hw_cfg = (self.config or {}).get("hardware", {}) or {}
-            if hw_cfg.get("log_backends_at_startup", True):
+            if (
+                hw_cfg.get("log_backends_at_startup", True)
+                and os.environ.get("HERMES_SKIP_HARDWARE_PROBE") != "1"
+            ):
                 from hermes_cli.hardware_backend import log_local_inference_backends
 
                 log_local_inference_backends(self.console)
@@ -5968,6 +5976,19 @@ class HermesCLI:
             return
         sys.stdout.write(seq)
         sys.stdout.flush()
+
+    @staticmethod
+    def _cli_prompt_toolkit_mouse_support(config: Optional[dict] = None) -> bool:
+        """Mouse in prompt_toolkit (off by default on Windows: voorkomt overlay op sluitknop)."""
+        display = (config or {}).get("display", {}) or {}
+        raw = display.get("mouse_tracking")
+        if raw is None:
+            raw = display.get("tui_mouse")
+        if raw in (False, 0, "0", "off", "false", "no"):
+            return False
+        if raw in (True, 1, "1", "on", "wheel", "buttons", "all"):
+            return True
+        return False
 
     def _recover_terminal_input_modes(self, *, reason: str) -> None:
         """Best-effort reset when leaked mouse reports indicate mode drift."""
@@ -12885,17 +12906,6 @@ class HermesCLI:
             _detect_light_mode()
         except Exception:
             pass
-        # Push the entire TUI to the bottom of the terminal so the banner,
-        # responses, and prompt all appear pinned to the bottom — empty
-        # space stays above, not below.  This prints enough blank lines to
-        # scroll the cursor to the last row before any content is rendered.
-        try:
-            _term_lines = shutil.get_terminal_size().lines
-            if _term_lines > 2:
-                print("\n" * (_term_lines - 1), end="", flush=True)
-        except Exception:
-            pass
-
         self.show_banner()
         # Surface any active supply-chain security advisories right after the
         # welcome banner. Quiet/single-query paths call this themselves.
@@ -12915,6 +12925,11 @@ class HermesCLI:
             _welcome_text = "Welcome to Hermes Agent! Type your message or /help for commands."
             _welcome_color = "#FFF8DC"
         self._console_print(f"[{_welcome_color}]{_welcome_text}[/]")
+        if sys.platform == "win32":
+            self._console_print(
+                "  [dim]Plakken: Ctrl+V · kopiëren invoer: Shift+pijlen + Ctrl+C · "
+                "scrollback: schuifbalk · muisklik vast? Ctrl+Shift+M (markeermodus uit).[/]"
+            )
 
         try:
             from hermes_cli.institutional_new_chat_notice import format_new_chat_notice_rich
@@ -12999,7 +13014,19 @@ class HermesCLI:
             )
             self._startup_skills_line_shown = True
         self._console_print()
-        
+
+        if sys.platform == "win32":
+            try:
+                from hermes_cli.win32_console import (
+                    align_win32_viewport_to_bottom,
+                    configure_interactive_console,
+                )
+
+                configure_interactive_console()
+                align_win32_viewport_to_bottom()
+            except Exception:
+                pass
+
         # State for async operation
         self._agent_running = False
         self._pending_input = queue.Queue()     # For normal input (commands + new queries)
@@ -13458,7 +13485,6 @@ class HermesCLI:
         _normal_input = Condition(
             lambda: not self._clarify_state and not self._approval_state and not self._slash_confirm_state and not self._sudo_state and not self._secret_state and not self._model_picker_state
         )
-
         @kb.add('up', filter=_normal_input)
         def history_up(event):
             """Up arrow: browse history when on first line, else move cursor up."""
@@ -13486,6 +13512,7 @@ class HermesCLI:
             
             Priority:
             0. Cancel active voice recording
+            0b. Copy selected text in the input area (Windows / OSC 52)
             1. Cancel active sudo/approval/clarify prompt
             2. Interrupt the running agent (first press)
             3. Force exit (second press within 2s, or when idle)
@@ -13510,6 +13537,24 @@ class HermesCLI:
                 ).start()
                 event.app.invalidate()
                 return
+
+            buff = event.current_buffer
+            if buff.selection_state is not None:
+                copied = buff.copy_selection()
+                text = (copied.text or "") if copied else ""
+                if text:
+                    if sys.platform == "win32":
+                        from hermes_cli.clipboard import set_clipboard_text
+
+                        if set_clipboard_text(text):
+                            event.app.invalidate()
+                            return
+                    try:
+                        self._write_osc52_clipboard(text)
+                        event.app.invalidate()
+                        return
+                    except Exception:
+                        pass
 
             # Cancel sudo prompt
             if self._sudo_state:
@@ -13823,7 +13868,6 @@ class HermesCLI:
 
                 threading.Thread(target=_start_recording, daemon=True).start()
                 event.app.invalidate()
-        from prompt_toolkit.keys import Keys
 
         @kb.add(Keys.BracketedPaste, eager=True)
         def handle_paste(event):
@@ -13893,17 +13937,35 @@ class HermesCLI:
 
         @kb.add('c-v')
         def handle_ctrl_v(event):
-            """Fallback image paste for terminals without bracketed paste.
+            """Paste fallback: Win32 clipboard text; Linux image-only; else images.
 
-            On Linux terminals (GNOME Terminal, Konsole, etc.), Ctrl+V
-            sends raw byte 0x16 instead of triggering a paste.  This
-            binding catches that and checks the clipboard for images.
-            On terminals that DO intercept Ctrl+V for paste (macOS
-            Terminal, iTerm2, VSCode, Windows Terminal), the bracketed
-            paste handler fires instead and this binding never triggers.
+            Windows Terminal often does not deliver bracketed paste to prompt_toolkit
+            Win32Input — read CF_UNICODETEXT here. Terminals with bracketed paste
+            use handle_paste instead; this binding is a fallback.
             """
+            if sys.platform == "win32":
+                from hermes_cli.clipboard import get_clipboard_text
+
+                pasted = get_clipboard_text()
+                if pasted:
+                    pasted = pasted.replace("\r\n", "\n").replace("\r", "\n")
+                    pasted = _strip_leaked_bracketed_paste_wrappers(pasted)
+                    event.current_buffer.insert_text(pasted)
+                    return
             if self._try_attach_clipboard_image():
                 event.app.invalidate()
+
+        @kb.add("s-insert", filter=_normal_input)
+        def handle_shift_insert_paste(event):
+            """Shift+Insert — classic Windows text paste."""
+            if sys.platform != "win32":
+                return
+            from hermes_cli.clipboard import get_clipboard_text
+
+            pasted = get_clipboard_text()
+            if pasted:
+                pasted = pasted.replace("\r\n", "\n").replace("\r", "\n")
+                event.current_buffer.insert_text(pasted)
 
         @kb.add('escape', 'v')
         def handle_alt_v(event):
@@ -14721,12 +14783,17 @@ class HermesCLI:
         style = PTStyle.from_dict(self._build_tui_style_dict())
         
         # Create the application
+        _win32_mouse = (
+            False
+            if sys.platform == "win32"
+            else self._cli_prompt_toolkit_mouse_support(self.config)
+        )
         app = Application(
             layout=layout,
             key_bindings=kb,
             style=style,
             full_screen=False,
-            mouse_support=False,
+            mouse_support=_win32_mouse,
             **({'cursor': _STEADY_CURSOR} if _STEADY_CURSOR is not None else {}),
         )
         _disable_prompt_toolkit_cpr_warning(app)
@@ -15197,6 +15264,12 @@ class HermesCLI:
             else:
                 raise
         finally:
+            if sys.platform == "win32":
+                try:
+                    sys.stdout.write(_TERMINAL_INPUT_MODE_RESET_SEQ)
+                    sys.stdout.flush()
+                except Exception:
+                    pass
             self._should_exit = True
             # Interrupt the agent immediately so its daemon thread stops making
             # API calls and exits promptly (agent_thread is daemon, so the
