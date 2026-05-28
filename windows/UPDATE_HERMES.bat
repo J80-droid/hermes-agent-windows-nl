@@ -1,13 +1,24 @@
 @echo off
 REM UPDATE_HERMES.bat — upstream sync + post-merge (conda hermes-env).
-REM -QuickFix: alleen repo-hygiene (quick_fix + guard); stopt als enige arg (geen upstream).
-REM Paden: altijd %%~dp0 (niet %%CD%%/HERMES_WIN-env) — voorkomt dubbele pad-concatenatie.
-REM HERMES_SKIP_PAUSE_AFTER_UPDATE=1: geen pause aan het einde (CI/automation).
+REM -QuickFix: alleen repo-hygiene; stopt als enige arg (geen upstream).
+REM Paden via pushd %%~dp0 (immuniteit voor HERMES_WIN / upstream_sync.ps1 env-vars).
+REM HERMES_SKIP_PAUSE_AFTER_UPDATE=1: geen pause aan het einde.
 setlocal EnableExtensions EnableDelayedExpansion
+
+REM Wis vervuilde env-vars (voorkomt paden als repo"repo\windows\...)
+set "UPSTREAM_SYNC_PS1="
+set "HERMES_WIN="
+
+if not exist "%~f0" (
+  echo [ERROR] Kan UPDATE_HERMES.bat niet lokaliseren. Draai: windows\UPDATE_HERMES.bat
+  pause
+  exit /b 1
+)
+pushd "%~dp0"
+set "HERMES_WIN=%CD%\"
+set "SCRIPT_UPSTREAM=%CD%\upstream_sync.ps1"
+popd
 cd /d "%~dp0\.."
-set "HERMES_WIN=%~dp0"
-if not "!HERMES_WIN:~-1!"=="\" set "HERMES_WIN=!HERMES_WIN!\"
-set "UPSTREAM_SYNC_PS1=!HERMES_WIN!upstream_sync.ps1"
 chcp 65001 >nul
 
 set "ESC= "
@@ -48,14 +59,15 @@ echo [INFO] Uitleg bij cijfers en vragen staat in het PowerShell-venster ^(grijs
 echo        Verify in de keten: .ps1 ^(geen pause^). Einde .bat: pause ^(overslaan: HERMES_SKIP_PAUSE_AFTER_UPDATE=1^).
 echo.
 
-if not exist "!UPSTREAM_SYNC_PS1!" (
-  echo [ERROR] Ontbreekt: !UPSTREAM_SYNC_PS1!
-  echo [INFO] Draai UPDATE vanuit windows\UPDATE_HERMES.bat, niet een kopie in repo-root.
+if not exist "!SCRIPT_UPSTREAM!" (
+  echo [ERROR] Ontbreekt: !SCRIPT_UPSTREAM!
+  echo [INFO] Verwacht: windows\upstream_sync.ps1 naast dit bat-bestand.
+  echo [INFO] Controleer user-env HERMES_WIN / UPSTREAM_SYNC_PS1 ^(moeten leeg of weg^).
   pause
   exit /b 1
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "!UPSTREAM_SYNC_PS1!" -Phase Update %*
+powershell -NoProfile -ExecutionPolicy Bypass -File "!SCRIPT_UPSTREAM!" -Phase Update %*
 set "ERR=!ERRORLEVEL!"
 if not "!ERR!"=="0" (
   echo.

@@ -102,7 +102,11 @@ Verplaatst **ongetrackte** bestanden uit de root naar `output/research/` (script
 windows\UPDATE_HERMES.bat
 ```
 
-**Fout “Ongeldige tekens in pad” / dubbel pad `hermes-agent"hermes-agent\windows\...`:** draai alleen `windows\UPDATE_HERMES.bat` (niet een kopie in repo-root). Verwijder een verkeerde user-env `HERMES_WIN` indien gezet. Na fix: `git pull` en opnieuw UPDATE.
+**Fout “Ongeldige tekens in pad” / dubbel pad `hermes-agent"hermes-agent\windows\...`:**
+
+1. Verwijder user-env variabelen (cmd als Administrator optioneel): `set HERMES_WIN=` en `set UPSTREAM_SYNC_PS1=` en `set upstream_sync.ps1=`
+2. Windows: Instellingen → Systeem → Info → Geavanceerde systeeminstellingen → Omgevingsvariabelen → verwijder `HERMES_WIN` / `UPSTREAM_SYNC_PS1` als die bestaan
+3. `git pull` en draai alleen `windows\UPDATE_HERMES.bat` (niet een kopie in repo-root)
 
 **Optioneel — codebase smoke na post-merge** (E1/E2, geen E3):
 
