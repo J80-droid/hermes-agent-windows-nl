@@ -91,11 +91,20 @@ try {
     $deskIco = Join-Path $windowsDir 'hermes_logo.ico'
     if (-not (Test-Path -LiteralPath $deskIco)) { $deskIco = $iconPath }
     if (Set-HermesStartShellShortcut -ShortcutPath $shortcutPath -RepoRoot $resolvedRepo `
-            -IconIcoPath $deskIco -Description 'Hermes Agent (start_hermes.bat via Windows Terminal)') {
+            -IconIcoPath $deskIco -Description 'Hermes Agent (minimal, start_hermes.bat via Windows Terminal)' `
+            -LaunchProfile minimal) {
         Write-Host '[SUCCESS] Snelkoppeling aangemaakt op je Bureaublad!' -ForegroundColor Green
-        Write-Host '[OK] Hermes Agent.lnk -> start_hermes.bat (zelfde keten als repo-root)' -ForegroundColor Green
+        Write-Host '[OK] Hermes Agent.lnk -> start_hermes.bat (profiel: minimal)' -ForegroundColor Green
     } else {
         throw 'Set-HermesStartShellShortcut mislukt'
+    }
+
+    $fullLnk = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Hermes Agent (volledig).lnk'
+    $fullIco = Join-Path $windowsDir 'hermes_logo_setup.ico'
+    if (-not (Test-Path -LiteralPath $fullIco)) { $fullIco = $deskIco }
+    if (Set-HermesStartShellShortcut -ShortcutPath $fullLnk -RepoRoot $resolvedRepo `
+            -IconIcoPath $fullIco -Description 'Hermes volledig (SOUL, Docker, dashboard)' -LaunchProfile full) {
+        Write-Host '[OK] Hermes Agent (volledig).lnk -> start_hermes_full.bat' -ForegroundColor Green
     }
 
     $logoBat = Join-Path $windowsDir 'Hermes_met_logo.bat'

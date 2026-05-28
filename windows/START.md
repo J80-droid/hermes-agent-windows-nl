@@ -21,25 +21,38 @@ start_hermes.bat          ← repo-root (aanbevolen entry)
 
 **Niet** voor normaal gebruik: `conda run …`, losse `python cli.py` in cmd, of `start_hermes_split.bat` (debug split-pane).
 
-## Wat `start_hermes.bat` standaard zet
+## Launch-profielen (canoniek)
 
-| Variabele | Effect |
-| --------- | ------ |
-| `HERMES_MAX_FLAG=1` | Geen dubbele maximize-relaunch |
-| `HERMES_AUTO_WINDOWS_TERMINAL=1` | Start in Windows Terminal (`wt.exe`) |
-| `HERMES_MINIMAL_LAUNCH=1` | Direct naar chat (geen Docker/SOUL/institutioneel bij start) |
-| `HERMES_SKIP_DOCKER_ON_START=1` | Geen Docker/WSL-spawn |
-| `HERMES_SKIP_DASHBOARD_ON_START=1` | Geen dashboard op 9119 |
-| `HERMES_SKIP_HARDWARE_PROBE=1` | Geen zware GPU-probe bij chat |
-| `HERMES_NO_WAKE_LOCAL_LLM=1` | Geen Ollama-wake bij init |
-| `HERMES_CONSOLE_LAYOUT=maximized` | Werkgebied maximaliseren (taakbalk blijft) |
+Alle env-defaults staan in **`windows\launch_profiles.ps1`** (één bron). `start_hermes.bat` past het gekozen profiel toe vóór `launch_hermes.bat`.
 
-Volledige launcher (bootstrap + SOUL + institutioneel + dashboard vóór chat):
+| Profiel | Entrypoint | Gedrag |
+| ------- | ---------- | ------ |
+| **minimal** (standaard) | `start_hermes.bat` | Snel naar chat; geen Docker/SOUL/institutioneel/dashboard bij start |
+| **full** | `start_hermes_full.bat` of `start_hermes.bat --full` | SOUL, institutioneel, trust, Docker-check, dashboard (9119) |
+
+**Resolutie** (welk profiel als je alleen `start_hermes.bat` draait):
+
+1. Vlag `--full` / `--minimal` / `--profile:full`
+2. Omgeving `HERMES_LAUNCH_PROFILE`
+3. `%LOCALAPPDATA%\hermes\preferences\launch_profile`
+4. `config.yaml` → `windows.launch_profile: minimal|full`
+5. Anders: **minimal**
+
+**Standaard profiel wijzigen (persistent):**
 
 ```bat
-set HERMES_MINIMAL_LAUNCH=0
-start_hermes.bat
+windows\set_launch_profile.bat full
 ```
+
+**Eenmalig volledig:**
+
+```bat
+start_hermes_full.bat
+rem of
+start_hermes.bat --full
+```
+
+Handmatige env-vars (`set HERMES_MINIMAL_LAUNCH=0`) zijn niet meer nodig; overrides vóór `start_hermes.bat` blijven mogelijk (worden niet overschreven tenzij je het profiel opnieuw toepast).
 
 ## Snelkoppelingen (bureaublad / taakbalk)
 
@@ -47,8 +60,9 @@ start_hermes.bat
 | --- | --- |
 | Alles vernieuwen | `hermes_onderhoud.bat` of `windows\CREATE_DESKTOP_SHORTCUT.bat` |
 | Alleen .lnk | `hermes_onderhoud.bat -ShortcutsOnly` |
-| Start Hermes | `windows\Start Hermes - naar taakbalk slepen.lnk` → **Windows Terminal** + `start_hermes.bat` (zelfde keten als hierboven) |
-| Bureaublad | `Hermes Agent.lnk` (canoniek); optioneel `Hermes Agent (met logo).lnk` |
+| Start Hermes (snel) | `Start Hermes - naar taakbalk slepen.lnk` → WT + `start_hermes.bat` (profiel **minimal**) |
+| Start Hermes (volledig) | `Start Hermes (volledig) - naar taakbalk slepen.lnk` → WT + `start_hermes_full.bat` |
+| Bureaublad | `Hermes Agent.lnk` (minimal); `Hermes Agent (volledig).lnk`; optioneel `Hermes Agent (met logo).lnk` |
 | Taakbalk-pin | Oude pin verwijderen → opnieuw vastmaken via `.lnk` in `windows\` (niet `.bat` slepen) |
 
 **Start-.lnk** gebruikt `Set-HermesStartShellShortcut` (`wt.exe -M` + `cmd /k call start_hermes.bat`). Overige taken (setup, backup, RAG, …) blijven `cmd.exe /c` naar het betreffende `.bat`.

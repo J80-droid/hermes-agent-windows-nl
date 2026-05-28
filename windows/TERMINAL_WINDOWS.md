@@ -48,7 +48,7 @@ start_hermes.bat
 | `HERMES_SKIP_DASHBOARD_ON_START=1` | aan | Geen dashboard op poort 9119 bij start |
 | `HERMES_CONSOLE_LAYOUT=maximized` | aan | Venster op werkgebied (taakbalk zichtbaar) |
 
-**Volledige launcher** (bootstrap + SOUL + institutioneel + dashboard): `set HERMES_MINIMAL_LAUNCH=0` vóór start.
+**Volledige launcher** (SOUL + institutioneel + dashboard + Docker): `start_hermes_full.bat` of `start_hermes.bat --full` (zie `launch_profiles.ps1`).
 
 **Maximaliseren:** één keer vóór chat in `launch_hermes.bat` (niet handmatig opnieuw — dat veroorzaakt ghost-overlays). **QuickEdit** uit via `HermesShellCommon.ps1` + `hermes_cli.win32_console`. **Config:** eenmalig `windows\OPEN_SETUP.bat` → `%LOCALAPPDATA%\hermes\config.yaml`.
 

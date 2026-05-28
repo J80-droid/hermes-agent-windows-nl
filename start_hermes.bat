@@ -1,23 +1,39 @@
 @echo off
-rem Dunne launcher op repo-root. Zie windows\START.md en windows\TERMINAL_WINDOWS.md
-setlocal EnableExtensions
+rem Dunne launcher op repo-root. Profielen: windows\launch_profiles.ps1 — zie windows\START.md
+setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
-rem Geen dubbele relaunch-flits bij dubbelklik (zelfde venster blijft open).
-if not defined HERMES_MAX_FLAG set "HERMES_MAX_FLAG=1"
-rem Snelle interactieve start (geen Docker/WSL, geen zware GPU-probes, Ollama niet wakkeren).
-if not defined HERMES_SKIP_DASHBOARD_ON_START set "HERMES_SKIP_DASHBOARD_ON_START=1"
-if not defined HERMES_SKIP_DOCKER_ON_START set "HERMES_SKIP_DOCKER_ON_START=1"
-if not defined HERMES_SKIP_HARDWARE_PROBE set "HERMES_SKIP_HARDWARE_PROBE=1"
-if not defined HERMES_NO_WAKE_LOCAL_LLM set "HERMES_NO_WAKE_LOCAL_LLM=1"
-rem Geen zware pre-chat fases (voorkomt tekst die bovenaan overschrijft).
-if not defined HERMES_SKIP_SOUL_DEPLOY_ON_START set "HERMES_SKIP_SOUL_DEPLOY_ON_START=1"
-if not defined HERMES_SKIP_INSTITUTIONAL_RUNTIME set "HERMES_SKIP_INSTITUTIONAL_RUNTIME=1"
-if not defined HERMES_SKIP_PENDING_TRUST_ON_START set "HERMES_SKIP_PENDING_TRUST_ON_START=1"
-if not defined HERMES_MINIMAL_LAUNCH set "HERMES_MINIMAL_LAUNCH=1"
-rem Gemaximaliseerd werkgebied (taakbalk zichtbaar), geen 88%% venster / geen F11-fullscreen.
-if not defined HERMES_CONSOLE_LAYOUT set "HERMES_CONSOLE_LAYOUT=maximized"
-rem Start in Windows Terminal wanneer wt.exe beschikbaar is (zie windows\requirements-windows.txt).
-if not defined HERMES_AUTO_WINDOWS_TERMINAL set "HERMES_AUTO_WINDOWS_TERMINAL=1"
+
+rem --- CLI: --full | --minimal | --profile:full | --profile:minimal ---
+:parse_launch_args
+if "%~1"=="" goto launch_args_done
+if /I "%~1"=="--full" set "HERMES_LAUNCH_PROFILE=full" & shift & goto parse_launch_args
+if /I "%~1"=="--minimal" set "HERMES_LAUNCH_PROFILE=minimal" & shift & goto parse_launch_args
+set "ARG=%~1"
+if /I "!ARG:~0,10!"=="--profile:" (
+  set "HERMES_LAUNCH_PROFILE=!ARG:~10!"
+  shift
+  goto parse_launch_args
+)
+
+:launch_args_done
+set "HERMES_PROFILE_CMD=%TEMP%\hermes_launch_profile.cmd"
+if defined HERMES_LAUNCH_PROFILE (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0windows\scripts\Invoke-HermesLaunchProfileEnv.ps1" -RepoRoot "%CD%" -Profile "!HERMES_LAUNCH_PROFILE!" -OutCmdPath "!HERMES_PROFILE_CMD!" -Quiet >nul
+) else (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0windows\scripts\Invoke-HermesLaunchProfileEnv.ps1" -RepoRoot "%CD%" -OutCmdPath "!HERMES_PROFILE_CMD!" -Quiet >nul
+)
+if errorlevel 1 (
+  echo [ERROR] Launch-profiel kon niet worden toegepast.
+  pause
+  exit /b 1
+)
+if not exist "!HERMES_PROFILE_CMD!" (
+  echo [ERROR] Ontbreekt: !HERMES_PROFILE_CMD!
+  pause
+  exit /b 1
+)
+call "!HERMES_PROFILE_CMD!"
+
 if not exist "%~dp0windows\launch_hermes.bat" (
   echo [ERROR] windows\launch_hermes.bat ontbreekt. Herstel de map windows\ uit git of backup.
   pause

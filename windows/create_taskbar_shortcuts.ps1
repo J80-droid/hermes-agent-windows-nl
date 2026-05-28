@@ -63,6 +63,7 @@ if (-not (Test-Path -LiteralPath $OutDir)) {
 
 $shortcutNames = @(
     'Start Hermes - naar taakbalk slepen.lnk',
+    'Start Hermes (volledig) - naar taakbalk slepen.lnk',
     'Hermes - setup Windows - naar taakbalk slepen.lnk',
     'Hermes - backup - naar taakbalk slepen.lnk',
     'Hermes - lokale bestanden herstellen - naar taakbalk slepen.lnk',
@@ -72,6 +73,7 @@ $shortcutNames = @(
 )
 $shortcutBats = @(
     $startHermesRel,
+    'start_hermes_full.bat',
     'windows/SETUP_HERMES.bat',
     'windows/MANAGE_BACKUPS.bat',
     'windows/restore_local_assets.bat',
@@ -79,9 +81,10 @@ $shortcutBats = @(
     'windows/RAG_KNOWLEDGE_UPDATE.bat',
     'windows/OPEN_OBSIDIAN_VAULT.bat'
 )
-$shortcutRoles = @('Start', 'Setup', 'Backup', 'Restore', 'Update', 'Rag', 'Obsidian')
+$shortcutRoles = @('Start', 'StartFull', 'Setup', 'Backup', 'Restore', 'Update', 'Rag', 'Obsidian')
 $shortcutDescriptions = @(
     $startHermesDesc,
+    'Hermes volledig (SOUL, Docker, dashboard) - start_hermes_full.bat - sleep naar taakbalk',
     'Hermes: Windows-setup (SETUP_HERMES.bat) - sleep naar taakbalk',
     'Hermes: fysieke backup uitvoeren (sleep naar taakbalk)',
     'Hermes: lokale scripts uit _local_assets herstellen (sleep naar taakbalk)',
@@ -89,7 +92,7 @@ $shortcutDescriptions = @(
     'Hermes RAG: interactief (J/N + pause) - sleep naar taakbalk. Nacht: RAG_KNOWLEDGE_UPDATE_NIGHT.bat',
     'Hermes Knowledge (Obsidian L4): env-sync, scaffold, open vault - sleep naar taakbalk'
 )
-$shortcutKeepOpen = @($false, $false, $false, $false, $false, $true, $false)
+$shortcutKeepOpen = @($false, $false, $false, $false, $false, $false, $true, $false)
 
 $legacyStartLnk = Join-Path $OutDir 'Hermes Agent - naar taakbalk slepen.lnk'
 if (Test-Path -LiteralPath $legacyStartLnk) {
@@ -111,7 +114,10 @@ for ($shortcutIndex = 0; $shortcutIndex -lt $shortcutPairCount; $shortcutIndex++
     try {
         $setOk = if ($shortcutRoles[$shortcutIndex] -eq 'Start') {
             Set-HermesStartShellShortcut -ShortcutPath $lnkPath -RepoRoot $RepoRoot `
-                -IconIcoPath $iconPath -Description $shortcutDescriptions[$shortcutIndex]
+                -IconIcoPath $iconPath -Description $shortcutDescriptions[$shortcutIndex] -LaunchProfile minimal
+        } elseif ($shortcutRoles[$shortcutIndex] -eq 'StartFull') {
+            Set-HermesStartShellShortcut -ShortcutPath $lnkPath -RepoRoot $RepoRoot `
+                -IconIcoPath $iconPath -Description $shortcutDescriptions[$shortcutIndex] -LaunchProfile full
         } else {
             Set-HermesShellShortcut -ShortcutPath $lnkPath -TargetBatPath $batPath `
                 -IconIcoPath $iconPath -WorkingDirectory $RepoRoot `

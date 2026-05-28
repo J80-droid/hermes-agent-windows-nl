@@ -19,9 +19,18 @@
 function Get-HermesStartLauncherRelativePath {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$RepoRoot
+        [string]$RepoRoot,
+        [ValidateSet('', 'minimal', 'full')]
+        [string]$LaunchProfile = ''
     )
     $trimmedRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
+
+    if ($LaunchProfile -eq 'full') {
+        $fullBat = Join-Path $trimmedRoot 'start_hermes_full.bat'
+        if (Test-Path -LiteralPath $fullBat) {
+            return 'start_hermes_full.bat'
+        }
+    }
 
     foreach ($scope in @('Process', 'User', 'Machine')) {
         $raw = [Environment]::GetEnvironmentVariable('HERMES_START_BAT', $scope)

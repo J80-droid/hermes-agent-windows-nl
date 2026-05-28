@@ -64,6 +64,7 @@ if defined HERMES_AUTO_WINDOWS_TERMINAL if not defined HERMES_SKIP_WINDOWS_TERMI
 rem ====================================================
 rem  Hermes Agent - Institutional Launcher (v1.5)
 rem ====================================================
+if defined HERMES_LAUNCH_PROFILE echo %CYAAN%[INFO] Launch profile: !HERMES_LAUNCH_PROFILE!%RESET%
 if /I not "!HERMES_MINIMAL_LAUNCH!"=="1" (
 echo %GOUD%
 echo  ====================================================

@@ -53,15 +53,17 @@ function Get-HermesWindowsTerminalExe {
 function Set-HermesStartShellShortcut {
     <#
     .SYNOPSIS
-        Start-snelkoppeling: Windows Terminal + start_hermes.bat (zelfde keten als dubbelklik repo-root).
-        Fallback zonder wt: cmd /k + start_hermes.bat (venster blijft open bij fout; geen flits door cmd /c).
+        Start-snelkoppeling: Windows Terminal + start_hermes(.bat|_full.bat) (zelfde keten als repo-root).
+        Fallback zonder wt: cmd /k + start bat (venster blijft open bij fout; geen flits door cmd /c).
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory)][string]$ShortcutPath,
         [Parameter(Mandatory)][string]$RepoRoot,
         [Parameter(Mandatory)][string]$IconIcoPath,
-        [string]$Description = ''
+        [string]$Description = '',
+        [ValidateSet('minimal', 'full')]
+        [string]$LaunchProfile = 'minimal'
     )
     if (-not $PSCmdlet.ShouldProcess($ShortcutPath, 'Create', 'Hermes start shortcut')) { return $false }
 
@@ -70,7 +72,7 @@ function Set-HermesStartShellShortcut {
         throw 'launcher_config.ps1 ontbreekt naast HermesIconGeneratorInvoke.ps1'
     }
     . (Join-Path $PSScriptRoot 'launcher_config.ps1')
-    $startRel = Get-HermesStartLauncherRelativePath -RepoRoot $repo
+    $startRel = Get-HermesStartLauncherRelativePath -RepoRoot $repo -LaunchProfile $LaunchProfile
     $startBat = Join-Path $repo $startRel
     if (-not (Test-Path -LiteralPath $startBat)) { return $false }
 
@@ -306,11 +308,12 @@ function Get-HermesTaskbarRoleIconPath {
     #>
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Start', 'Setup', 'OpenSetup', 'Update', 'Backup', 'Restore', 'Rag', 'Obsidian')]
+        [ValidateSet('Start', 'StartFull', 'Setup', 'OpenSetup', 'Update', 'Backup', 'Restore', 'Rag', 'Obsidian')]
         [string]$Role,
         [Parameter(Mandatory)][string]$WindowsDir
     )
     $leaf = switch ($Role) {
+        'StartFull' { 'hermes_logo_setup.ico' }
         'Update' { 'hermes_logo_update.ico' }
         'Setup' { 'hermes_logo_setup.ico' }
         'OpenSetup' { 'hermes_logo_setup.ico' }
@@ -330,7 +333,7 @@ function Get-HermesTaskbarRoleIconPath {
 function Get-HermesTaskbarRoleIconLocation {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Start', 'Setup', 'OpenSetup', 'Update', 'Backup', 'Restore', 'Rag', 'Obsidian')]
+        [ValidateSet('Start', 'StartFull', 'Setup', 'OpenSetup', 'Update', 'Backup', 'Restore', 'Rag', 'Obsidian')]
         [string]$Role,
         [Parameter(Mandatory)][string]$WindowsDir
     )

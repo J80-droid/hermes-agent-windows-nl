@@ -15,6 +15,7 @@ $win = if ($RepoRoot) {
 
 $checks = @(
     @{ Lnk = 'Start Hermes - naar taakbalk slepen.lnk'; Role = 'Start' },
+    @{ Lnk = 'Start Hermes (volledig) - naar taakbalk slepen.lnk'; Role = 'StartFull' },
     @{ Lnk = 'Hermes - update - naar taakbalk slepen.lnk'; Role = 'Update' },
     @{ Lnk = 'Hermes - setup Windows - naar taakbalk slepen.lnk'; Role = 'Setup' },
     @{ Lnk = 'Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk'; Role = 'Rag' },
@@ -34,8 +35,8 @@ foreach ($c in $checks) {
     }
     $s = (New-Object -ComObject WScript.Shell).CreateShortcut($lnkPath)
     $targetLeaf = Split-Path $s.TargetPath -Leaf
-    if ($c.Role -eq 'Start' -and $targetLeaf -match '^(wt|WindowsTerminal)\.exe$') {
-        if ($s.Arguments -notmatch 'start_hermes\.(bat|cmd)') {
+    if ($c.Role -in @('Start', 'StartFull') -and $targetLeaf -match '^(wt|WindowsTerminal)\.exe$') {
+        if ($s.Arguments -notmatch 'start_hermes(_full)?\.(bat|cmd)') {
             if (-not $Quiet) {
                 Write-Host ('[FAIL] ' + $($c.Lnk) + ': wt.exe zonder start_hermes in Arguments') -ForegroundColor Red
             }
