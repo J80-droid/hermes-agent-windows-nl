@@ -31,15 +31,120 @@ function Get-HermesShellShortcutIconLocation {
 function Get-HermesCmdShortcutArgumentLine {
     <#
     .SYNOPSIS
-        cmd.exe Arguments voor .lnk: cd /d + call met dubbele quotes (paden met spaties en A.I-segmenten).
+        cmd.exe Arguments voor .lnk: alleen /c call + bat (werkmap via .lnk WorkingDirectory).
+        Geen geneste cd-quotes — die breken onder Windows Terminal als standaard host.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$BatchPath,
+        [switch]$KeepWindowOpen,
+        [string]$WorkingDirectory = ''
+    )
+    $null = $WorkingDirectory
+    $cmdFlag = if ($KeepWindowOpen) { '/k' } else { '/c' }
+    return ('{0} call ""{1}""' -f $cmdFlag, $BatchPath)
+}
+
+function Get-HermesWtShortcutArgumentLine {
+    <#
+    .SYNOPSIS
+        wt.exe Arguments: zelfde patroon als Start-snelkoppeling (-M -d repo cmd /c call bat).
     #>
     param(
         [Parameter(Mandatory)][string]$WorkingDirectory,
         [Parameter(Mandatory)][string]$BatchPath,
         [switch]$KeepWindowOpen
     )
+    $cmdExe = Join-Path $env:SystemRoot 'System32\cmd.exe'
     $cmdFlag = if ($KeepWindowOpen) { '/k' } else { '/c' }
-    return ('/d {0} "cd /d ""{1}"" && call ""{2}"""' -f $cmdFlag, $WorkingDirectory, $BatchPath)
+    return ('-M -d "{0}" {1} {2} call "{3}"' -f $WorkingDirectory, $cmdExe, $cmdFlag, $BatchPath)
+}
+
+function Get-HermesBatPathFromShortcutArguments {
+    param([string]$Arguments)
+    if ([string]::IsNullOrWhiteSpace($Arguments)) { return $null }
+    $patterns = @(
+        'call\s+""([^""]+\.(?:bat|cmd))""',
+        'call\s+"([^"]+\.(?:bat|cmd))"',
+        '/k\s+call\s+""([^""]+\.(?:bat|cmd))""',
+        '/k\s+call\s+"([^"]+\.(?:bat|cmd))"'
+    )
+    foreach ($pat in $patterns) {
+        if ($Arguments -match $pat) {
+            return $Matches[1]
+        }
+    }
+    return $null
+}
+
+function Get-HermesShortcutResolvedBatPath {
+    <#
+    .SYNOPSIS
+        Bepaalt het .bat/.cmd-doel van een Hermes-.lnk (cmd /c, wt.exe of directe .bat-target).
+    #>
+    param(
+        [Parameter(Mandatory)][string]$ShortcutPath
+    )
+    if (-not (Test-Path -LiteralPath $ShortcutPath)) { return $null }
+    $s = (New-Object -ComObject WScript.Shell).CreateShortcut($ShortcutPath)
+    $target = $s.TargetPath
+    if ($target -match '\.(bat|cmd)$' -and (Test-Path -LiteralPath $target)) {
+        return (Resolve-Path -LiteralPath $target).Path
+    }
+    $fromArgs = Get-HermesBatPathFromShortcutArguments -Arguments $s.Arguments
+    if ($fromArgs -and (Test-Path -LiteralPath $fromArgs)) {
+        return (Resolve-Path -LiteralPath $fromArgs).Path
+    }
+    return $null
+}
+
+function Test-HermesShortcutPathHealth {
+    <#
+    .SYNOPSIS
+        Valideert .lnk: bat bestaat, werkmap = repo-root, volledig pad in call (geen relatieve stub).
+    #>
+    param(
+        [Parameter(Mandatory)][string]$ShortcutPath,
+        [Parameter(Mandatory)][string]$RepoRoot
+    )
+    $issues = [System.Collections.Generic.List[string]]::new()
+    if (-not (Test-Path -LiteralPath $ShortcutPath)) {
+        $issues.Add('Snelkoppeling ontbreekt')
+        return @{ Ok = $false; BatPath = $null; Issues = $issues }
+    }
+    $repoResolved = (Resolve-Path -LiteralPath $RepoRoot).Path
+    $s = (New-Object -ComObject WScript.Shell).CreateShortcut($ShortcutPath)
+    $batPath = Get-HermesShortcutResolvedBatPath -ShortcutPath $ShortcutPath
+    if (-not $batPath) {
+        $issues.Add('Geen .bat/.cmd-doel gevonden in Target of Arguments')
+    } elseif (-not (Test-Path -LiteralPath $batPath)) {
+        $issues.Add("Bat ontbreekt: $batPath")
+    }
+    if ($s.WorkingDirectory) {
+        if (-not (Test-Path -LiteralPath $s.WorkingDirectory)) {
+            $issues.Add("Werkmap ontbreekt: $($s.WorkingDirectory)")
+        } else {
+            $wd = (Resolve-Path -LiteralPath $s.WorkingDirectory).Path
+            if ($wd -ne $repoResolved) {
+                $issues.Add("Werkmap wijkt af van repo-root: $wd")
+            }
+        }
+    } else {
+        $issues.Add('WorkingDirectory is leeg')
+    }
+    $targetLeaf = Split-Path $s.TargetPath -Leaf
+    if ($targetLeaf -match '^(cmd|wt|WindowsTerminal)\.exe$') {
+        $quotedBat = Get-HermesBatPathFromShortcutArguments -Arguments $s.Arguments
+        if (-not $quotedBat) {
+            $issues.Add('Geen call ""pad.bat"" in Arguments (cmd/wt)')
+        } elseif ($quotedBat -notmatch '^[A-Za-z]:\\|^\\\\') {
+            $issues.Add("Relatief bat-pad in .lnk (verwacht absoluut): $quotedBat")
+        }
+    }
+    return @{
+        Ok      = ($issues.Count -eq 0)
+        BatPath = $batPath
+        Issues  = $issues
+    }
 }
 
 function Get-HermesWindowsTerminalExe {
@@ -94,7 +199,7 @@ function Set-HermesStartShellShortcut {
         $sc.Arguments = ('-M -d "{0}" {1} /k call "{2}"' -f $repo, $cmdExe, $startBatFull)
     } else {
         $sc.TargetPath = $cmdExe
-        $sc.Arguments = Get-HermesCmdShortcutArgumentLine -WorkingDirectory $repo -BatchPath $startBatFull -KeepWindowOpen
+        $sc.Arguments = Get-HermesCmdShortcutArgumentLine -BatchPath $startBatFull -KeepWindowOpen
     }
     $sc.WorkingDirectory = $repo
     $sc.WindowStyle = 1
@@ -134,11 +239,18 @@ function Set-HermesShellShortcut {
     $iconLoc = Get-HermesShellShortcutIconLocation -IcoPath $IconIcoPath
     if (-not $iconLoc) { return $false }
 
+    $wt = Get-HermesWindowsTerminalExe
+    $cmdExe = Join-Path $env:SystemRoot 'System32\cmd.exe'
     $wsh = New-Object -ComObject WScript.Shell
     $sc = $wsh.CreateShortcut($ShortcutPath)
-    $sc.TargetPath = Join-Path $env:SystemRoot 'System32\cmd.exe'
-    $sc.Arguments = Get-HermesCmdShortcutArgumentLine -WorkingDirectory $workFull -BatchPath $batFull `
-        -KeepWindowOpen:$KeepCmdWindowOpen
+    if ($wt) {
+        $sc.TargetPath = $wt
+        $sc.Arguments = Get-HermesWtShortcutArgumentLine -WorkingDirectory $workFull -BatchPath $batFull `
+            -KeepWindowOpen:$KeepCmdWindowOpen
+    } else {
+        $sc.TargetPath = $cmdExe
+        $sc.Arguments = Get-HermesCmdShortcutArgumentLine -BatchPath $batFull -KeepWindowOpen:$KeepCmdWindowOpen
+    }
     $sc.WorkingDirectory = $workFull
     $sc.WindowStyle = 1
     $sc.IconLocation = $iconLoc
@@ -155,7 +267,7 @@ function Set-HermesShellShortcut {
 function Set-HermesTaskbarPinShortcut {
     <#
     .SYNOPSIS
-        Variant voor User Pinned\TaskBar: cmd.exe /c zodat vastpinnen op Win10/11 werkt.
+        Zelfde als Set-HermesShellShortcut (wt.exe + call bat); taakbalk-pin = kopie van windows\ .lnk.
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param(
@@ -166,29 +278,9 @@ function Set-HermesTaskbarPinShortcut {
         [string]$Description = '',
         [switch]$KeepCmdWindowOpen
     )
-    if (-not (Test-Path -LiteralPath $TargetBatPath)) { return $false }
-    if (-not $PSCmdlet.ShouldProcess($ShortcutPath, 'Create', 'Taskbar pin shortcut')) { return $false }
-
-    $batFull = (Resolve-Path -LiteralPath $TargetBatPath).Path
-    $workFull = if (Test-Path -LiteralPath $WorkingDirectory) {
-        (Resolve-Path -LiteralPath $WorkingDirectory).Path
-    } else {
-        $WorkingDirectory
-    }
-    $iconLoc = Get-HermesShellShortcutIconLocation -IcoPath $IconIcoPath
-    if (-not $iconLoc) { return $false }
-
-    $wsh = New-Object -ComObject WScript.Shell
-    $sc = $wsh.CreateShortcut($ShortcutPath)
-    $sc.TargetPath = Join-Path $env:SystemRoot 'System32\cmd.exe'
-    $sc.Arguments = Get-HermesCmdShortcutArgumentLine -WorkingDirectory $workFull -BatchPath $batFull `
-        -KeepWindowOpen:$KeepCmdWindowOpen
-    $sc.WorkingDirectory = $workFull
-    $sc.WindowStyle = 1
-    $sc.IconLocation = $iconLoc
-    if ($Description) { $sc.Description = $Description }
-    $sc.Save()
-    return $true
+    return Set-HermesShellShortcut -ShortcutPath $ShortcutPath -TargetBatPath $TargetBatPath `
+        -IconIcoPath $IconIcoPath -WorkingDirectory $WorkingDirectory `
+        -Description $Description -KeepCmdWindowOpen:$KeepCmdWindowOpen
 }
 
 function Get-HermesWindowsShellIcoLocation {

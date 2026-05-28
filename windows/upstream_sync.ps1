@@ -241,10 +241,15 @@ function Invoke-UpstreamPreflight {
                 'Bij N of Enter: update stopt - repo blijft ongewijzigd.'
                 'Bij conflicten: script stopt; los handmatig op (geen reset --hard).'
             )
-            $ans = Read-Host 'Doorgaan met update? [j/N]'
-            if ($ans -notin @('j', 'J', 'y', 'Y')) {
-                Write-HermesInfo 'Update geannuleerd door gebruiker (preflight).'
-                return 4
+            $autoConfirm = ($Force -or $env:HERMES_UPSTREAM_AUTO_CONFIRM -eq '1')
+            if ($autoConfirm) {
+                Write-HermesInfo 'Doorgaan met grote achterstand (auto-bevestigd via -Force of HERMES_UPSTREAM_AUTO_CONFIRM=1).'
+            } else {
+                $ans = Read-Host 'Doorgaan met update? [j/N]'
+                if ($ans -notin @('j', 'J', 'y', 'Y')) {
+                    Write-HermesInfo 'Update geannuleerd door gebruiker (preflight).'
+                    return 4
+                }
             }
             Write-HermesWarn ('Doorgaan - merge van {0} Nous-commits start nu.' -f $behind)
         } else {

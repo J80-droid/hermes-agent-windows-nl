@@ -33,7 +33,8 @@ def main() -> int:
     _step("UPDATE_HERMES.bat heeft -QuickFix", "-QuickFix" in update_bat)
     _step(
         "UPDATE_HERMES.bat HERMES_WIN (shift-safe)",
-        'set "HERMES_WIN=%~dp0"' in update_bat and "upstream_sync.ps1" in update_bat,
+        ('set "HERMES_WIN=%~dp0"' in update_bat or 'pushd "%~dp0"' in update_bat)
+        and "upstream_sync.ps1" in update_bat,
     )
     _step("UPDATE_HERMES.bat QuickFix-only exit", 'if "%~2"==""' in update_bat and "Alleen QuickFix" in update_bat)
     _step("quick_fix_repo_hygiene.ps1 bestaat", (REPO / "windows/scripts/quick_fix_repo_hygiene.ps1").is_file())

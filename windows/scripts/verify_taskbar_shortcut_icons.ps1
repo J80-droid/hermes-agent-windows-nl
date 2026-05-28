@@ -35,18 +35,18 @@ foreach ($c in $checks) {
     }
     $s = (New-Object -ComObject WScript.Shell).CreateShortcut($lnkPath)
     $targetLeaf = Split-Path $s.TargetPath -Leaf
-    if ($c.Role -in @('Start', 'StartFast') -and $targetLeaf -match '^(wt|WindowsTerminal)\.exe$') {
-        if ($s.Arguments -notmatch 'start_hermes(_minimal|_full)?\.(bat|cmd)') {
+    if ($targetLeaf -match '^(wt|WindowsTerminal)\.exe$') {
+        if ($s.Arguments -notmatch 'call\s+"[^"]+\.(?:bat|cmd)"') {
             if (-not $Quiet) {
-                Write-Host ('[FAIL] ' + $($c.Lnk) + ': wt.exe zonder start_hermes in Arguments') -ForegroundColor Red
+                Write-Host ('[FAIL] ' + $($c.Lnk) + ': wt.exe zonder call ""pad.bat"" in Arguments') -ForegroundColor Red
             }
             $fail++
             continue
         }
     } elseif ($targetLeaf -ieq 'cmd.exe') {
-        if ($s.Arguments -notmatch 'call\s+""[^"]+\.bat""') {
+        if ($s.Arguments -notmatch 'call\s+""[^"]+\.(?:bat|cmd)""') {
             if (-not $Quiet) {
-                Write-Host ('[FAIL] ' + $($c.Lnk) + ': cmd.exe zonder .bat in Arguments') -ForegroundColor Red
+                Write-Host ('[FAIL] ' + $($c.Lnk) + ': cmd.exe zonder call ""pad.bat"" in Arguments') -ForegroundColor Red
             }
             $fail++
             continue

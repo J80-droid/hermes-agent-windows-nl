@@ -9,8 +9,10 @@ REM Wis vervuilde env-vars (voorkomt paden als repo"repo\windows\...)
 set "UPSTREAM_SYNC_PS1="
 set "HERMES_WIN="
 
-if not exist "%~f0" (
-  echo [ERROR] Kan UPDATE_HERMES.bat niet lokaliseren. Draai: windows\UPDATE_HERMES.bat
+if not exist "%~dp0upstream_sync.ps1" (
+  echo [ERROR] Kan windows\UPDATE_HERMES.bat niet lokaliseren ^(upstream_sync.ps1 ontbreekt^).
+  echo [INFO] Draai vanuit repo: windows\UPDATE_HERMES.bat
+  echo [INFO] Taakbalk kapot? windows\FIX_TASKBAR_ICONS.bat
   pause
   exit /b 1
 )
@@ -56,6 +58,8 @@ if /I "%~1"=="-QuickFix" (
   shift
 )
 echo [INFO] Uitleg bij cijfers en vragen staat in het PowerShell-venster ^(grijs^).
+echo        Bij ^>20 commits achter: typ **j** + Enter om door te gaan ^(of annuleer met N^).
+echo        Zonder prompt: -Force of set HERMES_UPSTREAM_AUTO_CONFIRM=1
 echo        Verify in de keten: .ps1 ^(geen pause^). Einde .bat: pause ^(overslaan: HERMES_SKIP_PAUSE_AFTER_UPDATE=1^).
 echo.
 

@@ -49,6 +49,26 @@ function Remove-HermesStrayShortcutFiles {
     }
 }
 
+function Remove-HermesDuplicatePinnedTaskbarShortcuts {
+    <#
+    .SYNOPSIS
+        Verwijdert Windows-duplicaten zoals "Hermes - update - (2).lnk" in User Pinned\TaskBar.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param([Parameter(Mandatory)][string]$Dir)
+    if (-not (Test-Path -LiteralPath $Dir)) { return }
+    Get-ChildItem -LiteralPath $Dir -Filter 'Hermes*.lnk' -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match ' \(\d+\)\.lnk$' } |
+        ForEach-Object {
+            if ($PSCmdlet.ShouldProcess($_.FullName, 'Remove', 'Duplicate Hermes taskbar pin')) {
+                Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue
+                if (-not $Quiet) {
+                    Write-Host "  [INFO] Dubbele pin verwijderd: $($_.Name)" -ForegroundColor DarkGray
+                }
+            }
+        }
+}
+
 function Remove-HermesTaskbarShortcutFiles {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][string]$Dir)
@@ -88,23 +108,32 @@ Remove-HermesStrayShortcutFiles -Dir $scriptDir
 Remove-HermesTaskbarShortcutFiles -Dir $scriptDir
 & $createPs1 -RepoRoot $RepoRoot -OutDir $scriptDir -Quiet:$Quiet
 
-$startBatFull = Join-Path $RepoRoot (Get-HermesStartLauncherRelativePath -RepoRoot $RepoRoot)
 $pinRows = @(
-    @{ Lnk = 'Hermes - update - naar taakbalk slepen.lnk'; Bat = 'UPDATE_HERMES.bat'; Role = 'Update' },
-    @{ Lnk = 'Hermes - setup Windows - naar taakbalk slepen.lnk'; Bat = 'setup_hermes_windows.bat'; Role = 'Setup' },
-    @{ Lnk = 'Start Hermes - naar taakbalk slepen.lnk'; Bat = ''; Role = 'Start' },
-    @{ Lnk = 'Start Hermes (snel) - naar taakbalk slepen.lnk'; Bat = ''; Role = 'StartFast' },
-    @{ Lnk = 'Hermes - backup - naar taakbalk slepen.lnk'; Bat = 'MANAGE_BACKUPS.bat'; Role = 'Backup' },
-    @{ Lnk = 'Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk'; Bat = 'RAG_KNOWLEDGE_UPDATE.bat'; Role = 'Rag' }
+    @{ Lnk = 'Hermes - update - naar taakbalk slepen.lnk'; Role = 'Update' },
+    @{ Lnk = 'Hermes - setup Windows - naar taakbalk slepen.lnk'; Role = 'Setup' },
+    @{ Lnk = 'Hermes - backup - naar taakbalk slepen.lnk'; Role = 'Backup' },
+    @{ Lnk = 'Hermes - lokale bestanden herstellen - naar taakbalk slepen.lnk'; Role = 'Restore' },
+    @{ Lnk = 'Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk'; Role = 'Rag' },
+    @{ Lnk = 'Hermes - Obsidian vault - naar taakbalk slepen.lnk'; Role = 'Obsidian' },
+    @{ Lnk = 'Start Hermes - naar taakbalk slepen.lnk'; Role = 'Start' },
+    @{ Lnk = 'Start Hermes (snel) - naar taakbalk slepen.lnk'; Role = 'StartFast' }
 )
 
 $pinnedDir = Join-Path $env:APPDATA (Join-Path 'Microsoft' (Join-Path 'Internet Explorer' (Join-Path 'Quick Launch' (Join-Path 'User Pinned' 'TaskBar'))))
 if (Test-Path -LiteralPath $pinnedDir) {
+    Remove-HermesDuplicatePinnedTaskbarShortcuts -Dir $pinnedDir
     foreach ($row in $pinRows) {
         $srcLnk = Join-Path $scriptDir $row.Lnk
         if (-not (Test-Path -LiteralPath $srcLnk)) { continue }
-        $batPath = if ($row.Bat) { Join-Path $scriptDir $row.Bat } else { $startBatFull }
-        if (-not (Test-Path -LiteralPath $batPath)) { continue }
+        $batPath = Get-HermesShortcutResolvedBatPath -ShortcutPath $srcLnk
+        if (-not $batPath) {
+            if ($row.Role -eq 'Start') {
+                $batPath = Join-Path $RepoRoot (Get-HermesStartLauncherRelativePath -RepoRoot $RepoRoot -LaunchProfile full)
+            } elseif ($row.Role -eq 'StartFast') {
+                $batPath = Join-Path $RepoRoot (Get-HermesStartLauncherRelativePath -RepoRoot $RepoRoot -LaunchProfile minimal)
+            }
+        }
+        if (-not $batPath -or -not (Test-Path -LiteralPath $batPath)) { continue }
         $iconPath = Get-HermesTaskbarRoleIconPath -Role $row.Role -WindowsDir $scriptDir
         $destLnk = Join-Path $pinnedDir ([IO.Path]::GetFileName($srcLnk))
         $keepOpen = ($row.Role -eq 'Rag')
@@ -146,7 +175,7 @@ Clear-HermesShellIconCache
 
 if (-not $Quiet) {
     Write-Host ''
-    Write-Host 'windows\*.lnk = cmd /c + multi-size .ico. Taakbalk-pin = zelfde wrapper.' -ForegroundColor Cyan
+    Write-Host 'windows\*.lnk = wt.exe + cmd /c call (zelfde als Start). Taakbalk-pin = kopie.' -ForegroundColor Cyan
     Write-Host 'Verkenner: F5 in windows\. Nieuwe pin: sleep .lnk uit windows\ (niet .bat).' -ForegroundColor Gray
 }
 

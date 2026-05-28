@@ -77,7 +77,7 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 | Toolset E2E (14 profielen) | `audits\RUN_TOOLSET_DOMAIN_E2E.bat` of `RUN_AUDITS.bat -IncludeToolsetDomainE2E` |
 | Web dashboard (9119, geen tab) | Automatisch bij `launch_hermes.bat` (Codebase Viz warmup); uit: `HERMES_SKIP_DASHBOARD_ON_START=1` |
 | **Alles-in-één na codewijziging** | `hermes_onderhoud.bat` of `windows\HERMES_ONDERHOUD.bat` (snelkoppelingen + dashboard + Codebase Viz) |
-| Snelkoppelingen kapot / `. was unexpected` | `hermes_onderhoud.bat` (of `-ShortcutsOnly`) → taakbalk-pin opnieuw via `Start Hermes - naar taakbalk slepen.lnk` |
+| Snelkoppelingen kapot / verkeerd pad | `FIX_TASKBAR_ICONS.bat` (icoon + pad + pins) · controle: `scripts\verify_hermes_shortcut_paths.ps1 -IncludePinned` · anders `hermes_onderhoud.bat -ShortcutsOnly` |
 | Institutionele presentatie | `docs\INSTITUTIONAL_PRESENTATION.md` |
 | Core routing / landkaart | `docs\ORCHESTRATOR_ROUTING.md`, skill `landkaart` (`/landkaart`) |
 | Legal lenzen (één bucket) | `docs\LEGAL_DOMAIN_ARCHITECTURE.md`, `docs\LEGAL_TAXONOMY.md`, `MIGRATE_LEGAL_LAYOUT.bat` |

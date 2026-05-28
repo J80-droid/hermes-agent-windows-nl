@@ -46,7 +46,7 @@ Na `git pull` of op een **nieuwe machine**:
 | --------- | ------------- |
 | Bron-PNG | `assets/Hermes_logo.png` (git) of `%USERPROFILE%\.hermes\_local_assets\assets\` |
 | Generator | `windows/tools/generate_colored_hermes_icons.py` → 7-lagen `.ico` (16–256 px) |
-| Snelkoppelingen | `create_taskbar_shortcuts.ps1` → Start: `Set-HermesStartShellShortcut` (`wt.exe` + `start_hermes.bat`); overige: `Set-HermesShellShortcut` (`cmd /c`; RAG: `cmd /k` + icoon) |
+| Snelkoppelingen | `create_taskbar_shortcuts.ps1` → alle rollen via `wt.exe` + `cmd /c call` (RAG: `/k`); fallback zonder wt: `cmd /c call` + WorkingDirectory |
 | Herstel | `FIX_TASKBAR_ICONS.bat` + F5 in `windows\` |
 | Verify | `windows/scripts/verify_taskbar_shortcut_icons.ps1` |
 | Setup wizard | `SETUP_HERMES.bat` (standaard `--full-setup` → `OPEN_SETUP.bat`); `--files-only` zonder wizard |

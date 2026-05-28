@@ -50,6 +50,10 @@ Kleuren: goud = start/RAG, groen = setup, wit = update, roze = backup, cyaan = r
 
 Taakbalk-.lnk: update = `hermes_logo_update.ico` (wit/zilver). Gebruik **niet** `hermes_taskbar_white.ico` in `.lnk` (oude H-stub in Explorer).
 
+**Launcher:** alle `.lnk` gebruiken `wt.exe -M -d repo cmd /c call pad.bat` (niet oude `cmd /c "cd /d …"` — faalt als WT standaardterminal is). Padcontrole: `scripts\verify_hermes_shortcut_paths.ps1 -IncludePinned`.
+
+**Preflight exit 2 (werkmap niet schoon):** commit of stash vóór update; alleen `assets/Hermes_logo.png` + `windows/hermes*.ico` mag door zonder commit.
+
 **Git dirty na update:** icoon-generator kan `assets/Hermes_logo.png` en `windows/hermes_logo.ico` wijzigen. Dat is normaal — `git restore` die bestanden of doe een branding-commit; preflight laat alleen branding door.
 
 ## Repo-hygiene preflight (fork)
@@ -101,6 +105,8 @@ Verplaatst **ongetrackte** bestanden uit de root naar `output/research/` (script
 ```cmd
 windows\UPDATE_HERMES.bat
 ```
+
+**Grote achterstand (^>20 commits behind):** het script vraagt `Doorgaan met update? [j/N]` — typ **j** + Enter in hetzelfde venster. Zonder vraag: `windows\UPDATE_HERMES.bat -Force` of `set HERMES_UPSTREAM_AUTO_CONFIRM=1` (automation/Cursor).
 
 **Fout “Ongeldige tekens in pad” / dubbel pad `hermes-agent"hermes-agent\windows\...`:**
 

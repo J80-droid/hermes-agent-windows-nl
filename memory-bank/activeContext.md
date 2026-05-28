@@ -20,6 +20,8 @@
 
 **Windows snelkoppelingen (2026-05-28):** `Set-HermesStartShellShortcut` (WT + `start_hermes.bat`); bureaublad niet meer overschreven door logo-only launcher; `HERMES_ONDERHOUD.bat` + `hermes_onderhoud.bat` (cmd-parsefix `(exit %ERR%)`); docs `START.md` / README / `TERMINAL_WINDOWS.md`.
 
+**Taakbalk alle rollen via WT (2026-05-27):** `Set-HermesShellShortcut` = `wt.exe` + `Get-HermesWtShortcutArgumentLine` (fix cmd-geneste quotes onder WT-default-terminal); `verify_hermes_shortcut_paths.ps1`; `UPDATE_HERMES.bat` preflight via `%~dp0upstream_sync.ps1`; upstream preflight `-Force` / `HERMES_UPSTREAM_AUTO_CONFIRM=1`.
+
 **Launch-profielen (2026-05-28):** `windows/launch_profiles.ps1`; **standaard full**; `start_hermes_minimal.bat` voor snelle chat; CLI-vlaggen gefilterd vóór `hermes_cli`; docs `START.md` + `LAUNCH_PROFILES.md`.
 
 **Post-pull automatisering (2026-05-28):** `start_hermes.bat` = **één entrypoint** — auto-pull alleen als achter tracking branch (`Test-HermesGitPullNeeded.ps1`); anders direct start. `--pull` / `--sync` / `--no-pull`; `PULL_HERMES.bat` = alias `--pull`. `POST_GIT_PULL.bat` (relaunch via `Invoke-HermesPostPullRelaunch.ps1` + WT, `-KeepPid`); trust pending bij FAIL; UPDATE post-merge zelfde relaunch; CLI `_apply_post_sync_new_chat_notice`. E2E **14/14** + unit **56** harness; `test_hermes_git_pull_needed.py`.
