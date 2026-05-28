@@ -47,6 +47,23 @@ def test_full_profile_enables_dashboard_and_disables_minimal() -> None:
     assert lines[1] == "0"
 
 
+def test_cli_args_filter_strips_launch_profile_flags() -> None:
+    script = (
+        f". '{PROFILE_PS1}' ; "
+        f"$env:HERMES_LAUNCH_ARGS='chat --minimal --maximized'; "
+        f"$a = Get-HermesLaunchCliArgs; Write-Output ($a -join ' ')"
+    )
+    proc = subprocess.run(
+        ["powershell", "-NoProfile", "-Command", script],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        cwd=str(REPO),
+    )
+    assert proc.returncode == 0, proc.stderr or proc.stdout
+    assert proc.stdout.strip() == "chat"
+
+
 def test_minimal_profile_skips_prechat() -> None:
     out = _ps(
         f". '{PROFILE_PS1}' ; "

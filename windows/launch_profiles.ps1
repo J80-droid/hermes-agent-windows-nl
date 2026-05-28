@@ -163,6 +163,52 @@ function Write-HermesLaunchProfileCmdFile {
     $lines | Set-Content -LiteralPath $OutCmdPath -Encoding ASCII
 }
 
+function Split-HermesLaunchCommandLine {
+    param([string]$CommandLine)
+    if ([string]::IsNullOrWhiteSpace($CommandLine)) { return @() }
+    $tokenMatches = [regex]::Matches($CommandLine.Trim(), '(?:[^\s"]+|"[^"]*")+')
+    $out = foreach ($m in $tokenMatches) {
+        $v = $m.Value
+        if ($v.Length -ge 2 -and $v.StartsWith('"') -and $v.EndsWith('"')) {
+            $v.Substring(1, $v.Length - 2)
+        } else { $v }
+    }
+    return @($out)
+}
+
+function Test-HermesLaunchOnlyCliArg {
+    param([string]$Token)
+    if ([string]::IsNullOrWhiteSpace($Token)) { return $false }
+    $t = $Token.Trim()
+    if ($t -in @('--maximized', '--minimal', '--full')) { return $true }
+    if ($t -match '^--profile:(minimal|full)$') { return $true }
+    return $false
+}
+
+function Get-HermesLaunchCliArgs {
+    <#
+    .SYNOPSIS
+      Args voor hermes_cli.main: zonder Windows launch-profielvlagen.
+    #>
+    param(
+        [string[]]$ArgumentList = @(),
+        [string]$LaunchArgsEnv = ''
+    )
+    $raw = @()
+    if ($ArgumentList -and $ArgumentList.Count -gt 0) {
+        $raw = @($ArgumentList)
+    } elseif ($LaunchArgsEnv) {
+        $raw = @(Split-HermesLaunchCommandLine $LaunchArgsEnv)
+    } elseif ($env:HERMES_LAUNCH_ARGS) {
+        try {
+            $raw = @(Split-HermesLaunchCommandLine $env:HERMES_LAUNCH_ARGS)
+        } finally {
+            Remove-Item Env:HERMES_LAUNCH_ARGS -ErrorAction SilentlyContinue
+        }
+    }
+    return @($raw | Where-Object { -not (Test-HermesLaunchOnlyCliArg $_) })
+}
+
 function Set-HermesLaunchProfilePreference {
     param(
         [Parameter(Mandatory)][ValidateSet('minimal', 'full')][string]$Profile

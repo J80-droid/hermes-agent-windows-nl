@@ -54,6 +54,8 @@ start_hermes.bat --full
 
 Handmatige env-vars (`set HERMES_MINIMAL_LAUNCH=0`) zijn niet meer nodig; overrides vóór `start_hermes.bat` blijven mogelijk (worden niet overschreven tenzij je het profiel opnieuw toepast).
 
+**Let op:** `--minimal` / `--full` zijn **alleen** vlaggen voor `start_hermes.bat` (launch-profiel). Ze worden **niet** aan `hermes chat` doorgegeven. Voor volledige start: `start_hermes_full.bat` of `start_hermes.bat --full`.
+
 ## Snelkoppelingen (bureaublad / taakbalk)
 
 | Wat | Hoe |

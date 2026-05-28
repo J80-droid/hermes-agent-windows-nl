@@ -22,31 +22,10 @@ function Write-RunLog {
     Add-Content -Path $logFile -Value $line
 }
 
-function Split-HermesCommandLine {
-    param([string]$CommandLine)
-    if ([string]::IsNullOrWhiteSpace($CommandLine)) { return @() }
-    $tokenMatches = [regex]::Matches($CommandLine.Trim(), '(?:[^\s"]+|"[^"]*")+')
-    $out = foreach ($m in $tokenMatches) {
-        $v = $m.Value
-        if ($v.Length -ge 2 -and $v.StartsWith('"') -and $v.EndsWith('"')) {
-            $v.Substring(1, $v.Length - 2)
-        } else { $v }
-    }
-    return @($out)
-}
+. (Join-Path $PSScriptRoot 'launch_profiles.ps1')
 
 function Get-HermesCliArgs {
-    $raw = @()
-    if ($args -and $args.Count -gt 0) {
-        $raw = @($args)
-    } elseif ($env:HERMES_LAUNCH_ARGS) {
-        try {
-            $raw = @(Split-HermesCommandLine $env:HERMES_LAUNCH_ARGS)
-        } finally {
-            Remove-Item Env:HERMES_LAUNCH_ARGS -ErrorAction SilentlyContinue
-        }
-    }
-    return @($raw | Where-Object { $_ -and ($_ -ne '--maximized') })
+    return @(Get-HermesLaunchCliArgs -ArgumentList @($args))
 }
 
 if (Invoke-HermesEnsureInteractiveConsole -RepoRoot $repoRoot) {

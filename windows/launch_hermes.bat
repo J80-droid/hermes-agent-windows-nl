@@ -45,6 +45,10 @@ if defined HERMES_PYTHON echo %CYAAN%[INFO] HERMES_PYTHON=!HERMES_PYTHON! ^(gate
 rem --- Args vroeg (nodig vóór WT-relaunch) ---
 set "CLEAN_ARGS=%*"
 if defined CLEAN_ARGS set "CLEAN_ARGS=!CLEAN_ARGS:--maximized=!"
+if defined CLEAN_ARGS set "CLEAN_ARGS=!CLEAN_ARGS:--minimal=!"
+if defined CLEAN_ARGS set "CLEAN_ARGS=!CLEAN_ARGS:--full=!"
+if defined CLEAN_ARGS set "CLEAN_ARGS=!CLEAN_ARGS:--profile:minimal=!"
+if defined CLEAN_ARGS set "CLEAN_ARGS=!CLEAN_ARGS:--profile:full=!"
 
 rem --- TrueColor: Windows Terminal. Geen TERM=xterm (breekt prompt_toolkit Win32). ---
 set "WT_EXE="

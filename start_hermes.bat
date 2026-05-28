@@ -3,17 +3,29 @@ rem Dunne launcher op repo-root. Profielen: windows\launch_profiles.ps1 — zie 
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
-rem --- CLI: --full | --minimal | --profile:full | --profile:minimal ---
+rem --- Strip launch-profielvlagen (niet doorgeven aan hermes CLI) ---
+set "HERMES_LAUNCH_REMAINING="
 :parse_launch_args
 if "%~1"=="" goto launch_args_done
-if /I "%~1"=="--full" set "HERMES_LAUNCH_PROFILE=full" & shift & goto parse_launch_args
-if /I "%~1"=="--minimal" set "HERMES_LAUNCH_PROFILE=minimal" & shift & goto parse_launch_args
+if /I "%~1"=="--full" (
+  set "HERMES_LAUNCH_PROFILE=full"
+  shift
+  goto parse_launch_args
+)
+if /I "%~1"=="--minimal" (
+  set "HERMES_LAUNCH_PROFILE=minimal"
+  shift
+  goto parse_launch_args
+)
 set "ARG=%~1"
 if /I "!ARG:~0,10!"=="--profile:" (
   set "HERMES_LAUNCH_PROFILE=!ARG:~10!"
   shift
   goto parse_launch_args
 )
+set "HERMES_LAUNCH_REMAINING=!HERMES_LAUNCH_REMAINING! %~1"
+shift
+goto parse_launch_args
 
 :launch_args_done
 set "HERMES_PROFILE_CMD=%TEMP%\hermes_launch_profile.cmd"
@@ -39,5 +51,5 @@ if not exist "%~dp0windows\launch_hermes.bat" (
   pause
   exit /b 1
 )
-call "%~dp0windows\launch_hermes.bat" %*
+call "%~dp0windows\launch_hermes.bat"!HERMES_LAUNCH_REMAINING!
 exit /b %ERRORLEVEL%
