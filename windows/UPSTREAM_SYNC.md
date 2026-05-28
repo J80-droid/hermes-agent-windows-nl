@@ -102,6 +102,8 @@ Verplaatst **ongetrackte** bestanden uit de root naar `output/research/` (script
 windows\UPDATE_HERMES.bat
 ```
 
+**Fout “Ongeldige tekens in pad” / dubbel pad `hermes-agent"hermes-agent\windows\...`:** draai alleen `windows\UPDATE_HERMES.bat` (niet een kopie in repo-root). Verwijder een verkeerde user-env `HERMES_WIN` indien gezet. Na fix: `git pull` en opnieuw UPDATE.
+
 **Optioneel — codebase smoke na post-merge** (E1/E2, geen E3):
 
 ```cmd

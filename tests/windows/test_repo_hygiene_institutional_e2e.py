@@ -80,7 +80,8 @@ def test_update_hermes_bat_quickfix_shift_safe() -> None:
     """Regressie: shift na -QuickFix mag %%~dp0 niet breken (HERMES_WIN vastzetten)."""
     bat = (REPO / "windows/UPDATE_HERMES.bat").read_text(encoding="utf-8")
     assert 'set "HERMES_WIN=%~dp0"' in bat
-    assert "%HERMES_WIN%upstream_sync.ps1" in bat
+    assert "upstream_sync.ps1" in bat
+    assert "UPSTREAM_SYNC_PS1" in bat or "%HERMES_WIN%upstream_sync.ps1" in bat
     assert 'if "%~2"==""' in bat
     assert "Alleen QuickFix" in bat
 

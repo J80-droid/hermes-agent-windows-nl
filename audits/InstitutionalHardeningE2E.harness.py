@@ -220,7 +220,7 @@ def test_h13_update_quickfix_bat() -> None:
         "-QuickFix" in bat
         and "quick_fix_repo_hygiene.ps1" in bat
         and 'set "HERMES_WIN=%~dp0"' in bat
-        and "%HERMES_WIN%upstream_sync.ps1" in bat
+        and "upstream_sync.ps1" in bat
         and 'if "%~2"==""' in bat
     )
     _step("UPDATE_HERMES -QuickFix keten (shift-safe)", ok)
