@@ -1,0 +1,11 @@
+# Windows-systeemvereisten voor Hermes (geen pip-packages).
+# Installeren via winget, of: windows\INSTALL_WINDOWS_TERMINAL.bat
+#
+# Verplicht voor interactieve chat (TrueColor, scroll, Ctrl+Enter):
+Microsoft.WindowsTerminal
+#
+# Aanbevolen (install.ps1 / setup):
+# BurntSushi.ripgrep.MSVC
+# Gyan.FFmpeg
+# Git.Git
+# Python.Python.3.11

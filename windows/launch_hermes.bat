@@ -42,38 +42,43 @@ set "RESET=%ESC%[0m"
 
 if defined HERMES_PYTHON echo %CYAAN%[INFO] HERMES_PYTHON=!HERMES_PYTHON! ^(gateway / tool-subprocessen^)%RESET%
 
-rem --- TrueColor: legacy conhost cmd = BGR-inversie (goud->blauw). Gebruik Windows Terminal. ---
+rem --- Args vroeg (nodig vóór WT-relaunch) ---
+set "CLEAN_ARGS=%*"
+if defined CLEAN_ARGS set "CLEAN_ARGS=!CLEAN_ARGS:--maximized=!"
+
+rem --- TrueColor: Windows Terminal. Geen TERM=xterm (breekt prompt_toolkit Win32). ---
 set "WT_EXE="
 where wt.exe >nul 2>&1 && set "WT_EXE=wt.exe"
 if not defined WT_EXE if exist "%LOCALAPPDATA%\Microsoft\WindowsApps\wt.exe" set "WT_EXE=%LOCALAPPDATA%\Microsoft\WindowsApps\wt.exe"
 if not defined WT_EXE where wt >nul 2>&1 && set "WT_EXE=wt"
-if not defined HERMES_SKIP_WINDOWS_TERMINAL if not defined WT_SESSION if defined WT_EXE (
+if defined HERMES_AUTO_WINDOWS_TERMINAL if not defined HERMES_SKIP_WINDOWS_TERMINAL if not defined WT_SESSION if defined WT_EXE (
     echo %CYAAN%[INFO] Start in Windows Terminal ^(TrueColor^)...%RESET%
-    "!WT_EXE!" -M -d "%REPO_ROOT%" cmd /k "cd /d \"%REPO_ROOT%\" && set HERMES_MAX_FLAG=1 && call \"%SCRIPT_SELF%\" --maximized %*"
+    if defined CLEAN_ARGS (set "HERMES_WT_LAUNCH_ARGS=!CLEAN_ARGS!") else (set "HERMES_WT_LAUNCH_ARGS=")
+    "%WT_EXE%" -M -d "%REPO_ROOT%" %SystemRoot%\System32\cmd.exe /k call "%WIN_SCR%hermes_wt_entry.cmd"
     exit /b 0
 )
-if not defined HERMES_SKIP_WINDOWS_TERMINAL if not defined WT_SESSION (
-    echo %GOUD%[WARN] Windows Terminal ^(wt^) niet gevonden — kleuren afwijkend in cmd. Zie windows\TERMINAL_WINDOWS.md%RESET%
-)
-if defined WT_SESSION (
-    set "COLORTERM=truecolor"
-    set "TERM=xterm-256color"
+if defined HERMES_AUTO_WINDOWS_TERMINAL if not defined HERMES_SKIP_WINDOWS_TERMINAL if not defined WT_SESSION (
+    echo %GOUD%[WARN] Windows Terminal ^(wt^) niet gevonden - kleuren afwijkend in cmd. Zie windows\TERMINAL_WINDOWS.md%RESET%
 )
 
 rem ====================================================
 rem  Hermes Agent - Institutional Launcher (v1.5)
 rem ====================================================
+if /I not "!HERMES_MINIMAL_LAUNCH!"=="1" (
 echo %GOUD%
 echo  ====================================================
 echo   HERMES AGENT - WINDOWS PREMIUM LAUNCHER
 echo  ====================================================
 echo %RESET%
+)
 
 set "LAUNCH_LOG=%REPO_ROOT%\hermes_launch.log"
 
-rem --- Filter internal --maximized flag from arguments ---
-set "CLEAN_ARGS=%*"
-if defined CLEAN_ARGS set "CLEAN_ARGS=!CLEAN_ARGS:--maximized=!"
+rem --- Filter internal --maximized (CLEAN_ARGS al gezet vóór WT) ---
+if defined HERMES_RELAUNCH_ARGS (
+    if not defined CLEAN_ARGS set "CLEAN_ARGS=%HERMES_RELAUNCH_ARGS%"
+    set "HERMES_RELAUNCH_ARGS="
+)
 
 rem Initialize Logging safely with Rotation (Max 1MB)
 if exist "%LAUNCH_LOG%" (
@@ -117,6 +122,13 @@ exit /b
 :run_agent
 shift
 cd /d "%REPO_ROOT%"
+
+rem Eerst venster + schone console (vóór alle echo) — voorkomt buffer-corruptie en muiscapture.
+powershell -NoProfile -ExecutionPolicy Bypass -Command ". '%REPO_ROOT%\windows\HermesShellCommon.ps1'; Reset-HermesConsoleInputModes; Invoke-HermesDisableConsoleQuickEdit; if ($env:HERMES_SKIP_CONSOLE_MAXIMIZE -ne '1') { [void][Invoke-HermesExpandConsoleWindow] }; try { Clear-Host } catch { }; Reset-HermesConsoleInputModes" 2>nul
+cls >nul 2>&1
+
+if /I "!HERMES_MINIMAL_LAUNCH!"=="1" goto :launch_chat
+
 net session >nul 2>&1
 if %errorLevel% equ 0 (
     echo %CYAAN%[INFO] Environment: Administrator%RESET%
@@ -130,6 +142,7 @@ echo ----------------------------------------------------
 rem ==========================================
 rem  Docker Auto-Start & Verification
 rem ==========================================
+if /I "!HERMES_SKIP_DOCKER_ON_START!"=="1" goto :docker_done
 echo %CYAAN%[INFO] Checking Docker daemon status...%RESET%
 docker info >nul 2>&1
 if %errorLevel% equ 0 (
@@ -166,7 +179,7 @@ if %DOCKER_RETRY% geq 12 (
 goto :docker_poll
 
 :docker_done
-echo ----------------------------------------------------
+if /I not "!HERMES_SKIP_DOCKER_ON_START!"=="1" echo ----------------------------------------------------
 
 rem Step 1: lichte bootstrap (geen volledige SETUP bij elke start)
 echo %CYAAN%[INFO] Bootstrap ^(conda + optioneel RAG-stamp^)...%RESET%
@@ -240,8 +253,12 @@ if not defined HERMES_SKIP_DASHBOARD_ON_START (
   )
 )
 
-echo %GROEN%[INFO] Step 2: Launching Hermes Agent...%RESET%
+:launch_chat
+echo %GROEN%[INFO] Hermes Agent starten...%RESET%
 echo [%DATE% %TIME%] Launching runtime wrapper... >> "%LAUNCH_LOG%"
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ". '%REPO_ROOT%\windows\HermesShellCommon.ps1'; Reset-HermesConsoleInputModes; Invoke-HermesDisableConsoleQuickEdit; [void](Stop-HermesGhostInputBlockers -RepoRoot '%REPO_ROOT%'); try { Clear-Host } catch { }" 2>nul
+cls >nul 2>&1
 
 rem --- PREMIUM: Auto-Backup before Update ---
 echo "!CLEAN_ARGS!" | findstr /I "update" >nul
@@ -261,16 +278,25 @@ if not exist "%USERPROFILE%\.hermes\.env" (
     echo %ROOD%[WAARSCHUWING] Geen .env gevonden! Gebruik 'hermes setup' in de agent.%RESET%
 )
 
-rem Args via HERMES_LAUNCH_ARGS (niet !CLEAN_ARGS! op cmd-regel: < > & en \s in paden breken cmd)
+rem Chat in dezelfde cmd (Win32-safe): prepare schrijft state, hermes_chat.cmd roept python aan.
 if defined CLEAN_ARGS (set "HERMES_LAUNCH_ARGS=!CLEAN_ARGS!") else (set "HERMES_LAUNCH_ARGS=")
-powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/run_hermes.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%\windows\run_hermes_prepare.ps1"
 if !errorLevel! neq 0 (
-    echo %ROOD%[ERROR] Hermes Agent stopped with an error. Check hermes_runtime.log.%RESET%
-    echo [%DATE% %TIME%] ERROR: Runtime failed with exit code !errorLevel! >> "%LAUNCH_LOG%"
+    echo %ROOD%[ERROR] Hermes voorbereiding mislukt. Zie hermes_runtime.log en hermes_last_error.log.%RESET%
+    echo [%DATE% %TIME%] ERROR: prepare failed with exit code !errorLevel! >> "%LAUNCH_LOG%"
+    pause
+    exit /b !errorLevel!
+)
+call "%REPO_ROOT%\windows\hermes_chat.cmd"
+if !errorLevel! neq 0 (
+    echo %ROOD%[ERROR] Hermes Agent stopped with an error. Check hermes_runtime.log en hermes_last_error.log.%RESET%
+    echo [%DATE% %TIME%] ERROR: chat failed with exit code !errorLevel! >> "%LAUNCH_LOG%"
     pause
     exit /b !errorLevel!
 )
 
 echo [INFO] Session ended normally.
 echo [%DATE% %TIME%] Session completed successfully. >> "%LAUNCH_LOG%"
-pause
+echo %CYAAN%[INFO] Sluit dit tabblad of start opnieuw via start_hermes.bat ^(nieuw venster^).%RESET%
+if defined HERMES_DEBUG_LAUNCH pause
+exit /b 0

@@ -20,7 +20,7 @@ if (-not $SkipVerify) {
     if (Test-Path -LiteralPath $verify) {
         & $verify -StrictDrift:$StrictDrift
         if ($LASTEXITCODE -ne 0) {
-            Write-Host '[FAIL] verify_hermes_home — start afgebroken' -ForegroundColor Red
+            Write-Host '[FAIL] verify_hermes_home - start afgebroken' -ForegroundColor Red
             exit $LASTEXITCODE
         }
     }

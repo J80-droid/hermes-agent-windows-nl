@@ -88,6 +88,20 @@ Assert-True ($commonText -notmatch 'Write-HermesTag ''\[INFO\]') 'no bracket INF
 Assert-True ($commonText -match "-Tag 'INFO '") 'INFO tag in source'
 Assert-True ($commonText -match 'finally') 'Invoke-GitCommand uses finally for EAP restore'
 
+# --- Win32 console + cmd chat launcher ---
+Assert-True ($commonText -match 'function Test-HermesWin32Console') 'Test-HermesWin32Console defined'
+Assert-True ($commonText -match 'function Clear-HermesUnixTerminalEnv') 'Clear-HermesUnixTerminalEnv defined'
+Assert-True ($commonText -match 'function Set-HermesWin32ChatEnv') 'Set-HermesWin32ChatEnv defined'
+Assert-True ($commonText -match 'function Invoke-HermesCliInCmdConsole') 'Invoke-HermesCliInCmdConsole defined'
+Assert-True ($commonText -match 'function Write-HermesLaunchState') 'Write-HermesLaunchState defined'
+Assert-True ($commonText -match 'function Invoke-HermesLaunchPhase') 'Invoke-HermesLaunchPhase defined'
+Assert-True ($commonText -match 'function Invoke-HermesMaximizeConsoleWindow') 'Invoke-HermesMaximizeConsoleWindow defined'
+Clear-HermesUnixTerminalEnv
+Assert-True (-not $env:TERM) 'TERM cleared'
+Assert-True (-not $env:COLORTERM) 'COLORTERM cleared'
+Assert-Equal '"a b"' (Format-HermesCmdArg -Value 'a b') 'quoted arg with space'
+Assert-Equal 'plain' (Format-HermesCmdArg -Value 'plain') 'plain arg unchanged'
+
 if ($script:UnitFailed -gt 0) {
     Write-Host ("Unit tests FAILED: $script:UnitFailed") -ForegroundColor Red
     exit 1

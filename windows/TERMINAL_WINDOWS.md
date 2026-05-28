@@ -15,7 +15,7 @@ Dit is geen skin-config en geen Hermes-bug in je fork; het is een **terminal-cap
 | Prioriteit | Actie |
 | ---------- | ----- |
 | 1 | Start via **`windows\launch_hermes.bat`** of **`start_hermes_split.bat`** (niet een losse `cmd` met handmatig `python cli.py`). |
-| 2 | Installeer **Windows Terminal** (`wt.exe` op PATH). De launcher herstart automatisch in WT (`wt -M`). |
+| 2 | **Windows Terminal** is verplicht (`wt.exe`). Zie [`requirements-windows.txt`](requirements-windows.txt) / [`INSTALL_WINDOWS_TERMINAL.bat`](INSTALL_WINDOWS_TERMINAL.bat). `start_hermes.bat` start automatisch in WT (`HERMES_AUTO_WINDOWS_TERMINAL=1`). |
 | 3 | Gebruik **conda `hermes-env`** (canoniek via `HermesPythonPolicy.ps1` / `REPAIR_PYTHON.bat`). |
 
 **Windows Terminal + Anaconda Prompt** is de combinatie die je beschreef — correct.
@@ -26,6 +26,31 @@ Dit is geen skin-config en geen Hermes-bug in je fork; het is een **terminal-cap
 cd D:\A.I\APPS\Hermes_agent_WS\hermes-agent
 start_hermes.bat
 ```
+
+**Startketen (2026-05):**
+
+```
+start_hermes.bat
+  → windows\launch_hermes.bat  (WT via hermes_wt_entry.cmd indien nodig)
+  → run_hermes_prepare.ps1       (conda/python, launch state)
+  → hermes_chat.cmd              (zelfde cmd, Win32-safe)
+  → python -m hermes_cli.main
+```
+
+`start_hermes.bat` zet o.a.:
+
+| Variabele | Standaard | Effect |
+| --------- | --------- | ------ |
+| `HERMES_MAX_FLAG=1` | aan | Geen dubbele relaunch-flits |
+| `HERMES_AUTO_WINDOWS_TERMINAL=1` | aan | Start in Windows Terminal (`wt.exe`) |
+| `HERMES_MINIMAL_LAUNCH=1` | aan | Sla Docker/SOUL/institutioneel over → direct chat (minder console-rommel) |
+| `HERMES_SKIP_DOCKER_ON_START=1` | aan | Geen `docker info` / WSL-spawn bij start |
+| `HERMES_SKIP_DASHBOARD_ON_START=1` | aan | Geen dashboard op poort 9119 bij start |
+| `HERMES_CONSOLE_LAYOUT=maximized` | aan | Venster op werkgebied (taakbalk zichtbaar) |
+
+**Volledige launcher** (bootstrap + SOUL + institutioneel + dashboard): `set HERMES_MINIMAL_LAUNCH=0` vóór start.
+
+**Maximaliseren:** één keer vóór chat in `launch_hermes.bat` (niet handmatig opnieuw — dat veroorzaakt ghost-overlays). **QuickEdit** uit via `HermesShellCommon.ps1` + `hermes_cli.win32_console`. **Config:** eenmalig `windows\OPEN_SETUP.bat` → `%LOCALAPPDATA%\hermes\config.yaml`.
 
 Of dubbelklik **windows\Hermes_met_logo.bat** / taakbalk-start (na `FIX_TASKBAR_ICONS.bat`).
 
@@ -113,11 +138,62 @@ De fork biedt drie verschillende manieren om flexibel en robuust van profiel te 
 
 **Fout `\ufeffcore`:** `active_profile` per ongeluk met PowerShell `Set-Content -Encoding UTF8` geschreven (BOM). De in-chat `/profile use` en `SWITCH_PROFILE.bat` schrijven BOM-safe. Gebruik bij voorkeur deze tools in plaats van handmatige edities met BOM. Bij een crash: herstel het bestand door `/profile use <naam>` opnieuw te gebruiken of `SWITCH_PROFILE.bat <naam>` te draaien.
 
+## TERM-footgun (prompt_toolkit / chat-crash)
+
+**Symptoom:** venster sluit direct na "Launching Hermes Agent Chat…" met `NoConsoleScreenBufferError` / *Found xterm-256color, while expecting a Windows console*.
+
+**Oorzaak:** `TERM=xterm-256color` (of `COLORTERM` + Unix-TERM) in een **echte** Windows-console (cmd / Windows Terminal). prompt_toolkit kiest dan geen `Win32Output` → crash.
+
+**Fix in deze fork (structureel):**
+
+| Onderdeel | Gedrag |
+| --------- | ------ |
+| `launch_hermes.bat` | Zet **geen** `TERM=xterm-256color` meer bij `WT_SESSION` |
+| `run_hermes_prepare.ps1` | `Set-HermesWin32ChatEnv` (wist TERM/COLORTERM, houdt `FORCE_COLOR` + VT) |
+| `hermes_chat.cmd` | Chat in **dezelfde cmd**; `set TERM=` vóór Python |
+| Kleuren / markdown | ONGEWIJZIGD — via `FORCE_COLOR`, `enable_console_ansi.ps1`, `display_markdown.py` |
+
+**Debug:** `start_hermes_debug.bat` (sneller, `pause` bij fout) → logs: `hermes_runtime.log`, `hermes_launch.log`, `hermes_last_error.log`.
+
+**Hang na config-pad (model-banner):** nooit `(?ms)` + `.*` op hele `config.yaml` — gebruikt `Get-HermesModelFieldsFromConfigYaml` (regelscanner). Dashboard bij start: `HERMES_DASHBOARD_QUICK_START=1` (geen 100s /health-wacht).
+
+**Muisklik geblokkeerd (minimaliseren/sluiten/titelbalk):** **niet handmatig opnieuw maximaliseren** na start. Oorzaak: `ENABLE_MOUSE_INPUT` of een ghost-console vangt klikken af. **Fix:** `windows\FIX_MOUSE_BLOCKED.bat` (reset + ghost-dismiss). In WT: **Ctrl+Shift+M** = markeermodus uit. Launcher: muismodus uit in `HermesShellCommon.ps1`; chat: `mouse_support=False` in `cli.py`.
+
+**Scherm springt omhoog bij typen / alleen `core >` bovenaan:** viewport stond midden in de scrollbuffer, of prompt_toolkit “reserve vertical space” scrollde elke toetsaanslag. **Fix in fork:** `align_win32_viewport_to_bottom()` + osd-patch ook op Win32. **Reset:** `windows\RESET_TERMINAL.bat`, alle WT-tabbladen sluiten, opnieuw `start_hermes.bat`.
+
+**Tekst overschrijft bovenaan / garbled bij start:** te veel echo vóór `cls` (Docker, SOUL, …). Gebruik standaard `HERMES_MINIMAL_LAUNCH=1` of `start_hermes.bat`. Oude “Session ended / Press any key”: nieuw WT-tab, geen `pause` na normale exit.
+
+**Scroll / plakken / kopiëren in chat:** `run_hermes_prepare.ps1` + `hermes_chat.cmd` (zelfde cmd, `TERM` leeg). **Plakken:** `Ctrl+V` (Win32-klembord). **Kopiëren invoer:** **Shift+pijlen** + **Ctrl+C** (zonder selectie = onderbreken). **Scrollback:** WT-schuifbalk of markeermodus; assistant: `/copy`. Geen `mode con: lines=9000` (zwart scherm bij scroll).
+
+**4× wslhost.exe + ollama.exe + vastlopen bij start:** `start_hermes.bat` zet standaard snelle start:
+
+| Variabele | Effect |
+| --------- | ------ |
+| `HERMES_SKIP_DOCKER_ON_START=1` | Geen `docker info` / Docker Desktop → geen WSL2-spawn |
+| `HERMES_SKIP_HARDWARE_PROBE=1` | Geen torch/onnx-probe bij chat-start |
+| `HERMES_NO_WAKE_LOCAL_LLM=1` | Geen HTTP naar `localhost:11434` bij agent-init (voorkomt Ollama-GUI) |
+
+Docker weer aan: `set HERMES_SKIP_DOCKER_ON_START=` vóór start. Ollama bij auxiliary-taken: start `ollama serve` in tray of verwijder `auxiliary.*` uit config. Zwart **ollama.exe**-venster = Ollama Desktop (niet Hermes); sluit via systeemvak of schakel “Launch at login” uit in Ollama.
+
+## Problemen oplossen (checklist)
+
+| Symptoom | Actie |
+| -------- | ----- |
+| Muisklik titelbalk / sluiten werkt niet | `FIX_MOUSE_BLOCKED.bat` → nieuw WT-tab → `start_hermes.bat` |
+| Scherm springt bij typen | Zelfde + controleer dat je via `hermes_chat.cmd` start (niet `conda run`) |
+| Blauw i.p.v. goud | Windows Terminal installeren; `display.skin: default` |
+| Crash na “Launching chat” | Geen `TERM=xterm`; zie sectie TERM-footgun |
+| Hang na model-banner | Banner-parser fix; gebruik `run_hermes_prepare.ps1` |
+| Debug met pause bij fout | `start_hermes_debug.bat` → `hermes_runtime.log`, `hermes_launch.log` |
+
 ## Wat de fork al doet
 
-- `launch_hermes.bat`: detecteert `WT_SESSION`; zonder WT → `wt -M` + herstart; **geen** tweede maximize in `ComSpec` als je al in WT zit.
-- `run_hermes.ps1`: zet `COLORTERM=truecolor` in WT; activeert VT via `enable_console_ansi.ps1`.
-- `start_hermes_split.bat`: split-pane logs in WT.
+- `launch_hermes.bat`: `WT_SESSION` → anders `wt -M` via `hermes_wt_entry.cmd`; console-reset + `cls` vóór chat.
+- `run_hermes_prepare.ps1` + `hermes_chat.cmd`: prepare in PS, **chat in dezelfde cmd** (geen `conda run` subprocess).
+- `hermes_cli/win32_console.py`: QuickEdit/muis uit, viewport naar onderkant buffer, terminal-reset bij exit.
+- `cli.py` (Win32): osd-patch tegen scroll-jump, `mouse_support=False`, Ctrl+V plakken.
+- `Set-HermesWin32ChatEnv`: VT via `enable_console_ansi.ps1`; **geen** Unix-`TERM`.
+- `start_hermes_split.bat`: split-pane logs in WT (alleen debug).
 
 ## Uitzonderingen
 

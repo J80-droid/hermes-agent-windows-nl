@@ -14,13 +14,10 @@ $repoRoot = if ((Split-Path -Leaf $scriptRoot) -ieq 'windows') {
 }
 $logFile = Join-Path $repoRoot 'hermes_runtime.log'
 
-if ($env:WT_SESSION) {
-    $env:COLORTERM = 'truecolor'
-    if (-not $env:TERM) { $env:TERM = 'xterm-256color' }
-}
+$env:TERM = ''
+$env:COLORTERM = ''
 $env:NO_COLOR = ''
 if ($env:FORCE_COLOR -eq '0') { $env:FORCE_COLOR = '1' }
-if ($env:TERM -eq 'dumb') { $env:TERM = 'xterm-256color' }
 $ansiPs1 = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/enable_console_ansi.ps1'
 if (Test-Path -LiteralPath $ansiPs1) {
     . $ansiPs1

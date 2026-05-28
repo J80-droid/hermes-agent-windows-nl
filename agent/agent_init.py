@@ -1554,7 +1554,12 @@ def init_agent(
             agent._ollama_num_ctx = int(_ollama_num_ctx_override)
         except (TypeError, ValueError):
             _ra().logger.debug("Invalid ollama_num_ctx config value: %r", _ollama_num_ctx_override)
-    if agent._ollama_num_ctx is None and agent.base_url and is_local_endpoint(agent.base_url):
+    if (
+        agent._ollama_num_ctx is None
+        and agent.base_url
+        and is_local_endpoint(agent.base_url)
+        and os.environ.get("HERMES_NO_WAKE_LOCAL_LLM") != "1"
+    ):
         try:
             # ``agent.api_key`` may be a callable (Entra token provider).
             # Ollama detection makes a manual HTTP request and expects a
