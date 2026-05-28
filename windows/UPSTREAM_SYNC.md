@@ -50,9 +50,11 @@ Kleuren: goud = start/RAG, groen = setup, wit = update, roze = backup, cyaan = r
 
 Taakbalk-.lnk: update = `hermes_logo_update.ico` (wit/zilver). Gebruik **niet** `hermes_taskbar_white.ico` in `.lnk` (oude H-stub in Explorer).
 
-**Launcher:** alle `.lnk` gebruiken `wt.exe -M -d repo cmd /c call pad.bat` (niet oude `cmd /c "cd /d …"` — faalt als WT standaardterminal is). Padcontrole: `scripts\verify_hermes_shortcut_paths.ps1 -IncludePinned`.
+**Launcher:** alle `.lnk` gebruiken `wt.exe -M -d repo cmd /c call pad.bat` (niet oude `cmd /c "cd /d …"` — faalt als WT standaardterminal is; symptoom: alleen Start werkt). Padcontrole: `scripts\verify_hermes_shortcut_paths.ps1 -IncludePinned`. Herstel: `FIX_TASKBAR_ICONS.bat`.
 
 **Preflight exit 2 (werkmap niet schoon):** commit of stash vóór update; alleen `assets/Hermes_logo.png` + `windows/hermes*.ico` mag door zonder commit.
+
+**Preflight exit 6 (merge-conflicten):** los conflicten op (zie `MERGE_UPSTREAM.bat` hieronder), `git commit`, daarna `UPDATE_HERMES.bat` opnieuw. Grote merge (2026-05): typische bestanden `.gitignore`, `hermes_cli/main.py` (geen `ai-gateway`), `ui-tui/.../appChrome.tsx` (fork cost/tps + upstream sessieteller), `uv.lock` (behoud `rag` + `voice-windows`).
 
 **Git dirty na update:** icoon-generator kan `assets/Hermes_logo.png` en `windows/hermes_logo.ico` wijzigen. Dat is normaal — `git restore` die bestanden of doe een branding-commit; preflight laat alleen branding door.
 

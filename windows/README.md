@@ -145,7 +145,7 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 | Memory-architectuur E2E | `audits\RUN_MEMORY_ARCHITECTURE_E2E.bat` (launcher → `MemoryArchitectureE2E.core.ps1`, 18/18) |
 | Trust forensic E2E | `audits\RUN_TRUST_FORENSIC_E2E.bat` (launcher → `TrustForensicE2E.core.ps1`) |
 | Audit PS1 syntax (IDE) | `audits\VALIDATE_AUDIT_PS1_SYNTAX.bat` |
-| Taakbalk-snelkoppelingen vernieuwen | `REFRESH_TASKBAR_SHORTCUTS.bat` of `CREATE_DESKTOP_SHORTCUT.bat` (Start: `wt.exe` + `start_hermes.bat`; overige: `cmd /c` + `call` + gekleurd `.ico`) |
+| Taakbalk-snelkoppelingen vernieuwen | `REFRESH_TASKBAR_SHORTCUTS.bat` of `CREATE_DESKTOP_SHORTCUT.bat` (alle rollen: `wt.exe` + `cmd /c call` bat; RAG: `/k`; zie `UPSTREAM_SYNC.md`) |
 
 ### Eén onderhoudsscript (aanbevolen na wijzigingen)
 
@@ -224,6 +224,6 @@ Zie `docs\PROFILE_MODEL_INHERITANCE.md`.
 - `TERMINAL_WINDOWS.md` — WT, skin, markdown-kleuren, API-home
 - `PSScriptAnalyzerSettings.psd1` — lint-regels
 
-**RAG handmatig/taakbalk:** `RAG_KNOWLEDGE_UPDATE.bat` — J/N via typen + Enter, venster blijft open (`cmd /k` in `.lnk`). Regenereer via `FIX_TASKBAR_ICONS.bat` of `create_taskbar_shortcuts.ps1`. **Alleen geplande nacht-run:** `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` (`HERMES_NONINTERACTIVE=1`, geen J/N).
+**RAG handmatig/taakbalk:** `RAG_KNOWLEDGE_UPDATE.bat` — J/N via typen + Enter, venster blijft open (`wt.exe` + `cmd /k call` in `.lnk`). Regenereer via `FIX_TASKBAR_ICONS.bat` of `create_taskbar_shortcuts.ps1`. **Alleen geplande nacht-run:** `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` (`HERMES_NONINTERACTIVE=1`, geen J/N).
 
-**Iconen (taakbalk + Verkenner):** goud = start/RAG (`hermes_logo.ico`), groen = setup (`hermes_logo_setup.ico`), wit/zilver = update (`hermes_logo_update.ico`), roze = backup, cyaan = restore. Bron: `assets/Hermes_logo.png` (of `%USERPROFILE%\.hermes\_local_assets\assets\Hermes_logo.png`). Generator bouwt **7-lagen ICO** (16–256 px). Gekleurde varianten in `windows/.gitignore` — na clone: generator + `FIX_TASKBAR_ICONS.bat`. **Start-.lnk:** `wt.exe` + `start_hermes.bat` (`Set-HermesStartShellShortcut`). **Overige .lnk:** `cmd.exe /c` + `cd /d` + `call` (RAG: **`/k`** voor J/N + pause) + `IconLocation` op `.ico` (niet `.bat` slepen). Controle: `scripts/verify_taskbar_shortcut_icons.ps1`. Herstel: `CREATE_DESKTOP_SHORTCUT.bat` of `hermes_onderhoud.bat -ShortcutsOnly` → **F5** in Explorer → taakbalk-pin opnieuw via `.lnk`.
+**Iconen (taakbalk + Verkenner):** goud = start/RAG (`hermes_logo.ico`), groen = setup (`hermes_logo_setup.ico`), wit/zilver = update (`hermes_logo_update.ico`), roze = backup, cyaan = restore. Bron: `assets/Hermes_logo.png` (of `%USERPROFILE%\.hermes\_local_assets\assets\Hermes_logo.png`). Generator bouwt **7-lagen ICO** (16–256 px). Gekleurde varianten in `windows/.gitignore` — na clone: generator + `FIX_TASKBAR_ICONS.bat`. **Alle .lnk (incl. Start):** `wt.exe -M -d repo cmd /c call pad.bat` (`Set-HermesShellShortcut`; RAG: `/k`). Geen `.bat` direct slepen. Controle: `scripts/verify_hermes_shortcut_paths.ps1 -IncludePinned` + `verify_taskbar_shortcut_icons.ps1`. Herstel: `FIX_TASKBAR_ICONS.bat` → **F5** in Explorer → pin opnieuw via `.lnk` in `windows\`.
