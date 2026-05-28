@@ -6021,6 +6021,17 @@ class HermesCLI:
                 f"If this repeats, run /new or restart this tab.{_RST}"
             )
 
+    def _finalize_win32_console(self, app=None) -> None:
+        """Win32: compact buffer + drop prompt_toolkit chrome (no viewport scroll-jump)."""
+        if sys.platform != "win32":
+            return
+        try:
+            from hermes_cli.win32_console import finalize_console_after_chat
+
+            finalize_console_after_chat(app or getattr(self, "_app", None))
+        except Exception:
+            pass
+
     def _handle_copy_command(self, cmd_original: str) -> None:
         """Handle /copy [number] — copy assistant output to clipboard."""
         parts = cmd_original.split(maxsplit=1)
@@ -12635,6 +12646,13 @@ class HermesCLI:
     
     def _print_exit_summary(self):
         """Print session resume info on exit, similar to Claude Code."""
+        if sys.platform == "win32":
+            try:
+                from hermes_cli.win32_console import align_win32_viewport_to_bottom
+
+                align_win32_viewport_to_bottom()
+            except Exception:
+                pass
         print()
         msg_count = len(self.conversation_history)
         if msg_count > 0:
@@ -12668,6 +12686,12 @@ class HermesCLI:
                 print(f"Title:          {session_title}")
             print(f"Duration:       {duration_str}")
             print(f"Messages:       {msg_count} ({user_msgs} user, {tool_calls} tool calls)")
+            if sys.platform == "win32":
+                print()
+                print(
+                    "Sluit dit Windows Terminal-tabblad of start opnieuw via "
+                    "start_hermes.bat (nieuw venster)."
+                )
         else:
             try:
                 from hermes_cli.skin_engine import get_active_goodbye
@@ -14957,7 +14981,6 @@ class HermesCLI:
                         try:
                             if not self.process_command(user_input):
                                 self._should_exit = True
-                                # Schedule app exit
                                 if app.is_running:
                                     app.exit()
                         except KeyboardInterrupt:
@@ -15264,12 +15287,7 @@ class HermesCLI:
             else:
                 raise
         finally:
-            if sys.platform == "win32":
-                try:
-                    sys.stdout.write(_TERMINAL_INPUT_MODE_RESET_SEQ)
-                    sys.stdout.flush()
-                except Exception:
-                    pass
+            self._finalize_win32_console(app)
             self._should_exit = True
             # Interrupt the agent immediately so its daemon thread stops making
             # API calls and exits promptly (agent_thread is daemon, so the

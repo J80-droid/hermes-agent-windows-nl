@@ -1,5 +1,5 @@
 @echo off
-rem Dunne launcher op repo-root: alle logica staat in windows\launch_hermes.bat
+rem Dunne launcher op repo-root. Zie windows\START.md en windows\TERMINAL_WINDOWS.md
 setlocal EnableExtensions
 cd /d "%~dp0"
 rem Geen dubbele relaunch-flits bij dubbelklik (zelfde venster blijft open).

@@ -26,12 +26,9 @@ set "TERM="
 set "COLORTERM="
 rem Schone console (geen oude "Session ended" + pause-resten boven nieuwe chat).
 cls >nul 2>&1
-rem Terminal reset: muismodi + alternate screen los (voorkomt vast muisklik).
-"!HERMES_PYTHON!" -c "import sys;s=sys.stdout;s.write('\x1b[?1006l\x1b[?1003l\x1b[?1002l\x1b[?1000l\x1b[?1004l\x1b[?2004l\x1b[?1049l\x1b[<u\x1b[>4m\x1b[0m\x1b[?25h');s.flush()" 2>nul
-"!HERMES_PYTHON!" -c "from hermes_cli.win32_console import release_terminal_capture; release_terminal_capture()" 2>nul
-chcp 65001 >nul
-rem Geen mode con: lines=9000 — lege bufferregels geven zwart scherm bij PgDn/scroll.
+rem Muismodi/QuickEdit (geen ANSI naar stdout — voorkomt ?[... garbage).
 if /I "%OS%"=="Windows_NT" "!HERMES_PYTHON!" -c "from hermes_cli.win32_console import configure_interactive_console, align_win32_viewport_to_bottom; configure_interactive_console(); align_win32_viewport_to_bottom()" >nul 2>&1
+chcp 65001 >nul
 set "PYTHONIOENCODING=utf-8"
 if defined NO_COLOR set "NO_COLOR="
 if /I "!FORCE_COLOR!"=="0" set "FORCE_COLOR=1"
@@ -73,7 +70,7 @@ exit /b %ERRORLEVEL%
 exit /b %ERRORLEVEL%
 
 :done
-"!HERMES_PYTHON!" -c "from hermes_cli.win32_console import release_terminal_capture; release_terminal_capture()" 2>nul
+rem Exit-finalize gebeurt in cli.run() finally (met app); niet opnieuw hier.
 if !CHAT_EXIT! neq 0 (
     echo [%DATE% %TIME%] Hermes chat exit !CHAT_EXIT! >> "%ERROR_LOG%"
     echo [ERROR] Hermes chat exit !CHAT_EXIT! — zie hermes_runtime.log >> "%ERROR_LOG%"

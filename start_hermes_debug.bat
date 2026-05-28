@@ -1,5 +1,5 @@
 @echo off
-rem Debug-start: sneller (geen dashboard), venster blijft open bij fout, logs zichtbaar.
+rem Debug-start — zie windows\START.md (sectie Gerelateerde scripts).
 setlocal EnableExtensions
 cd /d "%~dp0"
 set "HERMES_DEBUG_LAUNCH=1"

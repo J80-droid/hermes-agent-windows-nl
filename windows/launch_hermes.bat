@@ -295,8 +295,8 @@ if !errorLevel! neq 0 (
     exit /b !errorLevel!
 )
 
-echo [INFO] Session ended normally.
+rem Exit-summary komt uit Python; alleen muismodi herstellen (geen echo boven summary).
 echo [%DATE% %TIME%] Session completed successfully. >> "%LAUNCH_LOG%"
-echo %CYAAN%[INFO] Sluit dit tabblad of start opnieuw via start_hermes.bat ^(nieuw venster^).%RESET%
+powershell -NoProfile -ExecutionPolicy Bypass -Command ". '%REPO_ROOT%\windows\HermesShellCommon.ps1'; Reset-HermesConsoleInputModes; Invoke-HermesDisableConsoleQuickEdit" 2>nul
 if defined HERMES_DEBUG_LAUNCH pause
 exit /b 0

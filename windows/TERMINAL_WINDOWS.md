@@ -14,7 +14,7 @@ Dit is geen skin-config en geen Hermes-bug in je fork; het is een **terminal-cap
 
 | Prioriteit | Actie |
 | ---------- | ----- |
-| 1 | Start via **`windows\launch_hermes.bat`** of **`start_hermes_split.bat`** (niet een losse `cmd` met handmatig `python cli.py`). |
+| 1 | Start via **`start_hermes.bat`** (repo-root) → `windows\launch_hermes.bat`. Niet losse `cmd` + `python cli.py`. Zie [START.md](START.md). |
 | 2 | **Windows Terminal** is verplicht (`wt.exe`). Zie [`requirements-windows.txt`](requirements-windows.txt) / [`INSTALL_WINDOWS_TERMINAL.bat`](INSTALL_WINDOWS_TERMINAL.bat). `start_hermes.bat` start automatisch in WT (`HERMES_AUTO_WINDOWS_TERMINAL=1`). |
 | 3 | Gebruik **conda `hermes-env`** (canoniek via `HermesPythonPolicy.ps1` / `REPAIR_PYTHON.bat`). |
 
@@ -62,9 +62,9 @@ Standaard skin is **`default`** (goud/kawaii). Als je **blauw/cyaan** ziet, staa
 
 ```bat
 windows\APPLY_TEAM_DISPLAY.bat
-
-Bij **start** (`start_hermes.bat` → `launch_hermes.bat`): volgorde — (1) SOUL anatomy deploy (`launch_soul_anatomy_deploy.ps1`, skip via `HERMES_SKIP_SOUL_DEPLOY_ON_START`), (2) institutioneel runtime (`launch_institutional_runtime.ps1`, skip via `HERMES_SKIP_INSTITUTIONAL_RUNTIME`), (3) **pending trust-nazorg** (`launch_pending_trust_runtime.ps1` als `pending_trust_runtime.json` bestaat; skip via `HERMES_SKIP_PENDING_TRUST_ON_START=1`), (4) Hermes runtime. Institutioneel roept `apply_team_display.ps1` aan wanneer repo-defaults nieuwer zijn dan de stamp **of** runtime drift detecteert. Geen E2E tenzij `--institutional-e2e`. Handmatig: `APPLY_TEAM_DISPLAY.bat` alleen bij skip institutional of directe `cli.py`-start.
 ```
+
+**Standaard** (`HERMES_MINIMAL_LAUNCH=1` via `start_hermes.bat`): geen SOUL/institutioneel/trust bij elke start — direct chat. **Volledige start:** `set HERMES_MINIMAL_LAUNCH=0` vóór `start_hermes.bat` (dan SOUL → institutioneel → trust-nazorg → chat). Handmatig display: `APPLY_TEAM_DISPLAY.bat`.
 
 of: `hermes config set display.skin default` — daarna Hermes opnieuw starten.
 
@@ -181,6 +181,8 @@ Docker weer aan: `set HERMES_SKIP_DOCKER_ON_START=` vóór start. Ollama bij aux
 | -------- | ----- |
 | Muisklik titelbalk / sluiten werkt niet | `FIX_MOUSE_BLOCKED.bat` → nieuw WT-tab → `start_hermes.bat` |
 | Scherm springt bij typen | Zelfde + controleer dat je via `hermes_chat.cmd` start (niet `conda run`) |
+| Na exit: chat kwijt | Scrollback blijft; scroll omhoog om na te lezen. Volledig leeg: `RESET_TERMINAL.bat` |
+| Na exit: ghost statusbalk | `finalize_console_after_chat` zet alleen muismodi/renderer terug |
 | Blauw i.p.v. goud | Windows Terminal installeren; `display.skin: default` |
 | Crash na “Launching chat” | Geen `TERM=xterm`; zie sectie TERM-footgun |
 | Hang na model-banner | Banner-parser fix; gebruik `run_hermes_prepare.ps1` |
@@ -222,4 +224,4 @@ Voor Cursor-agents: start geen Hermes TUI in geïntegreerde **cmd**-terminals vo
 
 Fout `'licy' is not recognized` = kapotte cmd-regel (`\s` in pad → tab, of `<` als redirect). Geen Hermes-crash.
 
-Zie ook `windows/INSTITUTIONAL.md` en `.cursor/rules/terminal-windows.mdc` (indien aanwezig).
+Zie ook [START.md](START.md), [INSTITUTIONAL.md](INSTITUTIONAL.md) en `.cursor/rules/terminal-windows.mdc` (indien aanwezig).

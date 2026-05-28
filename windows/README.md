@@ -27,6 +27,8 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 
 ## Dagelijks gebruik
 
+**Hermes starten:** `start_hermes.bat` (repo-root) → zie **[START.md](START.md)** (keten + env-defaults). Terminal/kleuren/muisklik/exit: **[TERMINAL_WINDOWS.md](TERMINAL_WINDOWS.md)**.
+
 ### Klassieke CLI — prompt-wachtrij (`/queue`)
 
 Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
@@ -44,7 +46,9 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 
 | Taak | Script |
 | ---- | ------ |
-| Hermes starten | `launch_hermes.bat` / `run_hermes.ps1` (bootstrap + SOUL anatomy + institutioneel + **pending trust-nazorg** indien stamp) |
+| Hermes starten (standaard) | **`start_hermes.bat`** (minimale launch) — [START.md](START.md) |
+| Hermes starten (volledig) | `set HERMES_MINIMAL_LAUNCH=0` → `start_hermes.bat` of `launch_hermes.bat` |
+| Debug start | `start_hermes_debug.bat` |
 | Volledige setup | `SETUP_HERMES.bat` of `launch_hermes.bat --setup` |
 | RAG-index bijwerken | `scripts/update_knowledge.bat` |
 | Doctor / fixes | `DOCTOR_FIX.bat` |
@@ -71,7 +75,9 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 | Nieuw profiel (runtime) | `set HERMES_HOME=%LOCALAPPDATA%\hermes` → `SYNC_DOMAIN_TOOLSETS.bat --create-missing` — zie `docs\DOMAIN_BLUEPRINT.md` |
 | Provision E2E (smoke) | `audits\RUN_PROVISION_DOMAIN_E2E.bat` |
 | Toolset E2E (14 profielen) | `audits\RUN_TOOLSET_DOMAIN_E2E.bat` of `RUN_AUDITS.bat -IncludeToolsetDomainE2E` |
-| Web dashboard (9119, geen tab) | Automatisch bij `launch_hermes.bat`; handmatig: `hermes dashboard --no-open` · uit: `HERMES_SKIP_DASHBOARD_ON_START=1` |
+| Web dashboard (9119, geen tab) | Automatisch bij `launch_hermes.bat` (Codebase Viz warmup); uit: `HERMES_SKIP_DASHBOARD_ON_START=1` |
+| **Alles-in-één na codewijziging** | `hermes_onderhoud.bat` of `windows\HERMES_ONDERHOUD.bat` (snelkoppelingen + dashboard + Codebase Viz) |
+| Snelkoppelingen kapot / `. was unexpected` | `hermes_onderhoud.bat` (of `-ShortcutsOnly`) → taakbalk-pin opnieuw via `Start Hermes - naar taakbalk slepen.lnk` |
 | Institutionele presentatie | `docs\INSTITUTIONAL_PRESENTATION.md` |
 | Core routing / landkaart | `docs\ORCHESTRATOR_ROUTING.md`, skill `landkaart` (`/landkaart`) |
 | Legal lenzen (één bucket) | `docs\LEGAL_DOMAIN_ARCHITECTURE.md`, `docs\LEGAL_TAXONOMY.md`, `MIGRATE_LEGAL_LAYOUT.bat` |
@@ -136,7 +142,32 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 | Memory-architectuur E2E | `audits\RUN_MEMORY_ARCHITECTURE_E2E.bat` (launcher → `MemoryArchitectureE2E.core.ps1`, 18/18) |
 | Trust forensic E2E | `audits\RUN_TRUST_FORENSIC_E2E.bat` (launcher → `TrustForensicE2E.core.ps1`) |
 | Audit PS1 syntax (IDE) | `audits\VALIDATE_AUDIT_PS1_SYNTAX.bat` |
-| Taakbalk-snelkoppelingen vernieuwen | `REFRESH_TASKBAR_SHORTCUTS.bat` (`windows\*.lnk` = `cmd /c` + gekleurd `.ico`) |
+| Taakbalk-snelkoppelingen vernieuwen | `REFRESH_TASKBAR_SHORTCUTS.bat` (`cmd /d /c` + `cd /d` + `call` + gekleurd `.ico`) |
+
+### Eén onderhoudsscript (aanbevolen na wijzigingen)
+
+```cmd
+hermes_onderhoud.bat
+```
+
+Doet in volgorde: taakbalk-.lnk + bureaublad + pins → pip `[web]` + pygount → `npm run build` (indien nodig) → dashboard 9119 → health + force-scan.
+
+| Vlag | Alleen |
+|------|--------|
+| `-ShortcutsOnly` | Snelkoppelingen (alias: `REFRESH_TASKBAR_SHORTCUTS.bat`) |
+| `-DashboardOnly` | Dashboard/Codebase Viz (alias: `audits\RESTART_CODEBASE_VIZ_DASHBOARD.bat`) |
+| `-VerifyChain` | + `VERIFY_WINDOWS_CHAIN` |
+| `-OpenCodebaseViz` | Browser-tab `/codebase-viz` |
+| `-StartHermes` | Daarna `start_hermes.bat` |
+
+### Overige `.bat`-bestanden
+
+| Soort | Voorbeeld | Wanneer |
+|-------|-----------|---------|
+| **Dagelijks / start** | `start_hermes.bat` | Chat (+ dashboard warmup bij start) |
+| **CI / E2E** | `RUN_AUDITS.bat`, `RUN_CODEBASE_VIZ_*_E2E.bat` | Ontwikkelaars, niet handmatig na elke wijziging |
+
+Oude losse scripts (`REFRESH_*`, `RESTART_CODEBASE_VIZ_*`, `CREATE_DESKTOP_*`) zijn **aliases** naar `HERMES_ONDERHOUD.bat`.
 | Taakbalk-icoon herstellen | `FIX_TASKBAR_ICONS.bat` |
 | Nous upstream-merge (uitleg) | `UPSTREAM_SYNC.md` |
 | Repo-hygiene E2E | `..\audits\RUN_REPO_HYGIENE_E2E.bat` · `..\audits\REPO_HYGIENE_E2E_README.md` |
