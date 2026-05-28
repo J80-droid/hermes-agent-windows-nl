@@ -218,5 +218,6 @@ function Set-HermesLaunchProfilePreference {
     if (-not (Test-Path -LiteralPath $dir)) {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
-    Set-Content -LiteralPath $path -Value $Profile -Encoding UTF8NoBOM
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText($path, $Profile + "`n", $utf8NoBom)
 }
