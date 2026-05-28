@@ -46,8 +46,10 @@ Native Windows Hermes gebruikt `%LOCALAPPDATA%\hermes`. WSL-sessies kunnen paral
 | Actie | Commando |
 | --- | --- |
 | Start Hermes | `windows\launch_hermes.bat` |
-| Na `git pull` (aanbevolen) | **`PULL_HERMES.bat`** → `git pull` + `POST_GIT_PULL.bat` (standaard **Hermes-relaunch** in WT) |
-| Na pull handmatig | `windows\POST_GIT_PULL.bat` — `-SkipRelaunch` / `HERMES_SKIP_RELAUNCH_AFTER_PULL=1` om herstart uit te zetten |
+| Dagelijks | **`start_hermes.bat`** — pull+sync+relaunch alleen als nodig; anders direct start |
+| Forceer pull | `start_hermes.bat --pull` of `PULL_HERMES.bat` |
+| Na handmatige pull | `start_hermes.bat --sync` of `windows\POST_GIT_PULL.bat` |
+| Relaunch uit | `-SkipRelaunch` / `HERMES_SKIP_RELAUNCH_AFTER_PULL=1` · auto-pull uit: `HERMES_SKIP_AUTO_PULL_ON_START=1` |
 | Volledige preset na pull | `POST_GIT_PULL.bat -Full` (= AutoRepair + InstitutionalVerify + relaunch) |
 | Nous upstream | `UPDATE_HERMES.bat` (zelfde relaunch na post-merge) |
 | Wekelijkse kwaliteit | `windows\audits\RUN_AUDITS.bat` |

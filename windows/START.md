@@ -1,10 +1,29 @@
 # Hermes starten op Windows
 
-**Dagelijks:** dubbelklik of run vanaf repo-root:
+**Dagelijks (aanbevolen — één script):** taakbalk of repo-root:
 
 ```bat
 start_hermes.bat
 ```
+
+Gedrag:
+
+1. **Achter `origin` (tracking branch)?** → `git pull` + `POST_GIT_PULL` + Hermes-relaunch in WT.
+2. **Up-to-date?** → direct normale start (geen pull, geen extra wachttijd behalve korte `git fetch`).
+3. **Merge bezig / vuile working tree / offline?** → pull overslaan, gewoon starten (of los `POST_GIT_PULL` na opruimen).
+
+**Handmatig forceren:**
+
+| Vlag | Effect |
+|------|--------|
+| `--pull` | Altijd pull + sync (ook als up-to-date) |
+| `--pull -Full` | Zelfde + AutoRepair + InstitutionalVerify |
+| `--sync` | Alleen POST (na handmatige `git pull`) |
+| `--no-pull` | Geen auto-pull deze keer |
+
+Uitzetten auto-pull permanent: `set HERMES_SKIP_AUTO_PULL_ON_START=1`. Geen fetch bij start: `set HERMES_SKIP_FETCH_ON_START=1`.
+
+`PULL_HERMES.bat` = `start_hermes.bat --pull`. Draai **niet** in het Hermes-tabblad dat wordt afgesloten.
 
 Standaard = **volledige launcher** (SOUL, institutioneel, trust, Docker-check, dashboard 9119). Alle env-defaults via `windows\launch_profiles.ps1`.
 

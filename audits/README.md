@@ -1,6 +1,6 @@
 # Post-git-pull automatisering E2E
 
-Geïsoleerde E2E voor `PULL_HERMES.bat` → `POST_GIT_PULL.bat`, relaunch-keten (`Invoke-HermesPostPullRelaunch.ps1`), trust-outcome, stop-script en klassieke CLI `/new`-pariteit. Geen live WT-start (relaunch met `HERMES_SKIP_RELAUNCH_AFTER_PULL=1`).
+Geïsoleerde E2E voor `start_hermes.bat` / pull-keten → `POST_GIT_PULL.bat`, relaunch (`Invoke-HermesPostPullRelaunch.ps1`), trust-outcome, stop-script en CLI `/new`-pariteit. Dagelijks: `start_hermes.bat` (auto-pull via `Test-HermesGitPullNeeded.ps1`). Geen live WT in E2E (`HERMES_SKIP_RELAUNCH_AFTER_PULL=1`).
 
 | ID | Scenario | Verwachting |
 |----|----------|-------------|

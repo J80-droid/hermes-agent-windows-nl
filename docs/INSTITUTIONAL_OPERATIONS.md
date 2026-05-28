@@ -10,20 +10,24 @@ Runbook voor dagelijks gebruik, recovery en release-validatie.
 
 ```cmd
 start_hermes.bat
-PULL_HERMES.bat
-windows\POST_GIT_PULL.bat
-windows\POST_GIT_PULL.bat -Full
+start_hermes.bat --pull
+start_hermes.bat --pull -Full
+start_hermes.bat --sync
+start_hermes.bat --no-pull
+set HERMES_SKIP_AUTO_PULL_ON_START=1
 windows\POST_GIT_PULL.bat -SkipRelaunch
 windows\POST_GIT_PULL.bat -QuickFix
 windows\SYNC_TRUST_RUNTIME.bat
 ```
+
+**Eén entrypoint:** `start_hermes.bat` — detecteert automatisch of pull nodig is (`Test-HermesGitPullNeeded.ps1`); zo niet, direct chat. `--pull` forceert; `--no-pull` slaat auto-pull over.
 
 **Launch-profiel (Windows):** standaard **full** via `start_hermes.bat` (SOUL, institutioneel, trust, Docker, dashboard). Snel alleen chat: `start_hermes_minimal.bat`. Canoniek: [`windows/launch_profiles.ps1`](../windows/launch_profiles.ps1), [`windows/START.md`](../windows/START.md). Voorkeur opslaan: `windows\set_launch_profile.bat full|minimal`.
 
 `launch_hermes.bat` start dashboard bij profiel **full** (Codebase Viz warmup): **`hermes dashboard --no-open`** op `http://127.0.0.1:9119` (geen browser-tab; open zelf `/sessions`). Uitzetten: `HERMES_SKIP_DASHBOARD_ON_START=1` of `HERMES_DASHBOARD_ON_START=0`. Log: `output\research\logs\hermes_dashboard.log`.
 Windows Terminal is verplicht (`windows/requirements-windows.txt`; `INSTALL_WINDOWS_TERMINAL.bat`). `start_hermes.bat` zet `HERMES_AUTO_WINDOWS_TERMINAL=1` (start in `wt -M` wanneer `wt.exe` beschikbaar). Uitzetten: `HERMES_SKIP_WINDOWS_TERMINAL=1`. Console-layout: `HERMES_CONSOLE_LAYOUT=maximized` (werkgebied, geen `SW_MAXIMIZE`).
 
-**Na pull (standaard):** `PULL_HERMES.bat` of `POST_GIT_PULL.bat` — sync (trust, SOUL, drift, display) + **Hermes-relaunch** in Windows Terminal (`Invoke-HermesPostPullRelaunch.ps1`). Uitzetten: `-SkipRelaunch` of `set HERMES_SKIP_RELAUNCH_AFTER_PULL=1`. Preset: `-Full` = `-AutoRepairModelProvider` + `-IncludeInstitutionalVerify` + relaunch.
+**Na pull (standaard):** `start_hermes.bat --pull` of `start_hermes.bat --pull -Full` — sync (trust, SOUL, drift, display) + **Hermes-relaunch** in Windows Terminal. Alleen sync: `--sync` of `windows\POST_GIT_PULL.bat`. Uitzetten relaunch: `-SkipRelaunch` op dezelfde regel; daarna start `start_hermes.bat` zelf de chat op. `PULL_HERMES.bat` blijft werken (doorverwijzing).
 
 `-QuickFix` ruimt ongetrackte root-rommel op **vóór** verify. Optioneel: `-IncludeCodebaseSmoke`, `-IncludeCodebaseSmokeE2E`, `-IncludeRagPipeline` (lang), `windows\RAG_PIPELINE.bat`.
 

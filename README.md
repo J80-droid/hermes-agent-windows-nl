@@ -191,7 +191,7 @@ Deze checkout is een **Windows NL-fork** met extra institutioneel onderhoud (RAG
 | **Handige commando's (cheat sheet)** | [`docs/INSTITUTIONAL_OPERATIONS.md`](docs/INSTITUTIONAL_OPERATIONS.md#handige-commandos-fork) — dagelijks, hygiene, upstream, RAG, poorten, pytest |
 | RUN_AUDITS (snelle poort) | `windows/audits/RUN_AUDITS.bat -IncludeInstitutionalHardeningE2E` |
 
-Na upstream-wijzigingen: **`PULL_HERMES.bat`** (repo-root) = `git pull` + volledige sync + Hermes-relaunch in Windows Terminal. Zie `docs\INSTITUTIONAL_OPERATIONS.md`.
+Dagelijks: **`start_hermes.bat`** — pull + sync + herstart alleen als je achter `origin` staat; anders direct starten. Forceer pull: `--pull`. Zie `docs\INSTITUTIONAL_OPERATIONS.md`.
 
 Bij rommel in de repo-root: `windows\UPDATE_HERMES.bat -QuickFix` of `windows\POST_GIT_PULL.bat -QuickFix` (alleen opruimen). Optioneel: `set HERMES_SKIP_PAUSE_AFTER_UPDATE=1`.
 
