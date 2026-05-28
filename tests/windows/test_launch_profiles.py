@@ -23,11 +23,11 @@ def _ps(script: str) -> str:
     return (proc.stdout or "").strip()
 
 
-def test_resolve_defaults_to_minimal() -> None:
+def test_resolve_defaults_to_full() -> None:
     out = _ps(
         f". '{PROFILE_PS1}' ; Resolve-HermesLaunchProfile -Profile '' -ConfigPath 'C:\\nope\\config.yaml'"
     )
-    assert out == "minimal"
+    assert out == "full"
 
 
 def test_resolve_full_from_profile_arg() -> None:

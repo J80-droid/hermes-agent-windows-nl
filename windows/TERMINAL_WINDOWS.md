@@ -43,12 +43,13 @@ start_hermes.bat
 | --------- | --------- | ------ |
 | `HERMES_MAX_FLAG=1` | aan | Geen dubbele relaunch-flits |
 | `HERMES_AUTO_WINDOWS_TERMINAL=1` | aan | Start in Windows Terminal (`wt.exe`) |
-| `HERMES_MINIMAL_LAUNCH=1` | aan | Sla Docker/SOUL/institutioneel over → direct chat (minder console-rommel) |
+| `HERMES_MINIMAL_LAUNCH=0` | standaard (full) | SOUL, institutioneel, Docker, dashboard bij start |
+| `HERMES_MINIMAL_LAUNCH=1` | alleen met `--minimal` / `start_hermes_minimal.bat` | Direct chat |
 | `HERMES_SKIP_DOCKER_ON_START=1` | aan | Geen `docker info` / WSL-spawn bij start |
 | `HERMES_SKIP_DASHBOARD_ON_START=1` | aan | Geen dashboard op poort 9119 bij start |
 | `HERMES_CONSOLE_LAYOUT=maximized` | aan | Venster op werkgebied (taakbalk zichtbaar) |
 
-**Volledige launcher** (SOUL + institutioneel + dashboard + Docker): `start_hermes_full.bat` of `start_hermes.bat --full` (zie `launch_profiles.ps1`).
+**Snelle launcher** (alleen chat): `start_hermes_minimal.bat` of `start_hermes.bat --minimal`. Standaard is **volledig** via `start_hermes.bat` (zie `launch_profiles.ps1`).
 
 **Maximaliseren:** één keer vóór chat in `launch_hermes.bat` (niet handmatig opnieuw — dat veroorzaakt ghost-overlays). **QuickEdit** uit via `HermesShellCommon.ps1` + `hermes_cli.win32_console`. **Config:** eenmalig `windows\OPEN_SETUP.bat` → `%LOCALAPPDATA%\hermes\config.yaml`.
 

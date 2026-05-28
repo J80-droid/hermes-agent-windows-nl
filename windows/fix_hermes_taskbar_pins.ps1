@@ -93,7 +93,7 @@ $pinRows = @(
     @{ Lnk = 'Hermes - update - naar taakbalk slepen.lnk'; Bat = 'UPDATE_HERMES.bat'; Role = 'Update' },
     @{ Lnk = 'Hermes - setup Windows - naar taakbalk slepen.lnk'; Bat = 'setup_hermes_windows.bat'; Role = 'Setup' },
     @{ Lnk = 'Start Hermes - naar taakbalk slepen.lnk'; Bat = ''; Role = 'Start' },
-    @{ Lnk = 'Start Hermes (volledig) - naar taakbalk slepen.lnk'; Bat = ''; Role = 'StartFull' },
+    @{ Lnk = 'Start Hermes (snel) - naar taakbalk slepen.lnk'; Bat = ''; Role = 'StartFast' },
     @{ Lnk = 'Hermes - backup - naar taakbalk slepen.lnk'; Bat = 'MANAGE_BACKUPS.bat'; Role = 'Backup' },
     @{ Lnk = 'Hermes - RAG kennis bijwerken - naar taakbalk slepen.lnk'; Bat = 'RAG_KNOWLEDGE_UPDATE.bat'; Role = 'Rag' }
 )
@@ -109,9 +109,9 @@ if (Test-Path -LiteralPath $pinnedDir) {
         $destLnk = Join-Path $pinnedDir ([IO.Path]::GetFileName($srcLnk))
         $keepOpen = ($row.Role -eq 'Rag')
         $pinOk = if ($row.Role -eq 'Start') {
-            Set-HermesStartShellShortcut -ShortcutPath $destLnk -RepoRoot $RepoRoot -IconIcoPath $iconPath -LaunchProfile minimal
-        } elseif ($row.Role -eq 'StartFull') {
             Set-HermesStartShellShortcut -ShortcutPath $destLnk -RepoRoot $RepoRoot -IconIcoPath $iconPath -LaunchProfile full
+        } elseif ($row.Role -eq 'StartFast') {
+            Set-HermesStartShellShortcut -ShortcutPath $destLnk -RepoRoot $RepoRoot -IconIcoPath $iconPath -LaunchProfile minimal
         } else {
             Set-HermesTaskbarPinShortcut -ShortcutPath $destLnk -TargetBatPath $batPath `
                 -IconIcoPath $iconPath -WorkingDirectory $RepoRoot -KeepCmdWindowOpen:$keepOpen

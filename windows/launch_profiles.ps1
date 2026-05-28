@@ -10,7 +10,7 @@
     2) Omgeving HERMES_LAUNCH_PROFILE (Process → User → Machine)
     3) %LOCALAPPDATA%\hermes\preferences\launch_profile
     4) config.yaml → windows.launch_profile
-    5) default: minimal
+    5) default: full
 
   Per-variabele override: als de variabele al in Process staat vóór apply, wordt die niet overschreven
   (behalve met -ForceProfile).
@@ -92,7 +92,7 @@ function Resolve-HermesLaunchProfile {
     foreach ($c in $candidates) {
         if (Test-HermesLaunchProfileName -Name $c) { return $c }
     }
-    return 'minimal'
+    return 'full'
 }
 
 function Get-HermesLaunchProfileEnvMap {

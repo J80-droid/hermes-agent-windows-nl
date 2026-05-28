@@ -11,7 +11,8 @@
     Volgorde:
     1) Omgevingsvariabele **HERMES_START_BAT** (Process → User → Machine): alleen bestandsnaam,
        bijv. `org_start.bat`, moet op de repo-root bestaan. Geen paden met \ of / (geen submappen).
-    2) **start_hermes.bat** (standaard: één paneel, authentieke chat).
+    2) **start_hermes.bat** (standaard: volledige launcher — SOUL, Docker, dashboard).
+    2b) **start_hermes_minimal.bat** als `HERMES_START_BAT=start_hermes_minimal.bat` (snelle chat).
     3) **start_hermes_split.bat** alleen als `HERMES_START_SPLIT=1` (debug: chat + agent.log).
 
     Zo kunnen IT-teams zonder scriptwijziging een eigen entrypoint afdwingen (GPO/User-env).
@@ -29,6 +30,12 @@ function Get-HermesStartLauncherRelativePath {
         $fullBat = Join-Path $trimmedRoot 'start_hermes_full.bat'
         if (Test-Path -LiteralPath $fullBat) {
             return 'start_hermes_full.bat'
+        }
+    }
+    if ($LaunchProfile -eq 'minimal') {
+        $minBat = Join-Path $trimmedRoot 'start_hermes_minimal.bat'
+        if (Test-Path -LiteralPath $minBat) {
+            return 'start_hermes_minimal.bat'
         }
     }
 

@@ -308,12 +308,12 @@ function Get-HermesTaskbarRoleIconPath {
     #>
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Start', 'StartFull', 'Setup', 'OpenSetup', 'Update', 'Backup', 'Restore', 'Rag', 'Obsidian')]
+        [ValidateSet('Start', 'StartFast', 'Setup', 'OpenSetup', 'Update', 'Backup', 'Restore', 'Rag', 'Obsidian')]
         [string]$Role,
         [Parameter(Mandatory)][string]$WindowsDir
     )
     $leaf = switch ($Role) {
-        'StartFull' { 'hermes_logo_setup.ico' }
+        'StartFast' { 'hermes_logo_update.ico' }
         'Update' { 'hermes_logo_update.ico' }
         'Setup' { 'hermes_logo_setup.ico' }
         'OpenSetup' { 'hermes_logo_setup.ico' }
@@ -333,7 +333,7 @@ function Get-HermesTaskbarRoleIconPath {
 function Get-HermesTaskbarRoleIconLocation {
     param(
         [Parameter(Mandatory)]
-        [ValidateSet('Start', 'StartFull', 'Setup', 'OpenSetup', 'Update', 'Backup', 'Restore', 'Rag', 'Obsidian')]
+        [ValidateSet('Start', 'StartFast', 'Setup', 'OpenSetup', 'Update', 'Backup', 'Restore', 'Rag', 'Obsidian')]
         [string]$Role,
         [Parameter(Mandatory)][string]$WindowsDir
     )

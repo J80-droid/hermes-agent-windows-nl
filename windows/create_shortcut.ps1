@@ -91,20 +91,21 @@ try {
     $deskIco = Join-Path $windowsDir 'hermes_logo.ico'
     if (-not (Test-Path -LiteralPath $deskIco)) { $deskIco = $iconPath }
     if (Set-HermesStartShellShortcut -ShortcutPath $shortcutPath -RepoRoot $resolvedRepo `
-            -IconIcoPath $deskIco -Description 'Hermes Agent (minimal, start_hermes.bat via Windows Terminal)' `
-            -LaunchProfile minimal) {
+            -IconIcoPath $deskIco -Description 'Hermes Agent (volledig: SOUL, Docker, dashboard)' `
+            -LaunchProfile full) {
         Write-Host '[SUCCESS] Snelkoppeling aangemaakt op je Bureaublad!' -ForegroundColor Green
-        Write-Host '[OK] Hermes Agent.lnk -> start_hermes.bat (profiel: minimal)' -ForegroundColor Green
+        Write-Host '[OK] Hermes Agent.lnk -> start_hermes.bat (profiel: full)' -ForegroundColor Green
     } else {
         throw 'Set-HermesStartShellShortcut mislukt'
     }
 
-    $fullLnk = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Hermes Agent (volledig).lnk'
-    $fullIco = Join-Path $windowsDir 'hermes_logo_setup.ico'
-    if (-not (Test-Path -LiteralPath $fullIco)) { $fullIco = $deskIco }
-    if (Set-HermesStartShellShortcut -ShortcutPath $fullLnk -RepoRoot $resolvedRepo `
-            -IconIcoPath $fullIco -Description 'Hermes volledig (SOUL, Docker, dashboard)' -LaunchProfile full) {
-        Write-Host '[OK] Hermes Agent (volledig).lnk -> start_hermes_full.bat' -ForegroundColor Green
+    $fastLnk = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Hermes Agent (snel).lnk'
+    $fastIco = Join-Path $windowsDir 'hermes_logo_update.ico'
+    if (-not (Test-Path -LiteralPath $fastIco)) { $fastIco = $deskIco }
+    $fastBat = Join-Path $resolvedRepo 'start_hermes_minimal.bat'
+    if ((Test-Path -LiteralPath $fastBat) -and (Set-HermesStartShellShortcut -ShortcutPath $fastLnk -RepoRoot $resolvedRepo `
+            -IconIcoPath $fastIco -Description 'Hermes snel (minimal, alleen chat)' -LaunchProfile minimal)) {
+        Write-Host '[OK] Hermes Agent (snel).lnk -> start_hermes_minimal.bat' -ForegroundColor Green
     }
 
     $logoBat = Join-Path $windowsDir 'Hermes_met_logo.bat'
