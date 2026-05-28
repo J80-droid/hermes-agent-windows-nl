@@ -219,8 +219,14 @@ def _apply_profile_override() -> None:
     # See issue #22502.
     hermes_home_env = os.environ.get("HERMES_HOME", "")
     if profile_name is None and hermes_home_env:
-        if Path(hermes_home_env).parent.name == "profiles":
-            return
+        env_profile_dir = Path(hermes_home_env).parent.name == "profiles"
+        if env_profile_dir:
+            # Gateway-spawns keep inherited profile dirs stable. Interactive
+            # chat/manual starts should still respect sticky active_profile.
+            cmd_argv = [a.lower() for a in argv]
+            is_gateway_flow = len(cmd_argv) >= 2 and cmd_argv[0] == "gateway"
+            if is_gateway_flow:
+                return
 
     # 2. If no flag, check active_profile in the hermes root
     if profile_name is None:

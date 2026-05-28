@@ -34,8 +34,16 @@ foreach ($c in $checks) {
     }
     $s = (New-Object -ComObject WScript.Shell).CreateShortcut($lnkPath)
     $targetLeaf = Split-Path $s.TargetPath -Leaf
-    if ($targetLeaf -ieq 'cmd.exe') {
-        if ($s.Arguments -notmatch '\.bat"?\s*$') {
+    if ($c.Role -eq 'Start' -and $targetLeaf -match '^(wt|WindowsTerminal)\.exe$') {
+        if ($s.Arguments -notmatch 'start_hermes\.(bat|cmd)') {
+            if (-not $Quiet) {
+                Write-Host ('[FAIL] ' + $($c.Lnk) + ': wt.exe zonder start_hermes in Arguments') -ForegroundColor Red
+            }
+            $fail++
+            continue
+        }
+    } elseif ($targetLeaf -ieq 'cmd.exe') {
+        if ($s.Arguments -notmatch 'call\s+""[^"]+\.bat""') {
             if (-not $Quiet) {
                 Write-Host ('[FAIL] ' + $($c.Lnk) + ': cmd.exe zonder .bat in Arguments') -ForegroundColor Red
             }

@@ -41,6 +41,20 @@ set HERMES_MINIMAL_LAUNCH=0
 start_hermes.bat
 ```
 
+## Snelkoppelingen (bureaublad / taakbalk)
+
+| Wat | Hoe |
+| --- | --- |
+| Alles vernieuwen | `hermes_onderhoud.bat` of `windows\CREATE_DESKTOP_SHORTCUT.bat` |
+| Alleen .lnk | `hermes_onderhoud.bat -ShortcutsOnly` |
+| Start Hermes | `windows\Start Hermes - naar taakbalk slepen.lnk` → **Windows Terminal** + `start_hermes.bat` (zelfde keten als hierboven) |
+| Bureaublad | `Hermes Agent.lnk` (canoniek); optioneel `Hermes Agent (met logo).lnk` |
+| Taakbalk-pin | Oude pin verwijderen → opnieuw vastmaken via `.lnk` in `windows\` (niet `.bat` slepen) |
+
+**Start-.lnk** gebruikt `Set-HermesStartShellShortcut` (`wt.exe -M` + `cmd /k call start_hermes.bat`). Overige taken (setup, backup, RAG, …) blijven `cmd.exe /c` naar het betreffende `.bat`.
+
+Fout na onderhoud: `. was unexpected` → `HERMES_ONDERHOUD.bat` bijgewerkt; draai `CREATE_DESKTOP_SHORTCUT.bat` opnieuw.
+
 ## Gerelateerde scripts
 
 | Script | Wanneer |
@@ -51,6 +65,7 @@ start_hermes.bat
 | `windows\SETUP_HERMES.bat` | Volledige installatie |
 | `windows\RESET_TERMINAL.bat` | Console volledig resetten |
 | `windows\FIX_MOUSE_BLOCKED.bat` | Muisklik titelbalk herstellen |
+| `windows\CREATE_DESKTOP_SHORTCUT.bat` | Bureaublad + taakbalk-.lnk regenereren |
 
 ## Logs
 

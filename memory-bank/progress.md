@@ -19,6 +19,8 @@
 - [x] MCP per profile (`lancedb-<domein>`) — **`mcp_servers:`** (sync: `sync_profile_mcp_from_domains.py`)
 - [x] Institutionele P0-pipeline (`windows/scripts/institutional_p0_p1.bat`)
 - [x] Profiel → root config overerving (`profile_model_inheritance.py`: model + auxiliary + providers; save-guard, cache-bust; docs, doctor `--fix`, tests, E2E harness 8/8 + `py_compile` guard)
+- [x] Windows chat-startfix (2026-05-27): geen `TERM=xterm-256color`; `hermes_chat.cmd`; `launch_pre_chat_orchestrator.ps1` (fasen); `maximize_console.ps1`; `Write-HermesRuntimeModelBanner`; OPEN_SETUP coherence repair; `TERMINAL_WINDOWS.md`
+- [x] Windows snelkoppelingen + onderhoud (2026-05-28): `Set-HermesStartShellShortcut`; `Invoke-HermesPostChangeMaintenance.ps1`; `HERMES_ONDERHOUD.bat` / `hermes_onderhoud.bat`; `test_hermes_shortcut_args.py`; docs START/README
 - [x] Windows launchers (`update_knowledge.bat` / `.ps1`, `windows/scripts/rag/`)
 - [x] Noob-doc `docs/RAG_TWEE_FASEN.md` (bibliotheek vs. balie, twee fasen)
 - [x] Taakbalk RAG interactief: `RAG_KNOWLEDGE_UPDATE.bat` + `.lnk` `cmd /k` (J/N via `set /p`); nacht: `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` (`HERMES_NONINTERACTIVE=1`)
@@ -71,6 +73,8 @@
 - [x] PSScriptAnalyzer `windows\`: 0 Warning/Error (2026-05-23) — unused params/vars, ShouldProcess, catch-blokken, merge `-LockTheirs` wiring
 - [x] Python-policy institutioneel: `HermesPythonPolicy.ps1`, `REPAIR_PYTHON.bat`, `ensure_hermes_python.ps1`; kapotte `.venv` → `.venv.disabled-*` (gitignore); conda `hermes-env` canoniek; verify-keten + setup-hook
 - [x] Python institutional review-fixes (2026-05-25): bootstrap stamp guard, `rag-deps.json` fast-path, non-interactive REPAIR, `HERMES_CONDA_ROOT`, invalid-exe catch in pip/RAG checks; regression E2E 8/8; pytest `test_hermes_python_institutional.py` 40 passed
+- [x] Model-catalog startup hardening (2026-05-27): `Test-HermesModelCatalogAvailability` (hard stop + fallback-hint), opt-in auto-repair `HERMES_AUTOREPAIR_MODEL_CATALOG=1` via `Invoke-HermesModelCatalogAutoRepair` (`persist_model_runtime`), wiring in `run_hermes.ps1`; pytest windows-suite 49 passed / 3 skipped
+- [x] Startup flow polish (2026-05-27): dubbele preflight-failmelding verwijderd (`launch_hermes.bat` geeft `-SkipConfigDrift` aan institutional runtime); dashboard startvenster default hidden met override `HERMES_DASHBOARD_WINDOW_STYLE`; pytest windows startup-suite 61 passed / 3 skipped
 - [x] TUI display: skin `default` (`team_display.defaults`), `apply_team_display.ps1` → `profiles\<active>\config.yaml` (conda `--env-vars`)
 - [x] E2E institutioneel: `RUN_INSTITUTIONAL_E2E.ps1` (**11 stappen + 2f diagnose + 2g score + 2h pseudo-tabel**, PASS 2026-05-23)
 - [x] Assistant Rich-renderer: `institutional_render.py` (`TightHeadingBody`, `SectionSpacer`, per-kolom tabellen, labels verticaal — peel uit heading-body)

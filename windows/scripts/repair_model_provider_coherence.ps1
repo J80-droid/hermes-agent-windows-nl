@@ -39,7 +39,7 @@ if not issues:
 print('WARN: incoherentie gevonden:')
 for i in issues:
     print(f'  - {i.message}')
-actions = repair_model_provider_coherence()
+actions = repair_model_provider_coherence(prefer='auth_from_config')
 for a in actions:
     print(f'FIX: {a}')
 cfg2 = load_config()
@@ -62,7 +62,7 @@ try {
 
 if ($exit -ne 0) {
     if (-not $Quiet) {
-        Write-HermesFail 'Repair mislukt — probeer: hermes doctor --fix'
+        Write-HermesFail 'Repair mislukt - probeer: hermes doctor --fix'
     }
     exit $exit
 }

@@ -744,7 +744,60 @@ function Test-Node {
     return $true
 }
 
+function Install-WindowsTerminal {
+    $script:HasWindowsTerminal = $false
+
+    if (Get-Command wt.exe -ErrorAction SilentlyContinue) {
+        Write-Success "Windows Terminal (wt.exe) found"
+        $script:HasWindowsTerminal = $true
+        return
+    }
+    if (Test-Path -LiteralPath "$env:LOCALAPPDATA\Microsoft\WindowsApps\wt.exe") {
+        Write-Success "Windows Terminal found (WindowsApps alias)"
+        $script:HasWindowsTerminal = $true
+        return
+    }
+
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        Write-Warn "Windows Terminal not found (required for TrueColor TUI on Windows)"
+        Write-Info "  Install App Installer / winget, then: winget install Microsoft.WindowsTerminal"
+        Write-Info "  Or run: windows\INSTALL_WINDOWS_TERMINAL.bat from the Hermes repo"
+        return
+    }
+
+    Write-Info "Installing Windows Terminal (wt.exe) via winget..."
+    try {
+        $prevEAP = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        winget install Microsoft.WindowsTerminal `
+            --accept-package-agreements `
+            --accept-source-agreements `
+            --disable-interactivity 2>&1 | Out-Null
+        $ErrorActionPreference = $prevEAP
+    } catch {
+        if ($prevEAP) { $ErrorActionPreference = $prevEAP }
+    }
+
+    $env:Path = [Environment]::GetEnvironmentVariable("Path", "User") + ";" + [Environment]::GetEnvironmentVariable("Path", "Machine")
+    if (Get-Command wt.exe -ErrorAction SilentlyContinue) {
+        Write-Success "Windows Terminal installed"
+        $script:HasWindowsTerminal = $true
+        return
+    }
+    if (Test-Path -LiteralPath "$env:LOCALAPPDATA\Microsoft\WindowsApps\wt.exe") {
+        Write-Success "Windows Terminal installed (open a new terminal for wt on PATH)"
+        $script:HasWindowsTerminal = $true
+        return
+    }
+
+    Write-Warn "Windows Terminal install finished but wt.exe not on PATH yet"
+    Write-Info "  Open a new terminal tab, then: wt -h"
+    Write-Info "  See windows\WINDOWS_REQUIREMENTS.md"
+}
+
 function Install-SystemPackages {
+    Install-WindowsTerminal
+
     $script:HasRipgrep = $false
     $script:HasFfmpeg = $false
     $needRipgrep = $false

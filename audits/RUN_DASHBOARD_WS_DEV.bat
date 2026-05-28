@@ -1,7 +1,5 @@
 @echo off
-REM Alleen dashboard + browser (zelfde logica als start_hermes.bat).
-setlocal
+rem Alias: dashboard + Codebase Viz. Zie windows\HERMES_ONDERHOUD.bat -DashboardOnly
 cd /d "%~dp0.."
-rem Geen automatische browser-tab (zelfde als start_hermes.bat)
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0..\windows\scripts\launch_dashboard_on_start.ps1" -RepoRoot "%CD%"
+call "%~dp0..\windows\HERMES_ONDERHOUD.bat" -DashboardOnly %*
 exit /b %ERRORLEVEL%

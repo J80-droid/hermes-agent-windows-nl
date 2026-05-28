@@ -125,15 +125,39 @@ function New-ShellShortcut {
         [string]$Arguments,
         [string]$WorkDir,
         [string]$IconLocation,
-        [string]$Description
+        [string]$Description,
+        [switch]$KeepCmdWindowOpen
     )
     if (-not $PSCmdlet.ShouldProcess($LnkPath, 'Create', 'Shell shortcut')) { return }
     # Taakbalk (Win10/11): .bat als TargetPath → Shell negeert vaak IconLocation (generiek H/cmd-icoon).
     $launchTarget = $TargetPath
     $launchArgs = $Arguments
-    if ($TargetPath -match '\.bat$' -and -not $Arguments.Trim()) {
+    $batForWrapper = $null
+    if ($TargetPath -match '\.bat$') {
+        $batForWrapper = $TargetPath
+    } elseif ($Arguments -match '^/[ck]\s+"(.+\.bat)"\s*$') {
+        $batForWrapper = $Matches[1]
+    }
+    if ($batForWrapper -and (Test-Path -LiteralPath $batForWrapper)) {
         $launchTarget = Join-Path $env:SystemRoot 'System32\cmd.exe'
-        $launchArgs = '/c "' + $TargetPath + '"'
+        $batFull = (Resolve-Path -LiteralPath $batForWrapper).Path
+        $workFull = if ($WorkDir -and (Test-Path -LiteralPath $WorkDir)) {
+            (Resolve-Path -LiteralPath $WorkDir).Path
+        } else {
+            Split-Path -Parent $batFull
+        }
+        $keepOpen = $KeepCmdWindowOpen
+        if (-not $keepOpen -and $Arguments -match '^/k\b') { $keepOpen = $true }
+        $iconInvoke = Join-Path $root 'windows\HermesIconGeneratorInvoke.ps1'
+        if (Test-Path -LiteralPath $iconInvoke) {
+            . $iconInvoke
+            $launchArgs = Get-HermesCmdShortcutArgumentLine -WorkingDirectory $workFull -BatchPath $batFull `
+                -KeepWindowOpen:$keepOpen
+        } else {
+            $flag = if ($keepOpen) { '/k' } else { '/c' }
+            $launchArgs = ('/d {0} "cd /d ""{1}"" && call ""{2}"""' -f $flag, $workFull, $batFull)
+        }
+        if (-not $WorkDir) { $WorkDir = $workFull }
     }
     $w = New-Object -ComObject WScript.Shell
     $s = $w.CreateShortcut($LnkPath)
@@ -227,7 +251,7 @@ function New-DesktopShortcut {
     $desktop = [Environment]::GetFolderPath("Desktop")
     if (-not $desktop) { return }
     $lnkPath = Join-Path $desktop "Hermes Agent.lnk"
-    New-ShellShortcut -LnkPath $lnkPath -TargetPath "cmd.exe" -Arguments ('/k "' + $TargetBat + '"') `
+    New-ShellShortcut -LnkPath $lnkPath -TargetPath $TargetBat `
         -WorkDir $WorkDir -IconLocation $IconLocation `
         -Description "Hermes Agent - Windows launcher (logo)" -WhatIf:$WhatIfPreference
 }
@@ -248,7 +272,20 @@ $openSetupSrc = Join-Path $PSScriptRoot "OPEN_SETUP.bat"
 $openSetupDst = Join-Path $win "OPEN_SETUP.bat"
 if (-not $WhatIfPreference) {
     if (Test-Path -LiteralPath $openSetupSrc) {
-        Copy-Item -LiteralPath $openSetupSrc -Destination $openSetupDst -Force
+        @'
+@echo off
+setlocal EnableExtensions
+rem Wrapper-only: canonieke implementatie leeft in scripts\windows\OPEN_SETUP.bat
+set "CANON=%~dp0..\scripts\windows\OPEN_SETUP.bat"
+if not exist "%CANON%" (
+  echo [ERROR] Canonieke OPEN_SETUP ontbreekt:
+  echo   "%CANON%"
+  if not defined HERMES_OPEN_SETUP_NOPAUSE pause
+  exit /b 1
+)
+call "%CANON%" %*
+exit /b %ERRORLEVEL%
+'@ | Set-Content -LiteralPath $openSetupDst -Encoding ASCII
         Write-Host ('[OK] ' + $openSetupDst) -ForegroundColor Green
     } else {
         Write-Warning 'OPEN_SETUP.bat ontbreekt in scripts/windows - wizard-snelkoppeling niet gekopieerd.'
@@ -294,8 +331,8 @@ if (-not $NoShortcut) {
         if ($deskOs) {
             $openIconLoc = Get-HermesSetupShortcutIconLocation -WindowsDir $win
             $openLnkDesk = Join-Path $deskOs "Hermes Open Setup.lnk"
-            New-ShellShortcut -LnkPath $openLnkDesk -TargetPath "cmd.exe" -Arguments ('/k "' + $openBatWin + '"') `
-                -WorkDir $root -IconLocation $openIconLoc `
+            New-ShellShortcut -LnkPath $openLnkDesk -TargetPath $openBatWin `
+                -WorkDir $root -IconLocation $openIconLoc -KeepCmdWindowOpen `
                 -Description "Hermes - volledige setup-wizard (OPEN_SETUP)" -WhatIf:$WhatIfPreference
             if (-not $WhatIfPreference) {
                 Write-Host ('[OK] Snelkoppeling: ' + $openLnkDesk) -ForegroundColor Green

@@ -161,6 +161,9 @@ foreach ($bat in $batFiles) {
         } elseif ($target -match '%WIN_SCR%') {
             $rel = ($target -replace '%WIN_SCR%[\\/]', '' -replace '%WIN_SCR%', '').TrimStart('\', '/')
             $resolved = Join-Path $repo (Join-Path 'windows' (Join-Path 'scripts' $rel))
+        } elseif ($target -match '%HERMES_WIN%') {
+            $rel = ($target -replace '%HERMES_WIN%[\\/]', '' -replace '%HERMES_WIN%', '').TrimStart('\', '/')
+            $resolved = Join-Path $repo (Join-Path 'windows' $rel)
         } elseif ($target -match '%~dp0') {
             $rel = $target -replace '%~dp0', ''
             $resolved = Join-Path $bat.DirectoryName $rel

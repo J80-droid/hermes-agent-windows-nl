@@ -26,6 +26,10 @@ echo %C%^|%R%  %W%Hermes Agent - Windows%R%                                     
 echo %C%+------------------------------------------------------------------+%R%
 echo.
 
+if exist "%REPO_ROOT%\start_hermes.bat" (
+  call "%REPO_ROOT%\start_hermes.bat" %*
+  exit /b !ERRORLEVEL!
+)
 if exist "%WIN_DIR%\launch_hermes.bat" (
   call "%WIN_DIR%\launch_hermes.bat" %*
   exit /b !ERRORLEVEL!

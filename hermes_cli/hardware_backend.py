@@ -189,6 +189,13 @@ def _dependency_hints() -> list[str]:
 
 def probe_startup_backends() -> list[str]:
     """Lightweight probe lines for startup banner (no model load)."""
+    import os
+
+    if os.environ.get("HERMES_SKIP_HARDWARE_PROBE") == "1":
+        return [
+            "  (hardware-probe overgeslagen — HERMES_SKIP_HARDWARE_PROBE=1)",
+            "  Voice/TTS backends worden bij eerste gebruik gekozen.",
+        ]
     lines: list[str] = []
     whisper_pref = "auto (CUDA -> CPU)"
     if not probe_torch_cuda():

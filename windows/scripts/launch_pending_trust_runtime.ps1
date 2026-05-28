@@ -69,7 +69,7 @@ if ($env:HERMES_SKIP_PENDING_TRUST_ON_START -eq '1') {
 
 
 
-Clear-StalePendingTrustRuntimeFile
+Clear-StalePendingTrustRuntimeFile | Out-Null
 
 
 

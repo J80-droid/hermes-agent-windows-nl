@@ -52,7 +52,7 @@ start_hermes.bat
 
 **Maximaliseren:** één keer vóór chat in `launch_hermes.bat` (niet handmatig opnieuw — dat veroorzaakt ghost-overlays). **QuickEdit** uit via `HermesShellCommon.ps1` + `hermes_cli.win32_console`. **Config:** eenmalig `windows\OPEN_SETUP.bat` → `%LOCALAPPDATA%\hermes\config.yaml`.
 
-Of dubbelklik **windows\Hermes_met_logo.bat** / taakbalk-start (na `FIX_TASKBAR_ICONS.bat`).
+Of dubbelklik **`windows\Start Hermes - naar taakbalk slepen.lnk`** of bureaublad **`Hermes Agent.lnk`** (beide → `start_hermes.bat` in WT). Optioneel: `Hermes Agent (met logo).lnk` (ASCII-logo, daarna dezelfde startketen). Na wijzigingen: `CREATE_DESKTOP_SHORTCUT.bat`; taakbalk-pin opnieuw vastmaken.
 
 **Niet** `start_hermes_split.bat` voor normaal gebruik — dat opent chat + log-paneel (debug).
 

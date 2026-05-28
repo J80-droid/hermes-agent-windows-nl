@@ -41,6 +41,9 @@ def test_ps1_skip_env_flags(ps1_text: str) -> None:
     assert "[web]" in ps1_text
     assert "Stop-HermesDashboardProcess" in ps1_text
     assert "CODEBASE_VIZ_PYGOUNT_TIMEOUT" in ps1_text
+    assert "HERMES_DASHBOARD_WINDOW_STYLE" in ps1_text
+    assert "Start-HermesNoWindowProcess" in ps1_text
+    assert "CreateNoWindow" in ps1_text or "conhost" in ps1_text.lower()
     assert "New-CondaDashboardRunArgs" in ps1_text
     assert "Get-DashboardPythonExe" in ps1_text
     assert "-e', \"HERMES_BUNDLED_PLUGINS" not in ps1_text
@@ -48,6 +51,9 @@ def test_ps1_skip_env_flags(ps1_text: str) -> None:
     assert "Test-CodebaseVizHealth" in ps1_text
     assert "pygount" in ps1_text
     assert "verify_codebase_viz_health.py" in ps1_text
+    assert "Build-CodebaseVizDistIfNeeded" in ps1_text
+    assert "Invoke-CodebaseVizWarmupScan" in ps1_text
+    assert "HERMES_CODEBASE_VIZ_WARMUP" in ps1_text
 
 
 def test_ps1_port_validation(ps1_text: str) -> None:
@@ -72,12 +78,18 @@ def test_ps1_no_unicode_em_dash_in_strings(ps1_text: str) -> None:
 
 def test_launch_hermes_bat_wires_script() -> None:
     bat = BAT.read_text(encoding="utf-8")
-    assert "launch_dashboard_on_start.ps1" in bat
-    assert "HERMES_SKIP_DASHBOARD_ON_START" in bat
-    assert "HERMES_LAUNCH_LOG" in bat
+    orch = (REPO / "windows/scripts/launch_pre_chat_orchestrator.ps1").read_text(encoding="utf-8")
+    assert "launch_pre_chat_orchestrator.ps1" in bat
+    assert "launch_dashboard_on_start.ps1" in orch
+    assert "HERMES_SKIP_DASHBOARD_ON_START" in orch
+    assert "HERMES_DASHBOARD_ON_START" in orch
+    assert "HERMES_AUTO_WINDOWS_TERMINAL" in bat
+    assert "hermes_launch.log" in bat
+    assert "HERMES_LAUNCH_LOG" in orch
     assert 'if defined NO_COLOR set "NO_COLOR="' in bat
     assert 'if /I "%TERM%"=="dumb" set "TERM="' in bat
     assert 'if /I "%FORCE_COLOR%"=="0" set "FORCE_COLOR=1"' in bat
+    assert "launch_institutional_runtime.ps1" in orch
     assert 'set "HERMES_DASHBOARD_OPEN_PATH=/codebase-viz"' not in bat
 
 

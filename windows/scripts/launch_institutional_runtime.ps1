@@ -103,7 +103,8 @@ if (-not $needRun) {
 
 $runtimePs1 = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/apply_institutional_runtime.ps1'
 $runtimeArgs = @{ SkipE2E = (-not $runE2e); NoPause = $true }
-if (Test-SoulAnatomyDeployJustRan) {
+$soulJustRan = Test-SoulAnatomyDeployJustRan
+if ($soulJustRan) {
     $runtimeArgs['SkipSoul'] = $true
 }
 

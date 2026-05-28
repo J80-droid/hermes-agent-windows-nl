@@ -8,7 +8,11 @@
 #   HERMES_DASHBOARD_SKIP_BUILD=1     - geef --skip-build door aan hermes dashboard
 #   HERMES_DASHBOARD_OPEN_PATH        - bv. /codebase-viz (browser openen na start)
 #   HERMES_SKIP_DASHBOARD_BROWSER=1   - geen browser openen
+#   HERMES_DASHBOARD_QUICK_START=1    - geen /health-wacht bij interactieve launch (orchestrator zet dit)
+#   HERMES_DASHBOARD_WINDOW_STYLE      - hidden (default) | minimized | normal
 #   HERMES_LAUNCH_LOG                 - optioneel: append statusregels (ook bij -Quiet)
+#   HERMES_CODEBASE_VIZ_SKIP_BUILD=1  - geen npm run build bij verouderde src
+#   HERMES_CODEBASE_VIZ_WARMUP        - auto (default): force-scan na health | incremental | 0/skip
 # Workspace plugins/codebase-viz: zet HERMES_BUNDLED_PLUGINS + pip install -e .[web]
 #
 # Tests: pytest tests/windows/test_launch_dashboard_on_start.py
@@ -101,6 +105,50 @@ function Initialize-WorkspaceDashboardPlugins {
     if ($env:LOCALAPPDATA) {
         Move-AsideStaleCodebaseVizUserPlugin -Label 'localappdata' -PluginDir (Join-Path $env:LOCALAPPDATA 'hermes\plugins\codebase-viz')
     }
+    Build-CodebaseVizDistIfNeeded -RepoRoot $RepoRoot
+}
+
+function Build-CodebaseVizDistIfNeeded {
+    param([string]$RepoRoot)
+    if ($env:HERMES_CODEBASE_VIZ_SKIP_BUILD -eq '1') { return }
+    $dashDir = Join-Path $RepoRoot 'plugins\codebase-viz\dashboard'
+    $pkg = Join-Path $dashDir 'package.json'
+    if (-not (Test-Path -LiteralPath $pkg)) { return }
+
+    $dist = Join-Path $dashDir 'dist\index.js'
+    $needsBuild = -not (Test-Path -LiteralPath $dist)
+    if (-not $needsBuild) {
+        $distTime = (Get-Item -LiteralPath $dist).LastWriteTimeUtc
+        $srcDir = Join-Path $dashDir 'src'
+        if (Test-Path -LiteralPath $srcDir) {
+            $newest = Get-ChildItem -LiteralPath $srcDir -Recurse -File -ErrorAction SilentlyContinue |
+                Sort-Object LastWriteTimeUtc -Descending |
+                Select-Object -First 1
+            if ($newest -and $newest.LastWriteTimeUtc -gt $distTime) {
+                $needsBuild = $true
+            }
+        }
+    }
+    if (-not $needsBuild) { return }
+
+    if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+        Write-DashLog '[WARN] Codebase Viz: dist verouderd maar npm niet op PATH.' -Color Yellow
+        return
+    }
+    Write-DashLog '[INFO] Codebase Viz: npm run build (src nieuwer dan dist)...' -Color Cyan
+    Push-Location -LiteralPath $dashDir
+    try {
+        & npm run build 2>&1 | ForEach-Object { Write-LaunchLogAppend "$_" }
+        if ($LASTEXITCODE -ne 0) {
+            Write-DashLog '[WARN] Codebase Viz npm run build mislukt.' -Color Yellow
+        } else {
+            Write-DashLog '[OK] Codebase Viz dist gebouwd.' -Color Green
+        }
+    } catch {
+        Write-DashLog "[WARN] Codebase Viz build: $($_.Exception.Message)" -Color Yellow
+    } finally {
+        Pop-Location
+    }
 }
 
 function New-CondaDashboardRunArgs {
@@ -152,9 +200,12 @@ function Stop-HermesDashboardProcess {
             $null = & $py -m hermes_cli.main dashboard --stop 2>&1
         } catch { }
     }
-    try {
-        $null = & $CondaExe run -n hermes-env --no-capture-output python -m hermes_cli.main dashboard --stop 2>&1
-    } catch { }
+    if ($CondaExe) {
+        try {
+            $stopArgs = New-CondaDashboardRunArgs -PythonArgs @('dashboard', '--stop')
+            $null = & $CondaExe @stopArgs 2>&1
+        } catch { }
+    }
     $ErrorActionPreference = $prevEap
     Start-Sleep -Seconds 3
 }
@@ -173,11 +224,6 @@ function Install-HermesWebDashboardPackage {
             $null = & $py -m pip install -e $editable -q 2>&1
             if ($env:HERMES_BUNDLED_PLUGINS) {
                 $null = & $py -m pip install pygount -q 2>&1
-            }
-        } elseif ($CondaExe) {
-            $null = & $CondaExe run -n hermes-env --no-capture-output python -m pip install -e $editable -q 2>&1
-            if ($env:HERMES_BUNDLED_PLUGINS) {
-                $null = & $CondaExe run -n hermes-env --no-capture-output python -m pip install pygount -q 2>&1
             }
         } else {
             Write-DashLog '[WARN] Geen Python voor pip install -e [web].' -Color Yellow
@@ -228,6 +274,7 @@ function Test-CodebaseVizHealth {
         & $PythonExe $verify 2>&1 | ForEach-Object { Write-LaunchLogAppend $_ }
         if ($LASTEXITCODE -eq 0) {
             Write-DashLog '[OK] Codebase Viz /health verify geslaagd.' -Color Green
+            Invoke-CodebaseVizWarmupScan -BindHost $BindHost -BindPort $BindPort
             return $true
         }
         Write-DashLog '[WARN] Codebase Viz /health verify mislukt (exit ' + $LASTEXITCODE + '). Zie audits\RESTART_CODEBASE_VIZ_DASHBOARD.bat' -Color Yellow
@@ -241,6 +288,43 @@ function Test-CodebaseVizHealth {
         } else {
             Remove-Item Env:CODEBASE_VIZ_PYGOUNT_TIMEOUT -ErrorAction SilentlyContinue
         }
+    }
+}
+
+function Invoke-CodebaseVizWarmupScan {
+    param(
+        [string]$BindHost,
+        [int]$BindPort
+    )
+    if (-not $env:HERMES_BUNDLED_PLUGINS) { return }
+    $warmup = 'auto'
+    if ($null -ne $env:HERMES_CODEBASE_VIZ_WARMUP -and "$env:HERMES_CODEBASE_VIZ_WARMUP".Trim()) {
+        $warmup = "$env:HERMES_CODEBASE_VIZ_WARMUP".Trim().ToLowerInvariant()
+    }
+    if ($warmup -in @('0', 'skip', 'off', 'false', 'no')) { return }
+    if ($warmup -eq 'incremental') { return }
+
+    $connectHost = Get-DashboardConnectHost -BindHost $BindHost
+    $base = "http://${connectHost}:${BindPort}"
+    try {
+        $html = (Invoke-WebRequest -Uri "${base}/codebase-viz" -UseBasicParsing -TimeoutSec 12).Content
+    } catch {
+        Write-DashLog '[WARN] Codebase Viz warmup: dashboard HTML niet bereikbaar.' -Color Yellow
+        return
+    }
+    if ($html -notmatch '__HERMES_SESSION_TOKEN__="([^"]+)"') {
+        Write-DashLog '[WARN] Codebase Viz warmup: geen session token in HTML.' -Color Yellow
+        return
+    }
+    $token = $Matches[1]
+    $scanUrl = "${base}/api/plugins/codebase-viz/force-scan"
+    try {
+        $null = Invoke-WebRequest -Uri $scanUrl -Method POST `
+            -Headers @{ 'X-Hermes-Session-Token' = $token } `
+            -UseBasicParsing -TimeoutSec 20
+        Write-DashLog '[OK] Codebase Viz scan gestart (achtergrond, force-scan).' -Color Green
+    } catch {
+        Write-DashLog "[WARN] Codebase Viz force-scan: $($_.Exception.Message)" -Color Yellow
     }
 }
 
@@ -362,16 +446,36 @@ Write-DashLog "[INFO] Dashboard starten (geen browser): http://${hostAddr}:${por
 Write-DashLog ("[INFO] Python: $dashPy") -Color DarkGray
 Write-DashLog ("[INFO] Log: $dashLog") -Color DarkGray
 
+# Geen Start-Process -WindowStyle Hidden op python.exe: dat kan een onzichtbaar gemaximaliseerd
+# conhost-venster achterlaten dat muisklikken op het bureaublad blokkeert (alleen Alt+Tab werkt).
+$windowStyleRaw = ''
+if ($null -ne $env:HERMES_DASHBOARD_WINDOW_STYLE) {
+    $windowStyleRaw = "$env:HERMES_DASHBOARD_WINDOW_STYLE".Trim().ToLowerInvariant()
+}
 try {
-    $proc = Start-Process -FilePath $dashPy `
-        -ArgumentList $argList `
-        -WorkingDirectory $RepoRoot `
-        -WindowStyle Minimized `
-        -PassThru `
-        -RedirectStandardOutput $dashLog `
-        -RedirectStandardError $errLog
+    if ($windowStyleRaw -in @('normal', 'minimized')) {
+        $ws = if ($windowStyleRaw -eq 'minimized') { 'Minimized' } else { 'Normal' }
+        $proc = Start-Process -FilePath $dashPy `
+            -ArgumentList $argList `
+            -WorkingDirectory $RepoRoot `
+            -WindowStyle $ws `
+            -PassThru `
+            -RedirectStandardOutput $dashLog `
+            -RedirectStandardError $errLog
+    } else {
+        $proc = Start-HermesNoWindowProcess `
+            -FilePath $dashPy `
+            -ArgumentList $argList `
+            -WorkingDirectory $RepoRoot `
+            -StandardOutputPath $dashLog `
+            -StandardErrorPath $errLog
+    }
 } catch {
-    Write-DashLog ("[WARN] Start-Process dashboard mislukt: $($_.Exception.Message)") -Color Yellow
+    Write-DashLog ("[WARN] Dashboard start mislukt: $($_.Exception.Message)") -Color Yellow
+    exit 0
+}
+if (-not $proc) {
+    Write-DashLog '[WARN] Dashboard proces niet gestart.' -Color Yellow
     exit 0
 }
 
@@ -382,13 +486,21 @@ if ($proc.HasExited -and $proc.ExitCode -ne 0) {
 }
 if (Test-DashboardPortInUse -BindHost $hostAddr -BindPort $port) {
     Write-DashLog '[OK] Dashboard op de achtergrond.' -Color Green
-    $null = Test-CodebaseVizHealth -RepoRoot $RepoRoot -PythonExe $dashPy -BindHost $hostAddr -BindPort $port
+    if ($env:HERMES_DASHBOARD_QUICK_START -ne '1') {
+        $null = Test-CodebaseVizHealth -RepoRoot $RepoRoot -PythonExe $dashPy -BindHost $hostAddr -BindPort $port
+    } else {
+        Write-DashLog '[INFO] Quick start: /health-verify overgeslagen (HERMES_DASHBOARD_QUICK_START=1).' -Color DarkGray
+    }
     Open-DashboardBrowserIfRequested -BindHost $hostAddr -BindPort $port
     exit 0
 }
 if (-not $proc.HasExited) {
     Write-DashLog '[OK] Dashboard start (build kan even duren).' -Color Green
-    $null = Test-CodebaseVizHealth -RepoRoot $RepoRoot -PythonExe $dashPy -BindHost $hostAddr -BindPort $port
+    if ($env:HERMES_DASHBOARD_QUICK_START -ne '1') {
+        $null = Test-CodebaseVizHealth -RepoRoot $RepoRoot -PythonExe $dashPy -BindHost $hostAddr -BindPort $port
+    } else {
+        Write-DashLog '[INFO] Quick start: /health-verify overgeslagen (HERMES_DASHBOARD_QUICK_START=1).' -Color DarkGray
+    }
     Open-DashboardBrowserIfRequested -BindHost $hostAddr -BindPort $port
     exit 0
 }

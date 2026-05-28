@@ -42,6 +42,13 @@ if not defined HERMES_PYTHON if exist "C:\ProgramData\anaconda3\envs\!HERMES_CON
 echo %A%  python -m hermes_cli.main setup%R%  ^|  repo: %CD%
 echo.
 
+rem Zelfde HERMES_HOME als launch_hermes (split-home: %%LOCALAPPDATA%%\hermes).
+if exist "windows\scripts\ensure_hermes_launch_env.ps1" (
+  echo [INFO] HERMES_HOME alignen met launcher...
+  powershell -NoProfile -ExecutionPolicy Bypass -File "windows\scripts\ensure_hermes_launch_env.ps1" -FixUserEnv
+  if defined HERMES_HOME echo [INFO] HERMES_HOME=!HERMES_HOME!
+)
+
 set "RC=1"
 if defined HERMES_PYTHON (
   echo [INFO] Gebruik Conda-python: !HERMES_PYTHON!
@@ -110,6 +117,22 @@ if !RC! neq 0 (
 ) else (
   echo.
   echo [OK] Setup-wizard afgerond.
+  echo [INFO] Opgeslagen in %%LOCALAPPDATA%%\hermes\config.yaml - launch leest dit automatisch.
+  if exist "windows\scripts\repair_model_provider_coherence.ps1" (
+    echo [INFO] Model/provider coherentie controleren...
+    powershell -NoProfile -ExecutionPolicy Bypass -File "windows\scripts\repair_model_provider_coherence.ps1" -Quiet
+  )
+  if defined HERMES_PYTHON (
+    echo [INFO] Config-cache legen zodat chat direct OPEN_SETUP-model ziet...
+    "!HERMES_PYTHON!" -c "from hermes_cli.profile_model_inheritance import bust_config_caches, root_config_path; bust_config_caches(root_config_path())"
+  )
+  if defined HERMES_PYTHON (
+    echo [INFO] Config-cache legen zodat chat OPEN_SETUP direct ziet...
+    "!HERMES_PYTHON!" -c "import sys; sys.path.insert(0, r'%CD%'); from hermes_cli.profile_model_inheritance import bust_config_caches, root_config_path; bust_config_caches(root_config_path())"
+  )
+  if exist "windows\scripts\HermesHomeCommon.ps1" (
+    powershell -NoProfile -ExecutionPolicy Bypass -Command ". 'windows\scripts\HermesHomeCommon.ps1'; Write-HermesRuntimeModelBanner"
+  )
 )
 if not defined HERMES_OPEN_SETUP_NOPAUSE pause
 exit /b !RC!

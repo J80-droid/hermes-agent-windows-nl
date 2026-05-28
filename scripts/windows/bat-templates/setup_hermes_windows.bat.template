@@ -44,7 +44,11 @@ if defined HERMES_SETUP_FULL_SETUP (
   echo.
   echo [Hermes] Volledige configuratiewizard ^(OPEN_SETUP.bat - zelfde Python als launch_hermes^)...
   set "HERMES_OPEN_SETUP_NOPAUSE=1"
-  call "%~dp0OPEN_SETUP.bat"
+  if exist "%~dp0..\scripts\windows\OPEN_SETUP.bat" (
+    call "%~dp0..\scripts\windows\OPEN_SETUP.bat"
+  ) else (
+    call "%~dp0OPEN_SETUP.bat"
+  )
   set "HERMES_OPEN_SETUP_NOPAUSE="
   set "WIZ=!ERRORLEVEL!"
   if !WIZ! neq 0 (

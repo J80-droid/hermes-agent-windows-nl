@@ -51,6 +51,82 @@ function Get-HermesConfigAuxiliaryFingerprint {
     return 'no-auxiliary-block'
 }
 
+function Get-HermesModelFieldsFromConfigYaml {
+    <#
+    .SYNOPSIS
+        Leest model.provider en model.default uit config.yaml zonder regex (geen (?ms).* backtracking).
+    #>
+    param([string]$ConfigPath)
+    $provider = ''
+    $defaultModel = ''
+    if (-not $ConfigPath -or -not (Test-Path -LiteralPath $ConfigPath)) {
+        return [pscustomobject]@{ Provider = $provider; Default = $defaultModel }
+    }
+    $inModel = $false
+    foreach ($line in [System.IO.File]::ReadLines($ConfigPath)) {
+        if ($line -match '^\s*#') { continue }
+        if ($line -match '^\s*$') { continue }
+        if ($line -match '^model:\s*$') {
+            $inModel = $true
+            continue
+        }
+        if ($line -match '^model:\s*\S') {
+            $inModel = $false
+            continue
+        }
+        if ($inModel) {
+            if ($line -match '^[^\s#]') {
+                $inModel = $false
+                continue
+            }
+            if ($line -match '^\s+provider:\s*(\S+)') {
+                $provider = $Matches[1].Trim().Trim('"').Trim("'")
+                continue
+            }
+            if ($line -match '^\s+default:\s*(\S+)') {
+                $defaultModel = $Matches[1].Trim().Trim('"').Trim("'")
+                continue
+            }
+        }
+    }
+    return [pscustomobject]@{ Provider = $provider; Default = $defaultModel }
+}
+
+function Write-HermesRuntimeModelBanner {
+    <#
+    .SYNOPSIS
+        Toont canonieke runtime-config (één bron voor chat) — na setup/launch.
+    #>
+    $cfgPath = Get-HermesCanonicalConfigPath
+    $legacyEnv = Join-Path (Get-HermesLegacyRoot) '.env'
+    Write-Host '[INFO] Runtime-config (chat gebruikt dit bestand):' -ForegroundColor Cyan
+    Write-Host ('       ' + $cfgPath) -ForegroundColor DarkGray
+    Write-Host ('       Secrets hub: ' + $legacyEnv) -ForegroundColor DarkGray
+    if (-not (Test-Path -LiteralPath $cfgPath)) {
+        Write-Host '[WARN] config.yaml ontbreekt — run windows\OPEN_SETUP.bat' -ForegroundColor Yellow
+        return
+    }
+    try {
+        $fields = Get-HermesModelFieldsFromConfigYaml -ConfigPath $cfgPath
+        $provider = $fields.Provider
+        $model = $fields.Default
+        if ($provider -or $model) {
+            Write-Host ('[INFO] model.provider=' + $(if ($provider) { $provider } else { '?' })) -ForegroundColor Cyan
+            Write-Host ('[INFO] model.default=' + $(if ($model) { $model } else { '?' })) -ForegroundColor Cyan
+        }
+        $authPath = Join-Path (Get-HermesRuntimeRoot) 'auth.json'
+        if (Test-Path -LiteralPath $authPath) {
+            $authRaw = Get-Content -LiteralPath $authPath -Raw -Encoding UTF8
+            if ($authRaw -match '"active_provider"\s*:\s*"([^"]+)"') {
+                Write-Host ('[INFO] auth.active_provider=' + $Matches[1]) -ForegroundColor Cyan
+            }
+        }
+    } catch {
+        Write-Host ('[WARN] Config lezen mislukt: ' + $_.Exception.Message) -ForegroundColor Yellow
+    }
+    Write-Host '[INFO] Wijzig provider via windows\OPEN_SETUP.bat (niet alleen .env keys).' -ForegroundColor DarkGray
+}
+
 function Invoke-HermesModelProviderCoherenceRepair {
     param([switch]$Quiet)
     $repairScript = Join-Path $PSScriptRoot 'repair_model_provider_coherence.ps1'
@@ -135,6 +211,14 @@ function Test-HermesConfigDrift {
     }
 
     if ($issues.Count -eq 0) {
+        if (-not (Test-HermesModelCatalogAvailability -Quiet:$Quiet)) {
+            $issues.Add(
+                'Model/default staat niet in provider-catalog - run hermes model (of pas model.provider + model.default aan).'
+            )
+        }
+    }
+
+    if ($issues.Count -eq 0) {
         if (-not $Quiet) {
             Write-HermesOk 'Geen config drift (split-home)'
         }
@@ -193,6 +277,89 @@ sys.exit(1)
         return $false
     }
 }
+
+function Test-HermesModelCatalogAvailability {
+    param([switch]$Quiet)
+    $configPath = Get-HermesCanonicalConfigPath
+    if (-not (Test-Path -LiteralPath $configPath)) {
+        return $true
+    }
+    try {
+        $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+        $runtimeRoot = Get-HermesRuntimeRoot
+        $python = Get-HermesAuditPython -RepoRoot $repoRoot
+        $code = @'
+import os
+import sys
+sys.path.insert(0, r'__REPO_ROOT__')
+os.environ['HERMES_HOME'] = r'__RUNTIME_ROOT__'
+os.environ.setdefault('HERMES_WIN_PREFER_LOCALAPPDATA', '1')
+from hermes_cli.config import load_config
+from hermes_cli.models import normalize_provider, provider_model_ids
+
+cfg = load_config() or {}
+model = cfg.get('model') or {}
+if isinstance(model, str):
+    model = {'default': model}
+provider = normalize_provider((model.get('provider') or '').strip())
+default_model = (model.get('default') or model.get('model') or '').strip()
+if not provider or not default_model:
+    sys.exit(0)
+if provider in {'custom', 'auto'}:
+    sys.exit(0)
+
+catalog = provider_model_ids(provider)
+if not catalog:
+    sys.exit(0)
+
+name_l = default_model.lower()
+bare_l = name_l.split('/', 1)[1] if '/' in name_l else name_l
+
+def _match(mid: str) -> bool:
+    m = (mid or '').strip().lower()
+    if not m:
+        return False
+    if m == name_l or m == bare_l:
+        return True
+    if '/' in m and m.split('/', 1)[1] == bare_l:
+        return True
+    return False
+
+if any(_match(mid) for mid in catalog):
+    sys.exit(0)
+
+print(f"error: model '{default_model}' staat niet in catalog voor provider '{provider}'")
+sample = ', '.join((catalog[:8] if isinstance(catalog, list) else list(catalog)[:8]))
+if sample:
+    print(f"hint: voorbeelden: {sample}")
+sys.exit(1)
+'@
+        $code = $code.Replace('__REPO_ROOT__', $repoRoot.Replace('\', '\\'))
+        $code = $code.Replace('__RUNTIME_ROOT__', $runtimeRoot.Replace('\', '\\'))
+        $tmpPy = Join-Path ([System.IO.Path]::GetTempPath()) ("hermes_model_catalog_guard_" + [System.Guid]::NewGuid().ToString("N") + ".py")
+        Set-Content -LiteralPath $tmpPy -Value $code -Encoding UTF8
+        try {
+            $output = & $python $tmpPy 2>&1
+        } finally {
+            Remove-Item -LiteralPath $tmpPy -Force -ErrorAction SilentlyContinue
+        }
+        if ($LASTEXITCODE -ne 0) {
+            if (-not $Quiet) {
+                foreach ($line in @($output)) {
+                    if ($line) { Write-HermesFail $line }
+                }
+            }
+            return $false
+        }
+        return $true
+    } catch {
+        if (-not $Quiet) {
+            Write-HermesFail "Model/catalog check mislukt: $($_.Exception.Message)"
+        }
+        return $false
+    }
+}
+
 
 function Test-HermesProfileGlobalConfigBlocks {
     param([switch]$Quiet)

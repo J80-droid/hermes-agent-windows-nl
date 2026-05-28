@@ -109,10 +109,16 @@ for ($shortcutIndex = 0; $shortcutIndex -lt $shortcutPairCount; $shortcutIndex++
     $batPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $shortcutBats[$shortcutIndex]
     $iconPath = Get-HermesTaskbarRoleIconPath -Role $shortcutRoles[$shortcutIndex] -WindowsDir $windowsDirResolved
     try {
-        if (Set-HermesShellShortcut -ShortcutPath $lnkPath -TargetBatPath $batPath `
+        $setOk = if ($shortcutRoles[$shortcutIndex] -eq 'Start') {
+            Set-HermesStartShellShortcut -ShortcutPath $lnkPath -RepoRoot $RepoRoot `
+                -IconIcoPath $iconPath -Description $shortcutDescriptions[$shortcutIndex]
+        } else {
+            Set-HermesShellShortcut -ShortcutPath $lnkPath -TargetBatPath $batPath `
                 -IconIcoPath $iconPath -WorkingDirectory $RepoRoot `
                 -Description $shortcutDescriptions[$shortcutIndex] `
-                -KeepCmdWindowOpen:$shortcutKeepOpen[$shortcutIndex]) {
+                -KeepCmdWindowOpen:$shortcutKeepOpen[$shortcutIndex]
+        }
+        if ($setOk) {
             if (-not $Quiet) {
                 Write-Host "  [OK] $($shortcutNames[$shortcutIndex])" -ForegroundColor Green
             }

@@ -15,7 +15,8 @@ windows\POST_GIT_PULL.bat -QuickFix
 windows\SYNC_TRUST_RUNTIME.bat
 ```
 
-`launch_hermes.bat` start standaard ook **`hermes dashboard --no-open`** op `http://127.0.0.1:9119` (geen browser-tab; open zelf `/sessions`). Uitzetten: `set HERMES_SKIP_DASHBOARD_ON_START=1` vóór start. Log: `output\research\logs\hermes_dashboard.log`.
+`launch_hermes.bat` start dashboard standaard (Codebase Viz warmup): **`hermes dashboard --no-open`** op `http://127.0.0.1:9119` (geen browser-tab; open zelf `/sessions`). Uitzetten: `HERMES_SKIP_DASHBOARD_ON_START=1` of `HERMES_DASHBOARD_ON_START=0`. Log: `output\research\logs\hermes_dashboard.log`.
+Windows Terminal is verplicht (`windows/requirements-windows.txt`; `INSTALL_WINDOWS_TERMINAL.bat`). `start_hermes.bat` zet `HERMES_AUTO_WINDOWS_TERMINAL=1` (start in `wt -M` wanneer `wt.exe` beschikbaar). Uitzetten: `HERMES_SKIP_WINDOWS_TERMINAL=1`. Console-layout: `HERMES_CONSOLE_LAYOUT=maximized` (werkgebied, geen `SW_MAXIMIZE`).
 
 `-QuickFix` op `POST_GIT_PULL` ruimt ongetrackte root-rommel op **vóór** verify (zelfde logica als `UPDATE_HERMES -QuickFix`). Optioneel na pull: `-IncludeCodebaseSmoke` (~32s), `-IncludeCodebaseSmokeE2E` (~45s), `-AutoRepairModelProvider`.
 
@@ -29,6 +30,10 @@ Bundled tab **Codebase Viz** op `/codebase-viz` (na Skills). Bij workspace-start
 | `CODEBASE_VIZ_PYGOUNT_TIMEOUT` | `240` | pygount subprocess-timeout (volledige repo) |
 | `CODEBASE_VIZ_REPO` | hermes-agent root | Optioneel: ander scan-doel |
 | `CODEBASE_VIZ_SCAN_MODE` | `incremental` | Productie: stale-while-revalidate + delta-refresh; `full` voor expliciete full rebuilds |
+| `HERMES_CODEBASE_VIZ_WARMUP` | `auto` | Na health: POST `/force-scan` (achtergrond); `incremental` = alleen health; `0` = uit |
+| `HERMES_CODEBASE_VIZ_SKIP_BUILD` | *(uit)* | Geen `npm run build` als `src/` nieuwer is dan `dist/index.js` |
+
+Bij Hermes-start (standaard): pip `[web]` + pygount, optioneel `npm run build`, dashboard op 9119, health-verify, daarna force-scan warmup.
 
 **Na start controleren:**
 
@@ -40,11 +45,13 @@ Verwacht: `version=2.5.0`, `pygount_timeout_sec=240`, `plugin_api_path` onder de
 
 Bij `scan_mode=incremental` serveert de plugin direct gecachte payloads (`/structure`, `/summary`, `/dependencies`) en start daarna background refresh met delta-detectie. UI/WS tonen refresh-events (`refresh_started`, `delta_detected`, `refresh_done`).
 
-**Herstart alleen dashboard:**
+**Alles-in-één na codewijziging (aanbevolen):**
 
 ```cmd
-audits\RESTART_CODEBASE_VIZ_DASHBOARD.bat
+hermes_onderhoud.bat
 ```
+
+Alleen dashboard: `hermes_onderhoud.bat -DashboardOnly` (alias: `audits\RESTART_CODEBASE_VIZ_DASHBOARD.bat`).
 
 **Incidenten:**
 
@@ -209,6 +216,13 @@ Override conda: `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV`.
 6. Gate: `windows\audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat` (incl. `audits\RUN_INSTITUTIONAL_HARDENING_E2E.bat` 14/14)
 7. Regressie (review-fixes): `windows\audits\RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.bat` (8/8)
 
+## Canonical OPEN_SETUP-governance
+
+- Canonieke setup-implementatie: `scripts\windows\OPEN_SETUP.bat`
+- Wrapper-only ingangspunt: `windows\OPEN_SETUP.bat` (forwarder, geen eigen setup-logica)
+- Setup-launchers (`windows\SETUP_HERMES.bat`, `windows\setup_hermes_windows.bat`) verwijzen naar de canonieke flow
+- Herstelvolgorde bij setup-issues: 1) `windows\SETUP_HERMES.bat --files-only`, 2) `windows\OPEN_SETUP.bat`, 3) `windows\launch_hermes.bat`
+
 ## Dagelijks
 
 - Start: `start_hermes.bat` (bootstrap sync RAG-deps indien nodig)
@@ -253,6 +267,9 @@ Override conda: `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV`.
 | UPDATE stopt op dirty repo (exit 2) | `UPDATE_HERMES.bat -QuickFix` of commit/stash; alleen iconen: branding-waarschuwing OK |
 | Rommel in repo-root | `docs/WORKSPACE_CONVENTIONS.md`, `guard_git_clean.ps1`, E2E `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14); gecombineerd in `RUN_INSTITUTIONAL_PRODUCTION_GATE.bat` |
 | Legacy `.venv` | Quarantaine via `ensure_hermes_python.ps1`; niet productie-default |
+| Runtime 404: model niet gevonden | Nieuwe startup-guard blokkeert chatstart als `model.default` niet in provider-catalog staat; run `hermes model` |
+| Model-catalog mismatch | Startup faalt hard zonder fallback-auto-switch; gebruik `hermes model` of herstel `model.provider` + `model.default` expliciet |
+| Extra dashboard-venster bij start | Standaard hidden; override via `HERMES_DASHBOARD_WINDOW_STYLE=minimized|normal` |
 
 ## Pre-release (handmatig)
 

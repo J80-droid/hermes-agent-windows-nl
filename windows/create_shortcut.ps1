@@ -2,7 +2,8 @@
 param(
     # Optioneel: repo-root (map met pyproject.toml). CREATE_DESKTOP_SHORTCUT.bat zet dit door
     # zodat dit script ook werkt als het vanuit een tijdelijke kopie wordt aangeroepen.
-    [string] $RepoRoot = ''
+    [string] $RepoRoot = '',
+    [switch] $NoPause
 )
 
 $ErrorActionPreference = 'Stop'
@@ -87,19 +88,24 @@ if (-not (Test-Path -LiteralPath $iconPath)) {
 }
 
 try {
-    $WshShell = New-Object -ComObject WScript.Shell
-    $Shortcut = $WshShell.CreateShortcut($shortcutPath)
-    # TRICK: Prefix with cmd /c to allow taskbar pinning
-    $Shortcut.TargetPath = 'cmd.exe'
-    $Shortcut.Arguments = "/c `"$batchPath`""
-    $Shortcut.WorkingDirectory = $hermesDir
-    if ($iconPath -match '\.ico$') {
-        $iconPath = Get-HermesWindowsShellIcoLocation -IcoPath $iconPath
+    $deskIco = Join-Path $windowsDir 'hermes_logo.ico'
+    if (-not (Test-Path -LiteralPath $deskIco)) { $deskIco = $iconPath }
+    if (Set-HermesStartShellShortcut -ShortcutPath $shortcutPath -RepoRoot $resolvedRepo `
+            -IconIcoPath $deskIco -Description 'Hermes Agent (start_hermes.bat via Windows Terminal)') {
+        Write-Host '[SUCCESS] Snelkoppeling aangemaakt op je Bureaublad!' -ForegroundColor Green
+        Write-Host '[OK] Hermes Agent.lnk -> start_hermes.bat (zelfde keten als repo-root)' -ForegroundColor Green
+    } else {
+        throw 'Set-HermesStartShellShortcut mislukt'
     }
-    $Shortcut.IconLocation = $iconPath
-    $Shortcut.Description = 'Launch the Hermes AI Agent'
-    $Shortcut.Save()
-    Write-Host '[SUCCESS] Snelkoppeling aangemaakt op je Bureaublad!' -ForegroundColor Green
+
+    $logoBat = Join-Path $windowsDir 'Hermes_met_logo.bat'
+    if (Test-Path -LiteralPath $logoBat) {
+        $logoLnk = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Hermes Agent (met logo).lnk'
+        Set-HermesShellShortcut -ShortcutPath $logoLnk -TargetBatPath $logoBat `
+            -IconIcoPath (Join-Path $windowsDir 'hermes_logo.ico') -WorkingDirectory $resolvedRepo `
+            -Description 'Hermes Agent - ASCII-logo, daarna start_hermes.bat' -KeepCmdWindowOpen | Out-Null
+        Write-Host '[OK] Hermes Agent (met logo).lnk (optioneel)' -ForegroundColor Green
+    }
 
     $taskbarPs1 = Join-Path $windowsDir 'create_taskbar_shortcuts.ps1'
     if (Test-Path -LiteralPath $taskbarPs1) {
@@ -112,4 +118,4 @@ try {
 }
 
 Write-Host ''
-pause
+if (-not $NoPause) { pause }

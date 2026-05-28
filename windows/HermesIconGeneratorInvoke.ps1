@@ -28,6 +28,80 @@ function Get-HermesShellShortcutIconLocation {
     return ($resolved + ',0')
 }
 
+function Get-HermesCmdShortcutArgumentLine {
+    <#
+    .SYNOPSIS
+        cmd.exe Arguments voor .lnk: cd /d + call met dubbele quotes (paden met spaties en A.I-segmenten).
+    #>
+    param(
+        [Parameter(Mandatory)][string]$WorkingDirectory,
+        [Parameter(Mandatory)][string]$BatchPath,
+        [switch]$KeepWindowOpen
+    )
+    $cmdFlag = if ($KeepWindowOpen) { '/k' } else { '/c' }
+    return ('/d {0} "cd /d ""{1}"" && call ""{2}"""' -f $cmdFlag, $WorkingDirectory, $BatchPath)
+}
+
+function Get-HermesWindowsTerminalExe {
+    $wt = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\wt.exe'
+    if (Test-Path -LiteralPath $wt) { return $wt }
+    $cmd = Get-Command wt.exe -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    return $null
+}
+
+function Set-HermesStartShellShortcut {
+    <#
+    .SYNOPSIS
+        Start-snelkoppeling: Windows Terminal + start_hermes.bat (zelfde keten als dubbelklik repo-root).
+        Fallback zonder wt: cmd /k + start_hermes.bat (venster blijft open bij fout; geen flits door cmd /c).
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)][string]$ShortcutPath,
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$IconIcoPath,
+        [string]$Description = ''
+    )
+    if (-not $PSCmdlet.ShouldProcess($ShortcutPath, 'Create', 'Hermes start shortcut')) { return $false }
+
+    $repo = (Resolve-Path -LiteralPath $RepoRoot).Path
+    if (-not (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'launcher_config.ps1'))) {
+        throw 'launcher_config.ps1 ontbreekt naast HermesIconGeneratorInvoke.ps1'
+    }
+    . (Join-Path $PSScriptRoot 'launcher_config.ps1')
+    $startRel = Get-HermesStartLauncherRelativePath -RepoRoot $repo
+    $startBat = Join-Path $repo $startRel
+    if (-not (Test-Path -LiteralPath $startBat)) { return $false }
+
+    $iconLoc = Get-HermesShellShortcutIconLocation -IcoPath $IconIcoPath
+    if (-not $iconLoc) { return $false }
+
+    if (Test-Path -LiteralPath $ShortcutPath) {
+        Remove-Item -LiteralPath $ShortcutPath -Force -ErrorAction SilentlyContinue
+    }
+
+    $startBatFull = (Resolve-Path -LiteralPath $startBat).Path
+    $wt = Get-HermesWindowsTerminalExe
+    $cmdExe = Join-Path $env:SystemRoot 'System32\cmd.exe'
+
+    $wsh = New-Object -ComObject WScript.Shell
+    $sc = $wsh.CreateShortcut($ShortcutPath)
+    if ($wt) {
+        $sc.TargetPath = $wt
+        $sc.Arguments = ('-M -d "{0}" {1} /k call "{2}"' -f $repo, $cmdExe, $startBatFull)
+    } else {
+        $sc.TargetPath = $cmdExe
+        $sc.Arguments = Get-HermesCmdShortcutArgumentLine -WorkingDirectory $repo -BatchPath $startBatFull -KeepWindowOpen
+    }
+    $sc.WorkingDirectory = $repo
+    $sc.WindowStyle = 1
+    $sc.IconLocation = $iconLoc
+    if ($Description) { $sc.Description = $Description }
+    $sc.Save()
+    return $true
+}
+
 function Set-HermesShellShortcut {
     <#
     .SYNOPSIS
@@ -61,11 +135,8 @@ function Set-HermesShellShortcut {
     $wsh = New-Object -ComObject WScript.Shell
     $sc = $wsh.CreateShortcut($ShortcutPath)
     $sc.TargetPath = Join-Path $env:SystemRoot 'System32\cmd.exe'
-    if ($KeepCmdWindowOpen) {
-        $sc.Arguments = '/k "cd /d "' + $workFull + '" && call "' + $batFull + '"'
-    } else {
-        $sc.Arguments = '/c "' + $batFull + '"'
-    }
+    $sc.Arguments = Get-HermesCmdShortcutArgumentLine -WorkingDirectory $workFull -BatchPath $batFull `
+        -KeepWindowOpen:$KeepCmdWindowOpen
     $sc.WorkingDirectory = $workFull
     $sc.WindowStyle = 1
     $sc.IconLocation = $iconLoc
@@ -108,11 +179,8 @@ function Set-HermesTaskbarPinShortcut {
     $wsh = New-Object -ComObject WScript.Shell
     $sc = $wsh.CreateShortcut($ShortcutPath)
     $sc.TargetPath = Join-Path $env:SystemRoot 'System32\cmd.exe'
-    if ($KeepCmdWindowOpen) {
-        $sc.Arguments = '/k "cd /d "' + $workFull + '" && call "' + $batFull + '"'
-    } else {
-        $sc.Arguments = '/c "' + $batFull + '"'
-    }
+    $sc.Arguments = Get-HermesCmdShortcutArgumentLine -WorkingDirectory $workFull -BatchPath $batFull `
+        -KeepWindowOpen:$KeepCmdWindowOpen
     $sc.WorkingDirectory = $workFull
     $sc.WindowStyle = 1
     $sc.IconLocation = $iconLoc

@@ -150,6 +150,13 @@ def test_docs_mention_institutional_python():
     assert "sync_hermes_ide_python" in inst
 
 
+def test_hermes_home_common_has_model_catalog_guard():
+    text = (REPO / "windows" / "scripts" / "HermesHomeCommon.ps1").read_text(encoding="utf-8")
+    assert "function Test-HermesModelCatalogAvailability" in text
+    assert "provider_model_ids" in text
+    assert "provider-catalog" in text
+
+
 def test_e2e_audit_files_exist():
     audits = REPO / "windows" / "audits"
     for name in (
