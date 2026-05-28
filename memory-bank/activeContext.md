@@ -22,6 +22,8 @@
 
 **Launch-profielen (2026-05-28):** `windows/launch_profiles.ps1`; **standaard full**; `start_hermes_minimal.bat` voor snelle chat; CLI-vlaggen gefilterd vóór `hermes_cli`; docs `START.md` + `LAUNCH_PROFILES.md`.
 
+**Post-pull automatisering (2026-05-28):** `PULL_HERMES.bat` → `POST_GIT_PULL.bat` (standaard relaunch via `Invoke-HermesPostPullRelaunch.ps1` + WT, `-KeepPid`); `-Full`/`-SkipRelaunch`; trust pending bij FAIL (`Invoke-PostGitPullTrustOutcome.ps1`); `apply_institutional_runtime` in POST_GIT_PULL; UPDATE post-merge zelfde relaunch; klassieke CLI `_apply_post_sync_new_chat_notice`; `RAG_PIPELINE.bat` + `Get-RagSourceReadiness.ps1`. E2E **14/14** `audits/RUN_POST_GIT_PULL_AUTOMATION_E2E.bat`; unit **56** `tests/audits/test_post_git_pull_automation_e2e_harness.py`. Banner: upstream `main` prefetch + `.update_check` invalidatie na relaunch.
+
 **Upstream sync fase 2 + TUI layout (2026-05-25):** `Invoke-UpstreamGitMergeIfBehind` (preflight fetch-dedup, `$upstreamRef`, rev-list exit guards); `pip install -e .` na merge vóór `hermes update`; TUI `statusRuleMinLeftWidth` + `leftWidth`; slash **`/cost`** + upstream **`/queue`**. E2E **8/8** Phase2 + **7/7** `RUN_HERMES_SHELL_COMMON_E2E` (PSES). **UPDATE 2026-05-25:** 15 commits merge (conflict `core.ts` opgelost), daarna 2 commits auto-merge + volledige keten OK. **PSES:** `HermesShellCommon` `INFO:`/`OK:` tags, `Format-HermesStepLabel`, `Test-PsesTokenizer` 12 scripts.
 
 **IDE-onderhoud landkaart (2026-05-23):** `lancedb_maintenance.py` + `LANCEDB_MAINTENANCE.bat`; merge snippet-preview; `audit_skill_drift.py`; volledige E2E `windows/audits/RUN_IDE_MAINTENANCE_E2E.bat` (rapport `IDE_MAINTENANCE_E2E_REPORT_*.md`).

@@ -48,14 +48,19 @@ def test_check_for_updates_expired_cache(tmp_path, monkeypatch):
     cache_file = tmp_path / ".update_check"
     cache_file.write_text(json.dumps({"ts": 0, "behind": 1}))
 
-    mock_result = MagicMock(returncode=0, stdout="5\n")
+    def fake_run(cmd, **kwargs):
+        if cmd[:3] == ["git", "remote", "get-url"]:
+            return MagicMock(returncode=1, stdout="")
+        return MagicMock(returncode=0, stdout="5\n")
 
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    with patch("hermes_cli.banner.subprocess.run", return_value=mock_result) as mock_run:
+    with patch("hermes_cli.banner.subprocess.run", side_effect=fake_run) as mock_run:
         result = check_for_updates()
 
     assert result == 5
-    assert mock_run.call_count == 2  # git fetch + git rev-list
+    cmds = [list(call.args[0]) for call in mock_run.call_args_list]
+    assert any(cmd[:2] == ["git", "fetch"] for cmd in cmds)
+    assert any(cmd[:3] == ["git", "rev-list", "--count"] for cmd in cmds)
 
 
 def test_check_for_updates_no_git_dir(tmp_path, monkeypatch):
@@ -91,6 +96,55 @@ def test_check_for_updates_fallback_to_project_root(tmp_path, monkeypatch):
         result = banner.check_for_updates()
     # Should have fallen back to project root and run git commands
     assert mock_run.call_count >= 1
+
+
+def test_resolve_update_compare_ref_prefers_upstream(tmp_path):
+    """Forks should count against upstream/main, not origin/main."""
+    from hermes_cli.banner import _resolve_update_compare_ref
+
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    (repo_dir / ".git").mkdir()
+
+    calls: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(list(cmd))
+        if cmd[:3] == ["git", "remote", "get-url"]:
+            return MagicMock(returncode=0, stdout="https://github.com/NousResearch/hermes-agent.git\n")
+        return MagicMock(returncode=0, stdout="")
+
+    with patch("hermes_cli.banner.subprocess.run", side_effect=fake_run):
+        remote, compare_ref, label = _resolve_update_compare_ref(repo_dir)
+
+    assert remote == "upstream"
+    assert compare_ref == "upstream/main"
+    assert label == "upstream"
+
+
+def test_check_via_local_git_fetches_upstream(tmp_path):
+    from hermes_cli.banner import _check_via_local_git
+
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir()
+    (repo_dir / ".git").mkdir()
+
+    calls: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(list(cmd))
+        if cmd[:3] == ["git", "remote", "get-url"]:
+            return MagicMock(returncode=0, stdout="https://github.com/NousResearch/hermes-agent.git\n")
+        if cmd[:2] == ["git", "rev-list"]:
+            return MagicMock(returncode=0, stdout="12\n")
+        return MagicMock(returncode=0, stdout="")
+
+    with patch("hermes_cli.banner.subprocess.run", side_effect=fake_run):
+        behind = _check_via_local_git(repo_dir)
+
+    assert behind == 12
+    assert ["git", "fetch", "upstream", "--quiet"] in calls
+    assert any(cmd[:3] == ["git", "rev-list", "--count"] and cmd[3] == "HEAD..upstream/main" for cmd in calls)
 
 
 def test_prefetch_non_blocking():

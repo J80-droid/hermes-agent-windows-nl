@@ -5298,10 +5298,38 @@ class HermesCLI:
                 except (ValueError, Exception) as e:
                     _cprint(f"  Could not apply pending title: {e}")
                     # Keep _pending_title so it can be retried after row creation succeeds
+            self._apply_post_sync_new_chat_notice()
             return True
         except Exception as e:
             ChatConsole().print(f"[bold red]Failed to initialize agent: {e}[/]")
             return False
+
+    def _apply_post_sync_new_chat_notice(self):
+        """After SOUL/trust sync (POST_GIT_PULL / relaunch): honor institutional_new_chat_required.json.
+
+        Called from _init_agent after successful agent setup. Empty conversation: acknowledge
+        notice file only. Active history: new_session(silent=True). Skip via HERMES_SKIP_AUTO_NEW_AFTER_SYNC=1.
+        Parity with TUI auto-/new after sync.
+        """
+        if os.environ.get("HERMES_SKIP_AUTO_NEW_AFTER_SYNC") == "1":
+            return
+        try:
+            from hermes_cli.institutional_new_chat_notice import (
+                acknowledge_new_chat_notice,
+                read_new_chat_notice,
+            )
+        except Exception:
+            return
+        if not read_new_chat_notice():
+            return
+        history = getattr(self, "conversation_history", None) or []
+        if not history:
+            acknowledge_new_chat_notice()
+            return
+        try:
+            self.new_session(silent=True)
+        except Exception:
+            pass
     
     def _show_security_advisories(self):
         """Show a startup banner if any unacked security advisories match.
@@ -5330,6 +5358,12 @@ class HermesCLI:
 
     def show_banner(self):
         """Display the welcome banner in Claude Code style."""
+        try:
+            from hermes_cli.banner import ensure_update_check_started
+
+            ensure_update_check_started()
+        except Exception:
+            pass
         self.console.clear()
         ctx_len = None
         if hasattr(self, 'agent') and self.agent and hasattr(self.agent, 'context_compressor'):
@@ -12949,11 +12983,6 @@ class HermesCLI:
             _welcome_text = "Welcome to Hermes Agent! Type your message or /help for commands."
             _welcome_color = "#FFF8DC"
         self._console_print(f"[{_welcome_color}]{_welcome_text}[/]")
-        if sys.platform == "win32":
-            self._console_print(
-                "  [dim]Plakken: Ctrl+V · kopiëren invoer: Shift+pijlen + Ctrl+C · "
-                "scrollback: schuifbalk · muisklik vast? Ctrl+Shift+M (markeermodus uit).[/]"
-            )
 
         try:
             from hermes_cli.institutional_new_chat_notice import format_new_chat_notice_rich

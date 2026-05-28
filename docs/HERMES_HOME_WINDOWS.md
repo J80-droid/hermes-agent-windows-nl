@@ -46,7 +46,10 @@ Native Windows Hermes gebruikt `%LOCALAPPDATA%\hermes`. WSL-sessies kunnen paral
 | Actie | Commando |
 | --- | --- |
 | Start Hermes | `windows\launch_hermes.bat` |
-| Na `git pull` / update | `POST_GIT_PULL.bat` of `UPDATE_HERMES.bat` (optioneel `-AutoRepairModelProvider` bij auth/config drift) |
+| Na `git pull` (aanbevolen) | **`PULL_HERMES.bat`** → `git pull` + `POST_GIT_PULL.bat` (standaard **Hermes-relaunch** in WT) |
+| Na pull handmatig | `windows\POST_GIT_PULL.bat` — `-SkipRelaunch` / `HERMES_SKIP_RELAUNCH_AFTER_PULL=1` om herstart uit te zetten |
+| Volledige preset na pull | `POST_GIT_PULL.bat -Full` (= AutoRepair + InstitutionalVerify + relaunch) |
+| Nous upstream | `UPDATE_HERMES.bat` (zelfde relaunch na post-merge) |
 | Wekelijkse kwaliteit | `windows\audits\RUN_AUDITS.bat` |
 | Config drift check | `windows\VERIFY_HERMES_CONFIG_DRIFT.bat` |
 
@@ -72,9 +75,11 @@ Symptoom: `auth.json` heeft `active_provider: nous` maar chat gebruikt nog **Gem
 |------|--------|
 | 1 | `windows\REPAIR_MODEL_PROVIDER.bat` of `hermes doctor --fix` |
 | 2 | `hermes config get model.provider` → verwacht jouw gekozen provider (bijv. `nous`) |
-| 3 | Hermes/gateway volledig herstarten + `/new` in chat |
+| 3 | Automatisch via `PULL_HERMES.bat` / `POST_GIT_PULL.bat` (relaunch + verse SOUL); TUI: auto `/new`; klassieke CLI: notice bij start |
 
-**Checklist na code-deploy (operationeel):** `git pull` → `POST_GIT_PULL.bat` (optioneel `-AutoRepairModelProvider`) → `hermes config get model.provider` → Hermes + gateway afsluiten → opnieuw `launch_hermes.bat` → in chat `/new` → eerste bericht: provider Nous, geen `generativelanguage` in routing.
+**Checklist na code-deploy (operationeel):** `PULL_HERMES.bat` of `git pull` + `POST_GIT_PULL.bat -Full` → Hermes opent in nieuw WT-tabblad → `hermes config get model.provider` → eerste bericht: juiste provider (geen `generativelanguage` in routing). Geautomatiseerde check: `audits\RUN_POST_GIT_PULL_AUTOMATION_E2E.bat`.
+
+**Optionele git-hook (lokaal, niet in repo):** `post-merge` → `windows\POST_GIT_PULL.bat`
 
 **Architectuur (repo):** `hermes_cli/model_runtime_config.py` · `hermes_cli/auth.read_auth_json()` (UTF-8 BOM-safe)
 

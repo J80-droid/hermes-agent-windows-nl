@@ -150,7 +150,7 @@
 - [x] `POST_GIT_PULL.bat -AutoRepairModelProvider` (opt-in drift-repair)
 - [x] Auth corrupt-handler: expliciete fout + config-side repair poging; nous shared store `utf-8-sig`
 - [x] pytest model_runtime + doctor global-blocks + nous BOM (54+ tests)
-- [ ] **Gebruiker:** Hermes/gateway herstart + `/new` na pull (live Nous-verificatie) — zie `docs/HERMES_HOME_WINDOWS.md` checklist
+- [x] Post-pull automatisering (2026-05-28): `PULL_HERMES.bat`, `POST_GIT_PULL` relaunch default, `Invoke-HermesPostPullRelaunch.ps1`, trust pending parity, CLI auto-notice, `RAG_PIPELINE.bat`, `-Full` preset; E2E 14/14 + unit tests harness (56); banner upstream/main
 - [x] Profiel `core`: geen top-level `auxiliary:`/`providers:` (drift groen 2026-05-25)
 - [x] Drift-check: `Test-HermesModelProviderCoherence` LASTEXITCODE na pipeline gefixt
 

@@ -1,3 +1,19 @@
+# Post-git-pull automatisering E2E
+
+Geïsoleerde E2E voor `PULL_HERMES.bat` → `POST_GIT_PULL.bat`, relaunch-keten (`Invoke-HermesPostPullRelaunch.ps1`), trust-outcome, stop-script en klassieke CLI `/new`-pariteit. Geen live WT-start (relaunch met `HERMES_SKIP_RELAUNCH_AFTER_PULL=1`).
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| P1–P14 | Zie `audits/POST_GIT_PULL_AUTOMATION_E2E_README.md` | Wiring, mocks, trust pending, RAG exit 2, pytest-subset |
+
+```bat
+audits\RUN_POST_GIT_PULL_AUTOMATION_E2E.bat
+```
+
+Unit tests (gemockt, geen live PowerShell): `pytest tests/audits/test_post_git_pull_automation_e2e_harness.py -q -m "not e2e"`. Volledige harness: `-m e2e`.
+
+---
+
 # Institutional pipeline E2E
 
 Geïsoleerde E2E voor normalize → render → score hardening (single-normalize contract, `compact_institutional_check`, finalize-only streaming). Geen live API.

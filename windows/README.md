@@ -137,7 +137,10 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 | Institutional productie-poort | `audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat` (Python + KnowledgeRepository + platform + **hardening 14/14** + wiring) · `docs\INSTITUTIONAL_OPERATIONS.md` |
 | Codebase smoke E2E (E1/E2) | `audits\RUN_CODEBASE_SMOKE_E2E.bat` · `RUN_AUDITS.bat -IncludeCodebaseSmokeE2E` · `-IncludeAllE2E` |
 | Codebase smoke (snel) | `audits\RUN_CODEBASE_SMOKE_AUDIT.bat` · `RUN_AUDITS.bat -IncludeCodebaseSmoke` |
-| Na pull/update (optioneel) | `POST_GIT_PULL.bat -IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E` / `-AutoRepairModelProvider` · `UPDATE_HERMES.bat` (zelfde vlaggen waar van toepassing) |
+| Na `git pull` (aanbevolen) | **`PULL_HERMES.bat`** (repo-root): `git pull` + `POST_GIT_PULL` + **Hermes-relaunch** in WT (`Invoke-HermesPostPullRelaunch.ps1`, `-KeepPid`) |
+| Na pull/update (optioneel) | `POST_GIT_PULL.bat -Full` (= AutoRepair + InstitutionalVerify + relaunch) · `-IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E` · `-IncludeRagPipeline` · `-SkipRelaunch` · `HERMES_SKIP_RELAUNCH_AFTER_PULL=1` · `UPDATE_HERMES.bat` |
+| Post-pull E2E (geïsoleerd) | `audits\RUN_POST_GIT_PULL_AUTOMATION_E2E.bat` (14/14) · unit: `pytest tests\audits\test_post_git_pull_automation_e2e_harness.py -m "not e2e"` |
+| RAG na pull (optioneel) | `windows\RAG_PIPELINE.bat` — readiness (`Get-RagSourceReadiness.ps1`) + ingest; exit 2 = geen bronnen in `%USERPROFILE%\data\raw_source_files` |
 | Memory productie-poort | `audits\RUN_MEMORY_PRODUCTION_GATE.bat` (limits + memory + trust E2E + pytest) |
 | Memory-architectuur E2E | `audits\RUN_MEMORY_ARCHITECTURE_E2E.bat` (launcher → `MemoryArchitectureE2E.core.ps1`, 18/18) |
 | Trust forensic E2E | `audits\RUN_TRUST_FORENSIC_E2E.bat` (launcher → `TrustForensicE2E.core.ps1`) |

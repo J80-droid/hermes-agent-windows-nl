@@ -333,6 +333,14 @@ def recommended_update_command_for_method(method: str) -> str:
         if uv:
             return "uv pip install --upgrade hermes-agent"
         return "pip install --upgrade hermes-agent"
+    if method == "git":
+        import sys
+
+        project_root = Path(__file__).parent.parent.resolve()
+        win_update = project_root / "windows" / "UPDATE_HERMES.bat"
+        if sys.platform == "win32" and win_update.is_file():
+            return r"windows\UPDATE_HERMES.bat"
+        return "hermes update"
     return "hermes update"
 
 

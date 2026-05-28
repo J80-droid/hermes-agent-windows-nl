@@ -266,7 +266,28 @@ function Invoke-UpstreamPostMerge {
     }
 
     if ($exitCode -eq 0) {
-        Write-Ok 'Klaar - start een nieuwe Hermes-sessie.'
+        if ($env:HERMES_SKIP_RELAUNCH_AFTER_PULL -ne '1') {
+            $relaunchPs1 = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/scripts/Invoke-HermesPostPullRelaunch.ps1'
+            if (Test-Path -LiteralPath $relaunchPs1) {
+                Write-Step 'Hermes relaunch (WT + start_hermes)...'
+                if ($InstallRag) {
+                    & $relaunchPs1 -RepoRoot $Repo -InstallRag -KeepPid $PID
+                } else {
+                    & $relaunchPs1 -RepoRoot $Repo -KeepPid $PID
+                }
+                if ((Test-NativeCommandFailed) -or ($LASTEXITCODE -ne 0)) {
+                    Write-Warn 'Relaunch mislukt - start handmatig start_hermes.bat'
+                    if ($exitCode -eq 0) { $exitCode = [int]$LASTEXITCODE }
+                    if ($exitCode -eq 0) { $exitCode = 1 }
+                } else {
+                    Write-Ok 'Hermes relaunch gestart.'
+                }
+            } else {
+                Write-Ok 'Klaar - start een nieuwe Hermes-sessie (start_hermes.bat).'
+            }
+        } else {
+            Write-Ok 'Klaar - start een nieuwe Hermes-sessie (HERMES_SKIP_RELAUNCH_AFTER_PULL=1).'
+        }
     }
 
     return $exitCode

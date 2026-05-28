@@ -10,8 +10,10 @@ Runbook voor dagelijks gebruik, recovery en release-validatie.
 
 ```cmd
 start_hermes.bat
-windows\launch_hermes.bat
+PULL_HERMES.bat
 windows\POST_GIT_PULL.bat
+windows\POST_GIT_PULL.bat -Full
+windows\POST_GIT_PULL.bat -SkipRelaunch
 windows\POST_GIT_PULL.bat -QuickFix
 windows\SYNC_TRUST_RUNTIME.bat
 ```
@@ -21,7 +23,19 @@ windows\SYNC_TRUST_RUNTIME.bat
 `launch_hermes.bat` start dashboard bij profiel **full** (Codebase Viz warmup): **`hermes dashboard --no-open`** op `http://127.0.0.1:9119` (geen browser-tab; open zelf `/sessions`). Uitzetten: `HERMES_SKIP_DASHBOARD_ON_START=1` of `HERMES_DASHBOARD_ON_START=0`. Log: `output\research\logs\hermes_dashboard.log`.
 Windows Terminal is verplicht (`windows/requirements-windows.txt`; `INSTALL_WINDOWS_TERMINAL.bat`). `start_hermes.bat` zet `HERMES_AUTO_WINDOWS_TERMINAL=1` (start in `wt -M` wanneer `wt.exe` beschikbaar). Uitzetten: `HERMES_SKIP_WINDOWS_TERMINAL=1`. Console-layout: `HERMES_CONSOLE_LAYOUT=maximized` (werkgebied, geen `SW_MAXIMIZE`).
 
-`-QuickFix` op `POST_GIT_PULL` ruimt ongetrackte root-rommel op **vóór** verify (zelfde logica als `UPDATE_HERMES -QuickFix`). Optioneel na pull: `-IncludeCodebaseSmoke` (~32s), `-IncludeCodebaseSmokeE2E` (~45s), `-AutoRepairModelProvider`.
+**Na pull (standaard):** `PULL_HERMES.bat` of `POST_GIT_PULL.bat` — sync (trust, SOUL, drift, display) + **Hermes-relaunch** in Windows Terminal (`Invoke-HermesPostPullRelaunch.ps1`). Uitzetten: `-SkipRelaunch` of `set HERMES_SKIP_RELAUNCH_AFTER_PULL=1`. Preset: `-Full` = `-AutoRepairModelProvider` + `-IncludeInstitutionalVerify` + relaunch.
+
+`-QuickFix` ruimt ongetrackte root-rommel op **vóór** verify. Optioneel: `-IncludeCodebaseSmoke`, `-IncludeCodebaseSmokeE2E`, `-IncludeRagPipeline` (lang), `windows\RAG_PIPELINE.bat`.
+
+**Validatie (zonder live Hermes-kill):**
+
+```cmd
+audits\RUN_POST_GIT_PULL_AUTOMATION_E2E.bat
+pytest tests\audits\test_post_git_pull_automation_e2e_harness.py -q -m "not e2e"
+pytest tests\windows\test_post_git_pull_args.py tests\windows\test_stop_hermes_cli_processes.py tests\hermes_cli\test_cli_post_sync_new_chat.py -q
+```
+
+Relaunch-keten: `windows\scripts\Invoke-HermesPostPullRelaunch.ps1` (gateway stop, `stop_other_hermes_processes.ps1`, `pip install -e .`, `.update_check` wissen, `repair_gateway_home`, WT via `Invoke-HermesLaunchInWindowsTerminal`). Trust bij FAIL: `Invoke-PostGitPullTrustOutcome.ps1` → `pending_trust_runtime.json`. Klassieke CLI: `_apply_post_sync_new_chat_notice` na `_init_agent` (lege history = ack; anders `new_session(silent=True)`).
 
 ### Codebase Viz (dashboard-plugin)
 
@@ -233,9 +247,10 @@ Override conda: `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV`.
 
 ## Na git pull
 
-- `windows\POST_GIT_PULL.bat` (verify + trust + SOUL)
-- Optioneel rommel in root: `windows\POST_GIT_PULL.bat -QuickFix`
-- Bij pyproject-wijziging: bootstrap installeert RAG-deps opnieuw
+- **`PULL_HERMES.bat`** (repo-root): `git pull` + `POST_GIT_PULL` + relaunch
+- `windows\POST_GIT_PULL.bat` (verify + trust + SOUL + institutional runtime + relaunch)
+- Optioneel: `-QuickFix`, `-Full`, `-IncludeInstitutionalVerify`, `-IncludeRagPipeline`
+- Bij pyproject-wijziging: relaunch doet `pip install -e .` (optioneel `-InstallRag` via upstream post-merge)
 
 ## Na upstream merge
 
