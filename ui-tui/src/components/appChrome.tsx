@@ -150,6 +150,10 @@ function ctxBarColor(pct: number | undefined, t: Theme) {
   return t.color.statusGood
 }
 
+function statusSessionCountLabel(count: number) {
+  return `${count} ${count === 1 ? 'session' : 'sessions'}`
+}
+
 function ctxBar(pct: number | undefined, w = 10) {
   const p = Math.max(0, Math.min(100, pct ?? 0))
   const filled = Math.round((p / 100) * w)
@@ -306,12 +310,14 @@ export function StatusRule({
   modelReasoningEffort,
   usage,
   bgCount,
+  liveSessionCount,
   sessionStartedAt,
   costBarMode,
   showCost,
   showStatusBarTps,
   turnStartedAt,
   voiceLabel,
+  onSessionCountClick,
   t
 }: StatusRuleProps) {
   const lastCallTps = useTurnSelector(state => state.lastCallTps)
@@ -355,58 +361,98 @@ export function StatusRule({
     width: ruleCols
   })
 
+  const sessionCountText = liveSessionCount > 0 ? statusSessionCountLabel(liveSessionCount) : ''
+  const handleSessionCountClick = (event: { stopImmediatePropagation?: () => void }) => {
+    event.stopImmediatePropagation?.()
+    onSessionCountClick?.()
+  }
+
+  const sessionCountNode = sessionCountText ? (
+    onSessionCountClick ? (
+      <Box flexShrink={0} onClick={handleSessionCountClick}>
+        <Text color={t.color.accent}> │ {sessionCountText}</Text>
+      </Box>
+    ) : (
+      <Text color={t.color.muted}> │ {sessionCountText}</Text>
+    )
+  ) : null
+
   return (
     <Box flexDirection="row" height={1} width={ruleCols}>
-      <Box flexShrink={1} width={leftWidth}>
+      <Box flexDirection="row" flexShrink={1} overflow="hidden" width={leftWidth}>
         <Text color={t.color.border} wrap="truncate-end">
           {'─ '}
-          {busy ? (
-            <FaceTicker color={statusColor} startedAt={turnStartedAt} />
-          ) : (
-            <Text color={statusColor}>{status}</Text>
-          )}
-          <Text color={t.color.muted}> │ {modelLabel(model, modelReasoningEffort, modelFast)}</Text>
-          {costLabel ? (
-            <Text color={t.color.accent}>
-              {' │ '}
-              {costLabel}
-            </Text>
-          ) : null}
-          {throughputLabel ? <Text color={t.color.statusTps}> │ {throughputLabel}</Text> : null}
-          {ctxLabel ? <Text color={t.color.muted}> │ {ctxLabel}</Text> : null}
-          {bar ? (
-            <Text color={t.color.muted}>
-              {' │ '}
-              <Text color={barColor}>[{bar}]</Text> <Text color={barColor}>{pct != null ? `${pct}%` : ''}</Text>
-            </Text>
-          ) : null}
-          {sessionStartedAt ? (
-            <Text color={t.color.muted}>
-              {' │ '}
-              <SessionDuration startedAt={sessionStartedAt} />
-            </Text>
-          ) : null}
-          {typeof usage.compressions === 'number' && usage.compressions > 0 ? (
-            <Text color={t.color.muted}>
-              {' │ '}
-              <Text color={usage.compressions >= 10 ? t.color.error : usage.compressions >= 5 ? t.color.warn : t.color.muted}>
-                cmp {usage.compressions}
-              </Text>
-            </Text>
-          ) : null}
-          <SpawnHud t={t} />
-          {voiceLabel ? (
-            <Text
-              color={
-                voiceLabel.startsWith('●') ? t.color.error : voiceLabel.startsWith('◉') ? t.color.warn : t.color.muted
-              }
-            >
-              {' │ '}
-              {voiceLabel}
-            </Text>
-          ) : null}
-          {bgCount > 0 ? <Text color={t.color.muted}> │ {bgCount} bg</Text> : null}
         </Text>
+        {busy ? (
+          <FaceTicker color={statusColor} startedAt={turnStartedAt} />
+        ) : (
+          <Text color={statusColor} wrap="truncate-end">
+            {status}
+          </Text>
+        )}
+        <Text color={t.color.muted} wrap="truncate-end">
+          {' │ '}
+          {modelLabel(model, modelReasoningEffort, modelFast)}
+        </Text>
+        {costLabel ? (
+          <Text color={t.color.accent} wrap="truncate-end">
+            {' │ '}
+            {costLabel}
+          </Text>
+        ) : null}
+        {throughputLabel ? (
+          <Text color={t.color.statusTps} wrap="truncate-end">
+            {' │ '}
+            {throughputLabel}
+          </Text>
+        ) : null}
+        {ctxLabel ? (
+          <Text color={t.color.muted} wrap="truncate-end">
+            {' │ '}
+            {ctxLabel}
+          </Text>
+        ) : null}
+        {bar ? (
+          <Text color={t.color.muted} wrap="truncate-end">
+            {' │ '}
+            <Text color={barColor}>[{bar}]</Text> <Text color={barColor}>{pct != null ? `${pct}%` : ''}</Text>
+          </Text>
+        ) : null}
+        {sessionStartedAt ? (
+          <Text color={t.color.muted} wrap="truncate-end">
+            {' │ '}
+            <SessionDuration startedAt={sessionStartedAt} />
+          </Text>
+        ) : null}
+        {typeof usage.compressions === 'number' && usage.compressions > 0 ? (
+          <Text color={t.color.muted} wrap="truncate-end">
+            {' │ '}
+            <Text
+              color={usage.compressions >= 10 ? t.color.error : usage.compressions >= 5 ? t.color.warn : t.color.muted}
+            >
+              cmp {usage.compressions}
+            </Text>
+          </Text>
+        ) : null}
+        <SpawnHud t={t} />
+        {voiceLabel ? (
+          <Text
+            color={
+              voiceLabel.startsWith('●') ? t.color.error : voiceLabel.startsWith('◉') ? t.color.warn : t.color.muted
+            }
+            wrap="truncate-end"
+          >
+            {' │ '}
+            {voiceLabel}
+          </Text>
+        ) : null}
+        {sessionCountNode}
+        {bgCount > 0 ? (
+          <Text color={t.color.muted} wrap="truncate-end">
+            {' │ '}
+            {bgCount} bg
+          </Text>
+        ) : null}
       </Box>
 
       {rightWidth > 0 ? (
@@ -523,6 +569,7 @@ export function TranscriptScrollbar({ scrollRef, t }: TranscriptScrollbarProps) 
 
 interface StatusRuleProps {
   bgCount: number
+  liveSessionCount: number
   busy: boolean
   cols: number
   cwdLabel: string
@@ -539,6 +586,7 @@ interface StatusRuleProps {
   turnStartedAt?: null | number
   usage: Usage
   voiceLabel?: string
+  onSessionCountClick?: () => void
 }
 
 interface StickyPromptTrackerProps {
