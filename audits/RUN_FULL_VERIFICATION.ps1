@@ -40,7 +40,7 @@ function Invoke-VerifyStep {
     if ($code -eq 0) {
         Write-Host "[OK] $Name" -ForegroundColor Green
     } else {
-        Write-Host "[FAIL] $Name (exit $code) — zie $logPath" -ForegroundColor Red
+        Write-Host "[FAIL] $Name (exit $code) - zie $logPath" -ForegroundColor Red
         $script:failures++
     }
 }
