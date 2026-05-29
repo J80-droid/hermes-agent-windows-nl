@@ -157,7 +157,15 @@ def test_h8_guard_log_via_preflight() -> None:
     log_path = REPO / "windows/_upstream_sync_guard.log"
     before = log_path.stat().st_size if log_path.is_file() else 0
     sync = REPO / "windows/upstream_sync.ps1"
-    proc = _ps(sync, "-Phase", "Preflight", "-RepoRoot", str(REPO), timeout=180)
+    proc = _ps(
+        sync,
+        "-Phase",
+        "Preflight",
+        "-RepoRoot",
+        str(REPO),
+        "-Force",
+        timeout=180,
+    )
     after = log_path.stat().st_size if log_path.is_file() else 0
     grew = log_path.is_file() and after > before
     log_ok = False
