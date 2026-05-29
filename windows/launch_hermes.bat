@@ -215,7 +215,8 @@ if !errorLevel! neq 0 (
 rem --- Pre-chat orchestrator (SOUL, institutional, trust, dashboard; bootstrap al gedaan) ---
 set "HERMES_LAUNCH_LOG=!LAUNCH_LOG!"
 set "HERMES_REPO_ROOT=!REPO_ROOT!"
-set "ORCH_ARGS=-RepoRoot \"!REPO_ROOT!\" -SkipBootstrap"
+rem RepoRoot via HERMES_REPO_ROOT (geen -RepoRoot in cmd-args — voorkomt quote/drive "D-bug).
+set "ORCH_ARGS=-SkipBootstrap"
 echo !CLEAN_ARGS!| findstr /I "\-\-institutional-e2e" >nul && set "ORCH_ARGS=!ORCH_ARGS! -RunInstitutionalE2E"
 if defined HERMES_INSTITUTIONAL_E2E_ON_START set "ORCH_ARGS=!ORCH_ARGS! -RunInstitutionalE2E"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/scripts/launch_pre_chat_orchestrator.ps1" !ORCH_ARGS!

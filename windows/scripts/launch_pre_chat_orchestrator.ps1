@@ -1,7 +1,6 @@
 # Structurele pre-chat launch: alle PS-fases met voortgang, geen boolean-leak naar cmd.
 param(
-    [Parameter(Mandatory)]
-    [string]$RepoRoot,
+    [string]$RepoRoot = '',
     [switch]$RunInstitutionalE2E,
     [switch]$SkipBootstrap
 )
@@ -10,7 +9,17 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 . (Join-Path $PSScriptRoot 'HermesHomeCommon.ps1')
 
-$RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
+function Get-NormalizedHermesRepoRoot {
+    param([string]$Candidate = '')
+    $raw = if ($Candidate) { $Candidate } elseif ($env:HERMES_REPO_ROOT) { $env:HERMES_REPO_ROOT } else { '' }
+    $raw = "$raw".Trim().Trim([char]34, [char]39, [char]0x201C, [char]0x201D)
+    if (-not $raw) {
+        throw 'RepoRoot ontbreekt — zet HERMES_REPO_ROOT of geef -RepoRoot door.'
+    }
+    return (Resolve-Path -LiteralPath $raw).Path
+}
+
+$RepoRoot = Get-NormalizedHermesRepoRoot -Candidate $RepoRoot
 $env:HERMES_REPO_ROOT = $RepoRoot
 if ($env:HERMES_LAUNCH_LOG) {
     $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
