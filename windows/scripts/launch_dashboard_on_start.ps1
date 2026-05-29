@@ -446,15 +446,27 @@ Write-DashLog "[INFO] Dashboard starten (geen browser): http://${hostAddr}:${por
 Write-DashLog ("[INFO] Python: $dashPy") -Color DarkGray
 Write-DashLog ("[INFO] Log: $dashLog") -Color DarkGray
 
-# Geen Start-Process -WindowStyle Hidden op python.exe: dat kan een onzichtbaar gemaximaliseerd
-# conhost-venster achterlaten dat muisklikken op het bureaublad blokkeert (alleen Alt+Tab werkt).
+# Standaard Hidden + redirect (betrouwbaar op PS 5.1). Bij ghost-conhost/muisklik-blokkade:
+# set HERMES_DASHBOARD_WINDOW_STYLE=normal of HERMES_DASHBOARD_USE_NOWINDOW=1 (Start-HermesNoWindowProcess).
 $windowStyleRaw = ''
 if ($null -ne $env:HERMES_DASHBOARD_WINDOW_STYLE) {
     $windowStyleRaw = "$env:HERMES_DASHBOARD_WINDOW_STYLE".Trim().ToLowerInvariant()
 }
+$useNoWindow = ($env:HERMES_DASHBOARD_USE_NOWINDOW -eq '1')
 try {
-    if ($windowStyleRaw -in @('normal', 'minimized')) {
-        $ws = if ($windowStyleRaw -eq 'minimized') { 'Minimized' } else { 'Normal' }
+    if ($useNoWindow) {
+        $proc = Start-HermesNoWindowProcess `
+            -FilePath $dashPy `
+            -ArgumentList $argList `
+            -WorkingDirectory $RepoRoot `
+            -StandardOutputPath $dashLog `
+            -StandardErrorPath $errLog
+    } else {
+        $ws = switch ($windowStyleRaw) {
+            'minimized' { 'Minimized' }
+            'normal' { 'Normal' }
+            default { 'Hidden' }
+        }
         $proc = Start-Process -FilePath $dashPy `
             -ArgumentList $argList `
             -WorkingDirectory $RepoRoot `
@@ -462,13 +474,6 @@ try {
             -PassThru `
             -RedirectStandardOutput $dashLog `
             -RedirectStandardError $errLog
-    } else {
-        $proc = Start-HermesNoWindowProcess `
-            -FilePath $dashPy `
-            -ArgumentList $argList `
-            -WorkingDirectory $RepoRoot `
-            -StandardOutputPath $dashLog `
-            -StandardErrorPath $errLog
     }
 } catch {
     Write-DashLog ("[WARN] Dashboard start mislukt: $($_.Exception.Message)") -Color Yellow

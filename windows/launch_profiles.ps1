@@ -115,6 +115,7 @@ function Get-HermesLaunchProfileEnvMap {
         return $common + @{
             HERMES_MINIMAL_LAUNCH                   = '0'
             HERMES_SKIP_DASHBOARD_ON_START          = '0'
+            HERMES_DASHBOARD_OPEN_PATH              = '/sessions'
             HERMES_SKIP_DOCKER_ON_START             = '0'
             HERMES_SKIP_SOUL_DEPLOY_ON_START        = ''
             HERMES_SKIP_INSTITUTIONAL_RUNTIME       = ''

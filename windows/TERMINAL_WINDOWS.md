@@ -47,6 +47,8 @@ start_hermes.bat
 | `HERMES_MINIMAL_LAUNCH=1` | alleen met `--minimal` / `start_hermes_minimal.bat` | Direct chat |
 | `HERMES_SKIP_DOCKER_ON_START=1` | aan | Geen `docker info` / WSL-spawn bij start |
 | `HERMES_SKIP_DASHBOARD_ON_START=1` | aan | Geen dashboard op poort 9119 bij start |
+| `HERMES_DASHBOARD_OPEN_PATH` | *(full profile: `/sessions`)* | Browser openen na start; anders alleen URL in console |
+| `HERMES_MINIMAL_LAUNCH=1` / snel-profiel | aan | Dashboard wordt **niet** gestart |
 | `HERMES_CONSOLE_LAYOUT=maximized` | aan | Venster op werkgebied (taakbalk zichtbaar) |
 
 **Snelle launcher** (alleen chat): `start_hermes_minimal.bat` of `start_hermes.bat --minimal`. Standaard is **volledig** via `start_hermes.bat` (zie `launch_profiles.ps1`).

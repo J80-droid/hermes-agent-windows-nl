@@ -1103,7 +1103,7 @@ function Start-HermesNoWindowProcess {
     if ($psi.RedirectStandardOutput) {
         $stdout = $proc.StandardOutput
         $outPath = $StandardOutputPath
-        [void][System.Threading.Tasks.Task]::Run({
+        $copyStdout = [Action]{
             $writer = $null
             try {
                 $writer = [System.IO.StreamWriter]::new($outPath, $false, [System.Text.UTF8Encoding]::new($false))
@@ -1118,12 +1118,13 @@ function Start-HermesNoWindowProcess {
             } finally {
                 if ($writer) { $writer.Dispose() }
             }
-        })
+        }
+        [void][System.Threading.Tasks.Task]::Run($copyStdout)
     }
     if ($psi.RedirectStandardError) {
         $stderr = $proc.StandardError
         $errPath = $StandardErrorPath
-        [void][System.Threading.Tasks.Task]::Run({
+        $copyStderr = [Action]{
             $writer = $null
             try {
                 $writer = [System.IO.StreamWriter]::new($errPath, $false, [System.Text.UTF8Encoding]::new($false))
@@ -1138,7 +1139,8 @@ function Start-HermesNoWindowProcess {
             } finally {
                 if ($writer) { $writer.Dispose() }
             }
-        })
+        }
+        [void][System.Threading.Tasks.Task]::Run($copyStderr)
     }
     return $proc
 }
