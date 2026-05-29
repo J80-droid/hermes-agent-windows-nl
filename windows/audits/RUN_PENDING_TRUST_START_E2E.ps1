@@ -75,17 +75,25 @@ foreach ($rel in $required) {
 }
 if ($failures -eq 0) { Step-Ok ('repo-keten: ' + $required.Count + ' bestanden') }
 
-Assert-FileContains 'windows/launch_hermes.bat' @(
+Assert-FileContains 'windows/launch_hermes.bat' @('launch_pre_chat_orchestrator.ps1')
+Assert-FileContains 'windows/scripts/launch_pre_chat_orchestrator.ps1' @(
     'launch_pending_trust_runtime.ps1',
     'HERMES_SKIP_PENDING_TRUST_ON_START'
 )
 $launchBat = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/launch_hermes.bat')
-$instIdx = $launchBat.IndexOf('launch_institutional_runtime.ps1')
-$pendingIdx = $launchBat.IndexOf('launch_pending_trust_runtime.ps1')
-if ($pendingIdx -le $instIdx) {
-    Step-Fail 'launch_hermes.bat' 'pending trust moet na institutional runtime'
+$orchPs1 = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/launch_pre_chat_orchestrator.ps1')
+if ($launchBat -notmatch 'launch_pre_chat_orchestrator\.ps1') {
+    Step-Fail 'launch_hermes.bat' 'mist pre-chat orchestrator'
+} elseif ($orchPs1 -notmatch 'launch_pending_trust_runtime\.ps1') {
+    Step-Fail 'launch_pre_chat_orchestrator.ps1' 'mist pending trust fase'
 } else {
-    Step-Ok 'launch_hermes.bat volgorde pending na institutional'
+    $instIdx = $orchPs1.IndexOf('launch_institutional_runtime.ps1')
+    $pendingIdx = $orchPs1.IndexOf('launch_pending_trust_runtime.ps1')
+    if ($pendingIdx -le $instIdx) {
+        Step-Fail 'launch_pre_chat_orchestrator.ps1' 'pending trust moet na institutional runtime'
+    } else {
+        Step-Ok 'launch-keten volgorde pending na institutional'
+    }
 }
 
 $postMerge = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/Invoke-UpstreamPostMerge.ps1')

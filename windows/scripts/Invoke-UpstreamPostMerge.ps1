@@ -228,6 +228,20 @@ function Invoke-UpstreamPostMerge {
     }
 
     if ($exitCode -eq 0) {
+        $verifyChain = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/verify_windows_script_chain.ps1'
+        if (Test-Path -LiteralPath $verifyChain) {
+            Write-Step 'verify_windows_script_chain.ps1 (geen pause)...'
+            & $verifyChain -RepoRoot $Repo
+            if (Test-NativeCommandFailed) {
+                Write-Warn 'verify_windows_script_chain.ps1 faalde - draai windows/verify_windows_script_chain.ps1 handmatig.'
+                $exitCode = 1
+            } else {
+                Write-Ok 'Windows script-keten OK.'
+            }
+        }
+    }
+
+    if ($exitCode -eq 0) {
         $smokeRc = Invoke-UpstreamPostMergeCodebaseSmoke -Repo $Repo -WantSmoke:$WantCodebaseSmoke -WantE2E:$WantCodebaseSmokeE2E
         if ($smokeRc -ne 0) { $exitCode = $smokeRc }
     }

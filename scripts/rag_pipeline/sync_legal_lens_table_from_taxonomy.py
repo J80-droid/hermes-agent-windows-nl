@@ -11,7 +11,7 @@ REPO = Path(__file__).resolve().parents[2]
 TAXONOMY = REPO / "docs" / "LEGAL_TAXONOMY.md"
 TEMPLATE = REPO / "docs" / "templates" / "SOUL_LEGAL_DOMAIN.md"
 LENS_HEADER = "## Juridische lenzen"
-MULTI_HEADER = "## Multi-lens"
+MULTI_HEADER = "### Multi-lens"
 
 
 def _parse_taxonomy_rows(text: str) -> list[tuple[str, str, str]]:

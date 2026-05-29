@@ -31,7 +31,7 @@
 - [x] Taakbalk RAG interactief: `RAG_KNOWLEDGE_UPDATE.bat` + `.lnk` `cmd /k` (J/N via `set /p`); nacht: `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` (`HERMES_NONINTERACTIVE=1`)
 - [x] Trust & Forensic: `SOUL_SHARED_ADVISORY`, legal forensic-blok, `MEMORY_CANONICAL_SEED`, `SYNC_TRUST_RUNTIME` / `APPLY_TRUST_PROTOCOL`, scrub (gericht), `RUN_TRUST_FORENSIC_E2E`, legal E2E stap 3/8 memories
 - [x] Memory-trust integratie (2026-05-25): `RUN_MEMORY_TRUST_INTEGRATION_E2E` 10/10; `APPLY_WORKSPACE_IDE_SETTINGS.bat` + template parent `.vscode`; unit `TrustRuntimePending` + `Invoke-MemoryTrustPostSync`; PSES analyse uit; `Invoke-GitCommand` EAP-restore via `finally`; `docs/WORKSPACE_IDE_SETUP.md`
-- [x] SOUL Anatomy: `SOUL_ANATOMY_SPEC`, 13× `SOUL_*_DOMAIN` + core orchestrator, shared VALUES/WORKFLOW/MEMORY/TRUST, sync + `migrate_soul_anatomy.ps1`, `validate_soul_anatomy.py`, `RUN_SOUL_ANATOMY_E2E.ps1`, `RUN_SOUL_DEPLOY_START_E2E.ps1`; stamp-deploy `launch_soul_anatomy_deploy.ps1` (start + POST_GIT_PULL); runtime `APPLY_SOUL_ANATOMY_RUNTIME.bat`; output-sync insert + duplicate-repair (2026-05-23)
+- [x] SOUL Anatomy: `SOUL_ANATOMY_SPEC`, 14× `SOUL_*_DOMAIN` + core orchestrator, shared VALUES/WORKFLOW/MEMORY/TRUST, sync + `migrate_soul_anatomy.ps1`, `validate_soul_anatomy.py`, `RUN_SOUL_ANATOMY_E2E.ps1`, `RUN_SOUL_DEPLOY_START_E2E.ps1`; stamp-deploy `launch_soul_anatomy_deploy.ps1` (start + POST_GIT_PULL); runtime `APPLY_SOUL_ANATOMY_RUNTIME.bat`; output-sync insert + duplicate-repair (2026-05-23)
 - [x] SOUL snippet-sync robuustheid: `Test-NativeCommandFailed` in `SyncSoulSnippet.psm1` + orchestrator/deploy/institutional/sync_all; alle `sync_soul_*_snippet.ps1` met `exit 0`; verify-keten pad-literals `/`; IDE/PSES parser-hygiëne (2026-05-23)
 - [x] SOUL governance: zekerheid %, gaps/strategie, ga-door 1/N, tool 1× retry, geen compromis; `SOUL_ROOT_FALLBACK` + `sync_root_soul_fallback.ps1`; `validate_soul_anatomy.py --check-governance`; `docs/SOUL_GOVERNANCE.md` (2026-05-23)
 - [x] Windows split-home runtime: `HermesHomeCommon.ps1`, drift/migratie/E2E, Venice merge, root inheritance E2E (10/10 + harness), `collect_env_sync_keys.py` + `py_compile` guard, doctor + `hermes config get`, `HERMES_WIN_PREFER_LOCALAPPDATA`, `docs/HERMES_HOME_WINDOWS.md` (**machine + audits groen 2026-05-25**)
@@ -48,7 +48,7 @@
 - [x] `MERGE_UPSTREAM.bat` + IDE-prompt (`merge_upstream_fork.ps1`); default IDE-guided, `-AutoResolve` opt-in
 - [x] Merge `-PromptOnly`: git-diff snippets per conflict (`Get-ConflictSnippetForPrompt`, `Get-ConflictSnippetFromGitDiff`)
 - [x] LanceDB onderhoud: `scripts/rag_pipeline/lancedb_maintenance.py`, `windows/LANCEDB_MAINTENANCE.bat` (list/inspect/init-missing/compact/benchmark)
-- [x] `domains.yaml` user-data: 13 domeinen (ict/security/dev/data); lege LanceDB via `--init-missing`
+- [x] `domains.yaml` user-data: 14 domeinen (ict/security/dev/data/creative); lege LanceDB via `--init-missing`
 - [x] Skill drift audit: `scripts/audit_skill_drift.py` → `windows/audits/SKILL_DRIFT_AUDIT_*.md`
 - [x] IDE conda: `.vscode/settings.json` + `.cursor/rules/python-conda.mdc` + `docs/IDE_VSCODE_SETTINGS.example.json`
 - [x] IDE-onderhoud baseline/audit: `windows/audits/IDE_MAINTENANCE_BASELINE_2026-05-23.md`, `LANCEDB_SCHEMA_AUDIT_*.md`
@@ -58,7 +58,7 @@
 - [x] Pending trust bij start: `TrustRuntimePending.psm1`, `Invoke-TrustRuntimeLight.ps1`, `launch_pending_trust_runtime.ps1`, post-merge stamp; E2E `RUN_PENDING_TRUST_START_E2E`; pytest `test_pending_trust_runtime.py` (36 tests)
 - [x] Memory E2E PSES-refactor: launcher + `MemoryArchitectureE2E.core.ps1` (18/18: legacy root, consolidatie-layout, § U+00A7); idem validate-lijst
 - [x] Obsidian L4-automatisering: `OPEN_OBSIDIAN_VAULT.bat`, `open_obsidian_vault.ps1`, `ensure_hermes_knowledge_vault.ps1`, scaffold-template, taakbalk-rol `Obsidian`, sync in `sync_hermes_api_env.ps1`
-- [x] Memory-consolidatie institutioneel: `HermesMemoryMergeCommon.ps1`, `CONSOLIDATE_ROOT_MEMORIES.bat`, rebalance Hermes-config → core; `deduplicate_memories.py` (+ legacy root); core/legal domein-scheiding; audit PASS alle 13 profielen + legacy root; production gate PASS
+- [x] Memory-consolidatie institutioneel: `HermesMemoryMergeCommon.ps1`, `CONSOLIDATE_ROOT_MEMORIES.bat`, rebalance Hermes-config → core; `deduplicate_memories.py` (+ legacy root); core/legal domein-scheiding; audit PASS alle 14 profielen + legacy root; production gate PASS
 - [x] TUI statusbalk-kosten (rich): defaults `show_cost`/`cost_bar_mode`; `statusRuleColumns` (composer-padding); altijd zichtbaar + gereserveerd segment; live `~$turn`/`~NK tok`; breakdown-tier ≥72 cols; E2E `RUN_STATUS_BAR_COST_E2E`
 - [x] Klassieke CLI statusbalk-kosten: layout reorder (kosten na ctx/duur/timer), `status-bar-cost` (gedimd blauw), `session_tool_executions`; Gemini cache catalog + `_seed_agent_session_cost`; E2E **12/12**
 - [x] Statusbalk throughput (tok/s, 2026-05-25): `status_bar_throughput.py` + `statusBarThroughput.ts`; classic CLI + TUI na cost; agent stream/finalize; `/tps` + `show_status_bar_tps`; gateway RPC; `display_markdown` `realign_tables` flag; unit + E2E **14/14** `RUN_STATUS_BAR_THROUGHPUT_E2E`; score-unit `test_score_institutional_render.py` (**53** tests)
@@ -136,10 +136,10 @@
 ### Overige domeinen
 
 - [x] **core** — kleine ingest gedaan
-- [x] `--ingest-remaining` met `--skip-empty` (2026-05-21): 7 domeinen overgeslagen (0 bronbestanden); geen crash/pause
+- [x] `--ingest-remaining` met `--skip-empty` (2026-05-21): 7 lege ingest-domeinen overgeslagen (0 bronbestanden); geen crash/pause
 - [ ] **Bronnen plaatsen** in lege `raw_source_files`-mappen (nu 0 bestanden: `01_Academics_Beta` … `08_Ventures_Incubator`; legal onder `04_Legal_Corporate` = klaar), daarna `institutional_p0_p1.bat --ingest-remaining` — **gebruikersdata vereist**; zie sluit-checklist §4–5
 - [x] Preflight: `scripts/rag_pipeline/ingest_preflight.py` (in `institutional_p0_p1.bat --ingest-remaining`)
-- [x] `--mcp-test` (2026-05-21): legal + core OK; 7 domeinen WARN = lege LanceDB (**geen brondata** in `raw_source_files`, geen pipeline-fout)
+- [x] `--mcp-test` (2026-05-21): legal + core OK; 7 lege ingest-domeinen WARN = lege LanceDB (**geen brondata** in `raw_source_files`, geen pipeline-fout)
 
 ### Split-home (Windows — 2026-05-24)
 

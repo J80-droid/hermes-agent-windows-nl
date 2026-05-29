@@ -184,11 +184,12 @@ if ($pyOk) {
 $reportTpl = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'docs/templates/CODEBASE_AUDIT_REPORT.md'
 if ((Test-Path -LiteralPath $validateScript) -and (Test-Path -LiteralPath $reportTpl)) {
   $caOk = $false
+  $auditPy = Get-HermesAuditPython -RepoRoot $repoRoot
   try {
-    $null = & py -3 $validateScript $reportTpl --check-codebase-audit-claims --strict-codebase-audit-claims 2>&1
+    $null = & $auditPy $validateScript $reportTpl --check-codebase-audit-claims --strict-codebase-audit-claims 2>&1
     if ($LASTEXITCODE -eq 0) { $caOk = $true }
   } catch {
-    Write-Verbose 'py -3 ontbreekt voor codebase-audit template check.'
+    Write-Verbose 'validate_soul_anatomy.py codebase-audit check mislukt.'
   }
   if ($caOk) {
     Write-Host '[OK] CODEBASE_AUDIT_REPORT template (strict denylist)' -ForegroundColor Green

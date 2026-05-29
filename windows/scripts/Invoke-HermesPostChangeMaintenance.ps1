@@ -109,7 +109,7 @@ if (-not $RepoRoot.Trim()) {
 }
 
 $winDir = Join-Path $RepoRoot 'windows'
-$dashPs1 = Join-Path $RepoRoot 'windows\scripts\launch_dashboard_on_start.ps1'
+$dashPs1 = Join-Path $RepoRoot 'windows/scripts/launch_dashboard_on_start.ps1'
 $verifyChainPs1 = Join-Path $winDir 'verify_windows_script_chain.ps1'
 
 $runShortcuts = -not $SkipShortcuts -and -not $DashboardOnly

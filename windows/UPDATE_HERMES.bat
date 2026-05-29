@@ -38,12 +38,12 @@ echo [INFO] Rommel in repo-root: -QuickFix ^(verplaatst untracked naar output/re
 echo.
 if /I "%~1"=="-QuickFix" (
   echo [INFO] QuickFix repo-hygiene...
-  if not exist "!HERMES_WIN!scripts\quick_fix_repo_hygiene.ps1" (
-    echo [ERROR] Ontbreekt: !HERMES_WIN!scripts\quick_fix_repo_hygiene.ps1
+  if not exist "%~dp0scripts\quick_fix_repo_hygiene.ps1" (
+    echo [ERROR] Ontbreekt: %~dp0scripts\quick_fix_repo_hygiene.ps1
     pause
     exit /b 1
   )
-  powershell -NoProfile -ExecutionPolicy Bypass -File "!HERMES_WIN!scripts\quick_fix_repo_hygiene.ps1" -RepoRoot "%CD%"
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\quick_fix_repo_hygiene.ps1" -RepoRoot "%CD%"
   if errorlevel 1 (
     echo [ERROR] QuickFix mislukt — los handmatig op of zie docs\WORKSPACE_CONVENTIONS.md
     pause
@@ -84,8 +84,8 @@ if not "!ERR!"=="0" (
 echo.
 echo [OK] Update-keten geslaagd.
 echo [INFO] Taakbalk-icoon UPDATE vernieuwen...
-if exist "!HERMES_WIN!fix_hermes_taskbar_pins.ps1" (
-  powershell -NoProfile -ExecutionPolicy Bypass -File "!HERMES_WIN!fix_hermes_taskbar_pins.ps1" -RepoRoot "%CD%" -Quiet
+if exist "%~dp0fix_hermes_taskbar_pins.ps1" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0fix_hermes_taskbar_pins.ps1" -RepoRoot "%CD%" -Quiet
   if errorlevel 1 echo [WARN] fix_hermes_taskbar_pins.ps1 - draai handmatig FIX_TASKBAR_ICONS.bat
 ) else (
   echo [WARN] fix_hermes_taskbar_pins.ps1 ontbreekt
@@ -98,8 +98,8 @@ if exist "!HERMES_WIN!SKIP_TEAM_DISPLAY_AFTER_UPDATE" (
   echo [INFO] SKIP_TEAM_DISPLAY_AFTER_UPDATE - team display overgeslagen.
 ) else (
   echo [INFO] Team display-defaults toepassen...
-  if exist "!HERMES_WIN!apply_team_display.ps1" (
-    powershell -NoProfile -ExecutionPolicy Bypass -File "!HERMES_WIN!apply_team_display.ps1"
+  if exist "%~dp0apply_team_display.ps1" (
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0apply_team_display.ps1"
     if errorlevel 1 echo [WARN] apply_team_display.ps1 - controleer handmatig.
   ) else (
     echo [WARN] apply_team_display.ps1 ontbreekt

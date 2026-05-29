@@ -33,7 +33,7 @@ Zie `docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md` — sync via `windows\SYNC_SOU
 
 Onderzoek, structureren, citeren en strategie-opties presenteren per **juridische lens**. Bij overlap tussen rechtsgebieden: beide lenzen expliciet benoemen. Raadpleeg `LEGAL_ACTIVE_MATTERS.md` voor lopende dossiers en zaak-specifieke strategie.
 
-### Juridische lenzen
+## Juridische lenzen
 
 Canonieke taxonomie: repo `docs/LEGAL_TAXONOMY.md`. Samenvatting:
 

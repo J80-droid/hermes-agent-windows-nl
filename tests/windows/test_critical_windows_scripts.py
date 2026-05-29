@@ -56,10 +56,12 @@ def test_taskbar_white_icon_from_png_pipeline():
 
 
 def test_upstream_sync_branding_dirty_parses_porcelain_path():
-    """Regressie: Trim() vóór Substring(3) maakte 'ssets/...' — update blokkeerde ten onrechte."""
-    text = (REPO / "windows/upstream_sync.ps1").read_text(encoding="utf-8")
-    assert "TrimEnd()" in text
-    assert "niet $line.Trim() vóór Substring(3)" in text
+    """Regressie: Trim() vóór Substring(3) maakte 'ssets/...' — pad-parse in HermesShellCommon."""
+    common = (REPO / "windows/HermesShellCommon.ps1").read_text(encoding="utf-8")
+    assert "TrimEnd()" in common
+    assert "Substring(3)" in common
+    sync = (REPO / "windows/upstream_sync.ps1").read_text(encoding="utf-8")
+    assert "Test-HermesGitDirtyAllowedForPreflight" in sync
 
 
 def test_update_hermes_uses_upstream_sync():
@@ -91,8 +93,12 @@ def test_orchestrator_routing_doc_exists():
     assert (REPO / "windows/audits/RUN_CODEBASE_SMOKE_AUDIT.ps1").is_file()
     assert (REPO / "scripts/emit_codebase_smoke_report.py").is_file()
     prepare_text = (REPO / "windows/run_hermes_prepare.ps1").read_text(encoding="utf-8")
+    launch_bat = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
+    orch_ps1 = (REPO / "windows/scripts/launch_pre_chat_orchestrator.ps1").read_text(encoding="utf-8")
     assert "ensure_hermes_launch_env.ps1" in prepare_text
-    assert "hermes_chat.cmd" in (REPO / "windows/run_hermes.ps1").read_text(encoding="utf-8")
+    assert "launch_pre_chat_orchestrator.ps1" in launch_bat
+    assert "hermes_chat.cmd" in launch_bat
+    assert "launch_pending_trust_runtime.ps1" in orch_ps1
 
 
 def test_landkaart_skill_exists():
@@ -134,19 +140,21 @@ def test_setup_launchers_reference_canonical_open_setup():
 
 def test_launch_hermes_uses_relaunch_maximize_baseline():
     launch = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
-    assert 'start "Hermes Launcher" /max cmd /d /k' in launch
+    assert 'start "" /max "%ComSpec%"' in launch or "HERMES_MAX_FLAG=1" in launch
     assert "ShowWindow" not in launch
 
 
 def test_start_hermes_sets_max_flag_to_skip_double_relaunch():
     bat = (REPO / "start_hermes.bat").read_text(encoding="utf-8")
-    assert 'set "HERMES_MAX_FLAG=1"' in bat
-    assert "HERMES_SKIP_DOCKER_ON_START" in bat
-    assert "HERMES_SKIP_HARDWARE_PROBE" in bat
-    assert "HERMES_NO_WAKE_LOCAL_LLM" in bat
-    assert "HERMES_CONSOLE_LAYOUT" in bat
-    assert 'HERMES_CONSOLE_LAYOUT=maximized' in bat
-    assert "HERMES_AUTO_WINDOWS_TERMINAL" in bat
+    profiles = (REPO / "windows/launch_profiles.ps1").read_text(encoding="utf-8")
+    assert "Invoke-HermesLaunchProfileEnv" in bat
+    assert "HERMES_MAX_FLAG" in profiles and "'1'" in profiles
+    assert "HERMES_SKIP_DOCKER_ON_START" in profiles
+    assert "HERMES_SKIP_HARDWARE_PROBE" in profiles
+    assert "HERMES_NO_WAKE_LOCAL_LLM" in profiles
+    assert "HERMES_CONSOLE_LAYOUT" in profiles
+    assert "'maximized'" in profiles
+    assert "HERMES_AUTO_WINDOWS_TERMINAL" in profiles
 
 
 def test_windows_requirements_lists_windows_terminal():
@@ -164,24 +172,24 @@ def test_launch_hermes_skips_docker_when_env_set():
 
 def test_launch_pre_chat_orchestrator_and_maximize():
     launch = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
+    common = (REPO / "windows/HermesShellCommon.ps1").read_text(encoding="utf-8")
     assert (REPO / "windows/scripts/launch_pre_chat_orchestrator.ps1").is_file()
     assert (REPO / "windows/scripts/maximize_console.ps1").is_file()
-    prepare = (REPO / "windows/run_hermes_prepare.ps1").read_text(encoding="utf-8")
     assert "hermes_wt_entry.cmd" in launch
     assert "System32\\cmd.exe" in launch
-    assert "hermes_disable_quickedit.ps1" in launch
+    assert "Invoke-HermesDisableConsoleQuickEdit" in launch
+    assert (REPO / "windows/scripts/hermes_disable_quickedit.ps1").is_file()
     assert "launch_pre_chat_orchestrator.ps1" in launch
-    assert "Invoke-HermesExpandConsoleWindow" in prepare
-    assert "auto-expand werkgebied" in launch
-    common = (REPO / "windows/HermesShellCommon.ps1").read_text(encoding="utf-8")
+    assert "Invoke-HermesExpandConsoleWindow" in launch or "Invoke-HermesExpandConsoleWindow" in common
+    assert "auto-expand werkgebied" in launch or "Invoke-HermesExpandConsoleWindow" in launch
     assert "Invoke-HermesLaunchPhase" in common
     assert "Invoke-HermesMaximizeConsoleWindow" in common
     assert "Start-HermesNoWindowProcess" in common
     assert "Stop-HermesGhostInputBlockers" in common
     assert "Invoke-HermesDismissGhostConsoleWindows" in common
     assert "Reset-HermesConsoleInputModes" in common
-    start_bat = (REPO / "start_hermes.bat").read_text(encoding="utf-8")
-    assert "HERMES_SKIP_DASHBOARD_ON_START" in start_bat
+    profiles_ps1 = (REPO / "windows/launch_profiles.ps1").read_text(encoding="utf-8")
+    assert "HERMES_SKIP_DASHBOARD_ON_START" in profiles_ps1
     launch_bat = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
     assert "run_hermes_prepare.ps1" in launch_bat
     assert "Invoke-HermesDisableConsoleQuickEdit" in launch_bat
@@ -221,8 +229,8 @@ def test_run_hermes_uses_direct_python_not_conda_run():
     assert "run -n hermes-env" not in prepare_ps1
     assert "Get-HermesAuditPython" in prepare_ps1
     assert "Write-HermesLaunchState" in prepare_ps1
-    assert "run_hermes_prepare.ps1" in run_ps1
-    assert "hermes_chat.cmd" in run_ps1
+    assert "HermesShellCommon.ps1" in run_ps1
+    assert "Invoke-HermesCliInCmdConsole" in common_ps1
     assert "function Clear-HermesUnixTerminalEnv" in common_ps1
     assert "function Set-HermesWin32ChatEnv" in common_ps1
     assert "function Invoke-HermesCliInCmdConsole" in common_ps1

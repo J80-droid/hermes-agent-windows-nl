@@ -1,4 +1,4 @@
-# LanceDB schema audit — 2026-05-29 12:12
+# LanceDB schema audit — 2026-05-29 14:33
 
 Bron: `C:\Users\jamel\data\domains.yaml`
 

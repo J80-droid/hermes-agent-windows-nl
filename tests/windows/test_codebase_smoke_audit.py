@@ -43,14 +43,14 @@ def test_repo_codebase_audit_docs_exist():
 def test_post_git_pull_and_update_optional_smoke_flags():
     helper = REPO / "windows/scripts/Invoke-PostSyncCodebaseSmoke.ps1"
     assert helper.is_file()
-    post = (REPO / "windows/POST_GIT_PULL.bat").read_text(encoding="utf-8")
-    assert "-IncludeCodebaseSmokeE2E" in post
-    assert "-IncludeCodebaseSmoke" in post
-    assert "Invoke-PostSyncCodebaseSmoke.ps1" in post
-    assert "verify_windows_script_chain.ps1" in post
-    assert "VERIFY_WINDOWS_CHAIN.bat" not in post
+    post_git = (REPO / "windows/POST_GIT_PULL.bat").read_text(encoding="utf-8")
+    assert "-IncludeCodebaseSmokeE2E" in post_git
+    assert "-IncludeCodebaseSmoke" in post_git
+    assert "Invoke-PostSyncCodebaseSmoke.ps1" in post_git
+    assert "VERIFY_WINDOWS_CHAIN.bat" not in post_git
     upstream = (REPO / "windows/upstream_sync.ps1").read_text(encoding="utf-8")
     post = (REPO / "windows/scripts/Invoke-UpstreamPostMerge.ps1").read_text(encoding="utf-8")
+    assert "verify_windows_script_chain.ps1" in post
     assert "IncludeCodebaseSmokeE2E" in upstream
     assert "IncludeCodebaseSmoke" in upstream
     assert "Invoke-UpstreamPostMerge.ps1" in upstream

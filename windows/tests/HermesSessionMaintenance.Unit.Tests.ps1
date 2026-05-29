@@ -4,8 +4,8 @@
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$commonPath = Join-Path $repoRoot 'windows\HermesShellCommon.ps1'
-$maintPath = Join-Path $repoRoot 'windows\scripts\HermesSessionMaintenance.ps1'
+$commonPath = Join-Path $repoRoot 'windows/HermesShellCommon.ps1'
+$maintPath = Join-Path $repoRoot 'windows/scripts/HermesSessionMaintenance.ps1'
 
 $script:UnitFailed = 0
 if (-not $env:HERMES_UNIT_SKIP_HEAVY_POST_PULL) {
@@ -251,7 +251,7 @@ param() Write-Output 'ok'; exit 0
     # sync-fout pad (geen echte manifest-sync):
     function Invoke-HermesPostPullMaintenance_SyncFail {
         $err = 0
-        $syncPs = Join-Path $repoRoot 'windows\scripts\__missing_sync__.ps1'
+        $syncPs = Join-Path $repoRoot 'windows/scripts/__missing_sync__.ps1'
         if (Test-Path -LiteralPath $syncPs) { & $syncPs; if ($LASTEXITCODE -ne 0) { $err = 1 } }
         else { $err = 1 }
         return $err

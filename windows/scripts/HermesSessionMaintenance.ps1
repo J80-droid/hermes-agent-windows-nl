@@ -12,7 +12,7 @@
     Stamps: post_pull_maintenance, last_git_pull, model_config_ok, domain_toolsets_sync, lancedb_init_missing,
     rag_ingest_post_pull, windows_chain_verified. Dedupe: Test-HermesShouldSkipPostPullMaintenanceOnStart (~15 min, zelfde git head).
 
-    Wrapper: windows\scripts\Invoke-HermesPostPullMaintenance.ps1. E2E: audits\RUN_SESSION_MAINTENANCE_E2E.bat (14/14).
+    Wrapper: windows/scripts/Invoke-HermesPostPullMaintenance.ps1. E2E: audits/RUN_SESSION_MAINTENANCE_E2E.bat (14/14).
 #>
 param(
     [string]$RepoRoot = '',

@@ -134,7 +134,7 @@ def _sync_profile(
     raw = _read_yaml(cfg_path)
     if check:
         current = list((raw.get("platform_toolsets") or {}).get("cli") or [])
-        if current != cli:
+        if sorted(current) != sorted(cli):
             print(f"[FAIL] {name}: platform_toolsets.cli drift: {current!r} != {cli!r}")
             return False
         print(f"[OK] {name}: platform_toolsets.cli matcht manifest")

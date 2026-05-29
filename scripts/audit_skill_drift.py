@@ -74,12 +74,27 @@ def audit_file(path: Path) -> list[str]:
                 line = text[: m.start()].count("\n") + 1
                 issues.append(f"L{line}: verwijst naar {token} maar bestand ontbreekt in repo")
 
-    if "14 profiel" in text.lower() or "14 domein" in text.lower():
-        if "landkaart" in rel or "memory-bank" in rel:
-            line = 0
-            for i, line_text in enumerate(text.splitlines(), 1):
-                if "14" in line_text and ("profiel" in line_text.lower() or "domein" in line_text.lower()):
-                    issues.append(f"L{i}: vermeld '14' domeinen — canoniek zijn er 13 (core + 12)")
+    domain_yaml = REPO / "docs" / "domain_toolsets.yaml"
+    canonical_domains = 14
+    if domain_yaml.is_file():
+        import re as _re
+
+        profile_keys = _re.findall(r"^  ([a-z_]+):\s*$", domain_yaml.read_text(encoding="utf-8"), _re.MULTILINE)
+        profile_keys = [k for k in profile_keys if k not in ("platform_toolsets", "toolsets", "note")]
+        if profile_keys:
+            canonical_domains = len(profile_keys)
+    if "landkaart" in rel or "memory-bank" in rel:
+        count_re = re.compile(
+            r"\b(\d{1,2})\s*(?:domein(?:en|profielen)?|profiel(?:en)?)\b", re.IGNORECASE
+        )
+        for i, line_text in enumerate(text.splitlines(), 1):
+            for m in count_re.finditer(line_text):
+                stated = int(m.group(1))
+                if stated != canonical_domains:
+                    issues.append(
+                        f"L{i}: vermeld '{stated}' domeinen/profielen — canoniek zijn er "
+                        f"{canonical_domains} (zie docs/domain_toolsets.yaml)"
+                    )
                     break
 
     return issues

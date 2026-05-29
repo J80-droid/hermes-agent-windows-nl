@@ -376,10 +376,14 @@ class TestPendingTrustRepoWiring:
         assert "Clear-PendingTrustRuntime" in text
 
     def test_launch_hermes_wires_pending_trust_runtime(self):
-        text = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
-        assert "launch_pending_trust_runtime.ps1" in text
-        assert "HERMES_SKIP_PENDING_TRUST_ON_START" in text
-        assert text.index("launch_institutional_runtime.ps1") < text.index(
+        launch = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
+        orch = (REPO / "windows/scripts/launch_pre_chat_orchestrator.ps1").read_text(
+            encoding="utf-8"
+        )
+        assert "launch_pre_chat_orchestrator.ps1" in launch
+        assert "launch_pending_trust_runtime.ps1" in orch
+        assert "HERMES_SKIP_PENDING_TRUST_ON_START" in orch
+        assert orch.index("launch_institutional_runtime.ps1") < orch.index(
             "launch_pending_trust_runtime.ps1"
         )
 
