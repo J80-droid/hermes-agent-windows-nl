@@ -7,60 +7,131 @@ This script simulates batch processing with intentional failures to test:
 2. Whether resume functionality works correctly after interruption
 3. Whether data integrity is maintained across checkpoint cycles
 
+Live API tests (``test_current_implementation``, ``test_interruption_and_resume``)
+are **opt-in** via ``HERMES_RUN_LIVE_BATCH=1``. They use the active Hermes
+``model.default`` + provider from runtime config (Venice, Gemini, OpenRouter, …),
+not a hardcoded Claude/OpenRouter path.
+
 Usage:
-    # Test current implementation
-    python tests/test_checkpoint_resumption.py --test_current
+    # Test current implementation (requires HERMES_RUN_LIVE_BATCH=1)
+    python tests/integration/test_checkpoint_resumption.py --test_current
 
     # Test after fix is applied
-    python tests/test_checkpoint_resumption.py --test_fixed
+    python tests/integration/test_checkpoint_resumption.py --test_fixed
 
     # Run full comparison
-    python tests/test_checkpoint_resumption.py --compare
+    python tests/integration/test_checkpoint_resumption.py --compare
 """
 
-import os
-
-import pytest
-pytestmark = pytest.mark.integration
-
-
-def _openrouter_api_key_usable() -> bool:
-    """test_interruption_and_resume hardcodes claude-opus via OpenRouter — not Venice/Gemini config."""
-    key = (os.environ.get("OPENROUTER_API_KEY") or "").strip()
-    if len(key) < 24:
-        return False
-    lowered = key.lower()
-    if lowered in ("changeme", "replace-me", "your-api-key-here", "none", "null"):
-        return False
-    return key.startswith(("sk-or-", "sk-"))
+from __future__ import annotations
 
 import json
+import os
 import shutil
 import sys
 import time
-from pathlib import Path
-from typing import List, Dict, Any
 import traceback
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import pytest
+
+pytestmark = pytest.mark.integration
 
 # Add project root to path to import batch_runner
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+_SKIP_LIVE_BATCH_REASON = (
+    "Live batch checkpoint tests are opt-in: set HERMES_RUN_LIVE_BATCH=1. "
+    "They use model/provider from Hermes config (Venice/Gemini/etc.), not a fixed OpenRouter model."
+)
+
+
+def _live_batch_opt_in() -> bool:
+    return os.environ.get("HERMES_RUN_LIVE_BATCH", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
+
+def _live_hermes_home_path() -> Optional[Path]:
+    """Runtime home for live batch tests (bypasses per-test HERMES_HOME tmpdir)."""
+    explicit = os.environ.get("HERMES_LIVE_TEST_HOME", "").strip()
+    if explicit:
+        return Path(explicit)
+    local = Path(os.environ.get("LOCALAPPDATA", "")) / "hermes"
+    if (local / "config.yaml").is_file():
+        return local
+    legacy = Path.home() / ".hermes"
+    if (legacy / "config.yaml").is_file():
+        return legacy
+    return None
+
+
+def _bootstrap_live_hermes_runtime(monkeypatch: pytest.MonkeyPatch) -> Optional[Path]:
+    home = _live_hermes_home_path()
+    if home is None or not (home / "config.yaml").is_file():
+        return None
+    monkeypatch.setenv("HERMES_HOME", str(home))
+    try:
+        from hermes_cli.config import invalidate_env_cache, load_env
+        from hermes_cli.profile_model_inheritance import bust_config_caches
+
+        bust_config_caches(home / "config.yaml")
+        invalidate_env_cache()
+        for key, value in load_env().items():
+            if value:
+                monkeypatch.setenv(key, value)
+    except Exception:
+        return None
+    return home
+
+
+def live_batch_runner_kwargs(monkeypatch: pytest.MonkeyPatch) -> Optional[Dict[str, Any]]:
+    """Resolve BatchRunner kwargs from the user's real Hermes config + credentials."""
+    if _bootstrap_live_hermes_runtime(monkeypatch) is None:
+        return None
+    try:
+        from hermes_cli.auth import has_usable_secret
+        from hermes_cli.runtime_provider import _get_model_config, resolve_runtime_provider
+
+        runtime = resolve_runtime_provider()
+        api_key = (runtime.get("api_key") or "").strip()
+        if not has_usable_secret(api_key):
+            return None
+        base_url = (runtime.get("base_url") or "").strip()
+        if not base_url:
+            return None
+        model_cfg = _get_model_config()
+        model = (model_cfg.get("default") or "").strip()
+        if not model:
+            return None
+        return {
+            "model": model,
+            "base_url": base_url,
+            "api_key": api_key,
+        }
+    except Exception:
+        return None
 
 
 def create_test_dataset(num_prompts: int = 20) -> Path:
     """Create a small test dataset for checkpoint testing."""
     test_data_dir = Path("tests/test_data")
     test_data_dir.mkdir(parents=True, exist_ok=True)
-    
+
     dataset_file = test_data_dir / "checkpoint_test_dataset.jsonl"
-    
-    with open(dataset_file, 'w', encoding='utf-8') as f:
+
+    with open(dataset_file, "w", encoding="utf-8") as f:
         for i in range(num_prompts):
             entry = {
                 "prompt": f"Test prompt {i}: What is 2+2? Just answer briefly.",
-                "test_id": i
+                "test_id": i,
             }
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    
+
     print(f"✅ Created test dataset: {dataset_file} ({num_prompts} prompts)")
     return dataset_file
 
@@ -68,55 +139,57 @@ def create_test_dataset(num_prompts: int = 20) -> Path:
 def monitor_checkpoint_during_run(checkpoint_file: Path, duration: int = 30) -> List[Dict[str, Any]]:
     """
     Monitor checkpoint file during a batch run to see when it gets updated.
-    
+
     Args:
         checkpoint_file: Path to checkpoint file to monitor
         duration: How long to monitor (seconds)
-    
+
     Returns:
         List of checkpoint snapshots with timestamps
     """
     snapshots = []
     start_time = time.time()
     last_mtime = None
-    
+
     print(f"\n🔍 Monitoring checkpoint file: {checkpoint_file}")
     print(f"   Duration: {duration}s")
     print("-" * 70)
-    
+
     while time.time() - start_time < duration:
         if checkpoint_file.exists():
             current_mtime = checkpoint_file.stat().st_mtime
-            
-            # Check if file was modified
+
             if last_mtime is None or current_mtime != last_mtime:
                 elapsed = time.time() - start_time
-                
+
                 try:
-                    with open(checkpoint_file, 'r') as f:
+                    with open(checkpoint_file, "r", encoding="utf-8") as f:
                         checkpoint_data = json.load(f)
-                    
+
                     snapshot = {
                         "elapsed_seconds": round(elapsed, 2),
                         "completed_count": len(checkpoint_data.get("completed_prompts", [])),
-                        "completed_prompts": checkpoint_data.get("completed_prompts", [])[:5],  # First 5 for display
-                        "timestamp": checkpoint_data.get("last_updated")
+                        "completed_prompts": checkpoint_data.get("completed_prompts", [])[:5],
+                        "timestamp": checkpoint_data.get("last_updated"),
                     }
-                    
+
                     snapshots.append(snapshot)
-                    
-                    print(f"[{elapsed:6.2f}s] Checkpoint updated: {snapshot['completed_count']} prompts completed")
-                    
+
+                    print(
+                        f"[{elapsed:6.2f}s] Checkpoint updated: "
+                        f"{snapshot['completed_count']} prompts completed"
+                    )
+
                 except Exception as e:
                     print(f"[{elapsed:6.2f}s] Error reading checkpoint: {e}")
-                
+
                 last_mtime = current_mtime
         else:
             if len(snapshots) == 0:
                 print(f"[{time.time() - start_time:6.2f}s] Checkpoint file not yet created...")
-        
-        time.sleep(0.5)  # Check every 0.5 seconds
-    
+
+        time.sleep(0.5)
+
     return snapshots
 
 
@@ -130,202 +203,184 @@ def _cleanup_test_artifacts(*paths):
             p.unlink(missing_ok=True)
 
 
-def test_current_implementation():
+def _make_batch_runner(dataset_file: Path, run_name: str, runner_kwargs: Dict[str, Any], **overrides):
+    from batch_runner import BatchRunner
+
+    params = {
+        "dataset_file": str(dataset_file),
+        "run_name": run_name,
+        "distribution": "default",
+        "max_iterations": 3,
+        "verbose": False,
+        **runner_kwargs,
+    }
+    params.update(overrides)
+    return BatchRunner(**params)
+
+
+@pytest.mark.skipif(not _live_batch_opt_in(), reason=_SKIP_LIVE_BATCH_REASON)
+def test_current_implementation(monkeypatch):
     """Test the current checkpoint implementation."""
+    runner_kwargs = live_batch_runner_kwargs(monkeypatch)
+    if not runner_kwargs:
+        pytest.skip(
+            "No usable API credentials for configured provider/model "
+            f"(home={_live_hermes_home_path()})"
+        )
+
     print("\n" + "=" * 70)
     print("TEST 1: Current Implementation - Checkpoint Timing")
     print("=" * 70)
     print("\n📝 Testing whether checkpoints are saved incrementally during run...")
-    
-    # Setup
+    print(f"   Model: {runner_kwargs['model']}")
+    print(f"   Base URL: {runner_kwargs['base_url']}")
+
     dataset_file = create_test_dataset(num_prompts=12)
     run_name = "checkpoint_test_current"
     output_dir = Path("data") / run_name
-    
-    # Clean up any existing test data
+
     if output_dir.exists():
         shutil.rmtree(output_dir)
-    
-    # Import here to avoid issues if module changes
-    from batch_runner import BatchRunner
-    
+
     checkpoint_file = output_dir / "checkpoint.json"
-    
-    # Start monitoring in a separate process would be ideal, but for simplicity
-    # we'll just check before and after
+
     print(f"\n▶️  Starting batch run...")
     print(f"   Dataset: {dataset_file}")
     print(f"   Batch size: 3 (4 batches total)")
     print(f"   Workers: 2")
     print(f"   Expected behavior: If incremental, checkpoint should update during run")
-    
+
     start_time = time.time()
-    
+
     try:
-        runner = BatchRunner(
-            dataset_file=str(dataset_file),
+        runner = _make_batch_runner(
+            dataset_file,
+            run_name,
+            runner_kwargs,
             batch_size=3,
-            run_name=run_name,
-            distribution="default",
-            max_iterations=3,  # Keep it short
-            model="claude-opus-4-20250514",
             num_workers=2,
-            verbose=False
         )
-        
-        # Run with monitoring
+
         import threading
+
         snapshots = []
-        
+
         def monitor():
             nonlocal snapshots
             snapshots = monitor_checkpoint_during_run(checkpoint_file, duration=60)
-        
+
         monitor_thread = threading.Thread(target=monitor, daemon=True)
         monitor_thread.start()
-        
+
         runner.run(resume=False)
-        
+
         monitor_thread.join(timeout=2)
-        
+
     except Exception as e:
         print(f"❌ Error during run: {e}")
         traceback.print_exc()
-        return False
+        pytest.fail(str(e))
     finally:
         _cleanup_test_artifacts(dataset_file, output_dir)
-    
+
     elapsed = time.time() - start_time
-    
-    # Analyze results
+
     print("\n" + "=" * 70)
     print("📊 TEST RESULTS")
     print("=" * 70)
     print(f"Total run time: {elapsed:.2f}s")
     print(f"Checkpoint updates observed: {len(snapshots)}")
-    
+
     if len(snapshots) == 0:
-        print("\n❌ ISSUE: No checkpoint updates observed during run")
-        print("   This suggests checkpoints are only saved at the end")
-        return False
-    elif len(snapshots) == 1:
-        print("\n⚠️  WARNING: Only 1 checkpoint update (likely at the end)")
-        print("   This confirms the bug - no incremental checkpointing")
-        return False
-    else:
-        print(f"\n✅ GOOD: Multiple checkpoint updates ({len(snapshots)}) observed")
-        print("   Checkpointing appears to be incremental")
-        
-        # Show timeline
-        print("\n📈 Checkpoint Timeline:")
-        for i, snapshot in enumerate(snapshots, 1):
-            print(f"   {i}. [{snapshot['elapsed_seconds']:6.2f}s] "
-                  f"{snapshot['completed_count']} prompts completed")
-        
-        return True
+        pytest.fail("No checkpoint updates observed during run")
+    if len(snapshots) == 1:
+        pytest.fail("Only 1 checkpoint update (likely end-of-run only)")
 
 
-@pytest.mark.skipif(
-    not _openrouter_api_key_usable(),
-    reason=(
-        "Live BatchRunner uses hardcoded claude-opus (OpenRouter path); "
-        "set a usable OPENROUTER_API_KEY or use unit tests — Venice/Gemini config is not used here"
-    ),
-)
-def test_interruption_and_resume():
+@pytest.mark.skipif(not _live_batch_opt_in(), reason=_SKIP_LIVE_BATCH_REASON)
+def test_interruption_and_resume(monkeypatch):
     """Test that resume actually works after interruption."""
+    runner_kwargs = live_batch_runner_kwargs(monkeypatch)
+    if not runner_kwargs:
+        pytest.skip(
+            "No usable API credentials for configured provider/model "
+            f"(home={_live_hermes_home_path()})"
+        )
+
     print("\n" + "=" * 70)
     print("TEST 2: Interruption and Resume")
     print("=" * 70)
     print("\n📝 Testing whether resume works after manual interruption...")
-    
-    # Setup
+    print(f"   Model: {runner_kwargs['model']}")
+    print(f"   Base URL: {runner_kwargs['base_url']}")
+
     dataset_file = create_test_dataset(num_prompts=15)
     run_name = "checkpoint_test_resume"
     output_dir = Path("data") / run_name
-    
-    # Clean up any existing test data
+
     if output_dir.exists():
         shutil.rmtree(output_dir)
-    
-    from batch_runner import BatchRunner
-    
+
     checkpoint_file = output_dir / "checkpoint.json"
-    
+
     print(f"\n▶️  Starting first run (will process 5 prompts, then simulate interruption)...")
-    
+
     temp_dataset = Path("tests/test_data/checkpoint_test_resume_partial.jsonl")
     try:
-        # Create a modified dataset with only first 5 prompts for initial run
-        with open(dataset_file, 'r') as f:
+        with open(dataset_file, "r", encoding="utf-8") as f:
             lines = f.readlines()[:5]
-        with open(temp_dataset, 'w') as f:
+        with open(temp_dataset, "w", encoding="utf-8") as f:
             f.writelines(lines)
-        
-        runner = BatchRunner(
-            dataset_file=str(temp_dataset),
+
+        runner = _make_batch_runner(
+            temp_dataset,
+            run_name,
+            runner_kwargs,
             batch_size=2,
-            run_name=run_name,
-            distribution="default",
-            max_iterations=3,
-            model="claude-opus-4-20250514",
             num_workers=1,
-            verbose=False
         )
-        
+
         runner.run(resume=False)
-        
-        # Check checkpoint after first run
+
         if not checkpoint_file.exists():
-            print("❌ ERROR: Checkpoint file not created after first run")
-            return False
-        
-        with open(checkpoint_file, 'r') as f:
+            pytest.fail("Checkpoint file not created after first run")
+
+        with open(checkpoint_file, "r", encoding="utf-8") as f:
             checkpoint_data = json.load(f)
-        
+
         initial_completed = len(checkpoint_data.get("completed_prompts", []))
         print(f"✅ First run completed: {initial_completed} prompts saved to checkpoint")
-        
-        # Now try to resume with full dataset
+
         print(f"\n▶️  Starting resume run with full dataset (15 prompts)...")
-        
-        runner2 = BatchRunner(
-            dataset_file=str(dataset_file),
+
+        runner2 = _make_batch_runner(
+            dataset_file,
+            run_name,
+            runner_kwargs,
             batch_size=2,
-            run_name=run_name,
-            distribution="default",
-            max_iterations=3,
-            model="claude-opus-4-20250514",
             num_workers=1,
-            verbose=False
         )
-        
+
         runner2.run(resume=True)
-        
-        # Check final checkpoint
-        with open(checkpoint_file, 'r') as f:
+
+        with open(checkpoint_file, "r", encoding="utf-8") as f:
             final_checkpoint = json.load(f)
-        
+
         final_completed = len(final_checkpoint.get("completed_prompts", []))
-        
+
         print("\n" + "=" * 70)
         print("📊 TEST RESULTS")
         print("=" * 70)
         print(f"Initial completed: {initial_completed}")
         print(f"Final completed: {final_completed}")
         print(f"Expected: 15")
-        
-        if final_completed == 15:
-            print("\n✅ PASS: Resume successfully completed all prompts")
-            return True
-        else:
-            print(f"\n❌ FAIL: Expected 15 completed, got {final_completed}")
-            return False
-            
+
+        assert final_completed == 15, f"Expected 15 completed, got {final_completed}"
+
     except Exception as e:
         print(f"❌ Error during test: {e}")
         traceback.print_exc()
-        return False
+        raise
     finally:
         _cleanup_test_artifacts(dataset_file, temp_dataset, output_dir)
 
@@ -337,7 +392,7 @@ def test_simulated_crash():
     print("=" * 70)
     print("\n📝 This test would require running in a subprocess and killing it...")
     print("   Skipping for safety - manual testing recommended")
-    return None
+    pytest.skip("Manual crash test only")
 
 
 def print_test_plan():
@@ -345,7 +400,7 @@ def print_test_plan():
     print("\n" + "=" * 70)
     print("CHECKPOINT FIX - DETAILED PLAN")
     print("=" * 70)
-    
+
     print("""
 📋 PROBLEM SUMMARY
 ------------------
@@ -411,11 +466,11 @@ def main(
     test_resume: bool = False,
     test_crash: bool = False,
     compare: bool = False,
-    show_plan: bool = False
+    show_plan: bool = False,
 ):
     """
     Run checkpoint behavior tests.
-    
+
     Args:
         test_current: Test current implementation checkpoint timing
         test_resume: Test interruption and resume functionality
@@ -426,19 +481,26 @@ def main(
     if show_plan or (not any([test_current, test_resume, test_crash, compare])):
         print_test_plan()
         return
-    
+
+    if (test_current or test_resume or compare) and not _live_batch_opt_in():
+        print(_SKIP_LIVE_BATCH_REASON)
+        return
+
     results = {}
-    
+
     if test_current or compare:
-        results['current'] = test_current_implementation()
-    
+        results["current"] = pytest.main(
+            [__file__, "-k", "test_current_implementation", "-q"]
+        ) == 0
+
     if test_resume or compare:
-        results['resume'] = test_interruption_and_resume()
-    
+        results["resume"] = pytest.main(
+            [__file__, "-k", "test_interruption_and_resume", "-q"]
+        ) == 0
+
     if test_crash or compare:
-        results['crash'] = test_simulated_crash()
-    
-    # Summary
+        results["crash"] = None
+
     if results:
         print("\n" + "=" * 70)
         print("OVERALL TEST SUMMARY")
@@ -455,5 +517,5 @@ def main(
 
 if __name__ == "__main__":
     import fire
-    fire.Fire(main)
 
+    fire.Fire(main)
