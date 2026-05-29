@@ -2,7 +2,7 @@
 
 ## Focus
 
-**RUN_AUDITS E2E-keten (2026-05-29):** Gateway `config.get` cost/tps → `off` bij non-dict `display`; CLI `hermes config get <key>` + `profile use --fix-hermes-home` / `--no-restart-gateway`; SOUL snippet repair (`Repair-SoulDuplicateOutputBlocks` eindpatroon, orphan Output conventions + auto re-sync); Memory Repair Trust E2E aligned op `Initialize-HermesLegacyRootMemorySeed`; `.gitignore` voor `RUN_AUDITS_*.log` / `tests/test_data/checkpoint_*`. Subset 5/5 PASS lokaal vóór commit; volledige `-IncludeAllE2E` na push opnieuw draaien.
+**RUN_AUDITS E2E-keten (2026-05-29, gecommit `74ae0f4e6`):** Gateway cost/tps defensive read; CLI `config get` + profile switch flags; SOUL Output conventions repair; Memory Repair Trust `Initialize-*`; `.gitignore` audit-logs/checkpoint fixtures. `RUN_AUDITS -IncludeAllE2E` roept nu **`soul-runtime-prep`** aan (`sync_all_domain_souls_from_templates -UpdateDeployStamp`) vóór E2E — geen handmatige `APPLY_SOUL_ANATOMY_RUNTIME` meer nodig voor volledige audit. Volledige `-IncludeAllE2E` / `RUN_FULL_VERIFICATION` — zie laatste `audits/RUN_AUDITS_LAST_RUN.log` / `FULL_VERIFY_*.log`.
 
 **Codebase Viz live E2E + UI (2026-05-29):** dropdown-overlap fix (klik-nav, broodkruimel uit bij open menu, sticky `z-index`); `ForceGraph` `graph.capped`; `repo_path` in fallback-responses + scan-progress; loopback `AuthWidget` slaat `/api/auth/me` over; harness **`audits/RUN_CODEBASE_VIZ_LIVE_E2E.bat`** (15/15 met dashboard); rapport `audits/CODEBASE_VIZ_LIVE_AUDIT_REPORT_2026-05-29.md`. Operationeel: grote repo → `CODEBASE_VIZ_REPO` verkleinen of `CODEBASE_VIZ_PYGOUNT_TIMEOUT` verhogen; `npm run build` in `plugins/codebase-viz/dashboard` + `web` na UI-wijzigingen.
 

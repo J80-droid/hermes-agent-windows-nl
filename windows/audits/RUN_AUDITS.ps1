@@ -138,6 +138,24 @@ if (-not $SkipRuff) {
     }
 }
 
+if ($IncludeAllE2E) {
+    $syncSouls = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/sync_all_domain_souls_from_templates.ps1'
+    Invoke-Step 'soul-runtime-prep' {
+        $prevReminder = $env:HERMES_SUPPRESS_SOUL_REMINDER
+        $env:HERMES_SUPPRESS_SOUL_REMINDER = '1'
+        try {
+            & $syncSouls -RepoRoot $repoRoot -UpdateDeployStamp
+            $global:LASTEXITCODE = $LASTEXITCODE
+        } finally {
+            if ($null -eq $prevReminder) {
+                Remove-Item Env:HERMES_SUPPRESS_SOUL_REMINDER -ErrorAction SilentlyContinue
+            } else {
+                $env:HERMES_SUPPRESS_SOUL_REMINDER = $prevReminder
+            }
+        }
+    }
+}
+
 if ($IncludeCodebaseSmokeE2E -or $IncludeAllE2E) {
     $codebaseE2e = Join-Path $scriptRoot 'RUN_CODEBASE_SMOKE_E2E.ps1'
     Invoke-Step 'codebase-smoke-e2e' {
