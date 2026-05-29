@@ -64,8 +64,15 @@ function Invoke-HermesShortcutMaintenance {
     }
     $fix = Join-Path $winDir 'fix_hermes_taskbar_pins.ps1'
     Write-Maint '[INFO] Snelkoppelingen synchroniseren (windows + taakbalk)...'
-    & $fix -RepoRoot $RepoRoot -Quiet
-    if ($LASTEXITCODE -ne 0) { return 1 }
+    if (Test-HermesLaunchConsoleCapture) {
+        $fixCode = Invoke-HermesCapturedProcess -FilePath 'powershell.exe' -ArgumentList @(
+            '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $fix, '-RepoRoot', $RepoRoot, '-Quiet'
+        ) -FilterNoise -Quiet
+        if ($fixCode -ne 0) { return 1 }
+    } else {
+        & $fix -RepoRoot $RepoRoot -Quiet
+        if ($LASTEXITCODE -ne 0) { return 1 }
+    }
     $verify = Join-Path $scriptDir 'verify_hermes_shortcut_paths.ps1'
     & $verify -RepoRoot $RepoRoot -Quiet -IncludePinned -IncludeDesktop
     if ($LASTEXITCODE -ne 0) {
@@ -85,6 +92,12 @@ function Invoke-HermesTuiMaintenance {
         return 0
     }
     $rebuild = Join-Path $scriptDir 'rebuild_tui.ps1'
+    if (Test-HermesLaunchConsoleCapture) {
+        $rebuildCode = Invoke-HermesCapturedProcess -FilePath 'powershell.exe' -ArgumentList @(
+            '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $rebuild, '-RepoRoot', $RepoRoot
+        ) -FilterNoise -Quiet
+        return $rebuildCode
+    }
     & $rebuild -RepoRoot $RepoRoot
     return $LASTEXITCODE
 }

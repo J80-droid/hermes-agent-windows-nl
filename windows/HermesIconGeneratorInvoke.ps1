@@ -1,6 +1,13 @@
 ﻿# Gedeeld door sync_local_assets_to_backup.ps1 en create_taskbar_shortcuts.ps1
 # Draait generate_colored_hermes_icons.py zodat hermes_logo.ico gelijk loopt met de PNG-gebaseerde varianten.
 
+if (-not (Get-Command Test-HermesLaunchConsoleCapture -ErrorAction SilentlyContinue)) {
+    $iconCommon = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) 'HermesShellCommon.ps1'
+    if (Test-Path -LiteralPath $iconCommon) {
+        . $iconCommon
+    }
+}
+
 function Get-HermesRealLocalAppData {
     <#
     .SYNOPSIS
@@ -403,12 +410,17 @@ function Invoke-HermesColoredIconsFromPng {
             }
         }
         if ($condaExe) {
-            if ($Quiet) {
+            $condaArgs = @('run', '-n', 'hermes-env', '--no-capture-output', 'python', $IconGeneratorPy)
+            if ((Get-Command Test-HermesLaunchConsoleCapture -ErrorAction SilentlyContinue) -and (Test-HermesLaunchConsoleCapture)) {
+                $iconCode = Invoke-HermesCapturedProcess -FilePath $condaExe -ArgumentList $condaArgs -FilterNoise -Quiet:$Quiet
+                if ($iconCode -eq 0) { $ok = $true }
+            } elseif ($Quiet) {
                 $null = & $condaExe run -n hermes-env --no-capture-output python $IconGeneratorPy 2>&1
+                if ($LASTEXITCODE -eq 0) { $ok = $true }
             } else {
                 & $condaExe run -n hermes-env --no-capture-output python $IconGeneratorPy
+                if ($LASTEXITCODE -eq 0) { $ok = $true }
             }
-            if ($LASTEXITCODE -eq 0) { $ok = $true }
         }
         if (-not $ok) {
             foreach ($pair in @(

@@ -724,6 +724,91 @@ function Reset-HermesConsoleInputModes {
     }
 }
 
+function Test-HermesLaunchConsoleCapture {
+    return ($env:HERMES_LAUNCH_CAPTURE_CONSOLE -eq '1')
+}
+
+function Test-HermesSubprocessNoiseLine {
+    <#
+    .SYNOPSIS
+        Bekende cosmetische regels (PyTorch pytree, esbuild bundle-grootte) — niet tonen tijdens launch-capture.
+    #>
+    param([string]$Line)
+    if (-not $Line) { return $false }
+    if ($Line -match 'KernelPreference|register_constant\(\) on Enum|torch\\utils\\_pytree') {
+        return $true
+    }
+    if ($Line -match '^\s*dist\\entry\.js\s+\d+(\.\d+)?\s*(mb|kb)\b') {
+        return $true
+    }
+    return $false
+}
+
+function Write-HermesCapturedProcessOutput {
+    param(
+        [string[]]$Lines,
+        [switch]$FilterNoise,
+        [switch]$ErrorsOnly
+    )
+    if (-not $Lines) { return }
+    foreach ($line in $Lines) {
+        $text = "$line"
+        if ([string]::IsNullOrWhiteSpace($text)) { continue }
+        if ($FilterNoise -and (Test-HermesSubprocessNoiseLine -Line $text)) { continue }
+        if ($ErrorsOnly) {
+            Write-Host $text -ForegroundColor Yellow
+        } else {
+            Write-Host $text -ForegroundColor DarkGray
+        }
+    }
+}
+
+function Invoke-HermesCapturedProcess {
+    <#
+    .SYNOPSIS
+        Start extern proces met geredirecte stdout/stderr; print gebundeld na afloop (geen door elkaar lopende regels).
+    #>
+    param(
+        [Parameter(Mandatory)][string]$FilePath,
+        [string[]]$ArgumentList = @(),
+        [string]$WorkingDirectory = '',
+        [switch]$Quiet,
+        [switch]$FilterNoise
+    )
+    $stdoutFile = [IO.Path]::GetTempFileName()
+    $stderrFile = [IO.Path]::GetTempFileName()
+    try {
+        $startParams = @{
+            FilePath               = $FilePath
+            ArgumentList           = $ArgumentList
+            NoNewWindow            = $true
+            Wait                   = $true
+            PassThru               = $true
+            RedirectStandardOutput = $stdoutFile
+            RedirectStandardError  = $stderrFile
+        }
+        if ($WorkingDirectory -and (Test-Path -LiteralPath $WorkingDirectory)) {
+            $startParams['WorkingDirectory'] = $WorkingDirectory
+        }
+        $proc = Start-Process @startParams
+        $code = if ($proc) { [int]$proc.ExitCode } else { 1 }
+        $outLines = @(Get-Content -LiteralPath $stdoutFile -Encoding UTF8 -ErrorAction SilentlyContinue)
+        $errLines = @(Get-Content -LiteralPath $stderrFile -Encoding UTF8 -ErrorAction SilentlyContinue)
+        if (-not $Quiet) {
+            Write-HermesCapturedProcessOutput -Lines $outLines -FilterNoise:$FilterNoise
+            Write-HermesCapturedProcessOutput -Lines $errLines -FilterNoise:$FilterNoise -ErrorsOnly
+        } elseif ($code -ne 0) {
+            Write-HermesCapturedProcessOutput -Lines $errLines -FilterNoise:$FilterNoise -ErrorsOnly
+            if (-not $errLines -or $errLines.Count -eq 0) {
+                Write-HermesCapturedProcessOutput -Lines $outLines -FilterNoise:$FilterNoise -ErrorsOnly
+            }
+        }
+        return $code
+    } finally {
+        Remove-Item -LiteralPath $stdoutFile, $stderrFile -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Invoke-HermesLaunchPhase {
     <#
     .SYNOPSIS
@@ -742,8 +827,15 @@ function Invoke-HermesLaunchPhase {
     )
     $title = Format-HermesStepLabel -Step $Step -Total $Total -Suffix $Label
     Write-Host $title -ForegroundColor Cyan
+    try {
+        [Console]::Out.Flush()
+    } catch {
+        $null = $_.Exception.Message
+    }
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
     $prev = $ErrorActionPreference
+    $prevCapture = $env:HERMES_LAUNCH_CAPTURE_CONSOLE
+    $env:HERMES_LAUNCH_CAPTURE_CONSOLE = '1'
     $ErrorActionPreference = 'Continue'
     $code = 0
     try {
@@ -754,6 +846,11 @@ function Invoke-HermesLaunchPhase {
         $code = 1
     } finally {
         $ErrorActionPreference = $prev
+        if ($null -eq $prevCapture) {
+            Remove-Item Env:HERMES_LAUNCH_CAPTURE_CONSOLE -ErrorAction SilentlyContinue
+        } else {
+            $env:HERMES_LAUNCH_CAPTURE_CONSOLE = $prevCapture
+        }
         $sw.Stop()
     }
     $sec = [math]::Round($sw.Elapsed.TotalSeconds, 1)

@@ -189,6 +189,10 @@ Ollama bij auxiliary-taken: start `ollama serve` in tray of verwijder `auxiliary
 | Hang na model-banner | Banner-parser fix; gebruik `run_hermes_prepare.ps1` |
 | Debug met pause bij fout | `start_hermes_debug.bat` → `hermes_runtime.log`, `hermes_launch.log` |
 
+## Launch-console (geen door elkaar lopende regels)
+
+`launch_pre_chat_orchestrator.ps1` zet per fase `HERMES_LAUNCH_CAPTURE_CONSOLE=1`. Zware subprocessen (o.a. `fix_hermes_taskbar_pins.ps1`, `rebuild_tui.ps1`, RAG-importcheck) schrijven naar een buffer; output verschijnt **na** de stap, niet midden in `Stap N van M`. Cosmetische PyTorch-/esbuild-regels worden gefilterd. Handmatige scripts (`FIX_TASKBAR_ICONS.bat`) tonen output live zoals voorheen.
+
 ## Wat de fork al doet
 
 - `launch_hermes.bat`: `WT_SESSION` → anders `wt -M` via `hermes_wt_entry.cmd`; console-reset + `cls` vóór chat.

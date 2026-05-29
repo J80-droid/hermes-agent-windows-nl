@@ -95,6 +95,9 @@ Assert-True ($commonText -match 'function Set-HermesWin32ChatEnv') 'Set-HermesWi
 Assert-True ($commonText -match 'function Invoke-HermesCliInCmdConsole') 'Invoke-HermesCliInCmdConsole defined'
 Assert-True ($commonText -match 'function Write-HermesLaunchState') 'Write-HermesLaunchState defined'
 Assert-True ($commonText -match 'function Invoke-HermesLaunchPhase') 'Invoke-HermesLaunchPhase defined'
+Assert-True ($commonText -match 'function Invoke-HermesCapturedProcess') 'Invoke-HermesCapturedProcess defined'
+Assert-True (Test-HermesSubprocessNoiseLine -Line 'W0529 torch\utils\_pytree.py KernelPreference register_constant') 'torch noise'
+Assert-True (-not (Test-HermesSubprocessNoiseLine -Line '[OK] ui-tui/dist is up-to-date')) 'real ok line not noise'
 Assert-True ($commonText -match 'function Invoke-HermesMaximizeConsoleWindow') 'Invoke-HermesMaximizeConsoleWindow defined'
 Clear-HermesUnixTerminalEnv
 Assert-True (-not $env:TERM) 'TERM cleared'

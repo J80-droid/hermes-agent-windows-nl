@@ -238,6 +238,12 @@ function Test-HermesRagExtrasInstalled {
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'SilentlyContinue'
     try {
+        if ((Get-Command Test-HermesLaunchConsoleCapture -ErrorAction SilentlyContinue) -and (Test-HermesLaunchConsoleCapture)) {
+            $pyCode = Invoke-HermesCapturedProcess -FilePath $PythonExe -ArgumentList @(
+                '-c', 'import lancedb, sentence_transformers'
+            ) -FilterNoise -Quiet
+            return ($pyCode -eq 0)
+        }
         $null = & $PythonExe -c 'import lancedb, sentence_transformers'
         return ($LASTEXITCODE -eq 0)
     } catch {
