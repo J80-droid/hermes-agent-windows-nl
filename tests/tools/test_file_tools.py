@@ -11,10 +11,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from tools.file_tools import (
-    READ_FILE_SCHEMA,
-    WRITE_FILE_SCHEMA,
     PATCH_SCHEMA,
-    SEARCH_FILES_SCHEMA,
 )
 
 

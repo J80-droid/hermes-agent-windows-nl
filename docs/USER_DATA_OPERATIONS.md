@@ -47,7 +47,7 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 
 **Setup PS1:** alleen `scripts/windows/setup_hermes_windows.ps1` bewerken; `windows/setup_hermes_windows.ps1` blijft wrapper. Keten controleren: handmatig `VERIFY_WINDOWS_CHAIN.bat`; in `UPDATE_HERMES.bat` automatisch via `verify_windows_script_chain.ps1`.
 
-**Taakbalk:** pin altijd via `Hermes - * - naar taakbalk slepen.lnk` in `windows\`, niet door `.bat` te slepen (cmd-H-icoon).
+**Taakbalk:** pin via `Hermes - * - naar taakbalk slepen.lnk` in `windows\` of `%LOCALAPPDATA%\Hermes\shortcuts\` (niet `.bat` slepen). Na **elke update** en **Hermes-start** worden pins automatisch bijgewerkt (`fix_hermes_taskbar_pins.ps1`); handmatig opnieuw vastzetten is meestal niet nodig.
 
 **Iconen per rol (`.lnk` → `IconLocation`):**
 
@@ -81,15 +81,15 @@ Daarna **F5** in `windows\`. De generator kopieert de PNG naar `assets\Hermes_lo
 
 **Icoon = wit document in Verkenner (oude pin):** losmaken en opnieuw `.lnk` uit `windows\` vastmaken.
 
-**Technisch:** `windows\*.lnk` gebruiken `cmd.exe /c` + icoon uit `%LOCALAPPDATA%\Hermes\shortcut-icons\` (kopie van `windows\hermes*.ico`). Verify waarschuwt bij kapotte 1-laags ICO (onder 8 KB).
+**Technisch:** `.lnk` → `wt.exe` + `cmd /c call` (absoluut bat-pad); icoon uit `%LOCALAPPDATA%\Hermes\shortcut-icons\`. Canonieke kopieën: `%LOCALAPPDATA%\Hermes\shortcuts\`. Verify waarschuwt bij ontbrekend icoon of kapotte 1-laags ICO (onder 8 KB).
 
-## Eenmalig na oude pin (UPDATE toont H)
+## Kapotte pin (“item kan niet worden geopend”)
 
-1. Rechtsklik UPDATE op taakbalk → **Losmaken van de taakbalk**
-2. `windows\Hermes - update - naar taakbalk slepen.lnk` → rechtsklik → **Vastmaken aan taakbalk**
-3. Of: `FIX_TASKBAR_ICONS.bat` en stap 1–2 als het icoon niet ververst
+1. Draai `windows\FIX_TASKBAR_ICONS.bat` (of start Hermes — zelfde reparatie).
+2. Windows vraagt pin te verwijderen → **Ja** (dode pin).
+3. Alleen als nodig: opnieuw vastzetten via `.lnk` in `windows\` of `Hermes\shortcuts\`.
 
-Daarna vernieuwt elke geslaagde `UPDATE_HERMES.bat` de `.lnk` en icooncache automatisch.
+Daarna houdt elke geslaagde `UPDATE_HERMES.bat` pins en paden automatisch bij.
 
 ## IDE (Cursor / VS Code)
 

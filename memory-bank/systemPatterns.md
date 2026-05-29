@@ -56,9 +56,10 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 
 - **Bron:** `assets/Hermes_logo.png` (repo) of `%USERPROFILE%\.hermes\_local_assets\assets\Hermes_logo.png`.
 - **Generator:** `windows/tools/generate_colored_hermes_icons.py` — 7 ICO-lagen (16–256); geen synthetische H-stub zonder PNG.
-- **`windows\*.lnk`:** `Set-HermesShellShortcut` — bij WT: `wt.exe -M -d repo cmd /c call bat` (zelfde als Start; geen geneste `cd /d` in cmd-args); fallback: `cmd /c call` + `WorkingDirectory`; RAG: `/k`.
-- **Pins:** `User Pinned\TaskBar` = kopie van `windows\*.lnk` (`Get-HermesShortcutResolvedBatPath`); dubbele `(2).lnk` worden verwijderd.
-- **Herstel:** `FIX_TASKBAR_ICONS.bat`; verify: `verify_taskbar_shortcut_icons.ps1` + `verify_hermes_shortcut_paths.ps1` (`-IncludePinned`).
+- **Persistent:** `%LOCALAPPDATA%\Hermes\shortcuts\` (canonieke `.lnk` buiten git) + `%LOCALAPPDATA%\Hermes\shortcut-icons\` (icoon-cache; echte AppData, niet test-temp).
+- **`windows\*.lnk`:** `Set-HermesShellShortcut` — bij WT: `wt.exe -M -d repo cmd /c call bat`; fallback: `cmd /c call` + `WorkingDirectory`; RAG: `/k`.
+- **Auto-repair:** `Invoke-HermesShortcutSyncRepair` (`HermesPersistentShortcuts.ps1`) — na **update** en **start**; herkent alle `Hermes*.lnk` op taakbalk/bureaublad (ook legacy namen); herleidt verplaatste bat-paden.
+- **Handmatig:** `FIX_TASKBAR_ICONS.bat`; verify: `verify_taskbar_shortcut_icons.ps1` + `verify_hermes_shortcut_paths.ps1` (`-IncludePinned`).
 
 ## Institutionele presentatie (drie lagen)
 
