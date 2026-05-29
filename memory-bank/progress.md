@@ -2,7 +2,7 @@
 
 ## Code (P2 + institutioneel)
 
-- [x] RUN_AUDITS vijf-stappen fixes (2026-05-29): gateway cost/tps bij kapotte `display`; `hermes config get`; `profile use` + switch-flags; SOUL Output conventions repair; memory-repair E2E `Initialize-*`; gitignore audit-logs/checkpoint testdata
+- [x] RUN_AUDITS vijf-stappen fixes (2026-05-29): gateway cost/tps bij kapotte `display`; `hermes config get`; `profile use` + switch-flags; SOUL Output conventions repair; memory-repair E2E `Initialize-*`; gitignore audit-logs/checkpoint testdata; `soul-runtime-prep` in `-IncludeAllE2E`; **volledige RUN_AUDITS -IncludeAllE2E PASS** (~15 min, exit 0, 2026-05-29)
 - [x] Codebase Viz pygount pre-warm + disk-cache (2026-05-29): `warm_codebase_viz_pygount_cache.py`; `Ensure-CodebaseVizPygountCache` vóór dashboard; disk-cache hydrate/stale-fallback in `plugin_api.py`; defaults 600s/3600s/300s; nav overlap + `ForceGraph` crash; live E2E + auditrapport; `AuthWidget` loopback; tests disk-cache + warm script
 - [x] Web UI clean codebase (2026-05-29): ESLint 0 errors + `tsc`/Vite build; hooks (`useTooltipAnchor`, `useDropUpFixedStyle`); context splits (`i18n-context`, `theme-context`, `gatewayLine.ts`); Chat channel `resume-{id}`; `apply_team_display_profiles` sys.path; E2E **11/11** `RUN_WEB_UI_CLEAN_E2E.bat`; `web/README.md` quality gate
 - [x] Web UI a11y + IDE hints (2026-05-29): listbox/option ARIA (Theme/Language switcher), `lib/aria.ts`, CSS surface utilities, `dropUpMenuCssVars`; pytest curses guardrails UTF-8 Windows; docs `web/README.md` § Toegankelijkheid

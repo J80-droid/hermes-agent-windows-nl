@@ -28,6 +28,12 @@ if (-not (Test-Path -LiteralPath $py)) {
 $failures = 0
 $logDir = Join-Path $repoRoot 'audits'
 
+# Live batch/API integration tests are opt-in; do not inherit a developer shell flag.
+if ($env:HERMES_RUN_LIVE_BATCH) {
+    Remove-Item Env:\HERMES_RUN_LIVE_BATCH -ErrorAction SilentlyContinue
+    Write-Host '[INFO] HERMES_RUN_LIVE_BATCH unset for FULL_VERIFICATION (opt-in only).' -ForegroundColor DarkGray
+}
+
 function Invoke-VerifyStep {
     param(
         [string]$Name,
