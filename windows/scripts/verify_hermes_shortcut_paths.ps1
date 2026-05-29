@@ -83,7 +83,7 @@ if ($IncludePinned) {
             Report-ShortcutResult -Label ("TaskBar\$leaf") -Result $r
             $srcPath = Join-Path $windowsDir $leaf
             if ((Test-Path -LiteralPath $srcPath) -and $r.BatPath) {
-                $srcBat = Get-HermesShortcutResolvedBatPath -ShortcutPath $srcPath
+                $srcBat = Get-HermesShortcutResolvedBatPath -ShortcutPath $srcPath -RepoRoot $RepoRoot
                 if ($srcBat -and $r.BatPath -and ($srcBat -ne $r.BatPath)) {
                     $script:fail++
                     if (-not $Quiet) {

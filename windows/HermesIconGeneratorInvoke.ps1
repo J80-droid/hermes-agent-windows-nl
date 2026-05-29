@@ -113,23 +113,63 @@ function Get-HermesBatPathFromShortcutArguments {
     return $null
 }
 
+function Repair-HermesBatPathForRepo {
+    param(
+        [string]$BatPath,
+        [Parameter(Mandatory)][string]$RepoRoot
+    )
+    if ([string]::IsNullOrWhiteSpace($BatPath)) { return $null }
+    if (Test-Path -LiteralPath $BatPath) {
+        return (Resolve-Path -LiteralPath $BatPath).Path
+    }
+    $leaf = Split-Path $BatPath -Leaf
+    if (-not $leaf) { return $null }
+    $repo = (Resolve-Path -LiteralPath $RepoRoot).Path
+    foreach ($rel in @($leaf, (Join-Path 'windows' $leaf))) {
+        $cand = Join-Path $repo ($rel -replace '/', '\')
+        if (Test-Path -LiteralPath $cand) {
+            return (Resolve-Path -LiteralPath $cand).Path
+        }
+    }
+    return $null
+}
+
 function Get-HermesShortcutResolvedBatPath {
     <#
     .SYNOPSIS
-        Bepaalt het .bat/.cmd-doel van een Hermes-.lnk (cmd /c, wt.exe of directe .bat-target).
+        Bepaalt het .bat/.cmd-doel van een Hermes-.lnk (cmd /c, wt.exe, keten via .lnk, of verplaatst repo).
     #>
     param(
-        [Parameter(Mandatory)][string]$ShortcutPath
+        [Parameter(Mandatory)][string]$ShortcutPath,
+        [string]$RepoRoot = ''
     )
     if (-not (Test-Path -LiteralPath $ShortcutPath)) { return $null }
     $s = (New-Object -ComObject WScript.Shell).CreateShortcut($ShortcutPath)
     $target = $s.TargetPath
-    if ($target -match '\.(bat|cmd)$' -and (Test-Path -LiteralPath $target)) {
-        return (Resolve-Path -LiteralPath $target).Path
+    if ($target -match '\.lnk$') {
+        if (Test-Path -LiteralPath $target) {
+            return Get-HermesShortcutResolvedBatPath -ShortcutPath $target -RepoRoot $RepoRoot
+        }
+        return $null
+    }
+    if ($target -match '\.(bat|cmd)$') {
+        if (Test-Path -LiteralPath $target) {
+            return (Resolve-Path -LiteralPath $target).Path
+        }
+        if ($RepoRoot) {
+            $repaired = Repair-HermesBatPathForRepo -BatPath $target -RepoRoot $RepoRoot
+            if ($repaired) { return $repaired }
+        }
     }
     $fromArgs = Get-HermesBatPathFromShortcutArguments -Arguments $s.Arguments
-    if ($fromArgs -and (Test-Path -LiteralPath $fromArgs)) {
-        return (Resolve-Path -LiteralPath $fromArgs).Path
+    if ($fromArgs) {
+        if (Test-Path -LiteralPath $fromArgs) {
+            return (Resolve-Path -LiteralPath $fromArgs).Path
+        }
+        if ($RepoRoot) {
+            $repaired = Repair-HermesBatPathForRepo -BatPath $fromArgs -RepoRoot $RepoRoot
+            if ($repaired) { return $repaired }
+        }
     }
     return $null
 }
@@ -150,7 +190,7 @@ function Test-HermesShortcutPathHealth {
     }
     $repoResolved = (Resolve-Path -LiteralPath $RepoRoot).Path
     $s = (New-Object -ComObject WScript.Shell).CreateShortcut($ShortcutPath)
-    $batPath = Get-HermesShortcutResolvedBatPath -ShortcutPath $ShortcutPath
+    $batPath = Get-HermesShortcutResolvedBatPath -ShortcutPath $ShortcutPath -RepoRoot $repoResolved
     if (-not $batPath) {
         $issues.Add('Geen .bat/.cmd-doel gevonden in Target of Arguments')
     } elseif (-not (Test-Path -LiteralPath $batPath)) {

@@ -62,16 +62,17 @@ function Invoke-HermesShortcutMaintenance {
         Write-Maint '[SKIP] Snelkoppelingen recent via POST onderhoud.' -Level Info
         return 0
     }
-    $verify = Join-Path $scriptDir 'verify_hermes_shortcut_paths.ps1'
     $fix = Join-Path $winDir 'fix_hermes_taskbar_pins.ps1'
-    & $verify -RepoRoot $RepoRoot -Quiet -IncludePinned
+    Write-Maint '[INFO] Snelkoppelingen synchroniseren (windows + taakbalk)...'
+    & $fix -RepoRoot $RepoRoot -Quiet
+    if ($LASTEXITCODE -ne 0) { return 1 }
+    $verify = Join-Path $scriptDir 'verify_hermes_shortcut_paths.ps1'
+    & $verify -RepoRoot $RepoRoot -Quiet -IncludePinned -IncludeDesktop
     if ($LASTEXITCODE -ne 0) {
-        Write-Maint '[INFO] Snelkoppelingen repareren...'
-        & $fix -RepoRoot $RepoRoot -Quiet
-        if ($LASTEXITCODE -ne 0) { return 1 }
-        if ($env:HERMES_AUTO_COMMIT_BRANDING -eq '1') {
-            Invoke-HermesBrandingOnlyAutoCommit -RepoRoot $RepoRoot | Out-Null
-        }
+        Write-Maint '[WARN] Snelkoppeling-verify faalde — draai windows\FIX_TASKBAR_ICONS.bat' -Level Warn
+    }
+    if ($env:HERMES_AUTO_COMMIT_BRANDING -eq '1') {
+        Invoke-HermesBrandingOnlyAutoCommit -RepoRoot $RepoRoot | Out-Null
     }
     return 0
 }

@@ -20,6 +20,7 @@ if %ERR% neq 0 (
   exit /b %ERR%
 )
 echo.
-echo Klaar. Los de oude pin los en maak opnieuw vast als het icoon nog H is.
+echo Klaar. Pins worden bij update/start automatisch bijgewerkt.
+echo Blijft een pin kapot? Klik Ja om de oude pin te verwijderen, of losmaken en opnieuw via .lnk in windows\.
 pause
 exit /b 0

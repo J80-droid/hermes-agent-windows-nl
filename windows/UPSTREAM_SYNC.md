@@ -39,7 +39,7 @@ git fetch upstream
 
 ## Taakbalk-icoon na update
 
-Na een geslaagde update draait de keten **`fix_hermes_taskbar_pins.ps1`** (regenereert 7-lagen `.ico` uit `assets/Hermes_logo.png`, bouwt `windows\*.lnk` opnieuw, werkt pins bij). Blijft een pin of Verkenner-icoon fout (wit document, generiek H)?
+Na elke update en bij **start** draait **`fix_hermes_taskbar_pins.ps1`** automatisch: iconen, `windows\*.lnk`, **`%LOCALAPPDATA%\Hermes\shortcuts\`** (persistent buiten git), en **alle Hermes taakbalk/bureaublad-pins** (ook oude namen en verplaatste repo-paden). Handmatig opnieuw vastzetten is meestal **niet** nodig. Blijft een pin fout (wit document, “item kan niet worden geopend”)?
 
 1. **`python windows/tools/generate_colored_hermes_icons.py`** (als PNG/bron ontbrak: ook `%USERPROFILE%\.hermes\_local_assets\assets\Hermes_logo.png`)
 2. **`FIX_TASKBAR_ICONS.bat`** → **F5** in `windows\`
