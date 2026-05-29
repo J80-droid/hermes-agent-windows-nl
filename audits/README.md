@@ -64,6 +64,20 @@ audits\RUN_DASHBOARD_ON_START_E2E.bat
 
 ---
 
+# Web UI clean codebase E2E
+
+Geïsoleerde poort voor `web/`: `npm run lint` + `npm run build`, PTY-channel-contract (`resume-{id}`), hooks/context-splits, OAuth lifecycle, `apply_team_display_profiles` utils-import. Geen live browser op 9119.
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| W1–W11 | Zie `audits/WEB_UI_CLEAN_E2E_README.md` | Artefacten, lint, build, web_dist, pytest |
+
+```bat
+audits\RUN_WEB_UI_CLEAN_E2E.bat
+```
+
+---
+
 # Creative domain E2E
 
 Geïsoleerde E2E voor profiel `creative` (14e domein): manifest, `13_Creative/`, SOUL, fork-skills, provision, pytest-subset. Geen live API.

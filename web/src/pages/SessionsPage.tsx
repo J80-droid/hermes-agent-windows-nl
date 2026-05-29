@@ -275,19 +275,9 @@ function SessionRow({
   const [messages, setMessages] = useState<SessionMessage[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const loadRequestRef = useRef(0);
   const { t } = useI18n();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (isExpanded && messages === null && !loading) {
-      setLoading(true);
-      api
-        .getSessionMessages(session.id)
-        .then((resp) => setMessages(resp.messages))
-        .catch((err) => setError(String(err)))
-        .finally(() => setLoading(false));
-    }
-  }, [isExpanded, session.id, messages, loading]);
 
   const sourceInfo = (session.source
     ? SOURCE_CONFIG[session.source]
@@ -342,7 +332,31 @@ function SessionRow({
     >
       <div
         className="flex cursor-pointer items-start gap-3 p-3 transition-colors hover:bg-secondary/30"
-        onClick={onToggle}
+        onClick={() => {
+          if (!isExpanded && messages === null && !loading) {
+            const requestId = ++loadRequestRef.current;
+            setLoading(true);
+            setError(null);
+            api
+              .getSessionMessages(session.id)
+              .then((resp) => {
+                if (loadRequestRef.current === requestId) {
+                  setMessages(resp.messages);
+                }
+              })
+              .catch((err) => {
+                if (loadRequestRef.current === requestId) {
+                  setError(String(err));
+                }
+              })
+              .finally(() => {
+                if (loadRequestRef.current === requestId) {
+                  setLoading(false);
+                }
+              });
+          }
+          onToggle();
+        }}
       >
         <div className={`shrink-0 pt-0.5 ${sourceInfo.color}`}>
           <SourceIcon className="h-4 w-4" />
@@ -513,8 +527,8 @@ export default function SessionsPage() {
     };
   }, [loading, setAfterTitle, total]);
 
-  const loadSessions = useCallback((p: number) => {
-    setLoading(true);
+  const loadSessions = useCallback((p: number, showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     api
       .getSessions(PAGE_SIZE, p * PAGE_SIZE)
       .then((resp) => {
@@ -526,7 +540,7 @@ export default function SessionsPage() {
   }, []);
 
   useEffect(() => {
-    loadSessions(page);
+    queueMicrotask(() => loadSessions(page, false));
   }, [loadSessions, page]);
 
   useEffect(() => {
@@ -555,13 +569,15 @@ export default function SessionsPage() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (!search.trim()) {
-      setSearchResults(null);
-      setSearching(false);
+      queueMicrotask(() => {
+        setSearchResults(null);
+        setSearching(false);
+      });
       return;
     }
 
-    setSearching(true);
     debounceRef.current = setTimeout(() => {
+      setSearching(true);
       api
         .searchSessions(search.trim())
         .then((resp) => setSearchResults(resp.results))
@@ -625,12 +641,9 @@ export default function SessionsPage() {
   const isSearching = Boolean(search.trim());
   const showOverviewTab =
     platformEntries.length > 0 || recentSessions.length > 0;
-  const showList = view === "list" || isSearching || !showOverviewTab;
+  const effectiveView = isSearching ? "list" : view;
+  const showList = effectiveView === "list" || isSearching || !showOverviewTab;
   const showPagination = showList && !searchResults && total > PAGE_SIZE;
-
-  useEffect(() => {
-    if (isSearching) setView("list");
-  }, [isSearching]);
 
   const alerts: { message: string; detail?: string }[] = [];
   if (status) {

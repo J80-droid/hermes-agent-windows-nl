@@ -30,6 +30,8 @@
 
 **Persistente snelkoppelingen (2026-05-29):** `HermesPersistentShortcuts.ps1` + `Invoke-HermesShortcutSyncRepair` — canonieke `.lnk` in `%LOCALAPPDATA%\Hermes\shortcuts\`; taakbalk/bureaublad automatisch bij update/start; icoon-cache via echte `LocalApplicationData` (fix wit document na unit tests); `Repair-HermesBatPathForRepo` voor verplaatste repo-paden.
 
+**Web UI clean codebase (2026-05-29):** `web/` — `npm run lint` + `npm run build` groen; React-hooks fixes (sidebar tooltips via `useTooltipAnchor`, drop-up via `useDropUpFixedStyle`); i18n/theme context gesplitst; Chat PTY-channel `resume-{sessionId}` (geen `:` t.o.v. `_VALID_CHANNEL_RE`); `apply_team_display_profiles.py` utils-import via `sys.path`; E2E **11/11** `audits/RUN_WEB_UI_CLEAN_E2E.bat`; docs `web/README.md`.
+
 **Upstream sync fase 2 + TUI layout (2026-05-25):** `Invoke-UpstreamGitMergeIfBehind` (preflight fetch-dedup, `$upstreamRef`, rev-list exit guards); `pip install -e .` na merge vóór `hermes update`; TUI `statusRuleMinLeftWidth` + `leftWidth`; slash **`/cost`** + upstream **`/queue`**. E2E **8/8** Phase2 + **7/7** `RUN_HERMES_SHELL_COMMON_E2E` (PSES). **UPDATE 2026-05-25:** 15 commits merge (conflict `core.ts` opgelost), daarna 2 commits auto-merge + volledige keten OK. **PSES:** `HermesShellCommon` `INFO:`/`OK:` tags, `Format-HermesStepLabel`, `Test-PsesTokenizer` 12 scripts.
 
 **IDE-onderhoud landkaart (2026-05-23):** `lancedb_maintenance.py` + `LANCEDB_MAINTENANCE.bat`; merge snippet-preview; `audit_skill_drift.py`; volledige E2E `windows/audits/RUN_IDE_MAINTENANCE_E2E.bat` (rapport `IDE_MAINTENANCE_E2E_REPORT_*.md`).

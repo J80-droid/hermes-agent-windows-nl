@@ -150,7 +150,7 @@ const NFR_SECTION_HEADING_RE = /^\s{0,3}(#{1,6}\s+Niet-functionele\s+requirement
 const NFR_LONG_DASH_LINE_RE = /^[\s\-_\u2013\u2014]{6,}\s*$/
 const NFR_BOLD_CATEGORY_RE = /^\*\*(.+?)\*\*\s*$/
 const NFR_CATEGORY_DASH_RE =
-  /^(\*\*[^*]+\*\*|[^|\u2013\u2014\-\n]+?)\s*[\u2013\u2014\-:]\s*(.+?)(?:\s*[\u2013\u2014\-]\s*(.+))?\s*$/
+  /^(\*\*[^*]+\*\*|[^|\u2013\u2014\n-]+?)\s*[\u2013\u2014:-]\s*(.+?)(?:\s*[\u2013\u2014-]\s*(.+))?\s*$/
 
 function stripMdBold(text: string): string {
   return text.replace(/^\*\*|\*\*$/g, '').trim()
@@ -281,9 +281,9 @@ const MAX_COMPARISON_COLUMNS = 6
 const OVERVIEW_HEADING_HINT_RE =
   /\b(overzicht|auxiliary|configuratie|stack|architectuur|architectuursamenvatting|implementatie|testresultaten|poc)\b/i
 const OVERVIEW_FIELD_LINE_RE = /^([^:|]{1,48}):\s*(.+)$/i
-const FIELD_KEY_TOKEN_RE = /\b([A-Za-z][A-Za-z0-9\-]{0,39}):\s/gi
-const FIELD_KEY_TOKEN_COUNT_RE = /\b[A-Za-z][A-Za-z0-9\-]{0,39}:\s/gi
-const FIELD_KEY_TOKEN_LINE_RE = /\b[A-Za-z][A-Za-z0-9\-]{0,39}:\s/i
+const FIELD_KEY_TOKEN_RE = /\b([A-Za-z][A-Za-z0-9-]{0,39}):\s/gi
+const FIELD_KEY_TOKEN_COUNT_RE = /\b[A-Za-z][A-Za-z0-9-]{0,39}:\s/gi
+const FIELD_KEY_TOKEN_LINE_RE = /\b[A-Za-z][A-Za-z0-9-]{0,39}:\s/i
 const FIELD_REPEAT_GATE_RE =
   /(?:component|keuze|status|categorie|eis|meetmethode)\s*:/gi
 const CATEGORY_HEADER_NAMES = new Set(['category', 'categorie', 'taak', 'task', 'aspect'])
@@ -404,7 +404,7 @@ function splitRecordSegments(
   keys: string[],
   lineChunks: string[],
 ): string[] {
-  let segments = full.split(INLINE_DUAL_SPLIT_RE).map((p) => p.trim()).filter(Boolean)
+  const segments = full.split(INLINE_DUAL_SPLIT_RE).map((p) => p.trim()).filter(Boolean)
   if (segments.length >= 2) return segments
   if (
     lineChunks.length >= 2 &&
@@ -732,7 +732,7 @@ function parseSectionToTable(
 }
 
 function shouldAttemptPseudoNormalize(
-  headingLine: string,
+  _headingLine: string,
   bodyLines: string[],
   intent: string,
 ): boolean {
@@ -744,7 +744,7 @@ function shouldAttemptPseudoNormalize(
   return countPseudoTableSignals(bodyLines) >= 2
 }
 
-const ENTITY_PREFIX_RE = /^[A-Za-z0-9 .+\-]+:\s*/
+const ENTITY_PREFIX_RE = /^[A-Za-z0-9 .+-]+:\s*/
 
 function splitLabeledEntityValue(text: string): [string | null, string] {
   const match = text.trim().match(/^([^:|]{1,40}):\s*(.+)$/)

@@ -24,7 +24,9 @@ export function AssistantDisplayProvider({ children }: { children: ReactNode }) 
   }, []);
 
   useEffect(() => {
-    void refresh();
+    queueMicrotask(() => {
+      void refresh();
+    });
     const onChanged = () => {
       void refresh();
     };

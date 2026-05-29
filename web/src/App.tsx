@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -54,7 +55,9 @@ import { Typography } from "@nous-research/ui/ui/components/typography/index";
 import { cn } from "@/lib/utils";
 import { Backdrop } from "@/components/Backdrop";
 import { SidebarFooter } from "@/components/SidebarFooter";
-import { SidebarStatusStrip, gatewayLine } from "@/components/SidebarStatusStrip";
+import { SidebarStatusStrip } from "@/components/SidebarStatusStrip";
+import { gatewayLine } from "@/components/gatewayLine";
+import { useTooltipAnchor } from "@/hooks/useTooltipAnchor";
 import { useBelowBreakpoint } from "@nous-research/ui/hooks/use-below-breakpoint";
 import { useSidebarStatus } from "@/hooks/useSidebarStatus";
 import { AuthWidget } from "@/components/AuthWidget";
@@ -762,6 +765,7 @@ function SidebarNavLink({
   const { path, label, labelKey, icon: Icon } = item;
   const liRef = useRef<HTMLLIElement>(null);
   const [hovered, setHovered] = useState(false);
+  const tooltipAnchor = useTooltipAnchor(liRef, collapsed && hovered);
 
   const navLabel = labelKey
     ? ((t.app.nav as Record<string, string>)[labelKey] ?? label)
@@ -825,8 +829,8 @@ function SidebarNavLink({
         )}
       </NavLink>
 
-      {collapsed && hovered && liRef.current && (
-        <SidebarTooltip anchor={liRef.current} label={navLabel} warmRef={tooltipWarmRef} />
+      {tooltipAnchor && (
+        <SidebarTooltip anchor={tooltipAnchor} label={navLabel} warmRef={tooltipWarmRef} />
       )}
     </li>
   );
@@ -921,6 +925,7 @@ function SystemActionButton({
   const { icon: Icon, label, runningLabel, spin } = item;
   const liRef = useRef<HTMLLIElement>(null);
   const [hovered, setHovered] = useState(false);
+  const tooltipAnchor = useTooltipAnchor(liRef, collapsed && hovered);
   const busy = isPending || isActionRunning;
   const displayLabel = isActionRunning ? runningLabel : label;
 
@@ -984,8 +989,8 @@ function SystemActionButton({
         )}
       </button>
 
-      {collapsed && hovered && liRef.current && (
-        <SidebarTooltip anchor={liRef.current} label={displayLabel} warmRef={tooltipWarmRef} />
+      {tooltipAnchor && (
+        <SidebarTooltip anchor={tooltipAnchor} label={displayLabel} warmRef={tooltipWarmRef} />
       )}
     </li>
   );
@@ -999,6 +1004,7 @@ function SidebarIconWithTooltip({
 }: SidebarIconWithTooltipProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
+  const tooltipAnchor = useTooltipAnchor(ref, collapsed && hovered);
 
   return (
     <div
@@ -1019,8 +1025,8 @@ function SidebarIconWithTooltip({
         />
       )}
 
-      {collapsed && hovered && ref.current && (
-        <SidebarTooltip anchor={ref.current} label={label} warmRef={tooltipWarmRef} />
+      {tooltipAnchor && (
+        <SidebarTooltip anchor={tooltipAnchor} label={label} warmRef={tooltipWarmRef} />
       )}
     </div>
   );
@@ -1030,6 +1036,7 @@ function GatewayDot({ collapsed, status, tooltipWarmRef }: GatewayDotProps) {
   const { t } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
+  const tooltipAnchor = useTooltipAnchor(ref, hovered);
 
   const toneToColor: Record<string, string> = {
     "text-success": "bg-success",
@@ -1070,8 +1077,8 @@ function GatewayDot({ collapsed, status, tooltipWarmRef }: GatewayDotProps) {
         className={cn("h-1.5 w-1.5 rounded-full", color)}
       />
 
-      {hovered && ref.current && (
-        <SidebarTooltip anchor={ref.current} label={label} warmRef={tooltipWarmRef} />
+      {tooltipAnchor && (
+        <SidebarTooltip anchor={tooltipAnchor} label={label} warmRef={tooltipWarmRef} />
       )}
     </div>
   );
@@ -1082,7 +1089,15 @@ function SidebarTooltip({ anchor, label, warmRef }: SidebarTooltipProps) {
   const sidebar = document.getElementById("app-sidebar");
   const sidebarRight = sidebar?.getBoundingClientRect().right ?? rect.right;
 
-  const isWarm = warmRef ? Date.now() - warmRef.current < 300 : false;
+  const [isWarm, setIsWarm] = useState(false);
+
+  useLayoutEffect(() => {
+    if (!warmRef) {
+      setIsWarm(false);
+      return;
+    }
+    setIsWarm(Date.now() - warmRef.current < 300);
+  }, [warmRef, anchor, label]);
 
   useEffect(() => {
     if (warmRef) warmRef.current = Date.now();

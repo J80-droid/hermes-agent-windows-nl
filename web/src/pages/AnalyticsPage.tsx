@@ -415,9 +415,9 @@ export default function AnalyticsPage() {
       .catch(() => setShowTokens(false));
   }, []);
 
-  const load = useCallback(() => {
+  const load = useCallback((showSpinner = true) => {
     if (!showTokens) return;
-    setLoading(true);
+    if (showSpinner) setLoading(true);
     setError(null);
     api
       .getAnalytics(days)
@@ -440,7 +440,7 @@ export default function AnalyticsPage() {
             ghost
             size="icon"
             className="text-muted-foreground hover:text-foreground"
-            onClick={load}
+            onClick={() => load()}
             disabled={loading}
             aria-label={t.common.refresh}
           >
@@ -475,7 +475,7 @@ export default function AnalyticsPage() {
   }, [days, loading, load, setAfterTitle, setEnd, t.common.refresh, showTokens]);
 
   useEffect(() => {
-    load();
+    queueMicrotask(() => load(false));
   }, [load]);
 
   return (

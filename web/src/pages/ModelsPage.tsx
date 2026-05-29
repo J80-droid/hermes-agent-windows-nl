@@ -793,8 +793,8 @@ export default function ModelsPage() {
       });
   }, []);
 
-  const load = useCallback(() => {
-    setLoading(true);
+  const load = useCallback((showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     setError(null);
     Promise.all([
       api.getModelsAnalytics(days),
@@ -830,7 +830,7 @@ export default function ModelsPage() {
           ghost
           size="icon"
           className="text-muted-foreground hover:text-foreground"
-          onClick={load}
+          onClick={() => load()}
           disabled={loading}
           aria-label={t.common.refresh}
         >
@@ -863,7 +863,7 @@ export default function ModelsPage() {
   }, [days, loading, load, setAfterTitle, setEnd, t.common.refresh]);
 
   useEffect(() => {
-    load();
+    queueMicrotask(() => load(false));
   }, [load]);
 
   return (

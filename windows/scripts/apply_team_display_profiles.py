@@ -115,6 +115,9 @@ def main() -> int:
         return 1
 
     display = _parse_defaults(defaults_path)
+    # Repo root on sys.path — script lives under windows/scripts/, not package root.
+    if str(repo) not in sys.path:
+        sys.path.insert(0, str(repo))
     from utils import atomic_yaml_write
 
     root_cfg = root / "config.yaml"

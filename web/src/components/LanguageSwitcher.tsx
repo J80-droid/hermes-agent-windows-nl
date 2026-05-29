@@ -5,8 +5,8 @@ import { Button } from "@nous-research/ui/ui/components/button";
 import { BottomSheet } from "@nous-research/ui/ui/components/bottom-sheet";
 import { Typography } from "@nous-research/ui/ui/components/typography/index";
 import { useBelowBreakpoint } from "@nous-research/ui/hooks/use-below-breakpoint";
-import { useI18n } from "@/i18n/context";
-import { LOCALE_META } from "@/i18n";
+import { useI18n, LOCALE_META } from "@/i18n";
+import { useDropUpFixedStyle } from "@/hooks/useDropUpFixedStyle";
 import type { Locale } from "@/i18n";
 import { cn } from "@/lib/utils";
 
@@ -104,35 +104,68 @@ export function LanguageSwitcher({ collapsed = false, dropUp = false }: Language
         </BottomSheet>
       )}
 
-      {open && !useMobileSheet && (() => {
-        const rect = containerRef.current?.getBoundingClientRect();
-        const dropdown = (
-          <div
-            ref={dropdownRef}
-            aria-label={sheetTitle}
-            className={cn(
-              "min-w-[10rem] border border-border bg-popover shadow-md py-1 max-h-80 overflow-y-auto",
-              dropUp ? "fixed z-[100]" : "absolute z-50 right-0 top-full mt-1",
-            )}
-            role="listbox"
-            style={
-              dropUp && rect
-                ? { bottom: window.innerHeight - rect.top + 4, left: rect.left }
-                : undefined
-            }
-          >
-            <LanguageSwitcherOptions
-              allLocales={allLocales}
-              locale={locale}
-              setLocale={setLocale}
-              setOpen={setOpen}
-            />
-          </div>
-        );
-        return dropUp ? createPortal(dropdown, document.body) : dropdown;
-      })()}
+      {open && !useMobileSheet && (
+        <LanguageSwitcherDropdown
+          allLocales={allLocales}
+          containerRef={containerRef}
+          dropdownRef={dropdownRef}
+          dropUp={dropUp}
+          locale={locale}
+          setLocale={setLocale}
+          setOpen={setOpen}
+          sheetTitle={sheetTitle}
+        />
+      )}
     </div>
   );
+}
+
+function LanguageSwitcherDropdown({
+  allLocales,
+  containerRef,
+  dropdownRef,
+  dropUp,
+  locale,
+  setLocale,
+  setOpen,
+  sheetTitle,
+}: LanguageSwitcherDropdownProps) {
+  const fixedStyle = useDropUpFixedStyle(containerRef, dropUp);
+  const dropdown = (
+    <div
+      ref={dropdownRef}
+      aria-label={sheetTitle}
+      className={cn(
+        "min-w-[10rem] border border-border bg-popover shadow-md py-1 max-h-80 overflow-y-auto",
+        dropUp ? "fixed z-[100]" : "absolute z-50 right-0 top-full mt-1",
+      )}
+      role="listbox"
+      style={
+        dropUp
+          ? { ...fixedStyle, visibility: fixedStyle ? undefined : "hidden" }
+          : undefined
+      }
+    >
+      <LanguageSwitcherOptions
+        allLocales={allLocales}
+        locale={locale}
+        setLocale={setLocale}
+        setOpen={setOpen}
+      />
+    </div>
+  );
+  return dropUp ? createPortal(dropdown, document.body) : dropdown;
+}
+
+interface LanguageSwitcherDropdownProps {
+  allLocales: Array<[Locale, (typeof LOCALE_META)[Locale]]>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  dropdownRef: React.RefObject<HTMLDivElement | null>;
+  dropUp: boolean;
+  locale: Locale;
+  setLocale: (code: Locale) => void;
+  setOpen: (open: boolean) => void;
+  sheetTitle: string;
 }
 
 function LanguageSwitcherOptions({

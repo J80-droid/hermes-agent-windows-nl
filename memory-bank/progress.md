@@ -2,6 +2,7 @@
 
 ## Code (P2 + institutioneel)
 
+- [x] Web UI clean codebase (2026-05-29): ESLint 0 errors + `tsc`/Vite build; hooks (`useTooltipAnchor`, `useDropUpFixedStyle`); context splits (`i18n-context`, `theme-context`, `gatewayLine.ts`); Chat channel `resume-{id}`; `apply_team_display_profiles` sys.path; E2E **11/11** `RUN_WEB_UI_CLEAN_E2E.bat`; `web/README.md` quality gate
 - [x] Repo-hygiene + legal fork-skills (2026-05-26): `RepoHygieneCommon.ps1`, guard/QuickFix/health_check, `UPDATE_HERMES.bat` HERMES_WIN + QuickFix-only exit, guard-log trim, 3× `skills/legal/*`, pytest **101/101**, `test_repo_hygiene_institutional_e2e.py`, E2E **14/14** + repo-hygiene 9/9 + update-integratie **12/12**
 - [x] Fork automatisering hardening (2026-05-26): `RUN_AUDITS` vlaggen (hardening/repo-hygiene/update-integratie), `POST_GIT_PULL -QuickFix`, `.github/workflows/fork-windows-institutional.yml`, `.pre-commit-config.yaml` (warn-only), docs + memory bank
 - [x] Handige commando's cheat sheet (2026-05-26): `docs/INSTITUTIONAL_OPERATIONS.md#handige-commandos-fork` — dagelijks, hygiene, upstream, RAG, poorten, pytest; cross-links README/AGENTS/windows/README/docs/README/repo-hygiene.mdc

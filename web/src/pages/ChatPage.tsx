@@ -159,7 +159,12 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
   // treat the current resume target as part of the PTY identity and rebuild the
   // terminal session when it changes.
   const resumeParam = searchParams.get("resume");
-  const channel = useMemo(() => generateChannelId(), [resumeParam]);
+  // Channel id for /api/pty?channel=… — must match hermes_cli _VALID_CHANNEL_RE:
+  // ^[A-Za-z0-9._-]{1,128}$ (no colons). Resume uses a stable prefix + session id.
+  const channel = useMemo(
+    () => (resumeParam ? `resume-${resumeParam}` : generateChannelId()),
+    [resumeParam],
+  );
 
   useEffect(() => {
     if (!resumeParam) return;
@@ -189,7 +194,6 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
   useEffect(() => {
     const mql = window.matchMedia("(max-width: 1023px)");
     const sync = () => setNarrow(mql.matches);
-    sync();
     mql.addEventListener("change", sync);
     return () => mql.removeEventListener("change", sync);
   }, []);

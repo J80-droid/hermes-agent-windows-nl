@@ -27,6 +27,18 @@ Open the **Vite URL** printed in the terminal (usually `http://localhost:5173`).
 
 The Vite dev server proxies `/api` requests to `http://127.0.0.1:9119` (the FastAPI backend).
 
+## Quality gate (vóór commit)
+
+```bash
+cd web/
+npm run lint    # ESLint 9 + typescript-eslint + react-hooks (moet 0 errors)
+npm run build   # tsc -b && vite build → ../hermes_cli/web_dist/
+```
+
+Repo E2E (geen live browser): `audits/RUN_WEB_UI_CLEAN_E2E.bat` (11 stappen: lint, build, PTY-channel-contract, pytest-subset).
+
+`tsconfig` gebruikt `noUnusedLocals` — ongebruikte parameters blokkeren de build (prefix met `_` indien API-contract).
+
 ## Build
 
 ```bash
@@ -35,22 +47,32 @@ npm run build
 
 This outputs to `../hermes_cli/web_dist/`, which the FastAPI server serves as a static SPA. The built assets are included in the Python package via `pyproject.toml` package-data.
 
+`hermes dashboard` en `launch_hermes.bat` (profiel **full**) bouwen automatisch bij verouderde bron ten opzichte van `web_dist/`; bij mislukte build wordt een bestaande dist als fallback geserveerd (`_build_web_ui` in `hermes_cli/main.py`).
+
 ## Structure
 
 ```
 src/
+├── components/      # Feature UI (LanguageSwitcher, ThemeSwitcher, gatewayLine.ts, …)
 ├── components/ui/   # Reusable UI primitives (Card, Badge, Button, Input, etc.)
+├── contexts/        # React providers (assistant display, page header, …)
+├── hooks/           # useTooltipAnchor, useDropUpFixedStyle (layout-safe positioning)
+├── i18n/            # I18nProvider (context.tsx), useI18n, locale-meta, translations
+├── themes/          # ThemeProvider, useTheme, theme-context, presets
 ├── lib/
 │   ├── api.ts       # API client — typed fetch wrappers for all backend endpoints
+│   ├── institutionalMarkdown.ts  # Markdown → tables (pariteit met Python normalizer)
 │   └── utils.ts     # cn() helper for Tailwind class merging
-├── pages/
-│   ├── StatusPage   # Agent status, active/recent sessions
-│   ├── ConfigPage   # Dynamic config editor (reads schema from backend)
-│   └── EnvPage      # API key management with save/clear
-├── App.tsx          # Main layout and navigation
+├── pages/           # Route pages (Chat, Sessions, Config, Plugins, …)
+├── plugins/         # Dynamic plugin tabs (PluginPage + registry)
+├── App.tsx          # Shell layout, sidebar, collapsed tooltips
 ├── main.tsx         # React entry point
 └── index.css        # Tailwind imports and theme variables
 ```
+
+### Chat / PTY channel
+
+De ingebouwde Chat-tab koppelt TUI en sidebar via een opaque `channel` query-param op `/api/pty`. Bij resume uit Sessions: `resume-{sessionId}` (alleen `A-Za-z0-9._-`, geen `:` — server `_VALID_CHANNEL_RE` in `hermes_cli/web_server.py`). Zonder resume: `crypto.randomUUID()` of fallback-id.
 
 ## Typography & contrast rules
 

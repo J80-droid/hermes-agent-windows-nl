@@ -9,6 +9,7 @@ import { useBelowBreakpoint } from "@nous-research/ui/hooks/use-below-breakpoint
 import { BUILTIN_THEMES, useTheme } from "@/themes";
 import type { DashboardTheme, ThemeListEntry } from "@/themes";
 import { useI18n } from "@/i18n";
+import { useDropUpFixedStyle } from "@/hooks/useDropUpFixedStyle";
 import { cn } from "@/lib/utils";
 
 /**
@@ -108,46 +109,79 @@ export function ThemeSwitcher({ collapsed = false, dropUp = false }: ThemeSwitch
         </BottomSheet>
       )}
 
-      {open && !useMobileSheet && (() => {
-        const rect = wrapperRef.current?.getBoundingClientRect();
-        const dropdown = (
-          <div
-            ref={dropdownRef}
-            aria-label={sheetTitle}
-            className={cn(
-              "min-w-[240px] max-h-[70dvh] overflow-y-auto",
-              "border border-current/20 bg-background-base/95 backdrop-blur-sm",
-              "shadow-[0_12px_32px_-8px_rgba(0,0,0,0.6)]",
-              dropUp ? "fixed z-[100]" : "absolute z-50 right-0 top-full mt-1",
-            )}
-            role="listbox"
-            style={
-              dropUp && rect
-                ? { bottom: window.innerHeight - rect.top + 4, left: rect.left }
-                : undefined
-            }
-          >
-            <div className="border-b border-current/20 px-3 py-2">
-              <Typography
-                mondwest
-                className="text-display text-xs tracking-[0.12em] text-text-tertiary"
-              >
-                {sheetTitle}
-              </Typography>
-            </div>
-
-            <ThemeSwitcherOptions
-              availableThemes={availableThemes}
-              close={close}
-              setTheme={setTheme}
-              themeName={themeName}
-            />
-          </div>
-        );
-        return dropUp ? createPortal(dropdown, document.body) : dropdown;
-      })()}
+      {open && !useMobileSheet && (
+        <ThemeSwitcherDropdown
+          availableThemes={availableThemes}
+          close={close}
+          dropUp={dropUp}
+          dropdownRef={dropdownRef}
+          setTheme={setTheme}
+          sheetTitle={sheetTitle}
+          themeName={themeName}
+          wrapperRef={wrapperRef}
+        />
+      )}
     </div>
   );
+}
+
+function ThemeSwitcherDropdown({
+  availableThemes,
+  close,
+  dropUp,
+  dropdownRef,
+  setTheme,
+  sheetTitle,
+  themeName,
+  wrapperRef,
+}: ThemeSwitcherDropdownProps) {
+  const fixedStyle = useDropUpFixedStyle(wrapperRef, dropUp);
+  const dropdown = (
+    <div
+      ref={dropdownRef}
+      aria-label={sheetTitle}
+      className={cn(
+        "min-w-[240px] max-h-[70dvh] overflow-y-auto",
+        "border border-current/20 bg-background-base/95 backdrop-blur-sm",
+        "shadow-[0_12px_32px_-8px_rgba(0,0,0,0.6)]",
+        dropUp ? "fixed z-[100]" : "absolute z-50 right-0 top-full mt-1",
+      )}
+      role="listbox"
+      style={
+        dropUp
+          ? { ...fixedStyle, visibility: fixedStyle ? undefined : "hidden" }
+          : undefined
+      }
+    >
+      <div className="border-b border-current/20 px-3 py-2">
+        <Typography
+          mondwest
+          className="text-display text-xs tracking-[0.12em] text-text-tertiary"
+        >
+          {sheetTitle}
+        </Typography>
+      </div>
+
+      <ThemeSwitcherOptions
+        availableThemes={availableThemes}
+        close={close}
+        setTheme={setTheme}
+        themeName={themeName}
+      />
+    </div>
+  );
+  return dropUp ? createPortal(dropdown, document.body) : dropdown;
+}
+
+interface ThemeSwitcherDropdownProps {
+  availableThemes: ThemeListEntry[];
+  close: () => void;
+  dropUp: boolean;
+  dropdownRef: React.RefObject<HTMLDivElement | null>;
+  setTheme: (name: string) => void;
+  sheetTitle: string;
+  themeName: string;
+  wrapperRef: React.RefObject<HTMLDivElement | null>;
 }
 
 function ThemeSwitcherOptions({
