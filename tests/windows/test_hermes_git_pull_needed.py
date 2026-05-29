@@ -16,6 +16,13 @@ def test_pull_needed_script_exists_and_documents_exit_codes() -> None:
     assert "exit 2" in text
     assert "MERGE_HEAD" in text
     assert "HERMES_SKIP_AUTO_PULL_ON_START" in text
+    assert "Test-HermesGitDirtyOnlyBranding" in text
+
+
+def test_branding_only_dirty_allows_pull_check() -> None:
+    common = (REPO / "windows" / "HermesShellCommon.ps1").read_text(encoding="utf-8")
+    assert "function Test-HermesGitDirtyOnlyBranding" in common
+    assert "hermes_logo" in common
 
 
 def test_start_hermes_auto_pull_wiring() -> None:
@@ -23,6 +30,7 @@ def test_start_hermes_auto_pull_wiring() -> None:
     assert "Test-HermesGitPullNeeded.ps1" in bat
     assert "maybe_auto_pull_before_start" in bat
     assert "--no-pull" in bat
+    assert "chcp 65001" in bat
 
 
 def test_start_hermes_ps1_parses() -> None:

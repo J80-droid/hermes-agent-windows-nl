@@ -10,7 +10,7 @@ Gedrag:
 
 1. **Achter `origin` (tracking branch)?** → `git pull` + `POST_GIT_PULL` + Hermes-relaunch in WT.
 2. **Up-to-date?** → direct normale start (geen pull, geen extra wachttijd behalve korte `git fetch`).
-3. **Merge bezig / vuile working tree / offline?** → pull overslaan, gewoon starten (of los `POST_GIT_PULL` na opruimen).
+3. **Merge bezig / echte uncommitted wijzigingen / offline?** → pull overslaan, gewoon starten. **Alleen** `assets/Hermes_logo.png` + `windows/hermes*.ico` na taakbalk-fix telt als schoon (zelfde als UPDATE).
 
 **Handmatig forceren:**
 

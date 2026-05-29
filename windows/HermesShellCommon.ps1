@@ -55,6 +55,32 @@ function Write-HermesSkip {
     Write-HermesTag -Tag 'SKIP ' -Message $Message
 }
 
+function Test-HermesGitDirtyOnlyBranding {
+    <#
+    .SYNOPSIS
+        True als alle uncommitted wijzigingen alleen branding/iconen zijn (na generator of taakbalk-fix).
+    #>
+    param([Parameter(Mandatory)][string[]]$PorcelainLines)
+    if ($PorcelainLines.Count -eq 0) { return $true }
+    foreach ($line in $PorcelainLines) {
+        if (-not $line.Trim()) { continue }
+        $raw = $line.TrimEnd()
+        if ($raw -match ' -> ') {
+            $path = ($raw -split ' -> ', 2)[-1].Trim()
+        } elseif ($raw.Length -ge 4) {
+            $path = $raw.Substring(3).Trim()
+        } else {
+            $path = $raw.Trim()
+        }
+        $norm = ($path -replace '\\', '/')
+        if ($norm -match '^(assets/(Hermes_logo|hermes_logo)\.png|windows/hermes[^/]*\.ico)$') {
+            continue
+        }
+        return $false
+    }
+    return $true
+}
+
 function Format-HermesStepLabel {
     param(
         [Parameter(Mandatory)]

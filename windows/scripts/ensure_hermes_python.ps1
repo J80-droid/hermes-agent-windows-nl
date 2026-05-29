@@ -26,6 +26,7 @@ if (-not $SkipQuarantine) {
 }
 
 $py = Get-HermesPreferredPython -RepoRoot $RepoRoot
+[void](Repair-HermesPipTildeSitePackages -PythonExe $py -Quiet:$Quiet)
 if (-not $py) {
     Write-PolicyMsg '[ERROR] Geen conda hermes-env gevonden. Maak env aan of zet HERMES_PYTHON.' 'Red'
     Write-PolicyMsg '  conda create -n hermes-env python=3.12 -y' 'Yellow'

@@ -68,6 +68,49 @@ function Test-HermesVenvUsable {
     return (Test-HermesPythonHasPip -PythonExe $py)
 }
 
+function Repair-HermesPipTildeSitePackages {
+    <#
+    .SYNOPSIS
+        Verwijdert kapotte pip-restanten (~ermes_agent, ~ebsockets, ...) uit conda hermes-env site-packages.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [string]$PythonExe = '',
+        [switch]$Quiet
+    )
+    $siteDirs = [System.Collections.Generic.List[string]]::new()
+    if ($PythonExe -and (Test-Path -LiteralPath $PythonExe)) {
+        $py = (Resolve-Path -LiteralPath $PythonExe).Path
+        $lib = Join-Path (Split-Path -Parent $py) 'Lib\site-packages'
+        if (Test-Path -LiteralPath $lib) { [void]$siteDirs.Add($lib) }
+    }
+    foreach ($root in @(
+            (Join-Path $env:USERPROFILE 'miniconda3\envs\hermes-env'),
+            (Join-Path $env:USERPROFILE 'anaconda3\envs\hermes-env'),
+            (Join-Path $env:LOCALAPPDATA 'miniconda3\envs\hermes-env'),
+            (Join-Path $env:LOCALAPPDATA 'anaconda3\envs\hermes-env')
+        )) {
+        $lib = Join-Path $root 'Lib\site-packages'
+        if ((Test-Path -LiteralPath $lib) -and ($siteDirs -notcontains $lib)) {
+            [void]$siteDirs.Add($lib)
+        }
+    }
+    $removed = 0
+    foreach ($lib in $siteDirs) {
+        Get-ChildItem -LiteralPath $lib -Filter '~*' -Force -ErrorAction SilentlyContinue |
+            ForEach-Object {
+                if ($PSCmdlet.ShouldProcess($_.FullName, 'Remove', 'Broken pip artifact')) {
+                    Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+                    $removed++
+                }
+            }
+    }
+    if ($removed -gt 0 -and -not $Quiet) {
+        Write-Host ('[INFO] ' + $removed.ToString() + ' kapotte pip-map(pen) (~*) opgeruimd in hermes-env.') -ForegroundColor DarkGray
+    }
+    return ($removed -gt 0)
+}
+
 function Invoke-HermesQuarantineBrokenVenv {
     <#
     .SYNOPSIS

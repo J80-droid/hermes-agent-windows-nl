@@ -49,10 +49,18 @@ try {
         exit 2
     }
 
-    $dirty = git status --porcelain 2>$null
-    if ($dirty -and ($dirty | Where-Object { $_.Trim() })) {
-        if (-not $Quiet) { Write-HermesWarn 'Working tree niet schoon — auto-pull overgeslagen (gebruik --pull om te forceren).' }
-        exit 2
+    $dirtyLines = @(git status --porcelain 2>$null | Where-Object { $_.Trim() })
+    if ($dirtyLines.Count -gt 0) {
+        if (Test-HermesGitDirtyOnlyBranding -PorcelainLines $dirtyLines) {
+            if (-not $Quiet) {
+                Write-HermesInfo 'Alleen branding/iconen gewijzigd - auto-pull toegestaan (commit later optioneel).'
+            }
+        } else {
+            if (-not $Quiet) {
+                Write-HermesWarn 'Working tree niet schoon - auto-pull overgeslagen (gebruik --pull om te forceren).'
+            }
+            exit 2
+        }
     }
 
     $compareRef = $null

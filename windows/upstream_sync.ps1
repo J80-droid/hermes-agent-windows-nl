@@ -58,33 +58,6 @@ function Write-Uitleg {
     Write-Host ''
 }
 
-function Test-HermesUpstreamDirtyOnlyBranding {
-    <#
-    .SYNOPSIS
-        True als alle uncommitted wijzigingen alleen branding/iconen zijn (na generator of setup).
-    #>
-    param([Parameter(Mandatory)][string[]]$PorcelainLines)
-    if ($PorcelainLines.Count -eq 0) { return $true }
-    foreach ($line in $PorcelainLines) {
-        if (-not $line.Trim()) { continue }
-        # Porcelain: XY<space>path - niet $line.Trim() vóór Substring(3); dat verslindt kolom 1 en breekt het pad.
-        $raw = $line.TrimEnd()
-        if ($raw -match ' -> ') {
-            $path = ($raw -split ' -> ', 2)[-1].Trim()
-        } elseif ($raw.Length -ge 4) {
-            $path = $raw.Substring(3).Trim()
-        } else {
-            $path = $raw.Trim()
-        }
-        $norm = ($path -replace '\\', '/')
-        if ($norm -match '^(assets/(Hermes_logo|hermes_logo)\.png|windows/hermes[^/]*\.ico)$') {
-            continue
-        }
-        return $false
-    }
-    return $true
-}
-
 function Write-RepoHygieneGuardLog {
     param(
         [Parameter(Mandatory)][string]$Repo,
@@ -182,7 +155,7 @@ function Invoke-UpstreamPreflight {
 
     $dirtyLines = @(git status --porcelain | Where-Object { $_.Trim() })
     if ($dirtyLines.Count -gt 0 -and -not $AllowDirty) {
-        if (Test-HermesUpstreamDirtyOnlyBranding -PorcelainLines $dirtyLines) {
+        if (Test-HermesGitDirtyOnlyBranding -PorcelainLines $dirtyLines) {
             Write-HermesWarn 'Alleen branding/iconen .png/.ico gewijzigd - update gaat door. Commit later indien gewenst.'
         } else {
             Write-HermesErr 'Werkmap niet schoon - commit of stash eerst (of alleen iconen: FIX_TASKBAR_ICONS na commit).'

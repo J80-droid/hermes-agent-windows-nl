@@ -30,6 +30,9 @@ if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot "pyproject.toml"))) {
 [void](Invoke-HermesQuarantineBrokenVenv -RepoRoot $RepoRoot -Quiet:$Quiet)
 
 $pythons = @(Get-HermesRagPython -RepoRoot $RepoRoot)
+if ($pythons.Count -gt 0) {
+    [void](Repair-HermesPipTildeSitePackages -PythonExe $pythons[0] -Quiet:$Quiet)
+}
 if ($pythons.Count -eq 0) {
     Write-RagMsg '[WARN] Geen conda hermes-env - REPAIR_PYTHON.bat of: conda activate hermes-env' 'Yellow'
 }
