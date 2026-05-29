@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+} from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -159,8 +166,8 @@ function TokenBarChart({ daily }: { daily: AnalyticsDailyEntry[] }) {
       </CardHeader>
       <CardContent>
         <div
-          className="flex items-end gap-[2px]"
-          style={{ height: CHART_HEIGHT_PX }}
+          className="analytics-chart-column flex items-end gap-[2px]"
+          style={{ "--chart-column-height": `${CHART_HEIGHT_PX}px` } as CSSProperties}
         >
           {daily.map((d) => {
             const total = d.input_tokens + d.output_tokens;
@@ -173,8 +180,8 @@ function TokenBarChart({ daily }: { daily: AnalyticsDailyEntry[] }) {
             return (
               <div
                 key={d.day}
-                className="flex-1 min-w-0 group relative flex flex-col justify-end"
-                style={{ height: CHART_HEIGHT_PX }}
+                className="analytics-chart-column flex-1 min-w-0 group relative flex flex-col justify-end"
+                style={{ "--chart-column-height": `${CHART_HEIGHT_PX}px` } as CSSProperties}
               >
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10 pointer-events-none">
                   <div className="font-mondwest normal-case bg-card border border-border px-2.5 py-1.5 text-xs text-foreground shadow-lg whitespace-nowrap">
@@ -192,15 +199,21 @@ function TokenBarChart({ daily }: { daily: AnalyticsDailyEntry[] }) {
                 </div>
 
                 <div
-                  className="w-full bg-[#ffe6cb]/70"
-                  style={{ height: Math.max(inputH, total > 0 ? 1 : 0) }}
+                  className="analytics-bar-segment bg-[#ffe6cb]/70"
+                  style={
+                    {
+                      "--bar-segment-height": `${Math.max(inputH, total > 0 ? 1 : 0)}px`,
+                    } as CSSProperties
+                  }
                 />
 
                 <div
-                  className="w-full bg-emerald-500/70"
-                  style={{
-                    height: Math.max(outputH, d.output_tokens > 0 ? 1 : 0),
-                  }}
+                  className="analytics-bar-segment bg-emerald-500/70"
+                  style={
+                    {
+                      "--bar-segment-height": `${Math.max(outputH, d.output_tokens > 0 ? 1 : 0)}px`,
+                    } as CSSProperties
+                  }
                 />
               </div>
             );

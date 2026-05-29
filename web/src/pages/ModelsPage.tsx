@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  type CSSProperties,
+} from "react";
 import {
   Brain,
   ChevronDown,
@@ -109,17 +115,12 @@ function TokenBar({
         {segments.map((s, i) => (
           <div
             key={i}
-            className={`${s.color} relative flex items-center transition-all duration-300`}
-            style={{ width: `${(s.value / total) * 100}%` }}
+            className={`models-segment-bar ${s.color} relative flex items-center transition-all duration-300`}
+            style={
+              { "--segment-width": `${(s.value / total) * 100}%` } as CSSProperties
+            }
           >
-            {/* Stepped fill pattern overlay */}
-            <div
-              className="absolute inset-0 opacity-30"
-              style={{
-                backgroundImage:
-                  "repeating-linear-gradient(to right, transparent 0 0.4rem, currentColor 0.4rem calc(0.4rem + 1px))",
-              }}
-            />
+            <div aria-hidden className="models-segment-pattern" />
           </div>
         ))}
       </div>

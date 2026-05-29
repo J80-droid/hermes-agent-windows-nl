@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { Palette, Check } from "lucide-react";
 import { Button } from "@nous-research/ui/ui/components/button";
@@ -9,7 +9,8 @@ import { useBelowBreakpoint } from "@nous-research/ui/hooks/use-below-breakpoint
 import { BUILTIN_THEMES, useTheme } from "@/themes";
 import type { DashboardTheme, ThemeListEntry } from "@/themes";
 import { useI18n } from "@/i18n";
-import { useDropUpFixedStyle } from "@/hooks/useDropUpFixedStyle";
+import { dropUpMenuCssVars, useDropUpFixedStyle } from "@/hooks/useDropUpFixedStyle";
+import { ariaBool } from "@/lib/aria";
 import { cn } from "@/lib/utils";
 
 /**
@@ -33,6 +34,7 @@ export function ThemeSwitcher({ collapsed = false, dropUp = false }: ThemeSwitch
   const dropdownRef = useRef<HTMLDivElement>(null);
   const narrowViewport = useBelowBreakpoint(640);
   const useMobileSheet = Boolean(dropUp && narrowViewport);
+  const listboxTitleId = useId();
 
   const close = useCallback(() => setOpen(false), []);
 
@@ -98,7 +100,10 @@ export function ThemeSwitcher({ collapsed = false, dropUp = false }: ThemeSwitch
           open={open}
           title={sheetTitle}
         >
-          <div aria-label={sheetTitle} role="listbox">
+          <div aria-labelledby={listboxTitleId} role="listbox">
+            <p className="sr-only" id={listboxTitleId}>
+              {sheetTitle}
+            </p>
             <ThemeSwitcherOptions
               availableThemes={availableThemes}
               close={close}
@@ -115,6 +120,7 @@ export function ThemeSwitcher({ collapsed = false, dropUp = false }: ThemeSwitch
           close={close}
           dropUp={dropUp}
           dropdownRef={dropdownRef}
+          listboxTitleId={listboxTitleId}
           setTheme={setTheme}
           sheetTitle={sheetTitle}
           themeName={themeName}
@@ -130,6 +136,7 @@ function ThemeSwitcherDropdown({
   close,
   dropUp,
   dropdownRef,
+  listboxTitleId,
   setTheme,
   sheetTitle,
   themeName,
@@ -139,22 +146,17 @@ function ThemeSwitcherDropdown({
   const dropdown = (
     <div
       ref={dropdownRef}
-      aria-label={sheetTitle}
       className={cn(
         "min-w-[240px] max-h-[70dvh] overflow-y-auto",
         "border border-current/20 bg-background-base/95 backdrop-blur-sm",
         "shadow-[0_12px_32px_-8px_rgba(0,0,0,0.6)]",
-        dropUp ? "fixed z-[100]" : "absolute z-50 right-0 top-full mt-1",
+        dropUp ? "drop-up-menu-positioned fixed z-[100]" : "absolute z-50 right-0 top-full mt-1",
       )}
-      role="listbox"
-      style={
-        dropUp
-          ? { ...fixedStyle, visibility: fixedStyle ? undefined : "hidden" }
-          : undefined
-      }
+      style={dropUp ? dropUpMenuCssVars(fixedStyle) : undefined}
     >
       <div className="border-b border-current/20 px-3 py-2">
         <Typography
+          id={listboxTitleId}
           mondwest
           className="text-display text-xs tracking-[0.12em] text-text-tertiary"
         >
@@ -162,12 +164,14 @@ function ThemeSwitcherDropdown({
         </Typography>
       </div>
 
-      <ThemeSwitcherOptions
-        availableThemes={availableThemes}
-        close={close}
-        setTheme={setTheme}
-        themeName={themeName}
-      />
+      <div aria-labelledby={listboxTitleId} role="listbox">
+        <ThemeSwitcherOptions
+          availableThemes={availableThemes}
+          close={close}
+          setTheme={setTheme}
+          themeName={themeName}
+        />
+      </div>
     </div>
   );
   return dropUp ? createPortal(dropdown, document.body) : dropdown;
@@ -178,6 +182,7 @@ interface ThemeSwitcherDropdownProps {
   close: () => void;
   dropUp: boolean;
   dropdownRef: React.RefObject<HTMLDivElement | null>;
+  listboxTitleId: string;
   setTheme: (name: string) => void;
   sheetTitle: string;
   themeName: string;
@@ -190,55 +195,51 @@ function ThemeSwitcherOptions({
   setTheme,
   themeName,
 }: ThemeSwitcherOptionsProps) {
-  return (
-    <>
-      {availableThemes.map((th) => {
-        const isActive = th.name === themeName;
-        const paletteTheme = BUILTIN_THEMES[th.name] ?? th.definition;
+  return availableThemes.map((th) => {
+    const isActive = th.name === themeName;
+    const paletteTheme = BUILTIN_THEMES[th.name] ?? th.definition;
 
-        return (
-          <ListItem
-            active={isActive}
-            aria-selected={isActive}
-            className="gap-3"
-            key={th.name}
-            onClick={() => {
-              setTheme(th.name);
-              close();
-            }}
-            role="option"
+    return (
+      <ListItem
+        active={isActive}
+        aria-selected={ariaBool(isActive)}
+        className="gap-3"
+        key={th.name}
+        onClick={() => {
+          setTheme(th.name);
+          close();
+        }}
+        role="option"
+      >
+        {paletteTheme ? (
+          <ThemeSwatch theme={paletteTheme} />
+        ) : (
+          <PlaceholderSwatch />
+        )}
+
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <Typography
+            mondwest
+            className="truncate text-display text-xs tracking-wide"
           >
-            {paletteTheme ? (
-              <ThemeSwatch theme={paletteTheme} />
-            ) : (
-              <PlaceholderSwatch />
-            )}
+            {th.label}
+          </Typography>
+          {th.description && (
+            <Typography className="truncate text-xs tracking-normal text-text-tertiary">
+              {th.description}
+            </Typography>
+          )}
+        </div>
 
-            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <Typography
-                mondwest
-                className="truncate text-display text-xs tracking-wide"
-              >
-                {th.label}
-              </Typography>
-              {th.description && (
-                <Typography className="truncate text-xs tracking-normal text-text-tertiary">
-                  {th.description}
-                </Typography>
-              )}
-            </div>
-
-            <Check
-              className={cn(
-                "h-3 w-3 shrink-0 text-midground",
-                isActive ? "opacity-100" : "opacity-0",
-              )}
-            />
-          </ListItem>
-        );
-      })}
-    </>
-  );
+        <Check
+          className={cn(
+            "h-3 w-3 shrink-0 text-midground",
+            isActive ? "opacity-100" : "opacity-0",
+          )}
+        />
+      </ListItem>
+    );
+  });
 }
 
 function ThemeSwatch({ theme }: { theme: DashboardTheme }) {
@@ -248,9 +249,18 @@ function ThemeSwatch({ theme }: { theme: DashboardTheme }) {
       aria-hidden
       className="flex h-4 w-9 shrink-0 overflow-hidden border border-current/20"
     >
-      <span className="flex-1" style={{ background: background.hex }} />
-      <span className="flex-1" style={{ background: midground.hex }} />
-      <span className="flex-1" style={{ background: warmGlow }} />
+      <span
+        className="theme-swatch-segment"
+        style={{ "--swatch-color": background.hex } as CSSProperties}
+      />
+      <span
+        className="theme-swatch-segment"
+        style={{ "--swatch-color": midground.hex } as CSSProperties}
+      />
+      <span
+        className="theme-swatch-segment"
+        style={{ "--swatch-color": warmGlow } as CSSProperties}
+      />
     </div>
   );
 }

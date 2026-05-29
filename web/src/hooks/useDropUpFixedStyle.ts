@@ -42,3 +42,16 @@ export function useDropUpFixedStyle(
 
   return style;
 }
+
+/** Maps measured drop-up coords to CSS custom properties (see `.drop-up-menu-positioned`). */
+export function dropUpMenuCssVars(
+  fixedStyle: CSSProperties | undefined,
+): CSSProperties | undefined {
+  if (!fixedStyle) {
+    return { visibility: "hidden" };
+  }
+  return {
+    "--drop-up-bottom": `${fixedStyle.bottom}px`,
+    "--drop-up-left": `${fixedStyle.left}px`,
+  } as CSSProperties;
+}

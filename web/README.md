@@ -39,6 +39,14 @@ Repo E2E (geen live browser): `audits/RUN_WEB_UI_CLEAN_E2E.bat` (11 stappen: lin
 
 `tsconfig` gebruikt `noUnusedLocals` — ongebruikte parameters blokkeren de build (prefix met `_` indien API-contract).
 
+### Toegankelijkheid (ARIA) en IDE-hints
+
+- **Listbox-patroon:** `ThemeSwitcher` / `LanguageSwitcher` — titel of label buiten `role="listbox"`; alleen `role="option"` als kinderen. `aria-selected` via `lib/aria.ts` → `ariaBool()` (`"true"` / `"false"` strings).
+- **Booleans in JSX:** `aria-hidden` / `aria-busy` als string literals waar Edge Tools anders `{expression}` meldt (bijv. `aria-hidden={isChatRoute ? undefined : "true"}`).
+- **Statische theme-surfaces:** `.app-header-surface`, `.app-sidebar-surface`, `.nav-tab-clip`, `.blend-lighter` in `index.css` i.p.v. inline theme-variabelen.
+- **Dynamische layout:** drop-up (`dropUpMenuCssVars`), chart-bars en model-segmenten gebruiken CSS custom properties (`.drop-up-menu-positioned`, `.analytics-bar-segment`, `.models-segment-bar`) — minimale `style={{ "--…": … }}` alleen om variabelen te zetten.
+- **Microsoft Edge Tools** (axe/webhint in VS Code/Cursor) is geen onderdeel van `npm run lint`; na wijzigingen in bovenstaande bestanden IDE-diagnostics verversen.
+
 ## Build
 
 ```bash
@@ -61,6 +69,7 @@ src/
 ├── themes/          # ThemeProvider, useTheme, theme-context, presets
 ├── lib/
 │   ├── api.ts       # API client — typed fetch wrappers for all backend endpoints
+│   ├── aria.ts      # ariaBool() — ARIA boolean strings voor listbox/switchers
 │   ├── institutionalMarkdown.ts  # Markdown → tables (pariteit met Python normalizer)
 │   └── utils.ts     # cn() helper for Tailwind class merging
 ├── pages/           # Route pages (Chat, Sessions, Config, Plugins, …)

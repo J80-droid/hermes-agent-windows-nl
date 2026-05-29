@@ -224,6 +224,66 @@ code { font-size: 0.875rem; }
   mix-blend-mode: plus-lighter;
 }
 
+/* Theme component surfaces (values come from ThemeProvider CSS variables). */
+.app-header-surface {
+  background: var(--component-header-background);
+  border-image: var(--component-header-border-image);
+  clip-path: var(--component-header-clip-path);
+}
+
+.app-sidebar-surface {
+  background: var(--component-sidebar-background);
+  clip-path: var(--component-sidebar-clip-path);
+  border-image: var(--component-sidebar-border-image);
+}
+
+.nav-tab-clip {
+  clip-path: var(--component-tab-clip-path);
+}
+
+/* Drop-up menus positioned via useDropUpFixedStyle (--drop-up-* set in JSX). */
+.drop-up-menu-positioned {
+  bottom: var(--drop-up-bottom);
+  left: var(--drop-up-left);
+}
+
+.theme-swatch-segment {
+  flex: 1;
+  background: var(--swatch-color);
+}
+
+.analytics-chart-column {
+  height: var(--chart-column-height, 10rem);
+}
+
+.analytics-bar-segment {
+  width: 100%;
+  height: var(--bar-segment-height, 0);
+}
+
+.models-segment-bar {
+  width: var(--segment-width, 0);
+}
+
+.models-segment-pattern {
+  position: absolute;
+  inset: 0;
+  opacity: 0.3;
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent 0 0.4rem,
+    currentColor 0.4rem calc(0.4rem + 1px)
+  );
+}
+
+.sidebar-tooltip-positioned {
+  top: var(--tooltip-top);
+  left: var(--tooltip-left);
+  transform: translateY(-50%);
+  opacity: var(--tooltip-opacity, 1);
+  animation: var(--tooltip-animation, sidebar-tooltip-in 120ms ease-out);
+}
+
 /* System UI-monospace stack — distinct from `font-courier` (Courier
    Prime), used for dense data readouts where the display font would
    break the grid. Routes through the theme's mono stack so themes

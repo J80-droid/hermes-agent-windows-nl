@@ -115,24 +115,28 @@ class TestSourceCodeGuardrails:
     introduced by copy-paste of the old pattern.
     """
 
-    _RAW_COLOR_8_PATTERN = re.compile(r'init_pair\(\d+,\s*8\s*,')
+    # Literal color 8 only — not ``8 if curses.COLORS > 8`` (clamped pattern).
+    _RAW_COLOR_8_PATTERN = re.compile(r'init_pair\(\d+,\s*8\s*(?! if\b)\s*,')
+
+    def _read_source(self, name: str) -> str:
+        return (_SRC_ROOT / name).read_text(encoding="utf-8")
 
     def test_no_raw_color_8_in_plugins_cmd(self):
-        source = (_SRC_ROOT / "plugins_cmd.py").read_text()
+        source = self._read_source("plugins_cmd.py")
         matches = self._RAW_COLOR_8_PATTERN.findall(source)
         assert not matches, (
             f"plugins_cmd.py contains unclamped color 8: {matches}"
         )
 
     def test_no_raw_color_8_in_main(self):
-        source = (_SRC_ROOT / "main.py").read_text()
+        source = self._read_source("main.py")
         matches = self._RAW_COLOR_8_PATTERN.findall(source)
         assert not matches, (
             f"main.py contains unclamped color 8: {matches}"
         )
 
     def test_no_raw_color_8_in_curses_ui(self):
-        source = (_SRC_ROOT / "curses_ui.py").read_text()
+        source = self._read_source("curses_ui.py")
         matches = self._RAW_COLOR_8_PATTERN.findall(source)
         assert not matches, (
             f"curses_ui.py contains unclamped color 8: {matches}"

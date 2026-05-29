@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type ComponentType,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -461,16 +462,11 @@ export default function App() {
 
       <header
         className={cn(
-          "lg:hidden fixed top-0 left-0 right-0 z-40 min-h-14",
+          "app-header-surface lg:hidden fixed top-0 left-0 right-0 z-40 min-h-14",
           "flex items-center gap-2 px-4 py-2",
           "border-b border-current/20",
           "bg-background-base/90 backdrop-blur-sm",
         )}
-        style={{
-          background: "var(--component-header-background)",
-          borderImage: "var(--component-header-border-image)",
-          clipPath: "var(--component-header-clip-path)",
-        }}
       >
         <Button
           ghost
@@ -484,10 +480,7 @@ export default function App() {
           <Menu />
         </Button>
 
-        <Typography
-          className="font-bold text-[0.95rem] leading-[0.95] tracking-[0.05em] text-midground"
-          style={{ mixBlendMode: "plus-lighter" }}
-        >
+        <Typography className="blend-lighter font-bold text-[0.95rem] leading-[0.95] tracking-[0.05em] text-midground">
           {t.app.brand}
         </Typography>
       </header>
@@ -512,7 +505,7 @@ export default function App() {
             id="app-sidebar"
             aria-label={t.app.navigation}
             className={cn(
-              "fixed top-0 left-0 z-50 flex h-dvh max-h-dvh w-64 min-h-0 flex-col",
+              "app-sidebar-surface fixed top-0 left-0 z-50 flex h-dvh max-h-dvh w-64 min-h-0 flex-col",
               "border-r border-current/20",
               "bg-background-base/95 backdrop-blur-sm",
               "transition-[transform] duration-200 ease-out",
@@ -521,11 +514,6 @@ export default function App() {
               "lg:transition-[width] lg:duration-[600ms] lg:ease-[cubic-bezier(0.33,1.35,0.62,1)]",
               collapsed && "lg:w-14",
             )}
-            style={{
-              background: "var(--component-sidebar-background)",
-              clipPath: "var(--component-sidebar-clip-path)",
-              borderImage: "var(--component-sidebar-border-image)",
-            }}
           >
             <div
               className={cn(
@@ -542,10 +530,7 @@ export default function App() {
               >
                 <PluginSlot name="header-left" />
 
-                <Typography
-                  className="font-bold text-[1.125rem] leading-[0.95] tracking-[0.0525rem] text-midground uppercase"
-                  style={{ mixBlendMode: "plus-lighter" }}
-                >
+                <Typography className="blend-lighter font-bold text-[1.125rem] leading-[0.95] tracking-[0.0525rem] text-midground uppercase">
                   Hermes
                   <br />
                   Agent
@@ -738,7 +723,7 @@ export default function App() {
                         "min-h-0 min-w-0",
                         isChatRoute ? "flex flex-1 flex-col" : "hidden",
                       )}
-                      aria-hidden={!isChatRoute}
+                      aria-hidden={isChatRoute ? undefined : "true"}
                     >
                       <ChatPage isActive={isChatRoute} />
                     </div>
@@ -786,7 +771,7 @@ function SidebarNavLink({
         onBlur={collapsed ? () => setHovered(false) : undefined}
         className={({ isActive }) =>
           cn(
-            "group/nav relative flex items-center gap-3",
+            "nav-tab-clip group/nav relative flex items-center gap-3",
             "px-5 py-2.5",
             "font-mondwest text-display uppercase text-sm tracking-[0.12em]",
             "whitespace-nowrap transition-colors cursor-pointer",
@@ -796,9 +781,6 @@ function SidebarNavLink({
               : "text-text-secondary hover:text-midground",
           )
         }
-        style={{
-          clipPath: "var(--component-tab-clip-path)",
-        }}
       >
         {({ isActive }) => (
           <>
@@ -821,8 +803,7 @@ function SidebarNavLink({
             {isActive && (
               <span
                 aria-hidden
-                className="absolute left-0 top-0 bottom-0 w-px bg-midground"
-                style={{ mixBlendMode: "plus-lighter" }}
+                className="blend-lighter absolute left-0 top-0 bottom-0 w-px bg-midground"
               />
             )}
           </>
@@ -938,7 +919,7 @@ function SystemActionButton({
       <button
         onClick={onClick}
         disabled={disabled}
-        aria-busy={busy}
+        aria-busy={busy ? "true" : undefined}
         aria-label={collapsed ? displayLabel : undefined}
         onFocus={collapsed ? () => setHovered(true) : undefined}
         onBlur={collapsed ? () => setHovered(false) : undefined}
@@ -983,8 +964,7 @@ function SystemActionButton({
         {busy && (
           <span
             aria-hidden
-            className="absolute left-0 top-0 bottom-0 w-px bg-midground"
-            style={{ mixBlendMode: "plus-lighter" }}
+            className="blend-lighter absolute left-0 top-0 bottom-0 w-px bg-midground"
           />
         )}
       </button>
@@ -1109,18 +1089,18 @@ function SidebarTooltip({ anchor, label, warmRef }: SidebarTooltipProps) {
   return createPortal(
     <span
       className={cn(
-        "fixed z-[100] pointer-events-none",
+        "sidebar-tooltip-positioned fixed z-[100] pointer-events-none",
         "px-2 py-1",
         "bg-background-base/95 border border-current/20 backdrop-blur-sm shadow-lg",
         "font-mondwest text-display text-xs tracking-[0.1em] text-midground uppercase",
       )}
-      style={{
-        top: rect.top + rect.height / 2,
-        left: sidebarRight + 8,
-        transform: "translateY(-50%)",
-        opacity: isWarm ? 1 : undefined,
-        animation: isWarm ? "none" : "sidebar-tooltip-in 120ms ease-out",
-      }}
+      style={
+        {
+          "--tooltip-top": `${rect.top + rect.height / 2}px`,
+          "--tooltip-left": `${sidebarRight + 8}px`,
+          "--tooltip-animation": isWarm ? "none" : undefined,
+        } as CSSProperties
+      }
     >
       {label}
     </span>,
