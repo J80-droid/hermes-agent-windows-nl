@@ -34,7 +34,7 @@ if (Invoke-HermesEnsureInteractiveConsole -RepoRoot $repoRoot) {
 }
 
 Reset-HermesConsoleInputModes
-try { Clear-Host } catch { }
+try { Clear-Host } catch { $null = $_.Exception.Message }
 Set-HermesWin32ChatEnv -RepoRoot $repoRoot
 [void](Stop-HermesGhostInputBlockers -RepoRoot $repoRoot)
 Reset-HermesConsoleInputModes
@@ -98,6 +98,6 @@ if ($env:HERMES_MINIMAL_LAUNCH -ne '1') {
 }
 Invoke-HermesDisableConsoleQuickEdit
 Reset-HermesConsoleInputModes
-try { Clear-Host } catch { }
+try { Clear-Host } catch { $null = $_.Exception.Message }
 Write-Host '[INFO] Chat starten...' -ForegroundColor Green
 exit 0

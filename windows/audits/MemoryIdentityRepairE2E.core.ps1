@@ -30,6 +30,7 @@ function Add-IdentityE2EStep {
 }
 
 function New-IdentityE2EMockRuntime {
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$ParentDir)
     $root = Join-Path $ParentDir 'hermes'
     $coreMemDir = Join-Path $root 'profiles\core\memories'

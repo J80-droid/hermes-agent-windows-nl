@@ -144,29 +144,29 @@ try {
     Remove-Item Env:HERMES_MINIMAL_LAUNCH -ErrorAction SilentlyContinue
 
     $script:MockGitHead = 'model_head_1'
-    function Get-HermesGitHead { param([string]$RepoRoot = '') return $script:MockGitHead }
+    function Get-HermesGitHead { return $script:MockGitHead }
     Write-HermesSessionStamp -Name 'model_config_ok' -Data @{} -RepoRoot $repoRoot
     Assert-Equal 0 (Invoke-HermesModelConfigMaintenance) 'stamp hit'
     . $maintPath -RepoRoot $repoRoot -Quiet
 
     $script:MockCoherent = $false
     $script:MockCatalogOk = $false
-    function Test-HermesModelProviderCoherence { param([switch]$Quiet) return [bool]$script:MockCoherent }
-    function Test-HermesModelCatalogAvailability { param([switch]$Quiet) return [bool]$script:MockCatalogOk }
-    function Invoke-HermesModelProviderCoherenceRepair { param([switch]$Quiet) return $true }
-    function Invoke-HermesModelCatalogAutoRepair { param([string]$RepoRoot = '', [switch]$Quiet) return $true }
+    function Test-HermesModelProviderCoherence { return [bool]$script:MockCoherent }
+    function Test-HermesModelCatalogAvailability { return [bool]$script:MockCatalogOk }
+    function Invoke-HermesModelProviderCoherenceRepair { return $true }
+    function Invoke-HermesModelCatalogAutoRepair { return $true }
     Assert-Equal 1 (Invoke-HermesModelConfigMaintenance) 'incoherent => 1'
     Assert-Equal 0 (Invoke-HermesModelConfigMaintenance -AllowFailure) 'AllowFailure => 0'
     . $maintPath -RepoRoot $repoRoot -Quiet
 
     $script:MockCoherent = $true
     $script:MockCatalogOk = $true
-    function Test-HermesModelProviderCoherence { param([switch]$Quiet) return [bool]$script:MockCoherent }
-    function Test-HermesModelCatalogAvailability { param([switch]$Quiet) return [bool]$script:MockCatalogOk }
-    function Invoke-HermesModelProviderCoherenceRepair { param([switch]$Quiet) return $true }
-    function Invoke-HermesModelCatalogAutoRepair { param([string]$RepoRoot = '', [switch]$Quiet) return $true }
+    function Test-HermesModelProviderCoherence { return [bool]$script:MockCoherent }
+    function Test-HermesModelCatalogAvailability { return [bool]$script:MockCatalogOk }
+    function Invoke-HermesModelProviderCoherenceRepair { return $true }
+    function Invoke-HermesModelCatalogAutoRepair { return $true }
     $script:MockGitHead = 'model_head_2'
-    function Get-HermesGitHead { param([string]$RepoRoot = '') return $script:MockGitHead }
+    function Get-HermesGitHead { return $script:MockGitHead }
     Remove-Item (Get-HermesSessionStampPath -Name 'model_config_ok') -Force -ErrorAction SilentlyContinue
     Assert-Equal 0 (Invoke-HermesModelConfigMaintenance) 'coherent => 0 + stamp'
     Assert-True ($null -ne (Read-HermesSessionStamp -Name 'model_config_ok')) 'model_config_ok geschreven'
@@ -179,7 +179,7 @@ try {
     Assert-Equal 0 (Invoke-HermesTuiMaintenance) 'tui env skip'
     Remove-Item Env:HERMES_SKIP_SHORTCUT_MAINT_ON_START, Env:HERMES_SKIP_TUI_MAINT_ON_START -ErrorAction SilentlyContinue
 
-    function Test-HermesShouldSkipPostPullMaintenanceOnStart { param([string]$RepoRoot = '') return $true }
+    function Test-HermesShouldSkipPostPullMaintenanceOnStart { return $true }
     Assert-Equal 0 (Invoke-HermesShortcutMaintenance) 'post-pull dedupe shortcut'
     Assert-Equal 0 (Invoke-HermesTuiMaintenance) 'post-pull dedupe tui'
     . $maintPath -RepoRoot $repoRoot -Quiet
@@ -212,6 +212,7 @@ try {
     $fakeLance = Join-Path $isoRoot 'fake_lance.ps1'
     @'
 param([string]$RepoRoot = '')
+$null = $RepoRoot
 if ($args -contains '--list') { Write-Output 'domain SKIP table ontbreekt'; exit 0 }
 exit 1
 '@ | Set-Content -LiteralPath $fakeLance -Encoding UTF8
@@ -247,7 +248,7 @@ param() Write-Output 'ok'; exit 0
     # --- Domain sync failure (gemockte sync, geen manifest-IO) ---
     function Test-HermesPathNewerThanStamp { return $true }
     function Get-HermesDomainsYamlFingerprint { return 'sync_fp' }
-    function Read-HermesSessionStamp { param([string]$Name) return $null }
+    function Read-HermesSessionStamp { param([string]$Name) $null = $Name; return $null }
     # sync-fout pad (geen echte manifest-sync):
     function Invoke-HermesPostPullMaintenance_SyncFail {
         $err = 0

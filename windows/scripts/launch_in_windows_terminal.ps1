@@ -1,7 +1,6 @@
 #requires -Version 5.1
 param(
     [Parameter(Mandatory)][string]$RepoRoot,
-    [string]$LaunchScript = '',
     [string]$ExtraArgs = ''
 )
 $ErrorActionPreference = 'Stop'

@@ -34,6 +34,7 @@ function Get-MemoryTrustIntegrationMockConfigYaml {
 }
 
 function New-MemoryTrustIntegrationMockRuntime {
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$HermesParent)
     $root = Join-Path $HermesParent 'hermes'
     $coreDir = Join-Path $root 'profiles\core\memories'

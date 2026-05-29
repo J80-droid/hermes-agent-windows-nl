@@ -74,6 +74,9 @@ function Resolve-HermesLaunchProfile {
         [switch]$ForceProfile
     )
     $candidates = @()
+    if ($ForceProfile -and (Test-HermesLaunchProfileName -Name $Profile.Trim().ToLowerInvariant())) {
+        return $Profile.Trim().ToLowerInvariant()
+    }
     if ($Profile.Trim()) { $candidates += $Profile.Trim().ToLowerInvariant() }
     foreach ($scope in @('Process', 'User', 'Machine')) {
         $raw = [Environment]::GetEnvironmentVariable('HERMES_LAUNCH_PROFILE', $scope)
@@ -221,6 +224,7 @@ function Get-HermesLaunchCliArgs {
 }
 
 function Set-HermesLaunchProfilePreference {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory)][ValidateSet('minimal', 'full')][string]$Profile
     )

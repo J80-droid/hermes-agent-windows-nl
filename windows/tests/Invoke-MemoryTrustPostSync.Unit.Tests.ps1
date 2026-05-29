@@ -22,6 +22,8 @@ function Assert-True {
 }
 
 function New-MockHermesRuntime {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
     $root = Join-Path $isoParent 'hermes'
     $coreDir = Join-Path $root 'profiles\core\memories'
     New-Item -ItemType Directory -Path $coreDir -Force | Out-Null

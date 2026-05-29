@@ -24,6 +24,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$script:DashQuiet = [bool]$Quiet.IsPresent
+[void][bool]$Quiet
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 Import-HermesPythonPolicy
 
@@ -37,13 +39,15 @@ function Write-LaunchLogAppend {
             New-Item -ItemType Directory -Path $dir -Force | Out-Null
         }
         Add-Content -LiteralPath $logPath -Value $Line -Encoding UTF8 -ErrorAction SilentlyContinue
-    } catch { }
+    } catch {
+        $null = $_.Exception.Message
+    }
 }
 
 function Write-DashLog {
     param([string]$Message, [string]$Color = 'Cyan')
     Write-LaunchLogAppend $Message
-    if ($Quiet) { return }
+    if ($script:DashQuiet) { return }
     Write-Host $Message -ForegroundColor $Color
 }
 
@@ -105,10 +109,11 @@ function Initialize-WorkspaceDashboardPlugins {
     if ($env:LOCALAPPDATA) {
         Move-AsideStaleCodebaseVizUserPlugin -Label 'localappdata' -PluginDir (Join-Path $env:LOCALAPPDATA 'hermes\plugins\codebase-viz')
     }
-    Build-CodebaseVizDistIfNeeded -RepoRoot $RepoRoot
+    Update-CodebaseVizDistIfNeeded -RepoRoot $RepoRoot
 }
 
-function Build-CodebaseVizDistIfNeeded {
+function Update-CodebaseVizDistIfNeeded {
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$RepoRoot)
     if ($env:HERMES_CODEBASE_VIZ_SKIP_BUILD -eq '1') { return }
     $dashDir = Join-Path $RepoRoot 'plugins\codebase-viz\dashboard'
@@ -130,6 +135,7 @@ function Build-CodebaseVizDistIfNeeded {
         }
     }
     if (-not $needsBuild) { return }
+    if (-not $PSCmdlet.ShouldProcess($dashDir, 'Build Codebase Viz dist')) { return }
 
     if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
         Write-DashLog '[WARN] Codebase Viz: dist verouderd maar npm niet op PATH.' -Color Yellow
@@ -151,7 +157,7 @@ function Build-CodebaseVizDistIfNeeded {
     }
 }
 
-function New-CondaDashboardRunArgs {
+function Get-CondaDashboardRunArgs {
     param([string[]]$PythonArgs)
     # Geen ``conda run -e`` — veel Windows-conda builds ondersteunen dat niet.
     # Zet HERMES_BUNDLED_PLUGINS / CODEBASE_VIZ_PYGOUNT_TIMEOUT op $env: vóór aanroep;
@@ -179,7 +185,7 @@ function Get-DashboardPythonExe {
     return $null
 }
 
-function New-HermesDashboardCliArgs {
+function Get-HermesDashboardCliArgs {
     param([string[]]$PythonArgs)
     $cli = @('-m', 'hermes_cli.main')
     $cli += $PythonArgs
@@ -187,24 +193,32 @@ function New-HermesDashboardCliArgs {
 }
 
 function Stop-HermesDashboardProcess {
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$CondaExe)
+    if (-not $PSCmdlet.ShouldProcess('Hermes dashboard', 'Stop')) { return }
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
-    $stopArgs = New-CondaDashboardRunArgs -PythonArgs @('dashboard', '--stop')
+    $stopArgs = Get-CondaDashboardRunArgs -PythonArgs @('dashboard', '--stop')
     try {
         $null = & $CondaExe @stopArgs 2>&1
-    } catch { }
+    } catch {
+        $null = $_.Exception.Message
+    }
     $py = Get-DashboardPythonExe -RepoRoot $RepoRoot
     if ($py) {
         try {
             $null = & $py -m hermes_cli.main dashboard --stop 2>&1
-        } catch { }
+        } catch {
+            $null = $_.Exception.Message
+        }
     }
     if ($CondaExe) {
         try {
-            $stopArgs = New-CondaDashboardRunArgs -PythonArgs @('dashboard', '--stop')
+            $stopArgs = Get-CondaDashboardRunArgs -PythonArgs @('dashboard', '--stop')
             $null = & $CondaExe @stopArgs 2>&1
-        } catch { }
+        } catch {
+            $null = $_.Exception.Message
+        }
     }
     $ErrorActionPreference = $prevEap
     Start-Sleep -Seconds 3
@@ -212,8 +226,7 @@ function Stop-HermesDashboardProcess {
 
 function Install-HermesWebDashboardPackage {
     param(
-        [string]$RepoRoot,
-        [string]$CondaExe
+        [string]$RepoRoot
     )
     $editable = "${RepoRoot}[web]"
     $prevEap = $ErrorActionPreference
@@ -254,7 +267,9 @@ function Test-CodebaseVizHealth {
             try {
                 $r = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
                 if ($r.StatusCode -eq 200) { break }
-            } catch { }
+            } catch {
+                $null = $_.Exception.Message
+            }
         }
         Start-Sleep -Seconds 2
     }
@@ -382,10 +397,14 @@ function Test-DashboardPortInUse {
         if ($ok -and $client.Connected) {
             return $true
         }
-    } catch { }
+    } catch {
+        $null = $_.Exception.Message
+    }
     finally {
         if ($null -ne $client) {
-            try { $client.Close() } catch { }
+            try { $client.Close() } catch {
+                $null = $_.Exception.Message
+            }
         }
     }
     return $false
@@ -406,7 +425,7 @@ if ($workspacePlugins) {
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $statusArgs = New-CondaDashboardRunArgs -PythonArgs @('dashboard', '--status')
+        $statusArgs = Get-CondaDashboardRunArgs -PythonArgs @('dashboard', '--status')
         $statusOut = & $condaExe @statusArgs 2>&1 | Out-String
         if ($statusOut -match 'dashboard process\(es\) running') {
             Write-DashLog ("[OK] Dashboard-proces al actief - open http://${hostAddr}:${port}/sessions") -Color Green
@@ -420,7 +439,7 @@ if ($workspacePlugins) {
     }
 }
 
-Install-HermesWebDashboardPackage -RepoRoot $RepoRoot -CondaExe $condaExe
+Install-HermesWebDashboardPackage -RepoRoot $RepoRoot
 
 $logDir = Join-Path $RepoRoot 'output\research\logs'
 if (-not (Test-Path -LiteralPath $logDir)) {
@@ -440,7 +459,7 @@ if (-not $dashPy) {
     Write-DashLog '[WARN] Dashboard niet gestart: geen hermes-env python.exe.' -Color Yellow
     exit 0
 }
-$argList = New-HermesDashboardCliArgs -PythonArgs $dashPythonArgs
+$argList = Get-HermesDashboardCliArgs -PythonArgs $dashPythonArgs
 
 Write-DashLog "[INFO] Dashboard starten (geen browser): http://${hostAddr}:${port}/sessions" -Color Cyan
 Write-DashLog ("[INFO] Python: $dashPy") -Color DarkGray

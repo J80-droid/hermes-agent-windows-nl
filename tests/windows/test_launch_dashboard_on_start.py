@@ -44,14 +44,14 @@ def test_ps1_skip_env_flags(ps1_text: str) -> None:
     assert "HERMES_DASHBOARD_WINDOW_STYLE" in ps1_text
     assert "Start-HermesNoWindowProcess" in ps1_text
     assert "CreateNoWindow" in ps1_text or "conhost" in ps1_text.lower()
-    assert "New-CondaDashboardRunArgs" in ps1_text
+    assert "Get-CondaDashboardRunArgs" in ps1_text
     assert "Get-DashboardPythonExe" in ps1_text
     assert "-e', \"HERMES_BUNDLED_PLUGINS" not in ps1_text
     assert "'240'" in ps1_text or '"240"' in ps1_text
     assert "Test-CodebaseVizHealth" in ps1_text
     assert "pygount" in ps1_text
     assert "verify_codebase_viz_health.py" in ps1_text
-    assert "Build-CodebaseVizDistIfNeeded" in ps1_text
+    assert "Update-CodebaseVizDistIfNeeded" in ps1_text
     assert "Invoke-CodebaseVizWarmupScan" in ps1_text
     assert "HERMES_CODEBASE_VIZ_WARMUP" in ps1_text
 

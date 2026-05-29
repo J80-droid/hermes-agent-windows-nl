@@ -400,6 +400,7 @@ function Set-HermesWin32ChatEnv {
     .SYNOPSIS
         Win32-console env voor interactieve chat: geen Unix-TERM, wel kleur via FORCE_COLOR + VT.
     #>
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory)]
         [string]$RepoRoot
@@ -674,7 +675,7 @@ function Invoke-HermesPrepareConsoleForChat {
     .SYNOPSIS
         Scrollbuffer + muismodi voor Hermes-chat (aanroep vanuit .cmd zonder pad-quote bugs).
     #>
-    param([Parameter(Mandatory)][string]$RepoRoot)
+    param()
     Initialize-HermesWin32WindowUtil
     if ('HermesWin32WindowUtil' -as [type]) {
         $scrollMin = 999
@@ -712,6 +713,9 @@ function Reset-HermesConsoleInputModes {
     .SYNOPSIS
         Herstelt terminal: muismodi + alternate screen (voorkomt 'onzichtbare overlay' na vorige sessie).
     #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+    if (-not $PSCmdlet.ShouldProcess('local console', 'Reset input modes')) { return }
     $esc = [char]27
     $seq = $esc + '[?1006l' + $esc + '[?1003l' + $esc + '[?1002l' + $esc + '[?1000l' +
         $esc + '[?1004l' + $esc + '[?2004l' + $esc + '[?1049l' + $esc + '[<u' + $esc + '[>4m' +
@@ -1059,6 +1063,7 @@ function Start-HermesNoWindowProcess {
     .SYNOPSIS
         Start een achtergrondproces zonder conhost-venster (voorkomt onzichtbare fullscreen overlay die muisklikken blokkeert).
     #>
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory)]
         [string]$FilePath,
@@ -1150,6 +1155,7 @@ function Stop-HermesGhostInputBlockers {
     .SYNOPSIS
         Stopt ghost-dashboard + minimaliseert vreemde consoles; herstelt terminal input-modi.
     #>
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$RepoRoot = '')
     $stopped = 0
     if ($env:HERMES_DISMISS_GHOST_CONSOLES -eq '1') {

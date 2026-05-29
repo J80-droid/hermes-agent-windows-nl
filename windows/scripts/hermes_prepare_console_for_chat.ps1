@@ -4,5 +4,5 @@ $ErrorActionPreference = 'SilentlyContinue'
 $common = Join-Path $RepoRoot 'windows\HermesShellCommon.ps1'
 if (-not (Test-Path -LiteralPath $common)) { exit 0 }
 . $common
-Invoke-HermesPrepareConsoleForChat -RepoRoot $RepoRoot
+Invoke-HermesPrepareConsoleForChat
 exit 0

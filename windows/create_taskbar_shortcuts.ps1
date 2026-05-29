@@ -42,14 +42,6 @@ if ($needIconGen) {
 
 . (Join-Path $scriptDir 'launcher_config.ps1')
 $startHermesRel = Get-HermesStartLauncherRelativePath -RepoRoot $RepoRoot
-$startHermesDesc = if ($startHermesRel -eq 'start_hermes_split.bat') {
-    'Hermes starten (start_hermes_split.bat / Windows Terminal) - sleep naar taakbalk'
-} elseif ($startHermesRel -eq 'start_hermes.bat') {
-    'Hermes starten (start_hermes.bat) - sleep naar taakbalk'
-} else {
-    "Hermes starten ($startHermesRel) - sleep naar taakbalk"
-}
-
 if (-not $OutDir.Trim()) {
     $OutDir = $scriptDir
 } else {

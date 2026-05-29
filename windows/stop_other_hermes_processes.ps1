@@ -25,6 +25,7 @@ function Get-AncestorPidChain {
 }
 
 function Stop-HermesProcessIfAllowed {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [int]$ProcessId,
         [string]$Label

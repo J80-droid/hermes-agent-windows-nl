@@ -50,6 +50,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $script:FailCount = 0
 $script:WarnCount = 0
+$script:PostChangeQuiet = [bool]$Quiet.IsPresent
+[void][bool]$Quiet
 
 function Write-MaintLog {
     param(
@@ -57,7 +59,7 @@ function Write-MaintLog {
         [ValidateSet('Info', 'Ok', 'Warn', 'Error', 'Step')]
         [string]$Level = 'Info'
     )
-    if ($Quiet -and $Level -in @('Info', 'Step')) { return }
+    if ($script:PostChangeQuiet -and $Level -in @('Info', 'Step')) { return }
     $color = switch ($Level) {
         'Ok' { 'Green' }
         'Warn' { 'Yellow' }

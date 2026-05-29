@@ -9,7 +9,7 @@ param(
 
 $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
 $maintenance = Join-Path $scriptDir 'HermesSessionMaintenance.ps1'
-$argsList = @('-File', $maintenance, '-Phase', 'PostPullTail')
+$argsList = @('-File', $maintenance, '-Phase', $Phase)
 if (-not [string]::IsNullOrWhiteSpace($RepoRoot)) {
     $argsList += @('-RepoRoot', $RepoRoot)
 }

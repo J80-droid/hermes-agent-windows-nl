@@ -32,7 +32,7 @@ $canonicalLnks = @(
 $fail = 0
 $checked = 0
 
-function Report-ShortcutResult {
+function Write-ShortcutResult {
     param(
         [string]$Label,
         [hashtable]$Result
@@ -59,7 +59,7 @@ function Report-ShortcutResult {
 foreach ($leaf in $canonicalLnks) {
     $lnkPath = Join-Path $windowsDir $leaf
     $r = Test-HermesShortcutPathHealth -ShortcutPath $lnkPath -RepoRoot $RepoRoot
-    Report-ShortcutResult -Label ("windows\$leaf") -Result $r
+    Write-ShortcutResult -Label ("windows\$leaf") -Result $r
 }
 
 if ($IncludeDesktop) {
@@ -68,7 +68,7 @@ if ($IncludeDesktop) {
         $p = Join-Path $desk $leaf
         if (Test-Path -LiteralPath $p) {
             $r = Test-HermesShortcutPathHealth -ShortcutPath $p -RepoRoot $RepoRoot
-            Report-ShortcutResult -Label ("Desktop\$leaf") -Result $r
+            Write-ShortcutResult -Label ("Desktop\$leaf") -Result $r
         }
     }
 }
@@ -80,7 +80,7 @@ if ($IncludePinned) {
             $pinPath = Join-Path $pinnedDir $leaf
             if (-not (Test-Path -LiteralPath $pinPath)) { continue }
             $r = Test-HermesShortcutPathHealth -ShortcutPath $pinPath -RepoRoot $RepoRoot
-            Report-ShortcutResult -Label ("TaskBar\$leaf") -Result $r
+            Write-ShortcutResult -Label ("TaskBar\$leaf") -Result $r
             $srcPath = Join-Path $windowsDir $leaf
             if ((Test-Path -LiteralPath $srcPath) -and $r.BatPath) {
                 $srcBat = Get-HermesShortcutResolvedBatPath -ShortcutPath $srcPath -RepoRoot $RepoRoot

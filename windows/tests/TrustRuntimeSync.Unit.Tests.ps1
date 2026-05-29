@@ -50,6 +50,7 @@ function Get-TrustSyncMockConfigYaml {
 }
 
 function New-TrustSyncMockHermesRoot {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory)][string]$ParentDir,
         [string[]]$Profiles = @('core'),
@@ -87,6 +88,7 @@ function New-TrustSyncMockHermesRoot {
 }
 
 function New-TrustSyncMiniRepo {
+    [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][string]$ParentDir)
     $mini = Join-Path $ParentDir 'mini_repo'
     $seedSrc = Join-Path $repoRoot 'docs/templates/MEMORY_CANONICAL_SEED.md'

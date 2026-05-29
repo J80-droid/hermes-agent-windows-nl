@@ -36,10 +36,12 @@ if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
 }
 $env:HERMES_REPO_ROOT = $RepoRoot
 $script:DotAllowFailure = [bool]$AllowFailure
+$script:MaintQuiet = [bool]$Quiet.IsPresent
+[void][bool]$Quiet
 
 function Write-Maint {
     param([string]$Message, [string]$Level = 'Info')
-    if ($Quiet -and $Level -eq 'Info') { return }
+    if ($script:MaintQuiet -and $Level -eq 'Info') { return }
     $color = switch ($Level) {
         'Ok' { 'Green' }
         'Warn' { 'Yellow' }
@@ -256,7 +258,9 @@ function Invoke-HermesPostPullMaintenance {
         $manifest = Join-Path $RepoRoot 'docs\domain_toolsets.yaml'
         $domainsFp = Get-HermesDomainsYamlFingerprint
         $stamp = Read-HermesSessionStamp -Name 'domain_toolsets_sync'
-        $manifestNewer = Test-HermesPathNewerThanStamp -WatchPaths @('docs\domain_toolsets.yaml') -StampName 'domain_toolsets_sync' -RepoRoot $RepoRoot
+        $manifestNewer = (Test-Path -LiteralPath $manifest) -and (
+            Test-HermesPathNewerThanStamp -WatchPaths @($manifest) -StampName 'domain_toolsets_sync' -RepoRoot $RepoRoot
+        )
         $domainsChanged = Test-HermesDomainsFingerprintChanged -Stamp $stamp -CurrentFp $domainsFp
         if ($domainsChanged -or $manifestNewer) {
             Write-Maint '[INFO] Domein-toolsets sync...'

@@ -69,7 +69,6 @@ $iconPath = Join-Path $windowsDir 'hermes_logo.ico'
 . (Join-Path $windowsDir 'launcher_config.ps1')
 $batchLeaf = Get-HermesStartLauncherRelativePath -RepoRoot $resolvedRepo
 $batchPath = Join-Path $resolvedRepo $batchLeaf
-$hermesDir = $resolvedRepo
 $shortcutPath = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Hermes Agent.lnk'
 
 Write-Host '================================================' -ForegroundColor Cyan

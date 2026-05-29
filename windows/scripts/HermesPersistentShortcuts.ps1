@@ -156,12 +156,14 @@ function Get-HermesShortcutRoleFromShortcut {
 }
 
 function New-HermesCatalogShortcut {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory)][hashtable]$Entry,
         [Parameter(Mandatory)][string]$ShortcutPath,
         [Parameter(Mandatory)][string]$RepoRoot,
         [Parameter(Mandatory)][string]$WindowsDir
     )
+    if (-not $PSCmdlet.ShouldProcess($ShortcutPath, 'Create Hermes shortcut')) { return $false }
     $batPath = Join-Path $RepoRoot ($Entry.BatRelative -replace '/', '\')
     if (-not (Test-Path -LiteralPath $batPath)) { return $false }
     $iconPath = Get-HermesTaskbarRoleIconPath -Role $Entry.Role -WindowsDir $WindowsDir

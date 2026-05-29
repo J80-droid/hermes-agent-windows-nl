@@ -192,7 +192,7 @@ function Invoke-RebalanceHermesConfigToCore {
     }
 }
 
-function Ensure-HermesLegacyRootMemorySeed {
+function Initialize-HermesLegacyRootMemorySeed {
     <#
     .SYNOPSIS
     Maakt ontbrekende legacy root memories/MEMORY.md en USER.md aan uit canonieke seed.

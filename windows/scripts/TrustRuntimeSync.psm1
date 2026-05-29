@@ -131,6 +131,7 @@ function Test-TrustRuntimeSyncNeeded {
 }
 
 function Set-TrustRuntimeSyncStamp {
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$StampPath = '')
     $stamp = if ($StampPath) { $StampPath } else { Get-TrustRuntimeSyncStampPath }
     $dir = Split-Path -Parent $stamp

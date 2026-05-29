@@ -11,7 +11,6 @@ $ErrorActionPreference = 'Stop'
 
 $runtimeRoot = Get-HermesRuntimeRoot
 $configPath = Get-HermesCanonicalConfigPath
-$authPath = Join-Path $runtimeRoot 'auth.json'
 
 if (-not (Test-Path -LiteralPath $configPath)) {
     Write-HermesFail "Runtime config ontbreekt: $configPath"
