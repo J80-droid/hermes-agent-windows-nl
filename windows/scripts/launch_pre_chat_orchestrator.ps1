@@ -30,6 +30,7 @@ $total = 0
 if (-not $SkipBootstrap) { $total++ }
 if ($env:HERMES_MINIMAL_LAUNCH -ne '1') { $total++ }
 if ($env:HERMES_SKIP_SOUL_DEPLOY_ON_START -ne '1') { $total++ }
+if ($env:HERMES_SKIP_TRUST_RUNTIME_ON_START -ne '1') { $total++ }
 if ($env:HERMES_SKIP_INSTITUTIONAL_RUNTIME -ne '1') { $total++ }
 if ($env:HERMES_SKIP_PENDING_TRUST_ON_START -ne '1') { $total++ }
 if ($env:HERMES_SKIP_DASHBOARD_ON_START -ne '1') {
@@ -64,6 +65,14 @@ if ($env:HERMES_SKIP_SOUL_DEPLOY_ON_START -ne '1') {
     $soul = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/launch_soul_anatomy_deploy.ps1'
     Invoke-HermesLaunchPhase -Step $step -Total $total -Label 'SOUL anatomy deploy' -AllowFailure -Action {
         [void](& $soul -RepoRoot $RepoRoot)
+    }
+}
+
+if ($env:HERMES_SKIP_TRUST_RUNTIME_ON_START -ne '1') {
+    $step++
+    $trustSync = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/launch_trust_runtime_sync.ps1'
+    Invoke-HermesLaunchPhase -Step $step -Total $total -Label 'Trust/memory sync (indien nodig)' -AllowFailure -Action {
+        [void](& $trustSync -RepoRoot $RepoRoot -Quiet)
     }
 }
 

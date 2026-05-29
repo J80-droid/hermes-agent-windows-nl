@@ -381,6 +381,7 @@ class TestPendingTrustRepoWiring:
             encoding="utf-8"
         )
         assert "launch_pre_chat_orchestrator.ps1" in launch
+        assert "launch_trust_runtime_sync.ps1" in orch
         assert "launch_pending_trust_runtime.ps1" in orch
         assert "HERMES_SKIP_PENDING_TRUST_ON_START" in orch
         assert orch.index("launch_institutional_runtime.ps1") < orch.index(

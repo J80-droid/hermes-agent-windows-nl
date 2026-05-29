@@ -289,7 +289,7 @@ function Test-SoulAnatomyContent {
         @{ Pattern = 'Zekerheid:\s*NN%'; Label = 'zekerheidspercentage (Zekerheid: NN%)' },
         @{ Pattern = 'Ontbrekende informatie \(voor deze conclusie\)'; Label = 'gap-blok per strategie' },
         @{ Pattern = 'ga door'; Label = '1/N ga-door gate' },
-        @{ Pattern = 'max\.\s*1×'; Label = 'tool retry-limiet' }
+        @{ Pattern = 'max\.\s*1[\u00D7x]'; Label = 'tool retry-limiet' }
     )
     foreach ($g in $governanceRequired) {
         if ($Content -notmatch $g.Pattern) {
