@@ -45,6 +45,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | User-data docs (STATUS/RECOVERY sync) | [USER_DATA_OPERATIONS.md](USER_DATA_OPERATIONS.md) |
 | Backup & restore (schema v3, runtime) | [USER_DATA_OPERATIONS.md](USER_DATA_OPERATIONS.md) § Windows; `windows/INSTITUTIONAL.md` § Backup |
 | IDE / Cursor (PSES + conda) | [WORKSPACE_IDE_SETUP.md](WORKSPACE_IDE_SETUP.md) · parent template: `docs/templates/Hermes_agent_WS.vscode.settings.json` · repo-only: [IDE_VSCODE_SETTINGS.example.json](IDE_VSCODE_SETTINGS.example.json) |
+| Cursor MCP (`mcp.json`, orphan Node/Python) | [CURSOR_MCP_CONFIG.md](CURSOR_MCP_CONFIG.md) · repair: `windows/scripts/Repair-CursorMcpConfig.ps1` · Hermes reap: `logs/mcp-child-pids.json` |
 | Hermes starten zonder conda in PATH | [HERMES_START.md](HERMES_START.md) (kopie ook in workspace-root `HERMES_START.md`) |
 | **Windows split-home (config, drift, migratie)** | [HERMES_HOME_WINDOWS.md](HERMES_HOME_WINDOWS.md) · E2E: `RUN_HERMES_HOME_E2E.bat`, `RUN_ROOT_CONFIG_INHERITANCE_E2E.bat`, `audits/RUN_MODEL_PROVIDER_COHERENCE_E2E.bat`, `audits/RUN_MODEL_PROVIDER_HARDENING_E2E.bat` · repair: `windows/REPAIR_MODEL_PROVIDER.bat` · migratie: `windows/APPLY_HERMES_HOME_MIGRATION.bat` |
 | Blauwdruk: nieuw domein toevoegen | [DOMAIN_BLUEPRINT.md](DOMAIN_BLUEPRINT.md) |

@@ -1,8 +1,13 @@
 """Tests for MCP stability fixes — event loop handler, PID tracking, shutdown robustness."""
 
 import asyncio
+import json
+import os
 import signal
+from pathlib import Path
 from unittest.mock import patch, MagicMock
+
+import pytest
 
 
 
@@ -112,7 +117,12 @@ class TestStdioPidTracking:
             assert fake_pid not in _orphan_stdio_pids
 
     def test_kill_orphaned_uses_sigkill_when_available(self, monkeypatch):
-        """SIGTERM-first then SIGKILL after 2s for orphan cleanup."""
+        """SIGTERM-first then SIGKILL after 2s for orphan cleanup (POSIX)."""
+        import sys
+
+        if sys.platform == "win32":
+            pytest.skip("POSIX SIGTERM/SIGKILL path")
+
         from tools.mcp_tool import (
             _kill_orphaned_mcp_children,
             _orphan_stdio_pids,
@@ -127,15 +137,11 @@ class TestStdioPidTracking:
         fake_sigkill = 9
         monkeypatch.setattr(signal, "SIGKILL", fake_sigkill, raising=False)
 
-        # Post-#21561 the alive check routes through
-        # ``gateway.status._pid_exists`` (so it's safe on Windows — see
-        # bpo-14484). Return True so the SIGKILL escalation fires.
         with patch("tools.mcp_tool.os.kill") as mock_kill, \
              patch("gateway.status._pid_exists", return_value=True), \
              patch("tools.mcp_tool.time.sleep") as mock_sleep:
             _kill_orphaned_mcp_children()
 
-        # SIGTERM then SIGKILL; the alive check no longer touches os.kill.
         mock_kill.assert_any_call(fake_pid, signal.SIGTERM)
         mock_kill.assert_any_call(fake_pid, fake_sigkill)
         assert mock_kill.call_count == 2
@@ -144,8 +150,37 @@ class TestStdioPidTracking:
         with _lock:
             assert fake_pid not in _orphan_stdio_pids
 
+    def test_kill_orphaned_windows_uses_taskkill(self, monkeypatch):
+        """Windows orphan cleanup uses terminate_pid(force=True)."""
+        import sys
+
+        if sys.platform != "win32":
+            pytest.skip("Windows taskkill path")
+
+        from tools.mcp_tool import (
+            _kill_orphaned_mcp_children,
+            _orphan_stdio_pids,
+            _lock,
+        )
+
+        fake_pid = 424242
+        with _lock:
+            _orphan_stdio_pids.clear()
+            _orphan_stdio_pids.add(fake_pid)
+
+        with patch("gateway.status._pid_exists", return_value=True), \
+             patch("gateway.status.terminate_pid") as mock_term:
+            _kill_orphaned_mcp_children()
+
+        mock_term.assert_called_with(fake_pid, force=True)
+
     def test_kill_orphaned_falls_back_without_sigkill(self, monkeypatch):
-        """Without SIGKILL, SIGTERM is used for both phases."""
+        """Without SIGKILL, SIGTERM is used for both phases (POSIX)."""
+        import sys
+
+        if sys.platform == "win32":
+            pytest.skip("POSIX SIGTERM path")
+
         from tools.mcp_tool import (
             _kill_orphaned_mcp_children,
             _orphan_stdio_pids,
@@ -174,6 +209,81 @@ class TestStdioPidTracking:
 # ---------------------------------------------------------------------------
 # Fix 3: MCP reload timeout (cli.py)
 # ---------------------------------------------------------------------------
+
+class TestMCPChildrenRegistry:
+    """Persisted PID registry reaps children when owner process is dead."""
+
+    def test_reap_stale_registry_when_owner_dead(self, tmp_path, monkeypatch):
+        import tools.mcp_tool as mcp_mod
+
+        reg = tmp_path / "mcp-child-pids.json"
+        reg.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "owner_pid": 999001,
+                    "children": {"888001": "lancedb-knowledge"},
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(mcp_mod, "_mcp_children_registry_path", lambda: reg)
+
+        with patch("gateway.status._pid_exists", return_value=False), \
+             patch.object(mcp_mod, "_terminate_mcp_pids") as mock_term:
+            count = mcp_mod._reap_stale_mcp_children_from_registry()
+
+        assert count == 1
+        mock_term.assert_called_once()
+        assert not reg.exists()
+
+    def test_reap_when_pid_reused_session_mismatch(self, tmp_path, monkeypatch):
+        import tools.mcp_tool as mcp_mod
+
+        reg = tmp_path / "mcp-child-pids.json"
+        reg.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "owner_pid": os.getpid(),
+                    "session_id": "stale-session-id",
+                    "children": {"888003": "lancedb-knowledge"},
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(mcp_mod, "_mcp_children_registry_path", lambda: reg)
+
+        with patch.object(mcp_mod, "_terminate_mcp_pids") as mock_term:
+            count = mcp_mod._reap_stale_mcp_children_from_registry()
+
+        assert count == 1
+        mock_term.assert_called_once()
+
+    def test_reap_skips_when_owner_still_alive(self, tmp_path, monkeypatch):
+        import tools.mcp_tool as mcp_mod
+
+        reg = tmp_path / "mcp-child-pids.json"
+        reg.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "owner_pid": 999002,
+                    "children": {"888002": "lancedb-legal"},
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(mcp_mod, "_mcp_children_registry_path", lambda: reg)
+
+        with patch("gateway.status._pid_exists", return_value=True), \
+             patch.object(mcp_mod, "_terminate_mcp_pids") as mock_term:
+            count = mcp_mod._reap_stale_mcp_children_from_registry()
+
+        assert count == 0
+        mock_term.assert_not_called()
+        assert reg.exists()
+
 
 class TestMCPReloadTimeout:
     """_check_config_mcp_changes uses a timeout on _reload_mcp."""

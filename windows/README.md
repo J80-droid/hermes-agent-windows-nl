@@ -52,6 +52,7 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 | Volledige setup | `SETUP_HERMES.bat` of `launch_hermes.bat --setup` |
 | RAG-index bijwerken | `scripts/update_knowledge.bat` |
 | Doctor / fixes | `DOCTOR_FIX.bat` |
+| Cursor MCP-config repareren | `powershell -File windows\scripts\Repair-CursorMcpConfig.ps1` — zie `docs\CURSOR_MCP_CONFIG.md` |
 | TUI-kleuren / display | `TERMINAL_WINDOWS.md`, `APPLY_TEAM_DISPLAY.bat` (skin + markdown) |
 | API-keys + vault sync (split home) | `SYNC_HERMES_API_ENV.bat` — `~/.hermes/.env` → root + alle `profiles\*\`.env` (+ L4-scaffold) |
 | Obsidian vault (L4) openen | `OPEN_OBSIDIAN_VAULT.bat` — sync env, scaffold, start Obsidian; zie `docs\MEMORY_ARCHITECTURE.md` |
@@ -62,7 +63,7 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 | PowerShell lint (PSScriptAnalyzer) | `tests\RUN_PSScriptAnalyzer.bat` — 0 Warning/Error op `windows\` |
 | PSES/AST + shell helpers | `tests\Test-PsesTokenizer.ps1`, `tests\HermesShellCommon.Unit.Tests.ps1`, `tests\TrustRuntimePending.Unit.Tests.ps1`, `tests\Invoke-MemoryTrustPostSync.Unit.Tests.ps1`, `audits\RUN_HERMES_SHELL_COMMON_E2E.bat` |
 | Profielwissel E2E-audit | `audits\RUN_PROFILE_SWITCH_E2E.bat` |
-| SOUL anatomy bij start (stamp) | `launch_soul_anatomy_deploy.ps1` via `launch_hermes.bat` — zie `docs\SOUL_ANATOMY_SPEC.md` |
+| SOUL anatomy bij start (stamp) | `launch_soul_anatomy_deploy.ps1` via `launch_hermes.ps1` → orchestrator — zie `docs\SOUL_ANATOMY_SPEC.md` |
 | SOUL anatomy (handmatig + E2E) | `APPLY_SOUL_ANATOMY_RUNTIME.bat`; alleen snippets: `SYNC_SOUL_SNIPPETS.bat` |
 | SOUL deploy-start E2E | `audits\RUN_SOUL_DEPLOY_START_E2E.bat` of `RUN_AUDITS.bat -IncludeSoulDeployStartE2E` |
 | SOUL anatomy E2E (runtime) | `audits\RUN_SOUL_ANATOMY_E2E.ps1` |
@@ -76,7 +77,7 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 | Nieuw profiel (runtime) | `set HERMES_HOME=%LOCALAPPDATA%\hermes` → `SYNC_DOMAIN_TOOLSETS.bat --create-missing` — zie `docs\DOMAIN_BLUEPRINT.md` |
 | Provision E2E (smoke) | `audits\RUN_PROVISION_DOMAIN_E2E.bat` |
 | Toolset E2E (14 profielen) | `audits\RUN_TOOLSET_DOMAIN_E2E.bat` of `RUN_AUDITS.bat -IncludeToolsetDomainE2E` |
-| Web dashboard (9119, geen tab) | Automatisch bij `launch_hermes.bat` (Codebase Viz warmup); uit: `HERMES_SKIP_DASHBOARD_ON_START=1` |
+| Web dashboard (9119, geen tab) | Automatisch bij start via orchestrator (Codebase Viz warmup); uit: `HERMES_SKIP_DASHBOARD_ON_START=1` |
 | **Alles-in-één na codewijziging** | `hermes_onderhoud.bat` of `windows\HERMES_ONDERHOUD.bat` (snelkoppelingen + dashboard + Codebase Viz) |
 | Snelkoppelingen kapot / verkeerd pad | Automatisch bij **update** en **start** (`fix_hermes_taskbar_pins.ps1` → ook `%LOCALAPPDATA%\Hermes\shortcuts\`). Handmatig: `FIX_TASKBAR_ICONS.bat` · verify: `scripts\verify_hermes_shortcut_paths.ps1 -IncludePinned` |
 | Institutionele presentatie | `docs\INSTITUTIONAL_PRESENTATION.md` |
@@ -139,7 +140,7 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 | Codebase smoke E2E (E1/E2) | `audits\RUN_CODEBASE_SMOKE_E2E.bat` · `RUN_AUDITS.bat -IncludeCodebaseSmokeE2E` · `-IncludeAllE2E` |
 | Codebase smoke (snel) | `audits\RUN_CODEBASE_SMOKE_AUDIT.bat` · `RUN_AUDITS.bat -IncludeCodebaseSmoke` |
 | Dagelijks / na pull | **`start_hermes.bat`** (repo-root): auto-pull als achter `origin`; anders direct start. Forceer: `--pull` · `PULL_HERMES.bat` (alias) |
-| Sessie-onderhoud (stamps) | Start: `launch_pre_chat_orchestrator.ps1` → `HermesSessionMaintenance.ps1` · Post-pull: `Invoke-HermesPostPullMaintenance.ps1` · E2E: `audits\RUN_SESSION_MAINTENANCE_E2E.bat` (14/14) · unit: `tests\HermesSessionMaintenance.Unit.Tests.ps1` · [START.md](START.md) |
+| Sessie-onderhoud (stamps) | Start: `launch_hermes.ps1` → `launch_pre_chat_orchestrator.ps1` → `HermesSessionMaintenance.ps1` · Post-pull: `Invoke-HermesPostPullMaintenance.ps1` · E2E: `audits\RUN_SESSION_MAINTENANCE_E2E.bat` (14/14) · Launch UI: `audits\RUN_LAUNCH_UI_SINK_E2E.bat` · unit: `tests\HermesSessionMaintenance.Unit.Tests.ps1` · [START.md](START.md) |
 | Na pull/update (optioneel) | `POST_GIT_PULL.bat -Full` (= AutoRepair + InstitutionalVerify + relaunch) · `-IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E` · `-IncludeRagPipeline` · `-SkipRelaunch` · `HERMES_SKIP_RELAUNCH_AFTER_PULL=1` · `UPDATE_HERMES.bat` |
 | Post-pull E2E (geïsoleerd) | `audits\RUN_POST_GIT_PULL_AUTOMATION_E2E.bat` (14/14) · unit: `pytest tests\audits\test_post_git_pull_automation_e2e_harness.py -m "not e2e"` |
 | RAG na pull (optioneel) | `windows\RAG_PIPELINE.bat` — readiness (`Get-RagSourceReadiness.ps1`) + ingest; exit 2 = geen bronnen in `%USERPROFILE%\data\raw_source_files` |

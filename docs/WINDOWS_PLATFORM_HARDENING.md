@@ -113,6 +113,8 @@ High-level laag boven `VectorStoreBackend`:
 | Whisper | `hardware_backend.py` — modelcache per proces |
 | Subprocessen | `process_registry.py` — pipe-close + completion queue cap; Windows PTY: `_pty_spawn_argv` (direct `python -c`), `str` op winpty-write, detached kill via `taskkill`, PTY/PID reconcile in `poll()` |
 | MCP stderr | `mcp_tool.shutdown_mcp_servers` — sluit log-handle |
+| MCP stdio orphans | `mcp_tool` — PID-registry `logs/mcp-child-pids.json` (owner PID + session UUID); startup-reap in `discover_mcp_tools`; Windows `taskkill /T /F`; gateway + interpreter `atexit` |
+| Cursor `mcp.json` | [CURSOR_MCP_CONFIG.md](CURSOR_MCP_CONFIG.md) — `scripts/repair_cursor_mcp_json.py`, `windows/scripts/Repair-CursorMcpConfig.ps1` |
 
 Modules: `scripts/rag_pipeline/knowledge_repository.py`, `lancedb_storage.py`, `tools/process_registry.py` · tests: `tests/rag_pipeline/*` (performance subset), `tests/tools/test_process_registry.py` (60 passed op Windows; 6 skipped = 5× POSIX orphan-pipe + 1× PTY EOF-integratie) · E2E: `RUN_KNOWLEDGE_REPOSITORY_E2E.bat`, **`RUN_PERFORMANCE_ARCHITECTURE_E2E.bat`** (stap 10/10 pytest omvat o.a. `test_process_registry.py`)
 
