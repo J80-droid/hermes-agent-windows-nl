@@ -293,10 +293,16 @@ class TestApiMessagesSurrogateRecovery:
 class TestRunConversationSurrogateSanitization:
     """Integration: verify run_conversation sanitizes user_message."""
 
+    @patch("run_agent.check_toolset_requirements", return_value={})
+    @patch("run_agent.get_tool_definitions", return_value=[])
+    @patch("agent.context_compressor.get_model_context_length", return_value=128_000)
+    @patch("agent.agent_init.query_ollama_num_ctx", return_value=None)
     @patch("run_agent.AIAgent._build_system_prompt")
     @patch("run_agent.AIAgent._interruptible_streaming_api_call")
     @patch("run_agent.AIAgent._interruptible_api_call")
-    def test_user_message_surrogates_sanitized(self, mock_api, mock_stream, mock_sys):
+    def test_user_message_surrogates_sanitized(
+        self, mock_api, mock_stream, mock_sys, _mock_ollama_ctx, _mock_ctx_len, _mock_tools, _mock_toolset
+    ):
         """Surrogates in user_message are stripped before API call."""
         from run_agent import AIAgent
 

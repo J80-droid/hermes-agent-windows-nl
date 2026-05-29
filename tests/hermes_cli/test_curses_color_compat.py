@@ -9,17 +9,26 @@ black" / dim gray) which does not exist on 8-color terminals.  The fix
 clamps with ``min(8, curses.COLORS - 1)``.
 """
 
-import curses
 import re
+import sys
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
+import pytest
 
+try:
+    import curses
+except ModuleNotFoundError:  # Windows builds often lack _curses
+    curses = None  # type: ignore[assignment,misc]
 
 # Path to the source files under test
 _SRC_ROOT = Path(__file__).parent.parent.parent / "hermes_cli"
 
 
+@pytest.mark.skipif(
+    curses is None or sys.platform == "win32",
+    reason="curses/_curses not available on this platform",
+)
 class TestInitPairClampingBehavior:
     """Simulate curses color initialization on low-color terminals.
 
