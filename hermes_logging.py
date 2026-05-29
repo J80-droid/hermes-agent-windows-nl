@@ -407,7 +407,12 @@ class _ManagedRotatingFileHandler(RotatingFileHandler):
         return stream
 
     def doRollover(self):
-        super().doRollover()
+        try:
+            super().doRollover()
+        except PermissionError:
+            # Windows: agent.log may be held open by a live Hermes/gateway process
+            # while tests or atexit cleanup still emit — skip rollover, keep logging.
+            return
         self._chmod_if_managed()
         # Our own rollover writes a new baseFilename; refresh the snapshot
         # so the next emit doesn't mistake it for external rotation.

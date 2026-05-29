@@ -118,6 +118,7 @@ hermes_setup.log
 windows/scripts/rag_ingest_bulk.log
 windows/scripts/rag_ingest_bulk.err.log
 windows/audits/INSTITUTIONAL_E2E_LAST_RUN.log
+audits/FULL_VERIFY_*.log
 # Timestamped E2E run-rapporten (lokaal; baselines zonder _HHMMSS mogen in repo)
 windows/audits/*_E2E_REPORT_*_*.md
 audits/*_E2E_REPORT_*_*.md

@@ -41,13 +41,16 @@ def test_d1_repo_artefacts() -> None:
 
 def test_d2_launch_hermes_wiring() -> None:
     bat = _read("windows/launch_hermes.bat")
+    orch = _read("windows/scripts/launch_pre_chat_orchestrator.ps1")
+    dash_ps1 = _read("windows/scripts/launch_dashboard_on_start.ps1")
     checks = [
-        "launch_dashboard_on_start.ps1" in bat,
-        "HERMES_SKIP_DASHBOARD_ON_START" in bat,
+        "launch_pre_chat_orchestrator.ps1" in bat,
+        "launch_dashboard_on_start.ps1" in orch or "launch_dashboard_on_start.ps1" in dash_ps1,
+        "HERMES_SKIP_DASHBOARD_ON_START" in orch or "HERMES_SKIP_DASHBOARD_ON_START" in dash_ps1,
         "HERMES_LAUNCH_LOG" in bat,
     ]
     ok = all(checks)
-    _step("launch_hermes.bat wiring", ok, f"{sum(checks)}/3")
+    _step("launch_hermes.bat wiring", ok, f"{sum(checks)}/{len(checks)}")
 
 
 def test_d3_ps1_contract() -> None:

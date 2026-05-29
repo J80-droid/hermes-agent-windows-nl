@@ -131,10 +131,13 @@ def test_p2_post_git_pull_wiring() -> None:
 
 def test_p3_pull_hermes_chain() -> None:
     pull = _read("PULL_HERMES.bat")
+    start = _read("start_hermes.bat")
     ok = (
-        "git pull" in pull
-        and "POST_GIT_PULL.bat" in pull
-        and "which_hermes_repo.ps1" in pull
+        "start_hermes.bat" in pull
+        and "--pull" in pull
+        and "git pull" in start
+        and "POST_GIT_PULL.bat" in start
+        and "Test-HermesGitPullNeeded.ps1" in start
     )
     _step("PULL_HERMES.bat keten", ok)
 

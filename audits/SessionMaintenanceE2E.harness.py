@@ -169,7 +169,7 @@ def test_s4_orchestrator_wiring() -> None:
         ":after_setup" in launch,
         "HermesSessionMaintenance.ps1" in orch,
         "HERMES_REPO_ROOT" in launch,
-        "-SkipBootstrap" in orch,
+        "[switch]$SkipBootstrap" in orch,
         ". $maintenancePath -RepoRoot $RepoRoot -AllowFailure" in orch,
         "Invoke-HermesStartMaintenance" in orch,
         "SkipConfigDrift = $true" in orch,

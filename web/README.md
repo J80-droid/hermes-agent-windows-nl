@@ -37,6 +37,8 @@ npm run build   # tsc -b && vite build → ../hermes_cli/web_dist/
 
 Repo E2E (geen live browser): `audits/RUN_WEB_UI_CLEAN_E2E.bat` (11 stappen: lint, build, PTY-channel-contract, pytest-subset).
 
+Volledige matrix (integration + e2e + rag + `RUN_AUDITS -IncludeAllE2E`): `audits/RUN_FULL_VERIFICATION.bat` — zie `audits/FULL_VERIFICATION_README.md`.
+
 `tsconfig` gebruikt `noUnusedLocals` — ongebruikte parameters blokkeren de build (prefix met `_` indien API-contract).
 
 ### Toegankelijkheid (ARIA) en IDE-hints

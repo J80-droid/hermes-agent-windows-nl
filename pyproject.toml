@@ -272,6 +272,10 @@ markers = [
 # pytest-timeout: per-test 30s cap (each file = fresh subprocess via run_tests_parallel.py).
 # thread method: Windows has no SIGALRM (signal method crashes pytest).
 addopts = "-m 'not integration and not rag_integration and not e2e' --timeout=30 --timeout-method=thread"
+filterwarnings = [
+    "ignore:'audioop' is deprecated:DeprecationWarning",
+    "ignore:.*audioop.*:DeprecationWarning:discord.player",
+]
 
 [tool.ty.environment]
 python-version = "3.13"

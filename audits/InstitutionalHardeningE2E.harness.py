@@ -219,7 +219,10 @@ def test_h13_update_quickfix_bat() -> None:
     ok = (
         "-QuickFix" in bat
         and "quick_fix_repo_hygiene.ps1" in bat
-        and 'set "HERMES_WIN=%~dp0"' in bat
+        and (
+            'set "HERMES_WIN=%~dp0"' in bat
+            or ('pushd "%~dp0"' in bat and 'set "HERMES_WIN=%CD%\\"' in bat)
+        )
         and "upstream_sync.ps1" in bat
         and 'if "%~2"==""' in bat
     )

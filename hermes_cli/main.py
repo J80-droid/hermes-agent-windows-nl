@@ -11266,6 +11266,13 @@ def _try_termux_fast_tui_launch() -> bool:
 
 def main():
     """Main entry point for hermes CLI."""
+    try:
+        from hermes_runtime_warnings import apply_runtime_warning_filters
+
+        apply_runtime_warning_filters()
+    except Exception:
+        pass
+
     # Force UTF-8 stdio on Windows before anything prints.  No-op elsewhere.
     try:
         from hermes_cli.stdio import configure_windows_stdio

@@ -22,9 +22,12 @@ test runner at ``scripts/run_tests.sh``.
 import asyncio
 import os
 import sys
+import warnings
 from pathlib import Path
 
 import pytest
+
+warnings.filterwarnings("ignore", category=DeprecationWarning, message=r".*audioop.*")
 
 # Ensure project root is importable
 PROJECT_ROOT = Path(__file__).parent.parent

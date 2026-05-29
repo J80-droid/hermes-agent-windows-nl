@@ -24,10 +24,13 @@ def test_post_git_pull_has_relaunch_and_full_flags() -> None:
 
 
 def test_pull_hermes_bat_chains_git_pull_and_post() -> None:
-    text = (REPO / "PULL_HERMES.bat").read_text(encoding="utf-8")
-    assert "git pull" in text
-    assert "POST_GIT_PULL.bat" in text
-    assert "which_hermes_repo.ps1" in text
+    """PULL_HERMES.bat is een alias naar start_hermes.bat --pull (pull + POST_GIT_PULL)."""
+    pull = (REPO / "PULL_HERMES.bat").read_text(encoding="utf-8")
+    start = (REPO / "start_hermes.bat").read_text(encoding="utf-8")
+    assert "start_hermes.bat" in pull and "--pull" in pull
+    assert "git pull" in start
+    assert "POST_GIT_PULL.bat" in start
+    assert "Test-HermesGitPullNeeded.ps1" in start
 
 
 def test_invoke_upstream_post_merge_calls_relaunch() -> None:

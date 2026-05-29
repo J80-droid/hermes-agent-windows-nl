@@ -19,12 +19,16 @@ from re import Pattern
 
 _HEADING_LINE_SCORE_RE = re.compile(r"^#{1,6}\s+", re.MULTILINE)
 
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 ROOKTEST_PATH = (
-    Path(__file__).resolve().parent.parent
+    _REPO_ROOT
     / "docs"
     / "templates"
     / "INSTITUTIONAL_RENDERER_TEST_PROMPT.md"
 )
+
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 
 def _render_ansi_cached(md: str, cache: dict[str, str]) -> str:
