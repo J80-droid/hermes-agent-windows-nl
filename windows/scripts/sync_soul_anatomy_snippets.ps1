@@ -62,12 +62,39 @@ if (-not $Verify -and -not $SkipRepair) {
     }
     foreach ($path in (Get-SoulTargets -HermesRoot $HermesRoot)) {
         $content = Get-SoulFileContent -Path $path
+        $fixed = Repair-SoulMissingOutputConventionsHeader -Content $content
+        if ($fixed -ne $content) {
+            Set-SoulFileContent -Path $path -Content $fixed
+            if (-not $Quiet) {
+                Write-Host ('  REPAIR orphan output: ' + $path) -ForegroundColor Yellow
+            }
+            $content = $fixed
+        }
         $fixed = Repair-SoulDuplicateOutputBlocks -Content $content
         if ($fixed -ne $content) {
             Set-SoulFileContent -Path $path -Content $fixed
             if (-not $Quiet) {
-                Write-Host ('  REPAIR: ' + $path) -ForegroundColor Yellow
+                Write-Host ('  REPAIR duplicate output: ' + $path) -ForegroundColor Yellow
             }
+        }
+    }
+    $outSync = Join-Path $PSScriptRoot 'sync_soul_output_format_snippet.ps1'
+    $needsOut = $false
+    foreach ($path in (Get-SoulTargets -HermesRoot $HermesRoot)) {
+        $issues = Test-SoulAnatomyContent -Content (Get-SoulFileContent -Path $path) -Label $path
+        if ($issues | Where-Object { $_ -match 'Output conventions' }) {
+            $needsOut = $true
+            break
+        }
+    }
+    if ($needsOut) {
+        if (-not $Quiet) {
+            Write-Host '--- Re-sync Output conventions (anatomy repair) ---' -ForegroundColor Cyan
+        }
+        $outArgs = @{ RepoRoot = $RepoRoot; HermesRoot = $HermesRoot; Force = $true }
+        & $outSync @outArgs | Out-Null
+        if (Test-NativeCommandFailed) {
+            throw 'Output conventions re-sync mislukt na anatomy repair'
         }
     }
 }

@@ -228,6 +228,7 @@ function Sync-SoulSnippet {
 function Repair-SoulDuplicateOutputBlocks {
     param([string]$Content)
     $marker = "(?ms)^### Output conventions \(institutional\)\s*\r?\n"
+    $sectionEnd = $script:SoulRegexOutputConventionsEnd
     $changed = $false
     while ([regex]::Matches($Content, $marker).Count -gt 1) {
         $changed = $true
@@ -235,11 +236,35 @@ function Repair-SoulDuplicateOutputBlocks {
         $second = $regexHits[1].Index
         $before = $Content.Substring(0, $second)
         $after = $Content.Substring($second)
-        $after = $after -replace "(?ms)^### Output conventions \(institutional\)\s*\r?\n.*?(?=^\#\# |\z)", ''
+        $after = $after -replace ("(?ms)^### Output conventions \(institutional\)\s*\r?\n.*?" + $sectionEnd), ''
         $Content = ($before.TrimEnd() + "`r`n`r`n" + $after.TrimStart()).TrimEnd()
     }
     if ($changed) { return $Content + "`r`n" }
     return $Content
+}
+
+function Repair-SoulMissingOutputConventionsHeader {
+    <#
+    .SYNOPSIS
+        Verwijder wees-Output-conventions-inhoud zonder sectiekop (## Projectoverzicht … vóór Expertise).
+        Daarna opnieuw sync_soul_output_format_snippet.ps1 -Force uitvoeren.
+    #>
+    param([string]$Content)
+    if ($Content -match '(?m)^### Output conventions \(institutional\)\s') {
+        return $Content
+    }
+    if ($Content -notmatch '(?ms)^## Projectoverzicht\s') {
+        return $Content
+    }
+    if ($Content -notmatch '(?ms)^## Expertise & Knowledge\s') {
+        return $Content
+    }
+    $orphan = '(?ms)^## Projectoverzicht\s.*?(?=^## Expertise & Knowledge\s)'
+    $fixed = $Content -replace $orphan, ''
+    if ($fixed -eq $Content) {
+        return $Content
+    }
+    return $fixed.TrimEnd() + "`r`n"
 }
 
 function Test-SoulAnatomyContent {
@@ -423,4 +448,4 @@ function Set-InstitutionalNewChatReminder {
     }
 }
 
-Export-ModuleMember -Function Sync-SoulSnippet, Get-HermesRoot, Get-SoulTargets, Get-DomainSoulProfileNames, Get-SoulFileContent, Set-SoulFileContent, Set-SoulSyncIncludeRoot, Set-InstitutionalNewChatReminder, Get-SoulSectionEndPattern, Repair-SoulDuplicateOutputBlocks, Test-SoulAnatomyContent, Get-SoulAnatomyDeployStampPath, Get-SoulAnatomyWatchPaths, Test-SoulAnatomyDeployNeeded, Test-SoulAnatomyDeployJustRan, Set-SoulAnatomyDeployStamp, Test-NativeCommandFailed
+Export-ModuleMember -Function Sync-SoulSnippet, Get-HermesRoot, Get-SoulTargets, Get-DomainSoulProfileNames, Get-SoulFileContent, Set-SoulFileContent, Set-SoulSyncIncludeRoot, Set-InstitutionalNewChatReminder, Get-SoulSectionEndPattern, Repair-SoulDuplicateOutputBlocks, Repair-SoulMissingOutputConventionsHeader, Test-SoulAnatomyContent, Get-SoulAnatomyDeployStampPath, Get-SoulAnatomyWatchPaths, Test-SoulAnatomyDeployNeeded, Test-SoulAnatomyDeployJustRan, Set-SoulAnatomyDeployStamp, Test-NativeCommandFailed

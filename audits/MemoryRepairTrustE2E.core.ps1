@@ -135,9 +135,9 @@ Add-MemoryRepairTrustStep 'keten wiring (post-sync, stamp, watch)' $wiringOk
 
 $mergeCommon = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/HermesMemoryMergeCommon.ps1')
 $repairText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/Invoke-RepairProfileMemoryLimits.ps1')
-Add-MemoryRepairTrustStep 'Ensure-HermesLegacyRootMemorySeed wiring' (
-    ($mergeCommon -match 'function Ensure-HermesLegacyRootMemorySeed') -and
-    ($repairText -match 'Ensure-HermesLegacyRootMemorySeed')
+Add-MemoryRepairTrustStep 'Initialize-HermesLegacyRootMemorySeed wiring' (
+    ($mergeCommon -match 'function Initialize-HermesLegacyRootMemorySeed') -and
+    ($repairText -match 'Initialize-HermesLegacyRootMemorySeed')
 )
 
 $critical = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/HermesCriticalWindowsRepoPaths.ps1')
@@ -214,7 +214,7 @@ try {
     $legacyMem = Join-Path $legacyRoot 'MEMORY.md'
     if (Test-Path -LiteralPath $legacyUser) { Remove-Item -LiteralPath $legacyUser -Force }
     if (Test-Path -LiteralPath $legacyMem) { Remove-Item -LiteralPath $legacyMem -Force }
-    Ensure-HermesLegacyRootMemorySeed -HermesRoot $mockRoot -RepoRoot $RepoRoot
+    Initialize-HermesLegacyRootMemorySeed -HermesRoot $mockRoot -RepoRoot $RepoRoot
     $legacyOk = (Test-Path -LiteralPath $legacyUser) -and (Test-Path -LiteralPath $legacyMem)
     Add-MemoryRepairTrustStep 'legacy root seed bootstrap' $legacyOk
 } finally {

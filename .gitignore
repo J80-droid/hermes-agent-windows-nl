@@ -130,6 +130,10 @@ windows/audits/CODEBASE_SMOKE_STEPLOG_*.json
 windows/audits/SKILL_DRIFT_AUDIT_*.md
 windows/audits/TOOLSET_DOMAIN_E2E_LAST_RUN.log
 windows/audits/SOUL_DEPLOY_START_E2E_LAST_RUN.log
+audits/RUN_AUDITS_*.log
+audits/RUN_AUDITS_LAST_RUN.log
+audits/PSSA_WARNINGS_LAST.txt
+tests/test_data/checkpoint_*.jsonl
 windows/tests/last_pytest_run.log
 windows/_backup_last_run.log
 windows/scripts/rag_ingest_run.log

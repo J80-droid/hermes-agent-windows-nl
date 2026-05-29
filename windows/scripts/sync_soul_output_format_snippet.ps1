@@ -38,6 +38,12 @@ $null = Sync-SoulSnippet `
 if (-not $Verify) {
     foreach ($path in (Get-SoulTargets -HermesRoot $HermesRoot)) {
         $content = Get-SoulFileContent -Path $path
+        $fixed = Repair-SoulMissingOutputConventionsHeader -Content $content
+        if ($fixed -ne $content) {
+            Set-SoulFileContent -Path $path -Content $fixed
+            Write-Host ('  REPAIR orphan output: ' + $path) -ForegroundColor Yellow
+            $content = $fixed
+        }
         $fixed = Repair-SoulDuplicateOutputBlocks -Content $content
         if ($fixed -ne $content) {
             Set-SoulFileContent -Path $path -Content $fixed

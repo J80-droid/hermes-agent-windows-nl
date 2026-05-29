@@ -4674,11 +4674,17 @@ def _(rid, params: dict) -> dict:
         return _ok(rid, {"value": _coerce_statusbar(raw)})
     if key == "cost":
         display = _load_cfg().get("display")
-        on = bool((display or {}).get("show_cost", True)) if isinstance(display, dict) else True
+        if isinstance(display, dict):
+            on = bool(display.get("show_cost", True))
+        else:
+            on = False
         return _ok(rid, {"value": "on" if on else "off"})
     if key in {"status_bar_tps", "tps"}:
         display = _load_cfg().get("display")
-        on = bool((display or {}).get("show_status_bar_tps", True)) if isinstance(display, dict) else True
+        if isinstance(display, dict):
+            on = bool(display.get("show_status_bar_tps", True))
+        else:
+            on = False
         return _ok(rid, {"value": "on" if on else "off"})
     if key == "cost_bar_mode":
         display = _load_cfg().get("display")

@@ -14,7 +14,7 @@ Geen netwerk, geen wijziging aan productie-`%LOCALAPPDATA%\hermes` (isolated tem
 
 1. Repo-scripts en entrypoints aanwezig
 2. Keten-wiring (post-sync `-EnforceOnly`, SYNC_TRUST, launch stamp/pending, watch-paden; stamp na audit)
-3. `Ensure-HermesLegacyRootMemorySeed` in repair + merge-common
+3. `Initialize-HermesLegacyRootMemorySeed` in repair + merge-common
 4. `HermesCriticalWindowsRepoPaths.ps1`
 5. `Get-TrustRuntimeWatchPaths` bevat enforce + repair
 6. `-MigrateOnly` + `-EnforceOnly` geweigerd

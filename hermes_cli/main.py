@@ -10260,12 +10260,35 @@ def cmd_profile(args):
 
     elif action == "use":
         name = args.profile_name
+        use_full_switch = (
+            getattr(args, "fix_hermes_home", False)
+            or getattr(args, "no_restart_gateway", False)
+            or getattr(args, "no_sync_env", False)
+        )
         try:
-            set_active_profile(name)
-            if name == "default":
-                print(f"Switched to: default (~/.hermes)")
+            if use_full_switch:
+                from hermes_cli.profile_switch import (
+                    execute_profile_switch,
+                    print_switch_messages,
+                )
+
+                restart_gateway = (
+                    False if getattr(args, "no_restart_gateway", False) else None
+                )
+                sync_env = False if getattr(args, "no_sync_env", False) else None
+                result = execute_profile_switch(
+                    name,
+                    fix_hermes_home=getattr(args, "fix_hermes_home", False),
+                    restart_gateway=restart_gateway,
+                    sync_env=sync_env,
+                )
+                print_switch_messages(result)
             else:
-                print(f"Switched to: {name}")
+                set_active_profile(name)
+                if name == "default":
+                    print(f"Switched to: default (~/.hermes)")
+                else:
+                    print(f"Switched to: {name}")
         except (ValueError, FileNotFoundError) as e:
             print(f"Error: {e}")
             sys.exit(1)
@@ -12548,6 +12571,14 @@ Examples:
     # config edit
     config_subparsers.add_parser("edit", help="Open config file in editor")
 
+    # config get
+    config_get = config_subparsers.add_parser(
+        "get", help="Get a configuration value by dotted key"
+    )
+    config_get.add_argument(
+        "key", help="Configuration key (e.g., auxiliary.vision.provider)"
+    )
+
     # config set
     config_set = config_subparsers.add_parser("set", help="Set a configuration value")
     config_set.add_argument(
@@ -13878,6 +13909,21 @@ Examples:
         "use", help="Set sticky default profile"
     )
     profile_use.add_argument("profile_name", help="Profile name (or 'default')")
+    profile_use.add_argument(
+        "--fix-hermes-home",
+        action="store_true",
+        help="Normalize HERMES_HOME to match the sticky profile",
+    )
+    profile_use.add_argument(
+        "--no-restart-gateway",
+        action="store_true",
+        help="Do not restart gateway after switch",
+    )
+    profile_use.add_argument(
+        "--no-sync-env",
+        action="store_true",
+        help="Skip Windows API environment sync",
+    )
 
     profile_create = profile_subparsers.add_parser(
         "create", help="Create a new profile"
