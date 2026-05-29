@@ -152,6 +152,22 @@ Console (filter `[codebase-viz]`): `scan gestart`, `fetch start/ok`; bij oude AP
 
 Unit tests mocken `subprocess` en gebruiken een **kleine temp-repo** — die slagen ook als pygount op de echte `hermes-agent` root **>240s** nodig heeft.
 
+### UI-navigatie (categorie-dropdowns)
+
+- Klik op **Visuals / Analysis / Hermes / Tools** (niet alleen hover).
+- Broodkruimel (`Visuals › Sunburst`) wordt **verborgen** zolang een menu open is (voorkomt overlap met dropdown-items).
+- Sticky nav + `padding` onder open menu; Force Graph: `graph.capped` (geen `capped is not defined`).
+
+### Live E2E-audit (9119)
+
+```bat
+audits\RUN_CODEBASE_VIZ_LIVE_E2E.bat
+```
+
+Zie `audits/CODEBASE_VIZ_LIVE_E2E_README.md` en rapport `audits/CODEBASE_VIZ_LIVE_AUDIT_REPORT_2026-05-29.md`. Dashboard moet draaien voor HTTP-stappen L7+.
+
+**Loopback:** `GET /api/auth/me` → 401 is normaal (geen OAuth); dashboard slaat die call sinds web-fix over op localhost.
+
 ## Rooktest (dashboard)
 
 1. **Optioneel env** (PowerShell, vóór dashboard-start):

@@ -81,6 +81,8 @@ export default function ForceGraph({ data }) {
   const { connected, lastEvent } = useFileWatcher();
   const ripple = useRippleAnimation(lastEvent);
 
+  const graph = React.useMemo(() => buildGraph(data, search), [data, search]);
+
   React.useEffect(() => {
     const onEscape = () => setInspector(null);
     window.addEventListener('codebase-viz:escape', onEscape);
@@ -105,7 +107,7 @@ export default function ForceGraph({ data }) {
     const d3 = window.d3;
     if (!d3) return undefined;
 
-    const { nodes, links, capped } = buildGraph(data, search);
+    const { nodes, links } = graph;
     if (!nodes.length) return undefined;
 
     const width = size.w;
@@ -260,7 +262,7 @@ export default function ForceGraph({ data }) {
       simRef.current = null;
       zoomBehaviorRef.current = null;
     };
-  }, [data, search, ripple, size]);
+  }, [graph, ripple, size]);
 
   const edgeList = Array.isArray(data?.edges) ? data.edges : [];
   const inEdges = inspector
@@ -301,7 +303,7 @@ export default function ForceGraph({ data }) {
       }),
       h(FileWatcherIndicator, { connected }),
     ),
-    capped &&
+    graph.capped &&
       h(
         'p',
         { className: 'codebase-viz-hint', style: { margin: '0 0 0.25rem' } },

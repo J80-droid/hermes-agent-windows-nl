@@ -27,12 +27,15 @@ export default function ScanProgress({ active, tab }) {
   const expectedHint = timeoutSec != null ? `v2.5.0 / ${timeoutSec}s` : 'v2.5.0';
 
   React.useEffect(() => {
-    if (active && !loggedRef.current) {
-      loggedRef.current = true;
-      console.info(LOG, 'scan gestart', { tab, detail, repoLabel, repoPath });
+    if (!active) {
+      loggedRef.current = false;
+      return;
     }
-    if (!active) loggedRef.current = false;
-  }, [active, tab, detail, repoLabel, repoPath]);
+    if (loggedRef.current) return;
+    if (!repoPath && !repoLabel && timeoutSec == null) return;
+    loggedRef.current = true;
+    console.info(LOG, 'scan gestart', { tab, detail, repoLabel, repoPath });
+  }, [active, tab, detail, repoLabel, repoPath, timeoutSec]);
 
   const scanTarget = repoLabel || repoPath;
   const phaseKey = phase || detail;

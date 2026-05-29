@@ -98,6 +98,15 @@ var CodebaseVizPlugin = (() => {
   // src/usePluginFetch.js
   var API = "/api/plugins/codebase-viz";
   var LOG = "[codebase-viz]";
+  function notifyScanRepoFromBody(body) {
+    if (!body || typeof body !== "object") return;
+    if (!body.repo_path && !body.repo_label) return;
+    window.dispatchEvent(
+      new CustomEvent("codebase-viz:repo-meta", {
+        detail: { repo_path: body.repo_path, repo_label: body.repo_label }
+      })
+    );
+  }
   function usePluginFetch(path, deps = [], refreshToken = 0) {
     const SDK2 = window.__HERMES_PLUGIN_SDK__;
     const [data, setData] = react_shim_default.useState(null);
@@ -118,6 +127,7 @@ var CodebaseVizPlugin = (() => {
             keys: body && typeof body === "object" ? Object.keys(body) : []
           });
           setData(body);
+          notifyScanRepoFromBody(body);
         }
       }).catch((err) => {
         if (err?.name !== "AbortError" && !ac.signal.aborted) {
@@ -532,6 +542,7 @@ var CodebaseVizPlugin = (() => {
     const [size, setSize] = react_shim_default.useState({ w: 0, h: 0 });
     const { connected, lastEvent } = useFileWatcher();
     const ripple = useRippleAnimation(lastEvent);
+    const graph = react_shim_default.useMemo(() => buildGraph(data, search), [data, search]);
     react_shim_default.useEffect(() => {
       const onEscape = () => setInspector(null);
       window.addEventListener("codebase-viz:escape", onEscape);
@@ -552,7 +563,7 @@ var CodebaseVizPlugin = (() => {
       if (!svg || !data?.nodes?.length || size.w < 10) return void 0;
       const d3 = window.d3;
       if (!d3) return void 0;
-      const { nodes, links, capped: capped2 } = buildGraph(data, search);
+      const { nodes, links } = graph;
       if (!nodes.length) return void 0;
       const width = size.w;
       const height = size.h;
@@ -624,7 +635,7 @@ var CodebaseVizPlugin = (() => {
         simRef.current = null;
         zoomBehaviorRef.current = null;
       };
-    }, [data, search, ripple, size]);
+    }, [graph, ripple, size]);
     const edgeList = Array.isArray(data?.edges) ? data.edges : [];
     const inEdges = inspector ? edgeList.filter((e) => e.target === inspector).slice(0, 20) : [];
     const outEdges = inspector ? edgeList.filter((e) => e.source === inspector).slice(0, 20) : [];
@@ -659,7 +670,7 @@ var CodebaseVizPlugin = (() => {
         }),
         h5(FileWatcherIndicator, { connected })
       ),
-      capped && h5(
+      graph.capped && h5(
         "p",
         { className: "codebase-viz-hint", style: { margin: "0 0 0.25rem" } },
         `Grafiek beperkt tot ${MAX_NODES} modules (meest verbonden eerst).`
@@ -1078,8 +1089,10 @@ ${d.value} LOC`;
   function isScanStatusPayload(body) {
     return body && typeof body === "object" && typeof body.progress === "number" && "phase" in body;
   }
-  function mergeScanContext(prev, body, health) {
+  function mergeScanContext(prev, body, health, fetchBody) {
     const next = { ...prev };
+    if (fetchBody?.repo_path) next.repoPath = fetchBody.repo_path;
+    if (fetchBody?.repo_label) next.repoLabel = fetchBody.repo_label;
     if (health?.repo_path) next.repoPath = health.repo_path;
     if (health?.pygount_timeout_sec != null) next.timeoutSec = health.pygount_timeout_sec;
     if (health?.scan_mode) next.scanMode = health.scan_mode;
@@ -1147,6 +1160,17 @@ ${d.value} LOC`;
       }, 1e3);
       return () => window.clearInterval(tick);
     }, [active, tab]);
+    react_shim_default.useEffect(() => {
+      function onRepoMeta(ev) {
+        const d = ev?.detail;
+        if (!d) return;
+        setScanContext(
+          (prev) => mergeScanContext(prev, d, null, d)
+        );
+      }
+      window.addEventListener("codebase-viz:repo-meta", onRepoMeta);
+      return () => window.removeEventListener("codebase-viz:repo-meta", onRepoMeta);
+    }, []);
     react_shim_default.useEffect(() => {
       const fetchJSON = sdkRef.current?.fetchJSON;
       if (!active || !fetchJSON) return void 0;
@@ -1257,12 +1281,15 @@ ${d.value} LOC`;
     const loggedRef = react_shim_default.useRef(false);
     const expectedHint = timeoutSec != null ? `v2.5.0 / ${timeoutSec}s` : "v2.5.0";
     react_shim_default.useEffect(() => {
-      if (active && !loggedRef.current) {
-        loggedRef.current = true;
-        console.info(LOG3, "scan gestart", { tab, detail, repoLabel, repoPath });
+      if (!active) {
+        loggedRef.current = false;
+        return;
       }
-      if (!active) loggedRef.current = false;
-    }, [active, tab, detail, repoLabel, repoPath]);
+      if (loggedRef.current) return;
+      if (!repoPath && !repoLabel && timeoutSec == null) return;
+      loggedRef.current = true;
+      console.info(LOG3, "scan gestart", { tab, detail, repoLabel, repoPath });
+    }, [active, tab, detail, repoLabel, repoPath, timeoutSec]);
     const scanTarget = repoLabel || repoPath;
     const phaseKey = phase || detail;
     return h10(
@@ -1475,35 +1502,71 @@ ${d.value} LOC`;
     }
   };
   function CategoryNav({ categories, tab, setTab, menuOpen, setMenuOpen }) {
+    const navRef = react_shim_default.useRef(null);
+    react_shim_default.useEffect(() => {
+      if (!menuOpen) return void 0;
+      function onKey(e) {
+        if (e.key === "Escape") setMenuOpen(null);
+      }
+      function onPointerDown(e) {
+        const root = navRef.current;
+        if (!root || root.contains(e.target)) return;
+        setMenuOpen(null);
+      }
+      document.addEventListener("keydown", onKey);
+      document.addEventListener("pointerdown", onPointerDown);
+      return () => {
+        document.removeEventListener("keydown", onKey);
+        document.removeEventListener("pointerdown", onPointerDown);
+      };
+    }, [menuOpen, setMenuOpen]);
     return h11(
       "div",
-      { className: "codebase-viz-tabs" },
-      categories.map(
-        (cat) => h11(
-          "div",
-          {
-            key: cat.id,
-            className: "codebase-viz-category" + (menuOpen === cat.id ? " open" : ""),
-            onMouseEnter: () => setMenuOpen(cat.id),
-            onMouseLeave: () => setMenuOpen(null)
-          },
-          h11("span", { className: "codebase-viz-category-label" }, cat.label, " \u25BE"),
-          menuOpen === cat.id && h11(
+      {
+        ref: navRef,
+        className: "codebase-viz-nav-shell" + (menuOpen ? " is-menu-open" : "")
+      },
+      h11(
+        "div",
+        { className: "codebase-viz-tabs", role: "menubar" },
+        categories.map(
+          (cat) => h11(
             "div",
-            { className: "codebase-viz-dropdown" },
-            cat.tabs.map(
-              (t) => h11(
-                "button",
-                {
-                  key: t.id,
-                  type: "button",
-                  className: "codebase-viz-dropdown-item" + (tab === t.id ? " active" : ""),
-                  onClick: () => {
-                    setTab(t.id);
-                    setMenuOpen(null);
-                  }
-                },
-                t.label
+            {
+              key: cat.id,
+              className: "codebase-viz-category" + (menuOpen === cat.id ? " open" : ""),
+              role: "none"
+            },
+            h11(
+              "button",
+              {
+                type: "button",
+                className: "codebase-viz-category-trigger",
+                "aria-expanded": menuOpen === cat.id,
+                "aria-haspopup": "menu",
+                onClick: () => setMenuOpen(menuOpen === cat.id ? null : cat.id)
+              },
+              cat.label,
+              " \u25BE"
+            ),
+            menuOpen === cat.id && h11(
+              "div",
+              { className: "codebase-viz-dropdown", role: "menu" },
+              cat.tabs.map(
+                (t) => h11(
+                  "button",
+                  {
+                    key: t.id,
+                    type: "button",
+                    role: "menuitem",
+                    className: "codebase-viz-dropdown-item" + (tab === t.id ? " active" : ""),
+                    onClick: () => {
+                      setTab(t.id);
+                      setMenuOpen(null);
+                    }
+                  },
+                  t.label
+                )
               )
             )
           )
@@ -1569,7 +1632,11 @@ ${d.value} LOC`;
       "div",
       { className: "codebase-viz-container" },
       h11(CategoryNav, { categories: CATEGORIES, tab, setTab, menuOpen, setMenuOpen }),
-      h11("div", { className: "codebase-viz-active-label" }, activeLabel),
+      !menuOpen && h11(
+        "div",
+        { className: "codebase-viz-active-label", "aria-live": "polite" },
+        activeLabel
+      ),
       h11("div", { className: "codebase-viz-content" }, content2),
       h11(
         "div",

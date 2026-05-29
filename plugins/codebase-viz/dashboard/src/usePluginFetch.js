@@ -3,6 +3,17 @@ import React from 'react';
 const API = '/api/plugins/codebase-viz';
 const LOG = '[codebase-viz]';
 
+/** Laat ScanProgress repo/label uit API-body halen (ook bij fallback/error). */
+export function notifyScanRepoFromBody(body) {
+  if (!body || typeof body !== 'object') return;
+  if (!body.repo_path && !body.repo_label) return;
+  window.dispatchEvent(
+    new CustomEvent('codebase-viz:repo-meta', {
+      detail: { repo_path: body.repo_path, repo_label: body.repo_label },
+    }),
+  );
+}
+
 export function usePluginFetch(path, deps = [], refreshToken = 0) {
   const SDK = window.__HERMES_PLUGIN_SDK__;
   const [data, setData] = React.useState(null);
@@ -25,6 +36,7 @@ export function usePluginFetch(path, deps = [], refreshToken = 0) {
             keys: body && typeof body === 'object' ? Object.keys(body) : [],
           });
           setData(body);
+          notifyScanRepoFromBody(body);
         }
       })
       .catch((err) => {

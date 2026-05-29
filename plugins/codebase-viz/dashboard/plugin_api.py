@@ -393,6 +393,16 @@ def _repo_scan_label() -> str:
     return REPO_PATH.name or str(REPO_PATH)
 
 
+def _attach_repo_meta(payload: dict[str, Any]) -> dict[str, Any]:
+    """Zorg dat fout-/fallback-responses altijd scan-doel tonen in de UI."""
+    if REPO_PATH is not None:
+        payload.setdefault("repo_path", str(REPO_PATH))
+        label = _repo_scan_label()
+        if label:
+            payload.setdefault("repo_label", label)
+    return payload
+
+
 async def _dataset_updated_at(key: str) -> int | None:
     async with _snapshot_lock:
         datasets = _snapshot_state.get("datasets", {})
@@ -889,7 +899,7 @@ async def _build_structure():
     if bundle.get("error"):
         out["error"] = bundle["error"]
         out["fallback"] = bool(bundle.get("fallback", True))
-    return out
+    return _attach_repo_meta(out)
 
 
 async def _build_deps():

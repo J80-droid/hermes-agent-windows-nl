@@ -204,23 +204,39 @@
   opacity: 0.85;
 }
 
+/* Sticky nav + hoog z-index: dropdowns boven scrollbare content (dashboard main z-2). */
+.codebase-viz-nav-shell {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  flex-shrink: 0;
+  background: hsl(var(--background));
+  padding-bottom: 0.15rem;
+  margin-bottom: 0.15rem;
+  isolation: isolate;
+}
+
+/* Ruimte voor absoluut gepositioneerde dropdown (anders overlapt content eronder). */
+.codebase-viz-nav-shell.is-menu-open {
+  padding-bottom: 11rem;
+  margin-bottom: 0;
+}
+
 .codebase-viz-tabs {
   display: flex;
   gap: 0;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0;
   border-bottom: 1px solid hsl(var(--border));
   position: relative;
   flex-shrink: 0;
+  overflow: visible;
 }
 
 .codebase-viz-category {
   position: relative;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
   border-bottom: 2px solid transparent;
-  transition: all 0.15s ease;
-  -webkit-user-select: none;
-  user-select: none;
+  transition: background 0.15s ease;
+  overflow: visible;
 }
 
 .codebase-viz-category:hover,
@@ -228,28 +244,43 @@
   background: hsl(var(--accent) / 0.3);
 }
 
-.codebase-viz-category-label {
+.codebase-viz-category-trigger {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  border: none;
+  background: transparent;
   color: hsl(var(--muted-foreground));
   font-size: 0.875rem;
   white-space: nowrap;
+  text-align: left;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-.codebase-viz-category:hover .codebase-viz-category-label,
-.codebase-viz-category.open .codebase-viz-category-label {
+.codebase-viz-category:hover .codebase-viz-category-trigger,
+.codebase-viz-category.open .codebase-viz-category-trigger {
   color: hsl(var(--foreground));
 }
 
 .codebase-viz-dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 2px);
   left: 0;
-  background: hsl(var(--popover));
+  background-color: hsl(var(--background));
+  background-color: hsl(var(--popover, var(--background)));
   border: 1px solid hsl(var(--border));
   border-radius: 0.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  min-width: 160px;
-  z-index: 50;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  min-width: 11rem;
+  z-index: 1000;
   padding: 0.25rem;
+  pointer-events: auto;
+}
+
+.codebase-viz-category:not(.open) .codebase-viz-dropdown {
+  display: none;
 }
 
 .codebase-viz-dropdown-item {
@@ -276,12 +307,16 @@
   color: hsl(var(--muted-foreground));
   padding: 0.25rem 0.25rem 0.5rem;
   flex-shrink: 0;
+  line-height: 1.35;
+  min-height: 1.35rem;
 }
 
 .codebase-viz-content {
   flex: 1;
   overflow: auto;
   min-height: 0;
+  position: relative;
+  z-index: 0;
 }
 .codebase-viz-virtual-scroll {
   overflow-y: auto;

@@ -150,40 +150,78 @@ const TABLE_TABS = {
 };
 
 function CategoryNav({ categories, tab, setTab, menuOpen, setMenuOpen }) {
+  const navRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!menuOpen) return undefined;
+    function onKey(e) {
+      if (e.key === 'Escape') setMenuOpen(null);
+    }
+    function onPointerDown(e) {
+      const root = navRef.current;
+      if (!root || root.contains(e.target)) return;
+      setMenuOpen(null);
+    }
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [menuOpen, setMenuOpen]);
+
   return h(
     'div',
-    { className: 'codebase-viz-tabs' },
-    categories.map((cat) =>
-      h(
-        'div',
-        {
-          key: cat.id,
-          className: 'codebase-viz-category' + (menuOpen === cat.id ? ' open' : ''),
-          onMouseEnter: () => setMenuOpen(cat.id),
-          onMouseLeave: () => setMenuOpen(null),
-        },
-        h('span', { className: 'codebase-viz-category-label' }, cat.label, ' \u25BE'),
-        menuOpen === cat.id &&
+    {
+      ref: navRef,
+      className: 'codebase-viz-nav-shell' + (menuOpen ? ' is-menu-open' : ''),
+    },
+    h(
+      'div',
+      { className: 'codebase-viz-tabs', role: 'menubar' },
+      categories.map((cat) =>
+        h(
+          'div',
+          {
+            key: cat.id,
+            className: 'codebase-viz-category' + (menuOpen === cat.id ? ' open' : ''),
+            role: 'none',
+          },
           h(
-            'div',
-            { className: 'codebase-viz-dropdown' },
-            cat.tabs.map((t) =>
-              h(
-                'button',
-                {
-                  key: t.id,
-                  type: 'button',
-                  className:
-                    'codebase-viz-dropdown-item' + (tab === t.id ? ' active' : ''),
-                  onClick: () => {
-                    setTab(t.id);
-                    setMenuOpen(null);
+            'button',
+            {
+              type: 'button',
+              className: 'codebase-viz-category-trigger',
+              'aria-expanded': menuOpen === cat.id,
+              'aria-haspopup': 'menu',
+              onClick: () => setMenuOpen(menuOpen === cat.id ? null : cat.id),
+            },
+            cat.label,
+            ' \u25BE',
+          ),
+          menuOpen === cat.id &&
+            h(
+              'div',
+              { className: 'codebase-viz-dropdown', role: 'menu' },
+              cat.tabs.map((t) =>
+                h(
+                  'button',
+                  {
+                    key: t.id,
+                    type: 'button',
+                    role: 'menuitem',
+                    className:
+                      'codebase-viz-dropdown-item' + (tab === t.id ? ' active' : ''),
+                    onClick: () => {
+                      setTab(t.id);
+                      setMenuOpen(null);
+                    },
                   },
-                },
-                t.label,
+                  t.label,
+                ),
               ),
             ),
-          ),
+        ),
       ),
     ),
   );
@@ -258,7 +296,12 @@ export default function App() {
       'div',
       { className: 'codebase-viz-container' },
       h(CategoryNav, { categories: CATEGORIES, tab, setTab, menuOpen, setMenuOpen }),
-      h('div', { className: 'codebase-viz-active-label' }, activeLabel),
+      !menuOpen &&
+        h(
+          'div',
+          { className: 'codebase-viz-active-label', 'aria-live': 'polite' },
+          activeLabel,
+        ),
       h('div', { className: 'codebase-viz-content' }, content),
       h(
         'div',

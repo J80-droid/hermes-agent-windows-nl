@@ -2,6 +2,7 @@
 
 ## Code (P2 + institutioneel)
 
+- [x] Codebase Viz plugin hardening (2026-05-29): nav dropdown overlap + `ForceGraph` crash; live E2E `RUN_CODEBASE_VIZ_LIVE_E2E.bat` + auditrapport; `AuthWidget` geen `/auth/me` op loopback; `repo_path` in API-fouten; plugin + `web` rebuild voor `web_dist`
 - [x] Web UI clean codebase (2026-05-29): ESLint 0 errors + `tsc`/Vite build; hooks (`useTooltipAnchor`, `useDropUpFixedStyle`); context splits (`i18n-context`, `theme-context`, `gatewayLine.ts`); Chat channel `resume-{id}`; `apply_team_display_profiles` sys.path; E2E **11/11** `RUN_WEB_UI_CLEAN_E2E.bat`; `web/README.md` quality gate
 - [x] Web UI a11y + IDE hints (2026-05-29): listbox/option ARIA (Theme/Language switcher), `lib/aria.ts`, CSS surface utilities, `dropUpMenuCssVars`; pytest curses guardrails UTF-8 Windows; docs `web/README.md` § Toegankelijkheid
 - [x] Volledige verificatie-poort (2026-05-29): `audits/RUN_FULL_VERIFICATION.bat`; HA integration `watch_all`; `score_institutional_render.py` sys.path; harness D2/S4 orchestrator; `hermes_runtime_warnings.py`; log rollover Win32; pytest `filterwarnings` audioop

@@ -14,8 +14,10 @@ function isScanStatusPayload(body) {
   return body && typeof body === 'object' && typeof body.progress === 'number' && 'phase' in body;
 }
 
-function mergeScanContext(prev, body, health) {
+function mergeScanContext(prev, body, health, fetchBody) {
   const next = { ...prev };
+  if (fetchBody?.repo_path) next.repoPath = fetchBody.repo_path;
+  if (fetchBody?.repo_label) next.repoLabel = fetchBody.repo_label;
   if (health?.repo_path) next.repoPath = health.repo_path;
   if (health?.pygount_timeout_sec != null) next.timeoutSec = health.pygount_timeout_sec;
   if (health?.scan_mode) next.scanMode = health.scan_mode;
@@ -91,6 +93,18 @@ export function useScanProgress(active, tab) {
 
     return () => window.clearInterval(tick);
   }, [active, tab]);
+
+  React.useEffect(() => {
+    function onRepoMeta(ev) {
+      const d = ev?.detail;
+      if (!d) return;
+      setScanContext((prev) =>
+        mergeScanContext(prev, d, null, d),
+      );
+    }
+    window.addEventListener('codebase-viz:repo-meta', onRepoMeta);
+    return () => window.removeEventListener('codebase-viz:repo-meta', onRepoMeta);
+  }, []);
 
   React.useEffect(() => {
     const fetchJSON = sdkRef.current?.fetchJSON;
