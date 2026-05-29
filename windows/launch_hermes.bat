@@ -212,50 +212,18 @@ if !errorLevel! neq 0 (
 
 :after_setup
 
-rem --- SOUL anatomy deploy (14 templates + snippets wanneer repo bron nieuwer dan stamp) ---
-if not defined HERMES_SKIP_SOUL_DEPLOY_ON_START (
-  set "HERMES_REPO_ROOT=!REPO_ROOT!"
-  powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/scripts/launch_soul_anatomy_deploy.ps1" -RepoRoot "!REPO_ROOT!"
-  if !errorLevel! neq 0 (
-    echo %GOUD%[WARN] SOUL anatomy deploy mislukt ^(exit !errorLevel!^) — start gaat door.%RESET%
-    echo [%DATE% %TIME%] WARN: soul anatomy deploy exit !errorLevel! >> "%LAUNCH_LOG%"
-  )
-)
-
-rem --- Institutioneel runtime (display alle profielen + SOUL snippets indien nodig; E2E alleen met flag) ---
-if not defined HERMES_SKIP_INSTITUTIONAL_RUNTIME (
-  set "HERMES_REPO_ROOT=!REPO_ROOT!"
-  set "INST_PS_ARGS="
-  echo !CLEAN_ARGS!| findstr /I "\-\-institutional-e2e" >nul && set "INST_PS_ARGS=-RunE2E"
-  if defined HERMES_INSTITUTIONAL_E2E_ON_START set "INST_PS_ARGS=!INST_PS_ARGS! -RunE2E"
-  powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/scripts/launch_institutional_runtime.ps1" !INST_PS_ARGS!
-  if !errorLevel! neq 0 (
-    echo %GOUD%[WARN] Institutioneel runtime mislukt ^(exit !errorLevel!^) — start gaat door.%RESET%
-    echo [%DATE% %TIME%] WARN: institutional runtime exit !errorLevel! >> "%LAUNCH_LOG%"
-  )
-)
-
-rem --- Pending trust-nazorg na mislukte UPDATE (licht; geen harde stop) ---
-if not defined HERMES_SKIP_PENDING_TRUST_ON_START (
-  set "HERMES_REPO_ROOT=!REPO_ROOT!"
-  powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/scripts/launch_pending_trust_runtime.ps1" -RepoRoot "!REPO_ROOT!"
-  if !errorLevel! neq 0 (
-    echo %GOUD%[WARN] Trust-nazorg mislukt ^(exit !errorLevel!^) — start gaat door.%RESET%
-    echo [%DATE% %TIME%] WARN: pending trust runtime exit !errorLevel! >> "%LAUNCH_LOG%"
-  )
-)
-
-rem --- Web dashboard op 9119 (achtergrond, geen browser-tab) ---
-rem --- Optioneel tab openen: set HERMES_DASHBOARD_OPEN_PATH=/sessions of /codebase-viz ---
-rem --- Uit: HERMES_SKIP_DASHBOARD_ON_START=1 ---
-if not defined HERMES_SKIP_DASHBOARD_ON_START (
-  set "HERMES_REPO_ROOT=!REPO_ROOT!"
-  set "HERMES_LAUNCH_LOG=!LAUNCH_LOG!"
-  powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/scripts/launch_dashboard_on_start.ps1" -RepoRoot "!REPO_ROOT!" -Quiet
-  if !errorLevel! neq 0 (
-    echo %GOUD%[WARN] Dashboard start mislukt ^(exit !errorLevel!^) — chat start wel.%RESET%
-    echo [%DATE% %TIME%] WARN: dashboard on start exit !errorLevel! >> "%LAUNCH_LOG%"
-  )
+rem --- Pre-chat orchestrator (SOUL, institutional, trust, dashboard; bootstrap al gedaan) ---
+set "HERMES_LAUNCH_LOG=!LAUNCH_LOG!"
+set "HERMES_REPO_ROOT=!REPO_ROOT!"
+set "ORCH_ARGS=-RepoRoot \"!REPO_ROOT!\" -SkipBootstrap"
+echo !CLEAN_ARGS!| findstr /I "\-\-institutional-e2e" >nul && set "ORCH_ARGS=!ORCH_ARGS! -RunInstitutionalE2E"
+if defined HERMES_INSTITUTIONAL_E2E_ON_START set "ORCH_ARGS=!ORCH_ARGS! -RunInstitutionalE2E"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/scripts/launch_pre_chat_orchestrator.ps1" !ORCH_ARGS!
+if !errorLevel! neq 0 (
+  echo %ROOD%[ERROR] Pre-chat orchestrator mislukt ^(exit !errorLevel!^).%RESET%
+  echo [%DATE% %TIME%] ERROR: pre-chat orchestrator exit !errorLevel! >> "%LAUNCH_LOG%"
+  pause
+  exit /b !errorLevel!
 )
 
 :launch_chat

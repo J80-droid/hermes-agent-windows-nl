@@ -47,6 +47,7 @@ if /I "%~1"=="-RelaunchHermes" (
 )
 if /I "%~1"=="-IncludeRagPipeline" (
   set "HERMES_INCLUDE_RAG_PIPELINE=1"
+  set "HERMES_RAG_ON_POST_PULL=1"
   shift
   goto parse_post_pull_args
 )
@@ -116,13 +117,13 @@ if "!HERMES_POST_PULL_QUICKFIX!"=="1" (
   echo.
 )
 
-echo [INFO] Windows script-keten verify ^(geen pause^)...
-powershell -NoProfile -ExecutionPolicy Bypass -File "%HERMES_WIN%verify_windows_script_chain.ps1"
+echo [INFO] Windows script-keten verify ^(conditioneel, vóór trust^)...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%HERMES_WIN%scripts\HermesSessionMaintenance.ps1" -Phase ConditionalWindowsChainVerify -RepoRoot "%CD%"
 if errorlevel 1 (
-  echo [ERROR] verify_windows_script_chain.ps1 gefaald
+  echo [ERROR] Windows script-keten verify gefaald
   set "POST_PULL_ERR=1"
 ) else (
-  echo [OK] Windows script-keten OK.
+  echo [OK] Windows script-keten OK of overgeslagen ^(stamp^).
 )
 
 echo.
@@ -184,27 +185,11 @@ if errorlevel 1 (
   echo [WARN] apply_institutional_runtime.ps1 mislukt — APPLY_INSTITUTIONAL_RUNTIME.bat
 )
 set "HERMES_SKIP_PAUSE="
+if "!HERMES_INCLUDE_RAG_PIPELINE!"=="1" set "HERMES_RAG_ON_POST_PULL=1"
 echo.
-echo [INFO] Domein-toolsets (platform_toolsets.cli)...
-set "HERMES_SKIP_PAUSE=1"
-call "%~dp0SYNC_DOMAIN_TOOLSETS.bat"
-set "HERMES_SKIP_PAUSE="
-echo.
-echo [INFO] TUI bundel (ui-tui/dist) herbouwen indien bron nieuwer...
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\rebuild_tui.ps1" -RepoRoot "%CD%"
-if errorlevel 1 (
-  echo [WARN] rebuild_tui.ps1 mislukt — sluit Hermes af en start opnieuw
-) else (
-  echo [OK] TUI dist gecontroleerd/herbouwd.
-)
-echo.
-echo [INFO] Taakbalk-.lnk en icooncache vernieuwen...
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0fix_hermes_taskbar_pins.ps1" -RepoRoot "%CD%" -Quiet
-if errorlevel 1 (
-  echo [WARN] fix_hermes_taskbar_pins.ps1 mislukt
-) else (
-  echo [OK] Taakbalk-snelkoppelingen bijgewerkt.
-)
+echo [INFO] Post-pull onderhoud ^(toolsets, TUI, pins, optioneel RAG^)...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%HERMES_WIN%scripts\Invoke-HermesPostPullMaintenance.ps1" -RepoRoot "%CD%" -Phase PostPullTail
+if errorlevel 1 set "POST_PULL_ERR=1"
 
 if /I "!HERMES_CODEBASE_SMOKE_MODE!"=="e2e" (
   echo.
@@ -219,12 +204,6 @@ if /I "!HERMES_CODEBASE_SMOKE_MODE!"=="e2e" (
 if "!HERMES_INCLUDE_INST_VERIFY!"=="1" (
   echo.
   powershell -NoProfile -ExecutionPolicy Bypass -File "%HERMES_WIN%scripts\Invoke-PostGitPullInstitutionalVerify.ps1" -RepoRoot "%CD%"
-  if errorlevel 1 set "POST_PULL_ERR=1"
-)
-
-if "!HERMES_INCLUDE_RAG_PIPELINE!"=="1" (
-  echo.
-  call "%~dp0RAG_PIPELINE.bat"
   if errorlevel 1 set "POST_PULL_ERR=1"
 )
 

@@ -44,26 +44,6 @@ function Get-CondaExe {
     return $null
 }
 
-function Clear-HermesUpdateCheckCache {
-    $localAppData = $env:LOCALAPPDATA
-    if (-not $localAppData) { return }
-    $homes = [System.Collections.Generic.List[string]]::new()
-    $default = Join-Path $localAppData 'hermes'
-    if (Test-Path -LiteralPath $default) { [void]$homes.Add($default) }
-    $profiles = Join-Path $default 'profiles'
-    if (Test-Path -LiteralPath $profiles) {
-        Get-ChildItem -LiteralPath $profiles -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-            [void]$homes.Add($_.FullName)
-        }
-    }
-    foreach ($homePath in $homes) {
-        $cache = Join-Path $homePath '.update_check'
-        if (Test-Path -LiteralPath $cache) {
-            Remove-Item -LiteralPath $cache -Force -ErrorAction SilentlyContinue
-        }
-    }
-}
-
 function Invoke-HermesPipEditableInstall {
     param(
         [Parameter(Mandatory)][string]$PythonExe,
@@ -79,6 +59,7 @@ function Invoke-HermesPipEditableInstall {
 }
 
 . (Join-Path $winDir 'HermesShellCommon.ps1')
+# Clear-HermesUpdateCheckCache lives in HermesShellCommon.ps1
 . (Join-Path $winDir 'HermesNativeInvoke.ps1')
 . (Join-Path $winDir 'HermesPythonPolicy.ps1')
 

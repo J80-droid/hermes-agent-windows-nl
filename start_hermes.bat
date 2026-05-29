@@ -89,6 +89,7 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
+powershell -NoProfile -ExecutionPolicy Bypass -Command "& { . '%~dp0windows\HermesShellCommon.ps1'; Write-HermesSessionStamp -Name 'last_git_pull' -Data @{} }"
 
 :do_post_git_pull_only
 if not exist "%~dp0windows\POST_GIT_PULL.bat" (
@@ -105,10 +106,15 @@ exit /b 0
 
 :should_continue_after_post_pull
 rem POST_GIT_PULL relauncht standaard — dan niet opnieuw launch_hermes aanroepen.
-if /I "%HERMES_SKIP_RELAUNCH_AFTER_PULL%"=="1" exit /b 1
+if /I "%HERMES_SKIP_RELAUNCH_AFTER_PULL%"=="1" goto :after_sync_no_relaunch
 echo !HERMES_POST_PULL_ARGS! | findstr /I /C:"-SkipRelaunch" >nul
-if not errorlevel 1 exit /b 1
+if not errorlevel 1 goto :after_sync_no_relaunch
 exit /b 0
+
+:after_sync_no_relaunch
+powershell -NoProfile -ExecutionPolicy Bypass -Command "& { . '%~dp0windows\HermesShellCommon.ps1'; Clear-HermesUpdateCheckCache }"
+echo [INFO] Sync klaar zonder relaunch — start Hermes opnieuw met start_hermes.bat
+exit /b 1
 
 :apply_launch_profile
 set "HERMES_PROFILE_CMD=%TEMP%\hermes_launch_profile.cmd"

@@ -2,7 +2,8 @@
 param(
     [Parameter(Mandatory)]
     [string]$RepoRoot,
-    [switch]$RunInstitutionalE2E
+    [switch]$RunInstitutionalE2E,
+    [switch]$SkipBootstrap
 )
 
 $ErrorActionPreference = 'Stop'
@@ -16,7 +17,9 @@ if ($env:HERMES_LAUNCH_LOG) {
     Add-Content -LiteralPath $env:HERMES_LAUNCH_LOG -Value "[$ts] Pre-chat orchestrator start" -Encoding UTF8 -ErrorAction SilentlyContinue
 }
 
-$total = 1
+$total = 0
+if (-not $SkipBootstrap) { $total++ }
+if ($env:HERMES_MINIMAL_LAUNCH -ne '1') { $total++ }
 if ($env:HERMES_SKIP_SOUL_DEPLOY_ON_START -ne '1') { $total++ }
 if ($env:HERMES_SKIP_INSTITUTIONAL_RUNTIME -ne '1') { $total++ }
 if ($env:HERMES_SKIP_PENDING_TRUST_ON_START -ne '1') { $total++ }
@@ -24,15 +27,27 @@ if ($env:HERMES_SKIP_DASHBOARD_ON_START -ne '1') {
     if (-not $env:HERMES_DASHBOARD_ON_START) { $env:HERMES_DASHBOARD_ON_START = '1' }
     if ($env:HERMES_DASHBOARD_ON_START -ne '0') { $total++ }
 }
+if ($total -lt 1) { $total = 1 }
 
 $step = 0
+$maintenancePath = Join-Path $PSScriptRoot 'HermesSessionMaintenance.ps1'
 
 [void](Stop-HermesGhostInputBlockers -RepoRoot $RepoRoot)
 
-$step++
-$bootstrap = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/launch_bootstrap.ps1'
-Invoke-HermesLaunchPhase -Step $step -Total $total -Label 'Bootstrap (conda / RAG-stamp)' -Action {
-    [void](& $bootstrap -RepoRoot $RepoRoot)
+if (-not $SkipBootstrap) {
+    $step++
+    $bootstrap = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/launch_bootstrap.ps1'
+    Invoke-HermesLaunchPhase -Step $step -Total $total -Label 'Bootstrap (conda / RAG-stamp)' -Action {
+        [void](& $bootstrap -RepoRoot $RepoRoot)
+    }
+}
+
+if ($env:HERMES_MINIMAL_LAUNCH -ne '1') {
+    $step++
+    Invoke-HermesLaunchPhase -Step $step -Total $total -Label 'Sessie-onderhoud (start)' -AllowFailure -Action {
+        . $maintenancePath -RepoRoot $RepoRoot -AllowFailure
+        [void](Invoke-HermesStartMaintenance)
+    }
 }
 
 if ($env:HERMES_SKIP_SOUL_DEPLOY_ON_START -ne '1') {

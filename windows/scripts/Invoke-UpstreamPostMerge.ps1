@@ -214,37 +214,16 @@ function Invoke-UpstreamPostMerge {
     }
 
     if ($exitCode -eq 0) {
-        $rebuildTui = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/scripts/rebuild_tui.ps1'
-        if (Test-Path -LiteralPath $rebuildTui) {
-            Write-Step 'TUI bundel ui-tui/dist herbouwen...'
-            & powershell -NoProfile -ExecutionPolicy Bypass -File $rebuildTui -RepoRoot $Repo
+        $postPull = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/scripts/Invoke-HermesPostPullMaintenance.ps1'
+        if (Test-Path -LiteralPath $postPull) {
+            Write-Step 'Post-pull onderhoud (toolsets, TUI, pins, optioneel RAG)...'
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $postPull -RepoRoot $Repo -Phase PostPullTail
             if (Test-NativeCommandFailed) {
-                Write-Warn 'rebuild_tui.ps1 mislukt - sluit Hermes af en start opnieuw.'
+                Write-Warn 'Invoke-HermesPostPullMaintenance mislukt.'
+                $exitCode = 1
             } else {
-                Write-Ok 'TUI dist bijgewerkt - herstart Hermes om wijzigingen te zien.'
+                Write-Ok 'Post-pull onderhoud voltooid.'
             }
-        }
-    }
-
-    if ($exitCode -eq 0) {
-        $fixPins = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/fix_hermes_taskbar_pins.ps1'
-        if (Test-Path -LiteralPath $fixPins) {
-            Write-Step 'Taakbalk-iconen .lnk + icooncache voor verify...'
-            & powershell -NoProfile -ExecutionPolicy Bypass -File $fixPins -RepoRoot $Repo -Quiet
-            if (Test-NativeCommandFailed) {
-                Write-Warn 'fix_hermes_taskbar_pins.ps1 faalde - draai FIX_TASKBAR_ICONS.bat.'
-            } else {
-                Write-Ok 'Taakbalk-snelkoppelingen bijgewerkt.'
-            }
-        }
-    }
-
-    if ($exitCode -eq 0) {
-        $verify = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/verify_windows_script_chain.ps1'
-        if (Test-Path -LiteralPath $verify) {
-            Write-Step 'Windows script-keten verify - geautomatiseerd, geen pause'
-            & $verify
-            if (Test-NativeCommandFailed) { Write-Warn 'verify_windows_script_chain.ps1 faalde.' }
         }
     }
 

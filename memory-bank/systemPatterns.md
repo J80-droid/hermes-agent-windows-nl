@@ -120,6 +120,14 @@ Defaults: `windows/team_display.defaults`; toepassen: `APPLY_INSTITUTIONAL_RUNTI
 - **SOUL:** `SOUL_SHARED_CODEBASE_AUDIT.md` via `sync_soul_codebase_audit_snippet.ps1` (anatomy-keten); na sync `/new`.
 - **Validatie claims:** `validate_soul_anatomy.py --check-codebase-audit-claims` (warn); `--strict-codebase-audit-claims` (exit 1).
 
+## Sessie-onderhoud stamps (Windows)
+
+- Stamps: `%LOCALAPPDATA%\hermes\stamps\*.json` via `Get-HermesSessionStampPath` / `Write-HermesSessionStamp` in `HermesShellCommon.ps1`.
+- Start: `launch_pre_chat_orchestrator.ps1` → `Invoke-HermesStartMaintenance` (full); institutional met `-SkipConfigDrift`, drift apart warn-only.
+- Post-pull tail: `Invoke-HermesPostPullMaintenance -Phase PostPullTail`; `post_pull_maintenance` stamp voorkomt dubbele TUI/pins binnen 15 min + zelfde `HEAD`.
+- Model repair: `Invoke-HermesModelConfigMaintenance -AllowFailure` (orchestrator); `Invoke-HermesModelCatalogAutoRepair -RepoRoot`.
+- E2E: `audits/RUN_SESSION_MAINTENANCE_E2E.bat` (14/14); unit: `windows/tests/HermesSessionMaintenance.Unit.Tests.ps1`, `pytest tests/windows/test_hermes_session_maintenance.py`.
+
 ## Veiligheid
 
 - Geen ingest + zware Kanban-werk op dezelfde LanceDB tegelijk (lock-risico).

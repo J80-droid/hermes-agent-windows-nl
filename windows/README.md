@@ -138,6 +138,7 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 | Codebase smoke E2E (E1/E2) | `audits\RUN_CODEBASE_SMOKE_E2E.bat` · `RUN_AUDITS.bat -IncludeCodebaseSmokeE2E` · `-IncludeAllE2E` |
 | Codebase smoke (snel) | `audits\RUN_CODEBASE_SMOKE_AUDIT.bat` · `RUN_AUDITS.bat -IncludeCodebaseSmoke` |
 | Dagelijks / na pull | **`start_hermes.bat`** (repo-root): auto-pull als achter `origin`; anders direct start. Forceer: `--pull` · `PULL_HERMES.bat` (alias) |
+| Sessie-onderhoud (stamps) | Start: `launch_pre_chat_orchestrator.ps1` → `HermesSessionMaintenance.ps1` · Post-pull: `Invoke-HermesPostPullMaintenance.ps1` · E2E: `audits\RUN_SESSION_MAINTENANCE_E2E.bat` (14/14) · unit: `tests\HermesSessionMaintenance.Unit.Tests.ps1` · [START.md](START.md) |
 | Na pull/update (optioneel) | `POST_GIT_PULL.bat -Full` (= AutoRepair + InstitutionalVerify + relaunch) · `-IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E` · `-IncludeRagPipeline` · `-SkipRelaunch` · `HERMES_SKIP_RELAUNCH_AFTER_PULL=1` · `UPDATE_HERMES.bat` |
 | Post-pull E2E (geïsoleerd) | `audits\RUN_POST_GIT_PULL_AUTOMATION_E2E.bat` (14/14) · unit: `pytest tests\audits\test_post_git_pull_automation_e2e_harness.py -m "not e2e"` |
 | RAG na pull (optioneel) | `windows\RAG_PIPELINE.bat` — readiness (`Get-RagSourceReadiness.ps1`) + ingest; exit 2 = geen bronnen in `%USERPROFILE%\data\raw_source_files` |

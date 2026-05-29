@@ -152,6 +152,7 @@
 - [x] Auth corrupt-handler: expliciete fout + config-side repair poging; nous shared store `utf-8-sig`
 - [x] pytest model_runtime + doctor global-blocks + nous BOM (54+ tests)
 - [x] Post-pull automatisering (2026-05-28): `start_hermes.bat` smart auto-pull (`Test-HermesGitPullNeeded.ps1`), `POST_GIT_PULL` relaunch, trust pending, CLI notice, `RAG_PIPELINE.bat`; E2E 14/14 + harness unit 56 + pull-needed tests
+- [x] Sessie-onderhoud stamps (2026-05-28): `HermesSessionMaintenance.ps1`, orchestrator wired, PostPullTail, `Invoke-HermesModelCatalogAutoRepair`, `-AllowFailure` op model/start; E2E **14/14** `RUN_SESSION_MAINTENANCE_E2E.bat`; unit PS1 + pytest harness (32 tests, `-m "not e2e"`)
 - [x] Profiel `core`: geen top-level `auxiliary:`/`providers:` (drift groen 2026-05-25)
 - [x] Drift-check: `Test-HermesModelProviderCoherence` LASTEXITCODE na pipeline gefixt
 

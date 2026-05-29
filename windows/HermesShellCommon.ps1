@@ -81,6 +81,163 @@ function Test-HermesGitDirtyOnlyBranding {
     return $true
 }
 
+# --- Sessie-stamps (%LOCALAPPDATA%\hermes\stamps\*.json) ---
+# Gebruikt door HermesSessionMaintenance.ps1: onderhoud alleen als stamp verouderd of git head / domains.yaml wijzigde.
+# post_pull_maintenance + head: skip dubbele TUI/shortcut na POST-relaunch. Clear-HermesUpdateCheckCache: start_hermes --sync zonder relaunch.
+
+function Get-HermesSessionStampsDir {
+    $root = if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { $env:USERPROFILE }
+    if (-not $root) {
+        throw 'LOCALAPPDATA en USERPROFILE ontbreken — kan geen sessie-stamps schrijven.'
+    }
+    $dir = Join-Path (Join-Path $root 'hermes') 'stamps'
+    if (-not (Test-Path -LiteralPath $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
+    return $dir
+}
+
+function Get-HermesSessionStampPath {
+    param([Parameter(Mandatory)][string]$Name)
+    $safe = ($Name -replace '[^\w\-]', '_')
+    return Join-Path (Get-HermesSessionStampsDir) ($safe + '.json')
+}
+
+function Read-HermesSessionStamp {
+    param([Parameter(Mandatory)][string]$Name)
+    $path = Get-HermesSessionStampPath -Name $Name
+    if (-not (Test-Path -LiteralPath $path)) { return $null }
+    try {
+        $raw = Get-Content -LiteralPath $path -Raw -Encoding UTF8
+        if (-not $raw.Trim()) { return $null }
+        return $raw | ConvertFrom-Json
+    } catch {
+        return $null
+    }
+}
+
+function Write-HermesSessionStamp {
+    param(
+        [Parameter(Mandatory)][string]$Name,
+        [hashtable]$Data = @{},
+        [string]$RepoRoot = ''
+    )
+    if (-not $RepoRoot -and $env:HERMES_REPO_ROOT) {
+        $RepoRoot = $env:HERMES_REPO_ROOT
+    }
+    $path = Get-HermesSessionStampPath -Name $Name
+    $obj = [ordered]@{
+        at = (Get-Date).ToUniversalTime().ToString('o')
+    }
+    foreach ($k in $Data.Keys) { $obj[$k] = $Data[$k] }
+    $head = Get-HermesGitHead -RepoRoot $RepoRoot
+    if ($head) { $obj['head'] = $head }
+    try {
+        ($obj | ConvertTo-Json -Compress) | Set-Content -LiteralPath $path -Encoding UTF8 -ErrorAction Stop
+    } catch {
+        Write-HermesWarn ('Kon sessie-stamp niet schrijven: ' + $_.Exception.Message)
+    }
+}
+
+function Get-HermesGitHead {
+    param([string]$RepoRoot = '')
+    if (-not $RepoRoot -and $env:HERMES_REPO_ROOT) {
+        $RepoRoot = $env:HERMES_REPO_ROOT
+    }
+    $gitArgs = @('rev-parse', 'HEAD')
+    if ($RepoRoot -and (Test-Path -LiteralPath (Join-Path $RepoRoot '.git'))) {
+        $out = & git -C $RepoRoot @gitArgs 2>$null
+    } else {
+        $out = & git @gitArgs 2>$null
+    }
+    if ($LASTEXITCODE -ne 0) { return $null }
+    return ($out | Select-Object -First 1).ToString().Trim()
+}
+
+function Get-HermesDomainsYamlFingerprint {
+    $domainsPath = if ($env:HERMES_DOMAINS_YAML) { $env:HERMES_DOMAINS_YAML } else {
+        Join-Path $env:USERPROFILE 'data\domains.yaml'
+    }
+    if (-not (Test-Path -LiteralPath $domainsPath)) { return $null }
+    $bytes = [System.IO.File]::ReadAllBytes($domainsPath)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        return [BitConverter]::ToString($sha.ComputeHash($bytes)).Replace('-', '').ToLowerInvariant()
+    } finally {
+        $sha.Dispose()
+    }
+}
+
+function Test-HermesPathNewerThanStamp {
+    param(
+        [Parameter(Mandatory)][string[]]$WatchPaths,
+        [Parameter(Mandatory)][string]$StampName,
+        [string]$RepoRoot = ''
+    )
+    $stamp = Read-HermesSessionStamp -Name $StampName
+    if (-not $stamp -or -not $stamp.at) { return $true }
+    try {
+        $stampTime = [DateTime]::Parse($stamp.at).ToUniversalTime()
+    } catch {
+        return $true
+    }
+    foreach ($rel in $WatchPaths) {
+        $path = if ([System.IO.Path]::IsPathRooted($rel)) { $rel } else {
+            if ($RepoRoot) { Join-Path $RepoRoot $rel } else { $rel }
+        }
+        if (-not (Test-Path -LiteralPath $path)) { continue }
+        if ((Get-Item -LiteralPath $path).PSIsContainer) {
+            $includes = if ($path -match '[\\/]windows$') {
+                @('*.ps1', '*.bat', '*.cmd', '*.psm1')
+            } else {
+                @('*')
+            }
+            $newer = Get-ChildItem -LiteralPath $path -Recurse -Include $includes -File -ErrorAction SilentlyContinue |
+                Where-Object { $_.LastWriteTimeUtc -gt $stampTime } |
+                Select-Object -First 1
+            if ($newer) { return $true }
+        } elseif ((Get-Item -LiteralPath $path).LastWriteTimeUtc -gt $stampTime) {
+            return $true
+        }
+    }
+    return $false
+}
+
+function Test-HermesShouldSkipPostPullMaintenanceOnStart {
+    param([string]$RepoRoot = '')
+    $stamp = Read-HermesSessionStamp -Name 'post_pull_maintenance'
+    if (-not $stamp -or -not $stamp.at) { return $false }
+    try {
+        $at = [DateTime]::Parse($stamp.at).ToUniversalTime()
+        if ((Get-Date).ToUniversalTime() - $at -gt [TimeSpan]::FromMinutes(15)) { return $false }
+    } catch {
+        return $false
+    }
+    $head = Get-HermesGitHead -RepoRoot $RepoRoot
+    if (-not $head -or -not $stamp.head) { return $false }
+    return ($head -eq $stamp.head.ToString())
+}
+
+function Clear-HermesUpdateCheckCache {
+    $localAppData = $env:LOCALAPPDATA
+    if (-not $localAppData) { return }
+    $default = Join-Path $localAppData 'hermes'
+    $homes = [System.Collections.Generic.List[string]]::new()
+    if (Test-Path -LiteralPath $default) { [void]$homes.Add($default) }
+    $profiles = Join-Path $default 'profiles'
+    if (Test-Path -LiteralPath $profiles) {
+        Get-ChildItem -LiteralPath $profiles -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+            [void]$homes.Add($_.FullName)
+        }
+    }
+    foreach ($homePath in $homes) {
+        $cache = Join-Path $homePath '.update_check'
+        if (Test-Path -LiteralPath $cache) {
+            Remove-Item -LiteralPath $cache -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 function Format-HermesStepLabel {
     param(
         [Parameter(Mandatory)]

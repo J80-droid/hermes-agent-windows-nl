@@ -113,25 +113,33 @@ function Get-HermesLaunchProfileEnvMap {
     }
     if ($Profile -eq 'full') {
         return $common + @{
-            HERMES_MINIMAL_LAUNCH              = '0'
-            HERMES_SKIP_DASHBOARD_ON_START     = '0'
-            HERMES_SKIP_DOCKER_ON_START        = '0'
-            HERMES_SKIP_SOUL_DEPLOY_ON_START   = ''
-            HERMES_SKIP_INSTITUTIONAL_RUNTIME  = ''
-            HERMES_SKIP_PENDING_TRUST_ON_START = ''
-            HERMES_SKIP_HARDWARE_PROBE         = '0'
-            HERMES_NO_WAKE_LOCAL_LLM           = '0'
+            HERMES_MINIMAL_LAUNCH                   = '0'
+            HERMES_SKIP_DASHBOARD_ON_START          = '0'
+            HERMES_SKIP_DOCKER_ON_START             = '0'
+            HERMES_SKIP_SOUL_DEPLOY_ON_START        = ''
+            HERMES_SKIP_INSTITUTIONAL_RUNTIME       = ''
+            HERMES_SKIP_PENDING_TRUST_ON_START      = ''
+            HERMES_SKIP_HARDWARE_PROBE              = '0'
+            HERMES_NO_WAKE_LOCAL_LLM                = '0'
+            HERMES_AUTOREPAIR_MODEL_ON_DRIFT        = '1'
+            HERMES_AUTOREPAIR_MODEL_CATALOG         = '1'
+            HERMES_SKIP_SHORTCUT_MAINT_ON_START     = ''
+            HERMES_SKIP_TUI_MAINT_ON_START          = ''
+            HERMES_SKIP_CONFIG_DRIFT_WARN_ON_START  = ''
         }
     }
     return $common + @{
-        HERMES_MINIMAL_LAUNCH              = '1'
-        HERMES_SKIP_DASHBOARD_ON_START     = '1'
-        HERMES_SKIP_DOCKER_ON_START        = '1'
-        HERMES_SKIP_SOUL_DEPLOY_ON_START   = '1'
-        HERMES_SKIP_INSTITUTIONAL_RUNTIME  = '1'
-        HERMES_SKIP_PENDING_TRUST_ON_START = '1'
-        HERMES_SKIP_HARDWARE_PROBE         = '1'
-        HERMES_NO_WAKE_LOCAL_LLM           = '1'
+        HERMES_MINIMAL_LAUNCH                   = '1'
+        HERMES_SKIP_DASHBOARD_ON_START          = '1'
+        HERMES_SKIP_DOCKER_ON_START             = '1'
+        HERMES_SKIP_SOUL_DEPLOY_ON_START        = '1'
+        HERMES_SKIP_INSTITUTIONAL_RUNTIME       = '1'
+        HERMES_SKIP_PENDING_TRUST_ON_START      = '1'
+        HERMES_SKIP_HARDWARE_PROBE              = '1'
+        HERMES_NO_WAKE_LOCAL_LLM                = '1'
+        HERMES_SKIP_SHORTCUT_MAINT_ON_START     = '1'
+        HERMES_SKIP_TUI_MAINT_ON_START          = '1'
+        HERMES_SKIP_CONFIG_DRIFT_WARN_ON_START  = '1'
     }
 }
 

@@ -15,9 +15,12 @@ def test_post_git_pull_has_relaunch_and_full_flags() -> None:
     assert "-IncludeRagPipeline" in text
     assert "-Full" in text
     assert "Invoke-HermesPostPullRelaunch.ps1" in text
+    assert "Invoke-HermesPostPullMaintenance.ps1" in text
+    assert "-Phase PostPullTail" in text
     assert "Invoke-PostGitPullTrustOutcome.ps1" in text
     assert "apply_institutional_runtime.ps1" in text
     assert "MERGE_HEAD" in text
+    assert "HermesSessionMaintenance.ps1" in text
 
 
 def test_pull_hermes_bat_chains_git_pull_and_post() -> None:

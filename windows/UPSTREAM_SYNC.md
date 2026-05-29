@@ -195,7 +195,8 @@ windows\MERGE_UPSTREAM.bat -AutoResolve
 | Trust runtime (`SYNC_TRUST_RUNTIME.bat`, geen scrub + USER-regel snapshot) | Ja (post-merge, `HERMES_SKIP_PAUSE=1`). Bij FAIL: `pending_trust_runtime.json`; eerste `start_hermes.bat` herstelt via lichte trust-nazorg |
 | API + vault-env (`sync_hermes_api_env.ps1` via trust/UPDATE/POST_GIT_PULL) | Ja (`OBSIDIAN_VAULT_PATH` naar alle profiel-`.env`) |
 | Hermes home + config drift (`verify_hermes_home`, `verify_hermes_config_drift`) | Ja (post-merge; bij FAIL: `APPLY_HERMES_HOME_MIGRATION.bat`) |
-| Domein-toolsets (`SYNC_DOMAIN_TOOLSETS.bat`) | Ja (post-merge, na trust runtime) |
+| Post-pull tail (`Invoke-HermesPostPullMaintenance.ps1 -Phase PostPullTail`) | Ja — conditionele toolsets, LanceDB init, TUI, pins, smart RAG; stamp `post_pull_maintenance` |
+| Domein-toolsets (`SYNC_DOMAIN_TOOLSETS.bat`) | Via PostPullTail indien `domains.yaml` / manifest gewijzigd |
 | SOUL anatomy deploy (`launch_soul_anatomy_deploy.ps1 -Force -Quiet`) | Ja (post-merge: 13 templates + stamp) |
 | Institutioneel runtime (`apply_institutional_runtime.ps1 -SkipE2E -NoPause -SkipSoul`) | Ja (post-merge: display; snippets overgeslagen na soul deploy) |
 | RAG `[rag]` + script-keten verify | Ja (post-merge, via `verify_windows_script_chain.ps1` — **geen** pause) |

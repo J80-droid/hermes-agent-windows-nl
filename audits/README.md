@@ -1,3 +1,17 @@
+# Sessie-onderhoud (stamps) E2E
+
+Geïsoleerde E2E voor stamp-helpers, `HermesSessionMaintenance.ps1` (start + post-pull tail), orchestrator-wiring en POST_GIT_PULL-integratie. Geen live git pull / WT-relaunch / volledige RAG.
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| S1–S14 | Zie `audits/SESSION_MAINTENANCE_E2E_README.md` | Artefacten, wiring, isolated stamps, PostPullTail skips, pytest + Pester |
+
+```bat
+audits\RUN_SESSION_MAINTENANCE_E2E.bat
+```
+
+---
+
 # Post-git-pull automatisering E2E
 
 Geïsoleerde E2E voor `start_hermes.bat` / pull-keten → `POST_GIT_PULL.bat`, relaunch (`Invoke-HermesPostPullRelaunch.ps1`), trust-outcome, stop-script en CLI `/new`-pariteit. Dagelijks: `start_hermes.bat` (auto-pull via `Test-HermesGitPullNeeded.ps1`). Geen live WT in E2E (`HERMES_SKIP_RELAUNCH_AFTER_PULL=1`).

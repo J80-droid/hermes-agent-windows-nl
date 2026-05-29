@@ -43,7 +43,8 @@ param(
     [switch]$SkipShortcuts,
     [switch]$SkipDashboard,
     [switch]$OpenCodebaseViz,
-    [switch]$StartHermes
+    [switch]$StartHermes,
+    [switch]$IncludeSessionMaintenance
 )
 
 $ErrorActionPreference = 'Stop'
@@ -160,6 +161,16 @@ if ($runDashboard) {
         if (-not (Test-Path -LiteralPath $dashPs1)) { throw "Ontbreekt: $dashPs1" }
         & $dashPs1 -RepoRoot $RepoRoot -Quiet:$Quiet
         if ($LASTEXITCODE -ne 0) { throw "exit $LASTEXITCODE" }
+    } | Out-Null
+}
+
+if ($IncludeSessionMaintenance) {
+    $sessionPs = Join-Path $scriptDir 'HermesSessionMaintenance.ps1'
+    Invoke-MaintStepSoft 'Sessie-onderhoud (POST-tail + shortcuts)' {
+        if (-not (Test-Path -LiteralPath $sessionPs)) { throw "Ontbreekt: $sessionPs" }
+        . $sessionPs
+        if ((Invoke-HermesPostPullMaintenance) -ne 0) { throw 'PostPullMaintenance exit non-zero' }
+        if ((Invoke-HermesShortcutMaintenance) -ne 0) { throw 'ShortcutMaintenance exit non-zero' }
     } | Out-Null
 }
 

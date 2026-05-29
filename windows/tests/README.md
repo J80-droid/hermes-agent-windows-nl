@@ -59,6 +59,7 @@ Extra pytest-argumenten worden doorgegeven (bijv. een enkele test):
 - **`HermesShellCommon.Unit.Tests.ps1`**: `Format-HermesStepLabel`, `Test-NativeCommandFailed`, `Join-HermesRepoPath` (geen Pester).
 - **`MemoryAuditCommon.Unit.Tests.ps1`**: identity allowlist, `Repair-HermesIdentityLine`, runtime/repo scrub, skip zonder `config.yaml`.
 - **`TrustRuntimePending.Unit.Tests.ps1`**: stamp, attempts, max-pogingen, corrupte/leeg JSON (geïsoleerde `LOCALAPPDATA`).
+- **`HermesSessionMaintenance.Unit.Tests.ps1`**: stamps, domains fingerprint, model `-AllowFailure`, start/post-pull mocks (geïsoleerde `LOCALAPPDATA`, geen live RAG-ingest).
 - **`Invoke-MemoryTrustPostSync.Unit.Tests.ps1`**: mock runtime, notice JSON, skip scrub (geen production gate).
 - **`tests\windows\test_memory_identity_repair.ps1`**: geïsoleerde runtime mock (legacy runner).
 - **`tests\windows\test_scrub_identity.py`**: pytest parity met PS1 allowlist.
@@ -70,6 +71,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\tests\MemoryAuditC
 ```
 
 E2E-poorten: **`RUN_HERMES_SHELL_COMMON_E2E.bat`**, **`RUN_MEMORY_IDENTITY_REPAIR_E2E.bat`**, **`RUN_MEMORY_TRUST_INTEGRATION_E2E.bat`** (10/10 — alleen deze audit via `RUN_*.bat`).
+
+**Sessie-onderhoud:** `pytest tests\windows\test_hermes_session_maintenance.py tests\audits\test_session_maintenance_e2e_harness.py -q -m "not e2e"` · volledige keten: `audits\RUN_SESSION_MAINTENANCE_E2E.bat` (14/14).
 
 **IDE parent workspace:** vóór vertrouwen op de Problems-lijst: **`APPLY_WORKSPACE_IDE_SETTINGS.bat`** + Reload Window — `docs/WORKSPACE_IDE_SETUP.md`.
 

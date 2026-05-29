@@ -25,16 +25,43 @@ Uitzetten auto-pull permanent: `set HERMES_SKIP_AUTO_PULL_ON_START=1`. Geen fetc
 
 `PULL_HERMES.bat` = `start_hermes.bat --pull`. Draai **niet** in het Hermes-tabblad dat wordt afgesloten.
 
+`--sync -SkipRelaunch`: POST zonder Hermes-herstart; wist `.update_check` cache. Start daarna opnieuw met `start_hermes.bat`.
+
 Standaard = **volledige launcher** (SOUL, institutioneel, trust, Docker-check, dashboard 9119). Alle env-defaults via `windows\launch_profiles.ps1`.
+
+### Sessie-onderhoud (automatisch)
+
+| Wanneer | Wat |
+|---------|-----|
+| **Start (full)** | Snelkoppeling verify/fix, TUI rebuild indien stale, config-drift **waarschuwing**, model auto-repair |
+| **Na pull** | POST: trust/SOUL/drift strict; daarna PostPullTail (toolsets, LanceDB, TUI, pins, optioneel RAG) |
+| **Na relaunch** | Stamp `post_pull_maintenance` voorkomt dubbele TUI/pin-work (~15 min, zelfde commit) |
+
+| Env (full default) | Effect |
+|--------------------|--------|
+| `HERMES_SKIP_SHORTCUT_MAINT_ON_START=1` | Geen .lnk verify/fix bij start |
+| `HERMES_SKIP_TUI_MAINT_ON_START=1` | Geen ui-tui build bij start |
+| `HERMES_AUTOREPAIR_MODEL_ON_DRIFT=1` | Provider/catalog repair bij start (full profiel) |
+| `HERMES_RAG_ON_POST_PULL=1` | Forceer RAG na pull |
+| `HERMES_RAG_ON_POST_PULL_SMART=1` | RAG alleen bij bronnen + gewijzigde domains (default aan) |
+| `HERMES_AUTO_COMMIT_BRANDING=1` | Auto-commit alleen iconen na pin-fix (opt-in) |
+
+**Verificatie na wijzigingen:**
+
+```bat
+audits\RUN_SESSION_MAINTENANCE_E2E.bat
+powershell -NoProfile -ExecutionPolicy Bypass -File windows\tests\HermesSessionMaintenance.Unit.Tests.ps1
+pytest tests\windows\test_hermes_session_maintenance.py tests\audits\test_session_maintenance_e2e_harness.py -q -m "not e2e"
+```
 
 ## Startketen
 
 ```
 start_hermes.bat          ← repo-root (standaard profiel: full)
   └─ launch_hermes.bat    ← WT, maximize, prepare, logs
-       └─ hermes_wt_entry.cmd   (alleen als nog niet in WT)
+       └─ launch_pre_chat_orchestrator.ps1  (bootstrap al gedaan; SOUL, institutional, trust, dashboard)
        └─ run_hermes_prepare.ps1
-       └─ hermes_chat.cmd       (zelfde cmd, Win32-safe)
+       └─ hermes_chat.cmd
             └─ python -m hermes_cli.main
 ```
 

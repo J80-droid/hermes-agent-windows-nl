@@ -127,6 +127,75 @@ function Write-HermesRuntimeModelBanner {
     Write-Host '[INFO] Wijzig provider via windows\OPEN_SETUP.bat (niet alleen .env keys).' -ForegroundColor DarkGray
 }
 
+function Invoke-HermesModelCatalogAutoRepair {
+    param(
+        [string]$RepoRoot = '',
+        [switch]$Quiet
+    )
+    if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
+        if ($env:HERMES_REPO_ROOT) { $RepoRoot = $env:HERMES_REPO_ROOT }
+        else { $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path }
+    } else {
+        $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot.Trim()).Path
+    }
+    $repoRoot = $RepoRoot
+    $python = Get-HermesAuditPython -RepoRoot $repoRoot
+    if (-not $python) {
+        if (-not $Quiet) { Write-HermesFail 'Geen Python voor model-catalog repair.' }
+        return $false
+    }
+    $runtimeRoot = Get-HermesRuntimeRoot
+    $code = @'
+import os, sys
+sys.path.insert(0, r'__REPO_ROOT__')
+os.environ['HERMES_HOME'] = r'__RUNTIME_ROOT__'
+os.environ.setdefault('HERMES_WIN_PREFER_LOCALAPPDATA', '1')
+from hermes_cli.config import load_config
+from hermes_cli.models import normalize_provider, provider_model_ids
+from hermes_cli.model_runtime_config import persist_model_runtime
+
+cfg = load_config() or {}
+model = cfg.get('model') or {}
+if isinstance(model, str):
+    model = {'default': model}
+provider = normalize_provider((model.get('provider') or '').strip())
+default_model = (model.get('default') or model.get('model') or '').strip()
+if not provider or provider in {'custom', 'auto'}:
+    sys.exit(0)
+catalog = list(provider_model_ids(provider) or [])
+if not catalog:
+    sys.exit(1)
+pick = catalog[0]
+for mid in catalog:
+    m = (mid or '').strip().lower()
+    d = default_model.lower()
+    bare = d.split('/', 1)[1] if '/' in d else d
+    if m == d or m == bare or ( '/' in m and m.split('/', 1)[1] == bare):
+        pick = mid
+        break
+persist_model_runtime(provider, default_model=pick, sync_auth=True)
+print(f'ok: model.default -> {pick}')
+sys.exit(0)
+'@
+    $code = $code.Replace('__REPO_ROOT__', $repoRoot.Replace('\', '\\'))
+    $code = $code.Replace('__RUNTIME_ROOT__', $runtimeRoot.Replace('\', '\\'))
+    $tmpPy = Join-Path ([System.IO.Path]::GetTempPath()) ("hermes_catalog_repair_" + [Guid]::NewGuid().ToString('N') + '.py')
+    try {
+        Set-Content -LiteralPath $tmpPy -Value $code -Encoding UTF8
+        $output = & $python $tmpPy 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            if (-not $Quiet) {
+                foreach ($line in @($output)) { if ($line) { Write-HermesFail $line } }
+            }
+            return $false
+        }
+        if (-not $Quiet) { Write-HermesOk 'Model-catalog auto-repair toegepast.' }
+        return $true
+    } finally {
+        Remove-Item -LiteralPath $tmpPy -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Invoke-HermesModelProviderCoherenceRepair {
     param([switch]$Quiet)
     $repairScript = Join-Path $PSScriptRoot 'repair_model_provider_coherence.ps1'
