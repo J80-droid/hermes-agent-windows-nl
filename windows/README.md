@@ -155,7 +155,7 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 hermes_onderhoud.bat
 ```
 
-Doet in volgorde: taakbalk-.lnk + bureaublad + pins → pip `[web]` + pygount → `npm run build` (indien nodig) → dashboard 9119 → health + force-scan.
+Doet in volgorde: taakbalk-.lnk + bureaublad + pins → pip `[web]` + pygount → `npm run build` (indien nodig) → **pygount pre-warm** (`scripts/warm_codebase_viz_pygount_cache.py`, eenmalig ~10 min zonder cache) → dashboard 9119 → health (+ force-scan alleen als cache ontbreekt).
 
 | Vlag | Alleen |
 |------|--------|

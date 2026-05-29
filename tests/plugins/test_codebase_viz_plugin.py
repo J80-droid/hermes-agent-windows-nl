@@ -656,13 +656,13 @@ def test_scan_status_endpoint(client, plugin_module):
 def test_pygount_timeout_invalid_env_uses_fallback(monkeypatch, tiny_repo):
     monkeypatch.setenv("CODEBASE_VIZ_PYGOUNT_TIMEOUT", "not-a-number")
     mod = _load_plugin_module(monkeypatch, tiny_repo)
-    assert mod.PYGOUNT_TIMEOUT == 240
+    assert mod.PYGOUNT_TIMEOUT == mod.INSTITUTIONAL_PYGOUNT_TIMEOUT_SEC
 
 
 def test_pygount_timeout_zero_uses_fallback(monkeypatch, tiny_repo):
     monkeypatch.setenv("CODEBASE_VIZ_PYGOUNT_TIMEOUT", "0")
     mod = _load_plugin_module(monkeypatch, tiny_repo)
-    assert mod.PYGOUNT_TIMEOUT == 240
+    assert mod.PYGOUNT_TIMEOUT == mod.INSTITUTIONAL_PYGOUNT_TIMEOUT_SEC
 
 
 def test_scan_mode_invalid_env_uses_incremental(monkeypatch, tiny_repo):
@@ -722,12 +722,12 @@ def test_scan_status_reflects_inflight_phase(plugin_module):
 
 def test_scan_status_payload_defaults_when_idle(plugin_module, monkeypatch):
     monkeypatch.delenv("CODEBASE_VIZ_PYGOUNT_TIMEOUT", raising=False)
-    plugin_module.PYGOUNT_TIMEOUT = 240
+    plugin_module.PYGOUNT_TIMEOUT = plugin_module.INSTITUTIONAL_PYGOUNT_TIMEOUT_SEC
     plugin_module._scan_end()
     body = asyncio.run(_scan_status_payload(plugin_module))
     assert body["phase"] == "idle"
     assert body["busy"] is False
-    assert body.get("timeout_sec") == 240
+    assert body.get("timeout_sec") == plugin_module.INSTITUTIONAL_PYGOUNT_TIMEOUT_SEC
 
 
 def test_import_edges_shared_cache(plugin_module, monkeypatch):
@@ -905,3 +905,50 @@ def test_background_refresh_signature_delta_refreshes_core_sets(plugin_module, m
     assert "summary" in calls
     assert "structure" in calls
     assert "dependencies" in calls
+
+
+def test_pygount_disk_cache_roundtrip(plugin_module, tiny_repo, tmp_path, monkeypatch):
+    cache_path = tmp_path / "pygount_cache.json"
+    monkeypatch.setitem(plugin_module._state_paths, "pygount_disk", cache_path)
+    monkeypatch.setenv("CODEBASE_VIZ_PYGOUNT_DISK_CACHE", "1")
+    monkeypatch.setattr(plugin_module, "_compute_repo_signature", lambda _repo: "test-signature")
+    bundle = {
+        "summary": {"total_files": 1, "total_code": 10, "languages": {"Python": 10}},
+        "file_rows": [{"path": "pkg/a.py", "language": "Python", "code": 10}],
+    }
+    plugin_module._write_pygount_disk_cache(bundle)
+    assert cache_path.is_file()
+    loaded = plugin_module._read_pygount_disk_cache(allow_stale=False)
+    assert loaded is not None
+    assert loaded["file_rows"][0]["path"] == "pkg/a.py"
+
+
+def test_warm_pygount_cache_script_check_only(tiny_repo, tmp_path, monkeypatch):
+    warm_script = REPO_ROOT / "scripts" / "warm_codebase_viz_pygount_cache.py"
+    if not warm_script.is_file():
+        pytest.skip("warm_codebase_viz_pygount_cache.py ontbreekt")
+
+    cache_dir = tiny_repo / "output" / "research"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_path = cache_dir / "codebase_viz_pygount_cache.json"
+    monkeypatch.setenv("CODEBASE_VIZ_REPO", str(tiny_repo))
+    monkeypatch.setenv("CODEBASE_VIZ_PYGOUNT_CACHE_PATH", str(cache_path))
+    monkeypatch.setenv("CODEBASE_VIZ_PYGOUNT_DISK_CACHE", "1")
+
+    spec = importlib.util.spec_from_file_location("warm_pygount_test", warm_script)
+    assert spec is not None and spec.loader is not None
+    warm_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(warm_mod)
+
+    assert warm_mod.main(["--check-only"]) == 2
+
+    plugin = _load_plugin_module(monkeypatch, tiny_repo)
+    plugin._write_pygount_disk_cache(
+        {
+            "summary": {"total_files": 1},
+            "file_rows": [{"path": "pkg/a.py", "language": "Python", "code": 1}],
+        }
+    )
+
+    assert warm_mod.main(["--check-only"]) == 0
+    assert warm_mod.main([]) == 0

@@ -17,7 +17,8 @@ import verify_codebase_viz_health as verify  # noqa: E402
 
 @pytest.fixture(autouse=True)
 def _institutional_pygount_timeout_env(monkeypatch):
-    monkeypatch.setenv("CODEBASE_VIZ_PYGOUNT_TIMEOUT", "240")
+    monkeypatch.setenv("CODEBASE_VIZ_PYGOUNT_TIMEOUT", "600")
+    monkeypatch.setattr(verify, "INSTITUTIONAL_DEFAULT_PYGOUNT_TIMEOUT_SEC", 600)
 
 
 def test_extract_session_token_happy():
@@ -31,7 +32,7 @@ def test_extract_session_token_missing():
 
 
 def test_validate_health_body_ok():
-    body = {"pygount_timeout_sec": 240, "plugin": "codebase-viz", "version": "2.5.0"}
+    body = {"pygount_timeout_sec": 600, "plugin": "codebase-viz", "version": "2.5.0"}
     assert verify.validate_health_body(body) == []
 
 
@@ -48,7 +49,7 @@ def test_validate_health_body_wrong_timeout():
 
 
 def test_validate_health_body_missing_plugin():
-    errs = verify.validate_health_body({"pygount_timeout_sec": 240})
+    errs = verify.validate_health_body({"pygount_timeout_sec": 600})
     assert any("plugin" in e for e in errs)
 
 
@@ -100,7 +101,7 @@ def test_main_validation_failure_returns_2(capsys):
 def test_main_success_returns_0(capsys):
     html = 'x __HERMES_SESSION_TOKEN__="t" y'
     health = {
-        "pygount_timeout_sec": 240,
+        "pygount_timeout_sec": 600,
         "plugin": "codebase-viz",
         "version": "2.5.0",
         "plugin_api_path": "/x/plugin_api.py",
@@ -121,4 +122,4 @@ def test_main_success_returns_0(capsys):
         code = verify.main()
     assert code == 0
     out = capsys.readouterr().out
-    assert "pygount_timeout_sec=240" in out
+    assert "pygount_timeout_sec=600" in out

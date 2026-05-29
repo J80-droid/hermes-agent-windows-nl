@@ -102,7 +102,13 @@ function Initialize-WorkspaceDashboardPlugins {
     $env:HERMES_BUNDLED_PLUGINS = $pluginsRoot
     Write-DashLog "[INFO] HERMES_BUNDLED_PLUGINS=$pluginsRoot" -Color DarkGray
     if (-not $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT) {
-        $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT = '240'
+        $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT = '600'
+    }
+    if (-not $env:CODEBASE_VIZ_TTL) {
+        $env:CODEBASE_VIZ_TTL = '300'
+    }
+    if (-not $env:CODEBASE_VIZ_PYGOUNT_TTL) {
+        $env:CODEBASE_VIZ_PYGOUNT_TTL = '3600'
     }
 
     Move-AsideStaleCodebaseVizUserPlugin -Label 'profile' -PluginDir (Join-Path $env:USERPROFILE '.hermes\plugins\codebase-viz')
@@ -284,12 +290,12 @@ function Test-CodebaseVizHealth {
     }
     $hadTimeout = $null -ne $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT
     $prevTimeout = $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT
-    if (-not $hadTimeout) { $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT = '240' }
+    if (-not $hadTimeout) { $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT = '600' }
     try {
         & $PythonExe $verify 2>&1 | ForEach-Object { Write-LaunchLogAppend $_ }
         if ($LASTEXITCODE -eq 0) {
             Write-DashLog '[OK] Codebase Viz /health verify geslaagd.' -Color Green
-            Invoke-CodebaseVizWarmupScan -BindHost $BindHost -BindPort $BindPort
+            Invoke-CodebaseVizWarmupScan -BindHost $BindHost -BindPort $BindPort -RepoRoot $RepoRoot -PythonExe $PythonExe
             return $true
         }
         Write-DashLog '[WARN] Codebase Viz /health verify mislukt (exit ' + $LASTEXITCODE + '). Zie audits\RESTART_CODEBASE_VIZ_DASHBOARD.bat' -Color Yellow
@@ -306,10 +312,46 @@ function Test-CodebaseVizHealth {
     }
 }
 
+function Ensure-CodebaseVizPygountCache {
+    param(
+        [string]$RepoRoot,
+        [string]$PythonExe
+    )
+    if (-not $env:HERMES_BUNDLED_PLUGINS) { return }
+    if (-not $PythonExe) { return }
+    $pregount = ''
+    if ($null -ne $env:HERMES_CODEBASE_VIZ_PREGOUNT_CACHE) {
+        $pregount = "$env:HERMES_CODEBASE_VIZ_PREGOUNT_CACHE".Trim().ToLowerInvariant()
+    }
+    if ($pregount -in @('0', 'skip', 'off', 'false', 'no')) {
+        Write-DashLog '[INFO] Codebase Viz pre-warm overgeslagen (HERMES_CODEBASE_VIZ_PREGOUNT_CACHE).' -Color DarkGray
+        return
+    }
+    $warmScript = Join-Path $RepoRoot 'scripts\warm_codebase_viz_pygount_cache.py'
+    if (-not (Test-Path -LiteralPath $warmScript)) {
+        Write-DashLog '[WARN] Codebase Viz pre-warm: script ontbreekt.' -Color Yellow
+        return
+    }
+    & $PythonExe $warmScript --check-only 2>&1 | ForEach-Object { Write-LaunchLogAppend $_ }
+    if ($LASTEXITCODE -eq 0) {
+        Write-DashLog '[OK] Codebase Viz pygount-schijfcache aanwezig.' -Color DarkGray
+        return
+    }
+    Write-DashLog '[INFO] Codebase Viz: eerste pygount-cache opbouwen (eenmalig, kan tot 10 min duren)...' -Color Cyan
+    & $PythonExe $warmScript 2>&1 | ForEach-Object { Write-LaunchLogAppend $_ }
+    if ($LASTEXITCODE -eq 0) {
+        Write-DashLog '[OK] Codebase Viz pygount-cache opgebouwd vóór dashboard-start.' -Color Green
+    } else {
+        Write-DashLog '[WARN] Codebase Viz pre-warm mislukt — dashboard bouwt cache later op.' -Color Yellow
+    }
+}
+
 function Invoke-CodebaseVizWarmupScan {
     param(
         [string]$BindHost,
-        [int]$BindPort
+        [int]$BindPort,
+        [string]$RepoRoot,
+        [string]$PythonExe
     )
     if (-not $env:HERMES_BUNDLED_PLUGINS) { return }
     $warmup = 'auto'
@@ -318,6 +360,15 @@ function Invoke-CodebaseVizWarmupScan {
     }
     if ($warmup -in @('0', 'skip', 'off', 'false', 'no')) { return }
     if ($warmup -eq 'incremental') { return }
+
+    $warmScript = Join-Path $RepoRoot 'scripts\warm_codebase_viz_pygount_cache.py'
+    if ($PythonExe -and (Test-Path -LiteralPath $warmScript)) {
+        & $PythonExe $warmScript --check-only 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-DashLog '[OK] Codebase Viz warmup: schijfcache actueel — force-scan overgeslagen.' -Color DarkGray
+            return
+        }
+    }
 
     $connectHost = Get-DashboardConnectHost -BindHost $BindHost
     $base = "http://${connectHost}:${BindPort}"
@@ -441,6 +492,9 @@ if ($workspacePlugins) {
 
 Install-HermesWebDashboardPackage -RepoRoot $RepoRoot
 
+$dashPy = Get-DashboardPythonExe -RepoRoot $RepoRoot
+Ensure-CodebaseVizPygountCache -RepoRoot $RepoRoot -PythonExe $dashPy
+
 $logDir = Join-Path $RepoRoot 'output\research\logs'
 if (-not (Test-Path -LiteralPath $logDir)) {
     New-Item -ItemType Directory -Path $logDir -Force | Out-Null
@@ -454,7 +508,6 @@ $dashPythonArgs = @(
 if ($env:HERMES_DASHBOARD_SKIP_BUILD -eq '1') {
     $dashPythonArgs += '--skip-build'
 }
-$dashPy = Get-DashboardPythonExe -RepoRoot $RepoRoot
 if (-not $dashPy) {
     Write-DashLog '[WARN] Dashboard niet gestart: geen hermes-env python.exe.' -Color Yellow
     exit 0

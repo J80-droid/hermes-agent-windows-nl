@@ -32,9 +32,12 @@ pip install pygount watchdog radon psutil
 | Env | Default | Beschrijving |
 |-----|---------|--------------|
 | `CODEBASE_VIZ_REPO` | bundled `hermes-agent` root (`.git`) | Scan-doel |
-| `CODEBASE_VIZ_TTL` | `60` | Response-cache (s) |
+| `CODEBASE_VIZ_TTL` | `300` | Response-cache API (s) |
+| `CODEBASE_VIZ_PYGOUNT_TTL` | `3600` | Geheugen-cache pygount (s) |
 | `CODEBASE_VIZ_DEBOUNCE` | `2.0` | Watcher batch-interval |
-| `CODEBASE_VIZ_PYGOUNT_TIMEOUT` | `240` | `pygount` subprocess timeout (volledige fork-repo); ongeldige waarde → fallback 240 |
+| `CODEBASE_VIZ_PYGOUNT_TIMEOUT` | `600` | `pygount` subprocess timeout; ongeldige waarde → fallback 600 |
+| `CODEBASE_VIZ_PYGOUNT_DISK_CACHE` | `1` | Persistente pygount-cache (`output/research/codebase_viz_pygount_cache.json`) |
+| `HERMES_CODEBASE_VIZ_PREGOUNT_CACHE` | *(aan)* | Zet op `skip` om pre-warm vóór dashboard-start over te slaan |
 | `CODEBASE_VIZ_SCAN_MODE` | `incremental` | Productiepad: `incremental` (SWR + delta-refresh) of `full` |
 | `CODEBASE_VIZ_MAX_MEMORY_MB` | `500` | RSS-drempel; boven limiet → stale cache of `memory_pressure` |
 
@@ -44,8 +47,10 @@ pip install pygount watchdog radon psutil
 
 | Situatie | Verwachting |
 |----------|-------------|
-| **Eerste load** (Sunburst) | Volledige `hermes-agent` root: tot **~240 s** (één `pygount`-run); kleine repo's vaak sneller |
-| **Herladen binnen TTL** | **< 1 s** — resultaat uit server-cache (`CODEBASE_VIZ_TTL`, default **60 s**) |
+| **Eerste install (geen cache)** | `launch_dashboard_on_start.ps1` bouwt cache **vóór** dashboard-start via `scripts/warm_codebase_viz_pygount_cache.py` (tot **~600 s**, eenmalig in console) |
+| **Eerste load in UI** (Sunburst) | **< 1 s** als pre-warm geslaagd is — anders fallback: volledige pygount-run in dashboard |
+| **Na succes + herstart** | **< 1 s** — disk-cache hydrate (`codebase_viz_pygount_cache.json`, zelfde repo-handtekening) |
+| **Herladen binnen TTL** | **< 1 s** — geheugen-cache (`CODEBASE_VIZ_PYGOUNT_TTL`, default **3600 s**) |
 | **Tab wisselen** (Metrics, Treemap) | Vaak snel: deelt dezelfde `pygount`-cache |
 | **Force Scan / `r`** | Cache geleegd → opnieuw volledige scan |
 
@@ -71,7 +76,7 @@ Sneller op grote repos (PowerShell, vóór dashboard-start):
 
 ```powershell
 $env:CODEBASE_VIZ_TTL = "300"
-$env:CODEBASE_VIZ_PYGOUNT_TIMEOUT = "300"   # als 240s nog te krap
+$env:CODEBASE_VIZ_PYGOUNT_TIMEOUT = "900"   # als 600s nog te krap
 $env:CODEBASE_VIZ_REPO = "D:\pad\naar\kleinere-repo"   # optioneel: alleen submap
 ```
 
@@ -137,7 +142,8 @@ audits\RUN_DASHBOARD_WS_DEV.bat
 Controle in browser → Network → `GET /api/plugins/codebase-viz/health`:
 
 - `version`: `2.5.0`
-- `pygount_timeout_sec`: **240** (niet 30)
+- `pygount_timeout_sec`: **600** (niet 30)
+- `pygount_disk_cache_enabled`: **true**
 - `plugin_api_path`: pad onder deze repo
 
 Zie je nog **30 seconds** in de fouttekst? Er draait dan een **oud dashboard-proces**. Oplossing: `audits\RESTART_CODEBASE_VIZ_DASHBOARD.bat` of Hermes volledig afsluiten en opnieuw `start_hermes.bat`.

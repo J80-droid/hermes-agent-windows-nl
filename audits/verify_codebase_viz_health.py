@@ -11,7 +11,7 @@ from typing import Any
 
 DEFAULT_BASE = "http://127.0.0.1:9119"
 SESSION_TOKEN_RE = re.compile(r'__HERMES_SESSION_TOKEN__="([^"]+)"')
-INSTITUTIONAL_DEFAULT_PYGOUNT_TIMEOUT_SEC = 240
+INSTITUTIONAL_DEFAULT_PYGOUNT_TIMEOUT_SEC = 600
 
 
 def expected_pygount_timeout_sec() -> int:

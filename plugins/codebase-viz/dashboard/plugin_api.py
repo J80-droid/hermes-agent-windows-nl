@@ -74,21 +74,37 @@ def _resolve_repo_path() -> Path | None:
     return None
 
 
+INSTITUTIONAL_PYGOUNT_TIMEOUT_SEC = 600
+INSTITUTIONAL_PYGOUNT_CACHE_TTL_SEC = 3600.0
+
+
 def _parse_pygount_timeout() -> int:
-    raw = os.environ.get("CODEBASE_VIZ_PYGOUNT_TIMEOUT", "240").strip()
+    default = str(INSTITUTIONAL_PYGOUNT_TIMEOUT_SEC)
+    raw = os.environ.get("CODEBASE_VIZ_PYGOUNT_TIMEOUT", default).strip()
     try:
         value = int(raw)
     except ValueError:
-        log.warning("invalid CODEBASE_VIZ_PYGOUNT_TIMEOUT=%r, using 240", raw)
-        return 240
+        log.warning(
+            "invalid CODEBASE_VIZ_PYGOUNT_TIMEOUT=%r, using %s",
+            raw,
+            INSTITUTIONAL_PYGOUNT_TIMEOUT_SEC,
+        )
+        return INSTITUTIONAL_PYGOUNT_TIMEOUT_SEC
     if value < 1:
-        log.warning("CODEBASE_VIZ_PYGOUNT_TIMEOUT=%s too low, using 240", value)
-        return 240
+        log.warning(
+            "CODEBASE_VIZ_PYGOUNT_TIMEOUT=%s too low, using %s",
+            value,
+            INSTITUTIONAL_PYGOUNT_TIMEOUT_SEC,
+        )
+        return INSTITUTIONAL_PYGOUNT_TIMEOUT_SEC
     return value
 
 
 REPO_PATH = _resolve_repo_path()
-CODEBASE_VIZ_TTL = float(os.environ.get("CODEBASE_VIZ_TTL", "60"))
+CODEBASE_VIZ_TTL = float(os.environ.get("CODEBASE_VIZ_TTL", "300"))
+PYGOUNT_CACHE_TTL = float(
+    os.environ.get("CODEBASE_VIZ_PYGOUNT_TTL", str(int(INSTITUTIONAL_PYGOUNT_CACHE_TTL_SEC))),
+)
 CODEBASE_VIZ_DEBOUNCE = float(os.environ.get("CODEBASE_VIZ_DEBOUNCE", "2.0"))
 PYGOUNT_TIMEOUT = _parse_pygount_timeout()
 
@@ -143,11 +159,17 @@ _snapshot_lock = asyncio.Lock()
 _pending_changed_paths: set[str] = set()
 _RECENT_EVENT_LIMIT = 200
 _recent_events: list[dict[str, Any]] = []
+_research_dir = Path(__file__).resolve().parents[3] / "output" / "research"
 _state_paths = {
     "snapshot": (
         Path(os.environ.get("CODEBASE_VIZ_SNAPSHOT_PATH", "")).resolve()
         if os.environ.get("CODEBASE_VIZ_SNAPSHOT_PATH")
-        else Path(__file__).resolve().parents[3] / "output" / "research" / "codebase_viz_snapshot_state.json"
+        else _research_dir / "codebase_viz_snapshot_state.json"
+    ),
+    "pygount_disk": (
+        Path(os.environ.get("CODEBASE_VIZ_PYGOUNT_CACHE_PATH", "")).resolve()
+        if os.environ.get("CODEBASE_VIZ_PYGOUNT_CACHE_PATH")
+        else _research_dir / "codebase_viz_pygount_cache.json"
     ),
 }
 _snapshot_state: dict[str, Any] = {
@@ -185,6 +207,94 @@ async def _set_cache(key: str, data: object) -> None:
 
 def _snapshot_file() -> Path:
     return _state_paths["snapshot"]
+
+
+def _pygount_disk_cache_file() -> Path:
+    return _state_paths["pygount_disk"]
+
+
+def _pygount_disk_cache_enabled() -> bool:
+    return os.environ.get("CODEBASE_VIZ_PYGOUNT_DISK_CACHE", "1").strip().lower() not in {
+        "0",
+        "false",
+        "no",
+        "off",
+    }
+
+
+def _read_pygount_disk_cache(*, allow_stale: bool = False) -> dict[str, Any] | None:
+    """Lees gepersisteerde pygount-bundle (overleeft dashboard-herstart)."""
+    if not _pygount_disk_cache_enabled() or REPO_PATH is None:
+        return None
+    path = _pygount_disk_cache_file()
+    if not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        log.warning("codebase_viz_pygount_cache_load_failed: %s", exc)
+        return None
+    if not isinstance(data, dict):
+        return None
+    try:
+        cached_repo = Path(str(data.get("repo_path", ""))).resolve()
+        current_repo = REPO_PATH.resolve()
+    except (OSError, ValueError):
+        return None
+    if cached_repo != current_repo:
+        return None
+    signature = data.get("repo_signature") or ""
+    if signature != _compute_repo_signature(REPO_PATH):
+        return None
+    saved_at = data.get("saved_at")
+    if not allow_stale and isinstance(saved_at, (int, float)):
+        age = time.time() - float(saved_at)
+        if age > PYGOUNT_CACHE_TTL:
+            return None
+    bundle = data.get("bundle")
+    if not isinstance(bundle, dict) or bundle.get("error"):
+        return None
+    if not bundle.get("file_rows"):
+        return None
+    return dict(bundle)
+
+
+def _write_pygount_disk_cache(bundle: dict[str, Any]) -> None:
+    if not _pygount_disk_cache_enabled() or REPO_PATH is None or bundle.get("error"):
+        return
+    if not bundle.get("file_rows"):
+        return
+    path = _pygount_disk_cache_file()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "version": 1,
+            "repo_path": str(REPO_PATH),
+            "repo_signature": _compute_repo_signature(REPO_PATH),
+            "saved_at": int(time.time()),
+            "bundle": bundle,
+        }
+        path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    except Exception as exc:
+        log.warning("codebase_viz_pygount_cache_persist_failed: %s", exc)
+
+
+async def _hydrate_pygount_from_disk() -> bool:
+    """Vul geheugen-cache vanaf schijf zodat startup geen volledige pygount hoeft."""
+    bundle = await asyncio.to_thread(_read_pygount_disk_cache, allow_stale=False)
+    if bundle is None:
+        return False
+    async with _cache_lock:
+        _cache["pygount"] = (time.monotonic(), bundle)
+    signature = _compute_repo_signature(REPO_PATH)
+    async with _snapshot_lock:
+        _snapshot_state["repo_signature"] = signature
+    await _mark_dataset_updated("pygount", bundle)
+    log.info(
+        "codebase_viz_pygount_disk_hydrated",
+        extra={"files": len(bundle.get("file_rows") or [])},
+    )
+    return True
 
 
 def _safe_repo_file_iter(root: Path):
@@ -843,7 +953,24 @@ async def _fetch_pygount_bundle() -> dict[str, Any]:
         raise RuntimeError("memory_pressure")
     _scan_start("pygount")
     try:
-        return await asyncio.to_thread(_sync_pygount_bundle, str(REPO_PATH))
+        result = await asyncio.to_thread(_sync_pygount_bundle, str(REPO_PATH))
+        if result.get("error"):
+            stale = await asyncio.to_thread(_read_pygount_disk_cache, allow_stale=True)
+            if stale is not None:
+                stale = dict(stale)
+                stale["fallback"] = True
+                stale["stale"] = True
+                stale["warning"] = str(result["error"])
+                log.warning(
+                    "codebase_viz_pygount_timeout_serving_stale_cache",
+                    extra={"detail": result["error"]},
+                )
+                async with _cache_lock:
+                    _cache["pygount"] = (time.monotonic(), stale)
+                return stale
+        else:
+            await asyncio.to_thread(_write_pygount_disk_cache, result)
+        return result
     finally:
         _scan_end()
 
@@ -864,8 +991,8 @@ async def _get_import_edges() -> list[dict[str, str]]:
 
 
 async def _get_pygount_bundle() -> dict[str, Any]:
-    """Cached pygount result (default TTL 60s) — one scan serves structure + summary."""
-    return await _get_or_compute("pygount", CODEBASE_VIZ_TTL, _fetch_pygount_bundle)
+    """Cached pygount — lange TTL + disk-hydrate; één scan bedient structure + summary."""
+    return await _get_or_compute("pygount", PYGOUNT_CACHE_TTL, _fetch_pygount_bundle)
 
 
 async def _run_pygount() -> dict[str, Any]:
@@ -899,6 +1026,10 @@ async def _build_structure():
     if bundle.get("error"):
         out["error"] = bundle["error"]
         out["fallback"] = bool(bundle.get("fallback", True))
+    elif bundle.get("warning"):
+        out["error"] = bundle["warning"]
+        out["fallback"] = True
+        out["stale"] = bool(bundle.get("stale"))
     return _attach_repo_meta(out)
 
 
@@ -1124,6 +1255,7 @@ async def _ensure_started() -> None:
         if _initialized:
             return
         await _load_snapshot_state()
+        await _hydrate_pygount_from_disk()
         if REPO_PATH is not None and WATCHDOG_AVAILABLE:
             try:
                 _start_watcher(str(REPO_PATH))
@@ -1173,6 +1305,8 @@ async def health():
         "cache_keys": cache_keys,
         "plugin_api_path": str(Path(__file__).resolve()),
         "snapshot_state_path": str(_snapshot_file()),
+        "pygount_disk_cache_path": str(_pygount_disk_cache_file()),
+        "pygount_disk_cache_enabled": _pygount_disk_cache_enabled(),
     }
 
 
