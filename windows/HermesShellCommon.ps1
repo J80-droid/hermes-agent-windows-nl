@@ -81,6 +81,37 @@ function Test-HermesGitDirtyOnlyBranding {
     return $true
 }
 
+function Get-HermesGitPorcelainPath {
+    param([Parameter(Mandatory)][string]$Line)
+    $raw = $Line.TrimEnd()
+    if ($raw -match ' -> ') {
+        return ($raw -split ' -> ', 2)[-1].Trim()
+    }
+    if ($raw.Length -ge 4) {
+        return $raw.Substring(3).Trim()
+    }
+    return $raw.Trim()
+}
+
+function Test-HermesGitDirtyAllowedForPreflight {
+    <#
+    .SYNOPSIS
+        True als porcelain alleen branding/iconen en/of lokale Hermes runtime-logs in repo-root betreft.
+    #>
+    param([Parameter(Mandatory)][string[]]$PorcelainLines)
+    if ($PorcelainLines.Count -eq 0) { return $true }
+    if (Test-HermesGitDirtyOnlyBranding -PorcelainLines $PorcelainLines) { return $true }
+    foreach ($line in $PorcelainLines) {
+        if (-not $line.Trim()) { continue }
+        $norm = (Get-HermesGitPorcelainPath -Line $line) -replace '\\', '/'
+        if ($norm -match '^(hermes_last_error\.log|hermes_launch\.log|hermes_runtime\.log|hermes_setup\.log)$') {
+            continue
+        }
+        return $false
+    }
+    return $true
+}
+
 # --- Sessie-stamps (%LOCALAPPDATA%\hermes\stamps\*.json) ---
 # Gebruikt door HermesSessionMaintenance.ps1: onderhoud alleen als stamp verouderd of git head / domains.yaml wijzigde.
 # post_pull_maintenance + head: skip dubbele TUI/shortcut na POST-relaunch. Clear-HermesUpdateCheckCache: start_hermes --sync zonder relaunch.

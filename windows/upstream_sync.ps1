@@ -155,8 +155,8 @@ function Invoke-UpstreamPreflight {
 
     $dirtyLines = @(git status --porcelain | Where-Object { $_.Trim() })
     if ($dirtyLines.Count -gt 0 -and -not $AllowDirty) {
-        if (Test-HermesGitDirtyOnlyBranding -PorcelainLines $dirtyLines) {
-            Write-HermesWarn 'Alleen branding/iconen .png/.ico gewijzigd - update gaat door. Commit later indien gewenst.'
+        if (Test-HermesGitDirtyAllowedForPreflight -PorcelainLines $dirtyLines) {
+            Write-HermesWarn 'Alleen branding/iconen of lokale runtime-logs - update gaat door. Commit later indien gewenst.'
         } else {
             Write-HermesErr 'Werkmap niet schoon - commit of stash eerst (of alleen iconen: FIX_TASKBAR_ICONS na commit).'
             git status -sb | Out-Host

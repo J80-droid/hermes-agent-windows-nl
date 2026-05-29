@@ -6,7 +6,8 @@ function Get-HermesRepoRootAllowlist {
         'uv.lock', 'README.md', 'README-FORK.md', 'README.zh-CN.md',
         'AGENTS.md', 'cli.py', 'run_agent.py', 'model_tools.py', 'toolsets.py',
         'hermes_state.py', 'hermes_constants.py', 'hermes_logging.py',
-        'hermes_bootstrap.py', 'hermes_time.py', 'batch_runner.py', 'config.yaml'
+        'hermes_bootstrap.py', 'hermes_time.py', 'batch_runner.py', 'config.yaml',
+        'hermes_launch.log', 'hermes_runtime.log', 'hermes_last_error.log', 'hermes_setup.log'
     )
 }
 

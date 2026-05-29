@@ -83,6 +83,8 @@ try {
 
     Assert-True (Test-HermesGitDirtyOnlyBranding -PorcelainLines @(' M assets/Hermes_logo.png')) 'branding-only'
     Assert-True (-not (Test-HermesGitDirtyOnlyBranding -PorcelainLines @(' M README.md'))) 'mixed dirty'
+    Assert-True (Test-HermesGitDirtyAllowedForPreflight -PorcelainLines @('?? hermes_last_error.log')) 'runtime log only'
+    Assert-True (-not (Test-HermesGitDirtyAllowedForPreflight -PorcelainLines @('?? hermes_last_error.log', ' M README.md'))) 'log + code dirty'
 
     # --- Skip post-pull on start (edge) ---
     if (Get-Command git -ErrorAction SilentlyContinue) {

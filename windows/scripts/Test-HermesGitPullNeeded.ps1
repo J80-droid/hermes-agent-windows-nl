@@ -51,9 +51,9 @@ try {
 
     $dirtyLines = @(git status --porcelain 2>$null | Where-Object { $_.Trim() })
     if ($dirtyLines.Count -gt 0) {
-        if (Test-HermesGitDirtyOnlyBranding -PorcelainLines $dirtyLines) {
+        if (Test-HermesGitDirtyAllowedForPreflight -PorcelainLines $dirtyLines) {
             if (-not $Quiet) {
-                Write-HermesInfo 'Alleen branding/iconen gewijzigd - auto-pull toegestaan (commit later optioneel).'
+                Write-HermesInfo 'Alleen branding/iconen of runtime-logs - auto-pull toegestaan (commit later optioneel).'
             }
         } else {
             if (-not $Quiet) {
