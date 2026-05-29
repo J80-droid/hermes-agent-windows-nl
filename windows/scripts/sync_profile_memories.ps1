@@ -19,6 +19,7 @@ if (-not $RepoRoot) {
 $root = Get-HermesMemoryHermesRoot -OverrideRoot $HermesRoot
 $userSeed = Get-HermesMemorySeedEntries -RepoRoot $RepoRoot -SectionName 'USER.md'
 $memorySeed = Get-HermesMemorySeedEntries -RepoRoot $RepoRoot -SectionName 'MEMORY.md'
+Ensure-HermesLegacyRootMemorySeed -HermesRoot $root -RepoRoot $RepoRoot -DryRun:$DryRun
 Initialize-PendingHermesConfigSections
 
 $targets = @(

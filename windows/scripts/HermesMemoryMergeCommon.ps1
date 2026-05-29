@@ -192,6 +192,29 @@ function Invoke-RebalanceHermesConfigToCore {
     }
 }
 
+function Ensure-HermesLegacyRootMemorySeed {
+    <#
+    .SYNOPSIS
+    Maakt ontbrekende legacy root memories/MEMORY.md en USER.md aan uit canonieke seed.
+    Split-home: root blijft seed-only (~3 secties); profiel-scoped memory leidend.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$HermesRoot,
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [switch]$DryRun
+    )
+    $userSeed = Get-HermesMemorySeedEntries -RepoRoot $RepoRoot -SectionName 'USER.md'
+    $memorySeed = Get-HermesMemorySeedEntries -RepoRoot $RepoRoot -SectionName 'MEMORY.md'
+    $pairs = @(
+        @{ Path = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath 'memories/USER.md'; Seed = $userSeed }
+        @{ Path = Join-HermesRepoPath -RepoRoot $HermesRoot -RelativePath 'memories/MEMORY.md'; Seed = $memorySeed }
+    )
+    foreach ($pair in $pairs) {
+        if (Test-Path -LiteralPath $pair.Path) { continue }
+        Merge-MemoryFile -FilePath $pair.Path -SeedEntries $pair.Seed -DryRun:$DryRun
+    }
+}
+
 function Merge-MemoryFile {
     param(
         [string]$FilePath,

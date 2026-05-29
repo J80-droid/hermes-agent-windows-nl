@@ -53,6 +53,8 @@ if ($runMigrate) {
 }
 
 if ($runEnforce) {
+    Ensure-HermesLegacyRootMemorySeed -HermesRoot $root -RepoRoot $RepoRoot -DryRun:$DryRun
+
     $dedup = Join-Path $PSScriptRoot 'invoke_deduplicate_memories.ps1'
     if (Test-Path -LiteralPath $dedup) {
         Write-RepairStep 'deduplicate_memories'

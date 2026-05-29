@@ -10,16 +10,18 @@ audits\RUN_MEMORY_REPAIR_TRUST_E2E.bat
 
 Geen netwerk, geen wijziging aan productie-`%LOCALAPPDATA%\hermes` (isolated temp root).
 
-## Scenario's (12 stappen)
+## Scenario's (13 stappen)
 
 1. Repo-scripts en entrypoints aanwezig
-2. Keten-wiring (post-sync `-EnforceOnly`, SYNC_TRUST, launch stamp/pending, watch-paden)
-3. `HermesCriticalWindowsRepoPaths.ps1`
-4. `Get-TrustRuntimeWatchPaths` bevat enforce + repair
-5. `-MigrateOnly` + `-EnforceOnly` geweigerd
-6. Temp fixture OVER (>4000 tekens)
-7. `enforce_profile_memory_char_limits` → schone audit
-8. Hermes-config sectie behouden na trim
-9. `Invoke-RepairProfileMemoryLimits -EnforceOnly`
-10. `Invoke-MemoryTrustPostSync` op mock root
-11. `CONSOLIDATE_ROOT_MEMORIES.bat` roept `-Full` aan
+2. Keten-wiring (post-sync `-EnforceOnly`, SYNC_TRUST, launch stamp/pending, watch-paden; stamp na audit)
+3. `Ensure-HermesLegacyRootMemorySeed` in repair + merge-common
+4. `HermesCriticalWindowsRepoPaths.ps1`
+5. `Get-TrustRuntimeWatchPaths` bevat enforce + repair
+6. `-MigrateOnly` + `-EnforceOnly` geweigerd
+7. Temp fixture OVER (>4000 tekens)
+8. `enforce_profile_memory_char_limits` → schone audit
+9. Hermes-config sectie behouden na trim
+10. `Invoke-RepairProfileMemoryLimits -EnforceOnly`
+11. `Invoke-MemoryTrustPostSync` op mock root
+12. `CONSOLIDATE_ROOT_MEMORIES.bat` roept `-Full` aan
+13. Legacy root `memories/MEMORY.md` + `USER.md` seed-bootstrap

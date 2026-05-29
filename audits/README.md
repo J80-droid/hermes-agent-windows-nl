@@ -18,7 +18,7 @@ Geïsoleerde E2E voor automatische memory-trim (`enforce_profile_memory_char_lim
 
 | ID | Scenario | Verwachting |
 |----|----------|-------------|
-| M1–M12 | Zie `audits/MEMORY_REPAIR_TRUST_E2E_README.md` | Wiring, OVER→trim, post-sync, watch-paden, conflict-vlaggen |
+| M1–M13 | Zie `audits/MEMORY_REPAIR_TRUST_E2E_README.md` | Wiring, legacy seed, OVER→trim, post-sync, stamp/pending, conflict-vlaggen |
 
 ```bat
 audits\RUN_MEMORY_REPAIR_TRUST_E2E.bat

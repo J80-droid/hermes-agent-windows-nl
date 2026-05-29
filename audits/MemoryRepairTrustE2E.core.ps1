@@ -19,6 +19,7 @@ Import-Module (Join-Path $RepoRoot 'windows/scripts/TrustRuntimeSync.psm1') -For
 
 $script:Failures = 0
 $script:StepNum = 0
+$script:StepTotal = 13
 
 function Add-MemoryRepairTrustStep {
     param(
@@ -27,7 +28,7 @@ function Add-MemoryRepairTrustStep {
         [string]$Detail = ''
     )
     $script:StepNum++
-    $label = ('{0}/{1} {2}' -f $script:StepNum, 12, $Name)
+    $label = ('{0}/{1} {2}' -f $script:StepNum, $script:StepTotal, $Name)
     $suffix = if ($Detail) { ' - ' + $Detail } else { '' }
     if ($Ok) {
         Write-Host ('[OK] ' + $label + $suffix) -ForegroundColor Green
@@ -117,14 +118,27 @@ $postSync = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -
 $trustBat = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/SYNC_TRUST_RUNTIME.bat')
 $launchTrust = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/launch_trust_runtime_sync.ps1')
 $trustModule = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/TrustRuntimeSync.psm1')
+$stampIdx = $launchTrust.IndexOf('Set-TrustRuntimeSyncStamp')
+$auditIdx = $launchTrust.IndexOf('Test-TrustRuntimeMemoryAuditClean')
+$pendingIdx = $launchTrust.IndexOf('Register-PendingTrustRuntimeRequired')
 $wiringOk = ($postSync -match 'Invoke-RepairProfileMemoryLimits') -and
     ($postSync -match '-EnforceOnly') -and
     ($trustBat -match 'Invoke-RepairProfileMemoryLimits') -and
     ($trustBat -match 'Invoke-MemoryTrustPostSync') -and
     ($launchTrust -match 'Test-TrustRuntimeMemoryAuditClean') -and
     ($launchTrust -match 'Register-PendingTrustRuntimeRequired') -and
-    ($trustModule -match 'enforce_profile_memory_char_limits\.ps1')
+    ($trustModule -match 'enforce_profile_memory_char_limits\.ps1') -and
+    ($pendingIdx -ge 0) -and
+    ($auditIdx -ge 0) -and
+    ($stampIdx -gt $auditIdx)
 Add-MemoryRepairTrustStep 'keten wiring (post-sync, stamp, watch)' $wiringOk
+
+$mergeCommon = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/HermesMemoryMergeCommon.ps1')
+$repairText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/Invoke-RepairProfileMemoryLimits.ps1')
+Add-MemoryRepairTrustStep 'Ensure-HermesLegacyRootMemorySeed wiring' (
+    ($mergeCommon -match 'function Ensure-HermesLegacyRootMemorySeed') -and
+    ($repairText -match 'Ensure-HermesLegacyRootMemorySeed')
+)
 
 $critical = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/HermesCriticalWindowsRepoPaths.ps1')
 Add-MemoryRepairTrustStep 'HermesCriticalWindowsRepoPaths' (
@@ -194,6 +208,15 @@ try {
 
     $consolidateBat = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/CONSOLIDATE_ROOT_MEMORIES.bat')
     Add-MemoryRepairTrustStep 'CONSOLIDATE_ROOT_MEMORIES -Full' ($consolidateBat -match 'Invoke-RepairProfileMemoryLimits' -and $consolidateBat -match '-Full')
+
+    $legacyRoot = Join-Path $mockRoot 'memories'
+    $legacyUser = Join-Path $legacyRoot 'USER.md'
+    $legacyMem = Join-Path $legacyRoot 'MEMORY.md'
+    if (Test-Path -LiteralPath $legacyUser) { Remove-Item -LiteralPath $legacyUser -Force }
+    if (Test-Path -LiteralPath $legacyMem) { Remove-Item -LiteralPath $legacyMem -Force }
+    Ensure-HermesLegacyRootMemorySeed -HermesRoot $mockRoot -RepoRoot $RepoRoot
+    $legacyOk = (Test-Path -LiteralPath $legacyUser) -and (Test-Path -LiteralPath $legacyMem)
+    Add-MemoryRepairTrustStep 'legacy root seed bootstrap' $legacyOk
 } finally {
     if (Test-Path -LiteralPath $isoParent) {
         Remove-Item -LiteralPath $isoParent -Recurse -Force -ErrorAction SilentlyContinue
@@ -205,5 +228,5 @@ if ($script:Failures -gt 0) {
     Write-Host ('=== Memory Repair Trust E2E FAIL ({0} stap(pen)) ===' -f $script:Failures) -ForegroundColor Red
     exit 1
 }
-Write-Host '=== Memory Repair Trust E2E PASS (12/12) ===' -ForegroundColor Green
+Write-Host ('=== Memory Repair Trust E2E PASS ({0}/{0}) ===' -f $script:StepTotal) -ForegroundColor Green
 exit 0

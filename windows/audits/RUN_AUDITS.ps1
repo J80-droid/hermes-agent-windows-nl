@@ -16,6 +16,7 @@ param(
     [switch]$IncludeIdeMaintenanceE2E,
     [switch]$IncludeMemoryArchitectureE2E,
     [switch]$IncludeMemoryProductionGate,
+    [switch]$IncludeMemoryRepairTrustE2E,
     [switch]$IncludeStatusBarCostE2E,
     [switch]$IncludeClassicCliStatusBarCostE2E,
     [switch]$IncludeParetoE2E,
@@ -257,6 +258,14 @@ if ($IncludeMemoryProductionGate -or $IncludeAllE2E) {
     $memGate = Join-Path $scriptRoot 'RUN_MEMORY_PRODUCTION_GATE.ps1'
     Invoke-Step 'memory-production-gate' {
         & $memGate -RepoRoot $repoRoot
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeMemoryRepairTrustE2E -or $IncludeAllE2E) {
+    $memRepairE2e = Join-Path $repoRoot 'audits\RUN_MEMORY_REPAIR_TRUST_E2E.bat'
+    Invoke-Step 'memory-repair-trust-e2e' {
+        & cmd /c "`"$memRepairE2e`""
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }
