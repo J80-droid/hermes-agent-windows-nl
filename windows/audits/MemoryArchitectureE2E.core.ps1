@@ -106,6 +106,9 @@ $repoChecks = @(
     "windows/scripts/HermesMemoryMergeCommon.ps1",
     "windows/scripts/sync_profile_memories.ps1",
     "windows/scripts/consolidate_root_hermes_memories.ps1",
+    "windows/scripts/enforce_profile_memory_char_limits.ps1",
+    "windows/scripts/Invoke-RepairProfileMemoryLimits.ps1",
+    "windows/scripts/launch_trust_runtime_sync.ps1",
     "windows/CONSOLIDATE_ROOT_MEMORIES.bat",
     "windows/scripts/restore_core_hermes_config_memory.ps1"
 )
@@ -120,16 +123,19 @@ $upstream = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -
 $postPull = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/POST_GIT_PULL.bat")
 $trustBat = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/SYNC_TRUST_RUNTIME.bat")
 $syncMemPs1 = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/scripts/sync_profile_memories.ps1")
-if ($upstream -notmatch 'sync_hermes_api_env\.ps1') { $repoOk = $false }
+if ($upstream -notmatch 'sync_hermes_api_env\.ps1' -and $upstream -notmatch 'Invoke-UpstreamPostMerge') { $repoOk = $false }
 if ($postPull -notmatch 'SYNC_HERMES_API_ENV') { $repoOk = $false }
 if ($trustBat -notmatch 'SYNC_HERMES_API_ENV') { $repoOk = $false }
 if ($trustBat -notmatch 'sync_profile_memories') { $repoOk = $false }
 if ($trustBat -notmatch 'invoke_deduplicate_memories') { $repoOk = $false }
+if ($trustBat -notmatch 'Invoke-RepairProfileMemoryLimits') { $repoOk = $false }
 if ($trustBat -notmatch 'Invoke-MemoryTrustPostSync') { $repoOk = $false }
+$orchPs1 = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/scripts/launch_pre_chat_orchestrator.ps1")
+if ($orchPs1 -notmatch 'launch_trust_runtime_sync') { $repoOk = $false }
 if ($postPull -notmatch 'SYNC_TRUST_RUNTIME') { $repoOk = $false }
 if ($syncMemPs1 -notmatch 'HermesMemoryMergeCommon') { $repoOk = $false }
 if ($syncMemPs1 -notmatch 'Invoke-RebalanceHermesConfigToCore') { $repoOk = $false }
-Add-StepResult -Name '1/18 repo + sync-ketens' -Ok $repoOk -Detail 'trust-sync, merge-common, consolidate-root, rebalance'
+Add-StepResult -Name '1/18 repo + sync-ketens' -Ok $repoOk -Detail 'trust-sync, repair/enforce, merge-common, orchestrator'
 
 # --- 2 Legacy env bron ---
 $legacyOk = $true

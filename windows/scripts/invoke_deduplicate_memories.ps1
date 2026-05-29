@@ -1,6 +1,7 @@
 # Roept scripts/deduplicate_memories.py aan via canonieke conda hermes-env.
 param(
-    [string]$RepoRoot = ''
+    [string]$RepoRoot = '',
+    [string]$HermesRoot = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -25,6 +26,20 @@ if (-not (Test-Path -LiteralPath $script)) {
 }
 
 Write-Host '--- deduplicate_memories (hermes-env) ---' -ForegroundColor Cyan
-& $py $script
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+$prevHermesHome = $env:HERMES_HOME
+if ($HermesRoot) {
+    $env:HERMES_HOME = (Resolve-Path -LiteralPath $HermesRoot).Path
+}
+try {
+    & $py $script
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+} finally {
+    if ($HermesRoot) {
+        if ($null -eq $prevHermesHome) {
+            Remove-Item Env:\HERMES_HOME -ErrorAction SilentlyContinue
+        } else {
+            $env:HERMES_HOME = $prevHermesHome
+        }
+    }
+}
 exit 0

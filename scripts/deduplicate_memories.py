@@ -68,10 +68,21 @@ def deduplicate_file(path: Path) -> bool:
         return False
 
 
-def main() -> int:
+def _resolve_hermes_root() -> Path:
+    for key in ('HERMES_HOME', 'HERMES_RUNTIME_ROOT'):
+        raw = (os.environ.get(key) or '').strip()
+        if raw:
+            candidate = Path(raw)
+            if (candidate / 'config.yaml').is_file():
+                return candidate
     hermes_root = Path(os.environ.get('LOCALAPPDATA', '')) / 'hermes'
-    if not (hermes_root / 'config.yaml').is_file():
-        hermes_root = Path(os.environ.get('USERPROFILE', '')) / '.hermes'
+    if (hermes_root / 'config.yaml').is_file():
+        return hermes_root
+    return Path(os.environ.get('USERPROFILE', '')) / '.hermes'
+
+
+def main() -> int:
+    hermes_root = _resolve_hermes_root()
         
     profiles_dir = hermes_root / 'profiles'
     if not profiles_dir.is_dir():

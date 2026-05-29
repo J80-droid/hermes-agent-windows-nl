@@ -172,7 +172,11 @@ if (-not $SkipPytest) {
 if ($IncludeIdeMaintenanceE2E -or $IncludeAllE2E) {
     $ideE2e = Join-Path $scriptRoot 'RUN_IDE_MAINTENANCE_E2E.ps1'
     Invoke-Step 'ide-maintenance-e2e' {
-        & $ideE2e -ApplyDisplayFix
+        $ideArgs = @{ ApplyDisplayFix = $true }
+        if ($IncludeAllE2E) {
+            $ideArgs['SkipMergePreview'] = $true
+        }
+        & $ideE2e @ideArgs
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

@@ -12,6 +12,22 @@ audits\RUN_SESSION_MAINTENANCE_E2E.bat
 
 ---
 
+# Memory repair + trust stamp E2E
+
+Geïsoleerde E2E voor automatische memory-trim (`enforce_profile_memory_char_limits.ps1`), repair-orchestrator, post-sync choke point en stamp/drift (`TrustRuntimeSync.psm1`). Geen wijziging aan productie-runtime (temp `HERMES_HOME`).
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| M1–M12 | Zie `audits/MEMORY_REPAIR_TRUST_E2E_README.md` | Wiring, OVER→trim, post-sync, watch-paden, conflict-vlaggen |
+
+```bat
+audits\RUN_MEMORY_REPAIR_TRUST_E2E.bat
+```
+
+Unit: `windows\tests\TrustRuntimeSync.Unit.Tests.ps1` · pytest: `tests\windows\test_trust_runtime_sync.py`
+
+---
+
 # Post-git-pull automatisering E2E
 
 Geïsoleerde E2E voor `start_hermes.bat` / pull-keten → `POST_GIT_PULL.bat`, relaunch (`Invoke-HermesPostPullRelaunch.ps1`), trust-outcome, stop-script en CLI `/new`-pariteit. Dagelijks: `start_hermes.bat` (auto-pull via `Test-HermesGitPullNeeded.ps1`). Geen live WT in E2E (`HERMES_SKIP_RELAUNCH_AFTER_PULL=1`).
@@ -147,6 +163,22 @@ audits\RUN_CODEBASE_VIZ_SPRINT4_E2E.bat
 ```
 
 Zie `audits/CODEBASE_VIZ_SPRINT4_E2E_README.md` (H1–H9: memory guard, thundering herd, dist markers, example dist).
+
+### Codebase Viz live dashboard E2E (9119)
+
+Loopback audit voor `http://127.0.0.1:9119/codebase-viz`: bronscripts, dist CSS-contract (dropdown), launch wiring, live API smoke (als dashboard draait).
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| L1–L5 | Artefacten, routes, frontend, CSS, launch | Zie `audits/CODEBASE_VIZ_LIVE_E2E_README.md` |
+| L6–L10 | Live HTTP | `/codebase-viz`, assets, health, API subset, 401 zonder token |
+| L11 | pytest gate | `test_codebase_viz_plugin.py` |
+
+```bat
+audits\RUN_CODEBASE_VIZ_LIVE_E2E.bat
+```
+
+Rapport: `audits/CODEBASE_VIZ_LIVE_AUDIT_REPORT_2026-05-29.md`
 
 ---
 

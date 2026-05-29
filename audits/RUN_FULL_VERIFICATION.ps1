@@ -9,6 +9,14 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $repoRoot
 
+chcp 65001 > $null
+$utf8 = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = $utf8
+[Console]::InputEncoding = $utf8
+$OutputEncoding = $utf8
+$env:PYTHONIOENCODING = 'utf-8'
+$env:PYTHONUTF8 = '1'
+
 $py = if ($env:HERMES_PYTHON) { $env:HERMES_PYTHON } else {
     Join-Path $env:USERPROFILE 'miniconda3\envs\hermes-env\python.exe'
 }
@@ -29,14 +37,20 @@ function Invoke-VerifyStep {
     Write-Host ""
     Write-Host "=== $Name ===" -ForegroundColor Cyan
     $logPath = Join-Path $logDir $LogFile
+    if (Test-Path -LiteralPath $logPath) { Remove-Item -LiteralPath $logPath -Force }
+    $code = 0
     try {
-        & $Action 2>&1 | Tee-Object -FilePath $logPath
+        $output = & $Action 2>&1
+        if ($null -ne $output) {
+            $text = if ($output -is [array]) { ($output | ForEach-Object { "$_" }) -join "`n" } else { "$output" }
+            [System.IO.File]::AppendAllText($logPath, $text + "`n", $utf8)
+        }
         $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
     } catch {
-        $_ | Out-File -FilePath $logPath -Append -Encoding utf8
+        [System.IO.File]::AppendAllText($logPath, $_.Exception.Message + "`n", $utf8)
         $code = 1
     }
-    "EXIT:$code" | Out-File -FilePath $logPath -Append -Encoding utf8
+    [System.IO.File]::AppendAllText($logPath, "EXIT:$code`n", $utf8)
     if ($code -eq 0) {
         Write-Host "[OK] $Name" -ForegroundColor Green
     } else {
@@ -52,20 +66,31 @@ if (-not $SkipParallelDefault) {
     }
 }
 
-Invoke-VerifyStep 'pytest-integration' 'FULL_VERIFY_integration.log' {
-    & $py -m pytest -m integration -v --tb=short -o "addopts=--timeout=120 --timeout-method=thread"
-    $global:LASTEXITCODE = $LASTEXITCODE
+function Invoke-PytestMarked {
+    param(
+        [string]$Marker,
+        [string]$LogFile
+    )
+    $prevPytestTimeout = $env:PYTEST_TIMEOUT
+    Remove-Item Env:\PYTEST_TIMEOUT -ErrorAction SilentlyContinue
+    try {
+        Invoke-VerifyStep "pytest-$Marker" $LogFile {
+            & $py -m pytest -m $Marker -v --tb=short `
+                -o "addopts=-m $Marker --timeout=600 --timeout-method=thread"
+            $global:LASTEXITCODE = $LASTEXITCODE
+        }
+    } finally {
+        if ($null -eq $prevPytestTimeout) {
+            Remove-Item Env:\PYTEST_TIMEOUT -ErrorAction SilentlyContinue
+        } else {
+            $env:PYTEST_TIMEOUT = $prevPytestTimeout
+        }
+    }
 }
 
-Invoke-VerifyStep 'pytest-e2e' 'FULL_VERIFY_e2e.log' {
-    & $py -m pytest -m e2e -v --tb=short -o "addopts=--timeout=600 --timeout-method=thread"
-    $global:LASTEXITCODE = $LASTEXITCODE
-}
-
-Invoke-VerifyStep 'pytest-rag-integration' 'FULL_VERIFY_rag_integration.log' {
-    & $py -m pytest -m rag_integration -v --tb=short -o "addopts=--timeout=600 --timeout-method=thread"
-    $global:LASTEXITCODE = $LASTEXITCODE
-}
+Invoke-PytestMarked -Marker 'integration' -LogFile 'FULL_VERIFY_integration.log'
+Invoke-PytestMarked -Marker 'e2e' -LogFile 'FULL_VERIFY_e2e.log'
+Invoke-PytestMarked -Marker 'rag_integration' -LogFile 'FULL_VERIFY_rag_integration.log'
 
 if (-not $SkipRunAudits) {
     Invoke-VerifyStep 'run-audits-full' 'FULL_VERIFY_RUN_AUDITS.log' {

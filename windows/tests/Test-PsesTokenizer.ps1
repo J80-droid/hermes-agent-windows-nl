@@ -19,6 +19,7 @@ $targets = @(
     'windows/audits/MemoryTrustIntegrationE2E.core.ps1',
     'windows/audits/RUN_MEMORY_TRUST_INTEGRATION_E2E.ps1',
     'windows/tests/TrustRuntimePending.Unit.Tests.ps1',
+    'windows/tests/TrustRuntimeSync.Unit.Tests.ps1',
     'windows/tests/Invoke-MemoryTrustPostSync.Unit.Tests.ps1',
     'windows/scripts/check_hermes_rag_after_repair.ps1',
     'windows/scripts/HermesHomeCommon.ps1',

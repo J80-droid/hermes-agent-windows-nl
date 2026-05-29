@@ -47,6 +47,20 @@ if (-not $PSBoundParameters.ContainsKey('SkipSoulSnippets')) {
 
 Write-StepLocal 'Trust-nazorg: geheugen, limits en chat-reminder...'
 
+$repairPs1 = Join-Path $PSScriptRoot 'Invoke-RepairProfileMemoryLimits.ps1'
+if (Test-Path -LiteralPath $repairPs1) {
+  . (Join-Path $PSScriptRoot 'HermesMemoryMergeCommon.ps1')
+  $legacyMem = Join-Path (Get-HermesMemoryHermesRoot) (Join-Path 'memories' 'MEMORY.md')
+  if (Test-Path -LiteralPath $legacyMem) {
+    Write-StepLocal 'Legacy root memory migratie (MigrateOnly)'
+    & $repairPs1 -RepoRoot $RepoRoot -MigrateOnly -Quiet:$Quiet
+    if (Test-NativeCommandFailed) {
+      Write-FailLocal 'Invoke-RepairProfileMemoryLimits -MigrateOnly'
+      exit 1
+    }
+  }
+}
+
 $legalPs1 = Join-Path $PSScriptRoot 'sync_legal_soul_from_template.ps1'
 if (-not (Test-Path -LiteralPath $legalPs1)) {
     Write-FailLocal 'sync_legal_soul_from_template.ps1 ontbreekt'

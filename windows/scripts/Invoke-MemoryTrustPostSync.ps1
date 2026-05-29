@@ -42,6 +42,18 @@ if ($skipScrubValues -notcontains $scrubEnv) {
     Write-HermesInfo 'Runtime identity scrub overgeslagen (HERMES_SKIP_RUNTIME_IDENTITY_SCRUB)'
 }
 
+$repair = Join-Path $PSScriptRoot 'Invoke-RepairProfileMemoryLimits.ps1'
+if (Test-Path -LiteralPath $repair) {
+    if (-not $Quiet) { Write-HermesInfo 'Memory limits enforce (pre-audit)' }
+    $repairArgs = @{ RepoRoot = $RepoRoot; EnforceOnly = $true; Quiet = $Quiet }
+    if ($HermesRuntimeRoot) { $repairArgs['HermesRoot'] = $HermesRuntimeRoot }
+    & $repair @repairArgs
+    if (Test-NativeCommandFailed -or ($null -ne $LASTEXITCODE -and [int]$LASTEXITCODE -ne 0)) {
+        Write-HermesFail 'Invoke-RepairProfileMemoryLimits -EnforceOnly'
+        exit 1
+    }
+}
+
 $auditScript = Join-Path $PSScriptRoot 'audit_profile_memories.ps1'
 if (-not (Test-Path -LiteralPath $auditScript)) {
     Write-HermesFail 'audit_profile_memories.ps1 ontbreekt'
@@ -73,27 +85,8 @@ if (-not $SkipProductionGate) {
     }
 }
 
-$smokeRel = Join-Path 'docs' 'MEMORY_ARCHITECTURE.md'
-$hermesDir = Join-Path $env:LOCALAPPDATA 'hermes'
-if (-not (Test-Path -LiteralPath $hermesDir)) {
-    New-Item -ItemType Directory -Path $hermesDir -Force | Out-Null
-}
-$noticePath = Join-Path $hermesDir 'institutional_new_chat_required.json'
-$noticePayload = @{
-    required_at       = (Get-Date -Format 'o')
-    reason            = 'Memory-trust sync'
-    smoke_test_prompt = $smokeRel
-    repo_root         = $RepoRoot
-}
-try {
-    $noticePayload | ConvertTo-Json | Set-Content -LiteralPath $noticePath -Encoding UTF8
-} catch {
-    Write-HermesFail ('Kon institutional_new_chat_required.json niet schrijven: ' + $_.Exception.Message)
-    exit 1
-}
-if (-not $Quiet -and $env:HERMES_SUPPRESS_SOUL_REMINDER -ne '1') {
-    Write-HermesWarn ('Start een nieuwe chat (slash-new). Rooktest: ' + $smokeRel)
-}
+Import-Module (Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1') -Force
+Set-InstitutionalNewChatReminder -Reason 'Memory-trust sync' -RepoRoot $RepoRoot -SmokeTestPrompt 'docs\MEMORY_ARCHITECTURE.md' -Quiet:$Quiet
 if (-not $Quiet) {
     Write-HermesOk 'new-reminder gezet - TUI start automatisch een nieuwe sessie (banner + live reset)'
 }

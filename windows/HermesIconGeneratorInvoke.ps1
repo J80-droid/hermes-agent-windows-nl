@@ -132,8 +132,8 @@ function Repair-HermesBatPathForRepo {
     $leaf = Split-Path $BatPath -Leaf
     if (-not $leaf) { return $null }
     $repo = (Resolve-Path -LiteralPath $RepoRoot).Path
-    foreach ($rel in @($leaf, (Join-Path 'windows' $leaf))) {
-        $cand = Join-Path $repo ($rel -replace '/', '\')
+    foreach ($rel in @($leaf, "windows/$leaf")) {
+        $cand = Join-HermesRepoPath -RepoRoot $repo -RelativePath ($rel -replace '\\', '/')
         if (Test-Path -LiteralPath $cand) {
             return (Resolve-Path -LiteralPath $cand).Path
         }

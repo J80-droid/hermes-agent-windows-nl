@@ -285,14 +285,16 @@ function Test-SoulAnatomyContent {
     if ($Content -notmatch '(?m)^### Trust & verification') {
         $failures.Add('mist ### Trust & verification')
     }
+    $govText = $Content -replace '\u00D7', 'x' -replace '×', 'x'
     $governanceRequired = @(
         @{ Pattern = 'Zekerheid:\s*NN%'; Label = 'zekerheidspercentage (Zekerheid: NN%)' },
         @{ Pattern = 'Ontbrekende informatie \(voor deze conclusie\)'; Label = 'gap-blok per strategie' },
         @{ Pattern = 'ga door'; Label = '1/N ga-door gate' },
-        @{ Pattern = 'max\.\s*1[\u00D7x]'; Label = 'tool retry-limiet' }
+        @{ Pattern = 'max\.\s*1\s*x'; Label = 'tool retry-limiet' },
+        @{ Pattern = 'herproberen'; Label = 'tool retry-context' }
     )
     foreach ($g in $governanceRequired) {
-        if ($Content -notmatch $g.Pattern) {
+        if ($govText -notmatch $g.Pattern) {
             $failures.Add("governance mist: $($g.Label)")
         }
     }

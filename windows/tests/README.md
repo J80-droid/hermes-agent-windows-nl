@@ -59,6 +59,7 @@ Extra pytest-argumenten worden doorgegeven (bijv. een enkele test):
 - **`HermesShellCommon.Unit.Tests.ps1`**: `Format-HermesStepLabel`, `Test-NativeCommandFailed`, `Join-HermesRepoPath` (geen Pester).
 - **`MemoryAuditCommon.Unit.Tests.ps1`**: identity allowlist, `Repair-HermesIdentityLine`, runtime/repo scrub, skip zonder `config.yaml`.
 - **`TrustRuntimePending.Unit.Tests.ps1`**: stamp, attempts, max-pogingen, corrupte/leeg JSON (geïsoleerde `LOCALAPPDATA`).
+- **`TrustRuntimeSync.Unit.Tests.ps1`**: trust-runtime stamp/drift, watch-paden, profile-completeness, memory-audit gate, `Test-TrustRuntimeSyncNeeded` (geïsoleerde `LOCALAPPDATA` + mini-repo).
 - **`HermesSessionMaintenance.Unit.Tests.ps1`**: stamps, domains fingerprint, model `-AllowFailure`, start/post-pull mocks (geïsoleerde `LOCALAPPDATA`, geen live RAG-ingest).
 - **`Invoke-MemoryTrustPostSync.Unit.Tests.ps1`**: mock runtime, notice JSON, skip scrub (geen production gate).
 - **`tests\windows\test_memory_identity_repair.ps1`**: geïsoleerde runtime mock (legacy runner).

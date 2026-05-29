@@ -81,26 +81,37 @@ if (Test-Path -LiteralPath $analystTpl) {
     Step-Ok 'geen SOUL_ANALYST_DOMAIN.md'
 }
 
-Assert-FileContains 'windows/launch_hermes.bat' @(
-    'launch_soul_anatomy_deploy.ps1',
-    'launch_institutional_runtime.ps1',
-    'launch_pending_trust_runtime.ps1',
+Assert-FileContains 'windows/launch_hermes.bat' @('launch_pre_chat_orchestrator.ps1')
+Assert-FileContains 'windows/scripts/launch_pre_chat_orchestrator.ps1' @(
     'HERMES_SKIP_SOUL_DEPLOY_ON_START',
+    'HERMES_SKIP_TRUST_RUNTIME_ON_START',
     'HERMES_SKIP_PENDING_TRUST_ON_START'
 )
 $launchBat = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/launch_hermes.bat')
-$soulIdx = $launchBat.IndexOf('launch_soul_anatomy_deploy.ps1')
-$instIdx = $launchBat.IndexOf('launch_institutional_runtime.ps1')
-$pendingIdx = $launchBat.IndexOf('launch_pending_trust_runtime.ps1')
-if ($soulIdx -lt 0 -or $instIdx -lt 0 -or $soulIdx -ge $instIdx) {
-    Step-Fail 'launch_hermes.bat' 'volgorde moet zijn: soul deploy vóór institutional'
+$orchPs1 = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/launch_pre_chat_orchestrator.ps1')
+if ($launchBat -notmatch 'launch_pre_chat_orchestrator\.ps1') {
+    Step-Fail 'launch_hermes.bat' 'mist pre-chat orchestrator'
 } else {
-    Step-Ok 'launch_hermes.bat volgorde soul voor institutional'
+    Step-Ok 'launch_hermes.bat roept orchestrator aan'
+}
+$soulIdx = $orchPs1.IndexOf('launch_soul_anatomy_deploy.ps1')
+$trustIdx = $orchPs1.IndexOf('launch_trust_runtime_sync.ps1')
+$instIdx = $orchPs1.IndexOf('launch_institutional_runtime.ps1')
+$pendingIdx = $orchPs1.IndexOf('launch_pending_trust_runtime.ps1')
+if ($soulIdx -lt 0 -or $instIdx -lt 0 -or $soulIdx -ge $instIdx) {
+    Step-Fail 'launch_pre_chat_orchestrator.ps1' 'volgorde: soul deploy vóór institutional'
+} else {
+    Step-Ok 'orchestrator volgorde soul voor institutional'
+}
+if ($trustIdx -ge 0 -and ($trustIdx -le $soulIdx -or $trustIdx -ge $instIdx)) {
+    Step-Fail 'launch_pre_chat_orchestrator.ps1' 'trust sync moet tussen soul en institutional'
+} elseif ($trustIdx -ge 0) {
+    Step-Ok 'orchestrator trust sync tussen soul en institutional'
 }
 if ($pendingIdx -lt 0 -or $instIdx -lt 0 -or $pendingIdx -le $instIdx) {
-    Step-Fail 'launch_hermes.bat' 'pending trust moet na institutional runtime'
+    Step-Fail 'launch_pre_chat_orchestrator.ps1' 'pending trust moet na institutional'
 } else {
-    Step-Ok 'launch_hermes.bat volgorde pending trust na institutional'
+    Step-Ok 'orchestrator pending trust na institutional'
 }
 
 Assert-FileContains 'windows/POST_GIT_PULL.bat' @('launch_soul_anatomy_deploy.ps1', '-Force')
@@ -136,7 +147,7 @@ if (Test-Path -LiteralPath $upstream) {
 Write-HermesSection '--- 2/8 stamp/watch (psm1) ---'
 Import-Module (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/SyncSoulSnippet.psm1') -Force
 $profiles = Get-DomainSoulProfileNames
-if ($profiles.Count -ne 13) {
+if ($profiles.Count -ne 14) {
     Step-Fail 'Get-DomainSoulProfileNames' "verwacht 14, got $($profiles.Count)"
 } else {
     Step-Ok '14 domeinprofielen'

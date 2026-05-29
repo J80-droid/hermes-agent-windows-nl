@@ -18,8 +18,21 @@ Usage:
     python tests/test_checkpoint_resumption.py --compare
 """
 
+import os
+
 import pytest
 pytestmark = pytest.mark.integration
+
+
+def _openrouter_api_key_usable() -> bool:
+    """test_interruption_and_resume hardcodes claude-opus via OpenRouter — not Venice/Gemini config."""
+    key = (os.environ.get("OPENROUTER_API_KEY") or "").strip()
+    if len(key) < 24:
+        return False
+    lowered = key.lower()
+    if lowered in ("changeme", "replace-me", "your-api-key-here", "none", "null"):
+        return False
+    return key.startswith(("sk-or-", "sk-"))
 
 import json
 import shutil
@@ -212,6 +225,13 @@ def test_current_implementation():
         return True
 
 
+@pytest.mark.skipif(
+    not _openrouter_api_key_usable(),
+    reason=(
+        "Live BatchRunner uses hardcoded claude-opus (OpenRouter path); "
+        "set a usable OPENROUTER_API_KEY or use unit tests — Venice/Gemini config is not used here"
+    ),
+)
 def test_interruption_and_resume():
     """Test that resume actually works after interruption."""
     print("\n" + "=" * 70)

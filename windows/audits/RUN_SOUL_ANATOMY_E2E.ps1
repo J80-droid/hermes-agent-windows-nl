@@ -154,17 +154,13 @@ $validateScript = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'scripts
 $pyOk = $false
 
 if (Test-Path -LiteralPath $validateScript) {
-
     try {
-
-        $null = & py -3 $validateScript --repo-templates 2>&1
-
+        $auditPy = Get-HermesAuditPython -RepoRoot $repoRoot
+        $null = & $auditPy $validateScript --repo-templates 2>&1
         if ($LASTEXITCODE -eq 0) { $pyOk = $true }
-
     } catch {
-        Write-Verbose 'py -3 ontbreekt of faalde; PowerShell fallback hieronder.'
+        Write-Verbose 'Get-HermesAuditPython / validate_soul_anatomy mislukt; PowerShell fallback.'
     }
-
 }
 
 if ($pyOk) {

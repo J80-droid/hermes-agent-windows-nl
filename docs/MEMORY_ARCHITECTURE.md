@@ -65,8 +65,9 @@ windows\audits\VALIDATE_AUDIT_PS1_SYNTAX.bat
 
 | Stap | Actie | Succes |
 |------|--------|--------|
-| 1–3 | `SYNC_TRUST_RUNTIME.bat` | SOUL + memory-seed + dedup + limits + vault-env + snapshot |
-| 3b | (zelfde BAT) `Repair-HermesRuntimeIdentity` in `Invoke-MemoryTrustPostSync` | regel-scrub vóór audit (allowlist = audit) |
+| 1–3 | `SYNC_TRUST_RUNTIME.bat` | optioneel legacy `-MigrateOnly`; SOUL + memory-seed + dedup + limits + vault-env + snapshot |
+| 3a | (post-sync) `Invoke-RepairProfileMemoryLimits -EnforceOnly` | dedup → **`enforce_profile_memory_char_limits.ps1`** (backup `%LOCALAPPDATA%\hermes\backups\memory-trim-*`) → layout-check → restore core Hermes-config indien nodig |
+| 3b | (zelfde BAT) `Repair-HermesRuntimeIdentity` in `Invoke-MemoryTrustPostSync` | regel-scrub vóór enforce/audit (allowlist = audit) |
 | 4 | (zelfde BAT) `audit_profile_memories.ps1` | geen OVER, geen `Â§`, geen identiteitslek |
 | 5 | (zelfde BAT) `RUN_MEMORY_PRODUCTION_GATE` | PASS (tenzij `HERMES_SKIP_MEMORY_PRODUCTION_GATE=1`; pytest memory/trust) |
 | 6 | (zelfde BAT) `/new`-reminder JSON | TUI: auto `/new` bij start + live tijdens sync; CLI: gele banner |
@@ -81,14 +82,16 @@ Handmatig alleen bij incident: `audit_profile_memories.ps1 -FixEncoding`, of `py
 |------|--------|
 | 1 | Backup: `MANAGE_BACKUPS.bat` of kopie `%LOCALAPPDATA%\hermes\profiles` |
 | 2 | `core` handmatig: canonieke seed (`docs/templates/MEMORY_CANONICAL_SEED.md`) + runtime-secties (Windows/Python/Obsidian/MCP); USER: seed + voorkeuren (Monokai, kosten, skin, één statusbalk-regel) |
-| 3 | `windows\SYNC_TRUST_RUNTIME.bat` — seed-merge (genormaliseerd), dedup, audit, production gate |
+| 3 | `windows\SYNC_TRUST_RUNTIME.bat` of `CONSOLIDATE_ROOT_MEMORIES.bat` (`-Full`) — seed-merge, dedup, **enforce** (trim OVER), audit, production gate |
 | 4 | `/new` — TUI vaak automatisch via notice-vlag |
 
 `sync_profile_memories.ps1` merge’t op **genormaliseerde §-secties** (seed wint; policy-buckets `yesman` / `toolfail` / `trust` / `usertrust` / `statusbar`); runtime- en user-preference-secties blijven behouden. `deduplicate_memories.py` verwijdert alleen **exacte** duplicaten — overlappende varianten horen in stap 2 of via seed-update.
 
 **SOUL vs MEMORY:** beleid staat ook in SOUL-snippers; voeg geen nieuwe policy-blokken toe via memory-tool als ze al in SOUL staan (dubbele token-lading).
 
-**Legacy root-pad:** `%LOCALAPPDATA%\hermes\memories\` (default HERMES_HOME) is niet het actieve profiel — runtime gebruikt `profiles\<naam>\memories\`. Bij oude inhoud in root: `windows\CONSOLIDATE_ROOT_MEMORIES.bat` (migreert legal/core-secties, reset root naar seed, rebalance Hermes-config naar `core`). `deduplicate_memories.py` scant ook `memories/` naast `profiles/*/memories`. Hermes-config (MCP YAML, multi-profile) hoort alleen in `profiles\core\memories\MEMORY.md` — `sync_profile_memories.ps1` rebalanceert misplaatste secties automatisch.
+**Legacy root-pad:** `%LOCALAPPDATA%\hermes\memories\` (default HERMES_HOME) is niet het actieve profiel — runtime gebruikt `profiles\<naam>\memories\`. Bij oude inhoud in root: `windows\CONSOLIDATE_ROOT_MEMORIES.bat` → `Invoke-RepairProfileMemoryLimits -Full` (migreert legal/core-secties, reset root naar seed, rebalance Hermes-config naar `core`, enforce trim). **Enforce alleen ná sync** (in `Invoke-MemoryTrustPostSync`): `sync_profile_memories` kan MEMORY laten groeien; trim hoort niet vóór die keten. `deduplicate_memories.py` respecteert `HERMES_HOME` (via `invoke_deduplicate_memories.ps1 -HermesRoot`). Hermes-config (MCP YAML, multi-profile) hoort alleen in `profiles\core\memories\MEMORY.md` — `sync_profile_memories.ps1` rebalanceert misplaatste secties automatisch.
+
+**Start-stamp:** `launch_trust_runtime_sync.ps1` zet `trust_runtime_sync.stamp` alleen na schone memory-audit; bij FAIL → `pending_trust_runtime.json`. Drift-detectie: `windows/scripts/TrustRuntimeSync.psm1` (`Get-TrustRuntimeWatchPaths` incl. enforce/repair-scripts).
 
 ### Nieuwe sessie na sync (`/new`)
 

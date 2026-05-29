@@ -1,10 +1,13 @@
 # Stamp + drift voor trust/memory sync bij start (equivalent SYNC_TRUST_RUNTIME.bat, zonder volledige audit-poort).
+# Unit: windows/tests/TrustRuntimeSync.Unit.Tests.ps1; pytest: tests/windows/test_trust_runtime_sync.py
 #Requires -Version 5.1
 
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 
+$script:TrustRuntimeSoulModule = Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1'
+
 function Get-TrustRuntimeHermesRoot {
-    Import-Module (Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1') -Force
+    Import-Module $script:TrustRuntimeSoulModule -Force
     return Get-HermesRoot
 }
 
@@ -27,6 +30,8 @@ function Get-TrustRuntimeWatchPaths {
             'windows/scripts/sync_profile_memories.ps1',
             'windows/scripts/invoke_deduplicate_memories.ps1',
             'windows/scripts/apply_trust_memory_limits.ps1',
+            'windows/scripts/enforce_profile_memory_char_limits.ps1',
+            'windows/scripts/Invoke-RepairProfileMemoryLimits.ps1',
             'windows/scripts/Invoke-TrustRuntimeLight.ps1',
             'windows/scripts/Invoke-MemoryTrustPostSync.ps1',
             'windows/scripts/sync_legal_soul_from_template.ps1',
@@ -75,8 +80,16 @@ function Test-TrustRuntimeMemoryAuditClean {
                 $issues++
                 continue
             }
-            $len = (Get-Content -LiteralPath $path -Raw -Encoding UTF8).Length
+            try {
+                $len = (Get-Content -LiteralPath $path -Raw -Encoding UTF8 -ErrorAction Stop).Length
+            } catch {
+                $issues++
+                continue
+            }
             $cap = if ($file -eq 'MEMORY.md') { $lim.MemoryCharLimit } else { $lim.UserCharLimit }
+            if ($cap -le 0) {
+                $cap = if ($file -eq 'MEMORY.md') { 4000 } else { 1800 }
+            }
             if ($len -gt $cap) { $issues++ }
             $leaks = $null
             if ($file -eq 'MEMORY.md' -and (Test-MemoryFileIdentityLeaks -FilePath $path -LeakLines ([ref]$leaks))) {
@@ -105,7 +118,12 @@ function Test-TrustRuntimeSyncNeeded {
     if (-not (Test-Path -LiteralPath $stamp)) { return $true }
     $stampTime = (Get-Item -LiteralPath $stamp).LastWriteTimeUtc
     foreach ($f in Get-TrustRuntimeWatchPaths -RepoRoot $RepoRoot) {
-        if ((Get-Item -LiteralPath $f).LastWriteTimeUtc -gt $stampTime) {
+        try {
+            if (-not (Test-Path -LiteralPath $f)) { continue }
+            if ((Get-Item -LiteralPath $f -ErrorAction Stop).LastWriteTimeUtc -gt $stampTime) {
+                return $true
+            }
+        } catch {
             return $true
         }
     }

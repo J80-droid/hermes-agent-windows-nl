@@ -426,6 +426,7 @@ try {
         }
     }
 
+    # Post-merge keten: Invoke-UpstreamPostMerge.ps1 (windows/sync_hermes_api_env.ps1, SYNC_TRUST_RUNTIME.bat, trust/memory).
     if ($script:UpstreamExitCode -eq 0 -and $Phase -eq 'PostMerge') {
         . (Join-HermesRepoPath -RepoRoot $PSScriptRoot -RelativePath 'scripts/Invoke-UpstreamPostMerge.ps1')
         $script:UpstreamExitCode = Invoke-UpstreamPostMerge @{

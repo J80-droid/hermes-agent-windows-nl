@@ -39,8 +39,9 @@ LEGACY_ALLOWED_WITH_WARNING = [
 GOVERNANCE_MARKERS = [
     (r"Zekerheid:\s*NN%", "zekerheidspercentage (Zekerheid: NN%)"),
     (r"Ontbrekende informatie \(voor deze conclusie\)", "gap-blok per strategie"),
-    (r'ga door', "1/N ga-door gate"),
-    (r"max\.\s*1×", "tool retry-limiet"),
+    (r"ga door", "1/N ga-door gate"),
+    (r"max\.\s*1\s*x", "tool retry-limiet"),
+    (r"herproberen", "tool retry-context"),
 ]
 
 LEGACY_GOVERNANCE_FORBIDDEN = [
@@ -158,13 +159,18 @@ def _codebase_audit_claim_issues(text: str, *, strict_tiers: bool = False) -> li
     return issues
 
 
+def _normalize_governance_text(text: str) -> str:
+    return text.replace("\u00d7", "x").replace("×", "x")
+
+
 def _governance_issues(text: str) -> list[str]:
+    norm = _normalize_governance_text(text)
     issues: list[str] = []
     for pat, label in LEGACY_GOVERNANCE_FORBIDDEN:
-        if re.search(pat, text, re.IGNORECASE):
+        if re.search(pat, norm, re.IGNORECASE):
             issues.append(f"governance_legacy:{label}")
     for pat, label in GOVERNANCE_MARKERS:
-        if not re.search(pat, text, re.IGNORECASE):
+        if not re.search(pat, norm, re.IGNORECASE):
             issues.append(f"governance_missing:{label}")
     return issues
 

@@ -5,6 +5,8 @@ cd /d "%~dp0\.."
 chcp 65001 >nul
 title Hermes - Trust runtime sync (geen scrub)
 
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Invoke-RepairProfileMemoryLimits.ps1" -MigrateOnly %*
+if errorlevel 1 exit /b 1
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_legal_soul_from_template.ps1" %*
 if errorlevel 1 exit /b 1
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_soul_anatomy_snippets.ps1" -Force %*

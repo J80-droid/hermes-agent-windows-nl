@@ -19,7 +19,7 @@ Of alleen pytest-lagen (zonder `RUN_AUDITS`):
 | Stap | Wat | Log |
 |------|-----|-----|
 | 1 | `scripts/run_tests_parallel.py` (~29k tests, default markers) | `FULL_VERIFY_default_parallel.log` |
-| 2 | `pytest -m integration` (24 tests) | `FULL_VERIFY_integration.log` |
+| 2 | `pytest -m integration` (timeout 600s; live OpenRouter-test geskipt zonder geldige key) | `FULL_VERIFY_integration.log` |
 | 3 | `pytest -m e2e` (10 harness-tests) | `FULL_VERIFY_e2e.log` |
 | 4 | `pytest -m rag_integration` (LanceDB roundtrip) | `FULL_VERIFY_rag_integration.log` |
 | 5 | `RUN_AUDITS.ps1 -IncludeAllE2E -IncludeInstitutionalProductionGate -IncludeRepoHygieneE2E -IncludeUpdateHermesIntegrationE2E` | `FULL_VERIFY_RUN_AUDITS.log` |

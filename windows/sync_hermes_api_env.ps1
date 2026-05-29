@@ -79,25 +79,37 @@ function Get-AllNonEmptyEnvFromFile {
 function Get-DynamicEnvKeysFromConfig {
     param([string]$RuntimeRoot)
     $keys = [System.Collections.Generic.List[string]]::new()
-    $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
-    if (-not (Test-Path -LiteralPath $conda)) { return @() }
-    $env:HERMES_REPO_ROOT = (Resolve-Path (Join-Path $scriptDir '..')).Path
-    $py = Join-Path $scriptDir 'scripts\collect_env_sync_keys.py'
-    if (-not (Test-Path -LiteralPath $py)) { return @() }
+    $repoRoot = (Resolve-Path (Join-Path $scriptDir '..')).Path
+    $pyScript = Join-Path $scriptDir 'scripts\collect_env_sync_keys.py'
+    if (-not (Test-Path -LiteralPath $pyScript)) { return @() }
+    $auditPy = $null
+    try {
+        $auditPy = Get-HermesAuditPython -RepoRoot $repoRoot
+    } catch {
+        Write-Host '[WARN] collect_env_sync_keys: geen audit-python — dynamische env-keys overgeslagen.' -ForegroundColor Yellow
+        return @()
+    }
     $prevHome = $env:HERMES_HOME
+    $prevPyPath = $env:PYTHONPATH
     $prevEap = $ErrorActionPreference
     try {
         $env:HERMES_HOME = $RuntimeRoot
+        $env:HERMES_REPO_ROOT = $repoRoot
+        $env:PYTHONPATH = $repoRoot
         $ErrorActionPreference = 'Continue'
-        $out = & $conda run -n hermes-env --no-capture-output python $py
-        if (Test-NativeCommandFailed) { return @() }
+        $out = & $auditPy $pyScript 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host '[WARN] collect_env_sync_keys.py mislukt — dynamische env-keys overgeslagen.' -ForegroundColor Yellow
+            return @()
+        }
         foreach ($line in ($out -split "`n")) {
-            $k = $line.Trim()
-            if ($k) { $keys.Add($k) }
+            $k = "$line".Trim()
+            if ($k -and $k -notmatch 'ModuleNotFoundError|Traceback') { [void]$keys.Add($k) }
         }
     } finally {
         $ErrorActionPreference = $prevEap
         if ($null -ne $prevHome) { $env:HERMES_HOME = $prevHome } else { Remove-Item Env:HERMES_HOME -ErrorAction SilentlyContinue }
+        if ($null -ne $prevPyPath) { $env:PYTHONPATH = $prevPyPath } else { Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue }
     }
     return $keys
 }

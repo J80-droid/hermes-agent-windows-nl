@@ -26,7 +26,7 @@ Operationele handleiding voor J.'s Hermes Windows NL fork: verifieerbaar gedrag 
 
 **Geautomatiseerd:** `UPDATE_HERMES.bat` en `POST_GIT_PULL.bat` roepen `SYNC_TRUST_RUNTIME`, `launch_soul_anatomy_deploy.ps1 -Force` (13 SOUL-templates + stamp) en `SYNC_DOMAIN_TOOLSETS` aan. **Niet** automatisch: alleen `git pull` zonder `POST_GIT_PULL.bat` (eerste `start_hermes.bat` pikt SOUL-stamp wel op), of `hermes update` zonder `UPDATE_HERMES.bat`. Toolset-audit: `docs/DOMAIN_TOOLSET_AUDIT.md`.
 
-**Pending trust bij start:** als `SYNC_TRUST_RUNTIME` tijdens UPDATE faalt, zet post-merge een stamp `%LOCALAPPDATA%\hermes\pending_trust_runtime.json`. Bij de volgende `start_hermes.bat` → `launch_pending_trust_runtime.ps1` → `Invoke-TrustRuntimeLight.ps1` → `Invoke-MemoryTrustPostSync` met **automatische runtime scrub vóór audit** (zelfde allowlist als `audit_profile_memories`). Identiteitslek in `MEMORY.md`/`USER.md` wordt daardoor bij start hersteld; stamp verdwijnt na PASS. Overslaan: `HERMES_SKIP_PENDING_TRUST_ON_START=1`. Na 3 mislukte pogingen: `windows\APPLY_TRUST_PROTOCOL.bat` of `repair_runtime_identity.ps1` + `SYNC_TRUST_RUNTIME.bat`.
+**Pending trust bij start:** als `SYNC_TRUST_RUNTIME` tijdens UPDATE faalt, zet post-merge een stamp `%LOCALAPPDATA%\hermes\pending_trust_runtime.json`. Bij de volgende `start_hermes.bat` → `launch_pending_trust_runtime.ps1` of `launch_trust_runtime_sync.ps1` (licht, geen production gate) → `Invoke-TrustRuntimeLight.ps1` → `Invoke-MemoryTrustPostSync` met **scrub + enforce-trim vóór audit**. Bij mislukte light-sync of audit na sync: opnieuw `pending_trust_runtime.json` (geen `trust_runtime_sync.stamp`). Overslaan: `HERMES_SKIP_PENDING_TRUST_ON_START=1` / `HERMES_SKIP_TRUST_RUNTIME_ON_START=1`. Na 3 mislukte pogingen: `windows\APPLY_TRUST_PROTOCOL.bat` of `repair_runtime_identity.ps1` + `SYNC_TRUST_RUNTIME.bat`.
 
 **Nieuwe chat verplicht** na SOUL/memory-sync (agent laadt memory-snapshot pas bij sessiestart). **TUI:** automatisch via notice-vlag + `gateway.ready` / live `fs.watch`; **klassieke CLI:** gele banner + handmatig `/new`.
 
@@ -59,8 +59,13 @@ Toepassen: `windows\scripts\apply_trust_memory_limits.ps1` (idempotent). Na nieu
 | `windows\audits\RUN_MEMORY_IDENTITY_REPAIR_E2E.bat` | E2E-poort identity repair + post-sync |
 | `windows\audits\RUN_MEMORY_TRUST_INTEGRATION_E2E.bat` | Geïntegreerde poort (10/10): post-sync notice, pending trust, workspace IDE, AST, unit tests |
 | `windows\APPLY_WORKSPACE_IDE_SETTINGS.bat` | Parent `Hermes_agent_WS\.vscode` vanuit repo-template — zie `docs\WORKSPACE_IDE_SETUP.md` |
-| `windows\scripts\Invoke-MemoryTrustPostSync.ps1` | Pre-audit scrub + audit + gate + inline `/new`-notice (`institutional_new_chat_required.json`) |
+| `windows\scripts\Invoke-MemoryTrustPostSync.ps1` | Scrub → **`Invoke-RepairProfileMemoryLimits -EnforceOnly`** → audit + gate + inline `/new`-notice |
+| `windows\scripts\enforce_profile_memory_char_limits.ps1` | Trim MEMORY/USER per profiel binnen limiet; backup `backups\memory-trim-<timestamp>\` |
+| `windows\scripts\Invoke-RepairProfileMemoryLimits.ps1` | `-MigrateOnly` / `-EnforceOnly` / `-Full` (orchestrator dedup+enforce+layout) |
+| `windows\scripts\TrustRuntimeSync.psm1` | Stamp/drift: `Test-TrustRuntimeSyncNeeded`, `Set-TrustRuntimeSyncStamp`, watch-paden |
+| `windows\scripts\launch_trust_runtime_sync.ps1` | Start: light-sync; stamp alleen bij schone audit |
 | `windows\scripts\TrustRuntimePending.psm1` | Stamp pending trust; `Register-PendingTrustRuntimeRequired` / `Clear-PendingTrustRuntime` |
+| `audits\RUN_MEMORY_REPAIR_TRUST_E2E.bat` | E2E enforce + post-sync + stamp-wiring (12/12, temp root) |
 | `windows\audits\RUN_MEMORY_ARCHITECTURE_E2E.ps1` | Dunne launcher (`& MemoryArchitectureE2E.core.ps1`) — stabiel in Cursor/PSES |
 | `windows\audits\MemoryArchitectureE2E.core.ps1` | Memory-architectuur E2E: vault, limits, legacy root, consolidatie-layout, §-delimiter U+00A7 (18/18) |
 | `windows\audits\RUN_MEMORY_PRODUCTION_GATE.ps1` | Gecombineerde productie-poort (memory + trust E2E + pytest) |
@@ -88,7 +93,9 @@ Toepassen: `windows\scripts\apply_trust_memory_limits.ps1` (idempotent). Na nieu
 - `AppData\Local\hermes`
 - `data\lancedb\`
 
-Fail op `Â§` (double-encoding) in MEMORY/USER — herstel: `audit_profile_memories.ps1 -FixEncoding`. Dubbele §-secties of preamble-duplicaat vóór eerste `§`: `scripts\deduplicate_memories.py` via `SYNC_TRUST_RUNTIME` (runtime, idempotent; ook mojibake-regels).
+Fail op `Â§` (double-encoding) in MEMORY/USER — herstel: `audit_profile_memories.ps1 -FixEncoding`. Dubbele §-secties of preamble-duplicaat vóór eerste `§`: `scripts\deduplicate_memories.py` via `SYNC_TRUST_RUNTIME` (runtime, idempotent; ook mojibake-regels; root via `HERMES_HOME` / `-HermesRoot` op wrapper).
+
+Unit tests: `windows\tests\TrustRuntimeSync.Unit.Tests.ps1`, `pytest tests\windows\test_trust_runtime_sync.py`.
 
 **Pad-whitelist (identiteits-E2E):** centraal in `windows\scripts\MemoryAuditCommon.ps1` (`MemoryIdentityAllowPatterns`), niet inline in `RUN_TRUST_FORENSIC_E2E.ps1`. Nieuwe toegestane paden: alleen daar uitbreiden.
 
