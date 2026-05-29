@@ -275,8 +275,15 @@ function Invoke-HermesShortcutSyncRepair {
     if (-not $SkipIconGen) {
         $icoGenPy = Join-Path $WindowsDir (Join-Path 'tools' 'generate_colored_hermes_icons.py')
         if (Test-Path -LiteralPath $icoGenPy) {
-            if (-not $Quiet) { Write-Host '[INFO] Icoonset controleren...' -ForegroundColor Gray }
-            [void](Invoke-HermesColoredIconsFromPng -IconGeneratorPy $icoGenPy -Quiet:$Quiet)
+            $needIconGen = Test-HermesWindowsIconRegenNeeded -RepoRoot $repo -WindowsDir $WindowsDir
+            if ($needIconGen) {
+                if (-not $Quiet) {
+                    Write-Host '[INFO] Icoonset vernieuwen (PNG/ICO desync of ontbrekend)...' -ForegroundColor Gray
+                }
+                [void](Invoke-HermesColoredIconsFromPng -IconGeneratorPy $icoGenPy -Quiet:$Quiet)
+            } elseif (-not $Quiet) {
+                Write-Host '[INFO] Icoonset actueel — generator overgeslagen.' -ForegroundColor DarkGray
+            }
         }
     }
     [void](Publish-HermesShortcutIconCache -WindowsDir $WindowsDir)
