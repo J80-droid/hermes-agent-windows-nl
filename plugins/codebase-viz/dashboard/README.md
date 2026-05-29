@@ -47,9 +47,9 @@ pip install pygount watchdog radon psutil
 
 | Situatie | Verwachting |
 |----------|-------------|
-| **Eerste install (geen cache)** | `launch_dashboard_on_start.ps1` bouwt cache **vóór** dashboard-start via `scripts/warm_codebase_viz_pygount_cache.py` (tot **~600 s**, eenmalig in console) |
+| **Eerste install (geen cache)** | `launch_dashboard_on_start.ps1` → `Ensure-CodebaseVizPygountCache` → `scripts/warm_codebase_viz_pygount_cache.py` (~**4–10 min** afhankelijk van repo; `backups/` wordt overgeslagen) |
 | **Eerste load in UI** (Sunburst) | **< 1 s** als pre-warm geslaagd is — anders fallback: volledige pygount-run in dashboard |
-| **Na succes + herstart** | **< 1 s** — disk-cache hydrate (`codebase_viz_pygount_cache.json`, zelfde repo-handtekening) |
+| **Na succes + herstart** | **< 1 s** — disk-cache hydrate (`codebase_viz_pygount_cache.json`; validatie via git HEAD of bestands-handtekening) |
 | **Herladen binnen TTL** | **< 1 s** — geheugen-cache (`CODEBASE_VIZ_PYGOUNT_TTL`, default **3600 s**) |
 | **Tab wisselen** (Metrics, Treemap) | Vaak snel: deelt dezelfde `pygount`-cache |
 | **Force Scan / `r`** | Cache geleegd → opnieuw volledige scan |
@@ -78,6 +78,15 @@ Sneller op grote repos (PowerShell, vóór dashboard-start):
 $env:CODEBASE_VIZ_TTL = "300"
 $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT = "900"   # als 600s nog te krap
 $env:CODEBASE_VIZ_REPO = "D:\pad\naar\kleinere-repo"   # optioneel: alleen submap
+$env:HERMES_CODEBASE_VIZ_PREGOUNT_CACHE = "skip"       # optioneel: geen blokkerende pre-warm bij start
+```
+
+Handmatig cache opbouwen (zonder dashboard):
+
+```powershell
+python scripts/warm_codebase_viz_pygount_cache.py          # scan indien nodig
+python scripts/warm_codebase_viz_pygount_cache.py --check-only  # exit 0 = cache geldig
+python scripts/warm_codebase_viz_pygount_cache.py --force  # opnieuw scannen
 ```
 
 Controle: `GET /api/plugins/codebase-viz/health` → `pygount_cached: true` na eerste succesvolle scan.
@@ -156,7 +165,15 @@ Zie je nog **30 seconds** in de fouttekst? Er draait dan een **oud dashboard-pro
 
 Console (filter `[codebase-viz]`): `scan gestart`, `fetch start/ok`; bij oude API één regel `voortgang via lokale timer`.
 
-Unit tests mocken `subprocess` en gebruiken een **kleine temp-repo** — die slagen ook als pygount op de echte `hermes-agent` root **>240s** nodig heeft.
+Unit tests mocken `subprocess` en gebruiken een **kleine temp-repo** — die slagen ook als pygount op de volledige `hermes-agent` root lang duurt (typisch ~5 min na skip van `backups/`).
+
+### Pygount disk-cache E2E (geen live dashboard)
+
+```bat
+audits\RUN_CODEBASE_VIZ_PYGOUNT_CACHE_E2E.bat
+```
+
+8 checks (W1–W8): warm-script contract, skip-lijst, launch pre-warm, verify timeout 600, tiny-repo roundtrip. Zie `audits/CODEBASE_VIZ_PYGOUNT_CACHE_E2E_README.md`.
 
 ### UI-navigatie (categorie-dropdowns)
 

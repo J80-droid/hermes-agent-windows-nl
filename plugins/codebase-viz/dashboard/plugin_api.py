@@ -41,9 +41,25 @@ router = APIRouter()
 PLUGIN_VERSION = "2.5.0"
 CODEBASE_VIZ_MAX_MEMORY_MB = float(os.environ.get("CODEBASE_VIZ_MAX_MEMORY_MB", "500"))
 DEFAULT_SKIP = (
-    ".git,node_modules,venv,.venv,__pycache__,dist,build,.next,.cache,"
-    ".tox,.eggs,.mypy_cache,output,.hermes"
+    ".git,node_modules,venv,.venv,.venv.disabled*,__pycache__,dist,build,.next,.cache,"
+    ".tox,.eggs,.mypy_cache,output,.hermes,backups"
 )
+# Gedeelde skip-lijst voor pygount, repo-handtekening en import-analyse.
+# `backups/` en `.venv.disabled*` voorkomen timeouts op grote lokale mappen.
+_SCAN_SKIP_DIR_NAMES = frozenset({
+    ".git", "node_modules", "venv", ".venv", "__pycache__",
+    "dist", "build", ".next", ".cache", ".tox", ".eggs",
+    ".mypy_cache", "output", ".hermes", "backups",
+})
+
+
+def _scan_skip_dir_part(part: str) -> bool:
+    return part in _SCAN_SKIP_DIR_NAMES or part.startswith(".venv.disabled")
+
+
+def _path_has_skipped_dir(path: Path) -> bool:
+    return any(_scan_skip_dir_part(part) for part in path.parts)
+
 
 try:
     from watchdog.events import FileSystemEventHandler
@@ -243,8 +259,8 @@ def _read_pygount_disk_cache(*, allow_stale: bool = False) -> dict[str, Any] | N
         return None
     if cached_repo != current_repo:
         return None
-    signature = data.get("repo_signature") or ""
-    if signature != _compute_repo_signature(REPO_PATH):
+    stored_revision = str(data.get("repo_revision") or data.get("repo_signature") or "")
+    if not _disk_cache_revision_matches(stored_revision, REPO_PATH):
         return None
     saved_at = data.get("saved_at")
     if not allow_stale and isinstance(saved_at, (int, float)):
@@ -265,18 +281,29 @@ def _write_pygount_disk_cache(bundle: dict[str, Any]) -> None:
     if not bundle.get("file_rows"):
         return
     path = _pygount_disk_cache_file()
+    tmp_path: Path | None = None
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
+        revision = _repo_cache_revision(REPO_PATH)
         payload = {
             "version": 1,
             "repo_path": str(REPO_PATH),
-            "repo_signature": _compute_repo_signature(REPO_PATH),
+            "repo_revision": revision,
+            "repo_signature": revision,
             "saved_at": int(time.time()),
             "bundle": bundle,
         }
-        path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+        content = json.dumps(payload, ensure_ascii=False)
+        tmp_path = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+        tmp_path.write_text(content, encoding="utf-8")
+        tmp_path.replace(path)
     except Exception as exc:
         log.warning("codebase_viz_pygount_cache_persist_failed: %s", exc)
+        if tmp_path is not None:
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
 
 
 async def _hydrate_pygount_from_disk() -> bool:
@@ -286,7 +313,7 @@ async def _hydrate_pygount_from_disk() -> bool:
         return False
     async with _cache_lock:
         _cache["pygount"] = (time.monotonic(), bundle)
-    signature = _compute_repo_signature(REPO_PATH)
+    signature = _repo_cache_revision(REPO_PATH)
     async with _snapshot_lock:
         _snapshot_state["repo_signature"] = signature
     await _mark_dataset_updated("pygount", bundle)
@@ -298,25 +325,43 @@ async def _hydrate_pygount_from_disk() -> bool:
 
 
 def _safe_repo_file_iter(root: Path):
-    skip = {
-        ".git", "node_modules", "venv", ".venv", "__pycache__",
-        "dist", "build", ".next", ".cache", ".tox", ".eggs",
-        ".mypy_cache", "output", ".hermes",
-    }
     for path in root.rglob("*"):
         if not path.is_file():
             continue
-        if any(part in skip for part in path.parts):
+        if _path_has_skipped_dir(path):
             continue
         yield path
+
+
+def _git_head_revision(repo: Path) -> str | None:
+    """Huidige git commit (snel); None als geen git repo of git faalt."""
+    if not (repo / ".git").is_dir():
+        return None
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if proc.returncode != 0:
+        return None
+    rev = proc.stdout.strip()
+    return rev or None
 
 
 def _compute_repo_signature(repo: Path | None) -> str:
     if repo is None or not repo.is_dir():
         return ""
     digest = hashlib.sha1()
-    sample = 0
-    for path in _safe_repo_file_iter(repo):
+    paths = sorted(
+        _safe_repo_file_iter(repo),
+        key=lambda p: str(p.relative_to(repo)).replace("\\", "/"),
+    )
+    for path in paths:
         rel = str(path.relative_to(repo)).replace("\\", "/")
         try:
             st = path.stat()
@@ -324,12 +369,25 @@ def _compute_repo_signature(repo: Path | None) -> str:
             continue
         digest.update(rel.encode("utf-8", errors="ignore"))
         digest.update(str(st.st_size).encode("ascii", errors="ignore"))
-        digest.update(str(st.st_mtime_ns).encode("ascii", errors="ignore"))
-        sample += 1
-        if sample >= 4000:
-            break
     return digest.hexdigest()
 
+
+def _repo_cache_revision(repo: Path) -> str:
+    """Snelle revisie voor disk-cache (git HEAD); fallback: volledige bestands-handtekening."""
+    git_rev = _git_head_revision(repo)
+    if git_rev:
+        return git_rev
+    return _compute_repo_signature(repo)
+
+
+def _disk_cache_revision_matches(stored: str, repo: Path) -> bool:
+    """Vergelijk opgeslagen revisie met huidige repo (git HEAD of legacy handtekening)."""
+    if not stored:
+        return False
+    if stored == _repo_cache_revision(repo):
+        return True
+    # Legacy caches: volledige bestands-handtekening i.p.v. git HEAD
+    return stored == _compute_repo_signature(repo)
 
 async def _load_snapshot_state() -> None:
     path = _snapshot_file()
@@ -855,6 +913,14 @@ def _sync_pygount_bundle(target: str) -> dict[str, Any]:
         proc = subprocess.run(
             cmd, capture_output=True, text=True, timeout=PYGOUNT_TIMEOUT,
         )
+    except FileNotFoundError:
+        log.warning("pygount_missing", extra={"target": target})
+        return {
+            "summary": {"total_files": 0, "total_code": 0, "languages": {}},
+            "file_rows": [],
+            "error": "pygount niet gevonden op PATH — pip install pygount",
+            "fallback": True,
+        }
     except subprocess.TimeoutExpired:
         log.warning("pygount_timeout", extra={"target": target, "timeout": PYGOUNT_TIMEOUT})
         return {
@@ -887,13 +953,8 @@ def _sync_pygount_scan(target: str) -> dict[str, Any]:
 def _sync_import_analysis(target: str) -> list[dict[str, str]]:
     root = Path(target).resolve()
     edges: list[dict[str, str]] = []
-    skip = {
-        ".git", "node_modules", "venv", ".venv", "__pycache__",
-        "dist", "build", ".next", ".cache", ".tox", ".eggs",
-        ".mypy_cache", "output", ".hermes",
-    }
     for py_file in root.rglob("*.py"):
-        if any(part in skip for part in py_file.parts):
+        if _path_has_skipped_dir(py_file):
             continue
         rel = os.path.relpath(str(py_file), str(root))
         source_mod = rel.replace(os.sep, ".").replace(".py", "").replace(".__init__", "")

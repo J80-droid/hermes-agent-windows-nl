@@ -7,6 +7,8 @@ Gebruik:
   python scripts/warm_codebase_viz_pygount_cache.py --force     # altijd opnieuw scannen
 
 Exitcodes: 0 geslaagd, 1 fout, 2 (--check-only) geen geldige cache.
+
+Na `--force` wordt de cache gevalideerd (leesbaar + repo-revisie klopt) vóór exit 0.
 """
 
 from __future__ import annotations
@@ -58,9 +60,10 @@ def _try_install_bundled_seed(mod) -> bool:
             return False
     except (OSError, ValueError):
         return False
-    signature = data.get("repo_signature") or ""
-    if signature != mod._compute_repo_signature(mod.REPO_PATH):
-        return False
+    signature = data.get("repo_revision") or data.get("repo_signature") or ""
+    if signature != mod._repo_cache_revision(mod.REPO_PATH):
+        if signature != mod._compute_repo_signature(mod.REPO_PATH):
+            return False
     bundle = data.get("bundle")
     if not isinstance(bundle, dict) or bundle.get("error") or not bundle.get("file_rows"):
         return False
@@ -84,7 +87,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    mod = _load_plugin_module()
+    try:
+        mod = _load_plugin_module()
+    except RuntimeError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+
     if mod.REPO_PATH is None:
         print("Geen repo gevonden (zet CODEBASE_VIZ_REPO).", file=sys.stderr)
         return 1
@@ -118,6 +126,9 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     mod._write_pygount_disk_cache(bundle)
+    if mod._read_pygount_disk_cache(allow_stale=False) is None:
+        print("Cache geschreven maar validatie mislukt.", file=sys.stderr)
+        return 1
     rows = len(bundle.get("file_rows") or [])
     print(f"Klaar: {rows} bestanden gecachet -> {mod._pygount_disk_cache_file()}")
     return 0

@@ -952,3 +952,15 @@ def test_warm_pygount_cache_script_check_only(tiny_repo, tmp_path, monkeypatch):
 
     assert warm_mod.main(["--check-only"]) == 0
     assert warm_mod.main([]) == 0
+
+
+def test_scan_skip_backups_and_disabled_venv(plugin_module, tiny_repo):
+    (tiny_repo / "backups" / "old.txt").parent.mkdir(parents=True, exist_ok=True)
+    (tiny_repo / "backups" / "old.txt").write_text("skip", encoding="utf-8")
+    disabled = tiny_repo / ".venv.disabled-test" / "lib.py"
+    disabled.parent.mkdir(parents=True, exist_ok=True)
+    disabled.write_text("skip", encoding="utf-8")
+    paths = {p.name for p in plugin_module._safe_repo_file_iter(tiny_repo)}
+    assert "old.txt" not in paths
+    assert "lib.py" not in paths
+    assert "a.py" in paths

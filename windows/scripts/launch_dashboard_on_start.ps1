@@ -332,6 +332,9 @@ function Ensure-CodebaseVizPygountCache {
         Write-DashLog '[WARN] Codebase Viz pre-warm: script ontbreekt.' -Color Yellow
         return
     }
+    if (-not $env:CODEBASE_VIZ_REPO) {
+        $env:CODEBASE_VIZ_REPO = $RepoRoot
+    }
     & $PythonExe $warmScript --check-only 2>&1 | ForEach-Object { Write-LaunchLogAppend $_ }
     if ($LASTEXITCODE -eq 0) {
         Write-DashLog '[OK] Codebase Viz pygount-schijfcache aanwezig.' -Color DarkGray
@@ -342,7 +345,7 @@ function Ensure-CodebaseVizPygountCache {
     if ($LASTEXITCODE -eq 0) {
         Write-DashLog '[OK] Codebase Viz pygount-cache opgebouwd vóór dashboard-start.' -Color Green
     } else {
-        Write-DashLog '[WARN] Codebase Viz pre-warm mislukt — dashboard bouwt cache later op.' -Color Yellow
+        Write-DashLog '[WARN] Codebase Viz pre-warm mislukt - dashboard bouwt cache later op.' -Color Yellow
     }
 }
 
@@ -365,7 +368,7 @@ function Invoke-CodebaseVizWarmupScan {
     if ($PythonExe -and (Test-Path -LiteralPath $warmScript)) {
         & $PythonExe $warmScript --check-only 2>&1 | Out-Null
         if ($LASTEXITCODE -eq 0) {
-            Write-DashLog '[OK] Codebase Viz warmup: schijfcache actueel — force-scan overgeslagen.' -Color DarkGray
+            Write-DashLog '[OK] Codebase Viz warmup: schijfcache actueel - force-scan overgeslagen.' -Color DarkGray
             return
         }
     }

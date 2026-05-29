@@ -134,11 +134,19 @@ audits\RUN_CODEBASE_VIZ_E2E.bat
 
 Zie `audits/CODEBASE_VIZ_E2E_README.md` en `plugins/codebase-viz/dashboard/README.md`.
 
+### Codebase Viz pygount disk-cache E2E
+
+| Script | Doel |
+|--------|------|
+| `RUN_CODEBASE_VIZ_PYGOUNT_CACHE_E2E.bat` | Pre-warm script, skip `backups/`, disk-cache, launch wiring, tiny-repo roundtrip (8/8) |
+
+Zie `audits/CODEBASE_VIZ_PYGOUNT_CACHE_E2E_README.md`.
+
 ### Codebase Viz productie E2E
 
 | Script | Doel |
 |--------|------|
-| `RUN_CODEBASE_VIZ_PRODUCTION_E2E.bat` | 240s timeout, scan-status telemetry, launch/RESTART wiring, dist UI |
+| `RUN_CODEBASE_VIZ_PRODUCTION_E2E.bat` | Timeout/scan-status telemetry, launch/RESTART wiring, dist UI (structureel) |
 | `RUN_CODEBASE_VIZ_INCREMENTAL_SWR_E2E.bat` | SWR/incremental mode, snapshot data hashes, signature-delta fallback |
 | `RUN_CODEBASE_VIZ_LAUNCH_E2E.bat` | Dashboard launch integratie (7 checks) |
 
