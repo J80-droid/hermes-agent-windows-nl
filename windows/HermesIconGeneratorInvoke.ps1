@@ -1,13 +1,45 @@
 ﻿# Gedeeld door sync_local_assets_to_backup.ps1 en create_taskbar_shortcuts.ps1
 # Draait generate_colored_hermes_icons.py zodat hermes_logo.ico gelijk loopt met de PNG-gebaseerde varianten.
 
+function Get-HermesRealLocalAppData {
+    <#
+    .SYNOPSIS
+        Echte gebruikers-LOCALAPPDATA (niet $env:LOCALAPPDATA tijdens unit tests).
+    #>
+    try {
+        $p = [Environment]::GetFolderPath('LocalApplicationData')
+        if ($p -and (Test-Path -LiteralPath $p)) { return $p }
+    } catch {
+        $null = $_.Exception.Message
+    }
+    if ($env:LOCALAPPDATA -and (Test-Path -LiteralPath $env:LOCALAPPDATA)) {
+        return $env:LOCALAPPDATA
+    }
+    return $null
+}
+
+function Get-HermesShortcutIconCacheDir {
+    $local = Get-HermesRealLocalAppData
+    if (-not $local) { return $null }
+    return (Join-Path $local (Join-Path 'Hermes' 'shortcut-icons'))
+}
+
+function Test-HermesShortcutIconPathValid {
+    param([string]$IconPath)
+    if ([string]::IsNullOrWhiteSpace($IconPath)) { return $false }
+    $ico = ($IconPath -replace ',0$','').Trim()
+    if ($ico -match '\\Temp\\hermes_maint_unit_') { return $false }
+    return (Test-Path -LiteralPath $ico)
+}
+
 function Publish-HermesShortcutIconCache {
     <#
     .SYNOPSIS
         Kopieert hermes*.ico naar %LOCALAPPDATA%\Hermes\shortcut-icons (stabiel pad voor Shell).
     #>
     param([Parameter(Mandatory)][string]$WindowsDir)
-    $cacheDir = Join-Path $env:LOCALAPPDATA (Join-Path 'Hermes' 'shortcut-icons')
+    $cacheDir = Get-HermesShortcutIconCacheDir
+    if (-not $cacheDir) { return $null }
     New-Item -ItemType Directory -Force -Path $cacheDir | Out-Null
     Get-ChildItem -LiteralPath $WindowsDir -Filter 'hermes*.ico' -File -ErrorAction SilentlyContinue | ForEach-Object {
         Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $cacheDir $_.Name) -Force
@@ -18,14 +50,19 @@ function Publish-HermesShortcutIconCache {
 function Get-HermesShellShortcutIconLocation {
     param([Parameter(Mandatory)][string]$IcoPath)
     if (-not (Test-Path -LiteralPath $IcoPath)) { return $null }
-    # Zelfde map als .lnk (windows\) — betrouwbaarder dan alleen AppData-cache voor Verkenner.
-    $resolved = (Resolve-Path -LiteralPath $IcoPath).Path
-    $cacheDir = Join-Path $env:LOCALAPPDATA (Join-Path 'Hermes' 'shortcut-icons')
-    $cached = Join-Path $cacheDir (Split-Path -Leaf $IcoPath)
-    if (Test-Path -LiteralPath $cached) {
-        $resolved = (Resolve-Path -LiteralPath $cached).Path
+    $leaf = Split-Path -Leaf $IcoPath
+    $windowsDir = Split-Path -Parent $IcoPath
+    if ($windowsDir) {
+        [void](Publish-HermesShortcutIconCache -WindowsDir $windowsDir)
     }
-    return ($resolved + ',0')
+    $cacheDir = Get-HermesShortcutIconCacheDir
+    if ($cacheDir) {
+        $cached = Join-Path $cacheDir $leaf
+        if (Test-Path -LiteralPath $cached) {
+            return ((Resolve-Path -LiteralPath $cached).Path + ',0')
+        }
+    }
+    return ((Resolve-Path -LiteralPath $IcoPath).Path + ',0')
 }
 
 function Get-HermesCmdShortcutArgumentLine {
@@ -139,6 +176,9 @@ function Test-HermesShortcutPathHealth {
         } elseif ($quotedBat -notmatch '^[A-Za-z]:\\|^\\\\') {
             $issues.Add("Relatief bat-pad in .lnk (verwacht absoluut): $quotedBat")
         }
+    }
+    if (-not (Test-HermesShortcutIconPathValid -IconPath $s.IconLocation)) {
+        $issues.Add("Icoon ontbreekt of verouderd testpad: $($s.IconLocation)")
     }
     return @{
         Ok      = ($issues.Count -eq 0)

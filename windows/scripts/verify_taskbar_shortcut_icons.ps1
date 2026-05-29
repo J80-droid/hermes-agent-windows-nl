@@ -58,7 +58,16 @@ foreach ($c in $checks) {
         $fail++
         continue
     }
-    $got = Split-Path ($s.IconLocation -replace ',0$','') -Leaf
+    $iconFull = ($s.IconLocation -replace ',0$','').Trim()
+    if (-not (Test-HermesShortcutIconPathValid -IconPath $s.IconLocation)) {
+        if (-not $Quiet) {
+            Write-Host ('[FAIL] ' + $($c.Lnk) + ': icoonbestand ontbreekt of test-temp pad') -ForegroundColor Red
+            Write-Host ('       ' + $iconFull) -ForegroundColor DarkGray
+        }
+        $fail++
+        continue
+    }
+    $got = Split-Path $iconFull -Leaf
     if ($got -ne $wantIco) {
         if (-not $Quiet) {
             Write-Host ('[FAIL] ' + $($c.Lnk) + ': $got (verwacht $wantIco)') -ForegroundColor Red

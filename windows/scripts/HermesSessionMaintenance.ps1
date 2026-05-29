@@ -49,9 +49,15 @@ function Write-Maint {
     Write-Host $Message -ForegroundColor $color
 }
 
+function Test-HermesShortcutFixAllowed {
+    if ($env:LOCALAPPDATA -match 'hermes_maint_unit_') { return $false }
+    return $true
+}
+
 function Invoke-HermesShortcutMaintenance {
     if ($env:HERMES_SKIP_SHORTCUT_MAINT_ON_START -eq '1') { return 0 }
     if ($env:HERMES_MINIMAL_LAUNCH -eq '1') { return 0 }
+    if (-not (Test-HermesShortcutFixAllowed)) { return 0 }
     if (Test-HermesShouldSkipPostPullMaintenanceOnStart -RepoRoot $RepoRoot) {
         Write-Maint '[SKIP] Snelkoppelingen recent via POST onderhoud.' -Level Info
         return 0
@@ -269,7 +275,7 @@ function Invoke-HermesPostPullMaintenance {
         & $rebuild -RepoRoot $RepoRoot
         if ($LASTEXITCODE -ne 0) { $err = 1 }
     }
-    if ($err -eq 0) {
+    if ($err -eq 0 -and (Test-HermesShortcutFixAllowed)) {
         Write-Maint '[INFO] Taakbalk-snelkoppelingen...'
         $fix = Join-Path $winDir 'fix_hermes_taskbar_pins.ps1'
         & $fix -RepoRoot $RepoRoot -Quiet

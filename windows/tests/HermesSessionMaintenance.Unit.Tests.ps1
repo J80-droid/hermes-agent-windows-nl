@@ -8,6 +8,9 @@ $commonPath = Join-Path $repoRoot 'windows\HermesShellCommon.ps1'
 $maintPath = Join-Path $repoRoot 'windows\scripts\HermesSessionMaintenance.ps1'
 
 $script:UnitFailed = 0
+if (-not $env:HERMES_UNIT_SKIP_HEAVY_POST_PULL) {
+    $env:HERMES_UNIT_SKIP_HEAVY_POST_PULL = '1'
+}
 $isoRoot = Join-Path $env:TEMP ('hermes_maint_unit_' + [Guid]::NewGuid().ToString('n'))
 New-Item -ItemType Directory -Path $isoRoot -Force | Out-Null
 
