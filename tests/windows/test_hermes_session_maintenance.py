@@ -35,13 +35,13 @@ def test_post_git_pull_uses_post_pull_maintenance() -> None:
 
 def test_launch_hermes_uses_orchestrator() -> None:
     bat = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
-    assert "launch_pre_chat_orchestrator.ps1" in bat
-    assert "-SkipBootstrap" in bat
-    bat_text = bat
-    assert "HERMES_REPO_ROOT=!REPO_ROOT!" in bat_text
-    orch_line = next((ln for ln in bat_text.splitlines() if "ORCH_ARGS=" in ln), "")
-    assert "-SkipBootstrap" in orch_line
-    assert "-RepoRoot" not in orch_line, "RepoRoot alleen via HERMES_REPO_ROOT env"
+    ps1 = (REPO / "windows/scripts/launch_hermes.ps1").read_text(encoding="utf-8")
+    orch = (REPO / "windows/scripts/launch_pre_chat_orchestrator.ps1").read_text(encoding="utf-8")
+    assert "launch_hermes.ps1" in bat
+    assert "launch_pre_chat_orchestrator.ps1" in ps1
+    assert "-SkipBootstrap" not in bat
+    assert "launch_bootstrap.ps1" in orch
+    assert "HERMES_REPO_ROOT" in bat
 
 
 def test_shell_common_session_stamps() -> None:

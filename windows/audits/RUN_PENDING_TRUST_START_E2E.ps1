@@ -75,15 +75,19 @@ foreach ($rel in $required) {
 }
 if ($failures -eq 0) { Step-Ok ('repo-keten: ' + $required.Count + ' bestanden') }
 
-Assert-FileContains 'windows/launch_hermes.bat' @('launch_pre_chat_orchestrator.ps1')
+Assert-FileContains 'windows/launch_hermes.bat' @('launch_hermes.ps1')
+Assert-FileContains 'windows/scripts/launch_hermes.ps1' @('launch_pre_chat_orchestrator.ps1')
 Assert-FileContains 'windows/scripts/launch_pre_chat_orchestrator.ps1' @(
     'launch_pending_trust_runtime.ps1',
     'HERMES_SKIP_PENDING_TRUST_ON_START'
 )
 $launchBat = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/launch_hermes.bat')
+$launchPs1 = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/launch_hermes.ps1')
 $orchPs1 = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/launch_pre_chat_orchestrator.ps1')
-if ($launchBat -notmatch 'launch_pre_chat_orchestrator\.ps1') {
-    Step-Fail 'launch_hermes.bat' 'mist pre-chat orchestrator'
+if ($launchBat -notmatch 'launch_hermes\.ps1') {
+    Step-Fail 'launch_hermes.bat' 'mist launch_hermes.ps1 entry'
+} elseif ($launchPs1 -notmatch 'launch_pre_chat_orchestrator\.ps1') {
+    Step-Fail 'launch_hermes.ps1' 'mist pending trust orchestrator'
 } elseif ($orchPs1 -notmatch 'launch_pending_trust_runtime\.ps1') {
     Step-Fail 'launch_pre_chat_orchestrator.ps1' 'mist pending trust fase'
 } else {

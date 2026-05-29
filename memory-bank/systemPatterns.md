@@ -42,7 +42,8 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 - **Canoniek:** `scripts/windows/setup_hermes_windows.ps1` — alle setup-logica.
 - **Wrapper:** `windows/setup_hermes_windows.ps1` — alleen `& $canon @PSBoundParameters` (max. 40 regels).
 - **Beleid:** `windows/HermesSetupScriptPolicy.ps1`; gehandhaafd door `verify_windows_script_chain.ps1` + pytest.
-- **Entrypoints:** `SETUP_HERMES.bat`, `launch_hermes.bat` → canoniek PS1 (forward slashes in `.bat`).
+- **Entrypoints:** `SETUP_HERMES.bat`, `launch_hermes.bat` → `scripts/launch_hermes.ps1` → orchestrator (canoniek PS1; forward slashes in `.bat`).
+- **Launch UI Sink:** `HermesLaunchUi.ps1` — enige console-schrijver tijdens pre-chat; `Write-HermesLaunchUi`, capture-modus, rich visual in WT (`HERMES_LAUNCH_UI`, `HERMES_LAUNCH_VISUAL`).
 - **Verboden:** `Copy-Item $PSCommandPath` naar `windows/` (dubbele IDE/PSSA-lint).
 
 ## Pending trust-runtime (start-hook)

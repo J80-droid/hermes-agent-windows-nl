@@ -32,6 +32,8 @@ start_hermes.bat
 ```
 start_hermes.bat
   → windows\launch_hermes.bat  (WT via hermes_wt_entry.cmd indien nodig)
+  → scripts\launch_hermes.ps1  (Launch UI Sink, env-info, --setup)
+  → launch_pre_chat_orchestrator.ps1  (bootstrap, SOUL, institutional, trust, dashboard)
   → run_hermes_prepare.ps1       (conda/python, launch state)
   → hermes_chat.cmd              (zelfde cmd, Win32-safe)
   → python -m hermes_cli.main
@@ -164,7 +166,29 @@ De fork biedt drie verschillende manieren om flexibel en robuust van profiel te 
 
 **Scherm springt omhoog bij typen / alleen `core >` bovenaan:** viewport stond midden in de scrollbuffer, of prompt_toolkit “reserve vertical space” scrollde elke toetsaanslag. **Fix in fork:** `align_win32_viewport_to_bottom()` + osd-patch ook op Win32. **Reset:** `windows\RESET_TERMINAL.bat`, alle WT-tabbladen sluiten, opnieuw `start_hermes.bat`.
 
-**Tekst overschrijft bovenaan / garbled bij start:** veel launcher-echo vóór `cls` (normaal bij profiel **full**). Wil je alleen chat: `start_hermes_minimal.bat`. Oude “Session ended / Press any key”: nieuw WT-tab, geen `pause` na normale exit.
+**Tekst overschrijft bovenaan / garbled bij start:** vroeger door gemengde cmd/PS-echo vóór `cls` en live subprocess-output tijdens capture. **Fix (Launch UI Sink):** pre-chat output loopt via `Write-HermesLaunchUi` + `HermesLaunchUi.ps1` (EL `[2K` per regel); zware subprocessen naar log tijdens capture. Entry: `launch_hermes.bat` → `scripts/launch_hermes.ps1` → `launch_pre_chat_orchestrator.ps1` (bootstrap **in** orchestrator, geen `-SkipBootstrap` in bat). Wil je alleen chat: `start_hermes_minimal.bat`. Oude “Session ended / Press any key”: nieuw WT-tab, geen `pause` na normale exit.
+
+| Variabele | Effect |
+| --------- | ------ |
+| `HERMES_LAUNCH_UI` | `auto` (default): rich in WT, normal in cmd, quiet bij redirect |
+| `HERMES_LAUNCH_UI=quiet` | Alleen log + stapresultaten; geen live detail |
+| `HERMES_LAUNCH_UI=verbose` | Alle detailregels op console |
+| `HERMES_LAUNCH_VISUAL=0` | Geen spinner/checklist-animatie (tekst-only stappen) |
+| Rich visual (spinner/checklist) | Alleen met `WT_SESSION` (echte Windows Terminal-tab); legacy cmd = klassieke stapregels |
+| Ghost overlay / muisklik geblokkeerd | Geen dubbele `Invoke-HermesExpandConsoleWindow`; `Stop-HermesGhostInputBlockers` vóór start; zie `FIX_MOUSE_BLOCKED.bat` |
+| `HERMES_LAUNCH_VERBOSE=1` | Subprocess-detail ook op console tijdens capture |
+
+E2E: `audits\RUN_LAUNCH_UI_SINK_E2E.bat` (8/8). Zie `audits/LAUNCH_UI_SINK_E2E_README.md`.
+
+**Stap 8 (dashboard) traag of spinner blijft hangen:** `pip install -e .[web]` draait **niet** elke start — alleen bij gewijzigde `pyproject.toml` / Codebase Viz `package.json` of ontbrekend manifest (`%LOCALAPPDATA%\hermes\web-dashboard-deps.json`). Pygount pre-warm alleen als `output\research\codebase_viz_pygount_cache.json` ontbreekt of ongeldig is (bijv. pytest-temp in `repo_path`). **Repair:** `windows\FIX_CODEBASE_VIZ_CACHE.bat`. Workspace-dev: dashboard wordt **niet** herstart als deps, dist, pygount-cache en poort 9119 al OK zijn.
+
+| Variabele | Effect |
+| --------- | ------ |
+| `HERMES_FORCE_DASHBOARD_PIP=1` | Forceer pip `[web]` bij start |
+| `HERMES_CODEBASE_VIZ_PREGOUNT_CACHE=skip` | Geen blokkerende pygount pre-warm |
+| `HERMES_CODEBASE_VIZ_SKIP_BUILD=1` | Geen `npm run build` voor Codebase Viz dist |
+
+E2E optimalisaties: `audits\RUN_DASHBOARD_LAUNCH_OPTIMIZATIONS_E2E.bat`. Unit: `windows\tests\HermesWebDashboardLaunch.Unit.Tests.ps1`.
 
 **Scroll / plakken / kopiëren in chat:** `run_hermes_prepare.ps1` + `hermes_chat.cmd` (zelfde cmd, `TERM` leeg). **Plakken:** `Ctrl+V` (Win32-klembord). **Kopiëren invoer:** **Shift+pijlen** + **Ctrl+C** (zonder selectie = onderbreken). **Scrollback:** WT-schuifbalk of markeermodus; assistant: `/copy`. Geen `mode con: lines=9000` (zwart scherm bij scroll).
 
@@ -183,6 +207,7 @@ Ollama bij auxiliary-taken: start `ollama serve` in tray of verwijder `auxiliary
 | Symptoom | Actie |
 | -------- | ----- |
 | Muisklik titelbalk / sluiten werkt niet | `FIX_MOUSE_BLOCKED.bat` → nieuw WT-tab → `start_hermes.bat` |
+| Dashboard start minuten / pygount elke keer | `FIX_CODEBASE_VIZ_CACHE.bat`; check `web-dashboard-deps.json`; zie stap 8 hierboven |
 | Scherm springt bij typen | Zelfde + controleer dat je via `hermes_chat.cmd` start (niet `conda run`) |
 | Na exit: chat kwijt | Scrollback blijft; scroll omhoog om na te lezen. Volledig leeg: `RESET_TERMINAL.bat` |
 | Na exit: ghost statusbalk | `finalize_console_after_chat` zet alleen muismodi/renderer terug |

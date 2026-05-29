@@ -5,6 +5,7 @@
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 
 $script:TrustRuntimeSoulModule = Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1'
+$script:TrustRuntimeSoulProfilesLoaded = $false
 
 function Get-TrustRuntimeHermesRoot {
     Import-Module $script:TrustRuntimeSoulModule -Force
@@ -52,7 +53,10 @@ function Get-TrustRuntimeWatchPaths {
 
 function Test-TrustRuntimeProfileMemoriesComplete {
     param([Parameter(Mandatory)][string]$HermesRoot)
-    Import-Module (Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1') -Force
+    if (-not $script:TrustRuntimeSoulProfilesLoaded) {
+        Import-Module $script:TrustRuntimeSoulModule -Force
+        $script:TrustRuntimeSoulProfilesLoaded = $true
+    }
     foreach ($profile in Get-DomainSoulProfileNames) {
         $memDir = Join-Path $HermesRoot (Join-Path 'profiles' (Join-Path $profile 'memories'))
         foreach ($file in @('MEMORY.md', 'USER.md')) {
@@ -117,7 +121,8 @@ function Test-TrustRuntimeSyncNeeded {
     $stamp = if ($StampPath) { $StampPath } else { Get-TrustRuntimeSyncStampPath }
     if (-not (Test-Path -LiteralPath $stamp)) { return $true }
     $stampTime = (Get-Item -LiteralPath $stamp).LastWriteTimeUtc
-    foreach ($f in Get-TrustRuntimeWatchPaths -RepoRoot $RepoRoot) {
+    $watchPaths = Get-TrustRuntimeWatchPaths -RepoRoot $RepoRoot
+    foreach ($f in $watchPaths) {
         try {
             if (-not (Test-Path -LiteralPath $f)) { continue }
             if ((Get-Item -LiteralPath $f -ErrorAction Stop).LastWriteTimeUtc -gt $stampTime) {

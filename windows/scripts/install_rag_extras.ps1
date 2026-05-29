@@ -14,7 +14,9 @@ $ErrorActionPreference = "Stop"
 
 function Write-RagMsg([string]$Text, [string]$Color = "Gray") {
     if ($Quiet) { return }
-    Write-Host $Text -ForegroundColor $Color
+    $level = 'Info'
+    if ($Color -eq 'Yellow') { $level = 'Warn' }
+    Write-HermesLaunchUi -Message $Text -Level $level
 }
 
 if (-not $RepoRoot) {

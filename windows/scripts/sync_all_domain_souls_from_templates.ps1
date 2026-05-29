@@ -7,6 +7,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 Import-Module (Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1') -Force
 
 if (-not $RepoRoot) {
@@ -14,42 +15,47 @@ if (-not $RepoRoot) {
 }
 
 $profiles = Get-DomainSoulProfileNames
+$total = @($profiles).Count
+if ($total -lt 1) { $total = 1 }
 
-Write-Host '=== Push domain SOUL templates ===' -ForegroundColor Cyan
+Write-HermesLaunchUi -Message 'Push domain SOUL templates' -Level Info
 $failedProfiles = [System.Collections.Generic.List[string]]::new()
+$idx = 0
 foreach ($p in $profiles) {
+    $idx++
+    Update-HermesLaunchActivity -Reason ('template ' + $idx + '/' + $total + ' (' + $p + ')') -ProgressCurrent $idx -ProgressTotal $total
     & (Join-Path $PSScriptRoot 'sync_domain_soul_from_template.ps1') -ProfileName $p -RepoRoot $RepoRoot -HermesRoot $HermesRoot -SuppressTip
     if (Test-NativeCommandFailed) {
         [void]$failedProfiles.Add($p)
-        Write-Warning "Overgeslagen of mislukt: $p (exit $LASTEXITCODE)"
+        Write-HermesLaunchUi -Message ('Overgeslagen of mislukt: ' + $p) -Level Warn
     }
 }
 if ($failedProfiles.Count -gt 0) {
-    Write-Error "Domein-template sync mislukt voor: $($failedProfiles -join ', ')"
+    Write-HermesLaunchUi -Message ('Domein-template sync mislukt voor: ' + ($failedProfiles -join ', ')) -Level Error -ForceConsole
     exit 1
 }
 
 if ($SkipSnippetSync) {
-    Write-Host '[SKIP] Snippet sync' -ForegroundColor Yellow
+    Write-HermesLaunchUi -Message 'Snippet sync overgeslagen' -Level Warn
     exit 0
 }
 
-Write-Host '=== SOUL anatomy snippet sync (Force) ===' -ForegroundColor Cyan
+Write-HermesLaunchUi -Message 'SOUL anatomy snippet sync (Force)' -Level Info
 & (Join-Path $PSScriptRoot 'sync_soul_anatomy_snippets.ps1') -RepoRoot $RepoRoot -HermesRoot $HermesRoot -Force -Quiet
 if (Test-NativeCommandFailed) {
-    Write-Error "SOUL anatomy snippet sync mislukt (exit $LASTEXITCODE)"
+    Write-HermesLaunchUi -Message ('SOUL anatomy snippet sync mislukt (exit ' + $LASTEXITCODE + ')') -Level Error -ForceConsole
     exit 1
 }
 
-Write-Host '=== Root SOUL fallback (legacy) ===' -ForegroundColor Cyan
+Write-HermesLaunchUi -Message 'Root SOUL fallback (legacy)' -Level Info
 & (Join-Path $PSScriptRoot 'sync_root_soul_fallback.ps1') -RepoRoot $RepoRoot -HermesRoot $HermesRoot -Quiet
 if (Test-NativeCommandFailed) {
-    Write-Error "Root SOUL fallback sync mislukt (exit $LASTEXITCODE)"
+    Write-HermesLaunchUi -Message ('Root SOUL fallback sync mislukt (exit ' + $LASTEXITCODE + ')') -Level Error -ForceConsole
     exit 1
 }
 
 if ($UpdateDeployStamp) {
     Set-SoulAnatomyDeployStamp
 }
-Write-Host '[OK] Alle domein-SOUL templates + snippets toegepast. Start /new in Hermes.' -ForegroundColor Green
+Write-HermesLaunchUi -Message 'Alle domein-SOUL templates + snippets toegepast. Start /new in Hermes.' -Level Ok
 exit 0

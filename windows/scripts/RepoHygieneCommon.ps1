@@ -7,6 +7,7 @@ function Get-HermesRepoRootAllowlist {
         'AGENTS.md', 'cli.py', 'run_agent.py', 'model_tools.py', 'toolsets.py',
         'hermes_state.py', 'hermes_constants.py', 'hermes_logging.py',
         'hermes_bootstrap.py', 'hermes_time.py', 'batch_runner.py', 'config.yaml',
+        'start_hermes.bat',
         'hermes_launch.log', 'hermes_runtime.log', 'hermes_last_error.log', 'hermes_setup.log'
     )
 }

@@ -24,7 +24,7 @@ windows\SYNC_TRUST_RUNTIME.bat
 
 **Launch-profiel (Windows):** standaard **full** via `start_hermes.bat` (SOUL, institutioneel, trust, Docker, dashboard). Snel alleen chat: `start_hermes_minimal.bat`. Canoniek: [`windows/launch_profiles.ps1`](../windows/launch_profiles.ps1), [`windows/START.md`](../windows/START.md). Voorkeur opslaan: `windows\set_launch_profile.bat full|minimal`.
 
-`launch_hermes.bat` start dashboard bij profiel **full** (Codebase Viz warmup): **`hermes dashboard --no-open`** op `http://127.0.0.1:9119` (geen browser-tab; open zelf `/sessions`). Uitzetten: `HERMES_SKIP_DASHBOARD_ON_START=1` of `HERMES_DASHBOARD_ON_START=0`. Log: `output\research\logs\hermes_dashboard.log`.
+`start_hermes.bat` → `launch_hermes.ps1` → orchestrator start dashboard bij profiel **full** (Codebase Viz warmup): **`hermes dashboard --no-open`** op `http://127.0.0.1:9119` (geen browser-tab; open zelf `/sessions`). Uitzetten: `HERMES_SKIP_DASHBOARD_ON_START=1` of `HERMES_DASHBOARD_ON_START=0`. Log: `output\research\logs\hermes_dashboard.log`.
 Windows Terminal is verplicht (`windows/requirements-windows.txt`; `INSTALL_WINDOWS_TERMINAL.bat`). `start_hermes.bat` zet `HERMES_AUTO_WINDOWS_TERMINAL=1` (start in `wt -M` wanneer `wt.exe` beschikbaar). Uitzetten: `HERMES_SKIP_WINDOWS_TERMINAL=1`. Console-layout: `HERMES_CONSOLE_LAYOUT=maximized` (werkgebied, geen `SW_MAXIMIZE`).
 
 **Na pull (standaard):** `start_hermes.bat --pull` of `start_hermes.bat --pull -Full` — sync (trust, SOUL, drift, display) + **Hermes-relaunch** in Windows Terminal. Alleen sync: `--sync` of `windows\POST_GIT_PULL.bat`. Uitzetten relaunch: `-SkipRelaunch` op dezelfde regel; daarna start `start_hermes.bat` zelf de chat op. `PULL_HERMES.bat` blijft werken (doorverwijzing).

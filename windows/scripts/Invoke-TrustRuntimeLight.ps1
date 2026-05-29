@@ -17,23 +17,23 @@ Import-Module (Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1') -Force
 
 $RepoRoot = $RepoRoot.Trim().Trim('"')
 if (-not (Test-Path -LiteralPath $RepoRoot)) {
-    Write-Host ('[FAIL] RepoRoot bestaat niet: ' + $RepoRoot) -ForegroundColor Red
+    Write-HermesLaunchUi -Message ('RepoRoot bestaat niet: ' + $RepoRoot) -Level Error -ForceConsole
     exit 1
 }
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 
 function Write-StepLocal([string]$Msg) {
     if (-not $Quiet) {
-        Write-Host ('[INFO] ' + $Msg) -ForegroundColor Cyan
+        Write-HermesLaunchUi -Message $Msg -Level Info
     }
 }
 function Write-OkLocal([string]$Msg) {
     if (-not $Quiet) {
-        Write-Host ('[OK] ' + $Msg) -ForegroundColor Green
+        Write-HermesLaunchUi -Message $Msg -Level Ok
     }
 }
 function Write-FailLocal([string]$Msg) {
-    Write-Host ('[FAIL] ' + $Msg) -ForegroundColor Red
+    Write-HermesLaunchUi -Message $Msg -Level Error -ForceConsole
 }
 
 if (-not $PSBoundParameters.ContainsKey('SkipProductionGate')) {

@@ -443,8 +443,16 @@ function Set-InstitutionalNewChatReminder {
     }
     $payload | ConvertTo-Json | Set-Content -LiteralPath $noticePath -Encoding UTF8
     if (-not $Quiet -and $env:HERMES_SUPPRESS_SOUL_REMINDER -ne '1') {
-        Write-Host 'HERINNERING: Start een nieuwe chat (slash-new) - SOUL-system prompt is vernieuwd.' -ForegroundColor Yellow
-        Write-Host "  Rooktest: $SmokeTestPrompt" -ForegroundColor DarkYellow
+        $reminder = 'HERINNERING: Start een nieuwe chat (slash-new) - SOUL-system prompt is vernieuwd.'
+        $rook = "  Rooktest: $SmokeTestPrompt"
+        Add-HermesLaunchLogLine -Message $reminder
+        Add-HermesLaunchLogLine -Message $rook
+        $spinnerActive = $global:HermesLaunchVisualState -and $global:HermesLaunchVisualState.SpinnerActive
+        $capture = (Get-Command Test-HermesLaunchConsoleCapture -ErrorAction SilentlyContinue) -and (Test-HermesLaunchConsoleCapture)
+        if (-not $spinnerActive -and -not $capture) {
+            Write-Host $reminder -ForegroundColor Yellow
+            Write-Host $rook -ForegroundColor DarkYellow
+        }
     }
 }
 

@@ -182,6 +182,29 @@ foreach ($bat in $batFiles) {
 }
 
 $scriptsDir = Join-Path $winDir 'scripts'
+Write-Host '[INFO] launch_hermes.ps1 -> orchestrator keten...' -ForegroundColor Cyan
+$launchPs1 = Join-Path $scriptsDir 'launch_hermes.ps1'
+$orchPs1 = Join-Path $scriptsDir 'launch_pre_chat_orchestrator.ps1'
+if (-not (Test-Path -LiteralPath $launchPs1)) {
+    [void]$failures.Add('windows/scripts/launch_hermes.ps1 ontbreekt')
+    Write-Host '  [FAIL] launch_hermes.ps1' -ForegroundColor Red
+} elseif (-not (Test-Path -LiteralPath $orchPs1)) {
+    [void]$failures.Add('launch_pre_chat_orchestrator.ps1 ontbreekt')
+    Write-Host '  [FAIL] launch_pre_chat_orchestrator.ps1' -ForegroundColor Red
+} else {
+    $launchText = Get-Content -LiteralPath $launchPs1 -Raw -Encoding UTF8
+    $orchText = Get-Content -LiteralPath $orchPs1 -Raw -Encoding UTF8
+    if ($launchText -notmatch 'launch_pre_chat_orchestrator\.ps1') {
+        [void]$failures.Add('launch_hermes.ps1 roept orchestrator niet aan')
+        Write-Host '  [FAIL] launch_hermes.ps1 -> orchestrator' -ForegroundColor Red
+    } elseif ($orchText -notmatch 'launch_bootstrap\.ps1') {
+        [void]$failures.Add('orchestrator mist bootstrap fase')
+        Write-Host '  [FAIL] orchestrator -> bootstrap' -ForegroundColor Red
+    } else {
+        Write-Host '  [OK] launch_hermes.ps1 -> orchestrator -> bootstrap' -ForegroundColor Green
+    }
+}
+
 $perf = Join-Path $scriptsDir 'rag_ingest_perf_defaults.ps1'
 if (-not (Test-Path -LiteralPath $perf)) {
     [void]$failures.Add('windows/scripts/rag_ingest_perf_defaults.ps1 ontbreekt (RAG ingest)')

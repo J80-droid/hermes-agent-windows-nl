@@ -58,8 +58,9 @@ pytest tests\windows\test_hermes_session_maintenance.py tests\audits\test_sessio
 
 ```
 start_hermes.bat          ← repo-root (standaard profiel: full)
-  └─ launch_hermes.bat    ← WT, maximize, prepare, logs
-       └─ launch_pre_chat_orchestrator.ps1  (bootstrap al gedaan; SOUL, institutional, trust, dashboard)
+  └─ launch_hermes.bat    ← WT, maximize, logs
+       └─ scripts/launch_hermes.ps1  ← Launch UI Sink, --setup, env-info
+            └─ launch_pre_chat_orchestrator.ps1  (bootstrap, SOUL, institutional, trust, dashboard)
        └─ run_hermes_prepare.ps1
        └─ hermes_chat.cmd
             └─ python -m hermes_cli.main

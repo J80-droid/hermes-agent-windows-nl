@@ -18,6 +18,14 @@ if (-not $RepoRoot) {
 
 function Write-PolicyMsg([string]$Text, [string]$Color = 'Gray') {
     if ($Quiet) { return }
+    if ($global:HermesLaunchVisualState -and $global:HermesLaunchVisualState.SpinnerActive) {
+        Add-HermesLaunchLogLine -Message $Text
+        return
+    }
+    if ((Get-Command Test-HermesLaunchConsoleCapture -ErrorAction SilentlyContinue) -and (Test-HermesLaunchConsoleCapture)) {
+        Add-HermesLaunchLogLine -Message $Text
+        return
+    }
     Write-Host $Text -ForegroundColor $Color
 }
 

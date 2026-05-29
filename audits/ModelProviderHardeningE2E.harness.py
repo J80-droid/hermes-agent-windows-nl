@@ -222,7 +222,12 @@ def test_e6_corrupt_auth_guard_reset() -> None:
 
         (root / "auth.json").write_text("{not-json", encoding="utf-8")
         auth_mod._AUTH_CORRUPT_REPAIR_IN_PROGRESS = False
-        store = auth_mod._load_auth_store(root / "auth.json")
+        # Expected corrupt-auth recovery logs to stderr; keep harness output clean for PS audits.
+        os.environ["HERMES_SUPPRESS_AUTH_CORRUPT_LOG"] = "1"
+        try:
+            store = auth_mod._load_auth_store(root / "auth.json")
+        finally:
+            os.environ.pop("HERMES_SUPPRESS_AUTH_CORRUPT_LOG", None)
         ok = (
             store.get("providers") == {}
             and auth_mod._AUTH_CORRUPT_REPAIR_IN_PROGRESS is False

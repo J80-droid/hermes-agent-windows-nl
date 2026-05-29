@@ -40,7 +40,7 @@ set "GROEN=%ESC%[92m"
 set "ROOD=%ESC%[91m"
 set "RESET=%ESC%[0m"
 
-if defined HERMES_PYTHON echo %CYAAN%[INFO] HERMES_PYTHON=!HERMES_PYTHON! ^(gateway / tool-subprocessen^)%RESET%
+if defined HERMES_PYTHON rem HERMES_PYTHON getoond via launch_hermes.ps1 (Launch UI Sink)
 
 rem --- Args vroeg (nodig vóór WT-relaunch) ---
 set "CLEAN_ARGS=%*"
@@ -68,14 +68,7 @@ if defined HERMES_AUTO_WINDOWS_TERMINAL if not defined HERMES_SKIP_WINDOWS_TERMI
 rem ====================================================
 rem  Hermes Agent - Institutional Launcher (v1.5)
 rem ====================================================
-if defined HERMES_LAUNCH_PROFILE echo %CYAAN%[INFO] Launch profile: !HERMES_LAUNCH_PROFILE!%RESET%
-if /I not "!HERMES_MINIMAL_LAUNCH!"=="1" (
-echo %GOUD%
-echo  ====================================================
-echo   HERMES AGENT - WINDOWS PREMIUM LAUNCHER
-echo  ====================================================
-echo %RESET%
-)
+if /I not "!HERMES_MINIMAL_LAUNCH!"=="1" rem banner via launch_hermes.ps1 Launch Visual Layer
 
 set "LAUNCH_LOG=%REPO_ROOT%\hermes_launch.log"
 
@@ -129,103 +122,27 @@ shift
 cd /d "%REPO_ROOT%"
 
 rem Eerst venster + schone console (vóór alle echo) — voorkomt buffer-corruptie en muiscapture.
-powershell -NoProfile -ExecutionPolicy Bypass -Command ". '%REPO_ROOT%\windows\HermesShellCommon.ps1'; Reset-HermesConsoleInputModes; Invoke-HermesDisableConsoleQuickEdit; if ($env:HERMES_SKIP_CONSOLE_MAXIMIZE -ne '1') { [void][Invoke-HermesExpandConsoleWindow] }; try { Clear-Host } catch { }; Reset-HermesConsoleInputModes" 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command ". '%REPO_ROOT%\windows\HermesShellCommon.ps1'; Reset-HermesConsoleInputModes; Invoke-HermesDisableConsoleQuickEdit; if ($env:HERMES_SKIP_CONSOLE_MAXIMIZE -ne '1') { [void](Invoke-HermesExpandConsoleWindow) }; try { Clear-Host } catch { }; Reset-HermesConsoleInputModes" 2>nul
 cls >nul 2>&1
 
 if /I "!HERMES_MINIMAL_LAUNCH!"=="1" goto :launch_chat
 
-net session >nul 2>&1
-if %errorLevel% equ 0 (
-    echo %CYAAN%[INFO] Environment: Administrator%RESET%
-) else (
-    echo %CYAAN%[INFO] Environment: gebruiker ^(aanbevolen voor TrueColor in WT^)%RESET%
-)
-echo %CYAAN%[INFO] Window State: Maximized%RESET%
-echo %CYAAN%[INFO] Directory: %CD%%RESET%
-echo ----------------------------------------------------
-
-rem ==========================================
-rem  Docker Auto-Start & Verification
-rem ==========================================
-if /I "!HERMES_SKIP_DOCKER_ON_START!"=="1" goto :docker_done
-echo %CYAAN%[INFO] Checking Docker daemon status...%RESET%
-docker info >nul 2>&1
-if %errorLevel% equ 0 (
-    echo %GROEN%[OK] Docker is already running.%RESET%
-    goto :docker_done
-)
-
-echo [INFO] Docker is not running. Booting Docker Desktop...
-echo [%DATE% %TIME%] Booting Docker Desktop... >> "%LAUNCH_LOG%"
-
-if exist "C:\Program Files\Docker\Docker\Docker Desktop.exe" (
-    start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
-) else (
-    echo [WARNING] Docker Desktop not found at standard location.
-    goto :docker_done
-)
-
-echo [INFO] Waiting for Docker Engine to initialize (this takes ~10-30 seconds)...
-set DOCKER_RETRY=0
-
-:docker_poll
-timeout /t 5 /nobreak >nul
-docker info >nul 2>&1
-if %errorLevel% equ 0 (
-    echo %GROEN%[INFO] Docker is fully loaded and ready!%RESET%
-    goto :docker_done
-)
-set /a DOCKER_RETRY+=1
-if %DOCKER_RETRY% geq 12 (
-    echo %GOUD%[WARNING] Docker takes too long to start. We are continuing anyway...%RESET%
-    echo [%DATE% %TIME%] WARNING: Docker timeout >> "%LAUNCH_LOG%"
-    goto :docker_done
-)
-goto :docker_poll
-
-:docker_done
-if /I not "!HERMES_SKIP_DOCKER_ON_START!"=="1" echo ----------------------------------------------------
-
-rem Step 1: lichte bootstrap (geen volledige SETUP bij elke start)
-echo %CYAAN%[INFO] Bootstrap ^(conda + optioneel RAG-stamp^)...%RESET%
-if /I "!CLEAN_ARGS!"=="--setup" goto :run_full_setup
-echo !CLEAN_ARGS!| findstr /I "\-\-setup" >nul && goto :run_full_setup
-if defined HERMES_RUN_FULL_SETUP_ON_LAUNCH goto :run_full_setup
-if defined CLEAN_ARGS (set "HERMES_LAUNCH_ARGS=!CLEAN_ARGS!") else (set "HERMES_LAUNCH_ARGS=")
-powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/scripts/launch_bootstrap.ps1" -RepoRoot "%REPO_ROOT%"
-if !errorLevel! neq 0 (
-    echo %ROOD%[ERROR] Bootstrap mislukt.%RESET%
-    pause
-    exit /b !errorLevel!
-)
-goto :after_setup
-
-:run_full_setup
-echo %GOUD%[INFO] Volledige setup ^(SETUP_HERMES / --setup^)...%RESET%
-powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/scripts/windows/setup_hermes_windows.ps1" !CLEAN_ARGS!
-if !errorLevel! neq 0 (
-    echo %ROOD%[ERROR] Setup failed. Check hermes_setup.log for details.%RESET%
-    echo [%DATE% %TIME%] ERROR: Setup failed with exit code !errorLevel! >> "%LAUNCH_LOG%"
-    pause
-    exit /b !errorLevel!
-)
-
-:after_setup
-
-rem --- Pre-chat orchestrator (SOUL, institutional, trust, dashboard; bootstrap al gedaan) ---
 set "HERMES_LAUNCH_LOG=!LAUNCH_LOG!"
 set "HERMES_REPO_ROOT=!REPO_ROOT!"
-rem RepoRoot via HERMES_REPO_ROOT (geen -RepoRoot in cmd-args — voorkomt quote/drive "D-bug).
-set "ORCH_ARGS=-SkipBootstrap"
-echo !CLEAN_ARGS!| findstr /I "\-\-institutional-e2e" >nul && set "ORCH_ARGS=!ORCH_ARGS! -RunInstitutionalE2E"
-if defined HERMES_INSTITUTIONAL_E2E_ON_START set "ORCH_ARGS=!ORCH_ARGS! -RunInstitutionalE2E"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/scripts/launch_pre_chat_orchestrator.ps1" !ORCH_ARGS!
+set "LAUNCH_PS_ARGS="
+echo !CLEAN_ARGS!| findstr /I "\-\-setup" >nul && set "LAUNCH_PS_ARGS=-Setup"
+if /I "!CLEAN_ARGS!"=="--setup" set "LAUNCH_PS_ARGS=-Setup"
+if defined HERMES_RUN_FULL_SETUP_ON_LAUNCH set "LAUNCH_PS_ARGS=-Setup"
+echo !CLEAN_ARGS!| findstr /I "\-\-institutional-e2e" >nul && set "LAUNCH_PS_ARGS=!LAUNCH_PS_ARGS! -RunInstitutionalE2E"
+if defined HERMES_INSTITUTIONAL_E2E_ON_START set "LAUNCH_PS_ARGS=!LAUNCH_PS_ARGS! -RunInstitutionalE2E"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%/windows/scripts/launch_hermes.ps1" !LAUNCH_PS_ARGS!
 if !errorLevel! neq 0 (
-  echo %ROOD%[ERROR] Pre-chat orchestrator mislukt ^(exit !errorLevel!^).%RESET%
-  echo [%DATE% %TIME%] ERROR: pre-chat orchestrator exit !errorLevel! >> "%LAUNCH_LOG%"
+  echo %ROOD%[ERROR] Pre-chat launch mislukt ^(exit !errorLevel!^).%RESET%
+  echo [%DATE% %TIME%] ERROR: launch_hermes.ps1 exit !errorLevel! >> "%LAUNCH_LOG%"
   pause
   exit /b !errorLevel!
 )
+goto :launch_chat
 
 :launch_chat
 echo %GROEN%[INFO] Hermes Agent starten...%RESET%

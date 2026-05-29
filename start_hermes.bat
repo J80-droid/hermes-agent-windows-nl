@@ -64,7 +64,7 @@ if errorlevel 1 goto do_git_pull_and_sync
 goto apply_launch_profile
 
 :maybe_auto_pull_before_start
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0windows\scripts\Test-HermesGitPullNeeded.ps1" -RepoRoot "%CD%"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0windows\scripts\Test-HermesGitPullNeeded.ps1" -RepoRoot "%CD%" -Quiet
 exit /b %ERRORLEVEL%
 
 :do_git_pull_and_sync

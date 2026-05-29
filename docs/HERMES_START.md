@@ -24,7 +24,7 @@ Override conda-pad: `HERMES_PYTHON` of `HERMES_CONDA_ROOT` (zie `HermesPythonPol
 | Laag | Commando |
 |------|----------|
 | Interpreter + IDE | `windows\REPAIR_PYTHON.bat` |
-| RAG-deps `[rag]` | Automatisch bij start (`launch_bootstrap.ps1`; stamp alleen na succes) of `install_rag_extras.ps1` |
+| RAG-deps `[rag]` | Automatisch bij start via `launch_pre_chat_orchestrator.ps1` → `launch_bootstrap.ps1` (stamp alleen na succes) of `install_rag_extras.ps1` |
 | LanceDB-index | `windows\scripts\update_knowledge.bat` |
 
 Productie-gate: `windows\audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`. Runbook: `docs/INSTITUTIONAL_OPERATIONS.md`.
@@ -107,7 +107,7 @@ Preflight, merge, RAG-postinstall en script-keten-verify zitten in het script. V
 | Na actie | Script |
 | -------- | ------ |
 | `git pull` | `windows/POST_GIT_PULL.bat` (trust + SOUL anatomy stamp + toolsets); optioneel `-IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E` / `-AutoRepairModelProvider` (auth/config split-brain) |
-| Hermes starten | `start_hermes.bat` → bootstrap + SOUL stamp-deploy + display (zie [SOUL_ANATOMY_SPEC.md](SOUL_ANATOMY_SPEC.md)) |
+| Hermes starten | `start_hermes.bat` → `launch_hermes.ps1` → orchestrator (bootstrap + SOUL stamp-deploy + display); zie [SOUL_ANATOMY_SPEC.md](SOUL_ANATOMY_SPEC.md) |
 | SOUL audit (stamp-keten) | `windows/audits/RUN_SOUL_DEPLOY_START_E2E.bat` |
 | Keten controleren (handmatig) | `windows/VERIFY_WINDOWS_CHAIN.bat` |
 | Setup + wizard | `windows/SETUP_HERMES.bat` (standaard) of `OPEN_SETUP.bat`; alleen bestanden: `--files-only` |

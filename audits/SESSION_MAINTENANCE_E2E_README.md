@@ -11,7 +11,7 @@ Geïsoleerde E2E voor **sessie-afhankelijk onderhoud**: stamp-helpers in `Hermes
 | S1 | Repo-artefacten | Maintenance-module, wrappers, tests, runner |
 | S2 | Stamp-API in shell common | Read/Write, skip-post-pull, git head, path-watch |
 | S3 | POST_GIT_PULL wiring | Conditional verify vóór trust; PostPullTail; POST_PULL_ERR |
-| S4 | Start/orchestrator wiring | `launch_pre_chat_orchestrator` + `-SkipBootstrap` + `-AllowFailure` dot-source |
+| S4 | Start/orchestrator wiring | `launch_hermes.bat` → `launch_hermes.ps1` → orchestrator (bootstrap in orchestrator) + `-AllowFailure` dot-source |
 | S5 | `start_hermes` sync cache | `Clear-HermesUpdateCheckCache` bij sync zonder relaunch |
 | S6 | Launch-profielen | full autorepair + minimal start-skips |
 | S7 | PowerShell parse | Maintenance + orchestrator + shell common |

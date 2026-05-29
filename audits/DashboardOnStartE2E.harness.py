@@ -41,10 +41,12 @@ def test_d1_repo_artefacts() -> None:
 
 def test_d2_launch_hermes_wiring() -> None:
     bat = _read("windows/launch_hermes.bat")
+    launch_ps1 = _read("windows/scripts/launch_hermes.ps1")
     orch = _read("windows/scripts/launch_pre_chat_orchestrator.ps1")
     dash_ps1 = _read("windows/scripts/launch_dashboard_on_start.ps1")
     checks = [
-        "launch_pre_chat_orchestrator.ps1" in bat,
+        "launch_hermes.ps1" in bat,
+        "launch_pre_chat_orchestrator.ps1" in launch_ps1,
         "launch_dashboard_on_start.ps1" in orch or "launch_dashboard_on_start.ps1" in dash_ps1,
         "HERMES_SKIP_DASHBOARD_ON_START" in orch or "HERMES_SKIP_DASHBOARD_ON_START" in dash_ps1,
         "HERMES_LAUNCH_LOG" in bat,
@@ -82,26 +84,37 @@ def test_d4_docs_mention() -> None:
 
 
 def test_d5_skip_env_exits_zero() -> None:
-    env = {**os.environ, "HERMES_SKIP_DASHBOARD_ON_START": "1"}
-    proc = subprocess.run(
-        [
-            "powershell",
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-File",
-            str(PS1),
-            "-RepoRoot",
-            str(REPO),
-        ],
-        cwd=str(REPO),
-        capture_output=True,
-        text=True,
-        timeout=60,
-        env=env,
-    )
-    ok = proc.returncode == 0 and "overgeslagen" in (proc.stdout or "").lower()
-    _step("HERMES_SKIP_DASHBOARD_ON_START=1", ok, f"exit={proc.returncode}")
+    import tempfile
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".log", delete=False, encoding="utf-8") as fh:
+        log_path = Path(fh.name)
+    try:
+        env = {
+            **os.environ,
+            "HERMES_SKIP_DASHBOARD_ON_START": "1",
+            "HERMES_LAUNCH_LOG": str(log_path),
+        }
+        proc = subprocess.run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(PS1),
+                "-RepoRoot",
+                str(REPO),
+            ],
+            cwd=str(REPO),
+            capture_output=True,
+            text=True,
+            timeout=60,
+            env=env,
+        )
+        ok = proc.returncode == 0 and log_path.is_file() and "overgeslagen" in log_path.read_text(encoding="utf-8").lower()
+        _step("HERMES_SKIP_DASHBOARD_ON_START=1", ok, f"exit={proc.returncode}")
+    finally:
+        log_path.unlink(missing_ok=True)
 
 
 def test_d6_invalid_port_fallback() -> None:

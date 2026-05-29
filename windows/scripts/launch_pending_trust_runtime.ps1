@@ -12,7 +12,7 @@ param(
 
 
 $ErrorActionPreference = 'Stop'
-
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 Import-Module (Join-Path $PSScriptRoot 'TrustRuntimePending.psm1') -Force
 
 
@@ -59,7 +59,7 @@ if ($env:HERMES_SKIP_PENDING_TRUST_ON_START -eq '1') {
 
     if (-not $Quiet) {
 
-        Write-Host '[INFO] Pending trust overgeslagen (HERMES_SKIP_PENDING_TRUST_ON_START=1).' -ForegroundColor DarkGray
+        Write-HermesLaunchUi -Message 'Pending trust overgeslagen (HERMES_SKIP_PENDING_TRUST_ON_START=1).' -Level Detail
 
     }
 
@@ -107,7 +107,7 @@ try {
 
 } catch {
 
-    Write-Host ('[FAIL] ' + $_.Exception.Message) -ForegroundColor Red
+    Write-HermesLaunchUi -Message $_.Exception.Message -Level Error -ForceConsole
 
     Write-PendingTrustRuntimeFallbackHint
 
@@ -121,20 +121,13 @@ $attempt = Register-PendingTrustRuntimeAttempt -RepoRoot $RepoRoot
 
 if (-not $Quiet) {
 
-    Write-Host ''
-
-    Write-Host '[INFO] Na update: geheugen en trust even afronden (~1 min)...' -ForegroundColor Cyan
-
+    Update-HermesLaunchActivity -Reason 'Pending trust afronden (~1 min)...'
+    Write-HermesLaunchUi -Message 'Na update: geheugen en trust even afronden (~1 min)...' -Level Info
     if ($data.reason) {
-
-        Write-Host "  Reden: $($data.reason)" -ForegroundColor DarkGray
-
+        Write-HermesLaunchUi -Message ('  Reden: ' + $data.reason) -Level Detail
     }
-
     if ($attempt -gt 1) {
-
-        Write-Host "  Poging $attempt van 3" -ForegroundColor DarkGray
-
+        Write-HermesLaunchUi -Message ('  Poging ' + $attempt + ' van 3') -Level Detail
     }
 
 }
@@ -145,7 +138,7 @@ $lightPs1 = Join-Path $PSScriptRoot 'Invoke-TrustRuntimeLight.ps1'
 
 if (-not (Test-Path -LiteralPath $lightPs1)) {
 
-    Write-Host '[FAIL] Invoke-TrustRuntimeLight.ps1 ontbreekt' -ForegroundColor Red
+    Write-HermesLaunchUi -Message 'Invoke-TrustRuntimeLight.ps1 ontbreekt' -Level Error -ForceConsole
 
     exit 1
 
@@ -153,15 +146,20 @@ if (-not (Test-Path -LiteralPath $lightPs1)) {
 
 if ($env:HERMES_PENDING_TRUST_E2E_DRY_RUN -eq '1') {
     if (-not $Quiet) {
-        Write-Host '[INFO] E2E dry-run: trust-nazorg overgeslagen (geen memory-sync).' -ForegroundColor DarkGray
+        Write-HermesLaunchUi -Message 'E2E dry-run: trust-nazorg overgeslagen (geen memory-sync).' -Level Detail
     }
     Clear-PendingTrustRuntime
     exit 0
 }
 
-& $lightPs1 -RepoRoot $RepoRoot -SkipProductionGate -Quiet:$Quiet
-
-$rc = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
+if (Test-HermesLaunchConsoleCapture) {
+    $rc = Invoke-HermesCapturedProcess -FilePath 'powershell.exe' -ArgumentList @(
+        '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $lightPs1, '-RepoRoot', $RepoRoot, '-SkipProductionGate', '-Quiet'
+    ) -Quiet -FilterNoise
+} else {
+    & $lightPs1 -RepoRoot $RepoRoot -SkipProductionGate -Quiet:$Quiet
+    $rc = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
+}
 
 if ($rc -ne 0) {
 
@@ -171,11 +169,9 @@ if ($rc -ne 0) {
 
     } else {
 
-        Write-Host '[WARN] Trust-nazorg mislukt - wordt opnieuw geprobeerd bij volgende start.' -ForegroundColor Yellow
-
-        Write-Host '  Handmatig: windows/APPLY_TRUST_PROTOCOL.bat (na backup)' -ForegroundColor DarkYellow
-
-        Write-Host '  Of: windows/scripts/repair_runtime_identity.ps1 && windows/SYNC_TRUST_RUNTIME.bat' -ForegroundColor DarkYellow
+        Write-HermesLaunchUi -Message 'Trust-nazorg mislukt - wordt opnieuw geprobeerd bij volgende start.' -Level Warn -ForceConsole
+        Write-HermesLaunchUi -Message '  Handmatig: windows/APPLY_TRUST_PROTOCOL.bat (na backup)' -Level Detail
+        Write-HermesLaunchUi -Message '  Of: windows/scripts/repair_runtime_identity.ps1 && windows/SYNC_TRUST_RUNTIME.bat' -Level Detail
 
     }
 

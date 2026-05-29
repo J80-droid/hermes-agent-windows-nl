@@ -1,3 +1,17 @@
+# Launch UI Sink E2E
+
+Geïsoleerde E2E voor console-overlap-fix, capture-contract en startketen `launch_hermes.bat` → `launch_hermes.ps1` → orchestrator. Geen live WT, geen chat.
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| L1–L8 | Zie `audits/LAUNCH_UI_SINK_E2E_README.md` | Wiring, EL `[2K`, quiet log, allowlist, unit gate |
+
+```bat
+audits\RUN_LAUNCH_UI_SINK_E2E.bat
+```
+
+---
+
 # Sessie-onderhoud (stamps) E2E
 
 Geïsoleerde E2E voor stamp-helpers, `HermesSessionMaintenance.ps1` (start + post-pull tail), orchestrator-wiring en POST_GIT_PULL-integratie. Geen live git pull / WT-relaunch / volledige RAG.

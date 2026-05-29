@@ -377,10 +377,12 @@ class TestPendingTrustRepoWiring:
 
     def test_launch_hermes_wires_pending_trust_runtime(self):
         launch = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
+        launch_ps1 = (REPO / "windows/scripts/launch_hermes.ps1").read_text(encoding="utf-8")
         orch = (REPO / "windows/scripts/launch_pre_chat_orchestrator.ps1").read_text(
             encoding="utf-8"
         )
-        assert "launch_pre_chat_orchestrator.ps1" in launch
+        assert "launch_hermes.ps1" in launch
+        assert "launch_pre_chat_orchestrator.ps1" in launch_ps1
         assert "launch_trust_runtime_sync.ps1" in orch
         assert "launch_pending_trust_runtime.ps1" in orch
         assert "HERMES_SKIP_PENDING_TRUST_ON_START" in orch

@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 REPO = Path(__file__).resolve().parents[2]
 
 CRITICAL = [
@@ -26,7 +28,9 @@ CRITICAL = [
     "windows/scripts/launch_in_windows_terminal.ps1",
     "windows/scripts/hermes_disable_quickedit.ps1",
     "windows/scripts/hermes_prepare_console_for_chat.ps1",
-    "windows/verify_windows_script_chain.ps1",
+    "windows/scripts/launch_hermes.ps1",
+    "windows/HermesLaunchUi.ps1",
+    "windows/HermesShellCommon.ps1",
     "windows/LANCEDB_MAINTENANCE.bat",
     "scripts/rag_pipeline/lancedb_maintenance.py",
     "windows/HermesSetupScriptPolicy.ps1",
@@ -82,7 +86,9 @@ def test_orchestrator_routing_doc_exists():
     assert (REPO / "windows/APPLY_INSTITUTIONAL_RUNTIME.bat").is_file()
     assert (REPO / "windows/scripts/launch_institutional_runtime.ps1").is_file()
     bat = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
-    assert "launch_pre_chat_orchestrator.ps1" in bat
+    launch_ps1 = (REPO / "windows/scripts/launch_hermes.ps1").read_text(encoding="utf-8")
+    assert "launch_hermes.ps1" in bat
+    assert "launch_pre_chat_orchestrator.ps1" in launch_ps1
     assert (REPO / "tests/cli/test_institutional_profile_chat_ux.py").is_file()
     assert (REPO / "hermes_cli/institutional_render.py").is_file()
     assert (REPO / "tests/cli/test_institutional_rich_render.py").is_file()
@@ -94,9 +100,11 @@ def test_orchestrator_routing_doc_exists():
     assert (REPO / "scripts/emit_codebase_smoke_report.py").is_file()
     prepare_text = (REPO / "windows/run_hermes_prepare.ps1").read_text(encoding="utf-8")
     launch_bat = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
+    launch_ps1 = (REPO / "windows/scripts/launch_hermes.ps1").read_text(encoding="utf-8")
     orch_ps1 = (REPO / "windows/scripts/launch_pre_chat_orchestrator.ps1").read_text(encoding="utf-8")
     assert "ensure_hermes_launch_env.ps1" in prepare_text
-    assert "launch_pre_chat_orchestrator.ps1" in launch_bat
+    assert "launch_hermes.ps1" in launch_bat
+    assert "launch_pre_chat_orchestrator.ps1" in launch_ps1
     assert "hermes_chat.cmd" in launch_bat
     assert "launch_pending_trust_runtime.ps1" in orch_ps1
 
@@ -165,13 +173,58 @@ def test_windows_requirements_lists_windows_terminal():
 
 
 def test_launch_hermes_skips_docker_when_env_set():
-    launch = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
-    assert "HERMES_SKIP_DOCKER_ON_START" in launch
-    assert "goto :docker_done" in launch
+    orch = (REPO / "windows/scripts/launch_pre_chat_orchestrator.ps1").read_text(encoding="utf-8")
+    profiles = (REPO / "windows/launch_profiles.ps1").read_text(encoding="utf-8")
+    launch_ui = (REPO / "windows/HermesLaunchUi.ps1").read_text(encoding="utf-8")
+    assert "HERMES_SKIP_DOCKER_ON_START" in orch
+    assert "Invoke-HermesDockerPreflight" in launch_ui
+    assert "HERMES_SKIP_DOCKER_ON_START" in profiles
+
+
+def test_launch_ui_sink_wiring():
+    bat = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
+    ps1 = (REPO / "windows/scripts/launch_hermes.ps1").read_text(encoding="utf-8")
+    common = (REPO / "windows/HermesShellCommon.ps1").read_text(encoding="utf-8")
+    assert (REPO / "windows/HermesLaunchUi.ps1").is_file()
+    assert (REPO / "windows/scripts/launch_hermes.ps1").is_file()
+    assert "launch_hermes.ps1" in bat
+    assert "launch_pre_chat_orchestrator.ps1" in ps1
+    assert "-SkipBootstrap" not in ps1
+    assert "launch_bootstrap.ps1" not in bat
+    assert "HermesLaunchUi.ps1" in common
+    assert "Write-HermesLaunchUi" in common
+    assert "Invoke-HermesLaunchPhase" in common
+
+
+LAUNCH_UI_ALLOWLIST = [
+    "windows/scripts/launch_hermes.ps1",
+    "windows/scripts/launch_pre_chat_orchestrator.ps1",
+    "windows/scripts/launch_bootstrap.ps1",
+    "windows/scripts/launch_soul_anatomy_deploy.ps1",
+    "windows/scripts/launch_trust_runtime_sync.ps1",
+    "windows/scripts/launch_institutional_runtime.ps1",
+    "windows/scripts/launch_pending_trust_runtime.ps1",
+    "windows/scripts/launch_dashboard_on_start.ps1",
+    "windows/scripts/HermesSessionMaintenance.ps1",
+    "windows/apply_institutional_runtime.ps1",
+    "windows/scripts/Invoke-TrustRuntimeLight.ps1",
+    "windows/scripts/sync_all_domain_souls_from_templates.ps1",
+    "windows/scripts/install_rag_extras.ps1",
+]
+
+
+@pytest.mark.parametrize("rel_path", LAUNCH_UI_ALLOWLIST)
+def test_launch_path_scripts_use_launch_ui_not_write_host(rel_path: str):
+    path = REPO / rel_path
+    assert path.is_file(), f"{rel_path} ontbreekt"
+    text = path.read_text(encoding="utf-8")
+    assert "Write-Host" not in text, f"{rel_path} mag geen Write-Host gebruiken (Launch UI Sink)"
+    assert "-NoNewline" not in text, f"{rel_path} mag geen -NoNewline gebruiken"
 
 
 def test_launch_pre_chat_orchestrator_and_maximize():
     launch = (REPO / "windows/launch_hermes.bat").read_text(encoding="utf-8")
+    launch_ps1 = (REPO / "windows/scripts/launch_hermes.ps1").read_text(encoding="utf-8")
     common = (REPO / "windows/HermesShellCommon.ps1").read_text(encoding="utf-8")
     assert (REPO / "windows/scripts/launch_pre_chat_orchestrator.ps1").is_file()
     assert (REPO / "windows/scripts/maximize_console.ps1").is_file()
@@ -179,7 +232,8 @@ def test_launch_pre_chat_orchestrator_and_maximize():
     assert "System32\\cmd.exe" in launch
     assert "Invoke-HermesDisableConsoleQuickEdit" in launch
     assert (REPO / "windows/scripts/hermes_disable_quickedit.ps1").is_file()
-    assert "launch_pre_chat_orchestrator.ps1" in launch
+    assert "launch_hermes.ps1" in launch
+    assert "launch_pre_chat_orchestrator.ps1" in launch_ps1
     assert "Invoke-HermesExpandConsoleWindow" in launch or "Invoke-HermesExpandConsoleWindow" in common
     assert "auto-expand werkgebied" in launch or "Invoke-HermesExpandConsoleWindow" in launch
     assert "Invoke-HermesLaunchPhase" in common

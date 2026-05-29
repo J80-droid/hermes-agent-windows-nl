@@ -1078,14 +1078,15 @@ def _load_auth_store(auth_file: Optional[Path] = None) -> Dict[str, Any]:
             shutil.copy2(auth_file, corrupt_path)
         except Exception:
             pass
-        logger.error(
-            "auth: failed to parse %s (%s). Corrupt file preserved at %s. "
-            "Restore from backup or run windows\\REPAIR_MODEL_PROVIDER.bat / "
-            "'hermes doctor --fix' after fixing credentials.",
-            auth_file,
-            exc,
-            corrupt_path,
-        )
+        if os.environ.get("HERMES_SUPPRESS_AUTH_CORRUPT_LOG") != "1":
+            logger.error(
+                "auth: failed to parse %s (%s). Corrupt file preserved at %s. "
+                "Restore from backup or run windows\\REPAIR_MODEL_PROVIDER.bat / "
+                "'hermes doctor --fix' after fixing credentials.",
+                auth_file,
+                exc,
+                corrupt_path,
+            )
         global _AUTH_CORRUPT_REPAIR_IN_PROGRESS
         if not _AUTH_CORRUPT_REPAIR_IN_PROGRESS:
             _AUTH_CORRUPT_REPAIR_IN_PROGRESS = True

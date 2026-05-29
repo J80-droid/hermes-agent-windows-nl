@@ -38,6 +38,9 @@ def test_ps1_skip_env_flags(ps1_text: str) -> None:
     assert "HERMES_DASHBOARD_OPEN_PATH" in ps1_text
     assert "Initialize-WorkspaceDashboardPlugins" in ps1_text
     assert "Install-HermesWebDashboardPackage" in ps1_text
+    assert "Test-HermesNeedsWebDashboardPipInstall" in ps1_text
+    assert "Write-HermesWebDashboardDepsManifest" in ps1_text
+    assert "Test-HermesCodebaseVizPygountCacheMismatch" in ps1_text
     assert "[web]" in ps1_text
     assert "Stop-HermesDashboardProcess" in ps1_text
     assert "CODEBASE_VIZ_PYGOUNT_TIMEOUT" in ps1_text
@@ -78,8 +81,10 @@ def test_ps1_no_unicode_em_dash_in_strings(ps1_text: str) -> None:
 
 def test_launch_hermes_bat_wires_script() -> None:
     bat = BAT.read_text(encoding="utf-8")
+    launch_ps1 = (REPO / "windows/scripts/launch_hermes.ps1").read_text(encoding="utf-8")
     orch = (REPO / "windows/scripts/launch_pre_chat_orchestrator.ps1").read_text(encoding="utf-8")
-    assert "launch_pre_chat_orchestrator.ps1" in bat
+    assert "launch_hermes.ps1" in bat
+    assert "launch_pre_chat_orchestrator.ps1" in launch_ps1
     assert "launch_dashboard_on_start.ps1" in orch
     assert "HERMES_SKIP_DASHBOARD_ON_START" in orch
     assert "HERMES_DASHBOARD_ON_START" in orch
@@ -93,7 +98,8 @@ def test_launch_hermes_bat_wires_script() -> None:
     assert 'set "HERMES_DASHBOARD_OPEN_PATH=/codebase-viz"' not in bat
 
 
-def test_skip_env_exits_zero_quickly() -> None:
+def test_skip_env_exits_zero_quickly(tmp_path: Path) -> None:
+    log_path = tmp_path / "hermes_launch.log"
     proc = subprocess.run(
         [
             "powershell",
@@ -109,10 +115,15 @@ def test_skip_env_exits_zero_quickly() -> None:
         capture_output=True,
         text=True,
         timeout=90,
-        env={**os.environ, "HERMES_SKIP_DASHBOARD_ON_START": "1"},
+        env={
+            **os.environ,
+            "HERMES_SKIP_DASHBOARD_ON_START": "1",
+            "HERMES_LAUNCH_LOG": str(log_path),
+        },
     )
     assert proc.returncode == 0
-    assert "overgeslagen" in (proc.stdout or "").lower()
+    assert log_path.is_file()
+    assert "overgeslagen" in log_path.read_text(encoding="utf-8").lower()
 
 
 def test_on_start_zero_exits_zero() -> None:
@@ -163,6 +174,14 @@ def test_quiet_still_writes_launch_log(tmp_path: Path) -> None:
     assert proc.returncode == 0
     assert log_path.is_file()
     assert "overgeslagen" in log_path.read_text(encoding="utf-8").lower()
+
+
+def test_fix_codebase_viz_cache_bat_exists() -> None:
+    bat = REPO / "windows" / "FIX_CODEBASE_VIZ_CACHE.bat"
+    repair = REPO / "windows" / "scripts" / "Repair-CodebaseVizPygountCache.ps1"
+    assert bat.is_file()
+    assert repair.is_file()
+    assert "Repair-CodebaseVizPygountCache.ps1" in bat.read_text(encoding="utf-8")
 
 
 def test_docs_institutional_operations_mention() -> None:

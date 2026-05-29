@@ -11,9 +11,17 @@ param(
 $ErrorActionPreference = 'Stop'
 $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
 . (Join-Path $scriptDir 'HermesHomeCommon.ps1')
+. (Join-Path (Split-Path -Parent $scriptDir) 'HermesShellCommon.ps1')
 
 $root = Initialize-UserHermesHomeRoot -FixUserEnv:$FixUserEnv
-Write-Host ('[INFO] HERMES_HOME=' + $root) -ForegroundColor Cyan
+$homeLine = '[INFO] HERMES_HOME=' + $root
+if ($global:HermesLaunchVisualState -and $global:HermesLaunchVisualState.SpinnerActive) {
+    Add-HermesLaunchLogLine -Message $homeLine
+} elseif ((Get-Command Test-HermesLaunchConsoleCapture -ErrorAction SilentlyContinue) -and (Test-HermesLaunchConsoleCapture)) {
+    Add-HermesLaunchLogLine -Message $homeLine
+} else {
+    Write-Host $homeLine -ForegroundColor Cyan
+}
 
 if (-not $SkipVerify) {
     $verify = Join-Path $scriptDir 'verify_hermes_home.ps1'

@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -30,8 +31,16 @@ except ImportError as exc:
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PLUGIN_API = REPO_ROOT / "plugins" / "codebase-viz" / "dashboard" / "plugin_api.py"
 
+from tests.plugins.conftest import apply_isolated_pygount_cache_to_module  # noqa: E402
 
-def _load_plugin_module(monkeypatch, repo_path: Path | None, *, env_value: str | None = None):
+
+def _load_plugin_module(
+    monkeypatch,
+    repo_path: Path | None,
+    *,
+    env_value: str | None = None,
+    cache_path: Path | None = None,
+):
     if env_value is None and repo_path is not None:
         monkeypatch.setenv("CODEBASE_VIZ_REPO", str(repo_path))
     elif env_value is not None:
@@ -39,16 +48,23 @@ def _load_plugin_module(monkeypatch, repo_path: Path | None, *, env_value: str |
     else:
         monkeypatch.delenv("CODEBASE_VIZ_REPO", raising=False)
 
+    if cache_path is None:
+        env_cache = os.environ.get("CODEBASE_VIZ_PYGOUNT_CACHE_PATH", "").strip()
+        if env_cache:
+            cache_path = Path(env_cache)
+
     if str(REPO_ROOT) not in sys.path:
         sys.path.insert(0, str(REPO_ROOT))
 
     spec = importlib.util.spec_from_file_location(
-        f"codebase_viz_plugin_api_test_{id(repo_path)}",
+        f"codebase_viz_plugin_api_test_{id(repo_path)}_{id(cache_path)}",
         PLUGIN_API,
     )
     mod = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(mod)
+    if cache_path is not None:
+        apply_isolated_pygount_cache_to_module(mod, cache_path)
     asyncio.run(mod._invalidate_cache())
     mod._initialized = False
     if repo_path is not None:
@@ -57,19 +73,8 @@ def _load_plugin_module(monkeypatch, repo_path: Path | None, *, env_value: str |
 
 
 @pytest.fixture
-def tiny_repo(tmp_path):
-    (tmp_path / ".git").mkdir()
-    pkg = tmp_path / "pkg"
-    pkg.mkdir()
-    (pkg / "a.py").write_text("import os\n# TODO: fix\n", encoding="utf-8")
-    (pkg / "b.py").write_text("from pkg import a\n", encoding="utf-8")
-    (pkg / "bad.py").write_text("def (\n", encoding="utf-8")
-    return tmp_path
-
-
-@pytest.fixture
-def plugin_module(monkeypatch, tiny_repo):
-    return _load_plugin_module(monkeypatch, tiny_repo)
+def plugin_module(monkeypatch, tiny_repo, isolated_pygount_cache):
+    return _load_plugin_module(monkeypatch, tiny_repo, cache_path=isolated_pygount_cache)
 
 
 @pytest.fixture
@@ -907,9 +912,9 @@ def test_background_refresh_signature_delta_refreshes_core_sets(plugin_module, m
     assert "dependencies" in calls
 
 
-def test_pygount_disk_cache_roundtrip(plugin_module, tiny_repo, tmp_path, monkeypatch):
-    cache_path = tmp_path / "pygount_cache.json"
-    monkeypatch.setitem(plugin_module._state_paths, "pygount_disk", cache_path)
+def test_pygount_disk_cache_roundtrip(tiny_git_repo, isolated_pygount_cache, monkeypatch):
+    plugin_module = _load_plugin_module(monkeypatch, tiny_git_repo, cache_path=isolated_pygount_cache)
+    cache_path = isolated_pygount_cache
     monkeypatch.setenv("CODEBASE_VIZ_PYGOUNT_DISK_CACHE", "1")
     monkeypatch.setattr(plugin_module, "_compute_repo_signature", lambda _repo: "test-signature")
     bundle = {
@@ -923,15 +928,13 @@ def test_pygount_disk_cache_roundtrip(plugin_module, tiny_repo, tmp_path, monkey
     assert loaded["file_rows"][0]["path"] == "pkg/a.py"
 
 
-def test_warm_pygount_cache_script_check_only(tiny_repo, tmp_path, monkeypatch):
+def test_warm_pygount_cache_script_check_only(tiny_git_repo, isolated_pygount_cache, monkeypatch):
     warm_script = REPO_ROOT / "scripts" / "warm_codebase_viz_pygount_cache.py"
     if not warm_script.is_file():
         pytest.skip("warm_codebase_viz_pygount_cache.py ontbreekt")
 
-    cache_dir = tiny_repo / "output" / "research"
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    cache_path = cache_dir / "codebase_viz_pygount_cache.json"
-    monkeypatch.setenv("CODEBASE_VIZ_REPO", str(tiny_repo))
+    cache_path = isolated_pygount_cache
+    monkeypatch.setenv("CODEBASE_VIZ_REPO", str(tiny_git_repo))
     monkeypatch.setenv("CODEBASE_VIZ_PYGOUNT_CACHE_PATH", str(cache_path))
     monkeypatch.setenv("CODEBASE_VIZ_PYGOUNT_DISK_CACHE", "1")
 
@@ -942,7 +945,7 @@ def test_warm_pygount_cache_script_check_only(tiny_repo, tmp_path, monkeypatch):
 
     assert warm_mod.main(["--check-only"]) == 2
 
-    plugin = _load_plugin_module(monkeypatch, tiny_repo)
+    plugin = _load_plugin_module(monkeypatch, tiny_git_repo, cache_path=cache_path)
     plugin._write_pygount_disk_cache(
         {
             "summary": {"total_files": 1},

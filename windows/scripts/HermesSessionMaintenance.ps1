@@ -42,13 +42,13 @@ $script:MaintQuiet = [bool]$Quiet.IsPresent
 function Write-Maint {
     param([string]$Message, [string]$Level = 'Info')
     if ($script:MaintQuiet -and $Level -eq 'Info') { return }
-    $color = switch ($Level) {
-        'Ok' { 'Green' }
-        'Warn' { 'Yellow' }
-        'Error' { 'Red' }
-        default { 'Cyan' }
+    $uiLevel = switch ($Level) {
+        'Ok' { 'Ok' }
+        'Warn' { 'Warn' }
+        'Error' { 'Error' }
+        default { 'Info' }
     }
-    Write-Host $Message -ForegroundColor $color
+    Write-HermesLaunchUi -Message $Message -Level $uiLevel
 }
 
 function Test-HermesShortcutFixAllowed {
@@ -109,11 +109,11 @@ function Invoke-HermesConfigDriftWarn {
     if ($env:HERMES_MINIMAL_LAUNCH -eq '1') { return 0 }
     $ok = Test-HermesConfigDrift -Quiet
     if ($ok) { return 0 }
-    Write-Host ''
-    Write-Host '[WARN] Config drift gedetecteerd (start = alleen waarschuwing).' -ForegroundColor Yellow
-    Write-Host '       windows\VERIFY_HERMES_CONFIG_DRIFT.bat' -ForegroundColor DarkGray
-    Write-Host '       windows\APPLY_HERMES_HOME_MIGRATION.bat' -ForegroundColor DarkGray
-    Write-Host ''
+    Write-HermesLaunchUi -Message '' -Level Info
+    Write-HermesLaunchUi -Message '[WARN] Config drift gedetecteerd (start = alleen waarschuwing).' -Level Warn -ForceConsole
+    Write-HermesLaunchUi -Message '       windows\VERIFY_HERMES_CONFIG_DRIFT.bat' -Level Detail
+    Write-HermesLaunchUi -Message '       windows\APPLY_HERMES_HOME_MIGRATION.bat' -Level Detail
+    Write-HermesLaunchUi -Message '' -Level Info
     return 0
 }
 

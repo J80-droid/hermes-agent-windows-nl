@@ -12,8 +12,11 @@
 #   HERMES_DASHBOARD_WINDOW_STYLE      - hidden (default) | minimized | normal
 #   HERMES_LAUNCH_LOG                 - optioneel: append statusregels (ook bij -Quiet)
 #   HERMES_CODEBASE_VIZ_SKIP_BUILD=1  - geen npm run build bij verouderde src
+#   HERMES_CODEBASE_VIZ_PREGOUNT_CACHE - skip|0 = geen pygount pre-warm bij start
 #   HERMES_CODEBASE_VIZ_WARMUP        - auto (default): force-scan na health | incremental | 0/skip
-# Workspace plugins/codebase-viz: zet HERMES_BUNDLED_PLUGINS + pip install -e .[web]
+#   HERMES_FORCE_DASHBOARD_PIP=1      - forceer pip install -e .[web] (normaal: manifest in %LOCALAPPDATA%\hermes\web-dashboard-deps.json)
+# Workspace plugins/codebase-viz: HERMES_BUNDLED_PLUGINS; pip alleen bij gewijzigde pyproject/package.json.
+# Ongeldige pygount-cache (bijv. pytest-temp): auto-verwijderd; handmatig: windows\FIX_CODEBASE_VIZ_CACHE.bat
 #
 # Tests: pytest tests/windows/test_launch_dashboard_on_start.py
 # E2E:    audits/RUN_DASHBOARD_ON_START_E2E.bat
@@ -46,9 +49,14 @@ function Write-LaunchLogAppend {
 
 function Write-DashLog {
     param([string]$Message, [string]$Color = 'Cyan')
-    Write-LaunchLogAppend $Message
+    Add-HermesLaunchLogLine -Message $Message
     if ($script:DashQuiet) { return }
-    Write-Host $Message -ForegroundColor $Color
+    $level = 'Info'
+    if ($Color -eq 'Yellow') { $level = 'Warn' }
+    elseif ($Color -eq 'Green') { $level = 'Ok' }
+    elseif ($Color -eq 'Red') { $level = 'Error' }
+    elseif ($Color -eq 'DarkGray' -or $Color -eq 'Gray') { $level = 'Detail' }
+    [void](Write-HermesLaunchUi -Message $Message -Level $level)
 }
 
 function Get-DashboardConnectHost {
@@ -97,12 +105,14 @@ function Initialize-WorkspaceDashboardPlugins {
     param([string]$RepoRoot)
     $pluginsRoot = Join-Path $RepoRoot 'plugins'
     $manifest = Join-Path $pluginsRoot 'codebase-viz\dashboard\manifest.json'
-    if (-not (Test-Path -LiteralPath $manifest)) { return }
+    if (-not (Test-Path -LiteralPath $manifest)) {
+        return [pscustomobject]@{ BundledPlugins = $false; DistRebuilt = $false }
+    }
 
     $env:HERMES_BUNDLED_PLUGINS = $pluginsRoot
     Write-DashLog "[INFO] HERMES_BUNDLED_PLUGINS=$pluginsRoot" -Color DarkGray
     if (-not $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT) {
-        $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT = '600'
+        $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT = '240'
     }
     if (-not $env:CODEBASE_VIZ_TTL) {
         $env:CODEBASE_VIZ_TTL = '300'
@@ -115,16 +125,17 @@ function Initialize-WorkspaceDashboardPlugins {
     if ($env:LOCALAPPDATA) {
         Move-AsideStaleCodebaseVizUserPlugin -Label 'localappdata' -PluginDir (Join-Path $env:LOCALAPPDATA 'hermes\plugins\codebase-viz')
     }
-    Update-CodebaseVizDistIfNeeded -RepoRoot $RepoRoot
+    $distRebuilt = Update-CodebaseVizDistIfNeeded -RepoRoot $RepoRoot
+    return [pscustomobject]@{ BundledPlugins = $true; DistRebuilt = [bool]$distRebuilt }
 }
 
 function Update-CodebaseVizDistIfNeeded {
     [CmdletBinding(SupportsShouldProcess)]
     param([string]$RepoRoot)
-    if ($env:HERMES_CODEBASE_VIZ_SKIP_BUILD -eq '1') { return }
+    if ($env:HERMES_CODEBASE_VIZ_SKIP_BUILD -eq '1') { return $false }
     $dashDir = Join-Path $RepoRoot 'plugins\codebase-viz\dashboard'
     $pkg = Join-Path $dashDir 'package.json'
-    if (-not (Test-Path -LiteralPath $pkg)) { return }
+    if (-not (Test-Path -LiteralPath $pkg)) { return $false }
 
     $dist = Join-Path $dashDir 'dist\index.js'
     $needsBuild = -not (Test-Path -LiteralPath $dist)
@@ -140,27 +151,41 @@ function Update-CodebaseVizDistIfNeeded {
             }
         }
     }
-    if (-not $needsBuild) { return }
-    if (-not $PSCmdlet.ShouldProcess($dashDir, 'Build Codebase Viz dist')) { return }
+    if (-not $needsBuild) { return $false }
+    if (-not $PSCmdlet.ShouldProcess($dashDir, 'Build Codebase Viz dist')) { return $false }
 
     if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
         Write-DashLog '[WARN] Codebase Viz: dist verouderd maar npm niet op PATH.' -Color Yellow
-        return
+        return $false
     }
+    Update-HermesLaunchActivity -Reason 'Codebase Viz: npm run build (kan enkele minuten)...'
     Write-DashLog '[INFO] Codebase Viz: npm run build (src nieuwer dan dist)...' -Color Cyan
+    $built = $false
     Push-Location -LiteralPath $dashDir
     try {
-        & npm run build 2>&1 | ForEach-Object { Write-LaunchLogAppend "$_" }
-        if ($LASTEXITCODE -ne 0) {
-            Write-DashLog '[WARN] Codebase Viz npm run build mislukt.' -Color Yellow
+        if ((Get-Command Test-HermesLaunchConsoleCapture -ErrorAction SilentlyContinue) -and (Test-HermesLaunchConsoleCapture)) {
+            $npmCode = Invoke-HermesCapturedProcess -FilePath 'npm.cmd' -ArgumentList @('run', 'build') -WorkingDirectory $dashDir -Quiet -FilterNoise
+            if ($npmCode -ne 0) {
+                Write-DashLog '[WARN] Codebase Viz npm run build mislukt.' -Color Yellow
+            } else {
+                Write-DashLog '[OK] Codebase Viz dist gebouwd.' -Color Green
+                $built = $true
+            }
         } else {
-            Write-DashLog '[OK] Codebase Viz dist gebouwd.' -Color Green
+            & npm run build 2>&1 | ForEach-Object { Write-LaunchLogAppend "$_" }
+            if ($LASTEXITCODE -ne 0) {
+                Write-DashLog '[WARN] Codebase Viz npm run build mislukt.' -Color Yellow
+            } else {
+                Write-DashLog '[OK] Codebase Viz dist gebouwd.' -Color Green
+                $built = $true
+            }
         }
     } catch {
         Write-DashLog "[WARN] Codebase Viz build: $($_.Exception.Message)" -Color Yellow
     } finally {
         Pop-Location
     }
+    return $built
 }
 
 function Get-CondaDashboardRunArgs {
@@ -234,19 +259,30 @@ function Install-HermesWebDashboardPackage {
     param(
         [string]$RepoRoot
     )
+    $requirePygount = [bool]$env:HERMES_BUNDLED_PLUGINS
+    if (-not (Test-HermesNeedsWebDashboardPipInstall -RepoRoot $RepoRoot -RequirePygount:$requirePygount)) {
+        Write-DashLog '[OK] Dashboard-deps up-to-date (web manifest).' -Color DarkGray
+        return $false
+    }
     $editable = "${RepoRoot}[web]"
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     $py = Get-DashboardPythonExe -RepoRoot $RepoRoot
+    $changed = $false
     try {
         if ($py) {
+            Update-HermesLaunchActivity -Reason 'Dashboard: pip install -e [web]...'
             $null = & $py -m pip install -e $editable -q 2>&1
-            if ($env:HERMES_BUNDLED_PLUGINS) {
+            if ($requirePygount) {
                 $null = & $py -m pip install pygount -q 2>&1
+            }
+            if ($LASTEXITCODE -eq 0) {
+                [void](Write-HermesWebDashboardDepsManifest -RepoRoot $RepoRoot -PythonExe $py -RequirePygount:$requirePygount)
+                $changed = $true
             }
         } else {
             Write-DashLog '[WARN] Geen Python voor pip install -e [web].' -Color Yellow
-            return
+            return $false
         }
         Write-DashLog '[INFO] Dashboard-deps bijgewerkt (editable + web + pygount).' -Color DarkGray
     } catch {
@@ -254,6 +290,7 @@ function Install-HermesWebDashboardPackage {
     } finally {
         $ErrorActionPreference = $prevEap
     }
+    return $changed
 }
 
 function Test-CodebaseVizHealth {
@@ -290,7 +327,7 @@ function Test-CodebaseVizHealth {
     }
     $hadTimeout = $null -ne $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT
     $prevTimeout = $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT
-    if (-not $hadTimeout) { $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT = '600' }
+    if (-not $hadTimeout) { $env:CODEBASE_VIZ_PYGOUNT_TIMEOUT = '240' }
     try {
         & $PythonExe $verify 2>&1 | ForEach-Object { Write-LaunchLogAppend $_ }
         if ($LASTEXITCODE -eq 0) {
@@ -335,18 +372,32 @@ function Ensure-CodebaseVizPygountCache {
     if (-not $env:CODEBASE_VIZ_REPO) {
         $env:CODEBASE_VIZ_REPO = $RepoRoot
     }
-    & $PythonExe $warmScript --check-only 2>&1 | ForEach-Object { Write-LaunchLogAppend $_ }
-    if ($LASTEXITCODE -eq 0) {
-        Write-DashLog '[OK] Codebase Viz pygount-schijfcache aanwezig.' -Color DarkGray
-        return
+    if (Test-HermesCodebaseVizPygountCacheMismatch -RepoRoot $RepoRoot) {
+        [void](Clear-HermesCodebaseVizPygountCache -RepoRoot $RepoRoot -Reason 'ongeldig repo-pad (bijv. pytest)')
     }
-    Write-DashLog '[INFO] Codebase Viz: eerste pygount-cache opbouwen (eenmalig, kan tot 10 min duren)...' -Color Cyan
+    $checkCode = Invoke-HermesCodebaseVizPygountCacheCheckOnly -RepoRoot $RepoRoot -PythonExe $PythonExe
+    if ($checkCode -eq 0) {
+        Write-DashLog '[OK] Codebase Viz pygount-schijfcache aanwezig.' -Color DarkGray
+        return $false
+    }
+    Write-DashLog '[INFO] Codebase Viz: pygount-cache opbouwen (eenmalig, kan tot 10 min duren)...' -Color Cyan
+    Update-HermesLaunchActivity -Reason 'Codebase Viz: pygount-cache opbouwen (tot ~10 min)...'
+    if ((Get-Command Test-HermesLaunchConsoleCapture -ErrorAction SilentlyContinue) -and (Test-HermesLaunchConsoleCapture)) {
+        $warmCode = Invoke-HermesCapturedProcess -FilePath $PythonExe -ArgumentList @($warmScript) -Quiet -FilterNoise
+        if ($warmCode -eq 0) {
+            Write-DashLog '[OK] Codebase Viz pygount-cache opgebouwd vóór dashboard-start.' -Color Green
+            return $true
+        }
+        Write-DashLog '[WARN] Codebase Viz pre-warm mislukt - dashboard bouwt cache later op.' -Color Yellow
+        return $false
+    }
     & $PythonExe $warmScript 2>&1 | ForEach-Object { Write-LaunchLogAppend $_ }
     if ($LASTEXITCODE -eq 0) {
         Write-DashLog '[OK] Codebase Viz pygount-cache opgebouwd vóór dashboard-start.' -Color Green
-    } else {
-        Write-DashLog '[WARN] Codebase Viz pre-warm mislukt - dashboard bouwt cache later op.' -Color Yellow
+        return $true
     }
+    Write-DashLog '[WARN] Codebase Viz pre-warm mislukt - dashboard bouwt cache later op.' -Color Yellow
+    return $false
 }
 
 function Invoke-CodebaseVizWarmupScan {
@@ -426,7 +477,9 @@ if ($port -lt 1 -or $port -gt 65535) {
 
 $hostAddr = if ($env:HERMES_DASHBOARD_HOST) { $env:HERMES_DASHBOARD_HOST.Trim() } else { '127.0.0.1' }
 
-Initialize-WorkspaceDashboardPlugins -RepoRoot $RepoRoot
+$vizInit = Initialize-WorkspaceDashboardPlugins -RepoRoot $RepoRoot
+$vizDistRebuilt = $false
+if ($vizInit) { $vizDistRebuilt = [bool]$vizInit.DistRebuilt }
 
 $condaPaths = @(
     (Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'),
@@ -465,9 +518,29 @@ function Test-DashboardPortInUse {
 }
 
 $workspacePlugins = [bool]$env:HERMES_BUNDLED_PLUGINS
+$dashPyEarly = Get-DashboardPythonExe -RepoRoot $RepoRoot
+$pipNeeded = Test-HermesNeedsWebDashboardPipInstall -RepoRoot $RepoRoot -RequirePygount:$workspacePlugins
+$pygountCacheOk = $false
+if ($workspacePlugins -and $dashPyEarly) {
+    if (Test-HermesCodebaseVizPygountCacheMismatch -RepoRoot $RepoRoot) {
+        [void](Clear-HermesCodebaseVizPygountCache -RepoRoot $RepoRoot -Reason 'pre-check')
+    }
+    $pygountCacheOk = (Invoke-HermesCodebaseVizPygountCacheCheckOnly -RepoRoot $RepoRoot -PythonExe $dashPyEarly) -eq 0
+}
 
 if ($workspacePlugins) {
-    Write-DashLog '[INFO] Workspace plugins: dashboard herstarten (voorkomt oude 30s pygount-cache).' -Color DarkGray
+    $dashboardAlreadyUp = Test-DashboardPortInUse -BindHost $hostAddr -BindPort $port
+    $canSkipRestart = (-not $pipNeeded) -and (-not $vizDistRebuilt) -and $pygountCacheOk -and $dashboardAlreadyUp
+    if ($canSkipRestart) {
+        Write-DashLog ("[OK] Dashboard al actief; deps/cache ongewijzigd - http://${hostAddr}:${port}/sessions") -Color Green
+        Open-DashboardBrowserIfRequested -BindHost $hostAddr -BindPort $port
+        exit 0
+    }
+    if ($pipNeeded -or $vizDistRebuilt -or -not $pygountCacheOk) {
+        Write-DashLog '[INFO] Workspace plugins: dashboard herstarten (deps, dist of pygount-cache gewijzigd).' -Color DarkGray
+    } else {
+        Write-DashLog '[INFO] Workspace plugins: dashboard herstarten.' -Color DarkGray
+    }
     Stop-HermesDashboardProcess -CondaExe $condaExe
 } else {
     if (Test-DashboardPortInUse -BindHost $hostAddr -BindPort $port) {
@@ -493,10 +566,10 @@ if ($workspacePlugins) {
     }
 }
 
-Install-HermesWebDashboardPackage -RepoRoot $RepoRoot
+$pipChanged = Install-HermesWebDashboardPackage -RepoRoot $RepoRoot
 
-$dashPy = Get-DashboardPythonExe -RepoRoot $RepoRoot
-Ensure-CodebaseVizPygountCache -RepoRoot $RepoRoot -PythonExe $dashPy
+$dashPy = if ($dashPyEarly) { $dashPyEarly } else { Get-DashboardPythonExe -RepoRoot $RepoRoot }
+[void](Ensure-CodebaseVizPygountCache -RepoRoot $RepoRoot -PythonExe $dashPy)
 
 $logDir = Join-Path $RepoRoot 'output\research\logs'
 if (-not (Test-Path -LiteralPath $logDir)) {

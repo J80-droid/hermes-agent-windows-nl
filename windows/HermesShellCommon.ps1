@@ -17,7 +17,16 @@ function Write-HermesTag {
         [Parameter(Mandatory)]
         [string]$Message
     )
-    Write-Host ($Tag + $Message)
+    $line = $Tag + $Message
+    if ($global:HermesLaunchVisualState -and $global:HermesLaunchVisualState.SpinnerActive) {
+        Add-HermesLaunchLogLine -Message $line
+        return
+    }
+    if ((Get-Command Test-HermesLaunchConsoleCapture -ErrorAction SilentlyContinue) -and (Test-HermesLaunchConsoleCapture)) {
+        Add-HermesLaunchLogLine -Message $line
+        return
+    }
+    Write-Host $line
 }
 
 function Write-HermesSection {
@@ -27,21 +36,37 @@ function Write-HermesSection {
 
 function Write-HermesInfo {
     param([string]$Message)
+    if (Test-HermesLaunchConsoleCapture) {
+        [void](Write-HermesLaunchUi -Message $Message -Level Info)
+        return
+    }
     Write-HermesTag -Tag 'INFO ' -Message $Message
 }
 
 function Write-HermesOk {
     param([string]$Message)
+    if (Test-HermesLaunchConsoleCapture) {
+        [void](Write-HermesLaunchUi -Message $Message -Level Ok)
+        return
+    }
     Write-HermesTag -Tag 'OK ' -Message $Message
 }
 
 function Write-HermesWarn {
     param([string]$Message)
+    if (Test-HermesLaunchConsoleCapture) {
+        [void](Write-HermesLaunchUi -Message $Message -Level Warn)
+        return
+    }
     Write-HermesTag -Tag 'WARN ' -Message $Message
 }
 
 function Write-HermesFail {
     param([string]$Message)
+    if (Test-HermesLaunchConsoleCapture) {
+        [void](Write-HermesLaunchUi -Message $Message -Level Error)
+        return
+    }
     Write-HermesTag -Tag 'FAIL ' -Message $Message
 }
 
@@ -286,6 +311,8 @@ function Format-HermesStepLabel {
     }
     return ('Stap ' + $Step + ' van ' + $Total + ' - ' + $Suffix)
 }
+
+. (Join-Path $PSScriptRoot 'HermesLaunchUi.ps1')
 
 function Invoke-GitCommand {
     param(
@@ -755,14 +782,20 @@ function Write-HermesCapturedProcessOutput {
         [switch]$ErrorsOnly
     )
     if (-not $Lines) { return }
+    $capture = Test-HermesLaunchConsoleCapture
+    $verbose = ($env:HERMES_LAUNCH_VERBOSE -eq '1') -or ((Get-HermesLaunchUiMode) -eq 'verbose')
     foreach ($line in $Lines) {
         $text = "$line"
         if ([string]::IsNullOrWhiteSpace($text)) { continue }
         if ($FilterNoise -and (Test-HermesSubprocessNoiseLine -Line $text)) { continue }
+        if ($capture) {
+            Add-HermesLaunchLogLine -Message $text
+            if (-not $verbose) { continue }
+        }
         if ($ErrorsOnly) {
-            Write-Host $text -ForegroundColor Yellow
+            [void](Write-HermesLaunchUi -Message $text -Level Warn -ForceConsole)
         } else {
-            Write-Host $text -ForegroundColor DarkGray
+            [void](Write-HermesLaunchUi -Message $text -Level Detail)
         }
     }
 }
@@ -798,6 +831,13 @@ function Invoke-HermesCapturedProcess {
         $code = if ($proc) { [int]$proc.ExitCode } else { 1 }
         $outLines = @(Get-Content -LiteralPath $stdoutFile -Encoding UTF8 -ErrorAction SilentlyContinue)
         $errLines = @(Get-Content -LiteralPath $stderrFile -Encoding UTF8 -ErrorAction SilentlyContinue)
+        if ($Quiet -and (Test-HermesLaunchConsoleCapture)) {
+            foreach ($ln in @($outLines + $errLines)) {
+                if (-not [string]::IsNullOrWhiteSpace("$ln")) {
+                    Add-HermesLaunchLogLine -Message "$ln"
+                }
+            }
+        }
         if (-not $Quiet) {
             Write-HermesCapturedProcessOutput -Lines $outLines -FilterNoise:$FilterNoise
             Write-HermesCapturedProcessOutput -Lines $errLines -FilterNoise:$FilterNoise -ErrorsOnly
@@ -827,10 +867,15 @@ function Invoke-HermesLaunchPhase {
         [string]$Label,
         [Parameter(Mandatory)]
         [scriptblock]$Action,
-        [switch]$AllowFailure
+        [switch]$AllowFailure,
+        [string]$ActivityReason = ''
     )
-    $title = Format-HermesStepLabel -Step $Step -Total $Total -Suffix $Label
-    Write-Host $title -ForegroundColor Cyan
+    $useVisual = Test-HermesLaunchVisualEnabled
+    if ($useVisual) {
+        Start-HermesLaunchActivity -Step $Step -Total $Total -Label $Label -Reason $ActivityReason
+    } else {
+        Write-HermesLaunchPhaseHeader -Step $Step -Total $Total -Label $Label
+    }
     try {
         [Console]::Out.Flush()
     } catch {
@@ -846,7 +891,7 @@ function Invoke-HermesLaunchPhase {
         [void](& $Action)
         if ($null -ne $LASTEXITCODE) { $code = [int]$LASTEXITCODE }
     } catch {
-        Write-Host ('[ERROR] ' + $Label + ': ' + $_.Exception.Message) -ForegroundColor Red
+        [void](Write-HermesLaunchUi -Message ($Label + ': ' + $_.Exception.Message) -Level Error -ForceConsole)
         $code = 1
     } finally {
         $ErrorActionPreference = $prev
@@ -858,12 +903,27 @@ function Invoke-HermesLaunchPhase {
         $sw.Stop()
     }
     $sec = [math]::Round($sw.Elapsed.TotalSeconds, 1)
+    if ($useVisual) {
+        if ($code -eq 0) {
+            Write-HermesLaunchStepDone -Step $Step -Total $Total -Label $Label -Seconds $sec
+        } elseif ($AllowFailure) {
+            Write-HermesLaunchStepFailed -Step $Step -Total $Total -Label $Label -Reason ('exit ' + $code)
+        } else {
+            Write-HermesLaunchStepFailed -Step $Step -Total $Total -Label $Label -Reason ('exit ' + $code)
+        }
+    }
     if ($code -eq 0) {
-        Write-Host ('[OK] ' + $Label + ' (' + $sec + 's)') -ForegroundColor Green
+        if (-not $useVisual) {
+            Write-HermesLaunchPhaseResult -Label $Label -ExitCode 0 -Seconds $sec
+        }
     } elseif ($AllowFailure) {
-        Write-Host ('[WARN] ' + $Label + ' (exit ' + $code + ', ' + $sec + 's)') -ForegroundColor Yellow
+        if (-not $useVisual) {
+            Write-HermesLaunchPhaseResult -Label $Label -ExitCode $code -Seconds $sec -AllowFailure
+        }
     } else {
-        Write-Host ('[ERROR] ' + $Label + ' (exit ' + $code + ', ' + $sec + 's)') -ForegroundColor Red
+        if (-not $useVisual) {
+            Write-HermesLaunchPhaseResult -Label $Label -ExitCode $code -Seconds $sec
+        }
         exit $code
     }
 }

@@ -56,6 +56,8 @@ function Invoke-Step {
     Write-Host ""
     Write-Host "=== $Name ===" -ForegroundColor Cyan
     $stepFailed = $false
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
     try {
         & $Action
         $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
@@ -73,6 +75,8 @@ function Invoke-Step {
         Write-Host ('[FAIL] ' + $Name + ' (' + $($_.Exception.Message) + ')') -ForegroundColor Red
         $script:failures++
         $stepFailed = $true
+    } finally {
+        $ErrorActionPreference = $prevEap
     }
     return (-not $stepFailed)
 }

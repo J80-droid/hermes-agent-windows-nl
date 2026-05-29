@@ -105,6 +105,33 @@ Assert-True (-not $env:COLORTERM) 'COLORTERM cleared'
 Assert-Equal '"a b"' (Format-HermesCmdArg -Value 'a b') 'quoted arg with space'
 Assert-Equal 'plain' (Format-HermesCmdArg -Value 'plain') 'plain arg unchanged'
 
+# --- Launch UI Sink ---
+$launchUiPath = Join-Path $windowsRoot 'HermesLaunchUi.ps1'
+Assert-True (Test-Path -LiteralPath $launchUiPath) 'HermesLaunchUi.ps1 exists'
+Assert-True ($commonText -match 'HermesLaunchUi\.ps1') 'HermesShellCommon dot-sources LaunchUi'
+$capObj = Test-HermesConsoleCapability
+Assert-True ($null -ne $capObj.LaunchUiMode) 'Test-HermesConsoleCapability returns LaunchUiMode'
+Assert-True ($null -ne $capObj.IsWindowsTerminal) 'Test-HermesConsoleCapability returns IsWindowsTerminal'
+$prevUiMode = $env:HERMES_LAUNCH_UI
+$env:HERMES_LAUNCH_UI = 'quiet'
+Assert-Equal 'quiet' (Get-HermesLaunchUiMode) 'Get-HermesLaunchUiMode quiet override'
+if ($null -eq $prevUiMode) { Remove-Item Env:HERMES_LAUNCH_UI -ErrorAction SilentlyContinue } else { $env:HERMES_LAUNCH_UI = $prevUiMode }
+$esc = [char]27
+Assert-True (($esc + '[2K').Length -ge 4) 'EL [2K sequence'
+$prevVis = $env:HERMES_LAUNCH_VISUAL
+$env:HERMES_LAUNCH_VISUAL = '0'
+Assert-True (-not (Test-HermesLaunchVisualEnabled)) 'HERMES_LAUNCH_VISUAL=0 disables spinner'
+if ($null -eq $prevVis) { Remove-Item Env:HERMES_LAUNCH_VISUAL -ErrorAction SilentlyContinue } else { $env:HERMES_LAUNCH_VISUAL = $prevVis }
+$prevCapture = $env:HERMES_LAUNCH_CAPTURE_CONSOLE
+$prevUiForCap = $env:HERMES_LAUNCH_UI
+$env:HERMES_LAUNCH_CAPTURE_CONSOLE = '1'
+$env:HERMES_LAUNCH_UI = 'normal'
+Assert-True (-not (Test-HermesLaunchUiConsoleAllowed -Level 'Detail')) 'Detail suppressed during capture'
+Assert-True (Test-HermesLaunchUiConsoleAllowed -Level 'Ok') 'Ok still allowed during capture'
+Write-HermesInfo -Message 'unit-capture-delegation-test'
+if ($null -eq $prevCapture) { Remove-Item Env:HERMES_LAUNCH_CAPTURE_CONSOLE -ErrorAction SilentlyContinue } else { $env:HERMES_LAUNCH_CAPTURE_CONSOLE = $prevCapture }
+if ($null -eq $prevUiForCap) { Remove-Item Env:HERMES_LAUNCH_UI -ErrorAction SilentlyContinue } else { $env:HERMES_LAUNCH_UI = $prevUiForCap }
+
 if ($script:UnitFailed -gt 0) {
     Write-Host ("Unit tests FAILED: $script:UnitFailed") -ForegroundColor Red
     exit 1

@@ -36,9 +36,18 @@ if (-not (Test-Path -LiteralPath $harness)) {
 $python = Get-HermesAuditPython
 Write-Host "=== ModelProviderHardeningE2E (python: $python) ===" -ForegroundColor Cyan
 Push-Location $RepoRoot
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 try {
-    & $python $harness
+    & $python $harness 2>&1 | ForEach-Object {
+        if ($_ -is [System.Management.Automation.ErrorRecord]) {
+            Write-Host $_.ToString()
+        } else {
+            Write-Host $_
+        }
+    }
     exit $LASTEXITCODE
 } finally {
+    $ErrorActionPreference = $prevEap
     Pop-Location
 }

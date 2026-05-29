@@ -111,6 +111,8 @@ def test_s1_repo_artifacts() -> None:
         "windows/scripts/Invoke-HermesPostPullMaintenance.ps1",
         "windows/HermesShellCommon.ps1",
         "windows/scripts/launch_pre_chat_orchestrator.ps1",
+        "windows/scripts/launch_hermes.ps1",
+        "windows/HermesLaunchUi.ps1",
         "windows/launch_hermes.bat",
         "windows/POST_GIT_PULL.bat",
         "windows/launch_profiles.ps1",
@@ -161,15 +163,17 @@ def test_s3_post_git_pull_wiring() -> None:
 
 def test_s4_orchestrator_wiring() -> None:
     launch = _read("windows/launch_hermes.bat")
+    launch_ps1 = _read("windows/scripts/launch_hermes.ps1")
     orch = _read("windows/scripts/launch_pre_chat_orchestrator.ps1")
     checks = [
-        "launch_pre_chat_orchestrator.ps1" in launch,
-        "-SkipBootstrap" in launch,
+        "launch_hermes.ps1" in launch,
+        "launch_pre_chat_orchestrator.ps1" in launch_ps1,
+        "-SkipBootstrap" not in launch,
         "HERMES_LAUNCH_LOG" in launch,
-        ":after_setup" in launch,
+        ":launch_chat" in launch,
         "HermesSessionMaintenance.ps1" in orch,
         "HERMES_REPO_ROOT" in launch,
-        "[switch]$SkipBootstrap" in orch,
+        "launch_bootstrap.ps1" in orch,
         ". $maintenancePath -RepoRoot $RepoRoot -AllowFailure" in orch,
         "Invoke-HermesStartMaintenance" in orch,
         "SkipConfigDrift = $true" in orch,

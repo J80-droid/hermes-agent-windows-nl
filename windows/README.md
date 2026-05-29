@@ -77,7 +77,8 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 | Nieuw profiel (runtime) | `set HERMES_HOME=%LOCALAPPDATA%\hermes` → `SYNC_DOMAIN_TOOLSETS.bat --create-missing` — zie `docs\DOMAIN_BLUEPRINT.md` |
 | Provision E2E (smoke) | `audits\RUN_PROVISION_DOMAIN_E2E.bat` |
 | Toolset E2E (14 profielen) | `audits\RUN_TOOLSET_DOMAIN_E2E.bat` of `RUN_AUDITS.bat -IncludeToolsetDomainE2E` |
-| Web dashboard (9119, geen tab) | Automatisch bij start via orchestrator (Codebase Viz warmup); uit: `HERMES_SKIP_DASHBOARD_ON_START=1` |
+| Web dashboard (9119, geen tab) | Automatisch bij start via orchestrator; pip `[web]` alleen bij gewijzigde deps (`%LOCALAPPDATA%\hermes\web-dashboard-deps.json`); uit: `HERMES_SKIP_DASHBOARD_ON_START=1` |
+| Pygount-cache corrupt / pytest-pad | `FIX_CODEBASE_VIZ_CACHE.bat` (verwijdert ongeldige cache, bouwt opnieuw voor huidige repo) |
 | **Alles-in-één na codewijziging** | `hermes_onderhoud.bat` of `windows\HERMES_ONDERHOUD.bat` (snelkoppelingen + dashboard + Codebase Viz) |
 | Snelkoppelingen kapot / verkeerd pad | Automatisch bij **update** en **start** (`fix_hermes_taskbar_pins.ps1` → ook `%LOCALAPPDATA%\Hermes\shortcuts\`). Handmatig: `FIX_TASKBAR_ICONS.bat` · verify: `scripts\verify_hermes_shortcut_paths.ps1 -IncludePinned` |
 | Institutionele presentatie | `docs\INSTITUTIONAL_PRESENTATION.md` |
@@ -156,7 +157,7 @@ Zie `../scripts/rag_pipeline/ACTIVATION.md`. `update_knowledge.bat` respecteert 
 hermes_onderhoud.bat
 ```
 
-Doet in volgorde: taakbalk-.lnk + bureaublad + pins → pip `[web]` + pygount → `npm run build` (indien nodig) → **pygount pre-warm** (`scripts/warm_codebase_viz_pygount_cache.py`; eenmalig ~4–10 min zonder cache; skipt `backups/`) → dashboard 9119 → health (+ force-scan alleen als cache ontbreekt).
+Doet in volgorde: taakbalk-.lnk + bureaublad + pins → pip `[web]` + pygount (indien manifest verouderd) → `npm run build` (alleen als `src` nieuwer dan `dist`) → pygount pre-warm indien cache ontbreekt/ongeldig → dashboard 9119 → health.
 
 | Vlag | Alleen |
 |------|--------|

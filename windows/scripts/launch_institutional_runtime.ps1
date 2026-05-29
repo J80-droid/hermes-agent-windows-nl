@@ -1,6 +1,4 @@
 # Institutioneel runtime vóór Hermes-chat: display (alle profielen) + SOUL-snippet-sync indien nodig.
-# Volledige SOUL anatomy (14 templates) gebeurt in launch_soul_anatomy_deploy.ps1.
-# E2E alleen met -RunE2E of HERMES_INSTITUTIONAL_E2E_ON_START=1 (traag; niet standaard).
 param(
     [string]$RepoRoot = '',
     [switch]$RunE2E,
@@ -13,23 +11,19 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'HermesHomeCommon.ps1')
 Import-Module (Join-Path $PSScriptRoot 'SyncSoulSnippet.psm1') -Force
 
-if (-not $RepoRoot -and $env:HERMES_REPO_ROOT) {
-    $RepoRoot = $env:HERMES_REPO_ROOT
-}
-if ($RepoRoot) {
-    $RepoRoot = $RepoRoot.Trim().Trim('"')
-}
+if (-not $RepoRoot -and $env:HERMES_REPO_ROOT) { $RepoRoot = $env:HERMES_REPO_ROOT }
+if ($RepoRoot) { $RepoRoot = $RepoRoot.Trim().Trim('"') }
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 } elseif (-not (Test-Path -LiteralPath $RepoRoot)) {
-    Write-Host ('ERROR: RepoRoot bestaat niet: ' + $RepoRoot) -ForegroundColor Red
+    Write-HermesLaunchUi -Message ('RepoRoot bestaat niet: ' + $RepoRoot) -Level Error -ForceConsole
     exit 1
 } else {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 }
 
 if ($env:HERMES_SKIP_INSTITUTIONAL_RUNTIME -eq '1') {
-    Write-Host '[INFO] Institutioneel runtime overgeslagen (HERMES_SKIP_INSTITUTIONAL_RUNTIME=1).' -ForegroundColor DarkGray
+    Write-HermesLaunchUi -Message 'Institutioneel runtime overgeslagen (HERMES_SKIP_INSTITUTIONAL_RUNTIME=1).' -Level Detail
     exit 0
 }
 
@@ -37,7 +31,7 @@ $runE2e = $RunE2E.IsPresent -or $env:HERMES_INSTITUTIONAL_E2E_ON_START -eq '1'
 if (-not $SkipConfigDrift) {
     if ($runE2e) {
         if (-not (Test-HermesConfigDrift -Strict)) {
-            Write-Host '[FAIL] Config split-home drift (E2E) — APPLY_HERMES_HOME_MIGRATION.bat' -ForegroundColor Red
+            Write-HermesLaunchUi -Message 'Config split-home drift (E2E) — APPLY_HERMES_HOME_MIGRATION.bat' -Level Error -ForceConsole
             exit 1
         }
     } else {
@@ -89,7 +83,7 @@ if (-not $needRun) {
             & $driftPy $driftScript --check-drift 2>&1 | Out-Null
             if ($LASTEXITCODE -ne 0) {
                 $needRun = $true
-                Write-Host '[INFO] Team display drift gedetecteerd — apply opnieuw gepland.' -ForegroundColor Yellow
+                Write-HermesLaunchUi -Message 'Team display drift gedetecteerd — apply opnieuw gepland.' -Level Warn
             }
             $ErrorActionPreference = $prevEap
         }
@@ -97,35 +91,43 @@ if (-not $needRun) {
 }
 
 if (-not $needRun) {
-    Write-Host '[INFO] Institutioneel runtime up-to-date (stamp OK).' -ForegroundColor DarkGray
+    Write-HermesLaunchUi -Message 'Institutioneel runtime up-to-date (stamp OK).' -Level Detail
     exit 0
 }
 
 $runtimePs1 = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/apply_institutional_runtime.ps1'
 $runtimeArgs = @{ SkipE2E = (-not $runE2e); NoPause = $true }
 $soulJustRan = Test-SoulAnatomyDeployJustRan
-if ($soulJustRan) {
-    $runtimeArgs['SkipSoul'] = $true
+if ($soulJustRan) { $runtimeArgs['SkipSoul'] = $true }
+
+$infoMsg = 'Institutioneel runtime (display'
+if (-not $runtimeArgs['SkipSoul']) { $infoMsg += ' + SOUL snippets' }
+if ($runE2e) { $infoMsg += ' + E2E' }
+$infoMsg += ')...'
+Update-HermesLaunchActivity -Reason 'Team display toepassen...'
+Write-HermesLaunchUi -Message $infoMsg -Level Info
+
+$argList = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $runtimePs1, '-NoPause')
+if (-not $runE2e) { $argList += '-SkipE2E' }
+if ($runtimeArgs['SkipSoul']) { $argList += '-SkipSoul' }
+if (Test-HermesLaunchConsoleCapture) {
+    $rtCode = Invoke-HermesCapturedProcess -FilePath 'powershell.exe' -ArgumentList $argList -WorkingDirectory $RepoRoot -Quiet -FilterNoise
+} else {
+    & $runtimePs1 @runtimeArgs
+    $rtCode = [int]$LASTEXITCODE
 }
-
-Write-Host '[INFO] Institutioneel runtime (display' -NoNewline -ForegroundColor Cyan
-if (-not $runtimeArgs['SkipSoul']) { Write-Host ' + SOUL snippets' -NoNewline -ForegroundColor Cyan }
-if ($runE2e) { Write-Host ' + E2E' -NoNewline -ForegroundColor Cyan }
-Write-Host ')...' -ForegroundColor Cyan
-
-& $runtimePs1 @runtimeArgs
-if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
+if ($rtCode -ne 0) { exit $rtCode }
 
 if (-not (Test-Path -LiteralPath $stampDir)) {
     New-Item -ItemType Directory -Path $stampDir -Force | Out-Null
 }
 $utf8 = [System.Text.UTF8Encoding]::new($false)
 [System.IO.File]::WriteAllText($stampFile, (Get-Date -Format 'o'), $utf8)
-Write-Host '[OK] Institutioneel runtime toegepast.' -ForegroundColor Green
+Write-HermesLaunchUi -Message 'Institutioneel runtime toegepast.' -Level Ok
 
 $noticeFile = Join-Path $stampDir 'institutional_new_chat_required.json'
 if (Test-Path -LiteralPath $noticeFile) {
-    Write-Host '[HERINNERING] SOUL/presentatie is bijgewerkt — gebruik /new of een nieuwe sessie.' -ForegroundColor Yellow
-    Write-Host '  Rooktest: docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md' -ForegroundColor DarkYellow
+    Write-HermesLaunchUi -Message 'SOUL/presentatie is bijgewerkt — gebruik /new of een nieuwe sessie.' -Level Warn
+    Write-HermesLaunchUi -Message 'Rooktest: docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md' -Level Detail
 }
 exit 0

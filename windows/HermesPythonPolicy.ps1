@@ -3,6 +3,7 @@
 # Resolver: Resolve-HermesPythonExe (HERMES_PYTHON > conda > manifest > .venv).
 # Override conda-locatie: HERMES_CONDA_ROOT + HERMES_CONDA_ENV (default hermes-env).
 # RAG-manifest: %LOCALAPPDATA%\Hermes\rag-deps.json (rag_extras_verified fast-path).
+# Web-dashboard manifest: %LOCALAPPDATA%\hermes\web-dashboard-deps.json (pip -e [web] fast-path).
 # Bootstrap-stamp: %LOCALAPPDATA%\hermes\launch_bootstrap.stamp (Sync-HermesLaunchBootstrapStamp).
 # Dot-source: . (Join-Path $PSScriptRoot 'HermesPythonPolicy.ps1')
 
@@ -491,4 +492,267 @@ function Invoke-HermesSyncIdePython {
         return $false
     }
     return $true
+}
+
+function Get-HermesWebDashboardDepsManifestPath {
+    return Join-Path (Join-Path $env:LOCALAPPDATA 'hermes') 'web-dashboard-deps.json'
+}
+
+function Get-HermesCodebaseVizPygountCachePath {
+    param([string]$RepoRoot = '')
+    $custom = "$env:CODEBASE_VIZ_PYGOUNT_CACHE_PATH".Trim()
+    if ($custom) { return $custom }
+    if (-not $RepoRoot) {
+        if ($env:HERMES_REPO_ROOT) { $RepoRoot = $env:HERMES_REPO_ROOT }
+    }
+    if ($RepoRoot) {
+        return Join-Path $RepoRoot 'output\research\codebase_viz_pygount_cache.json'
+    }
+    return Join-Path (Join-Path (Get-Location).Path 'output\research') 'codebase_viz_pygount_cache.json'
+}
+
+function Get-HermesWebDashboardDepsFingerprint {
+    param([Parameter(Mandatory)][string]$RepoRoot)
+    $parts = @()
+    $pyproject = Join-Path $RepoRoot 'pyproject.toml'
+    if (Test-Path -LiteralPath $pyproject) {
+        $parts += (Get-FileHash -LiteralPath $pyproject -Algorithm SHA256).Hash
+    }
+    $cvPkg = Join-Path $RepoRoot 'plugins\codebase-viz\dashboard\package.json'
+    if (Test-Path -LiteralPath $cvPkg) {
+        $parts += (Get-FileHash -LiteralPath $cvPkg -Algorithm SHA256).Hash
+    }
+    if ($parts.Count -eq 0) { return '' }
+    return ($parts -join '|')
+}
+
+function Test-HermesWebDashboardExtrasInstalled {
+    param(
+        [Parameter(Mandatory)][string]$PythonExe,
+        [switch]$RequirePygount
+    )
+    if (-not (Test-Path -LiteralPath $PythonExe)) { return $false }
+    $snippet = 'import fastapi'
+    if ($RequirePygount) { $snippet += '; import pygount' }
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'SilentlyContinue'
+    try {
+        if ((Get-Command Test-HermesLaunchConsoleCapture -ErrorAction SilentlyContinue) -and (Test-HermesLaunchConsoleCapture)) {
+            $pyCode = Invoke-HermesCapturedProcess -FilePath $PythonExe -ArgumentList @('-c', $snippet) -FilterNoise -Quiet
+            return ($pyCode -eq 0)
+        }
+        $null = & $PythonExe -c $snippet
+        return ($LASTEXITCODE -eq 0)
+    } catch {
+        return $false
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+}
+
+function Test-HermesNeedsWebDashboardPipInstall {
+    <#
+    .SYNOPSIS
+        True als pip install -e .[web] (+ pygount bij workspace plugins) nodig is.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [switch]$RequirePygount
+    )
+    if ($env:HERMES_FORCE_DASHBOARD_PIP -eq '1') { return $true }
+
+    $pyproject = Join-Path $RepoRoot 'pyproject.toml'
+    if (-not (Test-Path -LiteralPath $pyproject)) { return $true }
+
+    $py = Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip
+    if (-not $py) { return $true }
+
+    $fingerprint = Get-HermesWebDashboardDepsFingerprint -RepoRoot $RepoRoot
+    $manifestPath = Get-HermesWebDashboardDepsManifestPath
+    if (-not (Test-Path -LiteralPath $manifestPath)) { return $true }
+
+    try {
+        $j = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        $manifestTime = (Get-Item -LiteralPath $manifestPath).LastWriteTimeUtc
+        $projTime = (Get-Item -LiteralPath $pyproject).LastWriteTimeUtc
+        if ($projTime -gt $manifestTime) { return $true }
+        $cvPkg = Join-Path $RepoRoot 'plugins\codebase-viz\dashboard\package.json'
+        if ((Test-Path -LiteralPath $cvPkg) -and ((Get-Item -LiteralPath $cvPkg).LastWriteTimeUtc -gt $manifestTime)) {
+            return $true
+        }
+        if ($j.python_exe -and ($j.python_exe.ToString() -ne $py)) { return $true }
+        if ($j.deps_fingerprint -and ($j.deps_fingerprint.ToString() -ne $fingerprint)) { return $true }
+        if ($j.web_deps_verified -ne $true) { return -not (Test-HermesWebDashboardExtrasInstalled -PythonExe $py -RequirePygount:$RequirePygount) }
+        if (-not (Test-HermesWebDashboardExtrasInstalled -PythonExe $py -RequirePygount:$RequirePygount)) { return $true }
+        return $false
+    } catch {
+        return $true
+    }
+}
+
+function Write-HermesWebDashboardDepsManifest {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$PythonExe,
+        [switch]$RequirePygount
+    )
+    if (-not (Test-HermesWebDashboardExtrasInstalled -PythonExe $PythonExe -RequirePygount:$RequirePygount)) {
+        return $null
+    }
+    $dir = Join-Path $env:LOCALAPPDATA 'hermes'
+    if (-not (Test-Path -LiteralPath $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
+    $version = ''
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'SilentlyContinue'
+    try {
+        $verOut = & $PythonExe -c "import importlib.metadata as m; print(m.version('hermes-agent'))"
+        if ($LASTEXITCODE -eq 0 -and $verOut) {
+            $version = ($verOut | Select-Object -Last 1).ToString().Trim()
+        }
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+    $manifestPath = Get-HermesWebDashboardDepsManifestPath
+    @{
+        installed_at      = (Get-Date).ToUniversalTime().ToString('o')
+        python_exe        = $PythonExe
+        deps_fingerprint  = (Get-HermesWebDashboardDepsFingerprint -RepoRoot $RepoRoot)
+        package_version   = $version
+        web_deps_verified = $true
+        require_pygount   = [bool]$RequirePygount
+    } | ConvertTo-Json | Set-Content -LiteralPath $manifestPath -Encoding UTF8
+    return $manifestPath
+}
+
+function Test-HermesCodebaseVizPygountCacheMismatch {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [string]$CachePath = ''
+    )
+    if (-not $CachePath) { $CachePath = Get-HermesCodebaseVizPygountCachePath -RepoRoot $RepoRoot }
+    if (-not (Test-Path -LiteralPath $CachePath)) { return $false }
+    try {
+        $raw = Get-Content -LiteralPath $CachePath -Raw -Encoding UTF8 -ErrorAction Stop
+        if ($raw -match 'pytest-of-') { return $true }
+        $j = $raw | ConvertFrom-Json
+        $cached = [string]$j.repo_path
+        if (-not $cached.Trim()) { return $true }
+        $cachedFull = [IO.Path]::GetFullPath($cached)
+        $expectedFull = [IO.Path]::GetFullPath($RepoRoot)
+        return ($cachedFull -ne $expectedFull)
+    } catch {
+        return $true
+    }
+}
+
+function Clear-HermesCodebaseVizPygountCache {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [string]$CachePath = '',
+        [string]$Reason = ''
+    )
+    if (-not $CachePath) { $CachePath = Get-HermesCodebaseVizPygountCachePath -RepoRoot $RepoRoot }
+    if (-not (Test-Path -LiteralPath $CachePath)) { return $false }
+    $msg = '[INFO] Codebase Viz pygount-cache verwijderd'
+    if ($Reason) { $msg += " ($Reason)" }
+    if ((Get-Command Write-HermesLaunchUi -ErrorAction SilentlyContinue)) {
+        [void](Write-HermesLaunchUi -Message $msg -Level Detail)
+    } elseif ((Get-Command Write-HermesTag -ErrorAction SilentlyContinue)) {
+        Write-HermesTag -Tag 'INFO ' -Message $msg
+    } else {
+        Write-Host $msg
+    }
+    Remove-Item -LiteralPath $CachePath -Force -ErrorAction SilentlyContinue
+    return $true
+}
+
+function Invoke-HermesCodebaseVizPygountCacheCheckOnly {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$PythonExe
+    )
+    $warmScript = Join-Path $RepoRoot 'scripts\warm_codebase_viz_pygount_cache.py'
+    if (-not (Test-Path -LiteralPath $warmScript)) { return 2 }
+    $prevRepo = $env:CODEBASE_VIZ_REPO
+    $prevCachePath = $env:CODEBASE_VIZ_PYGOUNT_CACHE_PATH
+    $env:CODEBASE_VIZ_REPO = $RepoRoot
+    if (-not $prevCachePath) {
+        $env:CODEBASE_VIZ_PYGOUNT_CACHE_PATH = (Get-HermesCodebaseVizPygountCachePath -RepoRoot $RepoRoot)
+    }
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $PythonExe $warmScript --check-only 2>&1 | Out-Null
+        if ($null -ne $LASTEXITCODE) { return [int]$LASTEXITCODE }
+        return 2
+    } finally {
+        $ErrorActionPreference = $prevEap
+        if ($null -eq $prevRepo) {
+            Remove-Item Env:CODEBASE_VIZ_REPO -ErrorAction SilentlyContinue
+        } else {
+            $env:CODEBASE_VIZ_REPO = $prevRepo
+        }
+        if ($null -eq $prevCachePath) {
+            Remove-Item Env:CODEBASE_VIZ_PYGOUNT_CACHE_PATH -ErrorAction SilentlyContinue
+        } else {
+            $env:CODEBASE_VIZ_PYGOUNT_CACHE_PATH = $prevCachePath
+        }
+    }
+}
+
+function Repair-HermesCodebaseVizPygountCache {
+    <#
+    .SYNOPSIS
+        Verwijdert ongeldige pygount-schijfcache en bouwt opnieuw op voor RepoRoot.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [string]$PythonExe = '',
+        [switch]$Quiet
+    )
+    $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
+    if (-not $PythonExe) {
+        $PythonExe = Resolve-HermesPythonExe -RepoRoot $RepoRoot -RequirePip
+    }
+    if (-not $PythonExe) {
+        if (-not $Quiet) { Write-Host '[FAIL] Geen hermes-env python.exe' -ForegroundColor Red }
+        return 1
+    }
+    if (Test-HermesCodebaseVizPygountCacheMismatch -RepoRoot $RepoRoot) {
+        [void](Clear-HermesCodebaseVizPygountCache -RepoRoot $RepoRoot -Reason 'repo-pad of pytest-cache')
+    }
+    $warmScript = Join-Path $RepoRoot 'scripts\warm_codebase_viz_pygount_cache.py'
+    if (-not (Test-Path -LiteralPath $warmScript)) {
+        if (-not $Quiet) { Write-Host '[FAIL] warm_codebase_viz_pygount_cache.py ontbreekt' -ForegroundColor Red }
+        return 1
+    }
+    $prevRepo = $env:CODEBASE_VIZ_REPO
+    $env:CODEBASE_VIZ_REPO = $RepoRoot
+    if (-not $Quiet) {
+        Write-Host "[INFO] Pygount-cache opbouwen voor $RepoRoot ..." -ForegroundColor Cyan
+    }
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $PythonExe $warmScript 2>&1 | ForEach-Object { if (-not $Quiet) { Write-Host $_ } }
+        $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 1 }
+    } finally {
+        $ErrorActionPreference = $prevEap
+        if ($null -eq $prevRepo) {
+            Remove-Item Env:CODEBASE_VIZ_REPO -ErrorAction SilentlyContinue
+        } else {
+            $env:CODEBASE_VIZ_REPO = $prevRepo
+        }
+    }
+    if ($code -eq 0) {
+        $check = Invoke-HermesCodebaseVizPygountCacheCheckOnly -RepoRoot $RepoRoot -PythonExe $PythonExe
+        if ($check -eq 0) {
+            if (-not $Quiet) { Write-Host '[OK] Pygount-cache gerepareerd en gevalideerd.' -ForegroundColor Green }
+            return 0
+        }
+    }
+    if (-not $Quiet) { Write-Host "[FAIL] Pygount-cache repair mislukt (exit $code)." -ForegroundColor Red }
+    return $(if ($code -ne 0) { $code } else { 1 })
 }

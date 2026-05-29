@@ -24,6 +24,17 @@ Of alleen pytest:
 python -m pytest tests/hermes_cli/test_apply_profile_override.py tests/hermes_cli/test_profile_switch.py tests/hermes_cli/test_relaunch.py::TestRelaunchChatAfterProfileSwitch -q
 ```
 
+## PowerShell unit tests (launch / dashboard)
+
+| Script | Doel |
+| ------ | ---- |
+| `HermesShellCommon.Unit.Tests.ps1` | Launch UI helpers, git, repo paths |
+| `HermesWebDashboardLaunch.Unit.Tests.ps1` | Web-deps manifest, pygount-cache mismatch/clear |
+
+```powershell
+powershell -NoProfile -File windows\tests\HermesWebDashboardLaunch.Unit.Tests.ps1
+```
+
 ## `RUN_PYTEST`
 
 - Zet de werkmap op de **repo-root** (`hermes-agent`).
