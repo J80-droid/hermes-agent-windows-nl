@@ -385,7 +385,8 @@ function Sync-HermesCatalogShortcuts {
         [Parameter(Mandatory)][string]$RepoRoot,
         [Parameter(Mandatory)][string]$WindowsDir,
         [string[]]$TargetDirs,
-        [switch]$Quiet
+        [switch]$Quiet,
+        [switch]$ForTaskbarPin
     )
     $catalog = Get-HermesShortcutCatalog -RepoRoot $RepoRoot
     $ok = 0
@@ -396,7 +397,8 @@ function Sync-HermesCatalogShortcuts {
         }
         foreach ($entry in $catalog) {
             $lnk = Join-Path $dir $entry.FileName
-            if (New-HermesCatalogShortcut -Entry $entry -ShortcutPath $lnk -RepoRoot $RepoRoot -WindowsDir $WindowsDir) {
+            if (New-HermesCatalogShortcut -Entry $entry -ShortcutPath $lnk -RepoRoot $RepoRoot -WindowsDir $WindowsDir `
+                    -ForTaskbarPin:$ForTaskbarPin) {
                 $ok++
             } elseif (-not $Quiet) {
                 Write-Host ('  [SKIP] ' + $entry.FileName + ' — bat ontbreekt') -ForegroundColor Yellow
@@ -516,7 +518,8 @@ function Invoke-HermesShortcutSyncRepair {
     }
     [void](Sync-HermesCatalogShortcuts -RepoRoot $repo -WindowsDir $WindowsDir -TargetDirs @($WindowsDir) -Quiet:$Quiet)
     if ($persistDir) {
-        [void](Sync-HermesCatalogShortcuts -RepoRoot $repo -WindowsDir $WindowsDir -TargetDirs @($persistDir) -Quiet:$Quiet)
+        [void](Sync-HermesCatalogShortcuts -RepoRoot $repo -WindowsDir $WindowsDir -TargetDirs @($persistDir) `
+            -Quiet:$Quiet -ForTaskbarPin)
     }
 
     $pinnedDir = Get-HermesTaskbarPinnedDir

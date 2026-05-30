@@ -67,9 +67,10 @@ Clear-HermesShellIconCache
 
 if (-not $Quiet) {
     Write-Host ''
-    Write-Host 'Snelkoppelingen staan in windows\ en %LOCALAPPDATA%\Hermes\shortcuts\.' -ForegroundColor Cyan
-    Write-Host 'Taakbalk-pins blijven na update werken (paden/iconen worden in-place bijgewerkt).' -ForegroundColor Gray
-    Write-Host 'Eenmalige pop-up over een dode pin? Klik Ja — daarna hoef je niet opnieuw te slepen.' -ForegroundColor DarkGray
+    Write-Host 'Snelkoppelingen: windows\ (dubbelklik, wt.exe) + taakbalk-map (bat-doel).' -ForegroundColor Cyan
+    Write-Host 'Pop-up op een taakbalk-icoon? Dat is een OUDE pin — niet het .lnk-bestand op schijf.' -ForegroundColor Yellow
+    Write-Host '  1) Klik die pin -> Ja   2) Rechtsklik .lnk in windows\ -> Vastmaken aan taakbalk' -ForegroundColor Gray
+    Write-Host '  Of: windows\HERSTEL_TAAKBALK_POPUP.bat' -ForegroundColor DarkGray
 }
 
 exit 0
