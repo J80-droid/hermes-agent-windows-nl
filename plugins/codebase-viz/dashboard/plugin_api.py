@@ -238,7 +238,11 @@ def _pygount_disk_cache_enabled() -> bool:
     }
 
 
-def _read_pygount_disk_cache(*, allow_stale: bool = False) -> dict[str, Any] | None:
+def _read_pygount_disk_cache(
+    *,
+    allow_stale: bool = False,
+    ignore_revision: bool = False,
+) -> dict[str, Any] | None:
     """Lees gepersisteerde pygount-bundle (overleeft dashboard-herstart)."""
     if not _pygount_disk_cache_enabled() or REPO_PATH is None:
         return None
@@ -259,9 +263,10 @@ def _read_pygount_disk_cache(*, allow_stale: bool = False) -> dict[str, Any] | N
         return None
     if cached_repo != current_repo:
         return None
-    stored_revision = str(data.get("repo_revision") or data.get("repo_signature") or "")
-    if not _disk_cache_revision_matches(stored_revision, REPO_PATH):
-        return None
+    if not ignore_revision:
+        stored_revision = str(data.get("repo_revision") or data.get("repo_signature") or "")
+        if not _disk_cache_revision_matches(stored_revision, REPO_PATH):
+            return None
     saved_at = data.get("saved_at")
     if not allow_stale and isinstance(saved_at, (int, float)):
         age = time.time() - float(saved_at)
@@ -309,8 +314,20 @@ def _write_pygount_disk_cache(bundle: dict[str, Any]) -> None:
 async def _hydrate_pygount_from_disk() -> bool:
     """Vul geheugen-cache vanaf schijf zodat startup geen volledige pygount hoeft."""
     bundle = await asyncio.to_thread(_read_pygount_disk_cache, allow_stale=False)
+    stale_reason: str | None = None
     if bundle is None:
-        return False
+        bundle = await asyncio.to_thread(
+            _read_pygount_disk_cache,
+            allow_stale=True,
+            ignore_revision=True,
+        )
+        if bundle is None:
+            return False
+        bundle = dict(bundle)
+        bundle.setdefault("warning", "disk_cache_revision_stale")
+        bundle["fallback"] = True
+        bundle["stale"] = True
+        stale_reason = "revision_mismatch"
     async with _cache_lock:
         _cache["pygount"] = (time.monotonic(), bundle)
     signature = _repo_cache_revision(REPO_PATH)
@@ -319,7 +336,10 @@ async def _hydrate_pygount_from_disk() -> bool:
     await _mark_dataset_updated("pygount", bundle)
     log.info(
         "codebase_viz_pygount_disk_hydrated",
-        extra={"files": len(bundle.get("file_rows") or [])},
+        extra={
+            "files": len(bundle.get("file_rows") or []),
+            "stale_reason": stale_reason,
+        },
     )
     return True
 
@@ -388,6 +408,32 @@ def _disk_cache_revision_matches(stored: str, repo: Path) -> bool:
         return True
     # Legacy caches: volledige bestands-handtekening i.p.v. git HEAD
     return stored == _compute_repo_signature(repo)
+
+
+def _disk_cache_status() -> dict[str, Any]:
+    """Diagnose voor /health — waarom hydrate wel/niet slaagt."""
+    path = _pygount_disk_cache_file()
+    out: dict[str, Any] = {
+        "enabled": _pygount_disk_cache_enabled(),
+        "path": str(path),
+        "exists": path.is_file(),
+        "revision_matches": False,
+        "current_revision": _repo_cache_revision(REPO_PATH) if REPO_PATH else None,
+        "stored_revision": None,
+    }
+    if not path.is_file() or REPO_PATH is None:
+        return out
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        out["load_error"] = str(exc)[:120]
+        return out
+    if isinstance(data, dict):
+        out["stored_revision"] = data.get("repo_revision") or data.get("repo_signature")
+        stored = str(out["stored_revision"] or "")
+        out["revision_matches"] = _disk_cache_revision_matches(stored, REPO_PATH)
+    return out
+
 
 async def _load_snapshot_state() -> None:
     path = _snapshot_file()
@@ -508,6 +554,10 @@ async def _run_factory_and_store(key: str, factory) -> object:
     return result
 
 
+# Endpoints die alleen een reeds geladen pygount-bundle afleiden (geen subprocess).
+_LIGHTWEIGHT_FROM_PYGOUNT_KEYS = frozenset({"structure", "summary"})
+
+
 async def _get_or_compute(key: str, ttl: float, factory):
     """Cache-aside + singleflight; factory runs outside lock (safe for nested pygount)."""
     cached = await _cached(key, ttl)
@@ -520,7 +570,9 @@ async def _get_or_compute(key: str, ttl: float, factory):
             if entry is not None:
                 log.warning("codebase_viz_stale_cache", extra={"cache_key": key})
                 return _with_memory_pressure_flag(entry[1])
-        raise RuntimeError("memory_pressure")
+            pygount_ready = "pygount" in _cache
+        if not (key in _LIGHTWEIGHT_FROM_PYGOUNT_KEYS and pygount_ready):
+            raise RuntimeError("memory_pressure")
 
     async with _cache_lock:
         entry = _cache.get(key)
@@ -714,7 +766,8 @@ async def _background_refresh_job(force_full: bool = False) -> None:
         "reason": _refresh_status.get("reason", ""),
     })
     try:
-        repo_signature = _compute_repo_signature(REPO_PATH)
+        # Zelfde revisie als disk-cache/hydrate (git HEAD), niet dure bestands-handtekening.
+        repo_signature = _repo_cache_revision(REPO_PATH) if REPO_PATH else ""
         async with _snapshot_lock:
             prev_signature = _snapshot_state.get("repo_signature", "")
             _snapshot_state["repo_signature"] = repo_signature
@@ -1011,6 +1064,21 @@ async def _fetch_pygount_bundle() -> dict[str, Any]:
             "file_rows": [],
         }
     if not _memory_ok():
+        async with _cache_lock:
+            entry = _cache.get("pygount")
+        if entry is not None and isinstance(entry[1], dict):
+            return entry[1]
+        stale = await asyncio.to_thread(
+            _read_pygount_disk_cache,
+            allow_stale=True,
+            ignore_revision=True,
+        )
+        if stale is not None:
+            stale = dict(stale)
+            stale.setdefault("warning", "memory_pressure_serving_disk_cache")
+            stale["fallback"] = True
+            stale["stale"] = True
+            return stale
         raise RuntimeError("memory_pressure")
     _scan_start("pygount")
     try:
@@ -1053,6 +1121,14 @@ async def _get_import_edges() -> list[dict[str, str]]:
 
 async def _get_pygount_bundle() -> dict[str, Any]:
     """Cached pygount — lange TTL + disk-hydrate; één scan bedient structure + summary."""
+    if not _memory_ok():
+        async with _cache_lock:
+            entry = _cache.get("pygount")
+        if entry is not None:
+            return entry[1]
+        cached = await _cached("pygount", PYGOUNT_CACHE_TTL)
+        if cached is not None:
+            return cached
     return await _get_or_compute("pygount", PYGOUNT_CACHE_TTL, _fetch_pygount_bundle)
 
 
@@ -1368,6 +1444,7 @@ async def health():
         "snapshot_state_path": str(_snapshot_file()),
         "pygount_disk_cache_path": str(_pygount_disk_cache_file()),
         "pygount_disk_cache_enabled": _pygount_disk_cache_enabled(),
+        "disk_cache": _disk_cache_status(),
     }
 
 

@@ -621,6 +621,98 @@ def test_memory_guard_pressure_flag(plugin_module, monkeypatch):
         )
 
 
+def test_structure_builds_from_cached_pygount_under_memory_pressure(
+    plugin_module, monkeypatch,
+):
+    import time
+
+    bundle = {
+        "summary": {"total_files": 1, "total_code": 10, "languages": {}},
+        "file_rows": [
+            {"path": "a.py", "language": "Python", "code": 10, "documentation": 0, "empty": 0},
+        ],
+    }
+
+    async def _seed():
+        async with plugin_module._cache_lock:
+            plugin_module._cache["pygount"] = (time.monotonic(), bundle)
+
+    asyncio.run(_seed())
+    monkeypatch.setattr(plugin_module, "_memory_ok", lambda: False)
+    result = asyncio.run(
+        plugin_module._get_or_compute(
+            "structure",
+            plugin_module.CODEBASE_VIZ_TTL,
+            plugin_module._build_structure,
+        ),
+    )
+    assert "tree" in result
+    assert result.get("error") != "memory_pressure"
+
+
+def test_hydrate_disk_cache_ignores_revision_mismatch(
+    plugin_module, isolated_pygount_cache,
+):
+    import time
+
+    apply_isolated_pygount_cache_to_module(plugin_module, isolated_pygount_cache)
+    payload = {
+        "version": 1,
+        "repo_path": str(plugin_module.REPO_PATH.resolve()),
+        "repo_revision": "deadbeef00000000000000000000000000000000",
+        "saved_at": int(time.time()),
+        "bundle": {
+            "summary": {"total_files": 1, "total_code": 1, "languages": {}},
+            "file_rows": [
+                {"path": "x.py", "language": "Python", "code": 1, "documentation": 0, "empty": 0},
+            ],
+        },
+    }
+    isolated_pygount_cache.write_text(json.dumps(payload), encoding="utf-8")
+    assert asyncio.run(plugin_module._hydrate_pygount_from_disk()) is True
+
+    async def _read_bundle():
+        async with plugin_module._cache_lock:
+            entry = plugin_module._cache.get("pygount")
+        return entry[1] if entry else None
+
+    bundle = asyncio.run(_read_bundle())
+    assert bundle is not None
+    assert bundle.get("stale") is True
+    assert bundle.get("warning")
+
+
+def test_background_refresh_no_false_delta_git_vs_file_signature(
+    plugin_module, monkeypatch,
+):
+    """Snapshot met git HEAD mag niet elke start een volledige refresh triggeren."""
+    git_rev = "abc123"
+    monkeypatch.setattr(plugin_module, "_repo_cache_revision", lambda _repo: git_rev)
+    monkeypatch.setattr(
+        plugin_module,
+        "_compute_repo_signature",
+        lambda _repo: "file-signature-never-matches-git",
+    )
+
+    async def _prep():
+        async with plugin_module._snapshot_lock:
+            plugin_module._snapshot_state["repo_signature"] = git_rev
+        async with plugin_module._cache_lock:
+            plugin_module._cache["pygount"] = (
+                __import__("time").monotonic(),
+                {"summary": {}, "file_rows": [{"path": "a.py", "code": 1}]},
+            )
+
+    asyncio.run(_prep())
+    asyncio.run(plugin_module._background_refresh_job(force_full=False))
+
+    async def _pygount_still_cached():
+        async with plugin_module._cache_lock:
+            return "pygount" in plugin_module._cache
+
+    assert asyncio.run(_pygount_still_cached()) is True
+
+
 def test_memory_guard_serves_stale_cache(plugin_module, monkeypatch):
     import time
 

@@ -12,6 +12,6 @@ if not "%RC%"=="0" (
   if /I not "%HERMES_NO_PAUSE%"=="1" pause
   exit /b %RC%
 )
-echo [OK] Pygount-cache gerepareerd. Start Hermes opnieuw met start_hermes.bat
+echo [OK] Pygount-cache gerepareerd - start Hermes opnieuw met start_hermes.bat
 if /I not "%HERMES_NO_PAUSE%"=="1" pause
 exit /b 0

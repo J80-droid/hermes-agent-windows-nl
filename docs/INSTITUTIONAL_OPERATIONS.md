@@ -82,6 +82,8 @@ Alleen dashboard: `hermes_onderhoud.bat -DashboardOnly` (alias: `audits\RESTART_
 | **timeout na 240s** | `set CODEBASE_VIZ_PYGOUNT_TIMEOUT=300` vóór start, of tijdelijk kleinere `CODEBASE_VIZ_REPO` |
 | **pygount failed** | `conda run -n hermes-env python -m pip install pygount` (launch-script installeert dit bij workspace-plugins) |
 | Geen live file-watcher | Normaal op Windows native; WSL alleen als WS-updates productiekritisch zijn |
+| **`memory_pressure` in Sunburst** | `windows\FIX_CODEBASE_VIZ_CACHE.bat`, dashboard herstarten; zie [`docs/CODEBASE_VIZ_TROUBLESHOOTING.md`](CODEBASE_VIZ_TROUBLESHOOTING.md) |
+| **`401` op `/api/.../health` in browser** | API vereist `X-Hermes-Session-Token` (console-fetch op `/codebase-viz` of verify-script) |
 
 Rooktest-checklist: [`docs/checklists/codebase-viz-sprint4-full-gate.md`](checklists/codebase-viz-sprint4-full-gate.md). Plugin-README: [`plugins/codebase-viz/dashboard/README.md`](../plugins/codebase-viz/dashboard/README.md).
 

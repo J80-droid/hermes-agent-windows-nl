@@ -43,6 +43,8 @@ pip install pygount watchdog radon psutil
 
 `REPO_PATH` wordt bij module-import bepaald; na env-wijziging dashboard herstarten.
 
+**Troubleshooting `memory_pressure`:** [`docs/CODEBASE_VIZ_TROUBLESHOOTING.md`](../../../docs/CODEBASE_VIZ_TROUBLESHOOTING.md) — repair: `windows\FIX_CODEBASE_VIZ_CACHE.bat`. `/health` bevat `disk_cache.revision_matches` (vereist `X-Hermes-Session-Token`, niet bare URL in browser).
+
 ### Scan-snelheid & cache
 
 | Situatie | Verwachting |
@@ -95,7 +97,7 @@ Controle: `GET /api/plugins/codebase-viz/health` → `pygount_cached: true` na e
 
 | Methode | Pad | Beschrijving |
 |---------|-----|--------------|
-| GET | `/health` | Status, repo, watcher, `memory` (RSS / pressure) |
+| GET | `/health` | Status, repo, watcher, `memory`, `disk_cache` (revisie-match) |
 | GET | `/structure` | Directory tree + LOC summary |
 | GET | `/dependencies` | Import-graaf (nodes/edges) |
 | GET | `/summary` | Aggregaten + top files/modules |
@@ -221,7 +223,8 @@ dashboard:
 | Feature | Details |
 |---------|---------|
 | Thundering herd | `asyncio.Lock` + pytest parallel cache miss |
-| Memory guard | `CODEBASE_VIZ_MAX_MEMORY_MB` (default 500), `pip install psutil` |
+| Memory guard | `CODEBASE_VIZ_MAX_MEMORY_MB` (default 500), `pip install psutil`; stale disk bij revisie-mismatch; `structure`/`summary` uit resident `pygount` |
+| Delta refresh | git HEAD (`_repo_cache_revision`), geen dure bestands-handtekening per start |
 | Shortcuts | `1`–`9` tabs, `0` coverage, `r` force-scan+refresh, `Esc` inspector |
 | Checklist | `docs/checklists/codebase-viz-sprint4-full-gate.md` |
 
