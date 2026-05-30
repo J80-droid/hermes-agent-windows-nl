@@ -46,12 +46,44 @@ function Sync-HermesStableTaskbarShortcuts {
     foreach ($map in (Get-HermesStableTaskbarShortcutFileMap)) {
         $entry = $catalog | Where-Object { $_.Role -eq $map.Role } | Select-Object -First 1
         if (-not $entry) { continue }
+        $src = Join-Path $WindowsDir $entry.FileName
         $dest = Join-Path $dir $map.FileName
-        if (New-HermesCatalogShortcut -Entry $entry -ShortcutPath $dest -RepoRoot $RepoRoot `
-                -WindowsDir $WindowsDir -ForTaskbarPin) {
+        if (-not (Test-Path -LiteralPath $src)) { continue }
+        if (Copy-HermesShellShortcutContent -SourcePath $src -DestinationPath $dest) {
             $ok++
             if (-not $Quiet) {
                 Write-Host ('  [OK] Stabiel taakbalk-pad: ' + $map.FileName) -ForegroundColor Green
+            }
+        }
+    }
+    return $ok
+}
+
+function Sync-HermesTaskbarPinsMirrorWindows {
+    <#
+    .SYNOPSIS
+        Regressie-fix (2026-05-29): User Pinned\TaskBar = exacte kopie van windows\ per catalogusnaam,
+        inclusief Start Hermes*. Zo werkte de oude pinRows-lus vóór Hermes*.lnk-filter.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$WindowsDir,
+        [Parameter(Mandatory)][string]$PinnedDir,
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [switch]$Quiet
+    )
+    if (-not (Test-Path -LiteralPath $PinnedDir)) {
+        New-Item -ItemType Directory -Force -Path $PinnedDir | Out-Null
+    }
+    $catalog = Get-HermesShortcutCatalog -RepoRoot $RepoRoot
+    $ok = 0
+    foreach ($entry in $catalog) {
+        $src = Join-Path $WindowsDir $entry.FileName
+        if (-not (Test-Path -LiteralPath $src)) { continue }
+        $dest = Join-Path $PinnedDir $entry.FileName
+        if (Copy-HermesShellShortcutContent -SourcePath $src -DestinationPath $dest) {
+            $ok++
+            if (-not $Quiet) {
+                Write-Host ('  [OK] Taakbalk-spiegel: ' + $entry.FileName) -ForegroundColor Green
             }
         }
     }
@@ -523,6 +555,12 @@ function Repair-HermesShellShortcutInPlace {
     $catalog = Get-HermesShortcutCatalog -RepoRoot $RepoRoot
     $entry = $catalog | Where-Object { $_.Role -eq $Role } | Select-Object -First 1
     if (-not $entry) { return $false }
+    if ($ForTaskbarPin) {
+        $canon = Join-Path $WindowsDir $entry.FileName
+        if (Test-Path -LiteralPath $canon) {
+            return (Copy-HermesShellShortcutContent -SourcePath $canon -DestinationPath $ShortcutPath)
+        }
+    }
     return (New-HermesCatalogShortcut -Entry $entry -ShortcutPath $ShortcutPath -RepoRoot $RepoRoot `
             -WindowsDir $WindowsDir -ForTaskbarPin:$ForTaskbarPin)
 }
@@ -622,8 +660,14 @@ function Invoke-HermesShortcutSyncRepair {
     }
     [void](Sync-HermesCatalogShortcuts -RepoRoot $repo -WindowsDir $WindowsDir -TargetDirs @($WindowsDir) -Quiet:$Quiet)
     if ($persistDir) {
-        [void](Sync-HermesCatalogShortcuts -RepoRoot $repo -WindowsDir $WindowsDir -TargetDirs @($persistDir) `
-            -Quiet:$Quiet -ForTaskbarPin)
+        [void](Sync-HermesCatalogShortcuts -RepoRoot $repo -WindowsDir $WindowsDir -TargetDirs @($persistDir) -Quiet:$Quiet)
+        foreach ($entry in (Get-HermesShortcutCatalog -RepoRoot $repo)) {
+            $src = Join-Path $WindowsDir $entry.FileName
+            $dest = Join-Path $persistDir $entry.FileName
+            if ((Test-Path -LiteralPath $src)) {
+                [void](Copy-HermesShellShortcutContent -SourcePath $src -DestinationPath $dest)
+            }
+        }
     }
 
     [void](Sync-HermesStableTaskbarShortcuts -RepoRoot $repo -WindowsDir $WindowsDir -Quiet:$Quiet)
@@ -632,27 +676,16 @@ function Invoke-HermesShortcutSyncRepair {
     if ($pinnedDir -and (Test-Path -LiteralPath $pinnedDir)) {
         Write-HermesOrphanExePinAdvisory -Quiet:$Quiet
         [void](Remove-HermesDuplicateTaskbarPins -PinnedDir $pinnedDir -Quiet:$Quiet)
-        [void](Repair-HermesWtTargetTaskbarPinsToBat -PinnedDir $pinnedDir -RepoRoot $repo -WindowsDir $WindowsDir -Quiet:$Quiet)
         [void](Remove-HermesTaskbarPinsWithMissingTargets -PinnedDir $pinnedDir -RepoRoot $repo -Quiet:$Quiet)
         [void](Repair-HermesPinnedAndDesktopShortcuts -RepoRoot $repo -WindowsDir $WindowsDir `
             -Quiet:$Quiet -RefreshAllTaskbarPins)
     }
 
-    $catalog = Get-HermesShortcutCatalog -RepoRoot $repo
-    if ($pinnedDir -and (Test-Path -LiteralPath $pinnedDir)) {
+    if ($pinnedDir) {
         if (-not $Quiet) {
-            Write-Host '[INFO] Taakbalk-kopieën bijwerken (zelfde inhoud als windows\, zonder .lnk te verwijderen)...' -ForegroundColor Gray
+            Write-Host '[INFO] Taakbalk = spiegel van windows\ (incl. Start Hermes*, in-place)...' -ForegroundColor Gray
         }
-        foreach ($entry in $catalog) {
-            $dest = Join-Path $pinnedDir $entry.FileName
-            if (-not (New-HermesCatalogShortcut -Entry $entry -ShortcutPath $dest -RepoRoot $repo `
-                    -WindowsDir $WindowsDir -ForTaskbarPin)) {
-                continue
-            }
-            if (-not $Quiet) {
-                Write-Host ('  [OK] Taakbalk-pin (bat-doel): ' + $entry.FileName) -ForegroundColor Green
-            }
-        }
+        [void](Sync-HermesTaskbarPinsMirrorWindows -WindowsDir $WindowsDir -PinnedDir $pinnedDir -RepoRoot $repo -Quiet:$Quiet)
     }
 
     if ($pinnedDir -and (Test-Path -LiteralPath $pinnedDir)) {

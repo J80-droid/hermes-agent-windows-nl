@@ -363,6 +363,30 @@ function Set-HermesShellShortcut {
     return $true
 }
 
+function Copy-HermesShellShortcutContent {
+    <#
+    .SYNOPSIS
+        Kopieert .lnk-inhoud in-place naar bestaand doel (zelfde Target/Args als bron).
+        Gebruik: taakbalk-map = spiegel van windows\ zodat Start en Hermes - * gelijk blijven.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$SourcePath,
+        [Parameter(Mandatory)][string]$DestinationPath
+    )
+    if (-not (Test-Path -LiteralPath $SourcePath)) { return $false }
+    $wsh = New-Object -ComObject WScript.Shell
+    $src = $wsh.CreateShortcut($SourcePath)
+    $dest = $wsh.CreateShortcut($DestinationPath)
+    $dest.TargetPath = $src.TargetPath
+    $dest.Arguments = $src.Arguments
+    $dest.WorkingDirectory = $src.WorkingDirectory
+    $dest.WindowStyle = $src.WindowStyle
+    $dest.IconLocation = $src.IconLocation
+    if ($src.Description) { $dest.Description = $src.Description }
+    $dest.Save()
+    return $true
+}
+
 function Set-HermesTaskbarPinStartShortcut {
     <#
     .SYNOPSIS

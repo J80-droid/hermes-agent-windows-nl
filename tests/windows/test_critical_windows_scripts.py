@@ -97,8 +97,8 @@ def test_taskbar_pin_repair_covers_start_hermes_and_in_place_refresh():
     assert "fix_hermes_taskbar_pins.ps1" in post_merge
     assert "Filter 'Hermes*.lnk'" not in ps1
     assert "Remove-Item -LiteralPath $ShortcutPath" not in icon_ps1
-    assert "function Set-HermesTaskbarPinShortcut" in icon_ps1
-    assert "TargetPath = $batFull" in icon_ps1
+    assert "function Copy-HermesShellShortcutContent" in icon_ps1
+    assert "function Sync-HermesTaskbarPinsMirrorWindows" in ps1
     assert "ForTaskbarPin" in ps1
     assert "zonder .lnk te verwijderen" in ps1 or "windows\\ eerst" in ps1
 
