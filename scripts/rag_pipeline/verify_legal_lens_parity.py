@@ -28,7 +28,11 @@ from sync_legal_lens_table_from_taxonomy import (  # noqa: E402
 
 
 def _parse_soul_lens_rows(text: str) -> list[tuple[str, str, str]]:
-    """Return (signals, lens, submap) from the Juridische lenzen table only (ignore other markdown tables)."""
+    """Return (signals, lens, submap) from the Juridische lenzen table only.
+
+    Scoped to text after ``## Juridische lenzen``; stops at non-folder rows so SOUL
+    USER.md / parallelle-invalshoeken tables are ignored. E2E: RUN_LEGAL_MEMORY_LANGUAGE_LAYERS_E2E.bat.
+    """
     scope = text
     if LENS_HEADER in text:
         scope = text.split(LENS_HEADER, 1)[1]

@@ -23,6 +23,15 @@ function Get-HermesMemoryHermesRoot {
 }
 
 function Get-HermesMemorySeedEntries {
+    <#
+    .SYNOPSIS
+      Leest §-entries uit docs/templates/MEMORY_CANONICAL_SEED.md (één string per ```-blok).
+    .PARAMETER SectionName
+      Bijv. 'USER.md' (EN trust), 'legal USER.md' (3× NL triggers), 'MEMORY.md'.
+    .NOTES
+      Retourneert altijd een array — één entry anders unwrapped PowerShell-string (index op chars).
+      E2E: audits/RUN_LEGAL_MEMORY_LANGUAGE_LAYERS_E2E.bat
+    #>
     param(
         [Parameter(Mandatory)][string]$RepoRoot,
         [Parameter(Mandatory)][string]$SectionName,
@@ -62,7 +71,8 @@ function Get-HermesMemorySeedEntries {
         if ($Optional) { return @() }
         Write-Error "Sectie niet gevonden of leeg in seed: $SectionName"
     }
-    return $entries.ToArray()
+    # Altijd array (voorkomt dat 1 entry als [char]-indexeerbare string wordt in callers).
+    return @($entries.ToArray())
 }
 
 function Test-IsLegalProfileMemoryUserPath {

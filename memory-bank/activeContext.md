@@ -4,7 +4,7 @@
 
 **Profielwissel Windows structureel (2026-05-30, productie OK):** `/profile use` in WT — TUI-modal op achtergrondthread (`_schedule_profile_command_async`); sync/gateway/relaunch na TUI-exit; geen stderr-spinner tijdens `chat` relaunch (prompt `legal ❯`); audit `docs/PROFILE_SWITCH_WINDOWS_AUDIT.md`; E2E `RUN_PROFILE_SWITCH_E2E.bat` + pytest 29 passed.
 
-**Legal memory taal-lagen 100% (2026-05-30):** EN trust + 3× NL legal USER-seed (proactief, voorbeeldvragen, taallaag); SOUL § USER.md precedence; `LEGAL_DOMAIN_ARCHITECTURE` § Taal- en triggerlagen; pytest `test_legal_memory_language_layers.py` + uitgebreide proactive E2E.
+**Legal memory taal-lagen 100% (2026-05-30):** EN trust + 3× NL legal USER-seed; SOUL § USER.md precedence; `RUN_LEGAL_MEMORY_LANGUAGE_LAYERS_E2E.bat` (9 stappen); pytest `test_legal_memory_language_layers.py` + `test_legal_memory_language_layers_e2e_harness.py` (38); `Get-HermesMemorySeedEntries` retourneert altijd `@()`-array.
 
 **Legal proactive E2E geautomatiseerd (2026-05-30):** `Invoke-LegalProactiveSparringE2E.ps1` gekoppeld aan `APPLY_SOUL_ANATOMY_RUNTIME`, `launch_soul_anatomy_deploy`, `SYNC_TRUST_RUNTIME`, `RUN_AUDITS -IncludeLegalDomainE2E`; skip `HERMES_SKIP_LEGAL_PROACTIVE_E2E=1` / trust `HERMES_LEGAL_PROACTIVE_E2E_ON_TRUST=0`; core.ps1 Identity-insert check via regex (geen false positive op commentaar).
 

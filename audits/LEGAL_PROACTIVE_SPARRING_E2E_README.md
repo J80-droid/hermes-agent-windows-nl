@@ -40,6 +40,13 @@ Centrale launcher: `windows\scripts\Invoke-LegalProactiveSparringE2E.ps1` (`-Con
 
 Overal uitschakelen: `HERMES_SKIP_LEGAL_PROACTIVE_E2E=1`.
 
+## Gerelateerde E2E
+
+| Audit | Wanneer |
+|-------|---------|
+| `RUN_LEGAL_MEMORY_LANGUAGE_LAYERS_E2E.bat` | Alleen taal-lagen (EN trust + 3× NL USER), geen Pester |
+| `pytest tests/audits/test_legal_proactive_sparring_e2e_harness.py` | Harness unit tests (gemockt) |
+
 ## Na wijzigingen
 
 1. `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat` (inclusief proactive E2E) → `/new` (legal)

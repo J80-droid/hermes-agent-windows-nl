@@ -372,6 +372,16 @@ Zwaardere runtime-poort: `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat`.
 
 ---
 
+# Legal memory language layers E2E
+
+Geïsoleerde E2E voor **taal per laag** (EN trust + 3× NL legal USER, SOUL precedence, geen i18n). Geen SOUL repair/Pester.
+
+```bat
+audits\RUN_LEGAL_MEMORY_LANGUAGE_LAYERS_E2E.bat
+```
+
+Zie `audits/LEGAL_MEMORY_LANGUAGE_LAYERS_E2E_README.md`. Unit (gemockt): `pytest tests/audits/test_legal_memory_language_layers_e2e_harness.py -q`.
+
 # Legal proactive sparring E2E
 
 Geïsoleerde E2E voor **parallelle invalshoeken**, **Config governance duplicate-repair**, **legal USER.md seed** en **LEGAL_ACTIVE_MATTERS Adjacent checks**. Geen live LLM.

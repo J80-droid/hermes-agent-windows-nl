@@ -69,7 +69,7 @@ Hermes legal gebruikt **taal per laag**, niet vertaalde dubbele bestanden.
 
 **Sync:** `docs/templates/MEMORY_CANONICAL_SEED.md` sectie `legal USER.md entries` (3 §-entries) → `sync_profile_memories.ps1` alleen voor `profiles/legal/memories/USER.md`.
 
-**Verificatie:** `audits/RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat` (seed + runtime USER); `pytest tests/windows/test_legal_memory_language_layers.py`.
+**Verificatie:** `audits/RUN_LEGAL_MEMORY_LANGUAGE_LAYERS_E2E.bat` (taal-lagen); `audits/RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat` (breed); `pytest tests/windows/test_legal_memory_language_layers.py`.
 
 ## Proactief meedenken (antwoordstructuur)
 

@@ -21,6 +21,7 @@ Na `git pull` / `UPDATE_HERMES.bat`. Volledige poort: [LEGAL_PRODUCTION_GATE.md]
 
 ```bat
 windows\VERIFY_LEGAL_RUNTIME.bat
+audits\RUN_LEGAL_MEMORY_LANGUAGE_LAYERS_E2E.bat
 audits\RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat
 windows\audits\RUN_LEGAL_DOMAIN_E2E.bat
 windows\audits\RUN_LEGAL_DOMAIN_E2E.bat -StrictSources

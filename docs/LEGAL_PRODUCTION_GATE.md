@@ -8,7 +8,8 @@ Operationele matrix voor institutioneel legal-domein (fork). Volledige architect
 |------|--------|--------|
 | Dagelijkse runtime | `windows\VERIFY_LEGAL_RUNTIME.bat` | SOUL meta + parity + `domains.yaml` (warn zonder strict) |
 | Snelle repo-E2E (geen RAG) | `audits\RUN_LEGAL_PRODUCTION_E2E.bat` | 17 harness-stappen + pytest-contract |
-| Proactief sparren + SOUL-repair | `audits\RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat` (ook auto na soul deploy / trust / `-IncludeLegalDomainE2E`) | 14 harness-stappen + core.ps1 + Pester repair |
+| Taal-lagen (EN trust + 3× NL USER) | `audits\RUN_LEGAL_MEMORY_LANGUAGE_LAYERS_E2E.bat` | 9 harness-stappen + core.ps1 + pytest contract |
+| Proactief sparren + SOUL-repair | `audits\RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat` (ook auto via `Invoke-LegalProactiveSparringE2E.ps1`) | 19 harness-stappen + core.ps1 + Pester repair |
 | Volledige poort | `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat` | 12 stappen |
 | Strict bronnen | `RUN_LEGAL_DOMAIN_E2E.bat -StrictSources` | Bronmap verplicht |
 | Lens sync toepassen | `RUN_LEGAL_DOMAIN_E2E.bat -ApplyLensSync` | `--all` i.p.v. dry-run |
@@ -21,6 +22,8 @@ Operationele matrix voor institutioneel legal-domein (fork). Volledige architect
 |----------|---------|
 | Na skill-wijziging onder `skills/legal/` | `RUN_LEGAL_SKILLS_ROOKTEST.bat` + `RUN_REPO_HYGIENE_E2E.bat` |
 | Na taxonomie/SOUL/deploy | `VERIFY_LEGAL_RUNTIME.bat` of `RUN_LEGAL_DOMAIN_E2E.bat` |
+| Na wijziging legal USER seed / taal-lagen | `RUN_LEGAL_MEMORY_LANGUAGE_LAYERS_E2E.bat` |
+| Na parallelle invalshoeken / config repair | `RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat` |
 | Na ingest | `show_legal_ingest_dashboard.ps1` + stap 12 E2E (search rooktest) |
 | Profielwissel + legal | `RUN_PROFILE_SWITCH_E2E.bat` daarna legal E2E |
 
@@ -28,11 +31,12 @@ Operationele matrix voor institutioneel legal-domein (fork). Volledige architect
 
 1. `UPDATE_HERMES.bat` (of pull + soul deploy)
 2. `VERIFY_LEGAL_RUNTIME.bat` met `set HERMES_LEGAL_VERIFY_STRICT=1`
-3. `audits\RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat`
-4. `RUN_LEGAL_DOMAIN_E2E.bat -StrictSources`
-5. `RUN_PROFILE_SWITCH_E2E.bat` (legal ↔ core)
-6. Chat smoke: profiel `legal`, vraag *“Hoe ziet het team van agents eruit?”* → lenzen; of `/legal-architectuur`
-7. Strategievraag smoke: disciplinair/mandaat → sectie **Parallelle invalshoeken** waar plausibel
+3. `audits\RUN_LEGAL_MEMORY_LANGUAGE_LAYERS_E2E.bat`
+4. `audits\RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat`
+5. `RUN_LEGAL_DOMAIN_E2E.bat -StrictSources`
+6. `RUN_PROFILE_SWITCH_E2E.bat` (legal ↔ core)
+7. Chat smoke: profiel `legal`, vraag *“Hoe ziet het team van agents eruit?”* → lenzen; of `/legal-architectuur`
+8. Strategievraag smoke: disciplinair/mandaat → sectie **Parallelle invalshoeken** waar plausibel
 
 ## User-data (P0)
 
@@ -65,7 +69,7 @@ GitHub `fork-windows-institutional.yml` draait hardening (legal skills pytest), 
 ```bat
 powershell -NoProfile -ExecutionPolicy Bypass -File windows\tests\LegalDomainE2E.Unit.Tests.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File windows\tests\SoulSnippetRepair.Unit.Tests.ps1
-pytest tests/windows/test_legal_domain_e2e_unit.py tests/audits/test_legal_production_e2e_harness.py tests/audits/test_legal_proactive_sparring_e2e_harness.py tests/windows/test_legal_memory_language_layers.py tests/scripts/test_verify_legal_lens_parity.py tests/scripts/test_legal_lens_from_path.py tests/hermes_cli/test_legal_architecture_brief.py tests/windows/test_legal_meta_contract.py -q
+pytest tests/windows/test_legal_domain_e2e_unit.py tests/audits/test_legal_production_e2e_harness.py tests/audits/test_legal_proactive_sparring_e2e_harness.py tests/audits/test_legal_memory_language_layers_e2e_harness.py tests/windows/test_legal_memory_language_layers.py tests/scripts/test_verify_legal_lens_parity.py tests/scripts/test_legal_lens_from_path.py tests/hermes_cli/test_legal_architecture_brief.py tests/windows/test_legal_meta_contract.py -q
 ```
 
 `RUN_AUDITS.bat -IncludeLegalDomainE2E` draait eerst de geïsoleerde unit (gemockte paden), daarna `RUN_LEGAL_DOMAIN_E2E.bat`, daarna `Invoke-LegalProactiveSparringE2E.ps1`.
@@ -78,6 +82,7 @@ Renderer rooktest (geen legal-domein): `pytest tests/scripts/test_score_institut
 
 - [LEGAL_ROLLOUT_CHECKLIST.md](LEGAL_ROLLOUT_CHECKLIST.md)
 - [../audits/LEGAL_PRODUCTION_E2E_README.md](../audits/LEGAL_PRODUCTION_E2E_README.md)
+- [../audits/LEGAL_MEMORY_LANGUAGE_LAYERS_E2E_README.md](../audits/LEGAL_MEMORY_LANGUAGE_LAYERS_E2E_README.md)
 - [../audits/LEGAL_PROACTIVE_SPARRING_E2E_README.md](../audits/LEGAL_PROACTIVE_SPARRING_E2E_README.md)
 - [INSTITUTIONAL_OPERATIONS.md](INSTITUTIONAL_OPERATIONS.md)
 - [PROFILE_SWITCH.md](PROFILE_SWITCH.md)

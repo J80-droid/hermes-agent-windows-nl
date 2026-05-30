@@ -2,6 +2,7 @@
 
 ## Code (P2 + institutioneel)
 
+- [x] Legal taal-lagen E2E + tests (2026-05-30): `RUN_LEGAL_MEMORY_LANGUAGE_LAYERS_E2E.bat`; harness/core/README; pytest harness **38** + contract **5**; seed array-fix `Get-HermesMemorySeedEntries`; docs gate/rollout/windows README
 - [x] Profielwissel in-chat Windows (2026-05-30): async `/profile` + TUI-modal; relaunch zonder chat-spinner; docs audit + PROFILE_SWITCH; pytest relaunch + chat UX; **gebruiker bevestigd legal ❯**
 - [x] RUN_AUDITS vijf-stappen fixes (2026-05-29): gateway cost/tps bij kapotte `display`; `hermes config get`; `profile use` + switch-flags; SOUL Output conventions repair; memory-repair E2E `Initialize-*`; gitignore audit-logs/checkpoint testdata; `soul-runtime-prep` in `-IncludeAllE2E`; **volledige RUN_AUDITS -IncludeAllE2E PASS** (~15 min, exit 0, 2026-05-29)
 - [x] Plan v2 fork-afsluiting (2026-05-30): `ee90ccb8c` gepusht (verify chain + dashboard D7); `SYNC_TRUST_RUNTIME` + `RUN_AUDITS -IncludeAllE2E` **PASS** (formele poort, log `audits/RUN_AUDITS_closure_2026-05-30.log`); acceptatie v2 = fork-poorten, niet parallel ~29k upstream
