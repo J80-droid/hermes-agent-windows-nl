@@ -10,6 +10,7 @@ Instructions for AI coding assistants and developers working on the hermes-agent
 - **Model/provider/auxiliary/providers:** domeinprofielen **erven** van root `%LOCALAPPDATA%\hermes\config.yaml` — geen global blocks in `profiles/<naam>/config.yaml` (tenzij `*.inherit: false`). Code: `hermes_cli/profile_model_inheritance.py`; docs: `docs/PROFILE_MODEL_INHERITANCE.md`, `docs/HERMES_HOME_WINDOWS.md`.
 - **Windows split-home (2026-05-23+):** `HermesHomeCommon.ps1`, drift verify, deprecate legacy config, auxiliary hybrid preset, Venice merge, root inheritance E2E, doctor + `HERMES_WIN_PREFER_LOCALAPPDATA`, runbook `docs/HERMES_HOME_WINDOWS.md`.
 - Citatieregels: `.cursorrules` + `LANCEDB_RAG_STRICT_CITATION_GUIDANCE` in `agent/prompt_builder.py` (actief wanneer tool `search_knowledge` geladen is).
+- **Windows Terminal / titelbalk-muis:** startcanon `start_hermes.bat` (WT); geen `ExpandConsoleToWorkArea` in `WT_SESSION`; recovery `windows/FIX_MOUSE_BLOCKED.bat`; docs `windows/MOUSE_OVERLAY_FIX.md`, `windows/TERMINAL_WINDOWS.md`; regressie `.cursorrules` § Hermes Windows terminal.
 
 ### Ad-hoc werk & repo-hygiene (deze fork)
 

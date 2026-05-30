@@ -42,6 +42,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Technische ingest/MCP-stappen | [../scripts/rag_pipeline/ACTIVATION.md](../scripts/rag_pipeline/ACTIVATION.md) |
 | Windows-scripts en taakbalk | [../windows/README.md](../windows/README.md) |
 | Terminal, skin, markdown-kleuren, API-home | [../windows/TERMINAL_WINDOWS.md](../windows/TERMINAL_WINDOWS.md) |
+| WT titelbalk / muisklik overlay (opgelost) | [../windows/MOUSE_OVERLAY_FIX.md](../windows/MOUSE_OVERLAY_FIX.md) · recovery: `FIX_MOUSE_BLOCKED.bat` · poort: `windows/audits/RUN_WT_MOUSE_OVERLAY_E2E.bat` |
 | User-data docs (STATUS/RECOVERY sync) | [USER_DATA_OPERATIONS.md](USER_DATA_OPERATIONS.md) |
 | Backup & restore (schema v3, runtime) | [USER_DATA_OPERATIONS.md](USER_DATA_OPERATIONS.md) § Windows; `windows/INSTITUTIONAL.md` § Backup |
 | IDE / Cursor (PSES + conda) | [WORKSPACE_IDE_SETUP.md](WORKSPACE_IDE_SETUP.md) · parent template: `docs/templates/Hermes_agent_WS.vscode.settings.json` · repo-only: [IDE_VSCODE_SETTINGS.example.json](IDE_VSCODE_SETTINGS.example.json) |
