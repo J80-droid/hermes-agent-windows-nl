@@ -75,10 +75,22 @@ def test_update_hermes_uses_upstream_sync():
     assert "gestopt met code" in bat.lower()
     assert "goto :team_display" in bat.lower()
     assert "-Yes" in bat
+    assert "fix_hermes_taskbar_pins.ps1" in bat
+    assert "bestaande pins" in bat.lower()
     yes_bat = REPO / "windows/UPDATE_HERMES_YES.bat"
     assert yes_bat.is_file()
     assert "UPDATE_HERMES.bat" in yes_bat.read_text(encoding="utf-8")
     assert "HERMES_UPSTREAM_AUTO_CONFIRM=1" in yes_bat.read_text(encoding="utf-8")
+
+
+def test_taskbar_pin_repair_covers_start_hermes_and_in_place_refresh():
+    """Taakbalk-pins (ook Start Hermes*.lnk) worden na update in-place vernieuwd."""
+    ps1 = (REPO / "windows/scripts/HermesPersistentShortcuts.ps1").read_text(encoding="utf-8")
+    assert "function Test-HermesManagedPinLeaf" in ps1
+    assert "function Get-HermesManagedPinShortcuts" in ps1
+    assert "RefreshAllTaskbarPins" in ps1
+    assert "Remove-HermesBrokenManagedPinsWithoutRole" in ps1
+    assert "Filter 'Hermes*.lnk'" not in ps1
 
 
 def test_orchestrator_routing_doc_exists():

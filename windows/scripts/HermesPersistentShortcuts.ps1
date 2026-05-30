@@ -12,6 +12,70 @@ function Get-HermesTaskbarPinnedDir {
     return (Join-Path $env:APPDATA (Join-Path 'Microsoft' (Join-Path 'Internet Explorer' (Join-Path 'Quick Launch' (Join-Path 'User Pinned' 'TaskBar')))))
 }
 
+function Test-HermesManagedPinLeaf {
+    param([Parameter(Mandatory)][string]$Leaf)
+    $n = $Leaf.ToLowerInvariant()
+    return ($n -match 'hermes|start hermes')
+}
+
+function Get-HermesManagedPinShortcuts {
+    param([Parameter(Mandatory)][string]$Dir)
+    if (-not (Test-Path -LiteralPath $Dir)) { return @() }
+    return @(Get-ChildItem -LiteralPath $Dir -Filter '*.lnk' -File -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.Name -notmatch ' \(\d+\)\.lnk$' -and (Test-HermesManagedPinLeaf -Leaf $_.Name)
+        })
+}
+
+function Remove-HermesDuplicateTaskbarPins {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)][string]$PinnedDir,
+        [switch]$Quiet
+    )
+    if (-not (Test-Path -LiteralPath $PinnedDir)) { return 0 }
+    $removed = 0
+    Get-ChildItem -LiteralPath $PinnedDir -Filter '*.lnk' -File -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.Name -match ' \(\d+\)\.lnk$' -and
+            (Test-HermesManagedPinLeaf -Leaf ($_.Name -replace ' \(\d+\)\.lnk$', '.lnk'))
+        } |
+        ForEach-Object {
+            if ($PSCmdlet.ShouldProcess($_.FullName, 'Remove', 'Duplicate Hermes taskbar pin')) {
+                Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue
+                $script:removed++
+            }
+        }
+    if (-not $Quiet -and $removed -gt 0) {
+        Write-Host ("  [OK] Dubbele taakbalk-pins verwijderd: $removed") -ForegroundColor Green
+    }
+    return $removed
+}
+
+function Remove-HermesBrokenManagedPinsWithoutRole {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)][string]$Dir,
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [switch]$Quiet
+    )
+    $removed = 0
+    foreach ($item in (Get-HermesManagedPinShortcuts -Dir $Dir)) {
+        $role = Get-HermesShortcutRoleFromShortcut -ShortcutPath $item.FullName -RepoRoot $RepoRoot
+        if ($role) { continue }
+        $health = Test-HermesShortcutPathHealth -ShortcutPath $item.FullName -RepoRoot $RepoRoot
+        if ($health.Ok) { continue }
+        if ($PSCmdlet.ShouldProcess($item.FullName, 'Remove', 'Broken Hermes pin without role')) {
+            Remove-Item -LiteralPath $item.FullName -Force -ErrorAction SilentlyContinue
+            $script:removed++
+            if (-not $Quiet) {
+                Write-Host ('  [OK] Verouderde pin verwijderd: ' + $item.Name) -ForegroundColor Yellow
+            }
+        }
+    }
+    return $removed
+}
+
 function Write-HermesInstallState {
     param([Parameter(Mandatory)][string]$RepoRoot)
     $local = Get-HermesRealLocalAppData
@@ -221,32 +285,44 @@ function Repair-HermesPinnedAndDesktopShortcuts {
     param(
         [Parameter(Mandatory)][string]$RepoRoot,
         [Parameter(Mandatory)][string]$WindowsDir,
-        [switch]$Quiet
+        [switch]$Quiet,
+        [switch]$RefreshAllTaskbarPins
     )
     $repaired = 0
-    $dirs = @()
     $pinDir = Get-HermesTaskbarPinnedDir
-    if ($pinDir -and (Test-Path -LiteralPath $pinDir)) { $dirs += $pinDir }
     $desk = [Environment]::GetFolderPath('Desktop')
-    if ($desk) { $dirs += $desk }
+    $targets = @()
+    if ($pinDir -and (Test-Path -LiteralPath $pinDir)) {
+        $targets += @{ Dir = $pinDir; IsTaskbar = $true }
+    }
+    if ($desk) {
+        $targets += @{ Dir = $desk; IsTaskbar = $false }
+    }
 
-    foreach ($dir in $dirs) {
-        Get-ChildItem -LiteralPath $dir -Filter 'Hermes*.lnk' -File -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -notmatch ' \(\d+\)\.lnk$' } |
-            ForEach-Object {
-                $health = Test-HermesShortcutPathHealth -ShortcutPath $_.FullName -RepoRoot $RepoRoot
-                $role = Get-HermesShortcutRoleFromShortcut -ShortcutPath $_.FullName -RepoRoot $RepoRoot
-                if (-not $role) { return }
-                if ($health.Ok -and (Test-HermesShortcutIconPathValid -IconPath ((New-Object -ComObject WScript.Shell).CreateShortcut($_.FullName).IconLocation))) {
-                    return
-                }
-                if (Repair-HermesShellShortcutInPlace -ShortcutPath $_.FullName -Role $role -RepoRoot $RepoRoot -WindowsDir $WindowsDir) {
-                    $script:repaired++
-                    if (-not $Quiet) {
-                        Write-Host ('  [OK] Hersteld: ' + $_.Name) -ForegroundColor Green
-                    }
+    foreach ($target in $targets) {
+        foreach ($item in (Get-HermesManagedPinShortcuts -Dir $target.Dir)) {
+            $role = Get-HermesShortcutRoleFromShortcut -ShortcutPath $item.FullName -RepoRoot $RepoRoot
+            if (-not $role) { continue }
+
+            $health = Test-HermesShortcutPathHealth -ShortcutPath $item.FullName -RepoRoot $RepoRoot
+            $iconOk = $true
+            if ($health.Ok) {
+                $iconLoc = (New-Object -ComObject WScript.Shell).CreateShortcut($item.FullName).IconLocation
+                $iconOk = Test-HermesShortcutIconPathValid -IconPath $iconLoc
+            }
+            $needsRepair = (-not $health.Ok) -or (-not $iconOk)
+            if ($target.IsTaskbar -and ($RefreshAllTaskbarPins -or $needsRepair)) {
+                $needsRepair = $true
+            }
+            if (-not $needsRepair) { continue }
+
+            if (Repair-HermesShellShortcutInPlace -ShortcutPath $item.FullName -Role $role -RepoRoot $RepoRoot -WindowsDir $WindowsDir) {
+                $script:repaired++
+                if (-not $Quiet) {
+                    Write-Host ('  [OK] Hersteld: ' + $item.Name) -ForegroundColor Green
                 }
             }
+        }
     }
     return $repaired
 }
@@ -299,19 +375,14 @@ function Invoke-HermesShortcutSyncRepair {
 
     $pinnedDir = Get-HermesTaskbarPinnedDir
     if ($pinnedDir -and (Test-Path -LiteralPath $pinnedDir)) {
-        Get-ChildItem -LiteralPath $pinnedDir -Filter 'Hermes*.lnk' -File -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -match ' \(\d+\)\.lnk$' } |
-            ForEach-Object {
-                if ($PSCmdlet.ShouldProcess($_.FullName, 'Remove', 'Duplicate Hermes pin')) {
-                    Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue
-                }
-            }
+        [void](Remove-HermesDuplicateTaskbarPins -PinnedDir $pinnedDir -Quiet:$Quiet)
+        [void](Repair-HermesPinnedAndDesktopShortcuts -RepoRoot $repo -WindowsDir $WindowsDir `
+            -Quiet:$Quiet -RefreshAllTaskbarPins)
     }
 
     $catalog = Get-HermesShortcutCatalog -RepoRoot $repo
     if ($pinnedDir -and (Test-Path -LiteralPath $pinnedDir)) {
         foreach ($entry in $catalog) {
-            if ($entry.Role -eq 'OpenSetup') { continue }
             $dest = Join-Path $pinnedDir $entry.FileName
             if (-not (New-HermesCatalogShortcut -Entry $entry -ShortcutPath $dest -RepoRoot $repo -WindowsDir $WindowsDir)) {
                 continue
@@ -322,9 +393,14 @@ function Invoke-HermesShortcutSyncRepair {
         }
     }
 
-    $extra = Repair-HermesPinnedAndDesktopShortcuts -RepoRoot $repo -WindowsDir $WindowsDir -Quiet:$Quiet
+    if ($pinnedDir -and (Test-Path -LiteralPath $pinnedDir)) {
+        [void](Remove-HermesBrokenManagedPinsWithoutRole -Dir $pinnedDir -RepoRoot $repo -Quiet:$Quiet)
+    }
+
+    $extra = Repair-HermesPinnedAndDesktopShortcuts -RepoRoot $repo -WindowsDir $WindowsDir `
+        -Quiet:$Quiet -RefreshAllTaskbarPins
     if (-not $Quiet -and $extra -gt 0) {
-        Write-Host ("  [OK] Extra pins/bureaublad hersteld: $extra") -ForegroundColor Green
+        Write-Host ("  [OK] Taakbalk/bureaublad-pins bijgewerkt: $extra") -ForegroundColor Green
     }
 
     if (Get-Command Clear-HermesShellIconCache -ErrorAction SilentlyContinue) {

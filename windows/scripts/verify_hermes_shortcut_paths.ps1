@@ -94,8 +94,12 @@ if ($IncludePinned) {
                 }
             }
         }
-        Get-ChildItem -LiteralPath $pinnedDir -Filter 'Hermes*.lnk' -File -ErrorAction SilentlyContinue |
-            Where-Object { $_.Name -match ' \(\d+\)\.lnk$' } |
+        . (Join-Path $windowsDir 'scripts\HermesPersistentShortcuts.ps1')
+        Get-ChildItem -LiteralPath $pinnedDir -Filter '*.lnk' -File -ErrorAction SilentlyContinue |
+            Where-Object {
+                $_.Name -match ' \(\d+\)\.lnk$' -and
+                (Test-HermesManagedPinLeaf -Leaf ($_.Name -replace ' \(\d+\)\.lnk$', '.lnk'))
+            } |
             ForEach-Object {
                 $script:fail++
                 if (-not $Quiet) {

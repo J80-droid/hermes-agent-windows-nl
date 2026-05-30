@@ -68,8 +68,8 @@ Clear-HermesShellIconCache
 if (-not $Quiet) {
     Write-Host ''
     Write-Host 'Snelkoppelingen staan in windows\ en %LOCALAPPDATA%\Hermes\shortcuts\.' -ForegroundColor Cyan
-    Write-Host 'Taakbalk-pins worden bij elke update/start automatisch bijgewerkt — opnieuw vastzetten is meestal niet nodig.' -ForegroundColor Gray
-    Write-Host 'Blijft een pin wit? Klik Ja om oude pin te verwijderen, of losmaken en opnieuw vastzetten via .lnk in windows\.' -ForegroundColor DarkGray
+    Write-Host 'Taakbalk-pins blijven na update werken (paden/iconen worden in-place bijgewerkt).' -ForegroundColor Gray
+    Write-Host 'Eenmalige pop-up over een dode pin? Klik Ja — daarna hoef je niet opnieuw te slepen.' -ForegroundColor DarkGray
 }
 
 exit 0
