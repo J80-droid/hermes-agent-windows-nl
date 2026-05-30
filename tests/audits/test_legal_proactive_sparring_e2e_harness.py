@@ -467,6 +467,7 @@ class TestModuleEntrypoint:
         assert 'if __name__ == "__main__":' in source
         assert "SystemExit(main())" in source
 
-    def test_repo_root_points_at_hermes_agent(self, harness: ModuleType) -> None:
-        assert harness.REPO.name == "hermes-agent"
+    def test_repo_root_points_at_legal_e2e_harness(self, harness: ModuleType) -> None:
+        # CI/fork checkouts use the repo folder name (e.g. hermes-agent-windows-nl).
         assert (harness.REPO / "audits" / "LegalProactiveSparringE2E.harness.py").is_file()
+        assert (harness.REPO / "pyproject.toml").is_file()

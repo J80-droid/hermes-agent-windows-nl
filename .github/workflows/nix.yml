@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   nix:
+    if: github.repository != 'J80-droid/hermes-agent-windows-nl'
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]

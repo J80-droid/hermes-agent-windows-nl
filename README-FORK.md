@@ -102,6 +102,19 @@ Gebruikers ontvangen de update via een van bovenstaande methodes.
 
 ---
 
+## CI en GitHub-notificaties
+
+| Workflow | Op deze fork |
+| -------- | ------------ |
+| **Fork Windows Institutional** | Draait op elke push/PR naar `main` (Windows, legal pytest, H1–H14) |
+| **Tests** (upstream Linux-matrix) | **Uitgeschakeld** op `J80-droid/hermes-agent-windows-nl` — die suite is bedoeld voor upstream op Ubuntu en faalt vaak op fork-drift (CLI/RAG/padnamen) |
+
+Na een push naar `main` zie je vooral **Fork Windows Institutional** in Actions. Minder e-mail: GitHub → Settings → Notifications → Actions → alleen *Failed workflows* of watch-level voor deze repo verlagen.
+
+Bij upstream-merge: conflict in `.github/workflows/tests.yml` oplossen door de regel `if: github.repository != 'J80-droid/hermes-agent-windows-nl'` op jobs `test`, `rag`, `e2e` en `save-durations` te behouden.
+
+---
+
 ## Beheer
 
 - **GitHub**: [github.com/J80-droid/hermes-agent-windows-nl](https://github.com/J80-droid/hermes-agent-windows-nl)

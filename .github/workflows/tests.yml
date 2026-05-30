@@ -22,6 +22,8 @@ concurrency:
 
 jobs:
   test:
+    # Upstream Linux matrix; fork gebruikt fork-windows-institutional.yml (Windows + legal pytest).
+    if: github.repository != 'J80-droid/hermes-agent-windows-nl'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -109,7 +111,7 @@ jobs:
   # (including PRs) get balanced slicing.
   save-durations:
     needs: test
-    if: always() && github.ref == 'refs/heads/main'
+    if: always() && github.ref == 'refs/heads/main' && github.repository != 'J80-droid/hermes-agent-windows-nl'
     runs-on: ubuntu-latest
     steps:
       - name: Download all slice durations
@@ -139,6 +141,7 @@ jobs:
           key: test-durations
 
   rag:
+    if: github.repository != 'J80-droid/hermes-agent-windows-nl'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -161,6 +164,7 @@ jobs:
           node web/scripts/test-rag-citations.mjs
 
   e2e:
+    if: github.repository != 'J80-droid/hermes-agent-windows-nl'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
