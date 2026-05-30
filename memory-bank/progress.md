@@ -122,7 +122,7 @@
 - [x] **Platform hardening 10/10:** VectorStore-laag split, `KnowledgeRepository` (47 unit tests), regression E2E 10/10, `RUN_KNOWLEDGE_REPOSITORY_E2E` 8/8, `RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat`, sandbox/hardware cache-bust, `patch_tool` PermissionError propagate
 - [x] Bron-submappen `04_Legal_Corporate` (Arbeidsrecht, Klokkenluiders, …); `migrate_legal_source_layout.ps1`
 - [x] `sync_legal_lens_table_from_taxonomy.py`; `RUN_LEGAL_DOMAIN_E2E.bat` (12 stappen); `RUN_AUDITS -IncludeLegalDomainE2E`
-- [x] Legal productie P0–P3 (2026-05-30): `/legal-architectuur`, `VERIFY_LEGAL_RUNTIME`, parity verify, MATTERS seed, `LEGAL_PRODUCTION_GATE.md`, `legal_lens_from_path`, ingest dashboard
+- [x] Legal productie P0–P3 (2026-05-30): `/legal-architectuur`, `VERIFY_LEGAL_RUNTIME` (domains.yaml), parity verify (`--fix`), MATTERS seed, `LEGAL_PRODUCTION_GATE.md`, `legal_lens_from_path`, ingest dashboard; repo-E2E `RUN_LEGAL_PRODUCTION_E2E.bat`; unit tests harness/parity/brief/score_renderer edge cases
 
 ## Operationeel (gebruiker)
 

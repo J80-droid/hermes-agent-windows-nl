@@ -38,6 +38,8 @@ Gereed voor controle.
 
 ### Team Samenstelling
 
+*(Renderer-testtabel — geen Hermes legal-domein "team van agents"; voor legal-architectuur: `/legal-architectuur`.)*
+
 | Naam | Rol | Status |
 | --- | --- | --- |
 | (min. 3 rijen) |

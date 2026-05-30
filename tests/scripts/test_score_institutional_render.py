@@ -102,10 +102,32 @@ class TestRooktestTemplateWiring:
         assert "score_institutional_render.py" in text
         assert "--verify" in text
 
+    def test_template_team_section_not_legal_agent_team(self):
+        """INSTITUTIONAL_RENDERER_TEST_PROMPT: geen verwarring met legal /legal-architectuur."""
+        text = score.ROOKTEST_PATH.read_text(encoding="utf-8")
+        assert "/legal-architectuur" in text
+        assert "geen Hermes legal-domein" in text or "legal-domein" in text.lower()
+
 
 # ---------------------------------------------------------------------------
 # _score_checklist_rendered
 # ---------------------------------------------------------------------------
+
+
+class TestRenderAnsiCached:
+    @patch("hermes_cli.display_markdown.format_response_ansi")
+    def test_cache_reuses_single_render_call(self, mock_fmt: MagicMock) -> None:
+        cache: dict[str, str] = {}
+        mock_fmt.return_value = "Controle ok"
+        out1 = score._render_ansi_cached("## A\n", cache)
+        out2 = score._render_ansi_cached("## B\n", cache)
+        assert out1 == out2 == "Controle ok"
+        mock_fmt.assert_called_once()
+
+    @patch("hermes_cli.display_markdown.format_response_ansi", return_value="")
+    def test_empty_string_cached(self, mock_fmt: MagicMock) -> None:
+        cache: dict[str, str] = {}
+        assert score._render_ansi_cached("", cache) == ""
 
 
 class TestScoreChecklistRendered:
@@ -545,4 +567,24 @@ class TestMainCli:
             "argv",
             ["score_institutional_render", "--file", str(missing)],
         )
+        assert score.main() == 1
+
+    def test_main_empty_file_returns_error(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+        empty = tmp_path / "empty.md"
+        empty.write_text("  \n", encoding="utf-8")
+        monkeypatch.setattr(sys, "argv", ["score_institutional_render", "--file", str(empty)])
+        assert score.main() == 1
+
+    def test_main_verify_at_exactly_nine_passes(self, monkeypatch: pytest.MonkeyPatch):
+        checks = {name: (9, "ok") for name in TestScoreMarkdown.EXPECTED_CHECKS}
+        monkeypatch.setattr(score, "score_markdown", lambda _md: checks)
+        monkeypatch.setattr(score, "print_report", lambda c: 9.0)
+        monkeypatch.setattr(sys, "argv", ["score_institutional_render", "--verify"])
+        assert score.main() == 0
+
+    def test_main_verify_below_nine_fails(self, monkeypatch: pytest.MonkeyPatch):
+        checks = {name: (8, "low") for name in TestScoreMarkdown.EXPECTED_CHECKS}
+        monkeypatch.setattr(score, "score_markdown", lambda _md: checks)
+        monkeypatch.setattr(score, "print_report", lambda c: 8.0)
+        monkeypatch.setattr(sys, "argv", ["score_institutional_render", "--verify"])
         assert score.main() == 1

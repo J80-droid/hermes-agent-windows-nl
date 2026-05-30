@@ -6574,9 +6574,9 @@ class HermesCLI:
     def _handle_legal_architectuur_command(self) -> bool:
         """Print fork legal domain brief (deterministic, no LLM)."""
         from hermes_cli.legal_architecture_brief import build_legal_architecture_brief
-        from hermes_cli.profiles import get_active_profile_name
+        from hermes_cli.profiles import get_active_profile
 
-        profile = get_active_profile_name()
+        profile = get_active_profile()
         brief = build_legal_architecture_brief(profile)
         print()
         print(brief)

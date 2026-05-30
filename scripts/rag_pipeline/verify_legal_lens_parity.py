@@ -1,4 +1,9 @@
-"""Verify ## Juridische lenzen table matches docs/LEGAL_TAXONOMY.md active rows."""
+"""Verify ## Juridische lenzen table matches docs/LEGAL_TAXONOMY.md active rows.
+
+CLI: ``--soul PATH`` | ``--all`` (template + runtime SOUL) | ``--fix`` (sync script bij mismatch).
+Exit 0 = parity OK; 1 = ontbrekende taxonomie, geen rijen, geen SOULs, of mismatch.
+Unit tests: ``tests/scripts/test_verify_legal_lens_parity.py``.
+"""
 
 from __future__ import annotations
 
@@ -8,12 +13,15 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
+_RAG_DIR = Path(__file__).resolve().parent
+if str(_RAG_DIR) not in sys.path:
+    sys.path.insert(0, str(_RAG_DIR))
+
 TAXONOMY = REPO / "docs" / "LEGAL_TAXONOMY.md"
-TEMPLATE = REPO / "docs" / "templates" / "SOUL_LEGAL_DOMAIN.md"
 LENS_HEADER = "## Juridische lenzen"
 
-# Shared with sync_legal_lens_table_from_taxonomy.py
 from sync_legal_lens_table_from_taxonomy import (  # noqa: E402
+    TEMPLATE,
     _parse_taxonomy_rows,
     resolve_soul_targets,
 )
@@ -40,7 +48,10 @@ def _parse_soul_lens_rows(text: str) -> list[tuple[str, str, str]]:
 
 
 def _normalize_rows(rows: list[tuple[str, str, str]]) -> list[tuple[str, str, str]]:
-    return [(s.strip(), l.strip(), m.strip()) for s, l, m in rows]
+    return [
+        (s.strip(), lens.strip(), submap.strip().strip("`").strip("/"))
+        for s, lens, submap in rows
+    ]
 
 
 def check_parity(soul_path: Path, taxonomy_rows: list[tuple[str, str, str]]) -> bool:
@@ -58,6 +69,13 @@ def check_parity(soul_path: Path, taxonomy_rows: list[tuple[str, str, str]]) -> 
         return True
     print(f"[FAIL] Parity mismatch: {soul_path}", file=sys.stderr)
     print(f"  taxonomie: {len(expected)} rijen, SOUL: {len(soul_rows)} rijen", file=sys.stderr)
+    for i, (exp, got) in enumerate(zip(expected, soul_rows)):
+        if exp != got:
+            print(f"  rij {i + 1}: verwacht {exp!r} vs SOUL {got!r}", file=sys.stderr)
+            break
+    else:
+        if len(expected) != len(soul_rows):
+            print("  (verschil in aantal rijen)", file=sys.stderr)
     return False
 
 
@@ -85,17 +103,27 @@ def main() -> int:
         souls = [TEMPLATE]
 
     ok_all = True
+    checked = 0
     for soul in souls:
         if not soul.is_file():
             print(f"[WARN] Overgeslagen (ontbreekt): {soul}", file=sys.stderr)
             continue
+        checked += 1
         ok = check_parity(soul, taxonomy_rows)
         if not ok and args.fix:
             sync = REPO / "scripts" / "rag_pipeline" / "sync_legal_lens_table_from_taxonomy.py"
             cmd = [sys.executable, str(sync), "--soul", str(soul)]
-            subprocess.run(cmd, check=False)
+            fix_run = subprocess.run(cmd, cwd=str(REPO), check=False)
+            if fix_run.returncode != 0:
+                print(f"[ERROR] Sync mislukt (exit {fix_run.returncode}): {soul}", file=sys.stderr)
+                ok_all = False
+                continue
             ok = check_parity(soul, taxonomy_rows)
         ok_all = ok_all and ok
+
+    if checked == 0:
+        print("[ERROR] Geen SOUL-bestanden om te controleren", file=sys.stderr)
+        return 1
 
     return 0 if ok_all else 1
 

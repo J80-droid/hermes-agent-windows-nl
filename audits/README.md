@@ -351,3 +351,21 @@ audits\RUN_CLI_PENDING_QUEUE_E2E.bat
 ```
 
 Unit tests: `pytest tests/hermes_cli/test_cli_pending_queue.py tests/cli/test_cli_init.py -k "queue or pending"`.
+
+---
+
+# Legal production E2E
+
+Geïsoleerde E2E voor legal P0–P3 (slash, SOUL-meta, parity, pytest-contract, runtime verify). Geen live LLM.
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| S1–S17 | Zie `audits/LEGAL_PRODUCTION_E2E_README.md` | Artefacten, brief, parity, lens smoke, pytest bundle, SOUL sync, strict verify |
+
+```bat
+audits\RUN_LEGAL_PRODUCTION_E2E.bat
+```
+
+Unit tests (gemockt): `pytest tests/audits/test_legal_production_e2e_harness.py tests/scripts/test_verify_legal_lens_parity.py tests/hermes_cli/test_legal_architecture_brief.py tests/scripts/test_legal_lens_from_path.py -q`.
+
+Zwaardere runtime-poort: `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat`.

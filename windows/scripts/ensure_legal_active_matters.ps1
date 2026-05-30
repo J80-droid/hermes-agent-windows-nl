@@ -42,6 +42,15 @@ if (Test-Path -LiteralPath $dest) {
     exit 0
 }
 
-Copy-Item -LiteralPath $example -Destination $dest -Force
+try {
+    Copy-Item -LiteralPath $example -Destination $dest -Force -ErrorAction Stop
+} catch {
+    Write-HermesWarn "Kon LEGAL_ACTIVE_MATTERS niet schrijven: $($_.Exception.Message)"
+    exit 1
+}
+if (-not (Test-Path -LiteralPath $dest)) {
+    Write-HermesWarn "LEGAL_ACTIVE_MATTERS ontbreekt na copy"
+    exit 1
+}
 if (-not $Quiet) { Write-HermesLaunchUi -Message "LEGAL_ACTIVE_MATTERS aangemaakt vanuit template." -Level Ok }
 exit 0

@@ -1547,13 +1547,23 @@ def build_context_files_prompt(cwd: Optional[str] = None, skip_soul: bool = Fals
     return "# Project Context\n\nThe following project context files have been loaded and should be followed:\n\n" + "\n".join(sections)
 
 
+def _safe_path_for_prompt(path: Path) -> str:
+    """Absolute pad voor prompts; faalt niet als tussenliggende mappen ontbreken."""
+    try:
+        return str(path.resolve())
+    except OSError:
+        return str(path)
+
+
 def build_legal_runtime_paths_block() -> str:
     """Ephemeral path hints for legal profile (file tools; not cached in SOUL)."""
     try:
         from agent.file_safety import _resolve_active_profile_name
+        from hermes_cli.profiles import get_active_profile
     except Exception:
         return ""
-    if _resolve_active_profile_name() != "legal":
+    # Sticky profiel op Windows root-HERMES_HOME; file_safety alleen is onvoldoende.
+    if get_active_profile() != "legal" and _resolve_active_profile_name() != "legal":
         return ""
     try:
         from hermes_constants import get_default_hermes_root
@@ -1561,15 +1571,15 @@ def build_legal_runtime_paths_block() -> str:
         root = get_default_hermes_root()
     except Exception:
         return ""
-    matters = (root / "profiles" / "legal" / "LEGAL_ACTIVE_MATTERS.md").resolve()
-    userprofile = os.environ.get("USERPROFILE", str(Path.home()))
+    matters = root / "profiles" / "legal" / "LEGAL_ACTIVE_MATTERS.md"
+    userprofile = os.environ.get("USERPROFILE") or str(Path.home())
     raw_legal = Path(userprofile) / "data" / "raw_source_files" / "04_Legal_Corporate"
     lance_legal = Path(userprofile) / "data" / "lancedb" / "legal"
     return (
         "## Runtime paths (legal profile — file tools)\n"
-        f"- LEGAL_ACTIVE_MATTERS: {matters}\n"
-        f"- Legal bronnen: {raw_legal.resolve()}\n"
-        f"- LanceDB legal: {lance_legal.resolve()}\n"
+        f"- LEGAL_ACTIVE_MATTERS: {_safe_path_for_prompt(matters)}\n"
+        f"- Legal bronnen: {_safe_path_for_prompt(raw_legal)}\n"
+        f"- LanceDB legal: {_safe_path_for_prompt(lance_legal)}\n"
         "Gebruik deze absolute paden; open geen letterlijke `%LOCALAPPDATA%`-placeholders."
     )
 

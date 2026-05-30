@@ -6,7 +6,8 @@ Operationele matrix voor institutioneel legal-domein (fork). Volledige architect
 
 | Doel | Script | Exit 0 |
 |------|--------|--------|
-| Dagelijkse runtime | `windows\VERIFY_LEGAL_RUNTIME.bat` | SOUL meta + parity (warn zonder strict) |
+| Dagelijkse runtime | `windows\VERIFY_LEGAL_RUNTIME.bat` | SOUL meta + parity + `domains.yaml` (warn zonder strict) |
+| Snelle repo-E2E (geen RAG) | `audits\RUN_LEGAL_PRODUCTION_E2E.bat` | 17 harness-stappen + pytest-contract |
 | Volledige poort | `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat` | 12 stappen |
 | Strict bronnen | `RUN_LEGAL_DOMAIN_E2E.bat -StrictSources` | Bronmap verplicht |
 | Lens sync toepassen | `RUN_LEGAL_DOMAIN_E2E.bat -ApplyLensSync` | `--all` i.p.v. dry-run |
@@ -54,8 +55,17 @@ GitHub `fork-windows-institutional.yml` draait hardening (legal skills pytest), 
 | `HERMES_LEGAL_PHASE_3B=1` | Geen warn op profiel `klokkenluiders` |
 | `HERMES_UPSTREAM_BEHIND_WARN` | Drempel upstream-banner (default 10) |
 
+## Unit tests (na codewijziging)
+
+```bat
+pytest tests/audits/test_legal_production_e2e_harness.py tests/scripts/test_verify_legal_lens_parity.py tests/scripts/test_legal_lens_from_path.py tests/hermes_cli/test_legal_architecture_brief.py -q
+```
+
+Renderer rooktest (geen legal-domein): `pytest tests/scripts/test_score_institutional_render.py -q` — zie [templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md).
+
 ## Zie ook
 
 - [LEGAL_ROLLOUT_CHECKLIST.md](LEGAL_ROLLOUT_CHECKLIST.md)
+- [../audits/LEGAL_PRODUCTION_E2E_README.md](../audits/LEGAL_PRODUCTION_E2E_README.md)
 - [INSTITUTIONAL_OPERATIONS.md](INSTITUTIONAL_OPERATIONS.md)
 - [PROFILE_SWITCH.md](PROFILE_SWITCH.md)

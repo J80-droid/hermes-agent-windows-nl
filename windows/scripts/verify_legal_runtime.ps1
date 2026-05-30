@@ -3,9 +3,13 @@
 .SYNOPSIS
   Snelle legal runtime verify (wrapper; volledige poort: RUN_LEGAL_DOMAIN_E2E.bat).
 
+.CHECKS
+  ensure_legal_active_matters, runtime legal/core SOUL meta, domains.yaml (legal + lancedb-legal),
+  verify_legal_lens_parity.py --all (conda hermes-env).
+
 .EXIT
   0 = OK (of warn-only zonder HERMES_LEGAL_VERIFY_STRICT=1)
-  1 = FAIL (strict) of parity/SOUL/meta
+  1 = FAIL (strict) of parity/SOUL/meta/domains
 #>
 param(
     [string]$RepoRoot = '',
@@ -44,16 +48,25 @@ if (-not (Test-Path -LiteralPath (Join-Path $hermesRoot 'config.yaml'))) {
     $hermesRoot = Join-Path $env:USERPROFILE '.hermes'
 }
 
-$domainsYaml = Join-Path $env:USERPROFILE 'data\domains.yaml'
+$domainsYaml = if ($env:HERMES_DOMAINS_YAML) { $env:HERMES_DOMAINS_YAML } else { Join-Path $env:USERPROFILE 'data\domains.yaml' }
 if (-not (Test-Path -LiteralPath $domainsYaml)) {
     Write-Verify "domains.yaml ontbreekt: $domainsYaml (zie docs/domains.yaml.example)" -Level Warn
     if ($strict) { $failures++ }
 } else {
-    $dy = Get-Content -LiteralPath $domainsYaml -Raw -Encoding UTF8
-    if ($dy -notmatch '(?m)^\s*-\s*name:\s*legal\b' -and $dy -notmatch '(?m)^legal:') {
+    try {
+        $dy = Get-Content -LiteralPath $domainsYaml -Raw -Encoding UTF8
+    } catch {
+        Write-Verify "domains.yaml niet leesbaar: $domainsYaml" -Level Fail
+        $failures++
+        $dy = ''
+    }
+    if ($dy -and $dy -notmatch '(?m)^\s*-\s*name:\s*legal\b' -and $dy -notmatch '(?m)^legal:') {
         Write-Verify 'domains.yaml: geen legal entry' -Level Warn
         if ($strict) { $failures++ }
-    } else {
+    } elseif ($dy -and $dy -notmatch 'lancedb-legal') {
+        Write-Verify 'domains.yaml: legal zonder lancedb-legal MCP-verwijzing' -Level Warn
+        if ($strict) { $failures++ }
+    } elseif ($dy) {
         Write-Verify 'domains.yaml: legal entry aanwezig' -Level Ok
     }
 }
