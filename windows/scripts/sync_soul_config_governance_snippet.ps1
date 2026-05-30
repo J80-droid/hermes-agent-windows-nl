@@ -1,4 +1,6 @@
 # Sync ## Config governance (Windows) from repo template into all profile SOUL.md files.
+# InsertBeforeRegex: alleen vóór ## Identity (niet vóór Communication Style — voorkomt dubbele blokken).
+# Dubbele koppen: Repair-SoulDuplicateConfigGovernanceBlocks in sync_soul_anatomy_snippets.ps1.
 param(
     [string]$RepoRoot = '',
     [string]$HermesRoot = '',
@@ -23,7 +25,7 @@ Write-Host '--- SOUL Config governance (Windows) sync ---' -ForegroundColor Cyan
 $null = Sync-SoulSnippet `
     -TemplatePath $templatePath `
     -SectionRegex '^## Config governance \(Windows\)\s' `
-    -InsertBeforeRegex '^## Communication Style\s|^## Identity\s' `
+    -InsertBeforeRegex '^## Identity\s' `
     -HermesRoot $HermesRoot `
     -Force:$Force `
     -Verify:$Verify `

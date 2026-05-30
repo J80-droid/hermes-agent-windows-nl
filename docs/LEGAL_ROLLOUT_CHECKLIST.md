@@ -7,8 +7,9 @@ Na `git pull` / `UPDATE_HERMES.bat`. Volledige poort: [LEGAL_PRODUCTION_GATE.md]
 1. `MANAGE_BACKUPS.bat` (SOUL-backup)
 2. SOUL + lenzen — **automatisch** via `start_hermes.bat` / `UPDATE_HERMES.bat` (soul anatomy deploy + legal lens sync). Handmatig: `SYNC_LEGAL_SOUL_FROM_TEMPLATE.bat`, `SYNC_LEGAL_LENS_FROM_TAXONOMY.bat`, `SYNC_SOUL_SNIPPETS.bat`
 3. `LEGAL_ACTIVE_MATTERS.md` — automatisch via `ensure_legal_active_matters.ps1` (bij soul sync); anders handmatig vanuit `docs/templates/LEGAL_ACTIVE_MATTERS.example.md`
-4. Trust-seed: `SYNC_TRUST_RUNTIME.bat` (legal `memories/USER.md`)
-5. **Nieuwe chat** (`/new`) alleen na SOUL-wijziging terwijl Hermes al draaide; na profielwissel met herstart meestal niet nodig
+4. Trust-seed: `SYNC_TRUST_RUNTIME.bat` (legal `memories/USER.md`, incl. **Legal proactief** seed)
+5. `LEGAL_ACTIVE_MATTERS.md`: per zaak optioneel **Adjacent checks** (zie `docs/templates/LEGAL_ACTIVE_MATTERS.example.md`)
+6. **Nieuwe chat** (`/new`) alleen na SOUL-wijziging terwijl Hermes al draaide; na profielwissel met herstart meestal niet nodig
 
 ## User-data
 
@@ -20,6 +21,7 @@ Na `git pull` / `UPDATE_HERMES.bat`. Volledige poort: [LEGAL_PRODUCTION_GATE.md]
 
 ```bat
 windows\VERIFY_LEGAL_RUNTIME.bat
+audits\RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat
 windows\audits\RUN_LEGAL_DOMAIN_E2E.bat
 windows\audits\RUN_LEGAL_DOMAIN_E2E.bat -StrictSources
 windows\audits\RUN_AUDITS.bat -IncludeLegalDomainE2E

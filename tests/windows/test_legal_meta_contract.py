@@ -15,6 +15,27 @@ def test_legal_soul_template_meta_triggers():
     assert "geen aparte Hermes-instantie" in text or "geen aparte hermes" in text.lower()
 
 
+def test_legal_soul_template_parallel_invalshoeken():
+    text = (REPO / "docs/templates/SOUL_LEGAL_DOMAIN.md").read_text(encoding="utf-8")
+    assert "Parallelle invalshoeken" in text
+    assert "mandaat" in text.lower()
+    assert "Adjacent checks" in text or "LEGAL_ACTIVE_MATTERS" in text
+
+
+def test_memory_canonical_seed_has_legal_user_section():
+    text = (REPO / "docs/templates/MEMORY_CANONICAL_SEED.md").read_text(encoding="utf-8")
+    assert "## legal USER.md entries" in text
+    assert "Parallelle invalshoeken" in text
+
+
+def test_legal_active_matters_example_adjacent_checks():
+    text = (REPO / "docs/templates/LEGAL_ACTIVE_MATTERS.example.md").read_text(
+        encoding="utf-8"
+    )
+    assert "Adjacent checks" in text
+    assert "GCR 2024-00145" in text
+
+
 def test_core_soul_legal_meta_section():
     text = (REPO / "docs/templates/SOUL_CORE_ORCHESTRATOR.md").read_text(encoding="utf-8")
     assert "Legal architectuur" in text

@@ -25,7 +25,8 @@ function Get-HermesMemoryHermesRoot {
 function Get-HermesMemorySeedEntries {
     param(
         [Parameter(Mandatory)][string]$RepoRoot,
-        [Parameter(Mandatory)][string]$SectionName
+        [Parameter(Mandatory)][string]$SectionName,
+        [switch]$Optional
     )
     $seedPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'docs/templates/MEMORY_CANONICAL_SEED.md'
     if (-not (Test-Path -LiteralPath $seedPath)) {
@@ -53,9 +54,16 @@ function Get-HermesMemorySeedEntries {
         }
     }
     if ($entries.Count -eq 0) {
+        if ($Optional) { return @() }
         Write-Error "Sectie niet gevonden of leeg in seed: $SectionName"
     }
     return $entries.ToArray()
+}
+
+function Test-IsLegalProfileMemoryUserPath {
+    param([Parameter(Mandatory)][string]$FilePath)
+    $norm = ($FilePath -replace '\\', '/').ToLowerInvariant()
+    return $norm -match '/profiles/legal/memories/user\.md$'
 }
 
 function Split-MemoryMarkdownSections {
@@ -104,7 +112,7 @@ function Test-MemoryUserPreferenceSection {
 
 function Test-MemoryLegalDomainSection {
     param([string]$Text)
-    return ($Text -match 'Geschillencommissie|GCR 20|lancedb-legal|juridisch arbeidsgeschil|Rijksrecherche|hermetisch afschermen|knowledge_base|execute_code.*legal')
+    return ($Text -match 'Geschillencommissie|GCR 20|lancedb-legal|juridisch arbeidsgeschil|Rijksrecherche|hermetisch afschermen|knowledge_base|execute_code.*legal|Legal proactief|Parallelle invalshoeken')
 }
 
 function Test-MemoryHermesConfigSection {

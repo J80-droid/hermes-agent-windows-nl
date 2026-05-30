@@ -47,6 +47,19 @@ Core routeert **niet** naar `legal-arb` of `klokkenluiders` tenzij fase 3b is ge
 
 Zaak-specifieke strategie, speerpunten en terminologie horen **niet** in SOUL Identity/Mission.
 
+Optioneel per zaak in `LEGAL_ACTIVE_MATTERS.md`: **Adjacent checks** (mandaat, procedure, P-Direkt vs arb, enz.) — de agent gebruikt die bij strategievraag.
+
+## Proactief meedenken (antwoordstructuur)
+
+| Onderdeel | Waar |
+|-----------|------|
+| **`### Parallelle invalshoeken`** | `SOUL_LEGAL_DOMAIN.md` + runtime SOUL; tabel *Invalshoek \| Waarom relevant \| Status* |
+| Gap-blok per strategie | Shared Values (`Ontbrekende informatie`) |
+| Legal USER seed | `MEMORY_CANONICAL_SEED.md` → `profiles/legal/memories/USER.md` via `SYNC_TRUST_RUNTIME.bat` |
+| Compact modus | `<institutional_check>` mag weg; parallelle sectie **niet** bij materieel strategiewerk (`SOUL_SHARED_OUTPUT_FORMAT.md`) |
+
+Voorbeeld: vraag over disciplinaire straffen → ook mandaat/bevoegdheid oplegger benoemen indien plausibel.
+
 ## Mapconventies
 
 ```
@@ -106,6 +119,7 @@ Na deploy met gewijzigde SOUL: **`/new`** in lopende chat (system prompt).
 | `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat` | Volledige poort (12 stappen) |
 | `scripts\rag_pipeline\verify_legal_lens_parity.py` | SOUL-tabel == taxonomie (≠ RAG-filter; zie [LEGAL_INGEST_METADATA.md](LEGAL_INGEST_METADATA.md)) |
 | `windows\scripts\ensure_legal_active_matters.ps1` | Seed `LEGAL_ACTIVE_MATTERS.md` (nooit overschrijven) |
+| `audits\RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat` | Template + repair + runtime parallelle invalshoeken / 1× Config governance |
 
 Matrix: [LEGAL_PRODUCTION_GATE.md](LEGAL_PRODUCTION_GATE.md). Chat: `/legal-architectuur`.
 

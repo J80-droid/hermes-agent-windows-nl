@@ -8,6 +8,7 @@ Operationele matrix voor institutioneel legal-domein (fork). Volledige architect
 |------|--------|--------|
 | Dagelijkse runtime | `windows\VERIFY_LEGAL_RUNTIME.bat` | SOUL meta + parity + `domains.yaml` (warn zonder strict) |
 | Snelle repo-E2E (geen RAG) | `audits\RUN_LEGAL_PRODUCTION_E2E.bat` | 17 harness-stappen + pytest-contract |
+| Proactief sparren + SOUL-repair | `audits\RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat` | 14 harness-stappen + core.ps1 + Pester repair |
 | Volledige poort | `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat` | 12 stappen |
 | Strict bronnen | `RUN_LEGAL_DOMAIN_E2E.bat -StrictSources` | Bronmap verplicht |
 | Lens sync toepassen | `RUN_LEGAL_DOMAIN_E2E.bat -ApplyLensSync` | `--all` i.p.v. dry-run |
@@ -27,9 +28,11 @@ Operationele matrix voor institutioneel legal-domein (fork). Volledige architect
 
 1. `UPDATE_HERMES.bat` (of pull + soul deploy)
 2. `VERIFY_LEGAL_RUNTIME.bat` met `set HERMES_LEGAL_VERIFY_STRICT=1`
-3. `RUN_LEGAL_DOMAIN_E2E.bat -StrictSources`
-4. `RUN_PROFILE_SWITCH_E2E.bat` (legal ↔ core)
-5. Chat smoke: profiel `legal`, vraag *“Hoe ziet het team van agents eruit?”* → lenzen; of `/legal-architectuur`
+3. `audits\RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat`
+4. `RUN_LEGAL_DOMAIN_E2E.bat -StrictSources`
+5. `RUN_PROFILE_SWITCH_E2E.bat` (legal ↔ core)
+6. Chat smoke: profiel `legal`, vraag *“Hoe ziet het team van agents eruit?”* → lenzen; of `/legal-architectuur`
+7. Strategievraag smoke: disciplinair/mandaat → sectie **Parallelle invalshoeken** waar plausibel
 
 ## User-data (P0)
 
@@ -59,7 +62,8 @@ GitHub `fork-windows-institutional.yml` draait hardening (legal skills pytest), 
 
 ```bat
 powershell -NoProfile -ExecutionPolicy Bypass -File windows\tests\LegalDomainE2E.Unit.Tests.ps1
-pytest tests/windows/test_legal_domain_e2e_unit.py tests/audits/test_legal_production_e2e_harness.py tests/scripts/test_verify_legal_lens_parity.py tests/scripts/test_legal_lens_from_path.py tests/hermes_cli/test_legal_architecture_brief.py -q
+powershell -NoProfile -ExecutionPolicy Bypass -File windows\tests\SoulSnippetRepair.Unit.Tests.ps1
+pytest tests/windows/test_legal_domain_e2e_unit.py tests/audits/test_legal_production_e2e_harness.py tests/audits/test_legal_proactive_sparring_e2e_harness.py tests/scripts/test_verify_legal_lens_parity.py tests/scripts/test_legal_lens_from_path.py tests/hermes_cli/test_legal_architecture_brief.py tests/windows/test_legal_meta_contract.py -q
 ```
 
 `RUN_AUDITS.bat -IncludeLegalDomainE2E` draait eerst de geïsoleerde unit (gemockte paden), daarna de volledige `RUN_LEGAL_DOMAIN_E2E.bat`.
@@ -70,5 +74,6 @@ Renderer rooktest (geen legal-domein): `pytest tests/scripts/test_score_institut
 
 - [LEGAL_ROLLOUT_CHECKLIST.md](LEGAL_ROLLOUT_CHECKLIST.md)
 - [../audits/LEGAL_PRODUCTION_E2E_README.md](../audits/LEGAL_PRODUCTION_E2E_README.md)
+- [../audits/LEGAL_PROACTIVE_SPARRING_E2E_README.md](../audits/LEGAL_PROACTIVE_SPARRING_E2E_README.md)
 - [INSTITUTIONAL_OPERATIONS.md](INSTITUTIONAL_OPERATIONS.md)
 - [PROFILE_SWITCH.md](PROFILE_SWITCH.md)

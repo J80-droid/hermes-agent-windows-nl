@@ -225,12 +225,52 @@ function Sync-SoulSnippet {
     return $results
 }
 
+function Repair-SoulDuplicateConfigGovernanceBlocks {
+    <#
+    .SYNOPSIS
+        Verwijder dubbele ## Config governance (Windows)-secties; behoud de eerste.
+        Aangeroepen na anatomy snippet-sync (sync_soul_anatomy_snippets.ps1).
+    #>
+    param([AllowNull()][string]$Content)
+    if ($null -eq $Content) { return $null }
+    if ($Content.Length -eq 0) { return $Content }
+    $marker = '(?ms)^## Config governance \(Windows\)\s*\r?\n'
+    $sectionEnd = '(?=^## |\z)'
+    $changed = $false
+    $maxPasses = 16
+    $pass = 0
+    while ([regex]::Matches($Content, $marker).Count -gt 1 -and $pass -lt $maxPasses) {
+        $pass++
+        $prevCount = [regex]::Matches($Content, $marker).Count
+        $changed = $true
+        $regexHits = [regex]::Matches($Content, $marker)
+        $second = $regexHits[1].Index
+        $before = $Content.Substring(0, $second)
+        $after = $Content.Substring($second)
+        $after = $after -replace ("(?ms)^## Config governance \(Windows\)\s*\r?\n.*?" + $sectionEnd), ''
+        $Content = ($before.TrimEnd() + "`r`n`r`n" + $after.TrimStart()).TrimEnd()
+        $newCount = [regex]::Matches($Content, $marker).Count
+        if ($newCount -ge $prevCount) {
+            Write-Warning 'Repair-SoulDuplicateConfigGovernanceBlocks: geen voortgang; stop om lus te vermijden.'
+            break
+        }
+    }
+    if ($changed) { return $Content + "`r`n" }
+    return $Content
+}
+
 function Repair-SoulDuplicateOutputBlocks {
-    param([string]$Content)
+    param([AllowNull()][string]$Content)
+    if ($null -eq $Content) { return $null }
+    if ($Content.Length -eq 0) { return $Content }
     $marker = "(?ms)^### Output conventions \(institutional\)\s*\r?\n"
     $sectionEnd = $script:SoulRegexOutputConventionsEnd
     $changed = $false
-    while ([regex]::Matches($Content, $marker).Count -gt 1) {
+    $maxPasses = 16
+    $pass = 0
+    while ([regex]::Matches($Content, $marker).Count -gt 1 -and $pass -lt $maxPasses) {
+        $pass++
+        $prevCount = [regex]::Matches($Content, $marker).Count
         $changed = $true
         $regexHits = [regex]::Matches($Content, $marker)
         $second = $regexHits[1].Index
@@ -238,6 +278,10 @@ function Repair-SoulDuplicateOutputBlocks {
         $after = $Content.Substring($second)
         $after = $after -replace ("(?ms)^### Output conventions \(institutional\)\s*\r?\n.*?" + $sectionEnd), ''
         $Content = ($before.TrimEnd() + "`r`n`r`n" + $after.TrimStart()).TrimEnd()
+        if ([regex]::Matches($Content, $marker).Count -ge $prevCount) {
+            Write-Warning 'Repair-SoulDuplicateOutputBlocks: geen voortgang; stop om lus te vermijden.'
+            break
+        }
     }
     if ($changed) { return $Content + "`r`n" }
     return $Content
@@ -306,6 +350,10 @@ function Test-SoulAnatomyContent {
     $outCount = ([regex]::Matches($Content, '(?m)^### Output conventions \(institutional\)')).Count
     if ($outCount -ne 1) {
         $failures.Add("verwacht 1 Output conventions-blok, gevonden $outCount")
+    }
+    $cfgCount = ([regex]::Matches($Content, '(?m)^## Config governance \(Windows\)')).Count
+    if ($cfgCount -gt 1) {
+        $failures.Add("verwacht 1 Config governance-blok, gevonden $cfgCount")
     }
     if ($Content -notmatch '(?m)^### Trust & verification') {
         $failures.Add('mist ### Trust & verification')
@@ -460,4 +508,4 @@ function Set-InstitutionalNewChatReminder {
     }
 }
 
-Export-ModuleMember -Function Sync-SoulSnippet, Get-HermesRoot, Get-SoulTargets, Get-DomainSoulProfileNames, Get-SoulFileContent, Set-SoulFileContent, Set-SoulSyncIncludeRoot, Set-InstitutionalNewChatReminder, Get-SoulSectionEndPattern, Repair-SoulDuplicateOutputBlocks, Repair-SoulMissingOutputConventionsHeader, Test-SoulAnatomyContent, Get-SoulAnatomyDeployStampPath, Get-SoulAnatomyWatchPaths, Test-SoulAnatomyDeployNeeded, Test-SoulAnatomyDeployJustRan, Set-SoulAnatomyDeployStamp, Test-NativeCommandFailed
+Export-ModuleMember -Function Sync-SoulSnippet, Get-HermesRoot, Get-SoulTargets, Get-DomainSoulProfileNames, Get-SoulFileContent, Set-SoulFileContent, Set-SoulSyncIncludeRoot, Set-InstitutionalNewChatReminder, Get-SoulSectionEndPattern, Repair-SoulDuplicateConfigGovernanceBlocks, Repair-SoulDuplicateOutputBlocks, Repair-SoulMissingOutputConventionsHeader, Test-SoulAnatomyContent, Get-SoulAnatomyDeployStampPath, Get-SoulAnatomyWatchPaths, Test-SoulAnatomyDeployNeeded, Test-SoulAnatomyDeployJustRan, Set-SoulAnatomyDeployStamp, Test-NativeCommandFailed

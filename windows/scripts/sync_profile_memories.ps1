@@ -1,4 +1,5 @@
 # Merge canonical Trust & Forensic memory seed into root + all profile memories/.
+# Legal-only: sectie "legal USER.md" in MEMORY_CANONICAL_SEED.md → SeedEntries voor profiles/legal/memories/USER.md.
 param(
     [string]$RepoRoot = '',
     [string]$HermesRoot = '',
@@ -19,6 +20,10 @@ if (-not $RepoRoot) {
 $root = Get-HermesMemoryHermesRoot -OverrideRoot $HermesRoot
 $userSeed = Get-HermesMemorySeedEntries -RepoRoot $RepoRoot -SectionName 'USER.md'
 $memorySeed = Get-HermesMemorySeedEntries -RepoRoot $RepoRoot -SectionName 'MEMORY.md'
+$legalUserSeed = Get-HermesMemorySeedEntries -RepoRoot $RepoRoot -SectionName 'legal USER.md' -Optional
+if ($legalUserSeed.Count -eq 0) {
+    Write-Host '[WARN] legal USER.md seed-sectie ontbreekt of is leeg in MEMORY_CANONICAL_SEED.md' -ForegroundColor Yellow
+}
 Initialize-HermesLegacyRootMemorySeed -HermesRoot $root -RepoRoot $RepoRoot -DryRun:$DryRun
 Initialize-PendingHermesConfigSections
 
@@ -36,7 +41,11 @@ if (Test-Path -LiteralPath $profilesDir) {
 }
 
 foreach ($t in $targets) {
-    Merge-MemoryFile -FilePath $t.User -SeedEntries $userSeed -DryRun:$DryRun
+    $userEntries = @($userSeed)
+    if ($legalUserSeed.Count -gt 0 -and (Test-IsLegalProfileMemoryUserPath -FilePath $t.User)) {
+        $userEntries = @($userSeed) + @($legalUserSeed)
+    }
+    Merge-MemoryFile -FilePath $t.User -SeedEntries $userEntries -DryRun:$DryRun
     Merge-MemoryFile -FilePath $t.Memory -SeedEntries $memorySeed -DryRun:$DryRun
 }
 

@@ -136,7 +136,9 @@ Export: kopie na elke wijziging of via `backup_soul_profiles` uit backup-restore
 
 `windows/SYNC_SOUL_SNIPPETS.bat` (of `windows/scripts/sync_soul_anatomy_snippets.ps1`):
 
-Values → Interaction → Output conventions → Trust & verification → Workflow → Tool Usage → Memory Policy → repair dubbele Output-blokken
+Values → Interaction → Output conventions → Trust & verification → Workflow → Tool Usage → Memory Policy → Config governance (Windows) → Codebase-audit → repair dubbele Output- en Config governance-blokken
+
+**Config governance:** snippet wordt **alleen vóór `## Identity`** ingevoegd (`sync_soul_config_governance_snippet.ps1`). Dubbele koppen worden verwijderd door `Repair-SoulDuplicateConfigGovernanceBlocks` in `sync_soul_anatomy_snippets.ps1` (houdt eerste blok).
 
 Trust-runtime (`SYNC_TRUST_RUNTIME.bat`): legal template → volledige anatomy snippet-sync → memories/limits.
 

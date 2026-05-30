@@ -76,6 +76,14 @@ if (-not $Verify -and -not $SkipRepair) {
             if (-not $Quiet) {
                 Write-Host ('  REPAIR duplicate output: ' + $path) -ForegroundColor Yellow
             }
+            $content = $fixed
+        }
+        $fixed = Repair-SoulDuplicateConfigGovernanceBlocks -Content $content
+        if ($fixed -ne $content) {
+            Set-SoulFileContent -Path $path -Content $fixed
+            if (-not $Quiet) {
+                Write-Host ('  REPAIR duplicate config governance: ' + $path) -ForegroundColor Yellow
+            }
         }
     }
     $outSync = Join-Path $PSScriptRoot 'sync_soul_output_format_snippet.ps1'

@@ -85,7 +85,7 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 | Institutionele presentatie | `docs\INSTITUTIONAL_PRESENTATION.md` |
 | Core routing / landkaart | `docs\ORCHESTRATOR_ROUTING.md`, skill `landkaart` (`/landkaart`) |
 | Legal lenzen (één bucket) | `docs\LEGAL_DOMAIN_ARCHITECTURE.md`, `docs\LEGAL_TAXONOMY.md`, `MIGRATE_LEGAL_LAYOUT.bat` |
-| Legal productie-poort | `docs\LEGAL_PRODUCTION_GATE.md` · `VERIFY_LEGAL_RUNTIME.bat` · `audits\RUN_LEGAL_PRODUCTION_E2E.bat` (repo, 17 stappen) · `audits\RUN_LEGAL_DOMAIN_E2E.bat` (runtime 12 stappen) |
+| Legal productie-poort | `docs\LEGAL_PRODUCTION_GATE.md` · `VERIFY_LEGAL_RUNTIME.bat` · `audits\RUN_LEGAL_PRODUCTION_E2E.bat` (repo, 17 stappen) · `audits\RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat` (parallelle invalshoeken + config repair) · `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat` (runtime 12 stappen) |
 | Legal architectuur (slash) | `/legal-architectuur` in chat (core + legal) |
 | Legal lenzentabel sync (auto) | `SYNC_LEGAL_LENS_FROM_TAXONOMY.bat` — ook in soul-deploy-keten bij start/UPDATE |
 | Legal ingest dashboard | `SHOW_LEGAL_INGEST_DASHBOARD.bat` |

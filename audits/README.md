@@ -369,3 +369,19 @@ audits\RUN_LEGAL_PRODUCTION_E2E.bat
 Unit tests (gemockt): `pytest tests/audits/test_legal_production_e2e_harness.py tests/scripts/test_verify_legal_lens_parity.py tests/hermes_cli/test_legal_architecture_brief.py tests/scripts/test_legal_lens_from_path.py -q`.
 
 Zwaardere runtime-poort: `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat`.
+
+---
+
+# Legal proactive sparring E2E
+
+Geïsoleerde E2E voor **parallelle invalshoeken**, **Config governance duplicate-repair**, **legal USER.md seed** en **LEGAL_ACTIVE_MATTERS Adjacent checks**. Geen live LLM.
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| S1–S14 | Zie `audits/LEGAL_PROACTIVE_SPARRING_E2E_README.md` | Templates, script-contract, pytest meta-contract, Pester repair, `LegalProactiveSparringE2E.core.ps1`, runtime SOUL/USER/MATTERS |
+
+```bat
+audits\RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat
+```
+
+Unit tests (gemockt): `pytest tests/audits/test_legal_proactive_sparring_e2e_harness.py -q`. Pester: `windows\tests\SoulSnippetRepair.Unit.Tests.ps1`.

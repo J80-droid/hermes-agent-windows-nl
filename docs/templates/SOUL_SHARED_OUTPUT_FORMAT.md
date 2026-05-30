@@ -179,4 +179,5 @@ Voor korte feitelijke vragen: `<institutional_check>` mag weggelaten; typografie
 
 - Legal/dossier: `[Bron: bestandsnaam]` bij feiten uit dossier.
 - Legal: bij analyse/dossier — volledige structuur, geen compact modus.
+- Legal: bij strategie/sanctie/dossier — waar plausibel sectie **`### Parallelle invalshoeken`** (tabel); compact modus mag `<institutional_check>` weglaten maar **niet** deze sectie bij materieel strategiewerk (zie `SOUL_LEGAL_DOMAIN.md`).
 - Geen emoji. Objectieve toon.
