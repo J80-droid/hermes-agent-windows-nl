@@ -76,7 +76,8 @@ def test_update_hermes_uses_upstream_sync():
     assert "goto :team_display" in bat.lower()
     assert "-Yes" in bat
     assert "fix_hermes_taskbar_pins.ps1" in bat
-    assert "bestaande pins" in bat.lower()
+    assert "PostUpdateGuidance" in bat
+    assert "taakbalk" in bat.lower()
     yes_bat = REPO / "windows/UPDATE_HERMES_YES.bat"
     assert yes_bat.is_file()
     assert "UPDATE_HERMES.bat" in yes_bat.read_text(encoding="utf-8")

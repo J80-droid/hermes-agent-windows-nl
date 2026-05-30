@@ -4,8 +4,18 @@
 param(
     [string]$RepoRoot = '',
     [switch]$Quiet,
-    [switch]$SkipIconGen
+    [switch]$SkipIconGen,
+    [switch]$PostUpdateGuidance
 )
+
+function Write-HermesTaskbarPostUpdateGuidance {
+    Write-Host ''
+    Write-Host '[INFO] Taakbalk — als een pin nog "item kan niet worden geopend" geeft:' -ForegroundColor Cyan
+    Write-Host '       1) Klik die taakbalk-pin -> Ja (alleen de dode pin)' -ForegroundColor Gray
+    Write-Host '       2) Rechtsklik windows\Start Hermes - naar taakbalk slepen.lnk (of andere rol)' -ForegroundColor Gray
+    Write-Host '          -> Vastmaken aan taakbalk (niet slepen)' -ForegroundColor Gray
+    Write-Host '       Verkenner-snelkoppelingen in windows\ blijven gewoon werken.' -ForegroundColor DarkGray
+}
 
 $ErrorActionPreference = 'Stop'
 $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
@@ -65,12 +75,12 @@ Remove-HermesStrayShortcutFiles -Dir $scriptDir
 [void](Invoke-HermesShortcutSyncRepair -RepoRoot $RepoRoot -WindowsDir $scriptDir -Quiet:$Quiet -SkipIconGen:$SkipIconGen)
 Clear-HermesShellIconCache
 
-if (-not $Quiet) {
+if ($PostUpdateGuidance) {
+    Write-HermesTaskbarPostUpdateGuidance
+} elseif (-not $Quiet) {
     Write-Host ''
     Write-Host 'Snelkoppelingen: windows\ (dubbelklik, wt.exe) + taakbalk-map (bat-doel).' -ForegroundColor Cyan
-    Write-Host 'Pop-up op een taakbalk-icoon? Dat is een OUDE pin — niet het .lnk-bestand op schijf.' -ForegroundColor Yellow
-    Write-Host '  1) Klik die pin -> Ja   2) Rechtsklik .lnk in windows\ -> Vastmaken aan taakbalk' -ForegroundColor Gray
-    Write-Host '  Of: windows\HERSTEL_TAAKBALK_POPUP.bat' -ForegroundColor DarkGray
+    Write-HermesTaskbarPostUpdateGuidance
 }
 
 exit 0

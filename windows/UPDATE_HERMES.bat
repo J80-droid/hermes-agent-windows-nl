@@ -92,10 +92,14 @@ if not "!ERR!"=="0" (
 echo.
 echo [OK] Update-keten geslaagd.
 echo [INFO] Hermes opnieuw: windows\start_hermes.bat  —  in chat: /new
-echo [INFO] Taakbalk-snelkoppelingen bijwerken (bestaande pins blijven)...
+echo [INFO] Taakbalk-snelkoppelingen bijwerken (windows\ + taakbalk-kopieen)...
 if exist "%~dp0fix_hermes_taskbar_pins.ps1" (
-  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0fix_hermes_taskbar_pins.ps1" -RepoRoot "%CD%" -Quiet
-  if errorlevel 1 echo [WARN] Draai FIX_TASKBAR_ICONS.bat
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0fix_hermes_taskbar_pins.ps1" -RepoRoot "%CD%" -Quiet -PostUpdateGuidance
+  if errorlevel 1 (
+    echo [WARN] Taakbalk-fix mislukt — draai windows\FIX_TASKBAR_ICONS.bat
+  ) else (
+    echo [OK] Taakbalk-.lnk op schijf bijgewerkt.
+  )
 )
 goto :team_display
 

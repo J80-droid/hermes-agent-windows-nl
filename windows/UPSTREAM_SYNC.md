@@ -53,7 +53,7 @@ git fetch upstream
 
 ## Taakbalk-icoon na update
 
-Na elke update en bij **start** draait **`fix_hermes_taskbar_pins.ps1`**: `windows\*.lnk` blijven **wt.exe** (dubbelklik in Verkenner); kopieën in **`User Pinned\TaskBar`** krijgen **.bat als doel** zodat Windows de snelkoppeling pint (geen losse Windows-Terminal-app-pin die na update breekt). **Eénmalig** na deze wijziging: dode pin → **Ja**, daarna opnieuw vastzetten via rechtsklik op `.lnk` in `windows\`. Oude hudui/electron-app-pins zijn geen `.lnk`. Blijft een pin fout?
+Na elke update en bij **start** draait **`fix_hermes_taskbar_pins.ps1`**: `windows\*.lnk` blijven **wt.exe** (dubbelklik in Verkenner); kopieën in **`User Pinned\TaskBar`** krijgen **.bat als doel** zodat Windows de snelkoppeling pint (geen losse Windows-Terminal-app-pin die na update breekt). **Na `UPDATE_HERMES.bat`:** dezelfde fix + korte uitleg verschijnt automatisch (`-PostUpdateGuidance`). **Eénmalig** bij oude pins: pop-up → **Ja**, daarna rechtsklik `.lnk` in `windows\` → Vastmaken aan taakbalk. Handmatig:zelfde als update: `HERSTEL_TAAKBALK_POPUP.bat` of `FIX_TASKBAR_ICONS.bat`. Oude hudui/electron-app-pins zijn geen `.lnk`.
 
 1. **`python windows/tools/generate_colored_hermes_icons.py`** (als PNG/bron ontbrak: ook `%USERPROFILE%\.hermes\_local_assets\assets\Hermes_logo.png`)
 2. **`FIX_TASKBAR_ICONS.bat`** → **F5** in `windows\`
