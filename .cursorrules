@@ -9,6 +9,12 @@ Bij het genereren van een **chronologie**, **feitenoverzicht** of **juridische a
 
 Laat feiten en bewijsstukken op deze manier **onweerlegbaar traceerbaar** zijn.
 
+## Legal domein (fork)
+
+- Architectuur: `docs/LEGAL_DOMAIN_ARCHITECTURE.md` · poort: `docs/LEGAL_PRODUCTION_GATE.md`
+- Slash: `/legal-architectuur` · verify: `windows\VERIFY_LEGAL_RUNTIME.bat`
+- Runtime paden: `profiles/legal/LEGAL_ACTIVE_MATTERS.md` onder HERMES_HOME (geen `%LOCALAPPDATA%`-placeholder in file-tools)
+
 ## Hermes Windows split-home (fork)
 
 - **Runtime config:** `%LOCALAPPDATA%\hermes\config.yaml` — niet `~/.hermes\config.yaml`
