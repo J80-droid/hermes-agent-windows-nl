@@ -94,7 +94,7 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 | Legal skills pytest (101) | `pytest tests\skills\test_*_skill.py` · `..\audits\RUN_LEGAL_SKILLS_ROOKTEST.bat` |
 | Institutioneel hardening E2E | `..\audits\RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14) |
 | Gedeelde hygiene helpers | `scripts\RepoHygieneCommon.ps1` |
-| **Update fork (Nous upstream)** | `UPDATE_HERMES.bat` of `hermes_update.bat` (zelfde keten) |
+| **Update fork (Nous upstream)** | `UPDATE_HERMES.bat` (normaal) · `UPDATE_HERMES_YES.bat` (geen j/N) · `hermes_update.bat` (alias) |
 | Alleen upstream-status | `powershell -File windows\upstream_sync.ps1 -Phase Preflight` |
 
 ## RAG (multi-domein)

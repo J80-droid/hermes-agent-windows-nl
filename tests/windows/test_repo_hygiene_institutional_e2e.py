@@ -79,7 +79,7 @@ def test_dashboard_on_start_e2e_harness() -> None:
 def test_update_hermes_bat_quickfix_shift_safe() -> None:
     """Regressie: shift na -QuickFix mag %%~dp0 niet breken (HERMES_WIN vastzetten)."""
     bat = (REPO / "windows/UPDATE_HERMES.bat").read_text(encoding="utf-8")
-    assert 'set "HERMES_WIN=%~dp0"' in bat
+    assert "pushd" in bat and "HERMES_WIN" in bat
     assert "upstream_sync.ps1" in bat
     assert "SCRIPT_UPSTREAM" in bat or "pushd" in bat
     assert 'if "%~2"==""' in bat

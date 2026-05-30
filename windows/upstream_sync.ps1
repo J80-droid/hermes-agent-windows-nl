@@ -58,6 +58,37 @@ function Write-Uitleg {
     Write-Host ''
 }
 
+function Write-HermesUpdateRecoveryGuide {
+    param([Parameter(Mandatory)][int]$ExitCode)
+    Write-Host ''
+    Write-HermesWarn 'Update gestopt — wat nu?'
+    switch ($ExitCode) {
+        2 {
+            Write-Host '  1. Commit of stash je wijzigingen (git status).' -ForegroundColor Yellow
+            Write-Host '  2. Alleen rommel in repo-root? windows\UPDATE_HERMES.bat -QuickFix' -ForegroundColor Yellow
+            Write-Host '  3. Opnieuw: windows\UPDATE_HERMES.bat' -ForegroundColor Yellow
+        }
+        4 {
+            Write-Host '  Geannuleerd — niets gewijzigd op schijf.' -ForegroundColor Yellow
+            Write-Host '  Zonder j/N-vraag: windows\UPDATE_HERMES.bat -Yes  of  UPDATE_HERMES_YES.bat' -ForegroundColor Yellow
+        }
+        6 {
+            Write-Host '  1. Conflicten: windows\MERGE_UPSTREAM.bat  (IDE-guided, geen blind merge)' -ForegroundColor Yellow
+            Write-Host '  2. Na fix: git add .  en  git commit  (of -FinalizeOnly)' -ForegroundColor Yellow
+            Write-Host '  3. Opnieuw: windows\UPDATE_HERMES.bat' -ForegroundColor Yellow
+            Write-Host '  NOOIT: git reset --hard upstream main  (wist NL-fork/RAG)' -ForegroundColor Red
+        }
+        7 {
+            Write-Host '  Merge was al bezig. Los conflicten op of: git merge --abort' -ForegroundColor Yellow
+            Write-Host '  Daarna: windows\MERGE_UPSTREAM.bat -FinalizeOnly' -ForegroundColor Yellow
+        }
+        default {
+            Write-Host '  Zie: windows\UPSTREAM_SYNC.md' -ForegroundColor Yellow
+        }
+    }
+    Write-Host ''
+}
+
 function Write-RepoHygieneGuardLog {
     param(
         [Parameter(Mandatory)][string]$Repo,
@@ -216,8 +247,15 @@ function Invoke-UpstreamPreflight {
             )
             $autoConfirm = ($Force -or $env:HERMES_UPSTREAM_AUTO_CONFIRM -eq '1')
             if ($autoConfirm) {
-                Write-HermesInfo 'Doorgaan met grote achterstand (auto-bevestigd via -Force of HERMES_UPSTREAM_AUTO_CONFIRM=1).'
+                Write-HermesInfo 'Doorgaan met grote achterstand (auto: -Yes, -Force of HERMES_UPSTREAM_AUTO_CONFIRM=1).'
             } else {
+                Write-Host ''
+                Write-Host '=== Bevestiging (grote achterstand op Nous) ===' -ForegroundColor Cyan
+                Write-Host ('  Je fork loopt {0} commit(s) achter op upstream/main.' -f $behind) -ForegroundColor White
+                Write-Host '  Merge kan conflicten geven (pyproject.toml, uv.lock, cli).'
+                Write-Host '  Typ j + Enter om door te gaan, of N om te annuleren (repo blijft zoals hij is).'
+                Write-Host '  Tip zonder deze vraag: windows\UPDATE_HERMES.bat -Yes  of  UPDATE_HERMES_YES.bat' -ForegroundColor DarkGray
+                Write-Host ''
                 $ans = Read-Host 'Doorgaan met update? [j/N]'
                 if ($ans -notin @('j', 'J', 'y', 'Y')) {
                     Write-HermesInfo 'Update geannuleerd door gebruiker (preflight).'
@@ -298,7 +336,7 @@ function Invoke-UpstreamGitMergeIfBehind {
     git merge $upstreamRef --no-edit | Out-Host
     if ($LASTEXITCODE -ne 0) {
         if (Test-Path -LiteralPath $mergeHead) {
-            Write-HermesErr 'Merge upstream main mislukt (conflicten). Los op via windows\MERGE_UPSTREAM.bat of: git merge --abort'
+            Write-HermesErr 'Merge upstream main mislukt (conflicten).'
         } else {
             Write-HermesErr 'git merge upstream main mislukt.'
         }
@@ -417,7 +455,11 @@ try {
         $uerr = if ($null -eq $uerrRaw) { 1 } elseif ($uerrRaw -is [array]) { [int]($uerrRaw[-1]) } else { [int]$uerrRaw }
         if ($uerr -ne 0) {
             Write-HermesErr ('hermes update eindigde met exitcode ' + $uerr)
-            Write-Host '        Bij merge-conflicten: windows\UPSTREAM_SYNC.md'
+            if ($uerr -eq 6 -or $uerr -eq 7) {
+                Write-HermesUpdateRecoveryGuide -ExitCode $uerr
+            } else {
+                Write-Host '        Zie: windows\UPSTREAM_SYNC.md'
+            }
             $script:UpstreamExitCode = $uerr
         } else {
             Write-HermesOk 'hermes update klaar.'
@@ -441,6 +483,12 @@ try {
 }
 finally {
     Pop-Location
+}
+
+if ($script:UpstreamExitCode -ne 0) {
+    if ($script:UpstreamExitCode -in 2, 4, 6, 7) {
+        Write-HermesUpdateRecoveryGuide -ExitCode $script:UpstreamExitCode
+    }
 }
 
 exit $script:UpstreamExitCode

@@ -124,13 +124,14 @@ Guard-log (lokaal): `windows\_upstream_sync_guard.log`. CI op push: `.github/wor
 
 ```cmd
 windows\UPDATE_HERMES.bat
+windows\UPDATE_HERMES_YES.bat
 windows\hermes_update.bat
 windows\POST_GIT_PULL.bat
 windows\MERGE_UPSTREAM.bat -PromptOnly
 powershell -NoProfile -File windows\upstream_sync.ps1 -Phase Preflight
 ```
 
-Automation: `set HERMES_SKIP_PAUSE_AFTER_UPDATE=1` (geen pause na UPDATE). Alleen `-QuickFix` als enig argument op `UPDATE_HERMES.bat`: stopt na opruimen (`HERMES_WIN` voorkomt pad-bug na `shift`). Zie [`windows/UPSTREAM_SYNC.md`](../windows/UPSTREAM_SYNC.md).
+Grote achterstand zonder j/N-vraag: `UPDATE_HERMES.bat -Yes` of `UPDATE_HERMES_YES.bat`. Automation: `set HERMES_SKIP_PAUSE_AFTER_UPDATE=1`. Alleen `-QuickFix` als enig argument: stopt na opruimen. Zie [`windows/UPSTREAM_SYNC.md`](../windows/UPSTREAM_SYNC.md).
 
 ### Release & zware poorten
 

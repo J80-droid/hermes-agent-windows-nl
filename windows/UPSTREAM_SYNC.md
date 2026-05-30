@@ -1,5 +1,19 @@
 # Upstream-sync: NousResearch + jouw fork (Windows NL)
 
+## Snel (gebruiker)
+
+| Wat je wilt | Commando |
+| ----------- | -------- |
+| **Normale wekelijkse update** | `windows\UPDATE_HERMES.bat` |
+| **Grote achterstand, geen j/N-vraag** | `windows\UPDATE_HERMES.bat -Yes` of `windows\UPDATE_HERMES_YES.bat` |
+| **Alleen rommel in repo-root** | `windows\UPDATE_HERMES.bat -QuickFix` |
+| **Merge mislukt (conflicten)** | `windows\MERGE_UPSTREAM.bat` → daarna `UPDATE_HERMES.bat` opnieuw |
+
+Eén keten, drie fasen: preflight (git) → merge + `hermes update` → post-merge (trust, RAG, verify).  
+`MERGE_UPSTREAM.bat` is **alleen** nodig als de merge in fase 2 vastloopt — geen aparte “dagelijkse” update.
+
+---
+
 ## Waarom dit bestand bestaat
 
 - **`hermes update`** haalt code van **`origin`** (meestal jouw fork op GitHub).
@@ -108,7 +122,7 @@ Verplaatst **ongetrackte** bestanden uit de root naar `output/research/` (script
 windows\UPDATE_HERMES.bat
 ```
 
-**Grote achterstand (^>20 commits behind):** het script vraagt `Doorgaan met update? [j/N]` — typ **j** + Enter in hetzelfde venster. Zonder vraag: `windows\UPDATE_HERMES.bat -Force` of `set HERMES_UPSTREAM_AUTO_CONFIRM=1` (automation/Cursor).
+**Grote achterstand (^>20 commits behind):** het script vraagt `Doorgaan met update? [j/N]` — typ **j** + Enter in het PowerShell-venster. Zonder vraag (aanbevolen bij 20+ commits): `windows\UPDATE_HERMES.bat -Yes`, `windows\UPDATE_HERMES_YES.bat`, `windows\UPDATE_HERMES.bat -Force`, of `set HERMES_UPSTREAM_AUTO_CONFIRM=1`.
 
 **Fout “Ongeldige tekens in pad” / dubbel pad `hermes-agent"hermes-agent\windows\...`:**
 

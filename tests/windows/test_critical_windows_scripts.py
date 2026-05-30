@@ -74,6 +74,11 @@ def test_update_hermes_uses_upstream_sync():
     assert "-Phase Update" in bat
     assert "gestopt met code" in bat.lower()
     assert "goto :team_display" in bat.lower()
+    assert "-Yes" in bat
+    yes_bat = REPO / "windows/UPDATE_HERMES_YES.bat"
+    assert yes_bat.is_file()
+    assert "UPDATE_HERMES.bat" in yes_bat.read_text(encoding="utf-8")
+    assert "HERMES_UPSTREAM_AUTO_CONFIRM=1" in yes_bat.read_text(encoding="utf-8")
 
 
 def test_orchestrator_routing_doc_exists():
