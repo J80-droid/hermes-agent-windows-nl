@@ -144,6 +144,19 @@ class TestAuditPython:
         assert harness._audit_python() == sys.executable
 
 
+class TestRunPySafe:
+    def test_run_py_safe_timeout_returns_fail_proc(self, harness: ModuleType) -> None:
+        with patch("subprocess.run", side_effect=subprocess.TimeoutExpired("py", 10)):
+            proc = harness._run_py_safe(["-c", "pass"], timeout=10)
+        assert proc.returncode == 1
+        assert "timeout" in (proc.stderr or "").lower()
+
+    def test_run_ps1_safe_missing_script_returns_fail(self, harness: ModuleType) -> None:
+        proc = harness._run_ps1_safe("__missing_script__.ps1")
+        assert proc.returncode == 1
+        assert "ontbreekt" in (proc.stderr or "")
+
+
 class TestRunPy:
     def test_run_py_uses_repo_cwd_and_audit_interpreter(self, harness: ModuleType) -> None:
         with (
@@ -201,19 +214,19 @@ class TestRunPs1:
 class TestRead:
     def test_read_existing_repo_file(self, harness: ModuleType) -> None:
         text = harness._read("docs/templates/SOUL_LEGAL_DOMAIN.md")
+        assert text is not None
         assert "Parallelle invalshoeken" in text
 
-    def test_read_missing_file_raises(self, harness: ModuleType) -> None:
-        with pytest.raises(FileNotFoundError):
-            harness._read("__unit_test_missing_template__.md")
+    def test_read_missing_file_returns_none(self, harness: ModuleType) -> None:
+        assert harness._read("__unit_test_missing_template__.md") is None
 
 
 class TestMainHappyPath:
     def test_main_success_all_external_mocked(self, harness: ModuleType) -> None:
         with (
             _patch_reads(harness),
-            patch.object(harness, "_run_py", return_value=_ok_proc("12 passed\n")),
-            patch.object(harness, "_run_ps1", return_value=_ok_proc("ALL PASS")),
+            patch.object(harness, "_run_py_safe", return_value=_ok_proc("12 passed\n")),
+            patch.object(harness, "_run_ps1_safe", return_value=_ok_proc("ALL PASS")),
         ):
             assert harness.main() == 0
         assert harness.FAILURES == 0
@@ -224,8 +237,8 @@ class TestMainHappyPath:
     ) -> None:
         with (
             _patch_reads(harness),
-            patch.object(harness, "_run_py", return_value=_ok_proc()),
-            patch.object(harness, "_run_ps1", return_value=_ok_proc()),
+            patch.object(harness, "_run_py_safe", return_value=_ok_proc()),
+            patch.object(harness, "_run_ps1_safe", return_value=_ok_proc()),
         ):
             assert harness.main() == 0
         out = capsys.readouterr().out
@@ -243,8 +256,8 @@ class TestMainNegativeScenarios:
             ("__definitely_missing_proactive_sparring__.md",),
         )
         with (
-            patch.object(harness, "_run_py", return_value=_ok_proc()),
-            patch.object(harness, "_run_ps1", return_value=_ok_proc()),
+            patch.object(harness, "_run_py_safe", return_value=_ok_proc()),
+            patch.object(harness, "_run_ps1_safe", return_value=_ok_proc()),
         ):
             assert harness.main() == 1
         assert harness.FAILURES >= 1
@@ -259,8 +272,8 @@ class TestMainNegativeScenarios:
                     "docs/templates/SOUL_LEGAL_DOMAIN.md": "Pushback only\nmandaat\ndisciplinair\n",
                 },
             ),
-            patch.object(harness, "_run_py", return_value=_ok_proc()),
-            patch.object(harness, "_run_ps1", return_value=_ok_proc()),
+            patch.object(harness, "_run_py_safe", return_value=_ok_proc()),
+            patch.object(harness, "_run_ps1_safe", return_value=_ok_proc()),
         ):
             code = harness.main()
         assert code == 1
@@ -272,8 +285,8 @@ class TestMainNegativeScenarios:
                 harness,
                 {"docs/templates/LEGAL_ACTIVE_MATTERS.example.md": "GCR 2024-00145 only\n"},
             ),
-            patch.object(harness, "_run_py", return_value=_ok_proc()),
-            patch.object(harness, "_run_ps1", return_value=_ok_proc()),
+            patch.object(harness, "_run_py_safe", return_value=_ok_proc()),
+            patch.object(harness, "_run_ps1_safe", return_value=_ok_proc()),
         ):
             assert harness.main() == 1
 
@@ -283,8 +296,8 @@ class TestMainNegativeScenarios:
                 harness,
                 {"docs/templates/MEMORY_CANONICAL_SEED.md": "## USER.md entries\n"},
             ),
-            patch.object(harness, "_run_py", return_value=_ok_proc()),
-            patch.object(harness, "_run_ps1", return_value=_ok_proc()),
+            patch.object(harness, "_run_py_safe", return_value=_ok_proc()),
+            patch.object(harness, "_run_ps1_safe", return_value=_ok_proc()),
         ):
             assert harness.main() == 1
 
@@ -301,8 +314,8 @@ class TestMainNegativeScenarios:
                     ),
                 },
             ),
-            patch.object(harness, "_run_py", return_value=_ok_proc()),
-            patch.object(harness, "_run_ps1", return_value=_ok_proc()),
+            patch.object(harness, "_run_py_safe", return_value=_ok_proc()),
+            patch.object(harness, "_run_ps1_safe", return_value=_ok_proc()),
         ):
             assert harness.main() == 1
 
@@ -314,8 +327,8 @@ class TestMainNegativeScenarios:
 
         with (
             _patch_reads(harness),
-            patch.object(harness, "_run_py", side_effect=fake_run_py),
-            patch.object(harness, "_run_ps1", return_value=_ok_proc()),
+            patch.object(harness, "_run_py_safe", side_effect=fake_run_py),
+            patch.object(harness, "_run_ps1_safe", return_value=_ok_proc()),
         ):
             assert harness.main() == 1
 
@@ -327,8 +340,8 @@ class TestMainNegativeScenarios:
 
         with (
             _patch_reads(harness),
-            patch.object(harness, "_run_py", return_value=_ok_proc("12 passed")),
-            patch.object(harness, "_run_ps1", side_effect=fake_run_ps1),
+            patch.object(harness, "_run_py_safe", return_value=_ok_proc("12 passed")),
+            patch.object(harness, "_run_ps1_safe", side_effect=fake_run_ps1),
         ):
             assert harness.main() == 1
 
@@ -340,8 +353,8 @@ class TestMainNegativeScenarios:
 
         with (
             _patch_reads(harness),
-            patch.object(harness, "_run_py", return_value=_ok_proc()),
-            patch.object(harness, "_run_ps1", side_effect=fake_run_ps1),
+            patch.object(harness, "_run_py_safe", return_value=_ok_proc()),
+            patch.object(harness, "_run_ps1_safe", side_effect=fake_run_ps1),
         ):
             assert harness.main() == 1
 
@@ -356,8 +369,8 @@ class TestMainNegativeScenarios:
                     "docs/templates/MEMORY_CANONICAL_SEED.md": "",
                 },
             ),
-            patch.object(harness, "_run_py", return_value=_fail_proc("pytest fail")),
-            patch.object(harness, "_run_ps1", return_value=_fail_proc("core fail")),
+            patch.object(harness, "_run_py_safe", return_value=_fail_proc("pytest fail")),
+            patch.object(harness, "_run_ps1_safe", return_value=_fail_proc("core fail")),
         ):
             code = harness.main()
         assert code == 1
@@ -369,8 +382,8 @@ class TestMainNegativeScenarios:
         monkeypatch.setattr(harness, "REQUIRED_PATHS", ())
         with (
             patch.object(harness, "_read", side_effect=FileNotFoundError("gone")),
-            patch.object(harness, "_run_py", return_value=_ok_proc()),
-            patch.object(harness, "_run_ps1", return_value=_ok_proc()),
+            patch.object(harness, "_run_py_safe", return_value=_ok_proc()),
+            patch.object(harness, "_run_ps1_safe", return_value=_ok_proc()),
         ):
             with pytest.raises(FileNotFoundError, match="gone"):
                 harness.main()
@@ -386,8 +399,8 @@ class TestMainExternalInvocation:
 
         with (
             _patch_reads(harness),
-            patch.object(harness, "_run_py", side_effect=fake_run_py),
-            patch.object(harness, "_run_ps1", return_value=_ok_proc()),
+            patch.object(harness, "_run_py_safe", side_effect=fake_run_py),
+            patch.object(harness, "_run_ps1_safe", return_value=_ok_proc()),
         ):
             harness.main()
 
@@ -404,8 +417,8 @@ class TestMainExternalInvocation:
 
         with (
             _patch_reads(harness),
-            patch.object(harness, "_run_py", return_value=_ok_proc()),
-            patch.object(harness, "_run_ps1", side_effect=fake_run_ps1),
+            patch.object(harness, "_run_py_safe", return_value=_ok_proc()),
+            patch.object(harness, "_run_ps1_safe", side_effect=fake_run_ps1),
         ):
             harness.main()
 
@@ -424,8 +437,8 @@ class TestMainExternalInvocation:
 
         with (
             _patch_reads(harness),
-            patch.object(harness, "_run_py", return_value=_ok_proc()),
-            patch.object(harness, "_run_ps1", side_effect=fake_run_ps1),
+            patch.object(harness, "_run_py_safe", return_value=_ok_proc()),
+            patch.object(harness, "_run_ps1_safe", side_effect=fake_run_ps1),
         ):
             harness.main()
 

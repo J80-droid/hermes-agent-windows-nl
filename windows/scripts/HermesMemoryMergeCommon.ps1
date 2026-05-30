@@ -42,7 +42,12 @@ function Get-HermesMemorySeedEntries {
             $inSection = $true
             continue
         }
-        if ($inSection -and $line -match '^## ') { break }
+        if ($inSection -and $line -match '^## ') {
+            if ($inFence) {
+                Write-Warning ('MEMORY_CANONICAL_SEED: onafgesloten code fence in sectie ''' + $SectionName + ''' - entry mogelijk afgekapt.')
+            }
+            break
+        }
         if (-not $inSection) { continue }
         if ($line.Trim() -eq '```') {
             $inFence = -not $inFence

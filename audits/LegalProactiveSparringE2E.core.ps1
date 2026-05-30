@@ -54,10 +54,15 @@ Write-E2eStep 'repair triple config governance' ($cfgCount -eq 1 -and $repaired 
 
 # --- Config sync script: alleen Identity insert ---
 $cfgSync = Join-Path $RepoRoot 'windows\scripts\sync_soul_config_governance_snippet.ps1'
-$cfgText = Get-Content -LiteralPath $cfgSync -Raw -Encoding UTF8
-$insertMatch = [regex]::Match($cfgText, "-InsertBeforeRegex '(?<pat>[^']+)'")
-$hasIdentityOnly = $insertMatch.Success -and ($insertMatch.Groups['pat'].Value -eq '^## Identity\s')
-Write-E2eStep 'config governance insert before Identity only' $hasIdentityOnly $insertMatch.Groups['pat'].Value
+if (-not (Test-Path -LiteralPath $cfgSync)) {
+    Write-E2eStep 'config governance insert before Identity only' $false "ontbreekt: $cfgSync"
+} else {
+    $cfgText = Get-Content -LiteralPath $cfgSync -Raw -Encoding UTF8
+    $insertMatch = [regex]::Match($cfgText, "-InsertBeforeRegex '(?<pat>[^']+)'")
+    $hasIdentityOnly = $insertMatch.Success -and ($insertMatch.Groups['pat'].Value -eq '^## Identity\s')
+    $patDetail = if ($insertMatch.Success) { $insertMatch.Groups['pat'].Value } else { 'geen match' }
+    Write-E2eStep 'config governance insert before Identity only' $hasIdentityOnly $patDetail
+}
 
 # --- Memory merge helpers ---
 $legalPathOk = (Test-IsLegalProfileMemoryUserPath -FilePath 'C:\hermes\profiles\legal\memories\USER.md') -and
@@ -83,11 +88,25 @@ $legalSeedChars = ($legalJoined).Length
 Write-E2eStep 'legal seed compact under 1200 chars' ($legalSeedChars -lt 1200) "chars=$legalSeedChars"
 
 # --- Anatomy sync roept config repair aan ---
-$anatomy = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows\scripts\sync_soul_anatomy_snippets.ps1') -Raw -Encoding UTF8
-Write-E2eStep 'anatomy snippets call config repair' ($anatomy -match 'Repair-SoulDuplicateConfigGovernanceBlocks')
+$anatomyPath = Join-Path $RepoRoot 'windows\scripts\sync_soul_anatomy_snippets.ps1'
+if (-not (Test-Path -LiteralPath $anatomyPath)) {
+    Write-E2eStep 'anatomy snippets call config repair' $false "ontbreekt: $anatomyPath"
+} else {
+    $anatomy = Get-Content -LiteralPath $anatomyPath -Raw -Encoding UTF8
+    Write-E2eStep 'anatomy snippets call config repair' ($anatomy -match 'Repair-SoulDuplicateConfigGovernanceBlocks')
+}
 
 # --- Runtime legal SOUL (optioneel maar verplicht als pad bestaat) ---
-$root = if ($HermesRoot) { (Resolve-Path -LiteralPath $HermesRoot).Path } else { Get-HermesRuntimeRoot }
+try {
+    $root = if ($HermesRoot) { (Resolve-Path -LiteralPath $HermesRoot).Path } else { Get-HermesRuntimeRoot }
+} catch {
+    Write-E2eStep 'Hermes runtime root' $false $_.Exception.Message
+    $root = $null
+}
+if (-not $root) {
+    Write-Host '[WARN] Hermes runtime root onbekend — runtime checks overgeslagen' -ForegroundColor Yellow
+}
+if ($root) {
 $legalSoul = Join-Path $root 'profiles\legal\SOUL.md'
 if (Test-Path -LiteralPath $legalSoul) {
     $soul = Get-SoulFileContent -Path $legalSoul
@@ -128,6 +147,7 @@ if (Test-Path -LiteralPath $matters) {
     Write-E2eStep 'runtime LEGAL_ACTIVE_MATTERS Adjacent checks' ($m -match 'Adjacent checks')
 } else {
     Write-Host '[WARN] LEGAL_ACTIVE_MATTERS ontbreekt — ensure_legal_active_matters' -ForegroundColor Yellow
+}
 }
 
 if ($failures -gt 0) {

@@ -29,9 +29,12 @@ from sync_legal_lens_table_from_taxonomy import (  # noqa: E402
 
 def _parse_soul_lens_rows(text: str) -> list[tuple[str, str, str]]:
     """Return (signals, lens, submap) from the Juridische lenzen table only (ignore other markdown tables)."""
+    scope = text
+    if LENS_HEADER in text:
+        scope = text.split(LENS_HEADER, 1)[1]
     rows: list[tuple[str, str, str]] = []
     in_table = False
-    for line in text.splitlines():
+    for line in scope.splitlines():
         stripped = line.strip()
         if not in_table:
             if stripped.startswith("| Signaal"):
@@ -65,7 +68,11 @@ def check_parity(soul_path: Path, taxonomy_rows: list[tuple[str, str, str]]) -> 
     if not soul_path.is_file():
         print(f"[ERROR] SOUL niet gevonden: {soul_path}", file=sys.stderr)
         return False
-    text = soul_path.read_text(encoding="utf-8")
+    try:
+        text = soul_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        print(f"[ERROR] Kan SOUL niet lezen: {soul_path} ({exc})", file=sys.stderr)
+        return False
     if LENS_HEADER not in text:
         print(f"[ERROR] {LENS_HEADER} ontbreekt in {soul_path}", file=sys.stderr)
         return False

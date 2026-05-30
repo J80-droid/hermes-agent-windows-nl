@@ -41,11 +41,16 @@ if ($Context -eq 'TrustSync' -and $env:HERMES_LEGAL_PROACTIVE_E2E_ON_TRUST -eq '
     exit 0
 }
 
-if (-not $RepoRoot) {
-    if ($env:HERMES_REPO_ROOT) { $RepoRoot = $env:HERMES_REPO_ROOT.Trim().Trim('"') }
-    else { $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path }
-} else {
-    $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
+try {
+    if (-not $RepoRoot) {
+        if ($env:HERMES_REPO_ROOT) { $RepoRoot = $env:HERMES_REPO_ROOT.Trim().Trim('"') }
+        else { $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path }
+    } else {
+        $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
+    }
+} catch {
+    Write-HermesFail ('RepoRoot ongeldig of ontbreekt: ' + $RepoRoot + ' - ' + $_.Exception.Message)
+    exit 1
 }
 
 $harness = Join-Path $RepoRoot 'audits\LegalProactiveSparringE2E.harness.py'
@@ -72,7 +77,7 @@ if (-not $Quiet) {
 $prevRepo = $env:HERMES_REPO_ROOT
 $env:HERMES_REPO_ROOT = $RepoRoot
 try {
-    $rc = Invoke-HermesNativeCommand -FilePath $py -ArgumentList @($harness) -Quiet:$Quiet
+    $rc = Invoke-HermesNativeCommand -FilePath $py -ArgumentList @($harness) -WorkingDirectory $RepoRoot -Quiet:$Quiet
 } finally {
     if ($null -eq $prevRepo) {
         Remove-Item Env:\HERMES_REPO_ROOT -ErrorAction SilentlyContinue

@@ -62,6 +62,20 @@ class TestParseSoulLensRows:
     def test_no_table_returns_empty(self, parity: ModuleType) -> None:
         assert parity._parse_soul_lens_rows("## Juridische lenzen\ngeen tabel") == []
 
+    def test_prefers_lens_section_after_header(self, parity: ModuleType) -> None:
+        md = (
+            "| Signaal (indicatief) | Lens | Bron-submap |\n"
+            "|----------------------|------|-------------|\n"
+            "| noise | Noise | `noise/` |\n\n"
+            "## Juridische lenzen\n\n"
+            "| Signaal (indicatief) | Lens | Bron-submap |\n"
+            "|----------------------|------|-------------|\n"
+            "| arbeidsrecht | Arbeidsrechtelijk | `Arbeidsrecht/` |\n"
+        )
+        rows = parity._parse_soul_lens_rows(md)
+        assert len(rows) == 1
+        assert rows[0][1] == "Arbeidsrechtelijk"
+
     def test_ignores_later_markdown_tables(self, parity: ModuleType) -> None:
         md = SAMPLE_SOUL + (
             "\n### USER.md (trust EN + legal triggers NL)\n\n"
