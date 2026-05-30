@@ -110,6 +110,12 @@ COMMAND_REGISTRY: list[CommandDef] = [
                args_hint="[text | remove N | clear]"),
     CommandDef("status", "Show session info", "Session"),
     CommandDef("whoami", "Show your slash command access (admin / user)", "Info"),
+    CommandDef(
+        "legal-architectuur",
+        "Legal domein: lenzen, RAG, routing (NL fork)",
+        "Info",
+        aliases=("legal-arch",),
+    ),
     CommandDef("profile", "Show active profile name and home directory", "Info"),
     CommandDef("sethome", "Set this chat as the home channel", "Session",
                gateway_only=True, aliases=("set-home",)),

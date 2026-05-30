@@ -84,6 +84,10 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 | Institutionele presentatie | `docs\INSTITUTIONAL_PRESENTATION.md` |
 | Core routing / landkaart | `docs\ORCHESTRATOR_ROUTING.md`, skill `landkaart` (`/landkaart`) |
 | Legal lenzen (één bucket) | `docs\LEGAL_DOMAIN_ARCHITECTURE.md`, `docs\LEGAL_TAXONOMY.md`, `MIGRATE_LEGAL_LAYOUT.bat` |
+| Legal productie-poort | `docs\LEGAL_PRODUCTION_GATE.md` · `VERIFY_LEGAL_RUNTIME.bat` · `audits\RUN_LEGAL_DOMAIN_E2E.bat` |
+| Legal architectuur (slash) | `/legal-architectuur` in chat (core + legal) |
+| Legal lenzentabel sync (auto) | `SYNC_LEGAL_LENS_FROM_TAXONOMY.bat` — ook in soul-deploy-keten bij start/UPDATE |
+| Legal ingest dashboard | `SHOW_LEGAL_INGEST_DASHBOARD.bat` |
 | Legal fork-skills (zoek/parse/web) | `skills\legal\` — `rechtspraak-zoeken`, `uitspraak-parseren`, `web-research-legal`; sync manifest: `SYNC_DOMAIN_TOOLSETS.bat` |
 | Repo-hygiene (schone root) | `docs\WORKSPACE_CONVENTIONS.md` · preflight: `scripts\guard_git_clean.ps1` · log: `_upstream_sync_guard.log` |
 | QuickFix vóór update | `UPDATE_HERMES.bat -QuickFix` · `scripts\quick_fix_repo_hygiene.ps1` |

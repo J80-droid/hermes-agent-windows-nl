@@ -261,6 +261,14 @@ def init_agent(
     agent.verbose_logging = verbose_logging
     agent.quiet_mode = quiet_mode
     agent.ephemeral_system_prompt = ephemeral_system_prompt
+    try:
+        from agent.prompt_builder import augment_ephemeral_for_legal_profile
+
+        agent.ephemeral_system_prompt = augment_ephemeral_for_legal_profile(
+            agent.ephemeral_system_prompt
+        )
+    except Exception:
+        pass
     agent.platform = platform  # "cli", "telegram", "discord", "whatsapp", etc.
     agent._user_id = user_id  # Platform user identifier (gateway sessions)
     agent._user_id_alt = user_id_alt  # Optional stable alternate platform identifier

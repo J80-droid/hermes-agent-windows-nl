@@ -121,7 +121,8 @@
 - [x] Legal domein future-proof: `LEGAL_DOMAIN_ARCHITECTURE.md`, `LEGAL_TAXONOMY.md`, `SOUL_LEGAL_DOMAIN.md`, runtime generieke legal-SOUL + `LEGAL_ACTIVE_MATTERS.md`
 - [x] **Platform hardening 10/10:** VectorStore-laag split, `KnowledgeRepository` (47 unit tests), regression E2E 10/10, `RUN_KNOWLEDGE_REPOSITORY_E2E` 8/8, `RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat`, sandbox/hardware cache-bust, `patch_tool` PermissionError propagate
 - [x] Bron-submappen `04_Legal_Corporate` (Arbeidsrecht, Klokkenluiders, …); `migrate_legal_source_layout.ps1`
-- [x] `sync_legal_lens_table_from_taxonomy.py`; `RUN_LEGAL_DOMAIN_E2E.bat`; `RUN_AUDITS -IncludeLegalDomainE2E`
+- [x] `sync_legal_lens_table_from_taxonomy.py`; `RUN_LEGAL_DOMAIN_E2E.bat` (12 stappen); `RUN_AUDITS -IncludeLegalDomainE2E`
+- [x] Legal productie P0–P3 (2026-05-30): `/legal-architectuur`, `VERIFY_LEGAL_RUNTIME`, parity verify, MATTERS seed, `LEGAL_PRODUCTION_GATE.md`, `legal_lens_from_path`, ingest dashboard
 
 ## Operationeel (gebruiker)
 

@@ -57,6 +57,15 @@ Zie routing-matrix (repo: `docs/ORCHESTRATOR_ROUTING.md`). Samenvatting:
 
 Bij multi-domein: label bronnen per domein; routeer bindende stappen naar specialisten. Profiel `legal` kiest intern rechtsgebied-lenzen — zie `docs/LEGAL_DOMAIN_ARCHITECTURE.md`.
 
+### Legal architectuur (meta-vragen)
+
+Triggers (o.a.): *team van agents*, *legal architectuur*, *legal team*, *hoe werkt het legal-domein*.
+
+- **Niet** uitleggen als generiek Hermes-framework (delegate_task, Kanban, zes parallelle profielen per rechtsgebied) tenzij J. daar expliciet naar vraagt.
+- **Wel:** core routeert juridisch werk naar profiel **`legal`**; binnen `legal` werken **rechtsgebied-lenzen** in **één** sessie + één RAG-bucket (`lancedb-legal`). Geen aparte Hermes-profielen per lens.
+- Vaste samenvatting: **`/legal-architectuur`**. Canoniek: `docs/LEGAL_DOMAIN_ARCHITECTURE.md`, `docs/LEGAL_TAXONOMY.md`. Inventaris: `/landkaart`.
+- Bindend juridisch werk: **`/profile use legal`** (niet zelf legal-dossier doen in core).
+
 ### Profielwissel (J. in chat)
 
 - J. wil ander profiel (bv. core, legal): wijs naar **`/profile use <naam>`** of **`/profile <naam>`** — **niet** zeggen dat wisselen alleen buiten de sessie kan; geen `hermes profile use` via exec-tools.

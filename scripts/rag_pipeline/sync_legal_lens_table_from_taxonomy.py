@@ -72,9 +72,30 @@ def patch_soul(soul_path: Path, lens_block: str, dry_run: bool) -> bool:
     return True
 
 
+def resolve_soul_targets(*, include_runtime: bool) -> list[Path]:
+    """Repo-template plus runtime legal SOUL when present."""
+    targets = [TEMPLATE]
+    if not include_runtime:
+        return targets
+    try:
+        from hermes_constants import get_default_hermes_root
+
+        runtime = get_default_hermes_root() / "profiles" / "legal" / "SOUL.md"
+        if runtime.is_file() and runtime.resolve() != TEMPLATE.resolve():
+            targets.append(runtime)
+    except Exception as exc:
+        print(f"[WARN] Runtime legal SOUL overgeslagen: {exc}", file=sys.stderr)
+    return targets
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--soul", type=Path, help="Pad naar legal SOUL.md (default: template)")
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Patch repo-template + runtime profiles/legal/SOUL.md (indien aanwezig)",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -88,13 +109,21 @@ def main() -> int:
         return 1
 
     lens_block = build_lens_section(rows)
-    soul = args.soul or TEMPLATE
-    if not soul.is_file():
-        print(f"[ERROR] SOUL niet gevonden: {soul}", file=sys.stderr)
-        return 1
+    if args.all:
+        souls = resolve_soul_targets(include_runtime=True)
+    elif args.soul:
+        souls = [args.soul]
+    else:
+        souls = [TEMPLATE]
 
-    ok = patch_soul(soul, lens_block, args.dry_run)
-    return 0 if ok else 1
+    ok_all = True
+    for soul in souls:
+        if not soul.is_file():
+            print(f"[WARN] SOUL niet gevonden (overgeslagen): {soul}", file=sys.stderr)
+            continue
+        ok = patch_soul(soul, lens_block, args.dry_run)
+        ok_all = ok_all and ok
+    return 0 if ok_all else 1
 
 
 if __name__ == "__main__":

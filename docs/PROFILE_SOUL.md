@@ -116,7 +116,7 @@ Core routing staat in [ORCHESTRATOR_ROUTING.md](ORCHESTRATOR_ROUTING.md). Volled
 | Architectuur (één RAG-bucket) | [LEGAL_DOMAIN_ARCHITECTURE.md](LEGAL_DOMAIN_ARCHITECTURE.md) |
 | Rechtsgebied-taxonomie | [LEGAL_TAXONOMY.md](LEGAL_TAXONOMY.md) |
 | Template SOUL legal | [templates/SOUL_LEGAL_DOMAIN.md](templates/SOUL_LEGAL_DOMAIN.md) |
-| Lopende dossiers (runtime) | `%LOCALAPPDATA%\hermes\profiles\legal\LEGAL_ACTIVE_MATTERS.md` |
+| Lopende dossiers (runtime) | `profiles/legal/LEGAL_ACTIVE_MATTERS.md` onder HERMES_HOME (file-tool: absoluut pad; geen `%LOCALAPPDATA%`-placeholder) |
 | Bron-submappen | `%USERPROFILE%\data\raw_source_files\04_Legal_Corporate\<Lens>\` |
 | Migratie layout | `windows\scripts\MIGRATE_LEGAL_LAYOUT.bat -Apply` |
 | Sync lenzentabel uit taxonomie | `python scripts\rag_pipeline\sync_legal_lens_table_from_taxonomy.py --soul <pad>` |

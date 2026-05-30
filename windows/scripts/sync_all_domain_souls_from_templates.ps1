@@ -35,6 +35,21 @@ if ($failedProfiles.Count -gt 0) {
     exit 1
 }
 
+$ensureMatters = Join-Path $PSScriptRoot 'ensure_legal_active_matters.ps1'
+if (Test-Path -LiteralPath $ensureMatters) {
+    & $ensureMatters -RepoRoot $RepoRoot -Quiet
+}
+
+$legalLens = Join-Path $PSScriptRoot 'sync_legal_lens_from_taxonomy.ps1'
+if (Test-Path -LiteralPath $legalLens) {
+    Write-HermesLaunchUi -Message 'Legal lenzentabel (LEGAL_TAXONOMY)' -Level Info
+    & $legalLens -RepoRoot $RepoRoot -Quiet
+    if (Test-NativeCommandFailed) {
+        Write-HermesLaunchUi -Message ('Legal lens sync mislukt (exit ' + $LASTEXITCODE + ')') -Level Error -ForceConsole
+        exit 1
+    }
+}
+
 if ($SkipSnippetSync) {
     Write-HermesLaunchUi -Message 'Snippet sync overgeslagen' -Level Warn
     exit 0

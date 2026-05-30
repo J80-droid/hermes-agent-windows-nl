@@ -4,6 +4,10 @@
 
 **Profielwissel Windows structureel (2026-05-30, productie OK):** `/profile use` in WT — TUI-modal op achtergrondthread (`_schedule_profile_command_async`); sync/gateway/relaunch na TUI-exit; geen stderr-spinner tijdens `chat` relaunch (prompt `legal ❯`); audit `docs/PROFILE_SWITCH_WINDOWS_AUDIT.md`; E2E `RUN_PROFILE_SWITCH_E2E.bat` + pytest 29 passed.
 
+**Legal productie P0–P3 (2026-05-30):** `/legal-architectuur` + `legal_architecture_brief.py`; `VERIFY_LEGAL_RUNTIME.bat` + `verify_legal_lens_parity.py`; `ensure_legal_active_matters.ps1`; E2E 12 stappen; `LEGAL_PRODUCTION_GATE.md`; ephemeral legal-paden in `prompt_builder`; fase 2b.1 `legal_lens_from_path.py`; `SHOW_LEGAL_INGEST_DASHBOARD.bat`; upstream-behind reminder.
+
+**Legal P2+P4 geautomatiseerd (2026-05-30):** `LEGAL_TAXONOMY.md` in soul-deploy watch; `sync_legal_lens_from_taxonomy.ps1 --all` in `sync_all_domain_souls`; core+legal SOUL meta-routing (lenzen vs framework-team); `SYNC_LEGAL_LENS_FROM_TAXONOMY.bat`.
+
 **Plan v2 fork 100% groen (2026-05-30):** `ee90ccb8c` op `origin/main` (Repair-CursorMcpConfig pad-literals, dashboard D7). Formele poort: `SYNC_TRUST_RUNTIME.bat` + `RUN_AUDITS -IncludeAllE2E` **PASS** — log `audits/RUN_AUDITS_closure_2026-05-30.log`. v2-acceptatie = fork/institutioneel, **niet** parallel ~29k upstream op Windows.
 
 **RUN_AUDITS E2E-keten (2026-05-29, `74ae0f4e6`+):** Gateway cost/tps; CLI `config get` + profile switch; SOUL repair; Memory Repair Trust `Initialize-*`; `soul-runtime-prep` vóór E2E. Zie ook `windows/audits/RUN_AUDITS_LAST_RUN.log`.

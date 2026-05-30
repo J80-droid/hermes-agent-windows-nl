@@ -368,10 +368,14 @@ function Get-SoulAnatomyWatchPaths {
     $spec = Join-Path $root 'docs/SOUL_ANATOMY_SPEC.md'
     if (Test-Path -LiteralPath $spec) { [void]$paths.Add($spec) }
     foreach ($rel in @(
+            'docs/LEGAL_TAXONOMY.md',
+            'docs/LEGAL_DOMAIN_ARCHITECTURE.md',
             'windows/scripts/sync_soul_anatomy_snippets.ps1',
             'windows/scripts/sync_all_domain_souls_from_templates.ps1',
+            'windows/scripts/sync_legal_lens_from_taxonomy.ps1',
             'windows/scripts/SyncSoulSnippet.psm1',
             'windows/scripts/sync_domain_soul_from_template.ps1',
+            'scripts/rag_pipeline/sync_legal_lens_table_from_taxonomy.py',
             'windows/scripts/toolset_domain_e2e_runtime.py'
         )) {
         $p = Join-Path $root $rel

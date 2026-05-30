@@ -6571,6 +6571,18 @@ class HermesCLI:
         print("  Example: python cli.py --toolsets web,terminal")
         print()
     
+    def _handle_legal_architectuur_command(self) -> bool:
+        """Print fork legal domain brief (deterministic, no LLM)."""
+        from hermes_cli.legal_architecture_brief import build_legal_architecture_brief
+        from hermes_cli.profiles import get_active_profile_name
+
+        profile = get_active_profile_name()
+        brief = build_legal_architecture_brief(profile)
+        print()
+        print(brief)
+        print()
+        return True
+
     def _handle_profile_command(self, cmd: str = "/profile") -> Optional[bool]:
         """Handle /profile, /profile list, /profile use <name>, /profile <name>."""
         import shlex
@@ -8994,6 +9006,8 @@ class HermesCLI:
             return False
         elif canonical == "help":
             self.show_help()
+        elif canonical == "legal-architectuur":
+            self._handle_legal_architectuur_command()
         elif canonical == "profile":
             if self._handle_profile_command(cmd_original) is False:
                 return False

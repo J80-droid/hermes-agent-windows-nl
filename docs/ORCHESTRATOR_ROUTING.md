@@ -35,6 +35,6 @@ Canonieke matrix voor `profiles/core/SOUL.md`. Domeinnamen komen uit [`domains.y
 | Taak naar specialist | Kanban + `hermes -p <profiel> chat` |
 | Volledige inventarisatie | `/landkaart` of skill `landkaart` |
 
-**Legal:** core routeert naar profiel `legal` alleen — geen subprofielen (`legal-arb`, …). Binnen-routering via rechtsgebied-lenzen: [LEGAL_DOMAIN_ARCHITECTURE.md](LEGAL_DOMAIN_ARCHITECTURE.md), [LEGAL_TAXONOMY.md](LEGAL_TAXONOMY.md).
+**Legal:** core routeert naar profiel `legal` alleen — geen subprofielen (`legal-arb`, …). Binnen-routering via rechtsgebied-lenzen: [LEGAL_DOMAIN_ARCHITECTURE.md](LEGAL_DOMAIN_ARCHITECTURE.md), [LEGAL_TAXONOMY.md](LEGAL_TAXONOMY.md). Meta-vragen over “team van agents”: zie **Legal architectuur** in core-SOUL — lenzen, geen zes parallelle instanties (automatisch in template na soul deploy).
 
 Zie ook [PROFILE_SWITCH.md](PROFILE_SWITCH.md) en [PROFILE_SOUL.md](PROFILE_SOUL.md).

@@ -31,7 +31,7 @@
 
 1. Nieuwe rij in **Actieve lenzen** (id, signalen, submap, tag, `active`).
 2. Submap aanmaken: `%USERPROFILE%\data\raw_source_files\04_Legal_Corporate\<Submap>\`.
-3. Rij toevoegen aan **Juridische lenzen** in `profiles\legal\SOUL.md` (of `sync_legal_lens_table_from_taxonomy.py`).
+3. Lenzentabel in SOUL — **automatisch** bij Hermes-start/UPDATE (`sync_legal_lens_from_taxonomy.ps1` in soul-deploy-keten). Handmatig: `windows\SYNC_LEGAL_LENS_FROM_TAXONOMY.bat` of `python scripts\rag_pipeline\sync_legal_lens_table_from_taxonomy.py --all`.
 4. **Geen** nieuw Hermes-profiel tenzij [LEGAL_DOMAIN_ARCHITECTURE.md](LEGAL_DOMAIN_ARCHITECTURE.md) split-criteria (fase 3b) gelden.
 5. `windows\scripts\update_knowledge.bat legal`
 6. Rooktest: `windows\scripts\user_data\hermes_legal_rooktest.bat`

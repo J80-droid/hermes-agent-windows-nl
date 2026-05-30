@@ -225,6 +225,16 @@ function Invoke-UpstreamPreflight {
     $behind = [int]$lr[1]
     Write-Host "  Fork-only commits (ahead):  $ahead"
     Write-Host "  Nous commits (behind):      $behind"
+    $behindWarn = 10
+    if ($env:HERMES_UPSTREAM_BEHIND_WARN) {
+        try { $behindWarn = [int]$env:HERMES_UPSTREAM_BEHIND_WARN } catch { }
+    }
+    if ($behind -gt $behindWarn) {
+        Write-Host ''
+        Write-Host ('  [REMINDER] Fork is ' + $behind + ' commits achter upstream (drempel ' + $behindWarn + ').') -ForegroundColor Yellow
+        Write-Host '             Zie windows\UPSTREAM_SYNC.md — NOOIT: git reset --hard upstream/main' -ForegroundColor Yellow
+        Write-Host ''
+    }
     Write-Uitleg @(
         'ahead = commits alleen op jouw fork (NL/RAG/windows) - blijven behouden.'
         'behind = nieuwe commits op NousResearch/hermes-agent - worden gemerged bij update.'

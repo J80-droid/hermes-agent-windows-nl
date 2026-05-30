@@ -57,6 +57,15 @@ if ($syncCode -ne 0) {
 Set-SoulAnatomyDeployStamp -StampPath $stampPath
 Set-InstitutionalNewChatReminder -Reason 'SOUL anatomy deploy bij start' -RepoRoot $RepoRoot
 
+$verifyLegal = Join-Path $PSScriptRoot 'verify_legal_runtime.ps1'
+if (Test-Path -LiteralPath $verifyLegal) {
+    & $verifyLegal -RepoRoot $RepoRoot -Quiet
+    if ((Test-NativeCommandFailed) -and ($env:HERMES_LEGAL_VERIFY_STRICT -eq '1')) {
+        Write-HermesLaunchUi -Message 'Legal runtime verify mislukt (HERMES_LEGAL_VERIFY_STRICT=1).' -Level Error -ForceConsole
+        exit 1
+    }
+}
+
 if (-not $Quiet) {
     Write-HermesLaunchUi -Message 'SOUL anatomy deploy voltooid. Gebruik /new in Hermes.' -Level Ok
 }

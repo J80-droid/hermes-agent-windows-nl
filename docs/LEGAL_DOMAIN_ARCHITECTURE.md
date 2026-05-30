@@ -87,6 +87,28 @@ Optioneel later (fase 2b): metadata `legal_lens` in ingest — alleen als mappen
 | `profiles\legal\SOUL.md` | Runtime (buiten git) |
 | `profiles\legal\LEGAL_ACTIVE_MATTERS.md` | Lopende dossiers (buiten git) |
 
+### Automatische sync (P2)
+
+| Trigger | Actie |
+|---------|--------|
+| `launch_soul_anatomy_deploy.ps1` (Hermes-start, UPDATE post-merge) | `sync_all_domain_souls` → **`sync_legal_lens_from_taxonomy.ps1 --all`** (template + runtime) |
+| Wijziging `docs/LEGAL_TAXONOMY.md` | Stamp soul-deploy invalid → volgende start pusht lenzentabel |
+| Handmatig | `windows\SYNC_LEGAL_LENS_FROM_TAXONOMY.bat` |
+| Overslaan | `HERMES_SKIP_LEGAL_LENS_SYNC=1` |
+
+Na deploy met gewijzigde SOUL: **`/new`** in lopende chat (system prompt).
+
+### Verificatie (productie)
+
+| Script | Doel |
+|--------|------|
+| `windows\VERIFY_LEGAL_RUNTIME.bat` | Snel: SOUL meta, parity, domains.yaml (warn of strict) |
+| `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat` | Volledige poort (12 stappen) |
+| `scripts\rag_pipeline\verify_legal_lens_parity.py` | SOUL-tabel == taxonomie (≠ RAG-filter; zie [LEGAL_INGEST_METADATA.md](LEGAL_INGEST_METADATA.md)) |
+| `windows\scripts\ensure_legal_active_matters.ps1` | Seed `LEGAL_ACTIVE_MATTERS.md` (nooit overschrijven) |
+
+Matrix: [LEGAL_PRODUCTION_GATE.md](LEGAL_PRODUCTION_GATE.md). Chat: `/legal-architectuur`.
+
 ## Fork-skills (web + parsing, in repo)
 
 Naast RAG (`search_knowledge` op `lancedb-legal`) zijn drie **CLI-skills** beschikbaar voor live zoeken en documentextractie (geen API-key voor rechtspraak.nl HTML):
