@@ -26,6 +26,7 @@ Zie `docs/PROFILE_MODEL_INHERITANCE.md`.
 ## Gebruikerservaring
 
 - Windows-first: `.bat`-starters, taakbalk, geen conda in PATH vereist voor `hermes.bat`.
+- **Windows Terminal:** minimize/maximize/sluiten op de WT-titelbalk moet werken; bij vastlopen: `windows\FIX_MOUSE_BLOCKED.bat` of `RESET_TERMINAL.bat` → alle tabs dicht → `start_hermes.bat` (klik op WT-chrome, niet het zwarte chatvlak). Zie `windows/MOUSE_OVERLAY_FIX.md`.
 - `domains.yaml` en LanceDB buiten de repo (geen secrets, geen bulk-data in git).
 - Live ingest-status en eindrapporten voor vertrouwen ("is legal klaar?").
 

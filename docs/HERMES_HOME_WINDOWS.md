@@ -31,7 +31,7 @@ Zie [WINDOWS_PLATFORM_HARDENING.md](WINDOWS_PLATFORM_HARDENING.md).
 
 | Wat | Pad |
 | --- | --- |
-| **Dev-repo (start hier)** | `windows\launch_hermes.bat` in je fork (bijv. `Hermes_agent_WS\hermes-agent`) |
+| **Dev-repo (start hier)** | `start_hermes.bat` in je fork (bijv. `Hermes_agent_WS\hermes-agent`; intern `windows\launch_hermes.bat`) |
 | Nous clone (optioneel) | `%LOCALAPPDATA%\hermes\hermes-agent` — **niet** mengen met fork/RAG zonder keuze |
 | Config leeft in | `%LOCALAPPDATA%\hermes\` — **niet** in de repo |
 
@@ -45,7 +45,7 @@ Native Windows Hermes gebruikt `%LOCALAPPDATA%\hermes`. WSL-sessies kunnen paral
 
 | Actie | Commando |
 | --- | --- |
-| Start Hermes | `windows\launch_hermes.bat` |
+| Start Hermes | **`start_hermes.bat`** (repo-root; Windows Terminal) |
 | Dagelijks | **`start_hermes.bat`** — pull+sync+relaunch alleen als nodig; anders direct start |
 | Forceer pull | `start_hermes.bat --pull` of `PULL_HERMES.bat` |
 | Na handmatige pull | `start_hermes.bat --sync` of `windows\POST_GIT_PULL.bat` |

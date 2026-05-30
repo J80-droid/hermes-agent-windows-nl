@@ -122,11 +122,15 @@ start_hermes.bat
 
 ---
 
-## Automatische tests (geen live WT-muis)
+## Automatische poort (geen live WT-muis)
+
+**Runner:** `windows\audits\RUN_WT_MOUSE_OVERLAY_E2E.bat` — stap 1: pytest-contracten; stap 2–7: **handmatige** checklist (titelbalk-klikken). Geen UI-automation in CI.
 
 | Test | Wat het bewijst |
 | ---- | --------------- |
-| `tests/windows/test_launch_dashboard_on_start.py::test_mouse_regression_contracts` | Geen `start /B`, NoWindow, geen repair in `hermes_chat.cmd`, WT-expand guard |
+| `tests/windows/test_launch_dashboard_on_start.py::test_mouse_regression_contracts` | Geen `start /B`, NoWindow, geen repair in `hermes_chat.cmd`, WT-expand guard, Clear-Host guard in launch |
+| `test_expand_console_to_work_area_guarded_in_wt` | `ExpandConsoleToWorkArea` alleen binnen `if (-not $inWt)` |
+| `test_cli_align_viewport_skipped_in_wt` | `cli.py` roept `align_win32_viewport_to_bottom` niet aan in `WT_SESSION` |
 | `tests/windows/test_critical_windows_scripts.py` | Prepare/chat-keten |
 | `tests/cli/test_cli_windows_mouse.py` | `mouse_support=False` op Win32 |
 | `tests/windows/test_launch_profiles.py` | Geen auto browser-open in profiel |
@@ -153,6 +157,11 @@ start_hermes.bat
 
 ## Git / release note
 
-**Commit message (samenvatting):** fix(windows): WT titelbalk-muis — geen ExpandConsoleToWorkArea in WT, overlay-herstel, dashboard NoWindow zonder browser.
+| Item | Waarde |
+| ---- | ------ |
+| **Fix-commit** | `91955c651` — `fix(windows): WT title bar mouse overlay and launch regressions` |
+| **Docs/guards-commit** | `16bc3d99d` — `docs(windows): close WT mouse overlay gaps 1-16` |
+| **Tag** | `windows-wt-titlebar-mouse-2026-05-30` |
+| **Remote** | https://github.com/J80-droid/hermes-agent-windows-nl |
 
-**Deze push lost op:** onzichtbare conhost-overlay op WT-titelbalk (minimize/maximize/close), extra vensters door verkeerde dashboard-launchers, automatische browser naar `/sessions`.
+**Deze release lost op:** onzichtbare conhost-overlay op WT-titelbalk (minimize/maximize/close), extra vensters door verkeerde dashboard-launchers, automatische browser naar `/sessions`. **User-verified working** (2026-05-30).

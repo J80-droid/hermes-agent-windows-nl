@@ -46,6 +46,15 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 - **Launch UI Sink:** `HermesLaunchUi.ps1` — enige console-schrijver tijdens pre-chat; `Write-HermesLaunchUi`, capture-modus, rich visual in WT (`HERMES_LAUNCH_UI`, `HERMES_LAUNCH_VISUAL`).
 - **Verboden:** `Copy-Item $PSCommandPath` naar `windows/` (dubbele IDE/PSSA-lint).
 
+## Windows Terminal — conhost overlay (WT)
+
+- **Startcanon:** repo-root `start_hermes.bat` → `wt.exe` → `hermes_wt_entry.cmd` → `launch_hermes.bat` (niet rechtstreeks launch in losse cmd).
+- **Geen** `ExpandConsoleToWorkArea` / work-area `SetWindowPos` op conhost wanneer `WT_SESSION` (`Test-HermesWindowsTerminalSession`); anders onzichtbare overlay op WT-titelbalk (minimize/maximize/close).
+- **Herstel:** `RestoreConsoleFromWorkAreaOverlay`, `Invoke-HermesFixMouseBlocked` via `FIX_MOUSE_BLOCKED.bat` / `RESET_TERMINAL.bat`.
+- **Launcher:** geen standaard `HERMES_DISMISS_GHOST_CONSOLES=1` in `launch_hermes.bat`; geen `DismissGhost` op `CASCADIA_HOSTING_WINDOW_CLASS`.
+- **Deferred dashboard:** `Start-HermesDashboardAfterChatDetached` + `Start-HermesNoWindowProcess` (geen `start /B` / `start "" powershell`).
+- **Docs:** `windows/MOUSE_OVERLAY_FIX.md`, `windows/TERMINAL_WINDOWS.md`; fix-commit `91955c651` + lacunes 1–16 (docs/guards).
+
 ## Pending trust-runtime (start-hook)
 
 - **Stamp:** `%LOCALAPPDATA%\hermes\pending_trust_runtime.json` (`TrustRuntimePending.psm1`) — gezet door `Invoke-UpstreamPostMerge.ps1` als `SYNC_TRUST_RUNTIME.bat` faalt tijdens UPDATE.

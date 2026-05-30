@@ -70,6 +70,20 @@ start_hermes.bat          ← repo-root (standaard profiel: full)
 
 **Niet** voor normaal gebruik: `conda run …`, losse `python cli.py` in cmd, of `start_hermes_split.bat` (debug split-pane).
 
+## Titelbalk / muisklik (opgelost)
+
+**Status:** geverifieerd werkend (2026-05-30). Volledige uitleg: **[MOUSE_OVERLAY_FIX.md](MOUSE_OVERLAY_FIX.md)**.
+
+| Symptoom | Actie |
+| -------- | ----- |
+| Minimize / maximize / sluiten reageert niet | `windows\FIX_MOUSE_BLOCKED.bat` of `windows\RESET_TERMINAL.bat` |
+| Daarna | **Alle** Hermes/cmd/WT-tabbladen sluiten |
+| Opnieuw starten | Alleen **`start_hermes.bat`** (titel moet **Windows Terminal** zijn, niet alleen cmd) |
+| Klikken | Op de **WT-titelbalk**, niet op het zwarte chatvlak |
+| Chat vast | **Ctrl+Shift+M** (markeermodus uit) |
+
+Automatische poort (pytest + checklist): `windows\audits\RUN_WT_MOUSE_OVERLAY_E2E.bat`.
+
 ## Launch-profielen
 
 | Profiel | Entrypoint | Gedrag |
@@ -99,7 +113,7 @@ start_hermes_minimal.bat
 
 Profielvlagen `--minimal` / `--full` zijn **alleen** voor `start_hermes.bat`, niet voor `hermes chat`.
 
-## Snelkoppelingen
+## Snelkoppellingen
 
 | Wat | Hoe |
 | --- | --- |
@@ -107,6 +121,14 @@ Profielvlagen `--minimal` / `--full` zijn **alleen** voor `start_hermes.bat`, ni
 | Start (volledig) | `Start Hermes - naar taakbalk slepen.lnk` |
 | Start (snel) | `Start Hermes (snel) - naar taakbalk slepen.lnk` |
 | Bureaublad | `Hermes Agent.lnk` (full); optioneel `Hermes Agent (snel).lnk` |
+
+| Symptoom | Actie |
+| -------- | ----- |
+| Venstertitel is alleen **cmd**, geen Windows Terminal | Snelkoppeling wijst vaak naar `launch_hermes.bat` i.p.v. `start_hermes.bat` → `CREATE_DESKTOP_SHORTCUT.bat` + taakbalk opnieuw pinnen |
+| Minimize werkt niet na oude sessie | `FIX_MOUSE_BLOCKED.bat` → alle tabs dicht → `start_hermes.bat` |
+| Na `git pull` | Shortcut-repair bij full start; anders handmatig `CREATE_DESKTOP_SHORTCUT.bat` |
+
+Zie ook **[TERMINAL_WINDOWS.md](TERMINAL_WINDOWS.md)** (wt.exe + `cmd /c call`).
 
 ## Gerelateerde scripts
 
@@ -126,4 +148,4 @@ Profielvlagen `--minimal` / `--full` zijn **alleen** voor `start_hermes.bat`, ni
 | `hermes_launch.log` | Launcher-stappen |
 | `hermes_last_error.log` | Laatste fout |
 
-Zie **[TERMINAL_WINDOWS.md](TERMINAL_WINDOWS.md)** voor WT, kleuren, muisklik, `/exit`.
+Zie **[TERMINAL_WINDOWS.md](TERMINAL_WINDOWS.md)** voor WT, kleuren, muisklik, `/exit`. Titelbalk-overlay (opgelost): **[MOUSE_OVERLAY_FIX.md](MOUSE_OVERLAY_FIX.md)**.

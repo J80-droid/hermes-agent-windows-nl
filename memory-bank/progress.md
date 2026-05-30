@@ -25,6 +25,7 @@
 - [x] Institutionele P0-pipeline (`windows/scripts/institutional_p0_p1.bat`)
 - [x] Profiel → root config overerving (`profile_model_inheritance.py`: model + auxiliary + providers; save-guard, cache-bust; docs, doctor `--fix`, tests, E2E harness 8/8 + `py_compile` guard)
 - [x] Windows WT titelbalk-muis overlay (2026-05-30): geen `ExpandConsoleToWorkArea` in WT; `RestoreConsoleFromWorkAreaOverlay` + `Invoke-HermesFixMouseBlocked`; dashboard NoWindow zonder browser; `MOUSE_OVERLAY_FIX.md`; contract tests; **geverifieerd door gebruiker**
+- [x] WT overlay lacunes 1–16 (docs/guards): memory bank + `.cursorrules` + START/LAUNCH_PROFILES + pytest guards + `RUN_WT_MOUSE_OVERLAY_E2E.bat` + Clear-Host WT + README-FORK + `WORKSPACE_CONVENTIONS` + doc-drift; tag `windows-wt-titlebar-mouse-2026-05-30`
 - [x] Windows chat-startfix (2026-05-27): geen `TERM=xterm-256color`; `hermes_chat.cmd`; `launch_pre_chat_orchestrator.ps1` (fasen); `maximize_console.ps1`; `Write-HermesRuntimeModelBanner`; OPEN_SETUP coherence repair; `TERMINAL_WINDOWS.md`
 - [x] Windows snelkoppelingen + onderhoud (2026-05-28): `Set-HermesStartShellShortcut`; `Invoke-HermesPostChangeMaintenance.ps1`; `HERMES_ONDERHOUD.bat` / `hermes_onderhoud.bat`; `test_hermes_shortcut_args.py`; docs START/README
 - [x] Taakbalk alle rollen via wt.exe (2026-05-27): `Get-HermesWtShortcutArgumentLine`; `verify_hermes_shortcut_paths.ps1`; pin-sync uit bron-.lnk; `UPDATE_HERMES` `%~dp0`-check; upstream `-Force` auto-confirm

@@ -25,7 +25,7 @@ windows\SYNC_TRUST_RUNTIME.bat
 **Launch-profiel (Windows):** standaard **full** via `start_hermes.bat` (SOUL, institutioneel, trust, Docker, dashboard). Snel alleen chat: `start_hermes_minimal.bat`. Canoniek: [`windows/launch_profiles.ps1`](../windows/launch_profiles.ps1), [`windows/START.md`](../windows/START.md). Voorkeur opslaan: `windows\set_launch_profile.bat full|minimal`.
 
 `start_hermes.bat` → `launch_hermes.ps1` → orchestrator start dashboard bij profiel **full** (Codebase Viz warmup): **`hermes dashboard --no-open`** op `http://127.0.0.1:9119` (geen browser-tab; open zelf `/sessions`). Uitzetten: `HERMES_SKIP_DASHBOARD_ON_START=1` of `HERMES_DASHBOARD_ON_START=0`. Log: `output\research\logs\hermes_dashboard.log`.
-Windows Terminal is verplicht (`windows/requirements-windows.txt`; `INSTALL_WINDOWS_TERMINAL.bat`). `start_hermes.bat` zet `HERMES_AUTO_WINDOWS_TERMINAL=1` (start in `wt -M` wanneer `wt.exe` beschikbaar). Uitzetten: `HERMES_SKIP_WINDOWS_TERMINAL=1`. Console-layout: `HERMES_CONSOLE_LAYOUT=maximized` (werkgebied, geen `SW_MAXIMIZE`).
+Windows Terminal is verplicht (`windows/requirements-windows.txt`; `INSTALL_WINDOWS_TERMINAL.bat`). `start_hermes.bat` zet `HERMES_AUTO_WINDOWS_TERMINAL=1` (start in `wt -M` wanneer `wt.exe` beschikbaar). Uitzetten: `HERMES_SKIP_WINDOWS_TERMINAL=1`. Console-layout: `HERMES_CONSOLE_LAYOUT=maximized` — in **WT geen** conhost work-area expand (titelbalk veilig); legacy cmd wel werkgebied. Zie [`windows/MOUSE_OVERLAY_FIX.md`](../windows/MOUSE_OVERLAY_FIX.md). Bij titelbalk-muis vast na pull: `windows\FIX_MOUSE_BLOCKED.bat` → alle tabs dicht → `start_hermes.bat`.
 
 **Na pull (standaard):** `start_hermes.bat --pull` of `start_hermes.bat --pull -Full` — sync (trust, SOUL, drift, display) + **Hermes-relaunch** in Windows Terminal. Alleen sync: `--sync` of `windows\POST_GIT_PULL.bat`. Uitzetten relaunch: `-SkipRelaunch` op dezelfde regel; daarna start `start_hermes.bat` zelf de chat op. `PULL_HERMES.bat` blijft werken (doorverwijzing).
 
@@ -106,6 +106,7 @@ pre-commit install
 | `-IncludeUpdateHermesIntegrationE2E` | ~7s — UPDATE/QuickFix wiring (**12/12**) |
 | `audits\RUN_CREATIVE_DOMAIN_E2E.bat` | ~10s — creative domein manifest/docs/SOUL/provision (**11/11**) |
 | `audits\RUN_DASHBOARD_ON_START_E2E.bat` | ~15s — dashboard bij launch (`--no-open`, wiring + unit tests) (**7/7**) |
+| `windows\audits\RUN_WT_MOUSE_OVERLAY_E2E.bat` | ~5s pytest + **handmatige** WT-titelbalk-checklist (overlay/muis; zie MOUSE_OVERLAY_FIX) |
 | `audits\RUN_LEGAL_SKILLS_ROOKTEST.bat` | Snelle legal-skills pytest |
 | `pytest tests\audits\test_creative_domain_e2e_harness.py -q` | Unit + mocks voor creative E2E-harness |
 | `pytest tests\windows\test_repo_hygiene_institutional_e2e.py -m e2e -q` | Zelfde E2E via pytest (Windows) |
@@ -242,7 +243,7 @@ Override conda: `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV`.
 - Canonieke setup-implementatie: `scripts\windows\OPEN_SETUP.bat`
 - Wrapper-only ingangspunt: `windows\OPEN_SETUP.bat` (forwarder, geen eigen setup-logica)
 - Setup-launchers (`windows\SETUP_HERMES.bat`, `windows\setup_hermes_windows.bat`) verwijzen naar de canonieke flow
-- Herstelvolgorde bij setup-issues: 1) `windows\SETUP_HERMES.bat --files-only`, 2) `windows\OPEN_SETUP.bat`, 3) `windows\launch_hermes.bat`
+- Herstelvolgorde bij setup-issues: 1) `windows\SETUP_HERMES.bat --files-only`, 2) `windows\OPEN_SETUP.bat`, 3) `start_hermes.bat` (canoniek entrypoint; intern `launch_hermes.bat`)
 
 ## Dagelijks
 

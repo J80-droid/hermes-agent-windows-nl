@@ -108,6 +108,7 @@ Preflight, merge, RAG-postinstall en script-keten-verify zitten in het script. V
 | -------- | ------ |
 | `git pull` | `windows/POST_GIT_PULL.bat` (trust + SOUL anatomy stamp + toolsets); optioneel `-IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E` / `-AutoRepairModelProvider` (auth/config split-brain) |
 | Hermes starten | `start_hermes.bat` → `launch_hermes.ps1` → orchestrator (bootstrap + SOUL stamp-deploy + display); zie [SOUL_ANATOMY_SPEC.md](SOUL_ANATOMY_SPEC.md) |
+| Titelbalk/muis (minimize/sluiten) | `windows/FIX_MOUSE_BLOCKED.bat` of `RESET_TERMINAL.bat` → alle tabs dicht → `start_hermes.bat`; zie [../windows/MOUSE_OVERLAY_FIX.md](../windows/MOUSE_OVERLAY_FIX.md) |
 | SOUL audit (stamp-keten) | `windows/audits/RUN_SOUL_DEPLOY_START_E2E.bat` |
 | Keten controleren (handmatig) | `windows/VERIFY_WINDOWS_CHAIN.bat` |
 | Setup + wizard | `windows/SETUP_HERMES.bat` (standaard) of `OPEN_SETUP.bat`; alleen bestanden: `--files-only` |

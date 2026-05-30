@@ -52,7 +52,7 @@ start_hermes.bat
 | `HERMES_DASHBOARD_OPEN_PATH` | *(standaard leeg)* | Alleen zetten om browser te openen (bv. `/codebase-viz`); standaard **geen** tab |
 | `HERMES_SKIP_DASHBOARD_BROWSER` | `1` in launcher/profiel | Geen automatische browser bij dashboard-start |
 | `HERMES_MINIMAL_LAUNCH=1` / snel-profiel | aan | Dashboard wordt **niet** gestart |
-| `HERMES_CONSOLE_LAYOUT=maximized` | aan | Venster op werkgebied (taakbalk zichtbaar) |
+| `HERMES_CONSOLE_LAYOUT=maximized` | aan | Legacy cmd: venster op werkgebied; **in WT geen** conhost work-area expand (zie [MOUSE_OVERLAY_FIX.md](MOUSE_OVERLAY_FIX.md)) |
 
 **Snelle launcher** (alleen chat): `start_hermes_minimal.bat` of `start_hermes.bat --minimal`. Standaard is **volledig** via `start_hermes.bat` (zie `launch_profiles.ps1`).
 
@@ -230,12 +230,12 @@ Recente launch-UI- en deferred-dashboard-wijzigingen kunnen het bewezen muis-con
 | Overlay op titelbalk / geen scroll | `start /B` of `start "" powershell` voor deferred dashboard (extra conhost/WT-tab) | `Start-HermesDashboardAfterChatDetached` → `Start-HermesNoWindowProcess` + `HERMES_DASHBOARD_USE_NOWINDOW=1` |
 | Lege WT-tabbladen / derde venster | `DismissGhost` minimaliseerde `CASCADIA_HOSTING_WINDOW_CLASS` | Alleen `ConsoleWindowClass` ghost-cmd minimaliseren |
 | Extra `ollama.exe`-venster | `HERMES_NO_WAKE_LOCAL_LLM=0` in full-profiel | Standaard `1`; alleen `HERMES_ALLOW_WAKE_LOCAL_LLM=1` om te wekken |
-| Gele titel verdwijnt tijdens stappen | `Clear-Host` in `run_hermes_prepare.ps1` of spinner zonder vaste kop | Geen `Clear-Host` in prepare; `Write-HermesLaunchPinnedHeader` in `HermesLaunchUi.ps1`; bat-echo `%GOUD%` behouden |
+| Gele titel verdwijnt tijdens stappen | `Clear-Host` in prepare/launch bij WT of spinner zonder vaste kop | Geen `Clear-Host` in `run_hermes_prepare.ps1`; in `launch_hermes.bat`/`hermes_wt_entry.cmd` alleen buiten `WT_SESSION`; `Write-HermesLaunchPinnedHeader` in `HermesLaunchUi.ps1` |
 | Dubbele fullscreen cmd | Tweede `Invoke-HermesExpandConsoleWindow` of `Invoke-HermesEnsureInteractiveConsole` → `start /max cmd /k` (alleen zonder Win32-buffer; normaal WT-pad triggert dit niet) | Start via `start_hermes.bat` / `hermes_wt_entry.cmd`; eén expand in `launch_hermes.bat`; vermijd handmatig maximaliseren |
 | Ghost minimaliseren “te agressief” | `HERMES_DISMISS_GHOST_CONSOLES=1` standaard in launcher | **Niet** standaard in `launch_hermes.bat` (alleen `FIX_MOUSE_BLOCKED.bat`); anders minimaliseert WT zichzelf |
 | Scroll lijkt dood (viewport onderaan) | `align_win32_viewport_to_bottom` bij chat-start | Scroll via WT-schuifbalk; markeermodus: **Ctrl+Shift+M** |
 
-**Handmatige verificatie:** zie checklist hieronder (`FIX_MOUSE_BLOCKED.bat` → WT → `start_hermes.bat`). **Automatisch:** `tests/windows/test_launch_dashboard_on_start.py::test_mouse_regression_contracts`, `tests/windows/test_critical_windows_scripts.py`, `tests/cli/test_cli_windows_mouse.py`. **Niet** vertrouwen op `RUN_LAUNCH_UI_SINK_E2E` alleen — die harness test geen live WT/muisklik.
+**Handmatige verificatie:** zie checklist hieronder (`FIX_MOUSE_BLOCKED.bat` → WT → `start_hermes.bat`). **Automatisch:** `windows\audits\RUN_WT_MOUSE_OVERLAY_E2E.bat` (pytest + handmatige stappen); `test_mouse_regression_contracts`, `test_expand_console_to_work_area_guarded_in_wt`, `test_cli_align_viewport_skipped_in_wt`. **Niet** vertrouwen op `RUN_LAUNCH_UI_SINK_E2E` alleen — geen live WT/muisklik.
 
 ## Problemen oplossen (checklist)
 

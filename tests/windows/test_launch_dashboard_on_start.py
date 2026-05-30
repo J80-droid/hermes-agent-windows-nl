@@ -105,6 +105,59 @@ def test_mouse_regression_contracts() -> None:
     assert "[93m" in launch_ui
     assert "Start-HermesDashboardAfterChatDetached" in prepare
     assert "Invoke-HermesRepairConsoleForChat" not in prepare
+    assert "WT_SESSION" in bat
+    assert "if (-not $env:WT_SESSION)" in bat
+
+
+def _invoke_hermes_expand_console_window_body(common_ps1: str) -> str:
+    m = re.search(
+        r"function Invoke-HermesExpandConsoleWindow\s*\{",
+        common_ps1,
+        re.IGNORECASE,
+    )
+    if not m:
+        pytest.fail("Invoke-HermesExpandConsoleWindow not found in HermesShellCommon.ps1")
+    start = m.start()
+    depth = 0
+    i = m.end() - 1
+    while i < len(common_ps1):
+        ch = common_ps1[i]
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return common_ps1[start : i + 1]
+        i += 1
+    pytest.fail("Unbalanced braces in Invoke-HermesExpandConsoleWindow")
+
+
+def test_expand_console_to_work_area_guarded_in_wt() -> None:
+    """ExpandConsoleToWorkArea only when not in Windows Terminal."""
+    common = (REPO / "windows/HermesShellCommon.ps1").read_text(encoding="utf-8")
+    body = _invoke_hermes_expand_console_window_body(common)
+    assert "Test-HermesWindowsTerminalSession" in body
+    assert "$inWt" in body
+    idx_wt = body.find("if (-not $inWt)")
+    assert idx_wt >= 0, "if (-not $inWt) guard missing"
+    idx_after_wt_block = body.find("$scrollMin = 999")
+    assert idx_after_wt_block > idx_wt
+    for match in re.finditer(r"ExpandConsoleToWorkArea", body):
+        pos = match.start()
+        assert idx_wt < pos < idx_after_wt_block, (
+            "ExpandConsoleToWorkArea must be inside if (-not $inWt) block"
+        )
+    assert "ExpandConsoleToWorkArea" not in body[:idx_wt]
+
+
+def test_cli_align_viewport_skipped_in_wt() -> None:
+    """cli.py must not align viewport in Windows Terminal."""
+    cli = (REPO / "cli.py").read_text(encoding="utf-8")
+    assert "align_win32_viewport_to_bottom" in cli
+    assert re.search(
+        r"if\s+not\s+os\.environ\.get\(\s*[\"']WT_SESSION[\"']\s*\)\s*:\s*\n\s*align_win32_viewport_to_bottom\(\)",
+        cli,
+    )
 
 
 def test_launch_hermes_bat_wires_script() -> None:

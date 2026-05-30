@@ -22,3 +22,4 @@
 - **Codebase-audit (smoke vs E3):** `docs/CODEBASE_AUDIT_EVIDENCE.md`, `RUN_CODEBASE_SMOKE_AUDIT.bat`, `emit_codebase_smoke_report.py`; `RUN_AUDITS -IncludeCodebaseSmoke`; optioneel `POST_GIT_PULL`/`UPDATE_HERMES` + `Invoke-PostSyncCodebaseSmoke.ps1`; SOUL `SOUL_SHARED_CODEBASE_AUDIT.md`
 - **SOUL-docs:** `docs/PROFILE_SOUL.md`
 - **Institutionele env (defaults):** `HERMES_RAG_LIVE_STALE_SEC=120`, `HERMES_RAG_QUIET_TORCH=1` via `rag_institutional_defaults.py` + `_rag_apply_institutional_env.bat`
+- **Windows launch (fork):** git-remote = map `hermes-agent/` (Cursor-workspace `Hermes_agent_WS` kan parent zijn zonder eigen `.git`); entry `start_hermes.bat` → `wt.exe`; terminal/muis: `windows/TERMINAL_WINDOWS.md`, overlay-fix `windows/MOUSE_OVERLAY_FIX.md`; code-fix `91955c651`; poort `windows/audits/RUN_WT_MOUSE_OVERLAY_E2E.bat`. Zie `docs/WORKSPACE_CONVENTIONS.md` (workspace vs git root).

@@ -29,3 +29,12 @@ Bij genummerde lijsten of bulletpoints: **titel, label of datum vet op een eigen
 ## Hermes TUI (presentatie)
 
 In Markdown-rendermodus zet de CLI niet-al-gebacktickte `[Bron: …]` automatisch tussen backticks zodat Rich ze als **inline code / chips** toont.
+
+## Hermes Windows terminal (fork)
+
+- Bij `WT_SESSION` / `Test-HermesWindowsTerminalSession`: **geen** `ExpandConsoleToWorkArea` of work-area `SetWindowPos` op conhost (ghost overlay op WT-titelbalk).
+- **Geen** `HERMES_DISMISS_GHOST_CONSOLES=1` standaard in `launch_hermes.bat` (alleen `FIX_MOUSE_BLOCKED.bat` / recovery).
+- **Geen** `start /B` of `start "" powershell` voor deferred dashboard; gebruik `Start-HermesDashboardAfterChatDetached` + `Start-HermesNoWindowProcess`.
+- **Geen** `DismissGhost` op `CASCADIA_HOSTING_WINDOW_CLASS` (alleen `ConsoleWindowClass`).
+- Startcanon: **`start_hermes.bat`** (Windows Terminal), niet rechtstreeks `launch_hermes.bat` in losse cmd.
+- Runbook: `windows/MOUSE_OVERLAY_FIX.md`, `windows/TERMINAL_WINDOWS.md`.

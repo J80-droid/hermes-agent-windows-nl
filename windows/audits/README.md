@@ -49,6 +49,7 @@ Runtime/AST: vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
 | **`RUN_AUDITS.bat -IncludeRepoHygieneE2E`** | Repo-root guard/gitignore/skills (~10s): `audits\RUN_REPO_HYGIENE_E2E.bat` |
 | **`audits\RUN_CREATIVE_DOMAIN_E2E.bat`** | Creative profiel (11/11): manifest, docs, SOUL, fork-skills, provision; unit `tests\audits\test_creative_domain_e2e_harness.py` |
 | **`audits\RUN_DASHBOARD_ON_START_E2E.bat`** | Dashboard bij `launch_hermes` (7/7): `--no-open`, skip-env, unit tests |
+| **`RUN_WT_MOUSE_OVERLAY_E2E.bat`** | WT titelbalk/muis: pytest overlay-contracten + handmatige checklist (geen live UI-automation) |
 | **`RUN_AUDITS.bat -IncludeInstitutionalHardeningE2E`** | Geïntegreerde poort H1–H14 (~20s): QuickFix, legal pytest, preflight-log |
 | **`RUN_AUDITS.bat -IncludeUpdateHermesIntegrationE2E`** | UPDATE/QuickFix wiring (~7s): `audits\RUN_UPDATE_HERMES_INTEGRATION_E2E.bat` (12/12) |
 | **`RUN_AUDITS.bat -IncludeInstitutionalProductionGate`** | Zware poort (~2+ min): Python + platform + hardening 14/14 + wiring |

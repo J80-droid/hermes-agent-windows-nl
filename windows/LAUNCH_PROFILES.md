@@ -39,6 +39,8 @@ Na wijziging: `CREATE_DESKTOP_SHORTCUT.bat` of `hermes_onderhoud.bat -ShortcutsO
 | Hermes Agent.lnk (bureaublad) | full |
 | Hermes Agent (snel).lnk | minimal |
 
+**Titelbalk / muisklik:** start altijd via `start_hermes.bat` (Windows Terminal). Werkt minimize/sluiten niet? Zie [START.md](START.md#titelbalk--muisklik-opgelost) en [MOUSE_OVERLAY_FIX.md](MOUSE_OVERLAY_FIX.md). Vernieuw .lnk: `CREATE_DESKTOP_SHORTCUT.bat`.
+
 ## Tests
 
 ```cmd

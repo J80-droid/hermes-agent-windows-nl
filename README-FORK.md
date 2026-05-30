@@ -24,6 +24,16 @@ Deze fork is de **enige goedgekeurde bron** voor Hermes-installaties binnen dit 
 | Runtime SOUL backup/restore | `windows/backup_soul_profiles.ps1`, `restore_from_backup.ps1` | Manifest v2: `localappdata_hermes/`; `-RestoreRuntimePersonas` |
 | Legal domein (lenzen, één bucket) | `docs/LEGAL_DOMAIN_ARCHITECTURE.md`, `LEGAL_TAXONOMY.md` | Rechtsgebied-lenzen; audit `RUN_LEGAL_DOMAIN_E2E.bat` |
 | Domein-toolsets (token-besparing) | `docs/DOMAIN_TOOLSET_AUDIT.md`, `docs/domain_toolsets.yaml` | Minimale toolbox per profiel; opt-in via agent; `SYNC_DOMAIN_TOOLSETS.bat` |
+| WT titelbalk-muis (overlay-fix) | `windows/MOUSE_OVERLAY_FIX.md`, `FIX_MOUSE_BLOCKED.bat` | Geen conhost work-area expand in `WT_SESSION`; geverifieerd 2026-05-30; tag `windows-wt-titlebar-mouse-2026-05-30` |
+
+### Windows Terminal — titelbalk-muis (2026-05-30)
+
+**Probleem (opgelost):** onzichtbare conhost-overlay blokkeerde minimize/maximize/sluiten in Windows Terminal.
+
+- **Start:** `start_hermes.bat` (niet rechtstreeks `launch_hermes.bat` in losse cmd).
+- **Recovery:** `windows\FIX_MOUSE_BLOCKED.bat` → alle tabs dicht → opnieuw `start_hermes.bat`.
+- **Docs:** [`windows/MOUSE_OVERLAY_FIX.md`](windows/MOUSE_OVERLAY_FIX.md), [`windows/TERMINAL_WINDOWS.md`](windows/TERMINAL_WINDOWS.md).
+- **Code-fix:** commit `91955c651`; poort: `windows\audits\RUN_WT_MOUSE_OVERLAY_E2E.bat`.
 
 ### Profielwissel (productie)
 

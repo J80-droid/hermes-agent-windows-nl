@@ -15,6 +15,16 @@ Institutionele afspraken voor **waar** werk hoort: repo-root blijft upstream-syn
 | RAG-bronnen (productie) | `%USERPROFILE%\data\raw_source_files\` | Nee (user data) |
 | Juridische index (LanceDB) | `%USERPROFILE%\data\lancedb\legal\` | Nee |
 
+## Cursor workspace vs. git root
+
+| Wat | Pad | Git? |
+|-----|-----|------|
+| **IDE-workspace** (bijv. `Hermes_agent_WS`) | Parent-map met `hermes-agent\` + optioneel `venv\`, logs | Parent heeft vaak **geen** eigen `.git` |
+| **Git-remote / commits** | `hermes-agent\` | Ja — alle `git push`, tags en releases hier |
+| **Dagelijks starten** | `hermes-agent\start_hermes.bat` | — |
+
+Commits, tags (`windows-wt-titlebar-mouse-2026-05-30`) en GitHub releases gelden alleen voor `hermes-agent/`. Bestanden in de parent-workspace (bijv. lokale `venv/`) niet committen.
+
 ## `output/` structuur (aanbevolen)
 
 Alles onder `output/` wordt door git genegeerd (`.gitignore` regel `output/`). QuickFix en handmatig werk gebruiken deze indeling:

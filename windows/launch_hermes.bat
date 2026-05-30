@@ -128,7 +128,7 @@ shift
 cd /d "%REPO_ROOT%"
 
 rem Eerst venster + schone console (vóór alle echo) — voorkomt buffer-corruptie en muiscapture.
-powershell -NoProfile -ExecutionPolicy Bypass -Command ". '%REPO_ROOT%\windows\HermesShellCommon.ps1'; Reset-HermesConsoleInputModes; Invoke-HermesDisableConsoleQuickEdit; if ($env:HERMES_SKIP_CONSOLE_MAXIMIZE -ne '1') { [void](Invoke-HermesExpandConsoleWindow) }; try { Clear-Host } catch { }; Reset-HermesConsoleInputModes" 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command ". '%REPO_ROOT%\windows\HermesShellCommon.ps1'; Reset-HermesConsoleInputModes; Invoke-HermesDisableConsoleQuickEdit; if ($env:HERMES_SKIP_CONSOLE_MAXIMIZE -ne '1') { [void](Invoke-HermesExpandConsoleWindow) }; if (-not $env:WT_SESSION) { try { Clear-Host } catch { } }; Reset-HermesConsoleInputModes" 2>nul
 cls >nul 2>&1
 echo.
 echo %GOUD%  Hermes Agent - starten%RESET%
