@@ -2,7 +2,9 @@
 
 ## Focus
 
-**RUN_AUDITS E2E-keten (2026-05-29, gecommit `74ae0f4e6`):** Gateway cost/tps defensive read; CLI `config get` + profile switch flags; SOUL Output conventions repair; Memory Repair Trust `Initialize-*`; `.gitignore` audit-logs/checkpoint fixtures. `RUN_AUDITS -IncludeAllE2E` roept nu **`soul-runtime-prep`** aan (`sync_all_domain_souls_from_templates -UpdateDeployStamp`) vóór E2E — geen handmatige `APPLY_SOUL_ANATOMY_RUNTIME` meer nodig voor volledige audit. Volledige `-IncludeAllE2E` / `RUN_FULL_VERIFICATION` — zie laatste `audits/RUN_AUDITS_LAST_RUN.log` / `FULL_VERIFY_*.log`.
+**Plan v2 fork 100% groen (2026-05-30):** `ee90ccb8c` op `origin/main` (Repair-CursorMcpConfig pad-literals, dashboard D7). Formele poort: `SYNC_TRUST_RUNTIME.bat` + `RUN_AUDITS -IncludeAllE2E` **PASS** — log `audits/RUN_AUDITS_closure_2026-05-30.log`. v2-acceptatie = fork/institutioneel, **niet** parallel ~29k upstream op Windows.
+
+**RUN_AUDITS E2E-keten (2026-05-29, `74ae0f4e6`+):** Gateway cost/tps; CLI `config get` + profile switch; SOUL repair; Memory Repair Trust `Initialize-*`; `soul-runtime-prep` vóór E2E. Zie ook `windows/audits/RUN_AUDITS_LAST_RUN.log`.
 
 **Codebase Viz pygount pre-warm + disk-cache (2026-05-29):** `scripts/warm_codebase_viz_pygount_cache.py` + `Ensure-CodebaseVizPygountCache` vóór dashboard; skip `backups/` + `.venv.disabled*`; disk-cache met git-HEAD-validatie + atomic write; E2E **`RUN_CODEBASE_VIZ_PYGOUNT_CACHE_E2E.bat` (8/8)**; defaults 600s/3600s/300s; skip: `HERMES_CODEBASE_VIZ_PREGOUNT_CACHE=skip`.
 

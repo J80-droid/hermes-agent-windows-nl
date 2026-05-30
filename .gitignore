@@ -132,6 +132,8 @@ windows/audits/TOOLSET_DOMAIN_E2E_LAST_RUN.log
 windows/audits/SOUL_DEPLOY_START_E2E_LAST_RUN.log
 audits/RUN_AUDITS_*.log
 audits/RUN_AUDITS_LAST_RUN.log
+audits/parallel_run_latest.log
+windows/audits/LANCEDB_SCHEMA_AUDIT_*.md
 audits/PSSA_WARNINGS_LAST.txt
 tests/test_data/checkpoint_*.jsonl
 windows/tests/last_pytest_run.log
