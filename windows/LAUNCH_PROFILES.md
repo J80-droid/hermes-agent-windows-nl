@@ -7,7 +7,9 @@ Canonieke implementatie: [`launch_profiles.ps1`](launch_profiles.ps1). Gebruiker
 | Profiel | Entrypoint | Gedrag |
 | ------- | ---------- | ------ |
 | **full** (standaard) | `start_hermes.bat` | SOUL deploy, institutioneel runtime, pending trust, Docker-check, dashboard (9119), daarna chat |
-| **minimal** | `start_hermes_minimal.bat` of `start_hermes.bat --minimal` | Direct chat; skips pre-chat-fases |
+| **minimal** | `start_hermes_minimal.bat` of `start_hermes.bat --minimal` | Direct chat; skips pre-chat-fases (SOUL, trust, Docker, …) |
+
+**Bootstrap (stap 2/7):** draait in **beide** profielen — conda/RAG via `launch_bootstrap.ps1`; snel met `%LOCALAPPDATA%\hermes\launch_bootstrap.json` (zie `docs/INSTITUTIONAL_OPERATIONS.md`).
 
 `start_hermes_full.bat` is een alias voor profiel **full** (zelfde als `start_hermes.bat`).
 

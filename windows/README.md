@@ -15,6 +15,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | Geavanceerd | `HERMES_ALLOW_UV_VENV=1` alleen bewust; niet productie-default |
 | Override | `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV` — zie `HermesPythonPolicy.ps1` |
 | RAG-manifest | `%LOCALAPPDATA%\Hermes\rag-deps.json` (`rag_extras_verified` fast-path) |
+| Bootstrap-state | `%LOCALAPPDATA%\hermes\launch_bootstrap.json` (schema v1) — snelle start stap 2/7; uitzetten: `HERMES_SKIP_LAUNCH_BOOTSTRAP_FAST_PATH=1` |
 | Future-proof | Eén waarheid: Hermes scripts + Cursor interpreter =zelfde `hermes-env` |
 
 ## Eerste installatie

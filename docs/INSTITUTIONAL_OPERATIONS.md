@@ -290,8 +290,9 @@ Override conda: `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV`.
 | `import lancedb` faalt | `install_rag_extras.ps1` |
 | IDE verkeerde interpreter | `REPAIR_PYTHON.bat` of `sync_hermes_ide_python.ps1` |
 | Rode PSES-fouten in `.ps1` (runtime OK) | `APPLY_WORKSPACE_IDE_SETTINGS.bat` + Reload Window + Restart Session — `docs/WORKSPACE_IDE_SETUP.md` |
-| Dubbele RAG-install | Verwijder `%LOCALAPPDATA%\Hermes\rag-deps.json` of wacht op pyproject-wijziging; stamp: `%LOCALAPPDATA%\hermes\launch_bootstrap.stamp` |
-| RAG-sync mislukt bij start | Stamp niet bijgewerkt — retry bij volgende start; log in bootstrap |
+| Dubbele RAG-install | Verwijder `%LOCALAPPDATA%\Hermes\rag-deps.json` en `%LOCALAPPDATA%\hermes\launch_bootstrap.json` (of wacht op pyproject-wijziging) |
+| Bootstrap stap 2 traag | Fast-path actief? Controleer `launch_bootstrap.json` + `rag-deps.json`; geforceerd volledig: `HERMES_SKIP_LAUNCH_BOOTSTRAP_FAST_PATH=1` |
+| RAG-sync mislukt bij start | Bootstrap-state niet bijgewerkt — retry bij volgende start; log in bootstrap |
 | REPAIR hangt op Read-Host | Gebruik `-NonInteractive` of `HERMES_NONINTERACTIVE=1` (automatisch in CI/audit) |
 | UPDATE stopt op dirty repo (exit 2) | `UPDATE_HERMES.bat -QuickFix` of commit/stash; alleen iconen: branding-waarschuwing OK |
 | Rommel in repo-root | `docs/WORKSPACE_CONVENTIONS.md`, `guard_git_clean.ps1`, E2E `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14); gecombineerd in `RUN_INSTITUTIONAL_PRODUCTION_GATE.bat` |

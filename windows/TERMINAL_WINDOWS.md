@@ -178,6 +178,7 @@ De fork biedt drie verschillende manieren om flexibel en robuust van profiel te 
 | `HERMES_LAUNCH_UI=verbose` | Alle detailregels op console |
 | `HERMES_LAUNCH_VISUAL=0` | Geen spinner/checklist-animatie (tekst-only stappen) |
 | Rich visual (spinner/checklist) | Alleen met `WT_SESSION`; goudgele kopregel `[33m` (geen dubbele titel op spinner); verstreken tijd per tiende seconde (50 ms tick) |
+| `HERMES_SKIP_LAUNCH_BOOTSTRAP_FAST_PATH=1` | Stap 2/7 altijd volledig (`ensure_*` + RAG-check); geen `launch_bootstrap.json` fast-path |
 | `HERMES_DASHBOARD_AFTER_CHAT` | Default `1`: dashboard start **na** chat via `Start-HermesDashboardAfterChat.ps1` (pre-chat 7 stappen). Oud: `=0` |
 | `HERMES_DASHBOARD_USE_NOWINDOW` | Default `1`: dashboard zonder conhost (voorkomt onzichtbare muisklik-overlay) |
 | Muisklik vast / geen scroll | `windows\FIX_MOUSE_BLOCKED.bat` of `RESET_TERMINAL.bat`; in chat: **Ctrl+Shift+M** (markeermodus uit). Geen extra `powershell`-repair in `hermes_chat.cmd` (alleen Python `configure_interactive_console`). |

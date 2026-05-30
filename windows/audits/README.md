@@ -93,7 +93,7 @@ Runtime/AST: vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
 | **`RUN_KNOWLEDGE_REPOSITORY_E2E.bat`** | KnowledgeRepository agent-API: edge cases, caller wiring, pytest (8 stappen) |
 | **`RUN_PERFORMANCE_ARCHITECTURE_E2E.bat`** | Performance-architectuur: RAG lifecycle/scan/MCP, config-snapshot, harness (11 scenario's), pytest-subset (RAG performance tests + `test_process_registry.py` + sandbox/hardware/config/review); rapport `PERFORMANCE_ARCHITECTURE_E2E_REPORT_*.md` (gitignored) |
 | **`RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.bat`** | Institutioneel Python: conda hermes-env, IDE sync, venv-quarantaine, pytest (8 stappen) |
-| **`RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.bat`** | Regressie review-fixes: bootstrap stamp guard, RAG-manifest fast-path, non-interactive REPAIR, pytest (8 stappen) |
+| **`RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.bat`** | Regressie review-fixes: bootstrap fast-path (`launch_bootstrap.json`), RAG-manifest, in-process ensure, pytest (9 stappen harness) |
 | **`RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`** | Gecombineerd: Python E2E + KnowledgeRepository + platform gate + wiring-check |
 | **`RUN_AUDITS.bat -IncludePseudoTableNormalizerE2E`** | Bovenstaande pseudo-tabel E2E in gecombineerde poort |
 | **`RUN_AUDITS.bat -IncludeInstitutionalPipelineE2E`** | Institutional pipeline E2E (`audits/InstitutionalPipelineE2E.core.ps1`, 11 stappen) in gecombineerde poort |
@@ -311,9 +311,9 @@ Validatie van code-review fixes (naast basis Python institutional E2E).
 | ---- | -------- |
 | 1/8 | Repo-artefacten (policy, bootstrap, REPAIR-check, pytest) |
 | 2/8 | Policy: `HERMES_CONDA_ROOT`, `rag_extras_verified`, manifest fast-path |
-| 3/8 | `launch_bootstrap.ps1`: stamp alleen na `$ragOk` |
+| 3/8 | `launch_bootstrap.ps1`: fast-path + `Write-HermesLaunchBootstrapState` |
 | 4/8 | `check_hermes_rag_after_repair.ps1`: `-NonInteractive` / `HERMES_NONINTERACTIVE` / `IsInputRedirected` |
-| 5/8 | Isolated harness (`HermesPythonInstitutionalRegressionE2E.harness.ps1`, 8 scenario's) |
+| 5/8 | Isolated harness (`HermesPythonInstitutionalRegressionE2E.harness.ps1`, 9 scenario's) |
 | 6/8 | pytest `test_hermes_python_institutional.py` (40+ tests) |
 | 7/8 | Setup gebruikt canonieke bootstrap stamp (`Sync-HermesLaunchBootstrapStamp`) |
 | 8/8 | `install_rag_extras.ps1`: manifest alleen na geverifieerde RAG-import |

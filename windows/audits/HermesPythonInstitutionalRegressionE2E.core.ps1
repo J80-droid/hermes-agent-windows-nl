@@ -143,8 +143,9 @@ foreach ($s in $steps) {
 }
 [void]$sb.AppendLine('')
 [void]$sb.AppendLine('## Scope')
-[void]$sb.AppendLine('- bootstrap stamp alleen na succesvolle RAG-sync')
+[void]$sb.AppendLine('- launch_bootstrap.json fast-path (schema v1, pyproject SHA-256)')
 [void]$sb.AppendLine('- rag-deps.json fast-path (rag_extras_verified)')
+[void]$sb.AppendLine('- in-process ensure_* (geen nested powershell bij bootstrap)')
 [void]$sb.AppendLine('- REPAIR non-interactive (geen Read-Host hang)')
 [void]$sb.AppendLine('- HERMES_CONDA_ROOT + Get-HermesAuditPython resolver')
 $sb.ToString() | Set-Content -LiteralPath $reportPath -Encoding UTF8

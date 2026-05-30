@@ -22,7 +22,9 @@
 
 **Platform hardening 10/10 (2026-05-25):** VectorStore-laag (`vector_store_*`, `lancedb_backend`), `KnowledgeRepository` (47 unit tests), regression E2E **10/10**, dedicated `RUN_KNOWLEDGE_REPOSITORY_E2E.bat` **8/8**, productie-poort `RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat`. Sandbox env-cache bust; hardware `reset_hardware_backend_cache()`; `patch_tool` her-propageert `PermissionError`. Docs: `docs/WINDOWS_PLATFORM_HARDENING.md`.
 
-**Python institutioneel review-fixes (2026-05-25):** bootstrap stamp alleen na succesvolle RAG-sync; `rag-deps.json` fast-path (`rag_extras_verified`); REPAIR non-interactive; `HERMES_CONDA_ROOT`; `Test-HermesPythonHasPip`/`Test-HermesRagExtrasInstalled` catch op ongeldige stub-`.exe`; regression E2E **8/8** (`RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E`); pytest `test_hermes_python_institutional.py` **40 passed**. Runbook: `docs/INSTITUTIONAL_OPERATIONS.md`.
+**Bootstrap fast-path (2026-05-30):** `launch_bootstrap.json` (schema v1, pyproject SHA-256 + repo + python_exe); `Test-HermesLaunchBootstrapFastPath` + in-process quick verify; geen nested `powershell` voor ensure_*; legacy `rag-deps.json`/`.stamp` fallback; upgrade naar JSON bij eerste snelle start; uitzetten: `HERMES_SKIP_LAUNCH_BOOTSTRAP_FAST_PATH=1`.
+
+**Python institutioneel review-fixes (2026-05-25):** bootstrap stamp alleen na succesvolle RAG-sync; `rag-deps.json` fast-path (`rag_extras_verified`); REPAIR non-interactive; `HERMES_CONDA_ROOT`; `Test-HermesPythonHasPip`/`Test-HermesRagExtrasInstalled` catch op ongeldige stub-`.exe`; regression E2E **9/9** harness (`RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E`); pytest `test_hermes_python_institutional.py`. Runbook: `docs/INSTITUTIONAL_OPERATIONS.md`.
 
 **Split-home & root inheritance (2026-05-25, productie-niveau — AF):** `model` + `auxiliary` + `providers` overerving; Venice merge + env sync; save-guard + cache-bust; keten `APPLY_HERMES_HOME_MIGRATION.bat` (7 stappen); E2E **14/14** (`RUN_HERMES_HOME_E2E`) + **10/10** (`RUN_ROOT_CONFIG_INHERITANCE_E2E`, harness + `py_compile` guard). Runbook: `docs/HERMES_HOME_WINDOWS.md`.
 

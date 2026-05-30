@@ -24,7 +24,7 @@ Override conda-pad: `HERMES_PYTHON` of `HERMES_CONDA_ROOT` (zie `HermesPythonPol
 | Laag | Commando |
 |------|----------|
 | Interpreter + IDE | `windows\REPAIR_PYTHON.bat` |
-| RAG-deps `[rag]` | Automatisch bij start via `launch_pre_chat_orchestrator.ps1` → `launch_bootstrap.ps1` (stamp alleen na succes) of `install_rag_extras.ps1` |
+| RAG-deps `[rag]` | Automatisch bij start via `launch_bootstrap.ps1` — **fast-path** (`launch_bootstrap.json` + `rag-deps.json`) of volledige sync na `pyproject`-wijziging; handmatig: `install_rag_extras.ps1` |
 | LanceDB-index | `windows\scripts\update_knowledge.bat` |
 
 Productie-gate: `windows\audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat`. Runbook: `docs/INSTITUTIONAL_OPERATIONS.md`.
