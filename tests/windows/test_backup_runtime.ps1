@@ -47,6 +47,12 @@ display:
 '@ -Encoding UTF8
 Set-Content -LiteralPath (Join-Path $coreDir 'SOUL.md') -Value '# Core SOUL test' -Encoding UTF8
 
+$legalDir = Join-Path $mockRuntime 'profiles\legal'
+New-Item -ItemType Directory -Path (Join-Path $legalDir 'memories') -Force | Out-Null
+Set-Content -LiteralPath (Join-Path $legalDir 'config.yaml') -Value 'platform_toolsets: {}' -Encoding UTF8
+Set-Content -LiteralPath (Join-Path $legalDir 'SOUL.md') -Value '# Legal SOUL test' -Encoding UTF8
+Set-Content -LiteralPath (Join-Path $legalDir 'LEGAL_ACTIVE_MATTERS.md') -Value '# GCR test matters' -Encoding UTF8
+
 try {
     New-Item -ItemType Directory -Path $personaDst -Force | Out-Null
     $relPaths = Get-HermesPersonaRelativePaths -ProfilesRoot (Join-Path $mockRuntime 'profiles')
@@ -84,12 +90,21 @@ try {
     $coreCfg = Join-Path $personaDst 'profiles\core\config.yaml'
     Assert-True (Test-Path -LiteralPath $coreCfg) 'persona subset mist profiles/core/config.yaml'
 
+  # 2b) Legal LEGAL_ACTIVE_MATTERS in persona-paden
+    $relPathsLegal = Get-HermesPersonaRelativePaths -ProfilesRoot (Join-Path $mockRuntime 'profiles')
+    Assert-True ($relPathsLegal -contains 'profiles/legal/LEGAL_ACTIVE_MATTERS.md') 'Get-HermesPersonaRelativePaths mist legal MATTERS'
+    $legalMattersDst = Join-Path $personaDst 'profiles\legal\LEGAL_ACTIVE_MATTERS.md'
+    Assert-True (Test-Path -LiteralPath $legalMattersDst) 'persona subset mist profiles/legal/LEGAL_ACTIVE_MATTERS.md'
+    $mattersName = Get-HermesProfileActiveMattersFileName -ProfileName 'ict'
+    Assert-True ($mattersName -eq 'ICT_ACTIVE_MATTERS.md') 'ICT_ACTIVE_MATTERS mapping ontbreekt'
+
     # 3) Restore subset uit runtime_hermes backup
     $restoreTarget = Join-Path $tempBackup '_restore_target'
     New-Item -ItemType Directory -Path $restoreTarget -Force | Out-Null
     $n = Invoke-HermesRestorePersonaSubsetFromRuntimeBackup -RuntimeBackupRoot $runtimeHermes -RuntimeDst $restoreTarget
     Assert-True ($n -ge 2) ('restore subset verwacht >=2 bestanden, kreeg ' + $n)
     Assert-True (Test-Path -LiteralPath (Join-Path $restoreTarget 'profiles\core\SOUL.md')) 'restore mist core SOUL'
+    Assert-True (Test-Path -LiteralPath (Join-Path $restoreTarget 'profiles\legal\LEGAL_ACTIVE_MATTERS.md')) 'restore mist legal MATTERS'
 } finally {
     Remove-Item -LiteralPath $tempBackup -Recurse -Force -ErrorAction SilentlyContinue
 }

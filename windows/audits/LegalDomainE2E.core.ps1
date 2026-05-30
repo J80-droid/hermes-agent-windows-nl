@@ -133,7 +133,7 @@ if (-not (Test-Path -LiteralPath $legalUser)) {
 }
 
 Write-Host "=== 4/$totalSteps LEGAL_ACTIVE_MATTERS.md ===" -ForegroundColor Cyan
-& (Join-Path $RepoRoot 'windows\scripts\ensure_legal_active_matters.ps1') -RepoRoot $RepoRoot -Quiet
+& (Join-Path $RepoRoot 'windows/scripts/ensure_legal_active_matters.ps1') -RepoRoot $RepoRoot -Quiet
 $matters = Join-Path $HermesRoot 'profiles\legal\LEGAL_ACTIVE_MATTERS.md'
 if (-not (Test-Path -LiteralPath $matters)) {
     Write-Host ('[FAIL] ' + 'Ontbreekt: ' + $matters) -ForegroundColor Red
@@ -246,7 +246,7 @@ if ($env:HERMES_LEGAL_PHASE_3B -ne '1') {
 
 Write-Host "=== 11/$totalSteps RAG bron-readiness + ingest summary ===" -ForegroundColor Cyan
 if (-not $skipReadiness) {
-    $readiness = Join-Path $RepoRoot 'windows\scripts\Get-RagSourceReadiness.ps1'
+    $readiness = Join-Path $RepoRoot 'windows/scripts/Get-RagSourceReadiness.ps1'
     if (Test-Path -LiteralPath $readiness) {
         & $readiness -RepoRoot $RepoRoot
         if (Test-NativeCommandFailed -and $StrictSources) { $failures++ }

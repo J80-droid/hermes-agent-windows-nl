@@ -125,7 +125,7 @@ Kopieer structuur uit `SOUL_LEGAL_DOMAIN.md`, niet de juridische inhoud.
 | Template | `docs/templates/{DOMAIN}_ACTIVE_MATTERS.example.md` |
 | Runtime | `%LOCALAPPDATA%\hermes\profiles\{domain}\{DOMAIN}_ACTIVE_MATTERS.md` |
 | Ensure script | `windows/scripts/ensure_{domain}_active_matters.ps1` |
-| Backup | `windows/scripts/HermesBackupCommon.ps1` — profiel `{domain}` → `profiles/{domain}/{DOMAIN}_ACTIVE_MATTERS.md` in manifest |
+| Backup | `Get-HermesProfileActiveMattersFileName` in `HermesBackupCommon.ps1` — voeg profiel toe aan de map (legal, creative, ict, security, dev, data) |
 | Restore | `restore_from_backup.ps1 -RestoreRuntimePersonas` — MATTERS mee terugzetten |
 
 Roep `ensure_*` aan vanuit `sync_all_domain_souls_from_templates.ps1` of `VERIFY_{DOMAIN}_RUNTIME.bat`.

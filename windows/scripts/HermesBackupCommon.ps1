@@ -248,6 +248,21 @@ function Test-HermesBackupPostVerify {
     }
 }
 
+# Profielen met optioneel runtime *_ACTIVE_MATTERS.md (SOUL verwijst ernaar).
+function Get-HermesProfileActiveMattersFileName {
+    param([string]$ProfileName)
+    $map = @{
+        legal    = 'LEGAL_ACTIVE_MATTERS.md'
+        creative = 'CREATIVE_ACTIVE_MATTERS.md'
+        ict      = 'ICT_ACTIVE_MATTERS.md'
+        security = 'SECURITY_ACTIVE_MATTERS.md'
+        dev      = 'DEV_ACTIVE_MATTERS.md'
+        data     = 'DATA_ACTIVE_MATTERS.md'
+    }
+    if ($map.ContainsKey($ProfileName)) { return $map[$ProfileName] }
+    return $null
+}
+
 function Get-HermesPersonaRelativePaths {
     param([string]$ProfilesRoot = '')
     $paths = [System.Collections.Generic.List[string]]::new()
@@ -265,11 +280,9 @@ function Get-HermesPersonaRelativePaths {
             [void]$paths.Add("profiles/$name/SOUL.md")
             [void]$paths.Add("profiles/$name/memories/USER.md")
             [void]$paths.Add("profiles/$name/memories/MEMORY.md")
-            if ($name -eq 'legal') {
-                [void]$paths.Add('profiles/legal/LEGAL_ACTIVE_MATTERS.md')
-            }
-            if ($name -eq 'creative') {
-                [void]$paths.Add('profiles/creative/CREATIVE_ACTIVE_MATTERS.md')
+            $mattersFile = Get-HermesProfileActiveMattersFileName -ProfileName $name
+            if ($mattersFile) {
+                [void]$paths.Add("profiles/$name/$mattersFile")
             }
         }
     }
