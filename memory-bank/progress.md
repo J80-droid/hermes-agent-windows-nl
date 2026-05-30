@@ -2,6 +2,7 @@
 
 ## Code (P2 + institutioneel)
 
+- [x] Profielwissel in-chat Windows (2026-05-30): async `/profile` + TUI-modal; relaunch zonder chat-spinner; docs audit + PROFILE_SWITCH; pytest relaunch + chat UX; **gebruiker bevestigd legal ❯**
 - [x] RUN_AUDITS vijf-stappen fixes (2026-05-29): gateway cost/tps bij kapotte `display`; `hermes config get`; `profile use` + switch-flags; SOUL Output conventions repair; memory-repair E2E `Initialize-*`; gitignore audit-logs/checkpoint testdata; `soul-runtime-prep` in `-IncludeAllE2E`; **volledige RUN_AUDITS -IncludeAllE2E PASS** (~15 min, exit 0, 2026-05-29)
 - [x] Plan v2 fork-afsluiting (2026-05-30): `ee90ccb8c` gepusht (verify chain + dashboard D7); `SYNC_TRUST_RUNTIME` + `RUN_AUDITS -IncludeAllE2E` **PASS** (formele poort, log `audits/RUN_AUDITS_closure_2026-05-30.log`); acceptatie v2 = fork-poorten, niet parallel ~29k upstream
 - [x] Codebase Viz pygount cache hardening (2026-05-29): skip `backups`/`.venv.disabled*`; git-HEAD cache-validatie; atomic disk write; code review fixes; E2E **8/8** `RUN_CODEBASE_VIZ_PYGOUNT_CACHE_E2E.bat`; pre-warm + disk-cache + live E2E + tests

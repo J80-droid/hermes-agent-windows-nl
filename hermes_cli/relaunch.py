@@ -171,15 +171,35 @@ def _print_profile_relaunch_progress(step: int, message: str) -> None:
     print(f"  Stap {step}/3: {message}", file=sys.stderr, flush=True)
 
 
+def _argv_relaunches_interactive_chat(argv: Sequence[str]) -> bool:
+    """Return True when the child will own the prompt_toolkit TUI."""
+    return any(arg == "chat" for arg in argv)
+
+
+def _clear_startup_spinner_line() -> None:
+    sys.stderr.write("\r          \r")
+    sys.stderr.flush()
+
+
 def _run_subprocess_with_startup_spinner(argv: list[str], env: dict[str, str]):
-    """Windows: show a spinner while the child process starts (often 5–15s)."""
+    """Windows: brief stderr spinner while a short child process starts.
+
+    Never spin during ``chat`` relaunch: the child owns the terminal for the
+  full session and stderr ``\\r`` updates corrupt the TUI prompt (shows
+    ``⟳ Opstarten`` instead of ``legal ❯``).
+    """
     import subprocess
+    import time
 
     if sys.platform != "win32":
         return subprocess.run(argv, env=env)
 
+    if _argv_relaunches_interactive_chat(argv):
+        return subprocess.run(argv, env=env)
+
     stop = threading.Event()
     frames = ["|", "/", "-", "\\"]
+    spinner_max_sec = 20.0
 
     def _spinner() -> None:
         i = 0
@@ -189,15 +209,21 @@ def _run_subprocess_with_startup_spinner(argv: list[str], env: dict[str, str]):
             sys.stderr.flush()
             i += 1
 
+    proc = subprocess.Popen(argv, env=env)
     thread = threading.Thread(target=_spinner, daemon=True)
     thread.start()
+    started = time.monotonic()
     try:
-        return subprocess.run(argv, env=env)
+        while proc.poll() is None:
+            if time.monotonic() - started >= spinner_max_sec:
+                stop.set()
+                break
+            time.sleep(0.12)
     finally:
         stop.set()
         thread.join(timeout=0.5)
-        sys.stderr.write("\r          \r")
-        sys.stderr.flush()
+        _clear_startup_spinner_line()
+    return subprocess.CompletedProcess(argv, proc.wait())
 
 
 def relaunch(

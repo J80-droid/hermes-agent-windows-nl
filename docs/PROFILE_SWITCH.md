@@ -101,7 +101,8 @@ Na wijziging aan `profiles\<naam>\SOUL.md`: **nieuwe chat** starten (bestaande s
 
 | Onderdeel | Gedrag |
 |-----------|--------|
-| Bevestiging | Zichtbaar keuzeblok in scrollback; Win32: `1`/`2` + Enter (geen verborgen stdin) |
+| Bevestiging | TUI-modal in composer (`1`/`2` of ↑/↓ + Enter); draait op achtergrondthread zodat de TUI niet bevriest |
+| Na herstart | Geen stderr-spinner tijdens `chat` (anders blijft prompt `⟳ Opstarten` i.p.v. `legal ❯`) |
 | Zware stappen | **Na** TUI-exit: sync/gateway/relaunch (cmd.exe kan niet bevriezen tijdens chat) |
 | API-sync | `sync_hermes_api_env.ps1` met timeout (`HERMES_PROFILE_SYNC_TIMEOUT`, default 120s) |
 | Totale switch | `HERMES_PROFILE_SWITCH_TIMEOUT` (default 180s) |

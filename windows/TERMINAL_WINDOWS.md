@@ -129,7 +129,7 @@ De fork biedt drie verschillende manieren om flexibel en robuust van profiel te 
 
 | Situatie / Context | Aanbevolen Methode | Werking & Details |
 | :--- | :--- | :--- |
-| **Al in Hermes-chat (WT)** | `/profile use <naam>` | **Primair (automatisch):** Toont een bevestigingsmodal $\rightarrow$ wijzigt sticky default $\rightarrow$ sluit TUI netjes af $\rightarrow$ start automatisch een schone Hermes-sessie in het geselecteerde profiel (zonder handmatige herstart). |
+| **Al in Hermes-chat (WT)** | `/profile use <naam>` | **Primair:** TUI-modal in composer (`1`/`2` of ↑/↓ + Enter) $\rightarrow$ sticky default $\rightarrow$ TUI-exit $\rightarrow$ sync/gateway $\rightarrow$ herstart `chat` met `legal ❯` (geen `⟳ Opstarten` in prompt; zie `docs/PROFILE_SWITCH.md`). |
 | **Nieuwe sessie vanuit Git Bash / WT** | `core` of `legal` of `trading` | **Directe shell wrappers:** Start direct een specifiek profiel op via de native wrappers in `~/.local/bin/` (bijv. `legal chat`, `trading`, `core`). |
 | **Sticky default zonder chat** | `windows\SWITCH_PROFILE.bat <naam>` | **Scripting / CLI fallback:** `hermes profile use` met `--fix-hermes-home`, API-sync (Windows), gateway-restart indien de oude gateway draaide. |
 | **Taak delegeren zonder wisselen** | `/kanban create --assign <naam>` | **Kanban-delegatie:** Maak een taak aan en delegeer deze aan een ander profiel. De dispatcher start dat profiel autonoom op de achtergrond. U hoeft zelf niet te wisselen! |

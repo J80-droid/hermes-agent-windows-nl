@@ -1,6 +1,7 @@
 """Tests for hermes_cli.relaunch — unified self-relaunch utility."""
 
 import sys
+import threading
 
 import pytest
 
@@ -307,6 +308,70 @@ class TestStripProfileFlags:
     def test_strip_profile_flags_empty_p(self):
         argv = ["chat", "-p"]
         assert relaunch_mod.strip_profile_flags(argv) == ["chat"]
+
+
+class TestStartupSpinner:
+    def test_chat_relaunch_skips_spinner_on_windows(self, monkeypatch):
+        """Interactive chat must not write stderr spinner for the whole session."""
+        monkeypatch.setattr(relaunch_mod.sys, "platform", "win32")
+
+        import subprocess as _subprocess
+
+        spinner_started = []
+
+        def fake_run(argv, env=None, **kwargs):
+            class _Result:
+                returncode = 0
+
+            return _Result()
+
+        def fake_spinner_thread(target, **kwargs):
+            spinner_started.append(True)
+            return threading.Thread(target=target, **kwargs)
+
+        monkeypatch.setattr(_subprocess, "run", fake_run)
+        monkeypatch.setattr(relaunch_mod.threading, "Thread", fake_spinner_thread)
+
+        relaunch_mod._run_subprocess_with_startup_spinner(
+            [r"C:\hermes.exe", "chat", "-p", "legal"], {}
+        )
+        assert spinner_started == []
+
+    def test_non_chat_still_uses_bounded_spinner_on_windows(self, monkeypatch):
+        monkeypatch.setattr(relaunch_mod.sys, "platform", "win32")
+
+        import subprocess as _subprocess
+
+        class _Proc:
+            def poll(self):
+                return 0
+
+            def wait(self):
+                return 0
+
+        monkeypatch.setattr(_subprocess, "Popen", lambda *a, **k: _Proc())
+        spinner_started = []
+
+        def fake_thread(target, **kwargs):
+            spinner_started.append(True)
+            stop = threading.Event()
+            stop.set()
+
+            class _T:
+                def start(self):
+                    pass
+
+                def join(self, timeout=None):
+                    pass
+
+            return _T()
+
+        monkeypatch.setattr(relaunch_mod.threading, "Thread", fake_thread)
+
+        relaunch_mod._run_subprocess_with_startup_spinner(
+            [r"C:\hermes.exe", "doctor"], {}
+        )
+        assert spinner_started == [True]
 
 
 class TestRelaunchChatAfterProfileSwitch:

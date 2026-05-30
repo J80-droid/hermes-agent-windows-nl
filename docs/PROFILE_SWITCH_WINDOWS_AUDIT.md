@@ -20,12 +20,16 @@
 
 **Status 2026-05-30 (geïmplementeerd):**
 
-- `/profile` en NL-intent op **UI-thread** (`_should_handle_profile_command_inline`)
-- Win32: **TUI-bevestigingspaneel** (geen blinde `Choice [1/2/3]:` stdin)
+- `/profile` en NL-intent: **niet** synchroon in `handle_enter` — `process_command` op **achtergrondthread** (`_schedule_profile_command_async`) zodat de TUI-modal niet de event-loop blokkeert
+- Bevestiging: **TUI-modal** in de composer (`1`/`2` of ↑/↓ + Enter); geen dubbele stdin-box onder prompt_toolkit
+- Zware stappen (sync/gateway/relaunch) **na** TUI-exit (`_pending_relaunch`)
 - `sync_hermes_api_env.ps1`: **timeout** + fout in `ProfileSwitchResult`
-- `execute_profile_switch_bounded` + `_busy_command` tijdens switch
+- `execute_profile_switch_bounded` in exit-handler na bevestiging
+- **Relaunch:** geen stderr-spinner tijdens `chat` (anders prompt `⟳ Opstarten` i.p.v. `legal ❯`) — `hermes_cli/relaunch.py`
 
 **Fallback zonder TUI:** `windows\SWITCH_PROFILE_AND_CHAT.bat <naam>`.
+
+**Verificatie:** `windows\audits\RUN_PROFILE_SWITCH_E2E.bat` + handmatig `/profile use legal` in WT.
 
 Historische aanbevelingen: [§8 Aanbevelingen](#8-aanbevelingen).
 

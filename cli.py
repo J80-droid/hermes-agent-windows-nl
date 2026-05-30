@@ -7642,16 +7642,21 @@ class HermesCLI:
         choices: list[tuple[str, str, str]],
         timeout: float = 90,
     ) -> str | None:
-        """Profile-switch confirm: visible box + Win32 stdin; TUI modal elsewhere."""
+        """Profile-switch confirm: TUI modal when the chat app is active; stdin otherwise.
+
+        Do not use raw ``input()`` under prompt_toolkit on Windows (issue #30768): the
+        scrollback box and stdin prompt race, keystrokes vanish, and the switch reads as
+        cancelled. Profile commands are routed on the UI thread so the modal is safe.
+        """
+        if getattr(self, "_app", None):
+            return self._prompt_text_input_modal(
+                title=title,
+                detail=detail,
+                choices=choices,
+                timeout=timeout,
+            )
         self._print_slash_confirm_box(title, detail, choices)
-        if sys.platform == "win32":
-            return self._prompt_slash_confirm_stdin_fallback(choices, timeout=timeout)
-        return self._prompt_text_input_modal(
-            title=title,
-            detail=detail,
-            choices=choices,
-            timeout=timeout,
-        )
+        return self._prompt_slash_confirm_stdin_fallback(choices, timeout=timeout)
 
     def _prompt_slash_confirm_stdin_fallback(
         self,
@@ -7739,10 +7744,10 @@ class HermesCLI:
         choices visible and lets the normal Enter key binding submit the typed
         or highlighted choice.
 
-        **Platform note (Windows — issue #30768):** The TUI modal deadlocks when
-        entered from the ``process_loop`` daemon thread.  Profile commands are
-        routed on the UI thread via :meth:`_should_handle_profile_command_inline`;
-        other confirms should follow the same pattern when possible.
+        **Platform note (Windows — issue #30768):** Do not call this from the
+        prompt_toolkit event-loop thread (``handle_enter`` / ``app.run()``) — it
+        blocks the loop and freezes the composer.  Profile commands run via
+        :meth:`_schedule_profile_command_async` on a background thread instead.
 
         When the modal cannot be set up, a visible stdin fallback is used (never
         a hidden ``Choice [1/2/3]:`` prompt under the composer).
@@ -8389,12 +8394,11 @@ class HermesCLI:
             return False
 
     def _should_handle_profile_command_inline(self, text: str, has_images: bool = False) -> bool:
-        """Route profile switches on the UI thread so the TUI confirm panel works on Windows.
+        """Return True when a profile command should bypass the agent message queue.
 
-        Slash commands submitted while the agent is idle are normally handled from
-        ``process_loop`` (background thread).  On Win32 that forced a hidden stdin
-        ``input()`` for confirmations (issue #30768).  Profile commands need the
-        same main-thread modal path as ``/model``.
+        Handling still runs on a background thread via
+        :meth:`_schedule_profile_command_async` so the TUI modal does not block
+        ``app.run()`` (issue #30768).
         """
         if has_images or not getattr(self, "_app", None):
             return False
@@ -8422,54 +8426,44 @@ class HermesCLI:
         except Exception:
             return False
 
-    def _schedule_profile_command_on_ui_thread(self, text: str) -> None:
-        """Run profile handling on the prompt_toolkit UI thread (process_loop safe)."""
-        app = getattr(self, "_app", None)
-        app_loop = None
-        if app is not None:
-            try:
-                app_loop = app.loop
-            except Exception:
-                app_loop = None
-        if app_loop is None:
-            self._dispatch_profile_inline(text)
-            return
+    def _schedule_profile_command_async(self, text: str) -> None:
+        """Run profile handling off the prompt_toolkit event loop (modal-safe).
 
+        ``/profile`` confirmations use ``_prompt_text_input_modal``, which must
+        not block the thread that runs ``app.run()`` — otherwise the TUI freezes
+        with the command stuck in the composer (issue #30768).
+        """
         import threading
 
-        done = threading.Event()
+        threading.Thread(
+            target=self._run_profile_command_off_ui_loop,
+            args=(text,),
+            daemon=True,
+            name="hermes-profile-switch",
+        ).start()
 
-        def _run_on_ui() -> None:
-            try:
-                self._dispatch_profile_inline(text)
-            finally:
-                done.set()
-
-        try:
-            app_loop.call_soon_threadsafe(_run_on_ui)
-            done.wait(timeout=300)
-        except Exception:
-            self._dispatch_profile_inline(text)
-
-    def _dispatch_profile_inline(self, text: str) -> bool:
-        """Handle profile switch or ``/profile`` on the UI thread. Returns False to exit."""
+    def _run_profile_command_off_ui_loop(self, text: str) -> None:
+        """Handle profile switch or ``/profile`` (background thread)."""
         if _looks_like_slash_command(text):
             cmd = text.strip()
         else:
             target = _parse_profile_switch_intent(text)
             if not target:
-                return True
+                return
             cmd = f"/profile use {target}"
             _cprint(f"\n{_DIM}Profielwissel herkend → {cmd}{_RST}")
         _cprint(f"\n⚙️  {cmd}")
         try:
             if not self.process_command(cmd):
                 self._should_exit = True
-                if getattr(self, "_app", None) and self._app.is_running:
-                    self._app.exit()
+                app = getattr(self, "_app", None)
+                if app is not None and app.is_running:
+                    try:
+                        app.loop.call_soon_threadsafe(app.exit)
+                    except Exception:
+                        app.exit()
         except KeyboardInterrupt:
             _cprint("\n[dim]Profielwissel onderbroken.[/dim]")
-        return True
 
     def _should_handle_steer_command_inline(self, text: str, has_images: bool = False) -> bool:
         """Return True when /steer should be dispatched immediately while the agent is running.
@@ -13690,7 +13684,9 @@ class HermesCLI:
                     return
 
                 if self._should_handle_profile_command_inline(text, has_images=has_images):
-                    self._dispatch_profile_inline(text)
+                    # Never call process_command synchronously here — modal confirm
+                    # blocks the event loop and freezes the composer on Windows.
+                    self._schedule_profile_command_async(text)
                     event.app.current_buffer.reset(append_to_history=True)
                     event.app.invalidate()
                     return
@@ -15491,9 +15487,8 @@ class HermesCLI:
                                 _cprint(
                                     f"\n{_DIM}Profielwissel herkend → {user_input}{_RST}"
                                 )
-                            else:
-                                _cprint(f"\n⚙️  {user_input}")
-                            self._schedule_profile_command_on_ui_thread(user_input)
+                            # Gear line + confirm run once in _run_profile_command_off_ui_loop.
+                            self._schedule_profile_command_async(user_input)
                             if self._should_exit and app.is_running:
                                 app.exit()
                             continue

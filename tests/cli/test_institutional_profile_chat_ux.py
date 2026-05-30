@@ -164,3 +164,53 @@ class TestLaunchIntegration:
         assert cli._should_handle_profile_command_inline("hello") is False
         cli._app = None
         assert cli._should_handle_profile_command_inline("/profile use legal") is False
+
+    def test_profile_confirm_uses_tui_modal_when_app_active(self, monkeypatch):
+        cli = HermesCLI.__new__(HermesCLI)
+        cli._app = object()
+        choices = [
+            ("once", "Wissel en herstart", "herstart"),
+            ("cancel", "Annuleren", "behouden"),
+        ]
+        modal_calls: list[dict] = []
+        stdin_calls: list[tuple] = []
+
+        def _modal(**kwargs):
+            modal_calls.append(kwargs)
+            return "once"
+
+        def _stdin(*args, **kwargs):
+            stdin_calls.append((args, kwargs))
+            return "1"
+
+        monkeypatch.setattr(cli, "_prompt_text_input_modal", _modal)
+        monkeypatch.setattr(cli, "_prompt_slash_confirm_stdin_fallback", _stdin)
+        monkeypatch.setattr(cli, "_print_slash_confirm_box", lambda *a, **k: None)
+
+        result = cli._prompt_profile_switch_confirm(
+            title="⚙  Wissel profiel",
+            detail="test",
+            choices=choices,
+        )
+        assert result == "once"
+        assert len(modal_calls) == 1
+        assert modal_calls[0]["title"] == "⚙  Wissel profiel"
+        assert stdin_calls == []
+
+    def test_profile_confirm_stdin_only_without_app(self, monkeypatch):
+        cli = HermesCLI.__new__(HermesCLI)
+        cli._app = None
+        choices = [
+            ("once", "Wissel en herstart", "herstart"),
+            ("cancel", "Annuleren", "behouden"),
+        ]
+        monkeypatch.setattr(cli, "_prompt_text_input_modal", lambda **k: "SHOULD_NOT")
+        monkeypatch.setattr(cli, "_print_slash_confirm_box", lambda *a, **k: None)
+        monkeypatch.setattr(
+            cli,
+            "_prompt_slash_confirm_stdin_fallback",
+            lambda *a, **k: "1",
+        )
+        assert cli._prompt_profile_switch_confirm(
+            title="t", detail="d", choices=choices
+        ) == "1"
