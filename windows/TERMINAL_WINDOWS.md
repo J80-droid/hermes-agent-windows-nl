@@ -136,6 +136,8 @@ De fork biedt drie verschillende manieren om flexibel en robuust van profiel te 
 
 **Voortgang in chat (3 stappen):** Na bevestigen: (1) profiel opgeslagen, (2) terminal opgeschoond, (3) Hermes start op (spinner op Windows, 5–15 s).
 
+**Windows in-chat (2026-05-30):** `/profile use` gebruikt hetzelfde bevestigingspaneel als `/new` (UI-thread, geen verborgen stdin). Zware stappen lopen met spinner + timeouts (`HERMES_PROFILE_SYNC_TIMEOUT`, `HERMES_PROFILE_SWITCH_TIMEOUT`). Zie `docs/PROFILE_SWITCH_WINDOWS_AUDIT.md`.
+
 **Vlaggen behouden / strippen:** Bij de in-chat `/profile use` herstart worden storende flags (zoals `-p` of `--profile`) automatisch gestript; het child-proces krijgt expliciet `-p <naam>` en root-`HERMES_HOME`. Om alleen sticky te zetten zonder herstart: `/profile use <naam> --no-restart`.
 
 **HERMES_HOME (User):** Moet `%LOCALAPPDATA%\hermes` (root) zijn, **niet** `...\profiles\core`. Controle: `windows\scripts\verify_hermes_home.ps1`. Installatie corrigeert profiel-subdirs automatisch.

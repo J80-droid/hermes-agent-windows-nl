@@ -6633,14 +6633,21 @@ class HermesCLI:
             getattr(self, "_app", None) is not None or "chat" in sys.argv[1:]
         )
 
+        from hermes_cli.profiles import get_active_profile
+
+        old_profile = get_active_profile()
+
         if should_relaunch:
             choices = [
                 ("once", "Wissel en herstart", f"Wisselen naar profiel '{name}' en Hermes herstarten"),
                 ("cancel", "Annuleren", "Huidige sessie behouden"),
             ]
-            raw = self._prompt_text_input_modal(
+            raw = self._prompt_profile_switch_confirm(
                 title="⚙  Wissel profiel",
-                detail=f"Dit zal de huidige sessie afsluiten en Hermes herstarten met profiel '{name}'.",
+                detail=(
+                    f"Dit zal de huidige sessie afsluiten en Hermes herstarten "
+                    f"met profiel '{name}'."
+                ),
                 choices=choices,
             )
             if raw is None:
@@ -6651,43 +6658,51 @@ class HermesCLI:
                 _cprint(f"  {_DIM}🟡 Profielwissel geannuleerd.{_RST}")
                 return True
 
-        from hermes_cli.profiles import get_active_profile
-        from hermes_cli.profile_switch import execute_profile_switch
+            # Fast sticky write only — gateway/sync/API run after TUI exits so
+            # prompt_toolkit cannot freeze on Win32 cmd.exe (issue #30768).
+            from hermes_cli.profile_switch import switch_sticky_profile
 
-        old_profile = get_active_profile()
-        try:
-            switch_result = execute_profile_switch(
-                name,
-                old_profile=old_profile,
-                sync_env=True,
-                restart_gateway=True,
-                fix_hermes_home=True,
-                verbose=False,
+            switch_sticky_profile(name)
+            target = "default (~/.hermes)" if name == "default" else name
+            _cprint(
+                f"{_ACCENT}✓ Profielwissel bevestigd: {target}{_RST}\n"
+                f"{_DIM}  Sessie wordt afgesloten — sync/gateway/herstart volgen "
+                f"(stap 1–3)...{_RST}"
             )
+            self._pending_relaunch = ["_profile_switch", name, old_profile]
+            return False
+
+        from hermes_cli.profile_switch import (
+            ProfileSwitchError,
+            execute_profile_switch_bounded,
+        )
+
+        try:
+            with self._busy_command(f"Profielwisselen naar {name}…"):
+                switch_result = execute_profile_switch_bounded(
+                    name,
+                    old_profile=old_profile,
+                    sync_env=True,
+                    restart_gateway=True,
+                    fix_hermes_home=True,
+                    verbose=False,
+                )
         except (ValueError, FileNotFoundError) as exc:
+            _cprint(f"  {_DIM}✗ {exc}{_RST}")
+            return True
+        except ProfileSwitchError as exc:
             _cprint(f"  {_DIM}✗ {exc}{_RST}")
             return True
 
         target = "default (~/.hermes)" if name == "default" else name
-
-        if should_relaunch:
-            _cprint(
-                f"{_ACCENT}✓ Sticky profiel gezet op: {target}{_RST}\n"
-                f"{_DIM}  Stap 1/3: profiel opgeslagen — Hermes wordt herstart...{_RST}"
-            )
-            for msg in switch_result.messages:
-                _cprint(f"  {_DIM}  {msg}{_RST}")
-            self._pending_relaunch = ["_profile_switch", name]
-            return False
-        else:
-            _cprint(
-                f"{_ACCENT}✓ Sticky profiel gezet op: {target}{_RST}\n"
-                f"{_DIM}  Sluit Hermes volledig af en start opnieuw "
-                f"(of start met: hermes -p {name} chat).{_RST}"
-            )
-            for msg in switch_result.messages:
-                _cprint(f"  {_DIM}  {msg}{_RST}")
-            return True
+        _cprint(
+            f"{_ACCENT}✓ Sticky profiel gezet op: {target}{_RST}\n"
+            f"{_DIM}  Sluit Hermes volledig af en start opnieuw "
+            f"(of start met: hermes -p {name} chat).{_RST}"
+        )
+        for msg in switch_result.messages:
+            _cprint(f"  {_DIM}  {msg}{_RST}")
+        return True
 
     def show_config(self):
         """Display current configuration with kawaii ASCII art."""
@@ -7595,7 +7610,65 @@ class HermesCLI:
 
         return result[0]
 
-    def _prompt_text_input(self, prompt_text: str) -> str | None:
+    @staticmethod
+    def _slash_confirm_footer_hint(num_choices: int) -> str:
+        if num_choices <= 0:
+            return "ESC annuleert."
+        keys = "/".join(str(i + 1) for i in range(num_choices))
+        return f"Druk {keys} of ↑/↓ + Enter. ESC annuleert."
+
+    def _print_slash_confirm_box(
+        self,
+        title: str,
+        detail: str,
+        choices: list[tuple[str, str, str]],
+    ) -> None:
+        """Always print a visible confirmation box in scrollback (Win32 cmd-safe)."""
+        _cprint("")
+        _cprint(f"  {_ACCENT}{title}{_RST}")
+        for line in detail.splitlines():
+            if line.strip():
+                _cprint(f"  {_DIM}{line}{_RST}")
+        for idx, (_val, label, desc) in enumerate(choices):
+            _cprint(f"  [{idx + 1}] {label} — {_DIM}{desc}{_RST}")
+        _cprint(f"  {_DIM}{self._slash_confirm_footer_hint(len(choices))}{_RST}")
+        _cprint("")
+
+    def _prompt_profile_switch_confirm(
+        self,
+        *,
+        title: str,
+        detail: str,
+        choices: list[tuple[str, str, str]],
+        timeout: float = 90,
+    ) -> str | None:
+        """Profile-switch confirm: visible box + Win32 stdin; TUI modal elsewhere."""
+        self._print_slash_confirm_box(title, detail, choices)
+        if sys.platform == "win32":
+            return self._prompt_slash_confirm_stdin_fallback(choices, timeout=timeout)
+        return self._prompt_text_input_modal(
+            title=title,
+            detail=detail,
+            choices=choices,
+            timeout=timeout,
+        )
+
+    def _prompt_slash_confirm_stdin_fallback(
+        self,
+        choices: list[tuple[str, str, str]],
+        *,
+        timeout: float = 90,
+    ) -> None:
+        """Last-resort confirm when the TUI modal cannot be shown (no app / setup failed)."""
+        lines = ["", "  ╭─ Bevestiging ─────────────────"]
+        for idx, (_val, label, desc) in enumerate(choices):
+            lines.append(f"  │  [{idx + 1}] {label} — {desc}")
+        lines.append(f"  │  {self._slash_confirm_footer_hint(len(choices))}")
+        lines.append("  ╰──────────────────────────────")
+        lines.append("> ")
+        return self._prompt_text_input("\n".join(lines), timeout=timeout)
+
+    def _prompt_text_input(self, prompt_text: str, timeout: float | None = None) -> str | None:
         """Prompt for free-text input safely inside or outside prompt_toolkit.
 
         Mirrors the thread-aware guard in ``_run_curses_picker``: ``run_in_terminal``
@@ -7617,26 +7690,36 @@ class HermesCLI:
 
         in_main_thread = threading.current_thread() is threading.main_thread()
 
+        if timeout is not None and timeout > 0:
+
+            def _timed_ask():
+                thread = threading.Thread(target=_ask, daemon=True)
+                thread.start()
+                thread.join(timeout=timeout)
+                if thread.is_alive():
+                    result[0] = None
+
+            _ask_impl = _timed_ask
+        else:
+            _ask_impl = _ask
+
         if self._app and in_main_thread:
             from prompt_toolkit.application import run_in_terminal
             was_visible = self._status_bar_visible
             self._status_bar_visible = False
             self._app.invalidate()
             try:
-                run_in_terminal(_ask)
+                run_in_terminal(_ask_impl)
             except Exception:
-                # WSL / Warp / certain terminal emulators silently drop the
-                # scheduled coroutine.  Fall back to a direct input() so the
-                # user's keystrokes don't leak into the agent buffer.
                 try:
-                    _ask()
+                    _ask_impl()
                 except Exception:
                     pass
             finally:
                 self._status_bar_visible = was_visible
                 self._app.invalidate()
         else:
-            _ask()
+            _ask_impl()
         return result[0]
 
     def _prompt_text_input_modal(
@@ -7656,27 +7739,13 @@ class HermesCLI:
         choices visible and lets the normal Enter key binding submit the typed
         or highlighted choice.
 
-        **Platform note (Windows dead-lock — issue #30768):**
-        The queue-based modal relies on prompt_toolkit key bindings receiving
-        keyboard events and calling ``_submit_slash_confirm_response``.  On
-        Windows (PowerShell / Windows Terminal) the prompt_toolkit input
-        channel can become unresponsive when the modal is entered from the
-        ``process_loop`` daemon thread, causing a dead-lock: the user sees the
-        confirmation panel but keystrokes never reach the key bindings and the
-        ``response_queue.get()`` blocks until the 120-second timeout expires.
+        **Platform note (Windows — issue #30768):** The TUI modal deadlocks when
+        entered from the ``process_loop`` daemon thread.  Profile commands are
+        routed on the UI thread via :meth:`_should_handle_profile_command_inline`;
+        other confirms should follow the same pattern when possible.
 
-        To avoid this, we fall back to ``_prompt_text_input`` (a simple
-        ``input()``-based prompt) when any of these conditions hold:
-
-        * ``sys.platform == "win32"`` — native Windows console (ConPTY /
-          win32_input) does not support the modal reliably.
-        * ``self._app`` is not set — unit tests / non-interactive contexts.
-
-        On non-Windows platforms the modal itself is still safe from the
-        ``process_loop`` daemon thread as long as the main-thread event loop
-        owns the prompt_toolkit buffer mutations.  When we are off the main
-        thread, schedule the modal snapshot / restore work on ``self._app.loop``
-        via ``call_soon_threadsafe`` and keep the queue-based response path.
+        When the modal cannot be set up, a visible stdin fallback is used (never
+        a hidden ``Choice [1/2/3]:`` prompt under the composer).
         """
         import threading
         import time as _time
@@ -7684,18 +7753,8 @@ class HermesCLI:
         if not choices:
             return None
 
-        # If prompt_toolkit is not running (unit tests / non-interactive calls),
-        # keep the simple stdin fallback.
         if not getattr(self, "_app", None):
-            return self._prompt_text_input("Choice [1/2/3]: ")
-
-        # On Windows the prompt_toolkit input channel can deadlock when the
-        # modal is entered from the process_loop daemon thread — keystrokes
-        # never reach the key bindings, so response_queue.get() blocks for
-        # the full timeout (issue #30768).  Fall back to the simpler
-        # stdin-based prompt which works reliably on Windows.
-        if sys.platform == "win32":
-            return self._prompt_text_input("Choice [1/2/3]: ")
+            return self._prompt_slash_confirm_stdin_fallback(choices, timeout=min(timeout, 90))
 
         try:
             app_loop = self._app.loop
@@ -7704,7 +7763,7 @@ class HermesCLI:
 
         in_main_thread = threading.current_thread() is threading.main_thread()
         if not in_main_thread and app_loop is None:
-            return self._prompt_text_input("Choice [1/2/3]: ")
+            return self._prompt_slash_confirm_stdin_fallback(choices, timeout=min(timeout, 90))
 
         response_queue = queue.Queue()
 
@@ -7745,7 +7804,7 @@ class HermesCLI:
             return ready.wait(timeout=5)
 
         if not _run_on_app_loop(_setup_modal):
-            return self._prompt_text_input("Choice [1/2/3]: ")
+            return self._prompt_slash_confirm_stdin_fallback(choices, timeout=min(timeout, 90))
 
         _last_countdown_refresh = _time.monotonic()
         try:
@@ -7852,7 +7911,7 @@ class HermesCLI:
         for idx, (_value, label, desc) in enumerate(choices):
             marker = "❯" if idx == selected else " "
             preview_lines.extend(_wrap_panel_text(f"{marker} [{idx + 1}] {label} — {desc}", 72, subsequent_indent="    "))
-        preview_lines.append("Type 1/2/3 or use ↑/↓ then Enter. ESC/Ctrl+C cancels.")
+        preview_lines.append(self._slash_confirm_footer_hint(len(choices)))
 
         box_width = _panel_box_width(title, preview_lines)
         inner_text_width = max(8, box_width - 2)
@@ -7886,7 +7945,13 @@ class HermesCLI:
             style = 'class:approval-selected' if idx == selected else 'class:approval-choice'
             _append_panel_line(lines, 'class:approval-border', style, wrapped, box_width)
         _append_blank_panel_line(lines, 'class:approval-border', box_width)
-        _append_panel_line(lines, 'class:approval-border', 'class:approval-cmd', 'Type 1/2/3 or use ↑/↓ then Enter. ESC/Ctrl+C cancels.', box_width)
+        _append_panel_line(
+            lines,
+            'class:approval-border',
+            'class:approval-cmd',
+            self._slash_confirm_footer_hint(len(choices)),
+            box_width,
+        )
         lines.append(('class:approval-border', '╰' + ('─' * box_width) + '╯\n'))
         return lines
 
@@ -8322,6 +8387,89 @@ class HermesCLI:
             return bool(cmd and cmd.name == "model")
         except Exception:
             return False
+
+    def _should_handle_profile_command_inline(self, text: str, has_images: bool = False) -> bool:
+        """Route profile switches on the UI thread so the TUI confirm panel works on Windows.
+
+        Slash commands submitted while the agent is idle are normally handled from
+        ``process_loop`` (background thread).  On Win32 that forced a hidden stdin
+        ``input()`` for confirmations (issue #30768).  Profile commands need the
+        same main-thread modal path as ``/model``.
+        """
+        if has_images or not getattr(self, "_app", None):
+            return False
+        if not isinstance(text, str) or not text.strip():
+            return False
+        if _looks_like_slash_command(text):
+            try:
+                from hermes_cli.commands import resolve_command
+                base = text.strip().split()[0].lower().lstrip("/")
+                cmd = resolve_command(base)
+                return bool(cmd and cmd.name == "profile")
+            except Exception:
+                return False
+        return _parse_profile_switch_intent(text) is not None
+
+    @staticmethod
+    def _is_profile_slash_command(text: str) -> bool:
+        if not text or not _looks_like_slash_command(text):
+            return False
+        try:
+            from hermes_cli.commands import resolve_command
+            base = text.strip().split()[0].lower().lstrip("/")
+            cmd = resolve_command(base)
+            return bool(cmd and cmd.name == "profile")
+        except Exception:
+            return False
+
+    def _schedule_profile_command_on_ui_thread(self, text: str) -> None:
+        """Run profile handling on the prompt_toolkit UI thread (process_loop safe)."""
+        app = getattr(self, "_app", None)
+        app_loop = None
+        if app is not None:
+            try:
+                app_loop = app.loop
+            except Exception:
+                app_loop = None
+        if app_loop is None:
+            self._dispatch_profile_inline(text)
+            return
+
+        import threading
+
+        done = threading.Event()
+
+        def _run_on_ui() -> None:
+            try:
+                self._dispatch_profile_inline(text)
+            finally:
+                done.set()
+
+        try:
+            app_loop.call_soon_threadsafe(_run_on_ui)
+            done.wait(timeout=300)
+        except Exception:
+            self._dispatch_profile_inline(text)
+
+    def _dispatch_profile_inline(self, text: str) -> bool:
+        """Handle profile switch or ``/profile`` on the UI thread. Returns False to exit."""
+        if _looks_like_slash_command(text):
+            cmd = text.strip()
+        else:
+            target = _parse_profile_switch_intent(text)
+            if not target:
+                return True
+            cmd = f"/profile use {target}"
+            _cprint(f"\n{_DIM}Profielwissel herkend → {cmd}{_RST}")
+        _cprint(f"\n⚙️  {cmd}")
+        try:
+            if not self.process_command(cmd):
+                self._should_exit = True
+                if getattr(self, "_app", None) and self._app.is_running:
+                    self._app.exit()
+        except KeyboardInterrupt:
+            _cprint("\n[dim]Profielwissel onderbroken.[/dim]")
+        return True
 
     def _should_handle_steer_command_inline(self, text: str, has_images: bool = False) -> bool:
         """Return True when /steer should be dispatched immediately while the agent is running.
@@ -13538,12 +13686,12 @@ class HermesCLI:
                         if event.app.is_running:
                             event.app.exit()
                     event.app.current_buffer.reset(append_to_history=True)
-                    # Force a repaint: process_command() prints through
-                    # patch_stdout (scrolls output above the prompt) and never
-                    # invalidates the app, so the just-cleared input area can
-                    # keep showing the submitted text until some unrelated
-                    # redraw fires. Every other early-return branch in this
-                    # handler invalidates after reset — match them.
+                    event.app.invalidate()
+                    return
+
+                if self._should_handle_profile_command_inline(text, has_images=has_images):
+                    self._dispatch_profile_inline(text)
+                    event.app.current_buffer.reset(append_to_history=True)
                     event.app.invalidate()
                     return
 
@@ -15333,6 +15481,23 @@ class HermesCLI:
                     ):
                         continue
 
+                    if not _file_drop and isinstance(user_input, str):
+                        _profile_intent = _parse_profile_switch_intent(user_input)
+                        if self._is_profile_slash_command(user_input) or _profile_intent:
+                            if _profile_intent and not self._is_profile_slash_command(
+                                user_input
+                            ):
+                                user_input = f"/profile use {_profile_intent}"
+                                _cprint(
+                                    f"\n{_DIM}Profielwissel herkend → {user_input}{_RST}"
+                                )
+                            else:
+                                _cprint(f"\n⚙️  {user_input}")
+                            self._schedule_profile_command_on_ui_thread(user_input)
+                            if self._should_exit and app.is_running:
+                                app.exit()
+                            continue
+
                     if not _file_drop and isinstance(user_input, str) and _looks_like_slash_command(user_input):
                         _cprint(f"\n⚙️  {user_input}")
                         try:
@@ -15341,28 +15506,7 @@ class HermesCLI:
                                 if app.is_running:
                                     app.exit()
                         except KeyboardInterrupt:
-                            # Ctrl+C during a slow slash command (e.g. /skills browse,
-                            # /sessions list with a large DB) should interrupt the
-                            # command and return to the prompt, NOT exit the entire
-                            # session. Without this guard a KeyboardInterrupt unwinds
-                            # to the outer prompt_toolkit loop and the session dies.
                             _cprint("\n[dim]Command interrupted.[/dim]")
-                        continue
-
-                    _profile_switch = (
-                        _parse_profile_switch_intent(user_input)
-                        if isinstance(user_input, str)
-                        else None
-                    )
-                    if _profile_switch:
-                        _profile_cmd = f"/profile use {_profile_switch}"
-                        _cprint(
-                            f"\n{_DIM}Profielwissel herkend → {_profile_cmd}{_RST}"
-                        )
-                        if not self.process_command(_profile_cmd):
-                            self._should_exit = True
-                            if app.is_running:
-                                app.exit()
                         continue
                     
                     # Expand paste references back to full content
@@ -15718,6 +15862,10 @@ class HermesCLI:
         # the worker thread on Windows).
         if getattr(self, '_pending_relaunch', None):
             if self._pending_relaunch[0] == "_profile_switch":
+                from hermes_cli.profile_switch import (
+                    ProfileSwitchError,
+                    execute_profile_switch_bounded,
+                )
                 from hermes_cli.relaunch import (
                     _print_profile_relaunch_progress,
                     relaunch_chat_after_profile_switch,
@@ -15727,6 +15875,27 @@ class HermesCLI:
                     if len(self._pending_relaunch) > 1
                     else "default"
                 )
+                old_profile = (
+                    self._pending_relaunch[2]
+                    if len(self._pending_relaunch) > 2
+                    else "default"
+                )
+                _print_profile_relaunch_progress(
+                    1, "profiel, API-sync en gateway…"
+                )
+                try:
+                    switch_result = execute_profile_switch_bounded(
+                        profile_name,
+                        old_profile=old_profile,
+                        sync_env=True,
+                        restart_gateway=True,
+                        fix_hermes_home=True,
+                        verbose=True,
+                    )
+                    for msg in switch_result.messages:
+                        print(f"  {msg}", file=sys.stderr, flush=True)
+                except ProfileSwitchError as exc:
+                    print(f"  ✗ {exc}", file=sys.stderr, flush=True)
                 _print_profile_relaunch_progress(
                     2, "terminal wordt opgeschoond…"
                 )

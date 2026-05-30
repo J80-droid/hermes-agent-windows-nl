@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -70,7 +71,7 @@ class TestExecuteProfileSwitch:
         (hermes_root / "active_profile").write_text("core\n")
         _patch_hermes_root(monkeypatch, hermes_root)
 
-        monkeypatch.setattr(ps, "sync_profile_env_windows", lambda: False)
+        monkeypatch.setattr(ps, "sync_profile_env_windows", lambda **_: (False, None))
         monkeypatch.setattr(ps, "_gateway_running_for_profile", lambda _n: False)
         monkeypatch.setattr(ps, "restart_gateway_for_profile", lambda *_a: False)
 
@@ -88,9 +89,9 @@ class TestExecuteProfileSwitch:
 
         called = []
 
-        def _sync():
+        def _sync(**_kwargs):
             called.append(True)
-            return True
+            return True, None
 
         monkeypatch.setattr(ps, "sync_profile_env_windows", _sync)
         monkeypatch.setattr(ps, "_gateway_running_for_profile", lambda _n: False)
@@ -107,7 +108,7 @@ class TestExecuteProfileSwitch:
         (hermes_root / "profiles" / "core").mkdir(parents=True, exist_ok=True)
         _patch_hermes_root(monkeypatch, hermes_root)
 
-        monkeypatch.setattr(ps, "sync_profile_env_windows", lambda: False)
+        monkeypatch.setattr(ps, "sync_profile_env_windows", lambda **_: (False, None))
         monkeypatch.setattr(ps, "_gateway_running_for_profile", lambda _n: False)
         monkeypatch.setattr(ps, "restart_gateway_for_profile", lambda *_a: False)
         monkeypatch.setattr(ps, "stop_kanban_workers_for_assignee", lambda a: 2 if a == "core" else 0)
@@ -116,3 +117,40 @@ class TestExecuteProfileSwitch:
             "legal", old_profile="core", sync_env=False, restart_gateway=False
         )
         assert result.kanban_workers_stopped == 2
+
+
+class TestSyncProfileEnvWindows:
+    def test_sync_timeout_returns_error_message(self, monkeypatch):
+        from hermes_cli import profile_switch as ps
+
+        script = ps._repo_windows_dir() / "sync_hermes_api_env.ps1"
+        if not script.is_file():
+            pytest.skip("sync script missing")
+        monkeypatch.setattr(ps.sys, "platform", "win32")
+
+        def _timeout(*_a, **_k):
+            raise subprocess.TimeoutExpired(cmd="powershell", timeout=1)
+
+        monkeypatch.setattr(ps.subprocess, "run", _timeout)
+        ok, err = ps.sync_profile_env_windows(timeout_sec=1)
+        assert ok is False
+        assert err and "timeout" in err.lower()
+
+
+class TestExecuteProfileSwitchBounded:
+    def test_bounded_raises_on_timeout(self, monkeypatch, tmp_path):
+        from hermes_cli import profile_switch as ps
+
+        hermes_root = tmp_path / ".hermes"
+        (hermes_root / "profiles" / "legal").mkdir(parents=True)
+        _patch_hermes_root(monkeypatch, hermes_root)
+
+        def _slow(*_a, **_k):
+            import time
+
+            time.sleep(5)
+            return ps.ProfileSwitchResult(profile="legal", old_profile="default")
+
+        monkeypatch.setattr(ps, "execute_profile_switch", _slow)
+        with pytest.raises(ps.ProfileSwitchError, match="timeout"):
+            ps.execute_profile_switch_bounded("legal", timeout_sec=1, sync_env=False)

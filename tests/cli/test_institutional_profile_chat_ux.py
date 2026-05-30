@@ -147,3 +147,20 @@ class TestLaunchIntegration:
         import cli as cli_mod
 
         assert callable(getattr(cli_mod, "_parse_profile_switch_intent", None))
+
+    def test_profile_command_routes_inline_when_tui_active(self, monkeypatch):
+        def _exists(name: str) -> bool:
+            return name in {"legal", "core", "default"}
+
+        monkeypatch.setattr(
+            "hermes_cli.profiles.profile_exists",
+            _exists,
+        )
+        cli = HermesCLI.__new__(HermesCLI)
+        cli._app = object()
+        assert cli._should_handle_profile_command_inline("/profile use legal") is True
+        assert cli._should_handle_profile_command_inline("/profile list") is True
+        assert cli._should_handle_profile_command_inline("wissel naar legal") is True
+        assert cli._should_handle_profile_command_inline("hello") is False
+        cli._app = None
+        assert cli._should_handle_profile_command_inline("/profile use legal") is False

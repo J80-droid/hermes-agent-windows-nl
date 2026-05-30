@@ -18,6 +18,24 @@ from typing import Optional
 
 _PROFILE_SUBDIR_RE = re.compile(r"[\\/]profiles[\\/]([a-z0-9][a-z0-9_-]{0,63})$", re.I)
 
+# Bounded waits — override via env for slow machines / large profile trees.
+_DEFAULT_SYNC_TIMEOUT_SEC = 120
+_DEFAULT_SWITCH_TIMEOUT_SEC = 180
+
+
+class ProfileSwitchError(RuntimeError):
+    """Profile switch failed or exceeded a configured time limit."""
+
+
+def _env_int(name: str, default: int) -> int:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return default
+
 
 @dataclass
 class ProfileSwitchResult:
@@ -25,6 +43,7 @@ class ProfileSwitchResult:
     old_profile: str
     gateway_restarted: bool = False
     env_synced: bool = False
+    env_sync_error: Optional[str] = None
     hermes_home_normalized: bool = False
     kanban_workers_stopped: int = 0
     messages: list[str] = field(default_factory=list)
@@ -117,15 +136,25 @@ def _apply_profile_env(profile_name: str) -> None:
     os.environ["HERMES_HOME"] = resolve_profile_env(profile_name)
 
 
-def sync_profile_env_windows() -> bool:
-    """Run windows/sync_hermes_api_env.ps1 (no-op off Windows)."""
+def sync_profile_env_windows(
+    *,
+    timeout_sec: Optional[int] = None,
+) -> tuple[bool, Optional[str]]:
+    """Run windows/sync_hermes_api_env.ps1 (no-op off Windows).
+
+    Returns ``(success, error_message)``. On timeout the sticky profile is
+    already written by the caller — *error_message* explains that sync was skipped.
+    """
     if sys.platform != "win32":
-        return False
+        return False, None
     script = _repo_windows_dir() / "sync_hermes_api_env.ps1"
     if not script.is_file():
-        return False
+        return False, None
+    limit = timeout_sec if timeout_sec is not None else _env_int(
+        "HERMES_PROFILE_SYNC_TIMEOUT", _DEFAULT_SYNC_TIMEOUT_SEC
+    )
     try:
-        subprocess.run(
+        proc = subprocess.run(
             [
                 "powershell",
                 "-NoProfile",
@@ -135,10 +164,21 @@ def sync_profile_env_windows() -> bool:
                 str(script),
             ],
             check=False,
+            timeout=limit,
         )
-        return True
-    except OSError:
-        return False
+        if proc.returncode != 0:
+            return False, (
+                f"API-sync afgerond met exitcode {proc.returncode} "
+                f"(profiel opgeslagen; zie logs)."
+            )
+        return True, None
+    except subprocess.TimeoutExpired:
+        return False, (
+            f"API-sync timeout na {limit}s (profiel opgeslagen; "
+            f"sync later via windows\\sync_hermes_api_env.ps1)."
+        )
+    except OSError as exc:
+        return False, f"API-sync mislukt: {exc}"
 
 
 def _gateway_running_for_profile(profile_name: str) -> bool:
@@ -263,8 +303,12 @@ def execute_profile_switch(
 
     do_sync = sync_env if sync_env is not None else (sys.platform == "win32")
     if do_sync:
-        result.env_synced = sync_profile_env_windows()
-        if result.env_synced and verbose:
+        synced, sync_err = sync_profile_env_windows()
+        result.env_synced = synced
+        result.env_sync_error = sync_err
+        if sync_err:
+            result.messages.append(sync_err)
+        elif synced and verbose:
             result.messages.append("API-omgeving gesynchroniseerd (Windows).")
 
     do_gw = restart_gateway if restart_gateway is not None else gw_was_running
@@ -279,3 +323,31 @@ def execute_profile_switch(
 def print_switch_messages(result: ProfileSwitchResult) -> None:
     for line in result.messages:
         print(line)
+
+
+def execute_profile_switch_bounded(
+    new_profile: str,
+    *,
+    timeout_sec: Optional[int] = None,
+    **kwargs,
+) -> ProfileSwitchResult:
+    """Run :func:`execute_profile_switch` in a worker thread with a hard timeout.
+
+    Used by the interactive CLI so gateway stop + API-sync cannot freeze the
+    prompt_toolkit event loop indefinitely.
+    """
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
+
+    limit = timeout_sec if timeout_sec is not None else _env_int(
+        "HERMES_PROFILE_SWITCH_TIMEOUT", _DEFAULT_SWITCH_TIMEOUT_SEC
+    )
+    with ThreadPoolExecutor(max_workers=1, thread_name_prefix="hermes-profile-switch") as pool:
+        fut = pool.submit(execute_profile_switch, new_profile, **kwargs)
+        try:
+            return fut.result(timeout=limit)
+        except FuturesTimeout as exc:
+            raise ProfileSwitchError(
+                f"Profielwissel timeout na {limit}s (gateway/sync). "
+                f"Controleer actieve processen en probeer "
+                f"hermes profile use {new_profile} --fix-hermes-home --no-restart-gateway."
+            ) from exc

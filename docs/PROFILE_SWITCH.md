@@ -97,6 +97,17 @@ Zonder `-p` in argv: als `HERMES_HOME=profiles/core` maar `active_profile=legal`
 
 Na wijziging aan `profiles\<naam>\SOUL.md`: **nieuwe chat** starten (bestaande sessie houdt oude system prompt).
 
+## Windows in-chat (structureel, 2026-05-30)
+
+| Onderdeel | Gedrag |
+|-----------|--------|
+| Bevestiging | Zichtbaar keuzeblok in scrollback; Win32: `1`/`2` + Enter (geen verborgen stdin) |
+| Zware stappen | **Na** TUI-exit: sync/gateway/relaunch (cmd.exe kan niet bevriezen tijdens chat) |
+| API-sync | `sync_hermes_api_env.ps1` met timeout (`HERMES_PROFILE_SYNC_TIMEOUT`, default 120s) |
+| Totale switch | `HERMES_PROFILE_SWITCH_TIMEOUT` (default 180s) |
+
+Zie **[PROFILE_SWITCH_WINDOWS_AUDIT.md](PROFILE_SWITCH_WINDOWS_AUDIT.md)** voor root-cause analyse. Fallback zonder TUI: `windows\SWITCH_PROFILE_AND_CHAT.bat <naam>`.
+
 ## Zie ook
 
 - [ORCHESTRATOR_ROUTING.md](ORCHESTRATOR_ROUTING.md) — routing-matrix core  
