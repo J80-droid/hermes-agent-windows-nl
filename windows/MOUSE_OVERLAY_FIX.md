@@ -160,7 +160,8 @@ start_hermes.bat
 | Item | Waarde |
 | ---- | ------ |
 | **Fix-commit** | `91955c651` — `fix(windows): WT title bar mouse overlay and launch regressions` |
-| **Docs/guards-commit** | `5ce2fb007` (+ `bfdc98968` hash doc) — lacunes 1–16; tag op `bfdc98968` |
+| **Docs/guards-commit** | `5ce2fb007` … `5d496c2bd` — lacunes 1–16 (docs/guards + release-tabel) |
+| **Tag commit** | `5d496c2bd` (annotated tag `windows-wt-titlebar-mouse-2026-05-30`) |
 | **Tag** | `windows-wt-titlebar-mouse-2026-05-30` |
 | **Remote** | https://github.com/J80-droid/hermes-agent-windows-nl |
 

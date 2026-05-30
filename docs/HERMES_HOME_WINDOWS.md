@@ -21,7 +21,7 @@ Zie [WINDOWS_PLATFORM_HARDENING.md](WINDOWS_PLATFORM_HARDENING.md).
 | Poort | Commando | Wanneer |
 | --- | --- | --- |
 | Dagelijks | `windows\POST_GIT_PULL.bat` | Na `git pull` |
-| Start | `windows\launch_hermes.bat` | Elke sessie |
+| Start | **`start_hermes.bat`** (repo-root; WT) | Elke sessie |
 | Wekelijks | `windows\audits\RUN_AUDITS.bat` | Kwaliteit |
 | Release | `windows\audits\RUN_AUDITS.bat -IncludeAllE2E` | Vóór grote wijziging |
 | Config wijziging | `APPLY_AUXILIARY_HYBRID_PRESET.bat` + `hermes config get auxiliary` | Eenmalig / na model pull |
