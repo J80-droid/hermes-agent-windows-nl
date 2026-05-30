@@ -5,16 +5,26 @@ param(
     [string]$RepoRoot = '',
     [switch]$Quiet,
     [switch]$SkipIconGen,
-    [switch]$PostUpdateGuidance
+    [switch]$PostUpdateGuidance,
+    [switch]$OpenStableFolder
 )
 
 function Write-HermesTaskbarPostUpdateGuidance {
+    param([switch]$OpenStableFolder)
+    $stable = Get-HermesStableTaskbarShortcutsDir
     Write-Host ''
-    Write-Host '[INFO] Taakbalk — als een pin nog "item kan niet worden geopend" geeft:' -ForegroundColor Cyan
-    Write-Host '       1) Klik die taakbalk-pin -> Ja (alleen de dode pin)' -ForegroundColor Gray
-    Write-Host '       2) Rechtsklik windows\Start Hermes - naar taakbalk slepen.lnk (of andere rol)' -ForegroundColor Gray
-    Write-Host '          -> Vastmaken aan taakbalk (niet slepen)' -ForegroundColor Gray
-    Write-Host '       Verkenner-snelkoppelingen in windows\ blijven gewoon werken.' -ForegroundColor DarkGray
+    Write-Host '[INFO] Taakbalk-pop-up? De pin op de balk is een OUDE verwijzing (niet windows\).' -ForegroundColor Cyan
+    Write-Host '       1) Klik die taakbalk-pin -> Ja (herhaal per kapotte pin)' -ForegroundColor Gray
+    Write-Host '       2) Vastmaken via RECHTSKLIK (niet slepen) op:' -ForegroundColor Gray
+    if ($stable) {
+        Write-Host ('          ' + $stable + '\Hermes Update.lnk (of andere Hermes *.lnk)') -ForegroundColor Gray
+    } else {
+        Write-Host '          windows\Start Hermes - naar taakbalk slepen.lnk' -ForegroundColor Gray
+    }
+    Write-Host '       windows\ blijft voor dubbelklik in Verkenner.' -ForegroundColor DarkGray
+    if ($OpenStableFolder -and $stable -and (Test-Path -LiteralPath $stable)) {
+        Start-Process -FilePath 'explorer.exe' -ArgumentList $stable
+    }
 }
 
 $ErrorActionPreference = 'Stop'
@@ -76,7 +86,7 @@ Remove-HermesStrayShortcutFiles -Dir $scriptDir
 Clear-HermesShellIconCache
 
 if ($PostUpdateGuidance) {
-    Write-HermesTaskbarPostUpdateGuidance
+    Write-HermesTaskbarPostUpdateGuidance -OpenStableFolder:$OpenStableFolder
 } elseif (-not $Quiet) {
     Write-Host ''
     Write-Host 'Snelkoppelingen: windows\ (dubbelklik, wt.exe) + taakbalk-map (bat-doel).' -ForegroundColor Cyan

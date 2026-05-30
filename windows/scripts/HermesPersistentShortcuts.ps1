@@ -8,6 +8,110 @@ function Get-HermesPersistentShortcutsDir {
     return (Join-Path $local (Join-Path 'Hermes' 'shortcuts'))
 }
 
+function Get-HermesStableTaskbarShortcutsDir {
+    <#
+    .SYNOPSIS
+        Vaste paden buiten git (niet door merge vervangen) — éénmalig hier vastpinnen i.p.v. slepen uit windows\.
+    #>
+    $local = Get-HermesRealLocalAppData
+    if (-not $local) { return $null }
+    return (Join-Path $local (Join-Path 'Hermes' 'taakbalk'))
+}
+
+function Get-HermesStableTaskbarShortcutFileMap {
+    return @(
+        @{ Role = 'Start';      FileName = 'Hermes Start.lnk' }
+        @{ Role = 'StartFast';  FileName = 'Hermes Start (snel).lnk' }
+        @{ Role = 'Update';     FileName = 'Hermes Update.lnk' }
+        @{ Role = 'Setup';      FileName = 'Hermes Setup.lnk' }
+        @{ Role = 'Backup';     FileName = 'Hermes Backup.lnk' }
+        @{ Role = 'Restore';    FileName = 'Hermes Herstellen.lnk' }
+        @{ Role = 'Rag';        FileName = 'Hermes RAG.lnk' }
+        @{ Role = 'Obsidian';   FileName = 'Hermes Obsidian.lnk' }
+        @{ Role = 'OpenSetup';  FileName = 'Hermes Open Setup.lnk' }
+    )
+}
+
+function Sync-HermesStableTaskbarShortcuts {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$WindowsDir,
+        [switch]$Quiet
+    )
+    $dir = Get-HermesStableTaskbarShortcutsDir
+    if (-not $dir) { return 0 }
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    $catalog = Get-HermesShortcutCatalog -RepoRoot $RepoRoot
+    $ok = 0
+    foreach ($map in (Get-HermesStableTaskbarShortcutFileMap)) {
+        $entry = $catalog | Where-Object { $_.Role -eq $map.Role } | Select-Object -First 1
+        if (-not $entry) { continue }
+        $dest = Join-Path $dir $map.FileName
+        if (New-HermesCatalogShortcut -Entry $entry -ShortcutPath $dest -RepoRoot $RepoRoot `
+                -WindowsDir $WindowsDir -ForTaskbarPin) {
+            $ok++
+            if (-not $Quiet) {
+                Write-Host ('  [OK] Stabiel taakbalk-pad: ' + $map.FileName) -ForegroundColor Green
+            }
+        }
+    }
+    return $ok
+}
+
+function Repair-HermesWtTargetTaskbarPinsToBat {
+    param(
+        [Parameter(Mandatory)][string]$PinnedDir,
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$WindowsDir,
+        [switch]$Quiet
+    )
+    $fixed = 0
+    foreach ($item in (Get-HermesTaskbarPinShortcutCandidates -PinnedDir $PinnedDir -RepoRoot $RepoRoot)) {
+        $s = (New-Object -ComObject WScript.Shell).CreateShortcut($item.FullName)
+        $leaf = Split-Path $s.TargetPath -Leaf
+        if ($leaf -notmatch '^(wt|WindowsTerminal)\.exe$') { continue }
+        $role = Get-HermesShortcutRoleFromShortcut -ShortcutPath $item.FullName -RepoRoot $RepoRoot
+        if (-not $role) { continue }
+        if (Repair-HermesShellShortcutInPlace -ShortcutPath $item.FullName -Role $role -RepoRoot $RepoRoot `
+                -WindowsDir $WindowsDir -ForTaskbarPin) {
+            $script:fixed++
+            if (-not $Quiet) {
+                Write-Host ('  [OK] WT-pin -> bat-doel: ' + $item.Name) -ForegroundColor Green
+            }
+        }
+    }
+    return $fixed
+}
+
+function Remove-HermesTaskbarPinsWithMissingTargets {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)][string]$PinnedDir,
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [switch]$Quiet
+    )
+    $removed = 0
+    foreach ($item in (Get-HermesTaskbarPinShortcutCandidates -PinnedDir $PinnedDir -RepoRoot $RepoRoot)) {
+        $s = (New-Object -ComObject WScript.Shell).CreateShortcut($item.FullName)
+        $missing = $false
+        if ($s.TargetPath -and -not (Test-Path -LiteralPath $s.TargetPath)) {
+            $missing = $true
+        }
+        if (-not $missing -and -not (Test-HermesShortcutLaunchTargetsExist -ShortcutPath $item.FullName -RepoRoot $RepoRoot)) {
+            $missing = $true
+        }
+        if (-not $missing) { continue }
+        if ($PSCmdlet.ShouldProcess($item.FullName, 'Remove', 'Taskbar pin with missing target')) {
+            Remove-Item -LiteralPath $item.FullName -Force -ErrorAction SilentlyContinue
+            $script:removed++
+            if (-not $Quiet) {
+                Write-Host ('  [OK] Kapotte taakbalk-.lnk verwijderd: ' + $item.Name) -ForegroundColor Yellow
+            }
+        }
+    }
+    return $removed
+}
+
 function Get-HermesTaskbarPinnedDir {
     return (Join-Path $env:APPDATA (Join-Path 'Microsoft' (Join-Path 'Internet Explorer' (Join-Path 'Quick Launch' (Join-Path 'User Pinned' 'TaskBar')))))
 }
@@ -522,10 +626,14 @@ function Invoke-HermesShortcutSyncRepair {
             -Quiet:$Quiet -ForTaskbarPin)
     }
 
+    [void](Sync-HermesStableTaskbarShortcuts -RepoRoot $repo -WindowsDir $WindowsDir -Quiet:$Quiet)
+
     $pinnedDir = Get-HermesTaskbarPinnedDir
     if ($pinnedDir -and (Test-Path -LiteralPath $pinnedDir)) {
         Write-HermesOrphanExePinAdvisory -Quiet:$Quiet
         [void](Remove-HermesDuplicateTaskbarPins -PinnedDir $pinnedDir -Quiet:$Quiet)
+        [void](Repair-HermesWtTargetTaskbarPinsToBat -PinnedDir $pinnedDir -RepoRoot $repo -WindowsDir $WindowsDir -Quiet:$Quiet)
+        [void](Remove-HermesTaskbarPinsWithMissingTargets -PinnedDir $pinnedDir -RepoRoot $repo -Quiet:$Quiet)
         [void](Repair-HermesPinnedAndDesktopShortcuts -RepoRoot $repo -WindowsDir $WindowsDir `
             -Quiet:$Quiet -RefreshAllTaskbarPins)
     }
