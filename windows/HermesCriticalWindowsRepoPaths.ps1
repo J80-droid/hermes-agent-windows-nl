@@ -203,6 +203,8 @@ function Get-HermesCriticalWindowsRepoPathList {
     'windows/tests/SoulSnippetRepair.Unit.Tests.ps1',
     'tests/scripts/test_verify_legal_lens_parity.py',
     'tests/hermes_cli/test_legal_architecture_brief.py',
+    'docs/DOMAIN_BLUEPRINT.md',
+    'docs/INSTITUTIONAL_DOMAIN_PLAN.md',
     'docs/LEGAL_TAXONOMY.md',
     'docs/LEGAL_DOMAIN_ARCHITECTURE.md',
     'docs/templates/SOUL_LEGAL_DOMAIN.md',

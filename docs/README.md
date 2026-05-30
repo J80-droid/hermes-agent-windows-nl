@@ -36,7 +36,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Repo-hygiene pytest (Windows) | `pytest tests/windows/test_repo_hygiene_institutional_e2e.py` (`-m e2e` voor harness) |
 | Institutionele productie-poort | `windows/audits/RUN_INSTITUTIONAL_PRODUCTION_GATE.bat` · [INSTITUTIONAL_OPERATIONS.md](INSTITUTIONAL_OPERATIONS.md) |
 | Landkaart / volledige lijsten | skill `landkaart` (`/landkaart`) |
-| Domeinen toevoegen (`domains.yaml`) | [domains.yaml.example](domains.yaml.example) + [DOMAIN_BLUEPRINT.md](DOMAIN_BLUEPRINT.md) |
+| Domeinen toevoegen (`domains.yaml`) | [domains.yaml.example](domains.yaml.example) + [DOMAIN_BLUEPRINT.md](DOMAIN_BLUEPRINT.md) / [INSTITUTIONAL_DOMAIN_PLAN.md](INSTITUTIONAL_DOMAIN_PLAN.md) |
 | RAG env-defaults (stale, torch-ruis) | [RAG_INSTITUTIONAL_ENV.md](RAG_INSTITUTIONAL_ENV.md) |
 | Windows platform hardening (sandbox, GPU, LanceDB, KnowledgeRepository) | [WINDOWS_PLATFORM_HARDENING.md](WINDOWS_PLATFORM_HARDENING.md) · E2E: `RUN_WINDOWS_PLATFORM_HARDENING_E2E.bat`, `RUN_PLATFORM_HARDENING_REGRESSION_E2E.bat`, `RUN_KNOWLEDGE_REPOSITORY_E2E.bat` · productie: `RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat` |
 | Technische ingest/MCP-stappen | [../scripts/rag_pipeline/ACTIVATION.md](../scripts/rag_pipeline/ACTIVATION.md) |
@@ -49,7 +49,8 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | Cursor MCP (`mcp.json`, orphan Node/Python) | [CURSOR_MCP_CONFIG.md](CURSOR_MCP_CONFIG.md) · repair: `windows/scripts/Repair-CursorMcpConfig.ps1` · Hermes reap: `logs/mcp-child-pids.json` |
 | Hermes starten zonder conda in PATH | [HERMES_START.md](HERMES_START.md) (kopie ook in workspace-root `HERMES_START.md`) |
 | **Windows split-home (config, drift, migratie)** | [HERMES_HOME_WINDOWS.md](HERMES_HOME_WINDOWS.md) · E2E: `RUN_HERMES_HOME_E2E.bat`, `RUN_ROOT_CONFIG_INHERITANCE_E2E.bat`, `audits/RUN_MODEL_PROVIDER_COHERENCE_E2E.bat`, `audits/RUN_MODEL_PROVIDER_HARDENING_E2E.bat` · repair: `windows/REPAIR_MODEL_PROVIDER.bat` · migratie: `windows/APPLY_HERMES_HOME_MIGRATION.bat` |
-| Blauwdruk: nieuw domein toevoegen | [DOMAIN_BLUEPRINT.md](DOMAIN_BLUEPRINT.md) |
+| Blauwdruk: nieuw domein (Niveau A) | [DOMAIN_BLUEPRINT.md](DOMAIN_BLUEPRINT.md) |
+| Plan: institutioneel domein (Niveau B, legal-model) | [INSTITUTIONAL_DOMAIN_PLAN.md](INSTITUTIONAL_DOMAIN_PLAN.md) |
 | Presentatie / Rich renderer (10/10) | [INSTITUTIONAL_PRESENTATION.md](INSTITUTIONAL_PRESENTATION.md), porting [INSTITUTIONAL_PORTING_GUIDE.md](INSTITUTIONAL_PORTING_GUIDE.md), rooktest [templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md) |
 | Pipeline hardening E2E (normalize → render → score) | `audits/RUN_INSTITUTIONAL_PIPELINE_E2E.bat` · [audits/INSTITUTIONAL_PIPELINE_E2E_README.md](../audits/INSTITUTIONAL_PIPELINE_E2E_README.md) · unit: `pytest tests/audits/test_institutional_pipeline_e2e_harness.py tests/hermes_cli/test_institutional_render_helpers.py -q` |
 | Voortgang / checklist | [../memory-bank/progress.md](../memory-bank/progress.md) |

@@ -5,7 +5,7 @@
 # Model (alle profielen): docs/PROFILE_MODEL_INHERITANCE.md — NIET in profiel-yaml
 # Kopieer naar: %USERPROFILE%\data\domains.yaml
 #
-# Nieuw domein toevoegen: zie docs/DOMAIN_BLUEPRINT.md
+# Nieuw domein: docs/DOMAIN_BLUEPRINT.md (Niveau A); institutioneel: docs/INSTITUTIONAL_DOMAIN_PLAN.md
 #   1. Kopieer domeinblok naar domains: (onderstaand sjabloon of bestaand voorbeeld, bv. creative)
 #   2. Maak raw_source_files\<source_dir>\ met bronbestanden
 #   3. set HERMES_HOME=%LOCALAPPDATA%\hermes

@@ -1,8 +1,27 @@
 # Blauwdruk: nieuw domein toevoegen aan Hermes-agent (Windows NL fork)
 
-> **Doel:** stap-voor-stap instructie om een nieuw profiel + domein + RAG + SOUL + audit toe te voegen, consistent met de bestaande 14 profielen (laatste toegevoegd: `creative`, map `13_Creative`).
+> **Doel:** stap-voor-stap instructie om een nieuw profiel + domein + RAG + SOUL + audit toe te voegen, consistent met de bestaande 14 profielen (laatste standaard: `creative`, map `13_Creative`).
 
-## Overzicht
+## Twee niveaus
+
+| Niveau | Wanneer | Document |
+|--------|---------|----------|
+| **A — Standaard** | Nieuw domein met SOUL, toolsets, RAG, routing; weinig subdomeinen; geen zaakdossiers | **Dit document** (stappen 1–12) |
+| **B — Institutioneel** | Lenzen + taxonomie, actieve zaken, trust-lagen, dedicated E2E, productie-poort (zoals `legal`) | **[INSTITUTIONAL_DOMAIN_PLAN.md](INSTITUTIONAL_DOMAIN_PLAN.md)** — na stap 12 van Niveau A |
+
+**Referentie Niveau B:** `legal` — architectuur, taxonomie, trust, vier E2E-ketens, [LEGAL_PRODUCTION_GATE.md](LEGAL_PRODUCTION_GATE.md).
+
+```mermaid
+flowchart TD
+    A["Niveau A: DOMAIN_BLUEPRINT<br>stappen 1-12"] --> Q{Institutioneel?}
+    Q -->|Nee| Z[TOOLSET + PROVISION E2E]
+    Q -->|Ja| B["Niveau B: INSTITUTIONAL_DOMAIN_PLAN<br>Fase B-J"]
+    B --> G["{DOMAIN}_PRODUCTION_GATE"]
+```
+
+---
+
+## Overzicht (Niveau A)
 
 ```mermaid
 flowchart TD
@@ -13,10 +32,12 @@ flowchart TD
     E --> F["6. Tests<br>test_domain_toolsets_manifest.py"]
     F --> G["7. Audit scripts<br>RUN_TOOLSET_DOMAIN_E2E.ps1"]
     G --> H["8. Docs<br>README.md, DOMAIN_TOOLSET_AUDIT.md"]
-    H --> I["9–10. Runtime provision<br>SYNC_DOMAIN_TOOLSETS.bat --create-missing"]
+    H --> I["9-10. Runtime provision<br>SYNC_DOMAIN_TOOLSETS.bat --create-missing"]
     I --> J["11. Optioneel<br>MCP + SOUL snippets"]
-    J --> K["11. Audit<br>RUN_TOOLSET_DOMAIN_E2E.bat"]
-    K --> L["12. Commit + push"]
+    J --> K["12. Audit + commit<br>RUN_TOOLSET_DOMAIN_E2E.bat"]
+    K --> L{Niveau B?}
+    L -->|Ja| M[INSTITUTIONAL_DOMAIN_PLAN.md]
+    L -->|Nee| N[Klaar]
 ```
 
 ---
@@ -47,6 +68,7 @@ Kopieer een bestaand profielblok en pas aan:
 ```
 
 **Regels:**
+
 - `mcp`, `file`, `memory`, `skills`, `clarify` = **verplicht** (basis)
 - `code_execution`: alleen aan als het profiel scripts bouwt (dev, security)
 - `terminal`: uit voor filosofie/lichte profielen
@@ -70,7 +92,9 @@ Kopieer `SOUL_LEGAL_DOMAIN.md` of `SOUL_ICT_DOMAIN.md` en vervang:
 | **Standards** | `[Bron: ...]` formaat |
 | **Tone** | Privé vs publiek |
 
-**Belangrijk:** Geen zaaknaam/dossiernummer in Identity; lopende zaken in `<NAAM>_ACTIVE_MATTERS.md`.
+**Belangrijk:** Geen zaaknaam/dossiernummer in Identity; lopende zaken in `<NAAM>_ACTIVE_MATTERS.md` (Niveau B: verplicht — zie [INSTITUTIONAL_DOMAIN_PLAN.md](INSTITUTIONAL_DOMAIN_PLAN.md) Fase C).
+
+**Niveau B extra:** parallelle invalshoeken, USER.md-precedence, meta-slash — zie institutioneel plan Fase B3.
 
 ---
 
@@ -89,7 +113,9 @@ docs/XX_<NAAM>/
   ...
 ```
 
-**Nummering:** `XX` = volgnummer na laatste domein (nu: 12 = Data, dus volgende = 13).
+**Nummering:** `XX` = volgnummer na laatste domein (nu: 13 = Creative, dus volgende = 14).
+
+**Optioneel (Niveau B):** `docs/<naam>/_Taxonomy/README.md` + aparte `{DOMAIN}_TAXONOMY.md` in `docs/`.
 
 ---
 
@@ -128,11 +154,13 @@ En in `SOUL_CORE_ORCHESTRATOR.md` (template):
 ## Stap 6: Tests uitbreiden (`tests/windows/test_domain_toolsets_manifest.py`)
 
 Voeg toe aan `REQUIRED_PROFILES`:
+
 ```python
 "<naam>",
 ```
 
 Voeg lens-test toe:
+
 ```python
 def test_<naam>_has_lenses():
     data = _load()
@@ -143,11 +171,14 @@ def test_<naam>_has_lenses():
 ```
 
 Voeg SOUL-template test toe:
+
 ```python
 def test_soul_templates_exist():
     # bestaande asserts
     assert (REPO / "docs/templates/SOUL_<NAAM>_DOMAIN.md").is_file()
 ```
+
+**Niveau B:** extra pytest-pakketten — zie [INSTITUTIONAL_DOMAIN_PLAN.md](INSTITUTIONAL_DOMAIN_PLAN.md) Fase E.
 
 ---
 
@@ -161,10 +192,13 @@ def test_soul_templates_exist():
 ### `windows/audits/RUN_INSTITUTIONAL_E2E.ps1`
 
 - Voeg `docs/templates/SOUL_<NAAM>_DOMAIN.md` toe aan `$requiredRepo`
+- Optioneel (Niveau B): `{DOMAIN}_TAXONOMY.md`, `{DOMAIN}_DOMAIN_ARCHITECTURE.md`
 
 ### `windows/HermesCriticalWindowsRepoPaths.ps1`
 
 - Voeg toe aan `Get-HermesCriticalWindowsRepoPaths`
+
+**Niveau B:** dedicated `RUN_<DOMAIN>_DOMAIN_E2E` + verify-scripts — inventaris in institutioneel plan § Legal referentie.
 
 ---
 
@@ -179,6 +213,8 @@ def test_soul_templates_exist():
 | `memory-bank/progress.md` | Todo afvinken |
 | `memory-bank/systemPatterns.md` | Patroon documenteren |
 | `memory-bank/productContext.md` | Team-lijst uitbreiden |
+
+**Niveau B:** `{DOMAIN}_PRODUCTION_GATE.md`, `{DOMAIN}_ROLLOUT_CHECKLIST.md` — zie institutioneel plan Fase I.
 
 ---
 
@@ -209,9 +245,25 @@ Of alleen snippets: `windows\SYNC_SOUL_SNIPPETS.bat`.
 
 Smoke-test provision: `windows\audits\RUN_PROVISION_DOMAIN_E2E.bat`
 
+**Niveau B na provision:** `SYNC_TRUST_RUNTIME.bat`, `VERIFY_<DOMAIN>_RUNTIME.bat`, layout-migratie vóór ingest.
+
 ---
 
-## Stap 11: Audit draaien
+## Stap 11: Optioneel — dedicated domein-E2E (Niveau A+)
+
+Voor een **standaard** maar volledig gedocumenteerd 14e domein (voorbeeld `creative`):
+
+| Artefact | Pad |
+|----------|-----|
+| README | `audits/CREATIVE_DOMAIN_E2E_README.md` |
+| Harness | `audits/CreativeDomainE2E.harness.py` |
+| Runner | `audits/RUN_CREATIVE_DOMAIN_E2E.bat` |
+
+Dit is **lichter** dan Niveau B (`legal`). Geen trust-lagen of production gate vereist.
+
+---
+
+## Stap 12: Audit draaien + commit
 
 ```cmd
 windows\audits\RUN_TOOLSET_DOMAIN_E2E.bat
@@ -219,9 +271,7 @@ windows\audits\RUN_TOOLSET_DOMAIN_E2E.bat
 
 Verwacht: **PASS** (alle profielen, root = 0 tools).
 
----
-
-## Stap 12: Commit + push
+**Daarna Niveau B?** → [INSTITUTIONAL_DOMAIN_PLAN.md](INSTITUTIONAL_DOMAIN_PLAN.md) volledig doorlopen vóór productie.
 
 ```cmd
 git add docs/ tests/ windows/ memory-bank/
@@ -229,9 +279,11 @@ git commit -m "feat(<naam>): nieuw domeinprofiel + SOUL + RAG + audit"
 git push origin main
 ```
 
+**Fork CI:** op `hermes-agent-windows-nl` draait upstream **Tests** (Linux) niet; poort = **Fork Windows Institutional** + lokale domein-E2E. Zie [README-FORK.md](../README-FORK.md) § CI.
+
 ---
 
-## Voorbeeld: legal als blauwdruk
+## Voorbeeld: legal (Niveau B referentie)
 
 ```yaml
 # domain_toolsets.yaml
@@ -258,9 +310,11 @@ Onderzoek, structureren, citeren per juridische lens.
 | arbeidsrecht, cao | Arbeidsrechtelijk | `Arbeidsrecht/` |
 ```
 
+Volledige legal-stack: [INSTITUTIONAL_DOMAIN_PLAN.md](INSTITUTIONAL_DOMAIN_PLAN.md) § Legal referentie.
+
 ---
 
-## Checklist
+## Checklist — Niveau A
 
 - [ ] `domain_toolsets.yaml` — profiel toegevoegd
 - [ ] `SOUL_<NAAM>_DOMAIN.md` — template geschreven
@@ -270,17 +324,21 @@ Onderzoek, structureren, citeren per juridische lens.
 - [ ] `SOUL_CORE_ORCHESTRATOR.md` — routing bijgewerkt
 - [ ] `test_domain_toolsets_manifest.py` — profiel + lenses + SOUL test
 - [ ] `RUN_INSTITUTIONAL_E2E.ps1` — SOUL template in `$requiredRepo`
-- [ ] `WindowsLocalAssetsManifest.ps1` — SOUL template in critical paths
+- [ ] `HermesCriticalWindowsRepoPaths.ps1` — kritieke paden
 - [ ] `README.md` — index-regel
 - [ ] `PROFILE_SOUL.md` — koppeling
 - [ ] `DOMAIN_TOOLSET_AUDIT.md` — profiel-tabel
 - [ ] Memory-bank — bijgewerkt
 - [ ] Runtime profiel-map + config.yaml + SOUL.md aangemaakt
-- [ ] `SYNC_DOMAIN_TOOLSETS.bat --create-missing` gedraaid (of profiel bestond al)
-- [ ] MCP sync gedraaid
-- [ ] SOUL snippets gesynced
+- [ ] `SYNC_DOMAIN_TOOLSETS.bat --create-missing` gedraaid
+- [ ] MCP sync gedraaid (optioneel)
+- [ ] SOUL snippets gesynced (optioneel)
 - [ ] `RUN_TOOLSET_DOMAIN_E2E.bat` — PASS
 - [ ] Git commit + push
+
+## Checklist — Niveau B (na A)
+
+→ [INSTITUTIONAL_DOMAIN_PLAN.md](INSTITUTIONAL_DOMAIN_PLAN.md) — **Master-checklist** (architectuur, taxonomie, trust, E2E, production gate, deploy-keten).
 
 ---
 
@@ -291,7 +349,9 @@ Onderzoek, structureren, citeren per juridische lens.
 3. **Security als lens onder `ict`** → Nee; security is **apart profiel** vanwege governance-risico
 4. **SOUL wijzigen zonder nieuwe chat** → Tools laden pas bij sessiestart
 5. **RAG bronnen vergeten** → Lege LanceDB = lege index; altijd bronnen plaatsen vóór ingest
-6. **Niet commit/push na manifest-wijziging** → SYNC_DOMAIN_TOOLSETS.bat leest uit repo; runtime drift bij git pull
+6. **Niet commit/push na manifest-wijziging** → SYNC leest uit repo; runtime drift bij git pull
+7. **Niveau B overslaan bij legal-achtig domein** → Geen `{DOMAIN}_PRODUCTION_GATE` = geen release-discipline
+8. **GitHub Tests-workflow als fork-poort** → Gebruik Fork Windows Institutional + lokale E2E
 
 ---
 
@@ -299,10 +359,15 @@ Onderzoek, structureren, citeren per juridische lens.
 
 | Document | Waarvoor |
 |----------|----------|
+| [**INSTITUTIONAL_DOMAIN_PLAN.md**](INSTITUTIONAL_DOMAIN_PLAN.md) | **Niveau B** — volledig plan (legal als referentie) |
 | [`DOMAIN_TOOLSET_AUDIT.md`](DOMAIN_TOOLSET_AUDIT.md) | Toolset-verdeling per profiel |
 | [`PROFILE_SOUL.md`](PROFILE_SOUL.md) | SOUL.md locatie en bewerken |
 | [`ORCHESTRATOR_ROUTING.md`](ORCHESTRATOR_ROUTING.md) | Core routing matrix |
 | [`domains.yaml.example`](domains.yaml.example) | RAG configuratie sjabloon |
-| [`RAG_TWEE_FASEN.md`](RAG_TWEE_FASEN.md) | Index vs. chat uitleg |
+| [`LEGAL_PRODUCTION_GATE.md`](LEGAL_PRODUCTION_GATE.md) | Voorbeeld productie-poort |
+| [`LEGAL_ROLLOUT_CHECKLIST.md`](LEGAL_ROLLOUT_CHECKLIST.md) | Voorbeeld rollout |
+| [`../audits/CREATIVE_DOMAIN_E2E_README.md`](../audits/CREATIVE_DOMAIN_E2E_README.md) | Niveau A+ dedicated E2E |
 | [`../windows/audits/README.md`](../windows/audits/README.md) | Audit runners |
 | [`../memory-bank/systemPatterns.md`](../memory-bank/systemPatterns.md) | Architectuurpatronen |
+| [`../README-FORK.md`](../README-FORK.md) | Fork CI-notificaties |
+| [`../skills/productivity/create_fork_domain/SKILL.md`](../skills/productivity/create_fork_domain/SKILL.md) | Agent-checklist |

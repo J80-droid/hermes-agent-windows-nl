@@ -1,5 +1,11 @@
 # Progress
 
+## Documentatie — domein-blauwdruk (2026-05-30)
+
+- [x] `docs/INSTITUTIONAL_DOMAIN_PLAN.md` — Niveau B plan (legal als referentie, Fase A–J, master-checklist)
+- [x] `docs/DOMAIN_BLUEPRINT.md` — herschreven met Niveau A/B split, creative vs legal, fork CI-notitie
+- [x] `skills/productivity/create_fork_domain/SKILL.md` — beslisboom + Niveau B verwijzingen
+
 ## Code (P2 + institutioneel)
 
 - [x] Legal taal-lagen E2E + tests (2026-05-30): `RUN_LEGAL_MEMORY_LANGUAGE_LAYERS_E2E.bat`; harness/core/README; pytest harness **38** + contract **5**; seed array-fix `Get-HermesMemorySeedEntries`; docs gate/rollout/windows README
