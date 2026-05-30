@@ -18,6 +18,133 @@ function Test-HermesManagedPinLeaf {
     return ($n -match 'hermes|start hermes')
 }
 
+function Test-HermesShortcutReferencesHermesProduct {
+    param(
+        [Parameter(Mandatory)][string]$ShortcutPath,
+        [string]$RepoRoot = ''
+    )
+    if (Test-HermesManagedPinLeaf -Leaf (Split-Path -Leaf $ShortcutPath)) { return $true }
+    if (-not (Test-Path -LiteralPath $ShortcutPath)) { return $false }
+    $s = (New-Object -ComObject WScript.Shell).CreateShortcut($ShortcutPath)
+    $blob = @($s.TargetPath, $s.Arguments, $s.WorkingDirectory, $s.Description) -join ' '
+    if ($blob -match 'hermes|hudui|hermesos|hermes-agent|hermes_agent') { return $true }
+    if ($RepoRoot -and $blob -match [regex]::Escape($RepoRoot)) { return $true }
+    return $false
+}
+
+function Get-HermesTaskbarPinShortcutCandidates {
+    param(
+        [Parameter(Mandatory)][string]$PinnedDir,
+        [string]$RepoRoot = ''
+    )
+    if (-not (Test-Path -LiteralPath $PinnedDir)) { return @() }
+    return @(Get-ChildItem -LiteralPath $PinnedDir -Filter '*.lnk' -File -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.Name -notmatch ' \(\d+\)\.lnk$' -and
+            (Test-HermesShortcutReferencesHermesProduct -ShortcutPath $_.FullName -RepoRoot $RepoRoot)
+        })
+}
+
+function Test-HermesShortcutLaunchTargetsExist {
+    param(
+        [Parameter(Mandatory)][string]$ShortcutPath,
+        [Parameter(Mandatory)][string]$RepoRoot
+    )
+    if (-not (Test-Path -LiteralPath $ShortcutPath)) { return $false }
+    $s = (New-Object -ComObject WScript.Shell).CreateShortcut($ShortcutPath)
+    if ($s.TargetPath) {
+        if ($s.TargetPath -match '\.lnk$') {
+            if (-not (Test-Path -LiteralPath $s.TargetPath)) { return $false }
+        } elseif ($s.TargetPath -match '\.(exe|bat|cmd)$') {
+            if (-not (Test-Path -LiteralPath $s.TargetPath)) {
+                $repaired = Repair-HermesBatPathForRepo -BatPath $s.TargetPath -RepoRoot $RepoRoot
+                if (-not $repaired) { return $false }
+            }
+        } elseif (-not (Test-Path -LiteralPath $s.TargetPath)) {
+            return $false
+        }
+    }
+    $bat = Get-HermesShortcutResolvedBatPath -ShortcutPath $ShortcutPath -RepoRoot $RepoRoot
+    if ($bat -and -not (Test-Path -LiteralPath $bat)) { return $false }
+    return $true
+}
+
+function Remove-HermesRedundantLegacyStartPins {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)][string]$PinnedDir,
+        [switch]$Quiet
+    )
+    $canonical = 'Start Hermes - naar taakbalk slepen.lnk'
+    $legacy = @(
+        'Start Hermes (volledig) - naar taakbalk slepen.lnk',
+        'Hermes Agent - naar taakbalk slepen.lnk'
+    )
+    $canonPath = Join-Path $PinnedDir $canonical
+    if (-not (Test-Path -LiteralPath $canonPath)) { return 0 }
+    $removed = 0
+    foreach ($leaf in $legacy) {
+        $p = Join-Path $PinnedDir $leaf
+        if (-not (Test-Path -LiteralPath $p)) { continue }
+        if ($PSCmdlet.ShouldProcess($p, 'Remove', 'Redundant legacy Hermes start pin')) {
+            Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue
+            $script:removed++
+            if (-not $Quiet) {
+                Write-Host ('  [OK] Dubbele start-pin verwijderd: ' + $leaf) -ForegroundColor Yellow
+            }
+        }
+    }
+    return $removed
+}
+
+function Remove-HermesUnlaunchableTaskbarPins {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)][string]$PinnedDir,
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$WindowsDir,
+        [switch]$Quiet
+    )
+    $removed = 0
+    foreach ($item in (Get-HermesTaskbarPinShortcutCandidates -PinnedDir $PinnedDir -RepoRoot $RepoRoot)) {
+        if (Test-HermesShortcutLaunchTargetsExist -ShortcutPath $item.FullName -RepoRoot $RepoRoot) {
+            continue
+        }
+        $role = Get-HermesShortcutRoleFromShortcut -ShortcutPath $item.FullName -RepoRoot $RepoRoot
+        if ($role) {
+            if (Repair-HermesShellShortcutInPlace -ShortcutPath $item.FullName -Role $role -RepoRoot $RepoRoot -WindowsDir $WindowsDir) {
+                if (Test-HermesShortcutLaunchTargetsExist -ShortcutPath $item.FullName -RepoRoot $RepoRoot) {
+                    continue
+                }
+            }
+        }
+        if ($PSCmdlet.ShouldProcess($item.FullName, 'Remove', 'Unlaunchable Hermes taskbar pin')) {
+            Remove-Item -LiteralPath $item.FullName -Force -ErrorAction SilentlyContinue
+            $script:removed++
+            if (-not $Quiet) {
+                Write-Host ('  [OK] Kapotte pin verwijderd (voorkomt pop-up): ' + $item.Name) -ForegroundColor Yellow
+            }
+        }
+    }
+    return $removed
+}
+
+function Write-HermesOrphanExePinAdvisory {
+    param([switch]$Quiet)
+    $knownDead = @(
+        'D:\A.I\APPS\Hermes_agent\hermes-hudui\src-tauri\target\debug\hermes-hudui.exe'
+    )
+    $found = @($knownDead | Where-Object { -not (Test-Path -LiteralPath $_) })
+    if ($found.Count -eq 0) { return }
+    if (-not $Quiet) {
+        Write-Host '[WARN] Oude Hermes-app-pins (geen .lnk in User Pinned\TaskBar):' -ForegroundColor Yellow
+        foreach ($p in $found) {
+            Write-Host ('       ' + $p) -ForegroundColor DarkYellow
+        }
+        Write-Host '       Los van taakbalk + klik Ja bij pop-up, of pin opnieuw via windows\Start Hermes - naar taakbalk slepen.lnk' -ForegroundColor Gray
+    }
+}
+
 function Get-HermesManagedPinShortcuts {
     param([Parameter(Mandatory)][string]$Dir)
     if (-not (Test-Path -LiteralPath $Dir)) { return @() }
@@ -300,7 +427,12 @@ function Repair-HermesPinnedAndDesktopShortcuts {
     }
 
     foreach ($target in $targets) {
-        foreach ($item in (Get-HermesManagedPinShortcuts -Dir $target.Dir)) {
+        $items = if ($target.IsTaskbar) {
+            Get-HermesTaskbarPinShortcutCandidates -PinnedDir $target.Dir -RepoRoot $RepoRoot
+        } else {
+            Get-HermesManagedPinShortcuts -Dir $target.Dir
+        }
+        foreach ($item in $items) {
             $role = Get-HermesShortcutRoleFromShortcut -ShortcutPath $item.FullName -RepoRoot $RepoRoot
             if (-not $role) { continue }
 
@@ -375,6 +507,7 @@ function Invoke-HermesShortcutSyncRepair {
 
     $pinnedDir = Get-HermesTaskbarPinnedDir
     if ($pinnedDir -and (Test-Path -LiteralPath $pinnedDir)) {
+        Write-HermesOrphanExePinAdvisory -Quiet:$Quiet
         [void](Remove-HermesDuplicateTaskbarPins -PinnedDir $pinnedDir -Quiet:$Quiet)
         [void](Repair-HermesPinnedAndDesktopShortcuts -RepoRoot $repo -WindowsDir $WindowsDir `
             -Quiet:$Quiet -RefreshAllTaskbarPins)
@@ -395,6 +528,8 @@ function Invoke-HermesShortcutSyncRepair {
 
     if ($pinnedDir -and (Test-Path -LiteralPath $pinnedDir)) {
         [void](Remove-HermesBrokenManagedPinsWithoutRole -Dir $pinnedDir -RepoRoot $repo -Quiet:$Quiet)
+        [void](Remove-HermesRedundantLegacyStartPins -PinnedDir $pinnedDir -Quiet:$Quiet)
+        [void](Remove-HermesUnlaunchableTaskbarPins -PinnedDir $pinnedDir -RepoRoot $repo -WindowsDir $WindowsDir -Quiet:$Quiet)
     }
 
     $extra = Repair-HermesPinnedAndDesktopShortcuts -RepoRoot $repo -WindowsDir $WindowsDir `

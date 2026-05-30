@@ -86,10 +86,14 @@ def test_update_hermes_uses_upstream_sync():
 def test_taskbar_pin_repair_covers_start_hermes_and_in_place_refresh():
     """Taakbalk-pins (ook Start Hermes*.lnk) worden na update in-place vernieuwd."""
     ps1 = (REPO / "windows/scripts/HermesPersistentShortcuts.ps1").read_text(encoding="utf-8")
+    icon_ps1 = (REPO / "windows/HermesIconGeneratorInvoke.ps1").read_text(encoding="utf-8")
+    post_merge = (REPO / "windows/scripts/Invoke-UpstreamPostMerge.ps1").read_text(encoding="utf-8")
     assert "function Test-HermesManagedPinLeaf" in ps1
-    assert "function Get-HermesManagedPinShortcuts" in ps1
+    assert "function Get-HermesTaskbarPinShortcutCandidates" in ps1
+    assert "Remove-HermesUnlaunchableTaskbarPins" in ps1
     assert "RefreshAllTaskbarPins" in ps1
-    assert "Remove-HermesBrokenManagedPinsWithoutRole" in ps1
+    assert "InstallLocation" in icon_ps1
+    assert "fix_hermes_taskbar_pins.ps1" in post_merge
     assert "Filter 'Hermes*.lnk'" not in ps1
 
 

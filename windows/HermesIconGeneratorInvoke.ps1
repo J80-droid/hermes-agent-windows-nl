@@ -235,9 +235,26 @@ function Test-HermesShortcutPathHealth {
 }
 
 function Get-HermesWindowsTerminalExe {
+    <#
+    .SYNOPSIS
+        Echt wt.exe-pad (AppX InstallLocation). WindowsApps\wt.exe is een alias en kan
+        "item kan niet worden geopend" geven na WT-update; vermijd dat in .lnk TargetPath.
+    #>
+    $appx = Get-AppxPackage -Name 'Microsoft.WindowsTerminal' -ErrorAction SilentlyContinue |
+        Sort-Object -Property Version -Descending |
+        Select-Object -First 1
+    if ($appx -and $appx.InstallLocation) {
+        $fromAppx = Join-Path $appx.InstallLocation 'wt.exe'
+        if (Test-Path -LiteralPath $fromAppx) {
+            return (Resolve-Path -LiteralPath $fromAppx).Path
+        }
+    }
+    $cmd = Get-Command wt.exe -ErrorAction SilentlyContinue
+    if ($cmd -and $cmd.Source -and ($cmd.Source -notmatch '\\WindowsApps\\')) {
+        return $cmd.Source
+    }
     $wt = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\wt.exe'
     if (Test-Path -LiteralPath $wt) { return $wt }
-    $cmd = Get-Command wt.exe -ErrorAction SilentlyContinue
     if ($cmd) { return $cmd.Source }
     return $null
 }

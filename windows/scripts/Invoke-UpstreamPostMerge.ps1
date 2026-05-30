@@ -228,6 +228,19 @@ function Invoke-UpstreamPostMerge {
     }
 
     if ($exitCode -eq 0) {
+        $fixPins = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/fix_hermes_taskbar_pins.ps1'
+        if (Test-Path -LiteralPath $fixPins) {
+            Write-Step 'Taakbalk-snelkoppelingen (wt-pad + pins in-place)...'
+            & $fixPins -RepoRoot $Repo -Quiet
+            if (Test-NativeCommandFailed) {
+                Write-Warn 'fix_hermes_taskbar_pins.ps1 faalde - draai FIX_TASKBAR_ICONS.bat.'
+            } else {
+                Write-Ok 'Taakbalk-snelkoppelingen bijgewerkt.'
+            }
+        }
+    }
+
+    if ($exitCode -eq 0) {
         $verifyChain = Join-HermesRepoPath -RepoRoot $Repo -RelativePath 'windows/verify_windows_script_chain.ps1'
         if (Test-Path -LiteralPath $verifyChain) {
             Write-Step 'verify_windows_script_chain.ps1 (geen pause)...'
