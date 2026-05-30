@@ -497,13 +497,13 @@ function Invoke-HermesShortcutSyncRepair {
     [void](Publish-HermesShortcutIconCache -WindowsDir $WindowsDir)
 
     $persistDir = Get-HermesPersistentShortcutsDir
-    $targets = @($WindowsDir)
-    if ($persistDir) { $targets += $persistDir }
-
     if (-not $Quiet) {
-        Write-Host '[INFO] Snelkoppelingen synchroniseren (windows + AppData)...' -ForegroundColor Gray
+        Write-Host '[INFO] Snelkoppelingen synchroniseren (windows\ eerst, daarna taakbalk-kopieën)...' -ForegroundColor Gray
     }
-    [void](Sync-HermesCatalogShortcuts -RepoRoot $repo -WindowsDir $WindowsDir -TargetDirs $targets -Quiet:$Quiet)
+    [void](Sync-HermesCatalogShortcuts -RepoRoot $repo -WindowsDir $WindowsDir -TargetDirs @($WindowsDir) -Quiet:$Quiet)
+    if ($persistDir) {
+        [void](Sync-HermesCatalogShortcuts -RepoRoot $repo -WindowsDir $WindowsDir -TargetDirs @($persistDir) -Quiet:$Quiet)
+    }
 
     $pinnedDir = Get-HermesTaskbarPinnedDir
     if ($pinnedDir -and (Test-Path -LiteralPath $pinnedDir)) {
@@ -515,6 +515,9 @@ function Invoke-HermesShortcutSyncRepair {
 
     $catalog = Get-HermesShortcutCatalog -RepoRoot $repo
     if ($pinnedDir -and (Test-Path -LiteralPath $pinnedDir)) {
+        if (-not $Quiet) {
+            Write-Host '[INFO] Taakbalk-kopieën bijwerken (zelfde inhoud als windows\, zonder .lnk te verwijderen)...' -ForegroundColor Gray
+        }
         foreach ($entry in $catalog) {
             $dest = Join-Path $pinnedDir $entry.FileName
             if (-not (New-HermesCatalogShortcut -Entry $entry -ShortcutPath $dest -RepoRoot $repo -WindowsDir $WindowsDir)) {

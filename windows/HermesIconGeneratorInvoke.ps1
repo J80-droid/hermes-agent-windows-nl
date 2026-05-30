@@ -288,9 +288,8 @@ function Set-HermesStartShellShortcut {
     $iconLoc = Get-HermesShellShortcutIconLocation -IcoPath $IconIcoPath
     if (-not $iconLoc) { return $false }
 
-    if (Test-Path -LiteralPath $ShortcutPath) {
-        Remove-Item -LiteralPath $ShortcutPath -Force -ErrorAction SilentlyContinue
-    }
+    # Nooit .lnk verwijderen vóór Save: taakbalk-pins verwijzen naar hetzelfde pad;
+    # delete+create geeft "item kan niet worden geopend" terwijl Verkenner wel werkt.
 
     $startBatFull = (Resolve-Path -LiteralPath $startBat).Path
     $wt = Get-HermesWindowsTerminalExe
@@ -329,10 +328,6 @@ function Set-HermesShellShortcut {
     )
     if (-not (Test-Path -LiteralPath $TargetBatPath)) { return $false }
     if (-not $PSCmdlet.ShouldProcess($ShortcutPath, 'Create', 'Hermes shortcut')) { return $false }
-
-    if (Test-Path -LiteralPath $ShortcutPath) {
-        Remove-Item -LiteralPath $ShortcutPath -Force -ErrorAction SilentlyContinue
-    }
 
     $batFull = (Resolve-Path -LiteralPath $TargetBatPath).Path
     $workFull = if (Test-Path -LiteralPath $WorkingDirectory) {
