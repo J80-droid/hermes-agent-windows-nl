@@ -8,8 +8,8 @@
     conda Python. Safe to run after Cursor updates or manual mcp.json edits.
 
 .EXAMPLE
-    powershell -File windows\scripts\Repair-CursorMcpConfig.ps1
-    powershell -File windows\scripts\Repair-CursorMcpConfig.ps1 -DryRun
+    powershell -File windows/scripts/Repair-CursorMcpConfig.ps1
+    powershell -File windows/scripts/Repair-CursorMcpConfig.ps1 -DryRun
 #>
 [CmdletBinding()]
 param(
@@ -19,7 +19,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$script = Join-Path $repoRoot 'scripts\repair_cursor_mcp_json.py'
+$script = Join-Path $repoRoot 'scripts/repair_cursor_mcp_json.py'
 
 $python = $env:HERMES_PYTHON
 if (-not $python) {

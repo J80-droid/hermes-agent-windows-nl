@@ -164,13 +164,13 @@ def test_launch_hermes_bat_wires_script() -> None:
     bat = BAT.read_text(encoding="utf-8")
     launch_ps1 = (REPO / "windows/scripts/launch_hermes.ps1").read_text(encoding="utf-8")
     orch = (REPO / "windows/scripts/launch_pre_chat_orchestrator.ps1").read_text(encoding="utf-8")
-    chat_cmd = (REPO / "windows/hermes_chat.cmd").read_text(encoding="utf-8")
+    prepare = (REPO / "windows/run_hermes_prepare.ps1").read_text(encoding="utf-8")
     defer_ps1 = (REPO / "windows/scripts/Start-HermesDashboardAfterChat.ps1").read_text(encoding="utf-8")
     assert "launch_hermes.ps1" in bat
     assert "launch_pre_chat_orchestrator.ps1" in launch_ps1
     assert "HERMES_DASHBOARD_AFTER_CHAT" in bat
     assert "HERMES_DASHBOARD_AFTER_CHAT" in orch
-    assert "Start-HermesDashboardAfterChat" in chat_cmd
+    assert "Start-HermesDashboardAfterChatDetached" in prepare
     assert "launch_dashboard_on_start.ps1" in defer_ps1
     assert "launch_dashboard_on_start.ps1" in orch or "DeferDashboardAfterChat" in orch
     assert "HERMES_SKIP_DASHBOARD_ON_START" in orch

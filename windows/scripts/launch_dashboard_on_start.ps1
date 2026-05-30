@@ -569,9 +569,9 @@ if ($workspacePlugins) {
 
 if ($workspacePlugins -and (Get-Command Update-HermesLaunchActivity -ErrorAction SilentlyContinue)) {
     if (-not $pipNeeded -and $pygountCacheOk) {
-        Update-HermesLaunchActivity -Reason 'Dashboard-deps en cache OK — starten...'
+        Update-HermesLaunchActivity -Reason 'Dashboard-deps en cache OK - starten...'
     } elseif (-not $pipNeeded) {
-        Update-HermesLaunchActivity -Reason 'Dashboard-deps OK — pygount controleren...'
+        Update-HermesLaunchActivity -Reason 'Dashboard-deps OK - pygount controleren...'
     }
 }
 
