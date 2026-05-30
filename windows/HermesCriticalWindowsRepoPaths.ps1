@@ -189,6 +189,7 @@ function Get-HermesCriticalWindowsRepoPathList {
     'audits/LegalProactiveSparringE2E.harness.py',
     'audits/LegalProactiveSparringE2E.core.ps1',
     'audits/RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat',
+    'windows/scripts/Invoke-LegalProactiveSparringE2E.ps1',
     'audits/LEGAL_PROACTIVE_SPARRING_E2E_README.md',
     'audits/Invoke-LegalProactiveSparringPester.ps1',
     'tests/audits/test_legal_production_e2e_harness.py',

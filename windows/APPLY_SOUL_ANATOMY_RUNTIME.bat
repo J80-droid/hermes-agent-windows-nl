@@ -10,4 +10,8 @@ set ERR=%ERRORLEVEL%
 if not "%ERR%"=="0" exit /b %ERR%
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0audits\RUN_SOUL_ANATOMY_E2E.ps1"
+set ERR=%ERRORLEVEL%
+if not "%ERR%"=="0" exit /b %ERR%
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Invoke-LegalProactiveSparringE2E.ps1" -Context SoulDeploy
 exit /b %ERRORLEVEL%

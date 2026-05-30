@@ -66,6 +66,15 @@ if (Test-Path -LiteralPath $verifyLegal) {
     }
 }
 
+$proactiveE2e = Join-Path $PSScriptRoot 'Invoke-LegalProactiveSparringE2E.ps1'
+if (Test-Path -LiteralPath $proactiveE2e) {
+    & $proactiveE2e -RepoRoot $RepoRoot -Context SoulDeploy -Quiet:$Quiet
+    if (Test-NativeCommandFailed) {
+        Write-HermesLaunchUi -Message 'Legal proactive sparring E2E mislukt na SOUL deploy.' -Level Error -ForceConsole
+        exit 1
+    }
+}
+
 if (-not $Quiet) {
     Write-HermesLaunchUi -Message 'SOUL anatomy deploy voltooid. Gebruik /new in Hermes.' -Level Ok
 }

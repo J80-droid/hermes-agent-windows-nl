@@ -27,13 +27,20 @@ Geen live LLM-chat.
 audits\RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat
 ```
 
-Of:
+Centrale launcher: `windows\scripts\Invoke-LegalProactiveSparringE2E.ps1` (`-Context SoulDeploy|TrustSync|Manual`).
 
-```bat
-python audits\LegalProactiveSparringE2E.harness.py
-```
+## Automatisering
+
+| Keten | Wanneer |
+|-------|---------|
+| `APPLY_SOUL_ANATOMY_RUNTIME.bat` | Na `RUN_SOUL_ANATOMY_E2E` |
+| `launch_soul_anatomy_deploy.ps1` | Na deploy + `verify_legal_runtime` |
+| `SYNC_TRUST_RUNTIME.bat` | Na trust post-sync (skip: `HERMES_LEGAL_PROACTIVE_E2E_ON_TRUST=0`) |
+| `RUN_AUDITS.ps1 -IncludeLegalDomainE2E` | Na legal domain E2E |
+
+Overal uitschakelen: `HERMES_SKIP_LEGAL_PROACTIVE_E2E=1`.
 
 ## Na wijzigingen
 
-1. `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat` → `/new` (legal)
-2. `windows\SYNC_TRUST_RUNTIME.bat` (legal USER seed)
+1. `windows\APPLY_SOUL_ANATOMY_RUNTIME.bat` (inclusief proactive E2E) → `/new` (legal)
+2. `windows\SYNC_TRUST_RUNTIME.bat` (legal USER seed + proactive E2E tenzij env skip)

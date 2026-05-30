@@ -46,5 +46,14 @@ if errorlevel 1 (
 )
 
 echo.
+echo [INFO] Legal proactive sparring E2E (na trust; skip: HERMES_SKIP_LEGAL_PROACTIVE_E2E=1 of HERMES_LEGAL_PROACTIVE_E2E_ON_TRUST=0)...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Invoke-LegalProactiveSparringE2E.ps1" -Context TrustSync
+if errorlevel 1 (
+  echo [FAIL] Legal proactive sparring E2E mislukt.
+  if not "%HERMES_SKIP_PAUSE%"=="1" pause
+  exit /b 1
+)
+
+echo.
 echo [OK] Trust runtime volledig gesynchroniseerd. Open TUI: auto /new; anders banner bij start.
 exit /b 0

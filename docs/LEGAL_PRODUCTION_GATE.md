@@ -8,7 +8,7 @@ Operationele matrix voor institutioneel legal-domein (fork). Volledige architect
 |------|--------|--------|
 | Dagelijkse runtime | `windows\VERIFY_LEGAL_RUNTIME.bat` | SOUL meta + parity + `domains.yaml` (warn zonder strict) |
 | Snelle repo-E2E (geen RAG) | `audits\RUN_LEGAL_PRODUCTION_E2E.bat` | 17 harness-stappen + pytest-contract |
-| Proactief sparren + SOUL-repair | `audits\RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat` | 14 harness-stappen + core.ps1 + Pester repair |
+| Proactief sparren + SOUL-repair | `audits\RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat` (ook auto na soul deploy / trust / `-IncludeLegalDomainE2E`) | 14 harness-stappen + core.ps1 + Pester repair |
 | Volledige poort | `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat` | 12 stappen |
 | Strict bronnen | `RUN_LEGAL_DOMAIN_E2E.bat -StrictSources` | Bronmap verplicht |
 | Lens sync toepassen | `RUN_LEGAL_DOMAIN_E2E.bat -ApplyLensSync` | `--all` i.p.v. dry-run |
@@ -55,6 +55,8 @@ GitHub `fork-windows-institutional.yml` draait hardening (legal skills pytest), 
 |-----------|-----------|
 | `HERMES_LEGAL_VERIFY_STRICT=1` | verify/E2E fail op waarschuwingen |
 | `HERMES_SKIP_LEGAL_LENS_SYNC=1` | Lens sync overslaan |
+| `HERMES_SKIP_LEGAL_PROACTIVE_E2E=1` | Proactive E2E overal overslaan (deploy, trust, audits) |
+| `HERMES_LEGAL_PROACTIVE_E2E_ON_TRUST=0` | Alleen trust-sync: proactive E2E overslaan (snellere dagelijkse trust) |
 | `HERMES_LEGAL_PHASE_3B=1` | Geen warn op profiel `klokkenluiders` |
 | `HERMES_UPSTREAM_BEHIND_WARN` | Drempel upstream-banner (default 10) |
 
@@ -66,7 +68,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File windows\tests\SoulSnippetRep
 pytest tests/windows/test_legal_domain_e2e_unit.py tests/audits/test_legal_production_e2e_harness.py tests/audits/test_legal_proactive_sparring_e2e_harness.py tests/scripts/test_verify_legal_lens_parity.py tests/scripts/test_legal_lens_from_path.py tests/hermes_cli/test_legal_architecture_brief.py tests/windows/test_legal_meta_contract.py -q
 ```
 
-`RUN_AUDITS.bat -IncludeLegalDomainE2E` draait eerst de geïsoleerde unit (gemockte paden), daarna de volledige `RUN_LEGAL_DOMAIN_E2E.bat`.
+`RUN_AUDITS.bat -IncludeLegalDomainE2E` draait eerst de geïsoleerde unit (gemockte paden), daarna `RUN_LEGAL_DOMAIN_E2E.bat`, daarna `Invoke-LegalProactiveSparringE2E.ps1`.
+
+**Automatisering:** `APPLY_SOUL_ANATOMY_RUNTIME.bat` en `launch_soul_anatomy_deploy.ps1` (bij echte deploy) draaien proactive E2E na SOUL-anatomy; `SYNC_TRUST_RUNTIME.bat` standaard na trust (uitschakelbaar via env hierboven).
 
 Renderer rooktest (geen legal-domein): `pytest tests/scripts/test_score_institutional_render.py -q` — zie [templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md).
 

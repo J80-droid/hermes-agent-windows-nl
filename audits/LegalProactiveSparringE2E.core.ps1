@@ -55,8 +55,9 @@ Write-E2eStep 'repair triple config governance' ($cfgCount -eq 1 -and $repaired 
 # --- Config sync script: alleen Identity insert ---
 $cfgSync = Join-Path $RepoRoot 'windows\scripts\sync_soul_config_governance_snippet.ps1'
 $cfgText = Get-Content -LiteralPath $cfgSync -Raw -Encoding UTF8
-$hasIdentityOnly = ($cfgText -match "InsertBeforeRegex '\^## Identity\\s'") -and ($cfgText -notmatch 'Communication Style')
-Write-E2eStep 'config governance insert before Identity only' $hasIdentityOnly
+$insertMatch = [regex]::Match($cfgText, "-InsertBeforeRegex '(?<pat>[^']+)'")
+$hasIdentityOnly = $insertMatch.Success -and ($insertMatch.Groups['pat'].Value -eq '^## Identity\s')
+Write-E2eStep 'config governance insert before Identity only' $hasIdentityOnly $insertMatch.Groups['pat'].Value
 
 # --- Memory merge helpers ---
 $legalPathOk = (Test-IsLegalProfileMemoryUserPath -FilePath 'C:\hermes\profiles\legal\memories\USER.md') -and

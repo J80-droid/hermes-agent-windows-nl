@@ -223,6 +223,11 @@ if ($IncludeLegalDomainE2E -or $IncludeAllE2E) {
         & $legalE2e
         $global:LASTEXITCODE = $LASTEXITCODE
     }
+    $proactivePs1 = Join-Path $repoRoot 'windows\scripts\Invoke-LegalProactiveSparringE2E.ps1'
+    Invoke-Step 'legal-proactive-sparring-e2e' {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $proactivePs1 -RepoRoot $repoRoot -Context Manual
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
 }
 
 if ($IncludeProfileE2E -or $IncludeAllE2E) {

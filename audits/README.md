@@ -384,4 +384,6 @@ Geïsoleerde E2E voor **parallelle invalshoeken**, **Config governance duplicate
 audits\RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat
 ```
 
+Auto: `APPLY_SOUL_ANATOMY_RUNTIME.bat`, `launch_soul_anatomy_deploy.ps1` (bij deploy), `SYNC_TRUST_RUNTIME.bat`, `RUN_AUDITS -IncludeLegalDomainE2E`. Skip: `HERMES_SKIP_LEGAL_PROACTIVE_E2E=1`; trust alleen: `HERMES_LEGAL_PROACTIVE_E2E_ON_TRUST=0`.
+
 Unit tests (gemockt): `pytest tests/audits/test_legal_proactive_sparring_e2e_harness.py -q`. Pester: `windows\tests\SoulSnippetRepair.Unit.Tests.ps1`.
