@@ -40,6 +40,8 @@ $files = @(
     'windows/audits/HermesPythonInstitutionalRegressionE2E.harness.ps1',
     'windows/audits/RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.ps1',
     'windows/audits/RUN_LEGAL_DOMAIN_E2E.ps1',
+    'windows/audits/LegalDomainE2E.core.ps1',
+    'windows/tests/LegalDomainE2E.Unit.Tests.ps1',
     'windows/scripts/verify_legal_runtime.ps1',
     'windows/scripts/sync_legal_lens_from_taxonomy.ps1',
     'windows/scripts/ensure_legal_active_matters.ps1'

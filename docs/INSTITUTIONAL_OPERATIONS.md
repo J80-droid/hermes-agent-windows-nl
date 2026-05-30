@@ -227,7 +227,10 @@ Legal pytest (**101**, gemockt):
 | Bestand | Doel |
 |---------|------|
 | `%LOCALAPPDATA%\Hermes\rag-deps.json` | `rag_extras_verified` + `python_exe` — skip RAG-reinstall als pyproject ongewijzigd |
-| `%LOCALAPPDATA%\hermes\launch_bootstrap.stamp` | Alleen bijgewerkt na **succesvolle** RAG-sync (`launch_bootstrap.ps1`) |
+| `%LOCALAPPDATA%\hermes\launch_bootstrap.json` | Schema v1: repo + `pyproject_sha256` + `python_exe` — **snelle bootstrap** (geen nested PowerShell) |
+| `%LOCALAPPDATA%\hermes\launch_bootstrap.stamp` | Legacy marker; wordt mee bijgewerkt met JSON-state |
+
+**Bootstrap versnellen uitzetten (volledige ensure_*):** `set HERMES_SKIP_LAUNCH_BOOTSTRAP_FAST_PATH=1` of `HERMES_FORCE_LAUNCH_BOOTSTRAP_FULL=1` vóór `start_hermes.bat`.
 
 Override conda: `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV`.
 

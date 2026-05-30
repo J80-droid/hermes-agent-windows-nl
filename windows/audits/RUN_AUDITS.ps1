@@ -213,6 +213,11 @@ if ($IncludeInstitutionalE2E -or $IncludeAllE2E) {
 }
 
 if ($IncludeLegalDomainE2E -or $IncludeAllE2E) {
+    $legalUnit = Join-Path $repoRoot 'windows\tests\LegalDomainE2E.Unit.Tests.ps1'
+    Invoke-Step 'legal-domain-e2e-unit' {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $legalUnit
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
     $legalE2e = Join-Path $scriptRoot 'RUN_LEGAL_DOMAIN_E2E.ps1'
     Invoke-Step 'legal-domain-e2e' {
         & $legalE2e

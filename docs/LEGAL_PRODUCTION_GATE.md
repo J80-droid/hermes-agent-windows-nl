@@ -58,8 +58,11 @@ GitHub `fork-windows-institutional.yml` draait hardening (legal skills pytest), 
 ## Unit tests (na codewijziging)
 
 ```bat
-pytest tests/audits/test_legal_production_e2e_harness.py tests/scripts/test_verify_legal_lens_parity.py tests/scripts/test_legal_lens_from_path.py tests/hermes_cli/test_legal_architecture_brief.py -q
+powershell -NoProfile -ExecutionPolicy Bypass -File windows\tests\LegalDomainE2E.Unit.Tests.ps1
+pytest tests/windows/test_legal_domain_e2e_unit.py tests/audits/test_legal_production_e2e_harness.py tests/scripts/test_verify_legal_lens_parity.py tests/scripts/test_legal_lens_from_path.py tests/hermes_cli/test_legal_architecture_brief.py -q
 ```
+
+`RUN_AUDITS.bat -IncludeLegalDomainE2E` draait eerst de geïsoleerde unit (gemockte paden), daarna de volledige `RUN_LEGAL_DOMAIN_E2E.bat`.
 
 Renderer rooktest (geen legal-domein): `pytest tests/scripts/test_score_institutional_render.py -q` — zie [templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md).
 

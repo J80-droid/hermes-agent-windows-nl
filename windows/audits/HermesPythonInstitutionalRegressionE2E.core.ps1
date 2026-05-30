@@ -79,9 +79,10 @@ Add-StepResult -Name '2/8 policy review helpers (manifest fast-path + CONDA_ROOT
 # --- 3 Bootstrap stamp guard ---
 $bootstrap = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/launch_bootstrap.ps1')
 $bootstrapOk = ($bootstrap -match 'Test-HermesNeedsRagExtrasInstall') -and
-    ($bootstrap -match '\$ragOk') -and
+    ($bootstrap -match 'Test-HermesLaunchBootstrapFastPath') -and
+    ($bootstrap -match 'Write-HermesLaunchBootstrapState') -and
     ($bootstrap -match 'Sync-HermesLaunchBootstrapStamp')
-Add-StepResult -Name '3/8 launch_bootstrap stamp + needs-RAG wiring' -Ok $bootstrapOk
+Add-StepResult -Name '3/8 launch_bootstrap fast-path + needs-RAG wiring' -Ok $bootstrapOk
 
 # --- 4 REPAIR non-interactive ---
 $repairCheck = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/check_hermes_rag_after_repair.ps1')

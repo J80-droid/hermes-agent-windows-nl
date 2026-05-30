@@ -62,7 +62,7 @@ Runtime/AST: vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
 | **`RUN_AUDITS.bat -IncludePendingTrustStartE2E`** | Zelfde pending-trust E2E in gecombineerde audit |
 | **`RUN_AUDITS.bat -IncludeSoulDeployStartE2E`** | Alleen SOUL deploy-start E2E |
 | **`RUN_AUDITS.bat -IncludeToolsetDomainE2E`** | `platform_toolsets.cli` per profiel vs manifest |
-| **`RUN_AUDITS.bat -IncludeLegalDomainE2E`** | Legal taxonomie, SOUL, submappen, rooktest |
+| **`RUN_AUDITS.bat -IncludeLegalDomainE2E`** | Legal unit (`LegalDomainE2E.Unit.Tests.ps1`) + volledige E2E (taxonomie, SOUL, submappen, rooktest) |
 | **`APPLY_INSTITUTIONAL_RUNTIME.bat`** | Handmatig: display + SOUL + E2E (incl. 2h pseudo-tabel); **automatisch** na `UPDATE_HERMES.bat` (post-merge, `-SkipE2E`) |
 | **`RUN_IDE_MAINTENANCE_E2E.bat`** | Volledige IDE-landkaart E2E (16 stappen, rapport `IDE_MAINTENANCE_E2E_REPORT_*.md`); `-Full` = display-fix + `RUN_INSTITUTIONAL_E2E`; `-SkipMergePreview` = zonder git fetch |
 | **`RUN_AUDITS.bat -IncludeIdeMaintenanceE2E`** | Bovenstaande IDE-onderhoud E2E in gecombineerde poort |

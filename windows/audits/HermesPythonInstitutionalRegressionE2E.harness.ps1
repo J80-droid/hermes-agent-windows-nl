@@ -103,18 +103,29 @@ $sw.Stop()
 if ($null -eq $prevNi) { Remove-Item Env:HERMES_NONINTERACTIVE -ErrorAction SilentlyContinue } else { $env:HERMES_NONINTERACTIVE = $prevNi }
 Step 'check_hermes_rag_after_repair NonInteractive binnen 15s' (($sw.Elapsed.TotalSeconds -lt 15) -and ($null -ne $exitRepair))
 
-# 7 launch_bootstrap stamp alleen na ragOk
+# 7 launch_bootstrap fast-path + state json
 $bootstrap = Get-Content -LiteralPath (Join-Path $scriptRoot '..\scripts\launch_bootstrap.ps1') -Raw -Encoding UTF8
-Step 'launch_bootstrap stamp guard ragOk' (
-    ($bootstrap -match '\$ragOk') -and
-    ($bootstrap -match 'stamp niet bijgewerkt')
+Step 'launch_bootstrap fast-path wiring' (
+    ($bootstrap -match 'Test-HermesLaunchBootstrapFastPath') -and
+    ($bootstrap -match 'Write-HermesLaunchBootstrapState') -and
+    ($bootstrap -match 'Invoke-HermesBootstrapChildScript') -and
+    ($bootstrap -notmatch 'Invoke-HermesCapturedProcess')
 )
 
-# 8 Get-HermesAuditPython hergebruikt resolver (geen dubbele dot-source crash)
+# 8 Get-HermesPyprojectFingerprint + bootstrap state pad
+$policyText = Get-Content -LiteralPath (Join-Path $scriptRoot '..\HermesPythonPolicy.ps1') -Raw -Encoding UTF8
+$stateExpected = Join-Path (Join-Path $env:LOCALAPPDATA 'hermes') 'launch_bootstrap.json'
+Step 'launch_bootstrap.json policy helpers' (
+    ($policyText -match 'function Get-HermesPyprojectFingerprint') -and
+    ($policyText -match 'function Test-HermesLaunchBootstrapFastPath') -and
+    ((Get-HermesLaunchBootstrapStatePath) -eq $stateExpected)
+)
+
+# 9 Get-HermesAuditPython hergebruikt resolver (geen dubbele dot-source crash)
 $auditPy = Get-HermesAuditPython -RepoRoot $repoRoot
 Step 'Get-HermesAuditPython resolve' ([bool]$auditPy -and ($auditPy -ne ''))
 
-$total = 8
+$total = 9
 if ($failures) {
     Write-Host "=== REGRESSION HARNESS: FAIL ($failures) ===" -ForegroundColor Red
     exit 1

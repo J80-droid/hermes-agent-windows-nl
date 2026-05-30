@@ -88,6 +88,9 @@ def test_policy_helpers_present():
         "Test-HermesRagExtrasInstalled",
         "Test-HermesNeedsRagExtrasInstall",
         "Sync-HermesLaunchBootstrapStamp",
+        "Test-HermesLaunchBootstrapFastPath",
+        "Write-HermesLaunchBootstrapState",
+        "Get-HermesPyprojectFingerprint",
         "Update-HermesVscodeInterpreterPath",
         "Invoke-HermesSyncIdePython",
         "Write-HermesPythonPolicyManifest",
@@ -188,8 +191,12 @@ def test_policy_hermes_conda_root_wiring():
 def test_launch_bootstrap_stamp_guard_wiring():
     text = LAUNCH_BOOTSTRAP_PS1.read_text(encoding="utf-8")
     assert "Test-HermesNeedsRagExtrasInstall" in text
-    assert "$ragOk" in text
+    assert "Test-HermesLaunchBootstrapFastPath" in text
+    assert "Write-HermesLaunchBootstrapState" in text
+    assert "Invoke-HermesLaunchBootstrapQuickVerify" in text
+    assert "Invoke-HermesBootstrapChildScript" in text
     assert "Sync-HermesLaunchBootstrapStamp" in text
+    assert "Invoke-HermesCapturedProcess" not in text
 
 
 def test_check_rag_after_repair_noninteractive_wiring():
@@ -692,6 +699,76 @@ exit 0
         assert proc.returncode == 0, proc.stdout + proc.stderr
     finally:
         _restore_rag_manifest(backup)
+
+
+def test_launch_bootstrap_fast_path_with_state_json():
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        (repo / "pyproject.toml").write_text('[project]\nname = "t"\nversion = "0.0.1"\n', encoding="utf-8")
+        local = Path(tmp) / "localappdata"
+        hermes_dir = local / "hermes"
+        hermes_dir.mkdir(parents=True)
+        policy_dir = local / "Hermes"
+        policy_dir.mkdir(parents=True)
+        py = r"C:\fake\miniconda3\envs\hermes-env\python.exe"
+        script_path = str(POLICY_PS1).replace("'", "''")
+        repo_s = str(repo).replace("'", "''")
+        script = f"""
+$env:LOCALAPPDATA = '{str(local).replace("'", "''")}'
+. '{script_path}'
+$fp = Get-HermesPyprojectFingerprint -PyprojectPath '{str(repo / "pyproject.toml").replace("'", "''")}'
+@{{
+    schema_version = 1
+    verified_at_utc = '2026-01-01T00:00:00Z'
+    repo_root = (Get-HermesNormalizedRepoRoot -RepoRoot '{repo_s}')
+    pyproject_sha256 = $fp
+    python_exe = '{py.replace("'", "''")}'
+    rag_extras_verified = $true
+}} | ConvertTo-Json | Set-Content -LiteralPath (Get-HermesLaunchBootstrapStatePath) -Encoding UTF8
+function Resolve-HermesPythonExe {{ param($RepoRoot='', [switch]$RequirePip) return '{py.replace("'", "''")}' }}
+function Test-HermesNeedsRagExtrasInstall {{ param($RepoRoot, $PyprojectPath) return $false }}
+function Test-HermesPythonHasPip {{ param($PythonExe) return $true }}
+$r = Test-HermesLaunchBootstrapFastPath -RepoRoot '{repo_s}'
+if (-not $r.Ok) {{ Write-Error $r.Reason; exit 1 }}
+if ($r.Reason -ne 'bootstrap-state v1') {{ exit 2 }}
+exit 0
+"""
+        proc = _run_powershell(script)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def test_launch_bootstrap_fast_path_rejects_pyproject_change():
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp)
+        proj = repo / "pyproject.toml"
+        proj.write_text('[project]\nname = "t"\nversion = "0.0.1"\n', encoding="utf-8")
+        local = Path(tmp) / "localappdata"
+        (local / "hermes").mkdir(parents=True)
+        script_path = str(POLICY_PS1).replace("'", "''")
+        repo_s = str(repo).replace("'", "''")
+        py = r"C:\fake\hermes-env\python.exe"
+        script = f"""
+$env:LOCALAPPDATA = '{str(local).replace("'", "''")}'
+. '{script_path}'
+$repo = '{repo_s}'
+$fp = Get-HermesPyprojectFingerprint -PyprojectPath '{str(proj).replace("'", "''")}'
+@{{
+    schema_version = 1
+    repo_root = (Get-HermesNormalizedRepoRoot -RepoRoot $repo)
+    pyproject_sha256 = 'deadbeef'
+    python_exe = '{py.replace("'", "''")}'
+    rag_extras_verified = $true
+}} | ConvertTo-Json | Set-Content -LiteralPath (Get-HermesLaunchBootstrapStatePath) -Encoding UTF8
+function Resolve-HermesPythonExe {{ param($RepoRoot='', [switch]$RequirePip) return '{py.replace("'", "''")}' }}
+function Test-HermesNeedsRagExtrasInstall {{ param($RepoRoot, $PyprojectPath) return $false }}
+function Test-HermesPythonHasPip {{ param($PythonExe) return $true }}
+$r = Test-HermesLaunchBootstrapFastPath -RepoRoot $repo
+if ($r.Ok) {{ exit 1 }}
+if ($r.Reason -notmatch 'pyproject') {{ exit 2 }}
+exit 0
+"""
+        proc = _run_powershell(script)
+        assert proc.returncode == 0, proc.stdout + proc.stderr
 
 
 def test_sync_launch_bootstrap_stamp_canonical_path():

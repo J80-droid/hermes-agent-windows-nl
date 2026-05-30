@@ -4,8 +4,13 @@
 # Override conda-locatie: HERMES_CONDA_ROOT + HERMES_CONDA_ENV (default hermes-env).
 # RAG-manifest: %LOCALAPPDATA%\Hermes\rag-deps.json (rag_extras_verified fast-path).
 # Web-dashboard manifest: %LOCALAPPDATA%\hermes\web-dashboard-deps.json (pip -e [web] fast-path).
-# Bootstrap-stamp: %LOCALAPPDATA%\hermes\launch_bootstrap.stamp (Sync-HermesLaunchBootstrapStamp).
+# Bootstrap-state: %LOCALAPPDATA%\hermes\launch_bootstrap.json (schema v1; fast-path bij start).
+# Legacy-stamp: %LOCALAPPDATA%\hermes\launch_bootstrap.stamp (Sync-HermesLaunchBootstrapStamp).
 # Dot-source: . (Join-Path $PSScriptRoot 'HermesPythonPolicy.ps1')
+
+if (-not (Get-Variable -Name HermesWindowsPolicyRoot -Scope Script -ErrorAction SilentlyContinue)) {
+    $script:HermesWindowsPolicyRoot = $PSScriptRoot
+}
 
 function Get-HermesCondaEnvName {
     if ($env:HERMES_CONDA_ENV) { return $env:HERMES_CONDA_ENV.Trim() }
@@ -337,6 +342,231 @@ function Sync-HermesLaunchBootstrapStamp {
         }
     }
     return $canonical
+}
+
+function Get-HermesLaunchBootstrapStatePath {
+    return Join-Path (Join-Path $env:LOCALAPPDATA 'hermes') 'launch_bootstrap.json'
+}
+
+function Get-HermesNormalizedRepoRoot {
+    param([Parameter(Mandatory)][string]$RepoRoot)
+    return (Resolve-Path -LiteralPath $RepoRoot).Path.TrimEnd('\')
+}
+
+function Get-HermesPyprojectFingerprint {
+    <#
+    .SYNOPSIS
+        SHA-256 van pyproject.toml (stabieler dan alleen LastWriteTime).
+    #>
+    param([Parameter(Mandatory)][string]$PyprojectPath)
+    if (-not (Test-Path -LiteralPath $PyprojectPath)) { return $null }
+    $resolved = (Resolve-Path -LiteralPath $PyprojectPath).Path
+    $bytes = [System.IO.File]::ReadAllBytes($resolved)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        return [BitConverter]::ToString($sha.ComputeHash($bytes)).Replace('-', '').ToLowerInvariant()
+    } finally {
+        $sha.Dispose()
+    }
+}
+
+function Test-HermesLaunchBootstrapFastPathDisabled {
+    if ($env:HERMES_SKIP_LAUNCH_BOOTSTRAP_FAST_PATH -eq '1') { return $true }
+    if ($env:HERMES_FORCE_LAUNCH_BOOTSTRAP -eq '1') { return $true }
+    if ($env:HERMES_FORCE_LAUNCH_BOOTSTRAP_FULL -eq '1') { return $true }
+    return $false
+}
+
+function Get-HermesLaunchBootstrapState {
+    <#
+    .SYNOPSIS
+        Leest launch_bootstrap.json (schema v1). Ongeldig/ontbrekend → $null.
+    #>
+    $path = Get-HermesLaunchBootstrapStatePath
+    if (-not (Test-Path -LiteralPath $path)) { return $null }
+    try {
+        $j = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
+        if ($j.schema_version -ne 1) { return $null }
+        return $j
+    } catch {
+        return $null
+    }
+}
+
+function Test-HermesLaunchBootstrapFastPath {
+    <#
+    .SYNOPSIS
+        True als start bootstrap zware ensure_*-subprocessen kan overslaan.
+    .OUTPUTS
+        PSCustomObject: Ok, Reason, PythonExe
+    #>
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [string]$PyprojectPath = ''
+    )
+
+    $fail = {
+        param($Reason, $Py = '')
+        return [pscustomobject]@{ Ok = $false; Reason = $Reason; PythonExe = $Py }
+    }
+
+    if (Test-HermesLaunchBootstrapFastPathDisabled) {
+        return & $fail 'fast-path uitgeschakeld via omgeving'
+    }
+
+    if (-not (Test-Path -LiteralPath $RepoRoot)) {
+        return & $fail 'repo ontbreekt'
+    }
+
+    $repoNorm = Get-HermesNormalizedRepoRoot -RepoRoot $RepoRoot
+    if (-not $PyprojectPath) { $PyprojectPath = Join-Path $repoNorm 'pyproject.toml' }
+    if (-not (Test-Path -LiteralPath $PyprojectPath)) {
+        return & $fail 'pyproject.toml ontbreekt'
+    }
+
+    $fingerprint = Get-HermesPyprojectFingerprint -PyprojectPath $PyprojectPath
+    if (-not $fingerprint) {
+        return & $fail 'pyproject fingerprint mislukt'
+    }
+
+    $py = Resolve-HermesPythonExe -RepoRoot $repoNorm -RequirePip
+    if (-not $py) {
+        return & $fail 'geen conda hermes-env met pip'
+    }
+
+    if (Test-HermesNeedsRagExtrasInstall -RepoRoot $repoNorm -PyprojectPath $PyprojectPath) {
+        return & $fail 'RAG-deps sync vereist (pyproject of manifest)'
+    }
+
+    if (-not (Test-HermesPythonHasPip -PythonExe $py)) {
+        return & $fail 'pip-check mislukt op canonieke python'
+    }
+
+    $state = Get-HermesLaunchBootstrapState
+    if ($state) {
+        $stateRepo = if ($state.repo_root) { $state.repo_root.ToString().TrimEnd('\') } else { '' }
+        $statePy = if ($state.python_exe) { $state.python_exe.ToString() } else { '' }
+        $stateFp = if ($state.pyproject_sha256) { $state.pyproject_sha256.ToString() } else { '' }
+        if ($stateRepo -and ($stateRepo -ne $repoNorm)) {
+            return & $fail 'andere repo in bootstrap-state' $py
+        }
+        if ($stateFp -and ($stateFp -ne $fingerprint)) {
+            return & $fail 'pyproject gewijzigd sinds laatste bootstrap' $py
+        }
+        if ($statePy -and ($statePy -ne $py)) {
+            return & $fail 'andere python_exe dan bootstrap-state' $py
+        }
+        if ($state.rag_extras_verified -ne $true) {
+            return & $fail 'bootstrap-state zonder rag_extras_verified' $py
+        }
+        return [pscustomobject]@{
+            Ok         = $true
+            Reason     = 'bootstrap-state v1'
+            PythonExe  = $py
+        }
+    }
+
+    # Legacy zonder JSON: geverifieerde rag-deps.json (stamp optioneel; pre-json installs)
+    [void](Sync-HermesLaunchBootstrapStamp)
+    $hasLegacyStamp = Test-Path -LiteralPath (Get-HermesLaunchBootstrapStampPath)
+
+    $manifestPath = Get-HermesRagDepsManifestPath
+    if (-not (Test-Path -LiteralPath $manifestPath)) {
+        return & $fail 'rag-deps.json ontbreekt' $py
+    }
+    try {
+        $rag = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        if ($rag.rag_extras_verified -ne $true) {
+            return & $fail 'rag-deps niet geverifieerd' $py
+        }
+        $manifestPy = if ($rag.python_exe) { $rag.python_exe.ToString() } else { '' }
+        if ($manifestPy -and ($manifestPy -ne $py)) {
+            return & $fail 'rag-deps python_exe wijkt af' $py
+        }
+    } catch {
+        return & $fail 'rag-deps.json onleesbaar' $py
+    }
+
+    $legacyReason = if ($hasLegacyStamp) { 'legacy stamp + rag-deps' } else { 'rag-deps geverifieerd' }
+    return [pscustomobject]@{
+        Ok         = $true
+        Reason     = $legacyReason
+        PythonExe  = $py
+    }
+}
+
+function Write-HermesLaunchBootstrapState {
+    <#
+    .SYNOPSIS
+        Schrijft launch_bootstrap.json (v1) + legacy .stamp na geslaagde volledige bootstrap.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$PythonExe,
+        [string]$PyprojectPath = '',
+        [string]$HermesHome = ''
+    )
+
+    [void](Sync-HermesLaunchBootstrapStamp)
+    $repoNorm = Get-HermesNormalizedRepoRoot -RepoRoot $RepoRoot
+    if (-not $PyprojectPath) { $PyprojectPath = Join-Path $repoNorm 'pyproject.toml' }
+    $fingerprint = Get-HermesPyprojectFingerprint -PyprojectPath $PyprojectPath
+    if (-not $HermesHome) { $HermesHome = $env:HERMES_HOME }
+
+    $stateDir = Split-Path -Parent (Get-HermesLaunchBootstrapStatePath)
+    if (-not (Test-Path -LiteralPath $stateDir)) {
+        New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+    }
+
+    $payload = @{
+        schema_version        = 1
+        verified_at_utc       = (Get-Date).ToUniversalTime().ToString('o')
+        repo_root             = $repoNorm
+        pyproject_sha256      = $fingerprint
+        python_exe            = $PythonExe
+        hermes_home           = $HermesHome
+        rag_extras_verified   = $true
+    }
+    $payload | ConvertTo-Json | Set-Content -LiteralPath (Get-HermesLaunchBootstrapStatePath) -Encoding UTF8
+
+    $stampPath = Get-HermesLaunchBootstrapStampPath
+    Set-Content -LiteralPath $stampPath -Value (Get-Date -Format 'o') -Encoding utf8
+    return (Get-HermesLaunchBootstrapStatePath)
+}
+
+function Invoke-HermesLaunchBootstrapQuickVerify {
+    <#
+    .SYNOPSIS
+        Lichtgewicht in-process verify bij bootstrap fast-path (geen nested powershell).
+    #>
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$PythonExe,
+        [string]$FastPathReason = ''
+    )
+
+    $homeScript = Join-Path $script:HermesWindowsPolicyRoot 'scripts\HermesHomeCommon.ps1'
+    if (Test-Path -LiteralPath $homeScript) {
+        . $homeScript
+        [void](Initialize-UserHermesHomeRoot -FixUserEnv -Quiet)
+    } elseif ($env:HERMES_HOME) {
+        $null = $env:HERMES_HOME
+    }
+
+    [void](Write-HermesPythonPolicyManifest -PythonExe $PythonExe)
+
+    $detail = if ($FastPathReason) { " ($FastPathReason)" } else { '' }
+    $msg = 'Bootstrap: conda/RAG OK — snelle controle' + $detail
+    if (Get-Command Write-HermesLaunchUi -ErrorAction SilentlyContinue) {
+        [void](Write-HermesLaunchUi -Message $msg -Level Detail)
+    } elseif (Get-Command Add-HermesLaunchLogLine -ErrorAction SilentlyContinue) {
+        Add-HermesLaunchLogLine -Message $msg
+    }
+
+    # Upgrade legacy installs naar JSON-state (eenmalig, stil)
+    if (-not (Get-HermesLaunchBootstrapState)) {
+        [void](Write-HermesLaunchBootstrapState -RepoRoot $RepoRoot -PythonExe $PythonExe)
+    }
 }
 
 function Get-HermesPreferredPython {

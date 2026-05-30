@@ -72,6 +72,7 @@ Extra pytest-argumenten worden doorgegeven (bijv. een enkele test):
 - **`TrustRuntimePending.Unit.Tests.ps1`**: stamp, attempts, max-pogingen, corrupte/leeg JSON (geïsoleerde `LOCALAPPDATA`).
 - **`TrustRuntimeSync.Unit.Tests.ps1`**: trust-runtime stamp/drift, watch-paden, profile-completeness, memory-audit gate, `Test-TrustRuntimeSyncNeeded` (geïsoleerde `LOCALAPPDATA` + mini-repo).
 - **`HermesSessionMaintenance.Unit.Tests.ps1`**: stamps, domains fingerprint, model `-AllowFailure`, start/post-pull mocks (geïsoleerde `LOCALAPPDATA`, geen live RAG-ingest).
+- **`LegalDomainE2E.Unit.Tests.ps1`**: `LegalDomainE2E.core.ps1` met geïsoleerde `HermesRoot`/`UserDataRoot`, `-StrictSources`, bronmap FAIL/PASS (pytest/rooktest uit via env).
 - **`Invoke-MemoryTrustPostSync.Unit.Tests.ps1`**: mock runtime, notice JSON, skip scrub (geen production gate).
 - **`tests\windows\test_memory_identity_repair.ps1`**: geïsoleerde runtime mock (legacy runner).
 - **`tests\windows\test_scrub_identity.py`**: pytest parity met PS1 allowlist.
