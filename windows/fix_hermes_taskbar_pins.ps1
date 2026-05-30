@@ -13,15 +13,17 @@ function Write-HermesTaskbarPostUpdateGuidance {
     param([switch]$OpenStableFolder)
     $stable = Get-HermesStableTaskbarShortcutsDir
     Write-Host ''
-    Write-Host '[INFO] Taakbalk-pop-up? De pin op de balk is een OUDE verwijzing (niet windows\).' -ForegroundColor Cyan
-    Write-Host '       1) Klik die taakbalk-pin -> Ja (herhaal per kapotte pin)' -ForegroundColor Gray
-    Write-Host '       2) Vastmaken via RECHTSKLIK (niet slepen) op:' -ForegroundColor Gray
+    Write-Host '[INFO] Taakbalk: NIET opnieuw slepen uit windows\ of backups\ na elke update.' -ForegroundColor Cyan
+    Write-Host '       Eénmalig: rechtsklik Vastmaken aan taakbalk op bestanden in:' -ForegroundColor Gray
     if ($stable) {
-        Write-Host ('          ' + $stable + '\Hermes Update.lnk (of andere Hermes *.lnk)') -ForegroundColor Gray
+        Write-Host ('          ' + $stable) -ForegroundColor White
+        Write-Host '       (Hermes Start.lnk, Hermes Update.lnk, … — vaste paden buiten git)' -ForegroundColor DarkGray
     } else {
-        Write-Host '          windows\Start Hermes - naar taakbalk slepen.lnk' -ForegroundColor Gray
+        Write-Host '          %LOCALAPPDATA%\Hermes\taakbalk\' -ForegroundColor Gray
     }
-    Write-Host '       windows\ blijft voor dubbelklik in Verkenner.' -ForegroundColor DarkGray
+    Write-Host '       Na UPDATE_HERMES: bestaande pins worden automatisch bijgewerkt (zelfde .lnk op de balk).' -ForegroundColor DarkGray
+    Write-Host '       windows\ *-naar-taakbalk-slepen.lnk = alleen Verkenner/dubbelklik.' -ForegroundColor DarkGray
+    Write-Host '       Kapotte pin-pop-up? Klik Ja, daarna éénmalig opnieuw vastmaken vanuit taakbalk-map hierboven.' -ForegroundColor DarkGray
     if ($OpenStableFolder -and $stable -and (Test-Path -LiteralPath $stable)) {
         Start-Process -FilePath 'explorer.exe' -ArgumentList $stable
     }

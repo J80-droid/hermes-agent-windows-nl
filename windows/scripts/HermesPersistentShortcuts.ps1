@@ -90,6 +90,42 @@ function Sync-HermesTaskbarPinsMirrorWindows {
     return $ok
 }
 
+function Repair-HermesTaskbarPinsFromStableDir {
+    <#
+    .SYNOPSIS
+        Werkt bestaande taakbalk-pins bij vanuit %LOCALAPPDATA%\Hermes\taakbalk\ (zelfde .lnk-pad op de balk).
+        Voorkomt opnieuw slepen na update wanneer pins uit windows\ of backup_* kwamen.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [switch]$Quiet
+    )
+    $stableDir = Get-HermesStableTaskbarShortcutsDir
+    $pinnedDir = Get-HermesTaskbarPinnedDir
+    if (-not $stableDir -or -not (Test-Path -LiteralPath $stableDir)) { return 0 }
+    if (-not $pinnedDir -or -not (Test-Path -LiteralPath $pinnedDir)) { return 0 }
+
+    $roleToStable = @{}
+    foreach ($map in (Get-HermesStableTaskbarShortcutFileMap)) {
+        $roleToStable[$map.Role] = Join-Path $stableDir $map.FileName
+    }
+
+    $fixed = 0
+    foreach ($item in (Get-HermesTaskbarPinShortcutCandidates -PinnedDir $pinnedDir -RepoRoot $RepoRoot)) {
+        $role = Get-HermesShortcutRoleFromShortcut -ShortcutPath $item.FullName -RepoRoot $RepoRoot
+        if (-not $role -or -not $roleToStable.ContainsKey($role)) { continue }
+        $stablePath = $roleToStable[$role]
+        if (-not (Test-Path -LiteralPath $stablePath)) { continue }
+        if (Copy-HermesShellShortcutContent -SourcePath $stablePath -DestinationPath $item.FullName) {
+            $fixed++
+            if (-not $Quiet) {
+                Write-Host ('  [OK] Taakbalk-pin bijgewerkt (stabiel): ' + $item.Name) -ForegroundColor Green
+            }
+        }
+    }
+    return $fixed
+}
+
 function Repair-HermesWtTargetTaskbarPinsToBat {
     param(
         [Parameter(Mandatory)][string]$PinnedDir,
@@ -674,6 +710,10 @@ function Invoke-HermesShortcutSyncRepair {
 
     $pinnedDir = Get-HermesTaskbarPinnedDir
     if ($pinnedDir -and (Test-Path -LiteralPath $pinnedDir)) {
+        $fromStable = Repair-HermesTaskbarPinsFromStableDir -RepoRoot $repo -Quiet:$Quiet
+        if (-not $Quiet -and $fromStable -gt 0) {
+            Write-Host ("  [OK] Taakbalk-pins gesynchroniseerd vanuit stabiele map: $fromStable") -ForegroundColor Green
+        }
         Write-HermesOrphanExePinAdvisory -Quiet:$Quiet
         [void](Remove-HermesDuplicateTaskbarPins -PinnedDir $pinnedDir -Quiet:$Quiet)
         [void](Remove-HermesTaskbarPinsWithMissingTargets -PinnedDir $pinnedDir -RepoRoot $repo -Quiet:$Quiet)

@@ -81,7 +81,7 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 | Web dashboard (9119, geen tab) | Standaard **na chat-start** (`HERMES_DASHBOARD_AFTER_CHAT=1`, `Start-HermesDashboardAfterChat.ps1`); pip `[web]` alleen bij gewijzigde deps; uit: `HERMES_SKIP_DASHBOARD_ON_START=1`; pre-chat stap 8: `HERMES_DASHBOARD_AFTER_CHAT=0` |
 | Pygount-cache corrupt / pytest-pad | `FIX_CODEBASE_VIZ_CACHE.bat` (verwijdert ongeldige cache, bouwt opnieuw voor huidige repo) |
 | **Alles-in-één na codewijziging** | `hermes_onderhoud.bat` of `windows\HERMES_ONDERHOUD.bat` (snelkoppelingen + dashboard + Codebase Viz) |
-| Snelkoppelingen kapot / verkeerd pad | Automatisch bij **update** en **start** (`fix_hermes_taskbar_pins.ps1` → ook `%LOCALAPPDATA%\Hermes\shortcuts\`). Handmatig: `FIX_TASKBAR_ICONS.bat` · verify: `scripts\verify_hermes_shortcut_paths.ps1 -IncludePinned` |
+| Snelkoppelingen kapot / verkeerd pad | Automatisch bij **update** en **start** (`fix_hermes_taskbar_pins.ps1`). **Taakbalk eenmalig:** `OPEN_HERMES_TAAKBALK_PINS.bat` → `%LOCALAPPDATA%\Hermes\taakbalk\` (niet uit `windows\`/`backups\` slepen) — zie [TAAKBALK_PINS.md](TAAKBALK_PINS.md). Handmatig: `FIX_TASKBAR_ICONS.bat` |
 | Institutionele presentatie | `docs\INSTITUTIONAL_PRESENTATION.md` |
 | Core routing / landkaart | `docs\ORCHESTRATOR_ROUTING.md`, skill `landkaart` (`/landkaart`) |
 | Legal lenzen (één bucket) | `docs\LEGAL_DOMAIN_ARCHITECTURE.md`, `docs\LEGAL_TAXONOMY.md`, `MIGRATE_LEGAL_LAYOUT.bat` |
