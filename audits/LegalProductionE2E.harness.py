@@ -212,6 +212,7 @@ def main() -> int:
         "tests/windows/test_legal_skill_manifest.py",
         "tests/cli/test_legal_architecture_slash.py",
         "tests/scripts/test_legal_lens_from_path.py",
+        "tests/windows/test_legal_windows_ps1_contract.py",
         "-q",
         "--tb=short",
     ]

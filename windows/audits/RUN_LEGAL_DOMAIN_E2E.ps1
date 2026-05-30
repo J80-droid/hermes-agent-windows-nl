@@ -1,12 +1,12 @@
-. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
-
 # E2E audit: legal domein (taxonomie, SOUL, bronmappen, parity, rooktest)
+# param() MOET vóór dot-source (PowerShell-taalregel).
 param(
     [switch]$StrictSources,
     [switch]$ApplyLensSync
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 $scriptRoot = $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $scriptRoot '..\..')).Path
 Set-Location $repoRoot
