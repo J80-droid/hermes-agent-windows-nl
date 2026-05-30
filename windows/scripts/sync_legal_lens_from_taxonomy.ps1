@@ -50,7 +50,7 @@ $args = @($script, '--all')
 if ($DryRun) { $args += '--dry-run' }
 
 if (-not $Quiet) {
-    Write-HermesLaunchUi -Message 'Legal lenzentabel sync (LEGAL_TAXONOMY → template + runtime)...' -Level Info
+    Write-HermesLaunchUi -Message 'Legal lenzentabel sync (LEGAL_TAXONOMY -> template + runtime)...' -Level Info
 }
 
 & $python @args
