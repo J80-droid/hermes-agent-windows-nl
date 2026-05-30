@@ -3,9 +3,10 @@
 # Resolver: Resolve-HermesPythonExe (HERMES_PYTHON > conda > manifest > .venv).
 # Override conda-locatie: HERMES_CONDA_ROOT + HERMES_CONDA_ENV (default hermes-env).
 # RAG-manifest: %LOCALAPPDATA%\Hermes\rag-deps.json (rag_extras_verified fast-path).
-# Web-dashboard manifest: %LOCALAPPDATA%\hermes\web-dashboard-deps.json (pip -e [web] fast-path).
-# Bootstrap-state: %LOCALAPPDATA%\hermes\launch_bootstrap.json (schema v1; fast-path bij start).
-# Legacy-stamp: %LOCALAPPDATA%\hermes\launch_bootstrap.stamp (Sync-HermesLaunchBootstrapStamp).
+# Web-dashboard manifest: %LOCALAPPDATA%\Hermes\web-dashboard-deps.json (pip -e [web] fast-path).
+# Bootstrap-state: %LOCALAPPDATA%\Hermes\launch_bootstrap.json (schema v1; fast-path bij start).
+# Legacy-stamp: %LOCALAPPDATA%\Hermes\launch_bootstrap.stamp (Sync-HermesLaunchBootstrapStamp).
+# Pad-helper: Get-HermesLocalAppDataPolicyDir (voorkomt hermes/Hermes case-conflict op Windows).
 # Dot-source: . (Join-Path $PSScriptRoot 'HermesPythonPolicy.ps1')
 
 if (-not (Get-Variable -Name HermesWindowsPolicyRoot -Scope Script -ErrorAction SilentlyContinue)) {
@@ -161,12 +162,33 @@ function Invoke-HermesQuarantineBrokenVenv {
     return $true
 }
 
+function Get-HermesLocalAppDataPolicyDir {
+    <#
+    .SYNOPSIS
+        Canonieke %LOCALAPPDATA%\Hermes (of bestaande hermes) — één map, geen dubbele New-Item case-fout.
+    #>
+    if ($script:HermesLocalAppDataPolicyDirResolved) {
+        return $script:HermesLocalAppDataPolicyDirResolved
+    }
+    $preferred = Join-Path $env:LOCALAPPDATA 'Hermes'
+    $legacyLower = Join-Path $env:LOCALAPPDATA 'hermes'
+    foreach ($candidate in @($preferred, $legacyLower)) {
+        if (Test-Path -LiteralPath $candidate) {
+            $script:HermesLocalAppDataPolicyDirResolved = (Resolve-Path -LiteralPath $candidate).Path
+            return $script:HermesLocalAppDataPolicyDirResolved
+        }
+    }
+    New-Item -ItemType Directory -Path $preferred -Force | Out-Null
+    $script:HermesLocalAppDataPolicyDirResolved = (Resolve-Path -LiteralPath $preferred).Path
+    return $script:HermesLocalAppDataPolicyDirResolved
+}
+
 function Get-HermesPythonPolicyManifestPath {
-    return Join-Path (Join-Path $env:LOCALAPPDATA 'Hermes') 'python-policy.json'
+    return Join-Path (Get-HermesLocalAppDataPolicyDir) 'python-policy.json'
 }
 
 function Get-HermesRagDepsManifestPath {
-    return Join-Path (Join-Path $env:LOCALAPPDATA 'Hermes') 'rag-deps.json'
+    return Join-Path (Get-HermesLocalAppDataPolicyDir) 'rag-deps.json'
 }
 
 function Get-HermesPythonFromPolicyManifest {
@@ -266,8 +288,7 @@ function Write-HermesRagDepsManifest {
         return $null
     }
 
-    $policyDir = Join-Path $env:LOCALAPPDATA 'Hermes'
-    New-Item -ItemType Directory -Force -Path $policyDir | Out-Null
+    $policyDir = Get-HermesLocalAppDataPolicyDir
     $manifestPath = Get-HermesRagDepsManifestPath
     $version = ''
     $prevEap = $ErrorActionPreference
@@ -320,7 +341,7 @@ function Test-HermesNeedsRagExtrasInstall {
 }
 
 function Get-HermesLaunchBootstrapStampPath {
-    return Join-Path (Join-Path $env:LOCALAPPDATA 'hermes') 'launch_bootstrap.stamp'
+    return Join-Path (Get-HermesLocalAppDataPolicyDir) 'launch_bootstrap.stamp'
 }
 
 function Sync-HermesLaunchBootstrapStamp {
@@ -329,10 +350,7 @@ function Sync-HermesLaunchBootstrapStamp {
         Migreert legacy stamp (%USERPROFILE%\.hermes) naar %LOCALAPPDATA%\hermes.
     #>
     $canonical = Get-HermesLaunchBootstrapStampPath
-    $canonicalDir = Split-Path -Parent $canonical
-    if (-not (Test-Path -LiteralPath $canonicalDir)) {
-        New-Item -ItemType Directory -Path $canonicalDir -Force | Out-Null
-    }
+    [void](Get-HermesLocalAppDataPolicyDir)
     $legacy = Join-Path (Join-Path $env:USERPROFILE '.hermes') 'launch_bootstrap.stamp'
     if ((Test-Path -LiteralPath $legacy) -and -not (Test-Path -LiteralPath $canonical)) {
         try {
@@ -345,7 +363,7 @@ function Sync-HermesLaunchBootstrapStamp {
 }
 
 function Get-HermesLaunchBootstrapStatePath {
-    return Join-Path (Join-Path $env:LOCALAPPDATA 'hermes') 'launch_bootstrap.json'
+    return Join-Path (Get-HermesLocalAppDataPolicyDir) 'launch_bootstrap.json'
 }
 
 function Get-HermesNormalizedRepoRoot {
@@ -513,10 +531,7 @@ function Write-HermesLaunchBootstrapState {
     $fingerprint = Get-HermesPyprojectFingerprint -PyprojectPath $PyprojectPath
     if (-not $HermesHome) { $HermesHome = $env:HERMES_HOME }
 
-    $stateDir = Split-Path -Parent (Get-HermesLaunchBootstrapStatePath)
-    if (-not (Test-Path -LiteralPath $stateDir)) {
-        New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
-    }
+    [void](Get-HermesLocalAppDataPolicyDir)
 
     $payload = @{
         schema_version        = 1
@@ -698,8 +713,7 @@ function Update-HermesVscodeInterpreterPath {
 function Write-HermesPythonPolicyManifest {
     param([Parameter(Mandatory)][string]$PythonExe)
 
-    $policyDir = Join-Path $env:LOCALAPPDATA 'Hermes'
-    New-Item -ItemType Directory -Force -Path $policyDir | Out-Null
+    $policyDir = Get-HermesLocalAppDataPolicyDir
     $manifestPath = Join-Path $policyDir 'python-policy.json'
     @{
         preferred_python = $PythonExe
@@ -725,7 +739,7 @@ function Invoke-HermesSyncIdePython {
 }
 
 function Get-HermesWebDashboardDepsManifestPath {
-    return Join-Path (Join-Path $env:LOCALAPPDATA 'hermes') 'web-dashboard-deps.json'
+    return Join-Path (Get-HermesLocalAppDataPolicyDir) 'web-dashboard-deps.json'
 }
 
 function Get-HermesCodebaseVizPygountCachePath {
@@ -835,10 +849,7 @@ function Write-HermesWebDashboardDepsManifest {
     if (-not (Test-HermesWebDashboardExtrasInstalled -PythonExe $PythonExe -RequirePygount:$RequirePygount)) {
         return $null
     }
-    $dir = Join-Path $env:LOCALAPPDATA 'hermes'
-    if (-not (Test-Path -LiteralPath $dir)) {
-        New-Item -ItemType Directory -Path $dir -Force | Out-Null
-    }
+    $dir = Get-HermesLocalAppDataPolicyDir
     $version = ''
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'SilentlyContinue'
