@@ -363,10 +363,50 @@ function Set-HermesShellShortcut {
     return $true
 }
 
+function Set-HermesTaskbarPinStartShortcut {
+    <#
+    .SYNOPSIS
+        Taakbalk-start: TargetPath = .bat (geen wt.exe). Windows pint dan het .lnk-bestand;
+        bij update blijft Verkenner én taakbalk in sync. (windows\ blijft wt voor dubbelklik.)
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)][string]$ShortcutPath,
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$IconIcoPath,
+        [string]$Description = '',
+        [ValidateSet('minimal', 'full')]
+        [string]$LaunchProfile = 'minimal'
+    )
+    if (-not $PSCmdlet.ShouldProcess($ShortcutPath, 'Create', 'Hermes taskbar start shortcut')) { return $false }
+
+    $repo = (Resolve-Path -LiteralPath $RepoRoot).Path
+    . (Join-Path $PSScriptRoot 'launcher_config.ps1')
+    $startRel = Get-HermesStartLauncherRelativePath -RepoRoot $repo -LaunchProfile $LaunchProfile
+    $startBat = Join-Path $repo $startRel
+    if (-not (Test-Path -LiteralPath $startBat)) { return $false }
+
+    $iconLoc = Get-HermesShellShortcutIconLocation -IcoPath $IconIcoPath
+    if (-not $iconLoc) { return $false }
+
+    $batFull = (Resolve-Path -LiteralPath $startBat).Path
+    $wsh = New-Object -ComObject WScript.Shell
+    $sc = $wsh.CreateShortcut($ShortcutPath)
+    $sc.TargetPath = $batFull
+    $sc.Arguments = ''
+    $sc.WorkingDirectory = $repo
+    $sc.WindowStyle = 1
+    $sc.IconLocation = $iconLoc
+    if ($Description) { $sc.Description = $Description }
+    $sc.Save()
+    return $true
+}
+
 function Set-HermesTaskbarPinShortcut {
     <#
     .SYNOPSIS
-        Zelfde als Set-HermesShellShortcut (wt.exe + call bat); taakbalk-pin = kopie van windows\ .lnk.
+        Taakbalk: TargetPath = .bat + gekleurd .ico. Geen wt.exe-target (voorkomt WT-app-pin die
+        na update "item kan niet worden geopend" geeft terwijl windows\ .lnk wel werkt).
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param(
@@ -377,9 +417,28 @@ function Set-HermesTaskbarPinShortcut {
         [string]$Description = '',
         [switch]$KeepCmdWindowOpen
     )
-    return Set-HermesShellShortcut -ShortcutPath $ShortcutPath -TargetBatPath $TargetBatPath `
-        -IconIcoPath $IconIcoPath -WorkingDirectory $WorkingDirectory `
-        -Description $Description -KeepCmdWindowOpen:$KeepCmdWindowOpen
+    if (-not (Test-Path -LiteralPath $TargetBatPath)) { return $false }
+    if (-not $PSCmdlet.ShouldProcess($ShortcutPath, 'Create', 'Hermes taskbar shortcut')) { return $false }
+
+    $batFull = (Resolve-Path -LiteralPath $TargetBatPath).Path
+    $workFull = if (Test-Path -LiteralPath $WorkingDirectory) {
+        (Resolve-Path -LiteralPath $WorkingDirectory).Path
+    } else {
+        $WorkingDirectory
+    }
+    $iconLoc = Get-HermesShellShortcutIconLocation -IcoPath $IconIcoPath
+    if (-not $iconLoc) { return $false }
+
+    $wsh = New-Object -ComObject WScript.Shell
+    $sc = $wsh.CreateShortcut($ShortcutPath)
+    $sc.TargetPath = $batFull
+    $sc.Arguments = ''
+    $sc.WorkingDirectory = $workFull
+    $sc.WindowStyle = 1
+    $sc.IconLocation = $iconLoc
+    if ($Description) { $sc.Description = $Description }
+    $sc.Save()
+    return $true
 }
 
 function Get-HermesWindowsShellIcoLocation {

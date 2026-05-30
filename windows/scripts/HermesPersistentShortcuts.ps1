@@ -112,7 +112,8 @@ function Remove-HermesUnlaunchableTaskbarPins {
         }
         $role = Get-HermesShortcutRoleFromShortcut -ShortcutPath $item.FullName -RepoRoot $RepoRoot
         if ($role) {
-            if (Repair-HermesShellShortcutInPlace -ShortcutPath $item.FullName -Role $role -RepoRoot $RepoRoot -WindowsDir $WindowsDir) {
+            if (Repair-HermesShellShortcutInPlace -ShortcutPath $item.FullName -Role $role -RepoRoot $RepoRoot `
+                    -WindowsDir $WindowsDir -ForTaskbarPin) {
                 if (Test-HermesShortcutLaunchTargetsExist -ShortcutPath $item.FullName -RepoRoot $RepoRoot) {
                     continue
                 }
@@ -352,7 +353,8 @@ function New-HermesCatalogShortcut {
         [Parameter(Mandatory)][hashtable]$Entry,
         [Parameter(Mandatory)][string]$ShortcutPath,
         [Parameter(Mandatory)][string]$RepoRoot,
-        [Parameter(Mandatory)][string]$WindowsDir
+        [Parameter(Mandatory)][string]$WindowsDir,
+        [switch]$ForTaskbarPin
     )
     if (-not $PSCmdlet.ShouldProcess($ShortcutPath, 'Create Hermes shortcut')) { return $false }
     $batPath = Join-Path $RepoRoot ($Entry.BatRelative -replace '/', '\')
@@ -360,6 +362,15 @@ function New-HermesCatalogShortcut {
     $iconPath = Get-HermesTaskbarRoleIconPath -Role $Entry.Role -WindowsDir $WindowsDir
     if (-not $iconPath) { return $false }
 
+    if ($ForTaskbarPin) {
+        if ($Entry.UseStartShortcut) {
+            return (Set-HermesTaskbarPinStartShortcut -ShortcutPath $ShortcutPath -RepoRoot $RepoRoot `
+                    -IconIcoPath $iconPath -LaunchProfile $Entry.LaunchProfile)
+        }
+        return (Set-HermesTaskbarPinShortcut -ShortcutPath $ShortcutPath -TargetBatPath $batPath `
+                -IconIcoPath $iconPath -WorkingDirectory $RepoRoot `
+                -KeepCmdWindowOpen:([bool]$Entry.KeepOpen))
+    }
     if ($Entry.UseStartShortcut) {
         return (Set-HermesStartShellShortcut -ShortcutPath $ShortcutPath -RepoRoot $RepoRoot `
                 -IconIcoPath $iconPath -LaunchProfile $Entry.LaunchProfile)
@@ -400,12 +411,14 @@ function Repair-HermesShellShortcutInPlace {
         [Parameter(Mandatory)][string]$ShortcutPath,
         [Parameter(Mandatory)][string]$Role,
         [Parameter(Mandatory)][string]$RepoRoot,
-        [Parameter(Mandatory)][string]$WindowsDir
+        [Parameter(Mandatory)][string]$WindowsDir,
+        [switch]$ForTaskbarPin
     )
     $catalog = Get-HermesShortcutCatalog -RepoRoot $RepoRoot
     $entry = $catalog | Where-Object { $_.Role -eq $Role } | Select-Object -First 1
     if (-not $entry) { return $false }
-    return (New-HermesCatalogShortcut -Entry $entry -ShortcutPath $ShortcutPath -RepoRoot $RepoRoot -WindowsDir $WindowsDir)
+    return (New-HermesCatalogShortcut -Entry $entry -ShortcutPath $ShortcutPath -RepoRoot $RepoRoot `
+            -WindowsDir $WindowsDir -ForTaskbarPin:$ForTaskbarPin)
 }
 
 function Repair-HermesPinnedAndDesktopShortcuts {
@@ -448,7 +461,8 @@ function Repair-HermesPinnedAndDesktopShortcuts {
             }
             if (-not $needsRepair) { continue }
 
-            if (Repair-HermesShellShortcutInPlace -ShortcutPath $item.FullName -Role $role -RepoRoot $RepoRoot -WindowsDir $WindowsDir) {
+            if (Repair-HermesShellShortcutInPlace -ShortcutPath $item.FullName -Role $role -RepoRoot $RepoRoot `
+                    -WindowsDir $WindowsDir -ForTaskbarPin:($target.IsTaskbar)) {
                 $script:repaired++
                 if (-not $Quiet) {
                     Write-Host ('  [OK] Hersteld: ' + $item.Name) -ForegroundColor Green
@@ -520,11 +534,12 @@ function Invoke-HermesShortcutSyncRepair {
         }
         foreach ($entry in $catalog) {
             $dest = Join-Path $pinnedDir $entry.FileName
-            if (-not (New-HermesCatalogShortcut -Entry $entry -ShortcutPath $dest -RepoRoot $repo -WindowsDir $WindowsDir)) {
+            if (-not (New-HermesCatalogShortcut -Entry $entry -ShortcutPath $dest -RepoRoot $repo `
+                    -WindowsDir $WindowsDir -ForTaskbarPin)) {
                 continue
             }
             if (-not $Quiet) {
-                Write-Host ('  [OK] Taakbalk-pin: ' + $entry.FileName) -ForegroundColor Green
+                Write-Host ('  [OK] Taakbalk-pin (bat-doel): ' + $entry.FileName) -ForegroundColor Green
             }
         }
     }
