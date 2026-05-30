@@ -11,7 +11,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | IDE / PSES (parent workspace, geen valse rode fouten) | [WORKSPACE_IDE_SETUP.md](WORKSPACE_IDE_SETUP.md) — `windows/APPLY_WORKSPACE_IDE_SETTINGS.bat` |
 | Na update: trust mislukt → start Hermes (pending nazorg) | [HERMES_START.md](HERMES_START.md) § *Na update* — stamp `pending_trust_runtime.json`; E2E: `windows/audits/RUN_PENDING_TRUST_START_E2E.bat` |
 | Memory L1–L4 (vault, geen L3) | [MEMORY_ARCHITECTURE.md](MEMORY_ARCHITECTURE.md) — E2E **18/18**: `RUN_MEMORY_ARCHITECTURE_E2E.bat` · productie: `RUN_MEMORY_PRODUCTION_GATE.bat` |
-| Obsidian vault openen (L4) | `windows/OPEN_OBSIDIAN_VAULT.bat` — taakbalk: `Hermes - Obsidian vault - naar taakbalk slepen.lnk` |
+| Obsidian vault openen (L4) | `windows/OPEN_OBSIDIAN_VAULT.bat` — taakbalk: `Hermes Obsidian.lnk` in `%LOCALAPPDATA%\Hermes\taakbalk\` |
 | TUI statusbalk-kosten (rich: turn/sessie, breakdown, tools) | `windows/audits/RUN_STATUS_BAR_COST_E2E.bat` · `-ApplyDisplayFix` · `RUN_AUDITS.bat -IncludeStatusBarCostE2E` — rapport `windows/audits/STATUS_BAR_COST_E2E_REPORT_2026-05-23.md` |
 | Klassieke CLI statusbalk-kosten (Gemini cache, 12-stappen E2E) | `windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` · `RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E` — rapport `windows/audits/CLASSIC_CLI_STATUS_BAR_COST_E2E_REPORT_2026-05-24.md` |
 | Klassieke CLI prompt-wachtrij (`/queue`, hint, status) | [../windows/README.md](../windows/README.md) § `/queue` · E2E: `audits/RUN_CLI_PENDING_QUEUE_E2E.bat` · unit: `pytest tests/hermes_cli/test_cli_pending_queue.py -q` |
@@ -40,7 +40,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | RAG env-defaults (stale, torch-ruis) | [RAG_INSTITUTIONAL_ENV.md](RAG_INSTITUTIONAL_ENV.md) |
 | Windows platform hardening (sandbox, GPU, LanceDB, KnowledgeRepository) | [WINDOWS_PLATFORM_HARDENING.md](WINDOWS_PLATFORM_HARDENING.md) · E2E: `RUN_WINDOWS_PLATFORM_HARDENING_E2E.bat`, `RUN_PLATFORM_HARDENING_REGRESSION_E2E.bat`, `RUN_KNOWLEDGE_REPOSITORY_E2E.bat` · productie: `RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat` |
 | Technische ingest/MCP-stappen | [../scripts/rag_pipeline/ACTIVATION.md](../scripts/rag_pipeline/ACTIVATION.md) |
-| Windows-scripts en taakbalk | [../windows/README.md](../windows/README.md) |
+| Windows-scripts en taakbalk | [../windows/README.md](../windows/README.md) · pins: [../windows/TAAKBALK_PINS.md](../windows/TAAKBALK_PINS.md) |
 | Terminal, skin, markdown-kleuren, API-home | [../windows/TERMINAL_WINDOWS.md](../windows/TERMINAL_WINDOWS.md) |
 | WT titelbalk / muisklik overlay (opgelost) | [../windows/MOUSE_OVERLAY_FIX.md](../windows/MOUSE_OVERLAY_FIX.md) · recovery: `FIX_MOUSE_BLOCKED.bat` · poort: `windows/audits/RUN_WT_MOUSE_OVERLAY_E2E.bat` |
 | User-data docs (STATUS/RECOVERY sync) | [USER_DATA_OPERATIONS.md](USER_DATA_OPERATIONS.md) |

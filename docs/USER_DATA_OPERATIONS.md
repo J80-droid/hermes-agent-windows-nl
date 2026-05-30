@@ -47,7 +47,7 @@ Na wijzigingen in `windows\UPDATE_HERMES.bat`, `FIX_TASKBAR_ICONS.bat` of `UPSTR
 
 **Setup PS1:** alleen `scripts/windows/setup_hermes_windows.ps1` bewerken; `windows/setup_hermes_windows.ps1` blijft wrapper. Keten controleren: handmatig `VERIFY_WINDOWS_CHAIN.bat`; in `UPDATE_HERMES.bat` automatisch via `verify_windows_script_chain.ps1`.
 
-**Taakbalk:** pin via `Hermes - * - naar taakbalk slepen.lnk` in `windows\` of `%LOCALAPPDATA%\Hermes\shortcuts\` (niet `.bat` slepen). Na **elke update** en **Hermes-start** worden pins automatisch bijgewerkt (`fix_hermes_taskbar_pins.ps1`); handmatig opnieuw vastzetten is meestal niet nodig.
+**Taakbalk:** canoniek [../windows/TAAKBALK_PINS.md](../windows/TAAKBALK_PINS.md). **Eénmalig** vastmaken vanuit `%LOCALAPPDATA%\Hermes\taakbalk\` (`Hermes Start.lnk`, …), niet slepen uit `windows\` of `backups\`. Dubbelklik blijft in `windows\`. Na **update** en **full start** worden pins in-place bijgewerkt (`fix_hermes_taskbar_pins.ps1`).
 
 **Iconen per rol (`.lnk` → `IconLocation`):**
 

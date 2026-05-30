@@ -52,7 +52,7 @@
 
 **Launch UI Sink (2026-05-29):** `HermesLaunchUi.ps1` + `launch_hermes.ps1` als PS-entry; enkelvoudige console-schrijver (EL `[2K`), capture naar log, rich visual in WT; vaste goudgele kop `Write-HermesLaunchPinnedHeader` (`[93m]` regels 1–2) tijdens spinner; bootstrap via orchestrator (geen `-SkipBootstrap` in bat); E2E **8/8** `audits/RUN_LAUNCH_UI_SINK_E2E.bat` (geen live muis/WT); zie `windows/TERMINAL_WINDOWS.md`.
 
-**Persistente snelkoppelingen (2026-05-29):** `HermesPersistentShortcuts.ps1` + `Invoke-HermesShortcutSyncRepair` — canonieke `.lnk` in `%LOCALAPPDATA%\Hermes\shortcuts\`; taakbalk/bureaublad automatisch bij update/start; icoon-cache via echte `LocalApplicationData` (fix wit document na unit tests); `Repair-HermesBatPathForRepo` voor verplaatste repo-paden.
+**Persistente snelkoppelingen (2026-05-29, doc 2026-05-30):** `HermesPersistentShortcuts.ps1` + `Invoke-HermesShortcutSyncRepair` — drie lagen: `windows\` (git, dubbelklik), `%LOCALAPPDATA%\Hermes\shortcuts\` (catalogus), `%LOCALAPPDATA%\Hermes\taakbalk\` (**pin-bron**, korte namen). Eénmalig vastmaken vanuit `taakbalk\`; `Repair-HermesTaskbarPinsFromStableDir` in-place na update/start. Canonieke doc: `windows/TAAKBALK_PINS.md`; entrypoints `OPEN_HERMES_TAAKBALK_PINS.bat`, `FIX_TASKBAR_ICONS.bat`.
 
 **Web UI clean codebase (2026-05-29):** `web/` — `npm run lint` + `npm run build` groen; React-hooks fixes (sidebar tooltips via `useTooltipAnchor`, drop-up via `useDropUpFixedStyle`); i18n/theme context gesplitst; Chat PTY-channel `resume-{sessionId}` (geen `:` t.o.v. `_VALID_CHANNEL_RE`); `apply_team_display_profiles.py` utils-import via `sys.path`; E2E **11/11** `audits/RUN_WEB_UI_CLEAN_E2E.bat`; docs `web/README.md`. **A11y/hints (zelfde dag):** listbox-structuur Theme/Language switcher; `lib/aria.ts`; CSS surface utilities (`index.css`); Edge Tools axe-hints (aria strings, geen header in listbox); pytest curses guardrails UTF-8 + clamped-color regex op Windows.
 
@@ -169,8 +169,8 @@
 | `MANAGE_BACKUPS.bat` | Inclusief `backup_soul_profiles` → `localappdata_hermes/` in backup |
 | `POST_GIT_PULL.bat` | Na pull: trust + SOUL stamp-deploy + toolsets |
 | `launch_soul_anatomy_deploy.ps1` | Stamp SOUL bij start / POST_GIT_PULL |
-| `FIX_TASKBAR_ICONS.bat` | Handmatig icoon + pins |
-| `.lnk` vastmaken | Sleep `.lnk` uit `windows\`, niet `.bat` |
+| `FIX_TASKBAR_ICONS.bat` / `OPEN_HERMES_TAAKBALK_PINS.bat` | Icoon + pins; vastmaken uit `%LOCALAPPDATA%\Hermes\taakbalk\` — zie `windows/TAAKBALK_PINS.md` |
+| Taakbalk (eenmalig) | Rechtsklik *Vastmaken* op `Hermes *.lnk` in `taakbalk\`; niet slepen uit `windows\`/`backups\`; geen `.bat` slepen |
 | `SETUP_HERMES.bat` | Standaard bestanden + wizard; `--files-only` = geen wizard |
 
 Iconen: goud = start/RAG, groen = setup, wit = update, roze = backup, cyaan = restore. Setup bewerken: alleen `scripts/windows/setup_hermes_windows.ps1` (niet volledige kopie naar `windows/`).

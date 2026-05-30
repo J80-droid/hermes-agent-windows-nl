@@ -113,7 +113,8 @@ Preflight, merge, RAG-postinstall en script-keten-verify zitten in het script. V
 | Keten controleren (handmatig) | `windows/VERIFY_WINDOWS_CHAIN.bat` |
 | Setup + wizard | `windows/SETUP_HERMES.bat` (standaard) of `OPEN_SETUP.bat`; alleen bestanden: `--files-only` |
 | Icoon kapot / leeg in Explorer | `python windows/tools/generate_colored_hermes_icons.py` daarna `windows/FIX_TASKBAR_ICONS.bat` + F5 |
-| Taakbalk-pin | Via `Hermes - * - naar taakbalk slepen.lnk` (niet `.bat` slepen) |
+| Taakbalk-pin (eenmalig) | `%LOCALAPPDATA%\Hermes\taakbalk\` → `Hermes Start.lnk`, … — `windows\OPEN_HERMES_TAAKBALK_PINS.bat`; zie [../windows/TAAKBALK_PINS.md](../windows/TAAKBALK_PINS.md) (niet `.bat` slepen; niet pinnen uit `windows\` of `backups\`) |
+| Dubbelklik start | `windows\Start Hermes - naar taakbalk slepen.lnk` |
 
 Setup bewerken: alleen `scripts/windows/setup_hermes_windows.ps1` (wrapper in `windows/`).
 

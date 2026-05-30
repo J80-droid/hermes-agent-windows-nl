@@ -58,7 +58,7 @@ start_hermes.bat
 
 **Maximaliseren:** één keer vóór chat in `launch_hermes.bat` — **niet** in Windows Terminal (`WT_SESSION`): `ExpandConsoleToWorkArea` op conhost geeft een onzichtbare fullscreen overlay op de titelbalk (minimize/maximize/close werken niet). In WT alleen QuickEdit/muis uit; grootte regelt WT zelf. Legacy cmd: work-area expand wel. **QuickEdit** uit via `HermesShellCommon.ps1` + `hermes_cli.win32_console`. **Config:** eenmalig `windows\OPEN_SETUP.bat` → `%LOCALAPPDATA%\hermes\config.yaml`.
 
-Of dubbelklik **`windows\Start Hermes - naar taakbalk slepen.lnk`** of bureaublad **`Hermes Agent.lnk`** (beide → `start_hermes.bat` in WT). Optioneel: `Hermes Agent (met logo).lnk` (ASCII-logo, daarna dezelfde startketen). Na wijzigingen: `CREATE_DESKTOP_SHORTCUT.bat`; taakbalk-pin opnieuw vastmaken.
+Dubbelklik **`windows\Start Hermes - naar taakbalk slepen.lnk`** of bureaublad **`Hermes Agent.lnk`** (beide → `start_hermes.bat` in WT). **Taakbalk:** eenmalig vastmaken vanuit `%LOCALAPPDATA%\Hermes\taakbalk\` (`Hermes Start.lnk`) — zie [TAAKBALK_PINS.md](TAAKBALK_PINS.md); niet slepen uit `windows\`. Na wijzigingen: `CREATE_DESKTOP_SHORTCUT.bat` + `FIX_TASKBAR_ICONS.bat`.
 
 **Niet** `start_hermes_split.bat` voor normaal gebruik — dat opent chat + log-paneel (debug).
 

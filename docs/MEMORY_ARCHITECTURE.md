@@ -31,7 +31,7 @@ Na wijziging in `~/.hermes\.env`: sync uitvoeren; Hermes TUI start daarna automa
 
 **Automatisch:** `UPDATE_HERMES.bat`, `POST_GIT_PULL.bat` en `SYNC_TRUST_RUNTIME.bat` roepen `sync_hermes_api_env.ps1` aan (inclusief idempotente vault-scaffold uit `docs/templates/obsidian_vault_scaffold/`).
 
-**Obsidian openen:** `windows\OPEN_OBSIDIAN_VAULT.bat` — env-sync, scaffold, start Obsidian op `OBSIDIAN_VAULT_PATH`. Eerste keer in Obsidian: *Open map als kluis* als het welkomstscherm verschijnt. Taakbalk: `Hermes - Obsidian vault - naar taakbalk slepen.lnk` (na `REFRESH_TASKBAR_SHORTCUTS.bat` of `FIX_TASKBAR_ICONS.bat`).
+**Obsidian openen:** `windows\OPEN_OBSIDIAN_VAULT.bat` — env-sync, scaffold, start Obsidian op `OBSIDIAN_VAULT_PATH`. Eerste keer in Obsidian: *Open map als kluis* als het welkomstscherm verschijnt. Taakbalk: `Hermes Obsidian.lnk` in `%LOCALAPPDATA%\Hermes\taakbalk\` (zie [../windows/TAAKBALK_PINS.md](../windows/TAAKBALK_PINS.md)); dubbelklik: `windows\Hermes - Obsidian vault - naar taakbalk slepen.lnk`.
 
 **E2E audit (18 stappen + productie-poort):**
 

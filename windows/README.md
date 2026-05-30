@@ -2,6 +2,8 @@
 
 Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan uit van **conda `hermes-env`** en repo-root `hermes-agent`.
 
+**Snelkoppelingen / taakbalk:** canonieke gids **[TAAKBALK_PINS.md](TAAKBALK_PINS.md)** (`windows\` = dubbelklik; `%LOCALAPPDATA%\Hermes\taakbalk\` = vastmaken).
+
 **Handige commando's (fork, cheat sheet):** [`docs/INSTITUTIONAL_OPERATIONS.md`](../docs/INSTITUTIONAL_OPERATIONS.md#handige-commandos-fork) — dagelijks, repo-hygiene, upstream, RAG, audits, pytest. Onderstaande tabellen zijn per domein; dupliceer geen losse `.bat`-lijsten elders zonder link naar die sectie.
 
 ## Python (institutioneel)
@@ -235,4 +237,4 @@ Zie `docs\PROFILE_MODEL_INHERITANCE.md`.
 
 **RAG handmatig/taakbalk:** `RAG_KNOWLEDGE_UPDATE.bat` — J/N via typen + Enter, venster blijft open (`wt.exe` + `cmd /k call` in `.lnk`). Regenereer via `FIX_TASKBAR_ICONS.bat` of `create_taskbar_shortcuts.ps1`. **Alleen geplande nacht-run:** `RAG_KNOWLEDGE_UPDATE_NIGHT.bat` (`HERMES_NONINTERACTIVE=1`, geen J/N).
 
-**Iconen (taakbalk + Verkenner):** goud = start/RAG (`hermes_logo.ico`), groen = setup (`hermes_logo_setup.ico`), wit/zilver = update (`hermes_logo_update.ico`), roze = backup, cyaan = restore. Bron: `assets/Hermes_logo.png` (of `%USERPROFILE%\.hermes\_local_assets\assets\Hermes_logo.png`). Generator bouwt **7-lagen ICO** (16–256 px). Gekleurde varianten in `windows/.gitignore` — na clone: generator + `FIX_TASKBAR_ICONS.bat`. **Alle .lnk (incl. Start):** `wt.exe -M -d repo cmd /c call pad.bat` (`Set-HermesShellShortcut`; RAG: `/k`). Geen `.bat` direct slepen. Controle: `scripts/verify_hermes_shortcut_paths.ps1 -IncludePinned` + `verify_taskbar_shortcut_icons.ps1`. Herstel: `FIX_TASKBAR_ICONS.bat` → **F5** in Explorer → pin opnieuw via `.lnk` in `windows\`.
+**Snelkoppelingen (canoniek):** [TAAKBALK_PINS.md](TAAKBALK_PINS.md) — drie lagen (`windows\` dubbelklik, `%LOCALAPPDATA%\Hermes\shortcuts\`, `%LOCALAPPDATA%\Hermes\taakbalk\` voor pins). **Iconen:** goud = start/RAG, groen = setup, wit/zilver = update, roze = backup, cyaan = restore. Bron: `assets/Hermes_logo.png` → `windows/tools/generate_colored_hermes_icons.py` (7-lagen ICO). Na clone: `FIX_TASKBAR_ICONS.bat`. **Launcher:** `wt.exe -M -d repo cmd /c call pad.bat` (RAG: `/k`); geen `.bat` slepen. Verify: `verify_hermes_shortcut_paths.ps1 -IncludePinned` + `verify_taskbar_shortcut_icons.ps1`. Herstel: `FIX_TASKBAR_ICONS.bat`; kapotte pin → opnieuw vastmaken vanuit **`taakbalk\`**, niet uit `windows\`.

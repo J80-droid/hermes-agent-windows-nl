@@ -38,17 +38,20 @@ Na `git pull` of op een **nieuwe machine**:
 2. Of handmatig: `VERIFY_WINDOWS_CHAIN.bat` en `FIX_TASKBAR_ICONS.bat`
 3. Bij oude clone zonder windows-bestanden: `restore_local_assets.bat`
 
-**Eenmalig** bij verkeerd taakbalk-icoon: pin losmaken → `Hermes - * - naar taakbalk slepen.lnk` opnieuw vastmaken (niet `.bat` slepen). Daarna doet elke `UPDATE_HERMES.bat` dit automatisch.
+**Taakbalk-pins (future-proof):** zie **`windows/TAAKBALK_PINS.md`**. Eénmalig vastmaken vanuit `%LOCALAPPDATA%\Hermes\taakbalk\` (`Hermes Start.lnk`, …), niet slepen uit `windows\` of `backups\`. Daarna: elke `UPDATE_HERMES.bat` en full **start** werken pins in-place bij.
 
-**Taakbalk-iconen (2026-05):**
+**Taakbalk-iconen en lagen:**
 
 | Onderdeel | Pad / gedrag |
 | --------- | ------------- |
+| Repo (dubbelklik) | `windows\*.lnk` — in git, vernieuwd bij sync |
+| Persistente catalogus | `%LOCALAPPDATA%\Hermes\shortcuts\` — volledige catalogus buiten git |
+| **Pin-bron taakbalk** | `%LOCALAPPDATA%\Hermes\taakbalk\` — korte namen; **hier** vastmaken |
 | Bron-PNG | `assets/Hermes_logo.png` (git) of `%USERPROFILE%\.hermes\_local_assets\assets\` |
 | Generator | `windows/tools/generate_colored_hermes_icons.py` → 7-lagen `.ico` (16–256 px) |
-| Snelkoppelingen | `create_taskbar_shortcuts.ps1` → alle rollen via `wt.exe` + `cmd /c call` (RAG: `/k`); fallback zonder wt: `cmd /c call` + WorkingDirectory |
-| Herstel | `FIX_TASKBAR_ICONS.bat` + F5 in `windows\` |
-| Verify | `windows/scripts/verify_taskbar_shortcut_icons.ps1` |
+| Sync/repair | `HermesPersistentShortcuts.ps1` → `fix_hermes_taskbar_pins.ps1`; `wt.exe` + `cmd /c call` (RAG: `/k`) |
+| Herstel | `FIX_TASKBAR_ICONS.bat` of `OPEN_HERMES_TAAKBALK_PINS.bat` |
+| Verify | `verify_taskbar_shortcut_icons.ps1` + `verify_hermes_shortcut_paths.ps1 -IncludePinned` |
 | Setup wizard | `SETUP_HERMES.bat` (standaard `--full-setup` → `OPEN_SETUP.bat`); `--files-only` zonder wizard |
 
 Kleuren: goud = start/RAG, groen = setup, wit = update, roze = backup, cyaan = restore. Geen `hermes_taskbar_white.ico` in `.lnk`.

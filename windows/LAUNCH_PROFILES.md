@@ -32,16 +32,16 @@ Vlaggen `--minimal` / `--full` zijn **alleen** voor `start_hermes.bat`. Ze worde
 
 ## Snelkoppelingen
 
-Na wijziging: `CREATE_DESKTOP_SHORTCUT.bat` of `hermes_onderhoud.bat -ShortcutsOnly`.
+Zie [TAAKBALK_PINS.md](TAAKBALK_PINS.md). Na wijziging: `CREATE_DESKTOP_SHORTCUT.bat` of `hermes_onderhoud.bat -ShortcutsOnly`.
 
-| .lnk | Profiel |
-| ---- | ------- |
-| Start Hermes - naar taakbalk slepen.lnk | full |
-| Start Hermes (snel) - naar taakbalk slepen.lnk | minimal |
-| Hermes Agent.lnk (bureaublad) | full |
-| Hermes Agent (snel).lnk | minimal |
+| Dubbelklik (`windows\`) | Profiel | Taakbalk vastmaken (`taakbalk\`) |
+| ---- | ------- | -------------------------------- |
+| `Start Hermes - naar taakbalk slepen.lnk` | full | `Hermes Start.lnk` |
+| `Start Hermes (snel) - naar taakbalk slepen.lnk` | minimal | `Hermes Start (snel).lnk` |
+| `Hermes Agent.lnk` (bureaublad) | full | — |
+| `Hermes Agent (snel).lnk` | minimal | — |
 
-**Titelbalk / muisklik:** start altijd via `start_hermes.bat` (Windows Terminal). Werkt minimize/sluiten niet? Zie [START.md](START.md#titelbalk--muisklik-opgelost) en [MOUSE_OVERLAY_FIX.md](MOUSE_OVERLAY_FIX.md). Vernieuw .lnk: `CREATE_DESKTOP_SHORTCUT.bat`.
+**Titelbalk / muisklik:** start via `start_hermes.bat` (WT). Zie [START.md](START.md#titelbalk--muisklik-opgelost). Pins: eenmalig uit `%LOCALAPPDATA%\Hermes\taakbalk\`, niet slepen uit `windows\`.
 
 ## Tests
 

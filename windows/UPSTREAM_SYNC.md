@@ -51,20 +51,21 @@ git fetch upstream
 
 ---
 
-## Taakbalk-icoon na update
+## Taakbalk na update
 
-Na elke update en bij **start** draait **`fix_hermes_taskbar_pins.ps1`**: eerst `windows\*.lnk`, daarna **`User Pinned\TaskBar`** als **spiegel** van die bestanden (incl. **Start Hermes*** — regressie 2026-05-29 filterde Start uit). **Na `UPDATE_HERMES.bat`:** fix + `-PostUpdateGuidance`. **Eénmalig** bij oude taakbalk-knoppen: pop-up → **Ja**, daarna vastzetten via `%LOCALAPPDATA%\Hermes\taakbalk\` of rechtsklik `.lnk` in `windows\`. Hudui/electron-app-pins zijn geen `.lnk`.
+**Canonieke gids:** [TAAKBALK_PINS.md](TAAKBALK_PINS.md).
 
-1. **`python windows/tools/generate_colored_hermes_icons.py`** (als PNG/bron ontbrak: ook `%USERPROFILE%\.hermes\_local_assets\assets\Hermes_logo.png`)
-2. **`FIX_TASKBAR_ICONS.bat`** → **F5** in `windows\`
-3. **Losmaken** van de oude pin (niet `.bat` slepen)
-4. **`windows\Hermes - update - naar taakbalk slepen.lnk`** (of andere rol) → **Vastmaken aan taakbalk**
+Na elke update en bij **start** (full) draait **`fix_hermes_taskbar_pins.ps1`**: `windows\` → `%LOCALAPPDATA%\Hermes\shortcuts\` + **`taakbalk\`** → in-place repair op **`User Pinned\TaskBar`**. **Na `UPDATE_HERMES.bat`:** fix + `-PostUpdateGuidance` (opent optioneel `taakbalk\`).
 
-Kleuren: goud = start/RAG, groen = setup, wit = update, roze = backup, cyaan = restore.
+| Situatie | Actie |
+|----------|--------|
+| Normale update | Niets — pins worden in-place bijgewerkt |
+| Eerste keer / nieuwe machine | `OPEN_HERMES_TAAKBALK_PINS.bat` → vastmaken vanuit **`%LOCALAPPDATA%\Hermes\taakbalk\`** |
+| Pop-up kapotte snelkoppeling | **Ja** → opnieuw vastmaken uit **`taakbalk\`** (niet uit `windows\` of `backups\`) |
+| Icoon leeg | `python windows/tools/generate_colored_hermes_icons.py` → `FIX_TASKBAR_ICONS.bat` → F5 |
+| Oude exe-pin (hudui) | Handmatig losmaken — geen `.lnk` |
 
-Taakbalk-.lnk: update = `hermes_logo_update.ico` (wit/zilver). Gebruik **niet** `hermes_taskbar_white.ico` in `.lnk` (oude H-stub in Explorer).
-
-**Launcher:** alle `.lnk` gebruiken `wt.exe -M -d repo cmd /c call pad.bat` (niet oude `cmd /c "cd /d …"` — faalt als WT standaardterminal is; symptoom: alleen Start werkt). Padcontrole: `scripts\verify_hermes_shortcut_paths.ps1 -IncludePinned`. Herstel: `FIX_TASKBAR_ICONS.bat`.
+Hudui/electron-app-pins zijn geen `.lnk`. Launcher: `wt.exe -M -d repo cmd /c call pad.bat`. Verify: `verify_hermes_shortcut_paths.ps1 -IncludePinned`.
 
 **Preflight exit 2 (werkmap niet schoon):** commit of stash vóór update; alleen `assets/Hermes_logo.png` + `windows/hermes*.ico` of lokale `hermes_*.log` in repo-root mag door zonder commit.
 

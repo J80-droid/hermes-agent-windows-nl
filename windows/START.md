@@ -113,20 +113,24 @@ start_hermes_minimal.bat
 
 Profielvlagen `--minimal` / `--full` zijn **alleen** voor `start_hermes.bat`, niet voor `hermes chat`.
 
-## Snelkoppellingen
+## Snelkoppelingen
 
-| Wat | Hoe |
-| --- | --- |
-| Vernieuwen | `windows\CREATE_DESKTOP_SHORTCUT.bat` |
-| Start (volledig) | `Start Hermes - naar taakbalk slepen.lnk` |
-| Start (snel) | `Start Hermes (snel) - naar taakbalk slepen.lnk` |
-| Bureaublad | `Hermes Agent.lnk` (full); optioneel `Hermes Agent (snel).lnk` |
+**Canonieke gids:** **[TAAKBALK_PINS.md](TAAKBALK_PINS.md)** (drie lagen, rollen, troubleshooting).
+
+| Wat | Waar / hoe |
+| --- | ---------- |
+| Dubbelklik (repo) | `windows\Start Hermes - naar taakbalk slepen.lnk` (full), `(snel)` voor minimal |
+| **Taakbalk vastmaken (eenmalig)** | `%LOCALAPPDATA%\Hermes\taakbalk\` → `Hermes Start.lnk`, … — **niet** slepen uit `windows\` |
+| Map openen | `windows\OPEN_HERMES_TAAKBALK_PINS.bat` |
+| Vernieuwen / bureaublad | `windows\CREATE_DESKTOP_SHORTCUT.bat` |
+| Na update / start | Pins automatisch (`fix_hermes_taskbar_pins.ps1`); handmatig: `FIX_TASKBAR_ICONS.bat` |
 
 | Symptoom | Actie |
 | -------- | ----- |
-| Venstertitel is alleen **cmd**, geen Windows Terminal | Snelkoppeling wijst vaak naar `launch_hermes.bat` i.p.v. `start_hermes.bat` → `CREATE_DESKTOP_SHORTCUT.bat` + taakbalk opnieuw pinnen |
+| Venstertitel is alleen **cmd**, geen Windows Terminal | `CREATE_DESKTOP_SHORTCUT.bat` + `FIX_TASKBAR_ICONS.bat`; taakbalk alleen opnieuw vastmaken vanuit **`taakbalk\`** |
 | Minimize werkt niet na oude sessie | `FIX_MOUSE_BLOCKED.bat` → alle tabs dicht → `start_hermes.bat` |
-| Na `git pull` | Shortcut-repair bij full start; anders handmatig `CREATE_DESKTOP_SHORTCUT.bat` |
+| Na `git pull` | Full start repareert pins; anders `FIX_TASKBAR_ICONS.bat` |
+| Kapotte-pin-pop-up | `HERSTEL_TAAKBALK_POPUP.bat` of Ja → opnieuw vastmaken uit `taakbalk\` |
 
 Zie ook **[TERMINAL_WINDOWS.md](TERMINAL_WINDOWS.md)** (wt.exe + `cmd /c call`).
 

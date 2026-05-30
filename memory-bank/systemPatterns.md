@@ -62,14 +62,17 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 - **Succes:** `Clear-PendingTrustRuntime` + `Set-InstitutionalNewChatReminder` via `Invoke-MemoryTrustPostSync.ps1`.
 - **Skip:** `HERMES_SKIP_PENDING_TRUST_ON_START=1`; max 3 pogingen, daarna handmatige fallback naar `SYNC_TRUST_RUNTIME.bat`.
 
-## Windows taakbalk-iconen
+## Windows snelkoppelingen en taakbalk
 
-- **Bron:** `assets/Hermes_logo.png` (repo) of `%USERPROFILE%\.hermes\_local_assets\assets\Hermes_logo.png`.
-- **Generator:** `windows/tools/generate_colored_hermes_icons.py` — 7 ICO-lagen (16–256); geen synthetische H-stub zonder PNG.
-- **Persistent:** `%LOCALAPPDATA%\Hermes\shortcuts\` (canonieke `.lnk` buiten git) + `%LOCALAPPDATA%\Hermes\shortcut-icons\` (icoon-cache; echte AppData, niet test-temp).
-- **`windows\*.lnk`:** `Set-HermesShellShortcut` — bij WT: `wt.exe -M -d repo cmd /c call bat`; fallback: `cmd /c call` + `WorkingDirectory`; RAG: `/k`.
-- **Auto-repair:** `Invoke-HermesShortcutSyncRepair` (`HermesPersistentShortcuts.ps1`) — na **update** en **start**; herkent alle `Hermes*.lnk` op taakbalk/bureaublad (ook legacy namen); herleidt verplaatste bat-paden.
-- **Handmatig:** `FIX_TASKBAR_ICONS.bat`; verify: `verify_taskbar_shortcut_icons.ps1` + `verify_hermes_shortcut_paths.ps1` (`-IncludePinned`).
+- **Canonieke doc:** `windows/TAAKBALK_PINS.md` (drie lagen, rollentabel, troubleshooting).
+- **Repo:** `windows\*.lnk` — in git; dubbelklik; lange catalogusnamen.
+- **AppData catalogus:** `%LOCALAPPDATA%\Hermes\shortcuts\` — volledige mirror buiten git.
+- **AppData taakbalk:** `%LOCALAPPDATA%\Hermes\taakbalk\` — `Hermes Start.lnk`, …; **hier** eenmalig vastmaken (niet slepen uit `windows\`/`backups\`).
+- **Icoon-cache:** `%LOCALAPPDATA%\Hermes\shortcut-icons\` (echte AppData, niet test-temp).
+- **Bron/generator:** `assets/Hermes_logo.png` → `windows/tools/generate_colored_hermes_icons.py` (7 ICO-lagen).
+- **`Set-HermesShellShortcut`:** `wt.exe -M -d repo cmd /c call bat` (RAG: `/k`).
+- **Auto-repair:** `Invoke-HermesShortcutSyncRepair` + `Repair-HermesTaskbarPinsFromStableDir` na update/start; spiegel `User Pinned\TaskBar`.
+- **Handmatig:** `OPEN_HERMES_TAAKBALK_PINS.bat`, `FIX_TASKBAR_ICONS.bat`; verify: `verify_*_shortcut_*.ps1` (`-IncludePinned`).
 
 ## Institutionele presentatie (drie lagen)
 
