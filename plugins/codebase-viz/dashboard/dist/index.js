@@ -15,46 +15,81 @@ var CodebaseVizPlugin = (() => {
   var react_shim_default = React;
   var useEffect = SDK.hooks.useEffect;
   var useRef = SDK.hooks.useRef;
+  var useState = SDK.hooks.useState;
+  var useMemo = SDK.hooks.useMemo;
+  var useCallback = SDK.hooks.useCallback;
 
   // src/SunburstChart.jsx
   var COLOR_MAP = {
-    Python: "#3572A5",
-    TypeScript: "#3178C6",
-    JavaScript: "#F7DF1E",
-    HTML: "#E34F26",
-    CSS: "#563D7C",
-    Shell: "#89E051",
-    Markdown: "#083FA1",
-    YAML: "#CB171E",
-    JSON: "#292929",
-    Dockerfile: "#384D54"
+    Python: "#4CAF50",
+    TypeScript: "#64B5F6",
+    JavaScript: "#FFD54F",
+    HTML: "#FFAB91",
+    CSS: "#80DEEA",
+    Shell: "#AED581",
+    Markdown: "#90CAF9",
+    YAML: "#A5D6A7",
+    JSON: "#BDBDBD",
+    Dockerfile: "#4FC3F7"
   };
-  var COLOR_DEFAULT = "#6B7280";
+  var COLOR_DEFAULT = "#90A4AE";
+  function textColorForBackground(hex) {
+    if (!hex || hex.startsWith("hsl")) return "#fff";
+    const r = parseInt(hex.slice(1, 3), 16) || 0;
+    const g = parseInt(hex.slice(3, 5), 16) || 0;
+    const b = parseInt(hex.slice(5, 7), 16) || 0;
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.55 ? "#0f0f0f" : "#ffffff";
+  }
+  function centroidLabel(d) {
+    const r = (d.y0 + d.y1) / 2;
+    const a = (d.x0 + d.x1) / 2 - Math.PI / 2;
+    return {
+      x: r * Math.cos(a),
+      y: r * Math.sin(a),
+      rotation: a * 180 / Math.PI + (a > Math.PI / 2 ? 180 : 0),
+      anchor: a > Math.PI / 2 ? "end" : "start"
+    };
+  }
   function SunburstChart({ data }) {
     const svgRef = useRef(null);
+    const containerRef = useRef(null);
+    const [size, setSize] = useState({ w: 0, h: 0 });
+    const [tooltip, setTooltip] = useState(null);
+    const [currentZoom, setCurrentZoom] = useState(null);
+    useEffect(() => {
+      const container = containerRef.current;
+      if (!container) return void 0;
+      const ro = new ResizeObserver(() => {
+        setSize({ w: container.clientWidth, h: Math.max(container.clientHeight, 300) });
+      });
+      ro.observe(container);
+      setSize({ w: container.clientWidth, h: Math.max(container.clientHeight, 300) });
+      return () => ro.disconnect();
+    }, []);
     useEffect(() => {
       if (!data?.tree || !svgRef.current || !window.d3) return;
+      setCurrentZoom(null);
       const d3 = window.d3;
       const svg = d3.select(svgRef.current);
       svg.selectAll("*").remove();
-      const width = svgRef.current.clientWidth || 800;
-      const height = svgRef.current.clientHeight || 600;
+      const width = size.w || svgRef.current.clientWidth || 800;
+      const height = size.h || svgRef.current.clientHeight || 600;
       const radius = Math.min(width, height) / 2;
       const root = d3.hierarchy(data.tree).sum((d) => Math.max(d.loc || 0, 1));
       d3.partition().size([2 * Math.PI, radius])(root);
       const g = svg.append("g").attr("transform", `translate(${width / 2},${height / 2})`);
       const arc = d3.arc().startAngle((d) => d.x0).endAngle((d) => d.x1).innerRadius((d) => d.y0).outerRadius((d) => d.y1);
-      const paths = g.selectAll("path").data(root.descendants().filter((d) => d.depth > 0)).enter().append("path").attr("d", arc).attr("fill", (d) => COLOR_MAP[d.data.language] || COLOR_DEFAULT).attr("opacity", 0.6).attr("stroke", "hsl(var(--background))").attr("stroke-width", 1);
-      let currentZoom = null;
+      const descendants = root.descendants().filter((d) => d.depth > 0);
+      const paths = g.selectAll("path").data(descendants).enter().append("path").attr("d", arc).attr("fill", (d) => COLOR_MAP[d.data.language] || COLOR_DEFAULT).attr("opacity", 0.85).attr("stroke", "hsl(var(--background))").attr("stroke-width", 1).style("cursor", "pointer");
       paths.on("click", function(event, d) {
         event.stopPropagation();
-        if (currentZoom === d) {
-          currentZoom = null;
-          g.transition().duration(750).attr("transform", `translate(${width / 2},${height / 2})`);
-          paths.transition().duration(750).attr("d", arc);
+        const current = currentZoom;
+        if (current && current === d) {
+          resetZoom();
           return;
         }
-        currentZoom = d;
+        setCurrentZoom(d);
         const kx = 2 * Math.PI / (d.x1 - d.x0);
         const ky = radius / (d.y1 - d.y0);
         g.transition().duration(750).attr(
@@ -72,26 +107,82 @@ var CodebaseVizPlugin = (() => {
             })
           )
         );
-      });
-      paths.on("mouseover", function(_event, d) {
+      }).on("mousemove", function(event, d) {
+        event.stopPropagation();
+        const lang = d.data.language || "?";
+        setTooltip({
+          x: event.clientX + 12,
+          y: event.clientY - 8,
+          html: `<strong>${d.data.name}</strong><br/>${lang}<br/>${d.value} LOC`
+        });
+      }).on("mouseleave", function() {
+        setTooltip(null);
+      }).on("mouseover", function(_event, d) {
         const lang = d.data.language;
-        d3.select(this).attr("opacity", 0.9).attr("stroke-width", 2);
+        d3.select(this).attr("opacity", 1).attr("stroke-width", 2);
         if (lang) {
-          paths.attr("opacity", (n) => n.data.language === lang ? 1 : 0.25);
+          paths.attr("opacity", (n) => n.data.language === lang ? 1 : 0.35);
         }
       }).on("mouseout", function() {
-        paths.attr("opacity", 0.6).attr("stroke-width", 1);
+        paths.attr("opacity", 0.85).attr("stroke-width", 1);
+        setTooltip(null);
       });
-      svg.on("click", () => {
-        currentZoom = null;
+      const labelG = g.append("g").attr("class", "labels");
+      labelG.selectAll("text").data(descendants.filter((d) => {
+        const arcLen = (d.y1 - d.y0) * ((d.x1 - d.x0) / 2);
+        return arcLen > 18 && d.x1 - d.x0 > 0.12;
+      })).join("text").attr("transform", (d) => {
+        const c = centroidLabel(d);
+        return `translate(${c.x},${c.y}) rotate(${c.rotation})`;
+      }).attr("text-anchor", (d) => centroidLabel(d).anchor).attr("dy", "0.35em").attr("font-size", (d) => {
+        const depthScale = Math.max(7, 11 - d.depth);
+        return depthScale + "px";
+      }).attr("fill", (d) => textColorForBackground(COLOR_MAP[d.data.language] || COLOR_DEFAULT)).style("pointer-events", "none").style("text-shadow", "0 1px 2px rgba(0,0,0,0.4)").text((d) => {
+        const arcLen = (d.y1 - d.y0) * ((d.x1 - d.x0) / 2);
+        const maxChars = Math.floor(arcLen / 4.5);
+        const name = d.data.name;
+        return name.length > maxChars && maxChars > 1 ? name.substring(0, maxChars) + "\u2026" : name;
+      });
+      function resetZoom() {
+        setCurrentZoom(null);
         g.transition().duration(750).attr("transform", `translate(${width / 2},${height / 2})`);
         paths.transition().duration(750).attr("d", arc);
+      }
+      svg.on("click", () => {
+        resetZoom();
       });
-    }, [data]);
-    return react_shim_default.createElement("svg", {
-      ref: svgRef,
-      className: "codebase-viz-sunburst",
-      style: { width: "100%", height: "100%", minHeight: "480px" }
+    }, [data, size]);
+    return react_shim_default.createElement("div", {
+      ref: containerRef,
+      style: { width: "100%", height: "100%", minHeight: "300px", position: "relative" },
+      children: [
+        react_shim_default.createElement("svg", {
+          key: "svg",
+          ref: svgRef,
+          className: "codebase-viz-sunburst",
+          style: { width: "100%", height: "100%", display: "block" }
+        }),
+        tooltip && react_shim_default.createElement("div", {
+          key: "tooltip",
+          style: {
+            position: "fixed",
+            left: tooltip.x,
+            top: tooltip.y,
+            background: "hsl(var(--popover, var(--background)))",
+            color: "hsl(var(--popover-foreground, var(--foreground)))",
+            border: "1px solid hsl(var(--border))",
+            borderRadius: "0.4rem",
+            padding: "0.35rem 0.6rem",
+            fontSize: "0.78rem",
+            lineHeight: 1.4,
+            pointerEvents: "none",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.35)",
+            zIndex: 2e3,
+            maxWidth: "16rem"
+          },
+          dangerouslySetInnerHTML: { __html: tooltip.html }
+        })
+      ]
     });
   }
 
@@ -540,6 +631,8 @@ var CodebaseVizPlugin = (() => {
     const [search, setSearch] = react_shim_default.useState("");
     const [inspector, setInspector] = react_shim_default.useState(null);
     const [size, setSize] = react_shim_default.useState({ w: 0, h: 0 });
+    const [tooltip, setTooltip] = react_shim_default.useState(null);
+    const [hoveredNode, setHoveredNode] = react_shim_default.useState(null);
     const { connected, lastEvent } = useFileWatcher();
     const ripple = useRippleAnimation(lastEvent);
     const graph = react_shim_default.useMemo(() => buildGraph(data, search), [data, search]);
@@ -575,11 +668,17 @@ var CodebaseVizPlugin = (() => {
         g.attr("transform", event.transform);
       });
       zoomBehaviorRef.current = zoom;
-      d3.select(svg).call(zoom);
-      const simulation = d3.forceSimulation(nodes).force("link", d3.forceLink(links).id((d) => d.id).distance(80)).force("charge", d3.forceManyBody().strength(-200)).force("center", d3.forceCenter(width / 2, height / 2)).force("collision", d3.forceCollide().radius(20));
+      d3.select(svg).call(zoom).on("dblclick.zoom", null);
+      const simulation = d3.forceSimulation(nodes).force("link", d3.forceLink(links).id((d) => d.id).distance(80)).force("charge", d3.forceManyBody().strength(-250)).force("center", d3.forceCenter(width / 2, height / 2)).force("collision", d3.forceCollide().radius(18));
       simRef.current = simulation;
-      const link = g.append("g").selectAll("line").data(links).join("line").attr("stroke", "hsl(var(--muted-foreground) / 0.3)").attr("stroke-width", 1).attr("stroke-dasharray", (d) => d.type === "from_import" ? "3,2" : "0");
-      const node = g.append("g").selectAll("circle").data(nodes).join("circle").attr("r", 6).attr("fill", "hsl(var(--primary))").attr("stroke", "hsl(var(--border))").attr("stroke-width", 1).style("cursor", "pointer").call(
+      const link = g.append("g").attr("stroke-linecap", "round").selectAll("line").data(links).join("line").attr("stroke", "hsl(var(--muted-foreground) / 0.35)").attr("stroke-width", 1).attr("stroke-dasharray", (d) => d.type === "from_import" ? "3,2" : "0").style("pointer-events", "none");
+      const node = g.append("g").selectAll("circle").data(nodes).join("circle").attr("r", (d) => {
+        const deg = links.filter((l) => l.source === d.id || l.target === d.id).length;
+        return 5 + Math.min(deg, 8);
+      }).attr("fill", (d) => {
+        if (d.id === hoveredNode) return "hsl(var(--primary))";
+        return "hsl(var(--muted-foreground) / 0.6)";
+      }).attr("stroke", (d) => d.id === hoveredNode ? "hsl(var(--primary))" : "hsl(var(--border))").attr("stroke-width", (d) => d.id === hoveredNode ? 2.5 : 1).style("cursor", "pointer").style("transition", "fill 0.2s, stroke 0.2s").call(
         d3.drag().on("start", (event, d) => {
           if (!event.active) simulation.alphaTarget(0.3).restart();
           d.fx = d.x;
@@ -592,11 +691,29 @@ var CodebaseVizPlugin = (() => {
           d.fx = null;
           d.fy = null;
         })
-      ).on("click", (_event, d) => setInspector(d.id)).on("mouseenter", function(_event, d) {
+      ).on("click", (event, d) => {
+        event.stopPropagation();
+        setInspector(d.id);
+      }).on("mouseenter", function(event, d) {
         if (d.x == null || d.y == null) return;
-        g.append("circle").attr("class", "codebase-viz-hover-pulse").attr("cx", d.x).attr("cy", d.y).attr("r", 6).attr("fill", "none").attr("stroke", "hsl(var(--primary))").attr("stroke-width", 1.5).attr("opacity", 0.85).transition().duration(450).attr("r", 22).attr("opacity", 0).remove();
+        setHoveredNode(d.id);
+        setTooltip({
+          x: event.clientX + 10,
+          y: event.clientY - 10,
+          html: `<strong>${d.id}</strong>`
+        });
+        g.append("circle").attr("class", "codebase-viz-hover-pulse").attr("cx", d.x).attr("cy", d.y).attr("r", 5).attr("fill", "none").attr("stroke", "hsl(var(--primary))").attr("stroke-width", 1.5).attr("opacity", 0.85).transition().duration(500).attr("r", 24).attr("opacity", 0).remove();
+      }).on("mousemove", function(event, d) {
+        setTooltip({
+          x: event.clientX + 10,
+          y: event.clientY - 10,
+          html: `<strong>${d.id}</strong>`
+        });
+      }).on("mouseleave", function() {
+        setHoveredNode(null);
+        setTooltip(null);
       });
-      const label = g.append("g").selectAll("text").data(nodes).join("text").text((d) => d.id.split(".").pop()).attr("font-size", "10px").attr("dx", 8).attr("dy", 3).attr("fill", "hsl(var(--foreground) / 0.8)");
+      const label = g.append("g").selectAll("text").data(nodes).join("text").text((d) => d.id.split(".").pop()).attr("font-size", "9px").attr("dx", 10).attr("dy", 3).attr("fill", "hsl(var(--foreground) / 0.75)").style("pointer-events", "none").style("opacity", (d) => d.id === hoveredNode || d.id === inspector ? 1 : 0).style("transition", "opacity 0.2s");
       function drawRipplePulse() {
         if (!ripple?.path) return;
         const targetId = pathToModuleId(
@@ -635,13 +752,13 @@ var CodebaseVizPlugin = (() => {
         simRef.current = null;
         zoomBehaviorRef.current = null;
       };
-    }, [graph, ripple, size]);
+    }, [graph, ripple, size, hoveredNode, inspector]);
     const edgeList = Array.isArray(data?.edges) ? data.edges : [];
     const inEdges = inspector ? edgeList.filter((e) => e.target === inspector).slice(0, 20) : [];
     const outEdges = inspector ? edgeList.filter((e) => e.source === inspector).slice(0, 20) : [];
     return h5(
       "div",
-      { style: { display: "flex", flexDirection: "column", height: "100%" } },
+      { style: { display: "flex", flexDirection: "column", height: "100%", position: "relative" } },
       h5(
         "div",
         {
@@ -724,8 +841,27 @@ var CodebaseVizPlugin = (() => {
       ),
       h5("div", {
         ref: containerRef,
-        style: { flex: 1, minHeight: 0, overflow: "hidden" },
-        children: h5("svg", { ref: svgRef, style: { width: "100%", height: "100%" } })
+        style: { flex: 1, minHeight: 0, overflow: "hidden", position: "relative" },
+        children: h5("svg", { ref: svgRef, style: { width: "100%", height: "100%", display: "block" } })
+      }),
+      tooltip && h5("div", {
+        style: {
+          position: "fixed",
+          left: tooltip.x,
+          top: tooltip.y,
+          background: "hsl(var(--popover, var(--background)))",
+          color: "hsl(var(--popover-foreground, var(--foreground)))",
+          border: "1px solid hsl(var(--border))",
+          borderRadius: "0.4rem",
+          padding: "0.35rem 0.6rem",
+          fontSize: "0.78rem",
+          lineHeight: 1.4,
+          pointerEvents: "none",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.35)",
+          zIndex: 2e3,
+          maxWidth: "16rem"
+        },
+        dangerouslySetInnerHTML: { __html: tooltip.html }
       })
     );
   }
@@ -733,30 +869,30 @@ var CodebaseVizPlugin = (() => {
   // src/TreemapChart.jsx
   var h6 = react_shim_default.createElement;
   var LANG_COLORS = {
-    python: "#3776AB",
-    javascript: "#F7DF1E",
-    typescript: "#3178C6",
-    jsx: "#61DAFB",
-    tsx: "#3178C6",
-    markdown: "#083FA1",
-    json: "#292929",
-    yaml: "#6CB2E6",
-    html: "#E34F26",
-    css: "#1572B6",
-    shell: "#4EAA25",
-    powershell: "#012456",
-    sql: "#E38C00",
-    dockerfile: "#2496ED",
-    makefile: "#427819",
-    rust: "#DEA584",
-    go: "#00ADD8",
-    "c#": "#178600",
-    ruby: "#CC342D",
-    php: "#777BB4",
-    java: "#ED8B00",
-    kotlin: "#7F52FF",
-    scala: "#DC322F",
-    swift: "#F05138"
+    python: "#4CAF50",
+    javascript: "#FFD54F",
+    typescript: "#64B5F6",
+    jsx: "#81D4FA",
+    tsx: "#64B5F6",
+    markdown: "#90CAF9",
+    json: "#BDBDBD",
+    yaml: "#A5D6A7",
+    html: "#FFAB91",
+    css: "#80DEEA",
+    shell: "#AED581",
+    powershell: "#90A4AE",
+    sql: "#FFB74D",
+    dockerfile: "#4FC3F7",
+    makefile: "#C5E1A5",
+    rust: "#FFCC80",
+    go: "#4DD0E1",
+    "c#": "#A5D6A7",
+    ruby: "#EF9A9A",
+    php: "#CE93D8",
+    java: "#FFB74D",
+    kotlin: "#B39DDB",
+    scala: "#EF9A9A",
+    swift: "#FFAB91"
   };
   function subtreeLoc(node) {
     if (!node) return 0;
@@ -781,10 +917,21 @@ var CodebaseVizPlugin = (() => {
       _raw: c
     })).filter((c) => c.loc > 0);
   }
+  function textColorForBackground2(hex) {
+    if (!hex || hex.startsWith("hsl")) return "#fff";
+    const r = parseInt(hex.slice(1, 3), 16) || 0;
+    const g = parseInt(hex.slice(3, 5), 16) || 0;
+    const b = parseInt(hex.slice(5, 7), 16) || 0;
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.55 ? "#0f0f0f" : "#ffffff";
+  }
   function TreemapChart({ data }) {
     const svgRef = react_shim_default.useRef(null);
     const containerRef = react_shim_default.useRef(null);
     const [zoomStack, setZoomStack] = react_shim_default.useState([]);
+    const [size, setSize] = react_shim_default.useState({ w: 0, h: 0 });
+    const [tooltip, setTooltip] = react_shim_default.useState(null);
+    const tooltipRef = react_shim_default.useRef(null);
     const treeData = data?.tree || { name: "root", children: [], loc: 0 };
     const currentData = zoomStack.length > 0 ? zoomStack[zoomStack.length - 1] : treeData;
     function zoomTo(node) {
@@ -795,12 +942,21 @@ var CodebaseVizPlugin = (() => {
     }
     react_shim_default.useEffect(() => {
       const container = containerRef.current;
+      if (!container) return void 0;
+      const ro = new ResizeObserver(() => {
+        setSize({ w: container.clientWidth, h: Math.max(container.clientHeight, 300) });
+      });
+      ro.observe(container);
+      setSize({ w: container.clientWidth, h: Math.max(container.clientHeight, 300) });
+      return () => ro.disconnect();
+    }, []);
+    react_shim_default.useEffect(() => {
       const svg = svgRef.current;
-      if (!container || !svg) return void 0;
+      if (!svg || size.w < 10) return void 0;
       const d3 = window.d3;
       if (!d3) return void 0;
-      const width = container.clientWidth;
-      const height = Math.max(container.clientHeight, 400);
+      const width = size.w;
+      const height = size.h;
       svg.setAttribute("width", width);
       svg.setAttribute("height", height);
       svg.innerHTML = "";
@@ -821,7 +977,8 @@ var CodebaseVizPlugin = (() => {
       const cells = root.children || [];
       if (!cells.length) return void 0;
       const g = d3.select(svg).append("g");
-      g.selectAll("rect").data(cells).join("rect").attr("x", (d) => d.x0).attr("y", (d) => d.y0).attr("width", (d) => Math.max(0, d.x1 - d.x0)).attr("height", (d) => Math.max(0, d.y1 - d.y0)).attr(
+      const cellSel = g.selectAll("g.cell").data(cells).join("g").attr("class", "cell");
+      cellSel.append("rect").attr("x", (d) => d.x0).attr("y", (d) => d.y0).attr("width", (d) => Math.max(0, d.x1 - d.x0)).attr("height", (d) => Math.max(0, d.y1 - d.y0)).attr(
         "fill",
         (d) => d.data.type === "dir" ? "hsl(var(--muted-foreground) / 0.25)" : getColor(d.data.language, d3)
       ).attr("stroke", "hsl(var(--background))").attr("stroke-width", 1).style(
@@ -831,30 +988,48 @@ var CodebaseVizPlugin = (() => {
         if (d.data.type === "dir" && d.data._raw?.children?.length) {
           zoomTo(d.data._raw);
         }
-      }).append("title").text((d) => {
+      }).on("mousemove", function(event, d) {
+        event.stopPropagation();
         const kind = d.data.type === "dir" ? "map" : d.data.language || "?";
-        return `${d.data.name}
-${kind}
-${d.value} LOC`;
+        setTooltip({
+          x: event.clientX + 12,
+          y: event.clientY - 8,
+          html: `<strong>${d.data.name}</strong><br/>${kind}<br/>${d.value} LOC`
+        });
+      }).on("mouseleave", function() {
+        setTooltip(null);
       });
-      g.selectAll("text.label").data(cells).join("text").attr("class", "label").attr("x", (d) => d.x0 + 3).attr("y", (d) => d.y0 + 12).attr("font-size", "10px").attr("fill", (d) => d.data.type === "dir" ? "hsl(var(--foreground))" : "#fff").style("pointer-events", "none").style(
+      cellSel.append("text").attr("class", "label").attr("x", (d) => d.x0 + 3).attr("y", (d) => d.y0 + 12).attr("font-size", (d) => {
+        const h12 = d.y1 - d.y0;
+        if (h12 < 14) return "0px";
+        return Math.min(12, Math.max(9, h12 / 3.5)) + "px";
+      }).attr("fill", (d) => {
+        if (d.data.type === "dir") return "hsl(var(--foreground))";
+        return textColorForBackground2(getColor(d.data.language, d3));
+      }).style("pointer-events", "none").style(
         "text-shadow",
-        (d) => d.data.type === "dir" ? "none" : "0 1px 2px rgba(0,0,0,0.6)"
-      ).text((d) => {
-        const w = d.x1 - d.x0;
-        if (w < 40) return "";
-        const label = d.data.type === "dir" ? `${d.data.name}/` : d.data.name;
-        return label.length * 7 > w ? `${label.substring(0, Math.floor(w / 7))}\u2026` : label;
-      }).style("opacity", (d) => {
+        (d) => d.data.type === "dir" ? "none" : "0 1px 2px rgba(0,0,0,0.35)"
+      ).style("opacity", (d) => {
         const area = (d.x1 - d.x0) * (d.y1 - d.y0);
-        return area < 600 ? 0 : 1;
+        return area < 200 ? 0 : 1;
+      }).each(function(d) {
+        const w = d.x1 - d.x0;
+        const h12 = d.y1 - d.y0;
+        if (w < 24 || h12 < 14) {
+          d3.select(this).text("");
+          return;
+        }
+        const label = d.data.type === "dir" ? `${d.data.name}/` : d.data.name;
+        const maxChars = Math.floor((w - 6) / (label.length > 10 ? 5.5 : 6));
+        const text = label.length > maxChars && maxChars > 0 ? label.substring(0, maxChars) + "\u2026" : label;
+        d3.select(this).text(text);
       });
       return void 0;
-    }, [currentData]);
+    }, [currentData, size]);
     const crumbs = zoomStack.length ? zoomStack : [treeData];
     return h6(
       "div",
-      { style: { display: "flex", flexDirection: "column", height: "100%" } },
+      { style: { display: "flex", flexDirection: "column", height: "100%", position: "relative" } },
       h6(
         "div",
         {
@@ -897,8 +1072,28 @@ ${d.value} LOC`;
       ),
       h6("div", {
         ref: containerRef,
-        style: { flex: 1, minHeight: 0, overflow: "hidden" },
-        children: h6("svg", { ref: svgRef, style: { width: "100%", height: "100%" } })
+        style: { flex: 1, minHeight: 0, overflow: "hidden", position: "relative" },
+        children: h6("svg", { ref: svgRef, style: { width: "100%", height: "100%", display: "block" } })
+      }),
+      tooltip && h6("div", {
+        ref: tooltipRef,
+        style: {
+          position: "fixed",
+          left: tooltip.x,
+          top: tooltip.y,
+          background: "hsl(var(--popover, var(--background)))",
+          color: "hsl(var(--popover-foreground, var(--foreground)))",
+          border: "1px solid hsl(var(--border))",
+          borderRadius: "0.4rem",
+          padding: "0.35rem 0.6rem",
+          fontSize: "0.78rem",
+          lineHeight: 1.4,
+          pointerEvents: "none",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.35)",
+          zIndex: 2e3,
+          maxWidth: "16rem"
+        },
+        dangerouslySetInnerHTML: { __html: tooltip.html }
       })
     );
   }
@@ -1200,6 +1395,12 @@ ${d.value} LOC`;
           if (isScanStatusPayload(body)) {
             setServerStatus(body);
             setScanContext((prev) => mergeScanContext(prev, body, null));
+            if (body.phase === "idle" || body.phase === "done") {
+              if (pollId != null) {
+                window.clearInterval(pollId);
+                pollId = window.setInterval(pollScanStatus, 5e3);
+              }
+            }
           } else {
             enableLocal("scan-status antwoord ongeldig");
           }

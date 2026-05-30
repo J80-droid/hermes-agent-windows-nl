@@ -1344,7 +1344,11 @@ def _start_watcher(path: str | None = None) -> Any:
         return None
     if _observer and _observer.is_alive():
         return _observer
-    target = path or (str(REPO_PATH) if REPO_PATH else os.getcwd())
+    # Never fall back to os.getcwd() — require an explicit repo
+    if REPO_PATH is None:
+        log.warning("file_watcher_no_repo: cannot start watcher without CODEBASE_VIZ_REPO or .git discovery")
+        return None
+    target = path or str(REPO_PATH)
     loop = asyncio.get_running_loop()
     handler = CodebaseEventHandler(loop, _event_queue)
     _observer = Observer()

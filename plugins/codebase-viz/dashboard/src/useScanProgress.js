@@ -140,6 +140,13 @@ export function useScanProgress(active, tab) {
           if (isScanStatusPayload(body)) {
             setServerStatus(body);
             setScanContext((prev) => mergeScanContext(prev, body, null));
+            // Adaptive polling: faster during active scan, slower when idle
+            if (body.phase === 'idle' || body.phase === 'done') {
+              if (pollId != null) {
+                window.clearInterval(pollId);
+                pollId = window.setInterval(pollScanStatus, 5000);
+              }
+            }
           } else {
             enableLocal('scan-status antwoord ongeldig');
           }

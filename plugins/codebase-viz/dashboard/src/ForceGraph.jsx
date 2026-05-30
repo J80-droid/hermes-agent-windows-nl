@@ -77,6 +77,8 @@ export default function ForceGraph({ data }) {
   const [search, setSearch] = React.useState('');
   const [inspector, setInspector] = React.useState(null);
   const [size, setSize] = React.useState({ w: 0, h: 0 });
+  const [tooltip, setTooltip] = React.useState(null);
+  const [hoveredNode, setHoveredNode] = React.useState(null);
 
   const { connected, lastEvent } = useFileWatcher();
   const ripple = useRippleAnimation(lastEvent);
@@ -121,36 +123,46 @@ export default function ForceGraph({ data }) {
       g.attr('transform', event.transform);
     });
     zoomBehaviorRef.current = zoom;
-    d3.select(svg).call(zoom);
+    d3.select(svg).call(zoom)
+      .on('dblclick.zoom', null);
 
     const simulation = d3
       .forceSimulation(nodes)
       .force('link', d3.forceLink(links).id((d) => d.id).distance(80))
-      .force('charge', d3.forceManyBody().strength(-200))
+      .force('charge', d3.forceManyBody().strength(-250))
       .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide().radius(20));
+      .force('collision', d3.forceCollide().radius(18));
 
     simRef.current = simulation;
 
     const link = g
       .append('g')
+      .attr('stroke-linecap', 'round')
       .selectAll('line')
       .data(links)
       .join('line')
-      .attr('stroke', 'hsl(var(--muted-foreground) / 0.3)')
+      .attr('stroke', 'hsl(var(--muted-foreground) / 0.35)')
       .attr('stroke-width', 1)
-      .attr('stroke-dasharray', (d) => (d.type === 'from_import' ? '3,2' : '0'));
+      .attr('stroke-dasharray', (d) => (d.type === 'from_import' ? '3,2' : '0'))
+      .style('pointer-events', 'none');
 
     const node = g
       .append('g')
       .selectAll('circle')
       .data(nodes)
       .join('circle')
-      .attr('r', 6)
-      .attr('fill', 'hsl(var(--primary))')
-      .attr('stroke', 'hsl(var(--border))')
-      .attr('stroke-width', 1)
+      .attr('r', (d) => {
+        const deg = links.filter((l) => l.source === d.id || l.target === d.id).length;
+        return 5 + Math.min(deg, 8);
+      })
+      .attr('fill', (d) => {
+        if (d.id === hoveredNode) return 'hsl(var(--primary))';
+        return 'hsl(var(--muted-foreground) / 0.6)';
+      })
+      .attr('stroke', (d) => (d.id === hoveredNode ? 'hsl(var(--primary))' : 'hsl(var(--border))'))
+      .attr('stroke-width', (d) => (d.id === hoveredNode ? 2.5 : 1))
       .style('cursor', 'pointer')
+      .style('transition', 'fill 0.2s, stroke 0.2s')
       .call(
         d3
           .drag()
@@ -169,23 +181,43 @@ export default function ForceGraph({ data }) {
             d.fy = null;
           }),
       )
-      .on('click', (_event, d) => setInspector(d.id))
-      .on('mouseenter', function (_event, d) {
+      .on('click', (event, d) => {
+        event.stopPropagation();
+        setInspector(d.id);
+      })
+      .on('mouseenter', function (event, d) {
         if (d.x == null || d.y == null) return;
+        setHoveredNode(d.id);
+        setTooltip({
+          x: event.clientX + 10,
+          y: event.clientY - 10,
+          html: `<strong>${d.id}</strong>`,
+        });
         g.append('circle')
           .attr('class', 'codebase-viz-hover-pulse')
           .attr('cx', d.x)
           .attr('cy', d.y)
-          .attr('r', 6)
+          .attr('r', 5)
           .attr('fill', 'none')
           .attr('stroke', 'hsl(var(--primary))')
           .attr('stroke-width', 1.5)
           .attr('opacity', 0.85)
           .transition()
-          .duration(450)
-          .attr('r', 22)
+          .duration(500)
+          .attr('r', 24)
           .attr('opacity', 0)
           .remove();
+      })
+      .on('mousemove', function (event, d) {
+        setTooltip({
+          x: event.clientX + 10,
+          y: event.clientY - 10,
+          html: `<strong>${d.id}</strong>`,
+        });
+      })
+      .on('mouseleave', function () {
+        setHoveredNode(null);
+        setTooltip(null);
       });
 
     const label = g
@@ -194,10 +226,13 @@ export default function ForceGraph({ data }) {
       .data(nodes)
       .join('text')
       .text((d) => d.id.split('.').pop())
-      .attr('font-size', '10px')
-      .attr('dx', 8)
+      .attr('font-size', '9px')
+      .attr('dx', 10)
       .attr('dy', 3)
-      .attr('fill', 'hsl(var(--foreground) / 0.8)');
+      .attr('fill', 'hsl(var(--foreground) / 0.75)')
+      .style('pointer-events', 'none')
+      .style('opacity', (d) => (d.id === hoveredNode || d.id === inspector ? 1 : 0))
+      .style('transition', 'opacity 0.2s');
 
     function drawRipplePulse() {
       if (!ripple?.path) return;
@@ -262,7 +297,7 @@ export default function ForceGraph({ data }) {
       simRef.current = null;
       zoomBehaviorRef.current = null;
     };
-  }, [graph, ripple, size]);
+  }, [graph, ripple, size, hoveredNode, inspector]);
 
   const edgeList = Array.isArray(data?.edges) ? data.edges : [];
   const inEdges = inspector
@@ -274,7 +309,7 @@ export default function ForceGraph({ data }) {
 
   return h(
     'div',
-    { style: { display: 'flex', flexDirection: 'column', height: '100%' } },
+    { style: { display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' } },
     h(
       'div',
       {
@@ -361,8 +396,27 @@ export default function ForceGraph({ data }) {
       ),
     h('div', {
       ref: containerRef,
-      style: { flex: 1, minHeight: 0, overflow: 'hidden' },
-      children: h('svg', { ref: svgRef, style: { width: '100%', height: '100%' } }),
+      style: { flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' },
+      children: h('svg', { ref: svgRef, style: { width: '100%', height: '100%', display: 'block' } }),
+    }),
+    tooltip && h('div', {
+      style: {
+        position: 'fixed',
+        left: tooltip.x,
+        top: tooltip.y,
+        background: 'hsl(var(--popover, var(--background)))',
+        color: 'hsl(var(--popover-foreground, var(--foreground)))',
+        border: '1px solid hsl(var(--border))',
+        borderRadius: '0.4rem',
+        padding: '0.35rem 0.6rem',
+        fontSize: '0.78rem',
+        lineHeight: 1.4,
+        pointerEvents: 'none',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
+        zIndex: 2000,
+        maxWidth: '16rem',
+      },
+      dangerouslySetInnerHTML: { __html: tooltip.html },
     }),
   );
 }

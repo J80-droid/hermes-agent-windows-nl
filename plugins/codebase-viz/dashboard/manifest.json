@@ -3,7 +3,7 @@
   "label": "Codebase Viz",
   "description": "Interactieve codebase-visualisatie met Hermes doctor health en LOC-metrics",
   "icon": "GitBranch",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "tab": {
     "path": "/codebase-viz",
     "position": "after:skills"

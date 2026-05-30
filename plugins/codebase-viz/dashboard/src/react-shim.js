@@ -19,3 +19,6 @@ const React = SDK.React;
 export default React;
 export const useEffect = SDK.hooks.useEffect;
 export const useRef = SDK.hooks.useRef;
+export const useState = SDK.hooks.useState;
+export const useMemo = SDK.hooks.useMemo;
+export const useCallback = SDK.hooks.useCallback;

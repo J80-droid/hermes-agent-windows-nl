@@ -3,30 +3,30 @@ import React from 'react';
 const h = React.createElement;
 
 const LANG_COLORS = {
-  python: '#3776AB',
-  javascript: '#F7DF1E',
-  typescript: '#3178C6',
-  jsx: '#61DAFB',
-  tsx: '#3178C6',
-  markdown: '#083FA1',
-  json: '#292929',
-  yaml: '#6CB2E6',
-  html: '#E34F26',
-  css: '#1572B6',
-  shell: '#4EAA25',
-  powershell: '#012456',
-  sql: '#E38C00',
-  dockerfile: '#2496ED',
-  makefile: '#427819',
-  rust: '#DEA584',
-  go: '#00ADD8',
-  'c#': '#178600',
-  ruby: '#CC342D',
-  php: '#777BB4',
-  java: '#ED8B00',
-  kotlin: '#7F52FF',
-  scala: '#DC322F',
-  swift: '#F05138',
+  python: '#4CAF50',
+  javascript: '#FFD54F',
+  typescript: '#64B5F6',
+  jsx: '#81D4FA',
+  tsx: '#64B5F6',
+  markdown: '#90CAF9',
+  json: '#BDBDBD',
+  yaml: '#A5D6A7',
+  html: '#FFAB91',
+  css: '#80DEEA',
+  shell: '#AED581',
+  powershell: '#90A4AE',
+  sql: '#FFB74D',
+  dockerfile: '#4FC3F7',
+  makefile: '#C5E1A5',
+  rust: '#FFCC80',
+  go: '#4DD0E1',
+  'c#': '#A5D6A7',
+  ruby: '#EF9A9A',
+  php: '#CE93D8',
+  java: '#FFB74D',
+  kotlin: '#B39DDB',
+  scala: '#EF9A9A',
+  swift: '#FFAB91',
 };
 
 function subtreeLoc(node) {
@@ -57,10 +57,22 @@ function immediateChildren(treeNode) {
     .filter((c) => c.loc > 0);
 }
 
+function textColorForBackground(hex) {
+  if (!hex || hex.startsWith('hsl')) return '#fff';
+  const r = parseInt(hex.slice(1, 3), 16) || 0;
+  const g = parseInt(hex.slice(3, 5), 16) || 0;
+  const b = parseInt(hex.slice(5, 7), 16) || 0;
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.55 ? '#0f0f0f' : '#ffffff';
+}
+
 export default function TreemapChart({ data }) {
   const svgRef = React.useRef(null);
   const containerRef = React.useRef(null);
   const [zoomStack, setZoomStack] = React.useState([]);
+  const [size, setSize] = React.useState({ w: 0, h: 0 });
+  const [tooltip, setTooltip] = React.useState(null);
+  const tooltipRef = React.useRef(null);
 
   const treeData = data?.tree || { name: 'root', children: [], loc: 0 };
   const currentData =
@@ -76,14 +88,24 @@ export default function TreemapChart({ data }) {
 
   React.useEffect(() => {
     const container = containerRef.current;
+    if (!container) return undefined;
+    const ro = new ResizeObserver(() => {
+      setSize({ w: container.clientWidth, h: Math.max(container.clientHeight, 300) });
+    });
+    ro.observe(container);
+    setSize({ w: container.clientWidth, h: Math.max(container.clientHeight, 300) });
+    return () => ro.disconnect();
+  }, []);
+
+  React.useEffect(() => {
     const svg = svgRef.current;
-    if (!container || !svg) return undefined;
+    if (!svg || size.w < 10) return undefined;
 
     const d3 = window.d3;
     if (!d3) return undefined;
 
-    const width = container.clientWidth;
-    const height = Math.max(container.clientHeight, 400);
+    const width = size.w;
+    const height = size.h;
     svg.setAttribute('width', width);
     svg.setAttribute('height', height);
     svg.innerHTML = '';
@@ -118,9 +140,12 @@ export default function TreemapChart({ data }) {
 
     const g = d3.select(svg).append('g');
 
-    g.selectAll('rect')
+    const cellSel = g.selectAll('g.cell')
       .data(cells)
-      .join('rect')
+      .join('g')
+      .attr('class', 'cell');
+
+    cellSel.append('rect')
       .attr('x', (d) => d.x0)
       .attr('y', (d) => d.y0)
       .attr('width', (d) => Math.max(0, d.x1 - d.x0))
@@ -140,46 +165,63 @@ export default function TreemapChart({ data }) {
           zoomTo(d.data._raw);
         }
       })
-      .append('title')
-      .text((d) => {
-        const kind = d.data.type === 'dir' ? 'map' : d.data.language || '?';
-        return `${d.data.name}\n${kind}\n${d.value} LOC`;
+      .on('mousemove', function(event, d) {
+        event.stopPropagation();
+        const kind = d.data.type === 'dir' ? 'map' : (d.data.language || '?');
+        setTooltip({
+          x: event.clientX + 12,
+          y: event.clientY - 8,
+          html: `<strong>${d.data.name}</strong><br/>${kind}<br/>${d.value} LOC`,
+        });
+      })
+      .on('mouseleave', function() {
+        setTooltip(null);
       });
 
-    g.selectAll('text.label')
-      .data(cells)
-      .join('text')
+    cellSel.append('text')
       .attr('class', 'label')
       .attr('x', (d) => d.x0 + 3)
       .attr('y', (d) => d.y0 + 12)
-      .attr('font-size', '10px')
-      .attr('fill', (d) => (d.data.type === 'dir' ? 'hsl(var(--foreground))' : '#fff'))
+      .attr('font-size', (d) => {
+        const h = d.y1 - d.y0;
+        if (h < 14) return '0px';
+        return Math.min(12, Math.max(9, h / 3.5)) + 'px';
+      })
+      .attr('fill', (d) => {
+        if (d.data.type === 'dir') return 'hsl(var(--foreground))';
+        return textColorForBackground(getColor(d.data.language, d3));
+      })
       .style('pointer-events', 'none')
       .style('text-shadow', (d) =>
-        d.data.type === 'dir' ? 'none' : '0 1px 2px rgba(0,0,0,0.6)',
+        d.data.type === 'dir' ? 'none' : '0 1px 2px rgba(0,0,0,0.35)',
       )
-      .text((d) => {
-        const w = d.x1 - d.x0;
-        if (w < 40) return '';
-        const label =
-          d.data.type === 'dir' ? `${d.data.name}/` : d.data.name;
-        return label.length * 7 > w
-          ? `${label.substring(0, Math.floor(w / 7))}…`
-          : label;
-      })
       .style('opacity', (d) => {
         const area = (d.x1 - d.x0) * (d.y1 - d.y0);
-        return area < 600 ? 0 : 1;
+        return area < 200 ? 0 : 1;
+      })
+      .each(function(d) {
+        const w = d.x1 - d.x0;
+        const h = d.y1 - d.y0;
+        if (w < 24 || h < 14) {
+          d3.select(this).text('');
+          return;
+        }
+        const label = d.data.type === 'dir' ? `${d.data.name}/` : d.data.name;
+        const maxChars = Math.floor((w - 6) / (label.length > 10 ? 5.5 : 6));
+        const text = label.length > maxChars && maxChars > 0
+          ? label.substring(0, maxChars) + '…'
+          : label;
+        d3.select(this).text(text);
       });
 
     return undefined;
-  }, [currentData]);
+  }, [currentData, size]);
 
   const crumbs = zoomStack.length ? zoomStack : [treeData];
 
   return h(
     'div',
-    { style: { display: 'flex', flexDirection: 'column', height: '100%' } },
+    { style: { display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' } },
     h(
       'div',
       {
@@ -209,21 +251,41 @@ export default function TreemapChart({ data }) {
             opacity: zoomStack.length ? 1 : 0.4,
           },
         },
-        '← Terug',
+        '\u2190 Terug',
       ),
       crumbs.map((node, i) =>
         h(
           'span',
           { key: `${node.path || node.name}-${i}`, style: { color: 'hsl(var(--muted-foreground))' } },
-          i === 0 ? '' : ' › ',
+          i === 0 ? '' : ' \u203A ',
           node.name || 'root',
         ),
       ),
     ),
     h('div', {
       ref: containerRef,
-      style: { flex: 1, minHeight: 0, overflow: 'hidden' },
-      children: h('svg', { ref: svgRef, style: { width: '100%', height: '100%' } }),
+      style: { flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' },
+      children: h('svg', { ref: svgRef, style: { width: '100%', height: '100%', display: 'block' } }),
+    }),
+    tooltip && h('div', {
+      ref: tooltipRef,
+      style: {
+        position: 'fixed',
+        left: tooltip.x,
+        top: tooltip.y,
+        background: 'hsl(var(--popover, var(--background)))',
+        color: 'hsl(var(--popover-foreground, var(--foreground)))',
+        border: '1px solid hsl(var(--border))',
+        borderRadius: '0.4rem',
+        padding: '0.35rem 0.6rem',
+        fontSize: '0.78rem',
+        lineHeight: 1.4,
+        pointerEvents: 'none',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
+        zIndex: 2000,
+        maxWidth: '16rem',
+      },
+      dangerouslySetInnerHTML: { __html: tooltip.html },
     }),
   );
 }
