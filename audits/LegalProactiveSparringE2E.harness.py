@@ -129,6 +129,31 @@ def main() -> int:
         "MEMORY seed legal USER section",
         "## legal USER.md entries" in seed and "Legal proactief" in seed,
     )
+    _step(
+        "MEMORY seed legal triggers voorbeeldvragen",
+        "Legal triggers" in seed
+        and "voorbeeldvragen" in seed
+        and "disciplinaire maatregel" in seed,
+    )
+    _step(
+        "MEMORY seed taallaag + SOUL prevaleert",
+        "Legal taallaag" in seed and "SOUL prevaleert" in seed,
+    )
+    _step(
+        "MEMORY seed taal-triggerlagen doc",
+        "Taal- en triggerlagen" in seed and "Geen i18n" in seed,
+    )
+    soul_tpl = _read("docs/templates/SOUL_LEGAL_DOMAIN.md")
+    _step(
+        "SOUL USER.md trust EN + triggers NL sectie",
+        "USER.md (trust EN + legal triggers NL)" in soul_tpl
+        and "SOUL prevaleert" in soul_tpl,
+    )
+    arch = _read("docs/LEGAL_DOMAIN_ARCHITECTURE.md")
+    _step(
+        "LEGAL_DOMAIN_ARCHITECTURE taal-triggerlagen",
+        "Taal- en triggerlagen" in arch and "SOUL prevaleert" in arch,
+    )
 
     out_fmt = _read("docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md")
     _step(

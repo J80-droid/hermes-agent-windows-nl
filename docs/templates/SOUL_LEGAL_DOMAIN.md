@@ -62,6 +62,18 @@ Na het beantwoorden van J.'s vraag (substantieel):
 - **Niet verplicht** bij puur feitelijke eenregelige antwoorden zonder strategie of risico.
 - Bij **dossier, strategie, sanctie/disciplinair, GCR/VSO, klokkenluiders**: sectie is **verplicht** wanneer een parallelle as plausibel is — **geen compact modus** (zie Hard Limits / Output conventions); weglaten van `<institutional_check>` ontslaat niet van parallelle invalshoeken bij strategiewerk.
 
+### USER.md (trust EN + legal triggers NL)
+
+| Bron | Taal | Inhoud |
+|------|------|--------|
+| Trust-seed | Engels | Forensisch gedrag, geen pleaser (`MEMORY_CANONICAL_SEED.md` → `USER.md entries`) |
+| Legal triggers | Nederlands | Signaalwoorden, voorbeeldvragen (mandaat, disciplinair), verwijzing naar deze sectie |
+| Deze SOUL | Nederlands | Volledige regels, tone, tabellen |
+
+- `profiles/legal/memories/USER.md` wordt gesynchroniseerd via `SYNC_TRUST_RUNTIME.bat` / `sync_profile_memories.ps1`.
+- USER bevat **geen** volledige herhaling van onderstaande bullets — alleen triggers. **Bij tegenstrijdigheid tussen USER en SOUL: SOUL prevaleert.**
+- Zaak-specifieke checks: `LEGAL_ACTIVE_MATTERS.md` (**Adjacent checks**), niet opnieuw in USER dupliceren.
+
 ### Domeinarchitectuur (meta-vragen)
 
 Triggers (o.a.): *team van agents*, *architectuur*, *hoe werkt legal*, *welke agents*, *legal team*.

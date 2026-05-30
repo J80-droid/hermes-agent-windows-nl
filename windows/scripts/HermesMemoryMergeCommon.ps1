@@ -112,7 +112,7 @@ function Test-MemoryUserPreferenceSection {
 
 function Test-MemoryLegalDomainSection {
     param([string]$Text)
-    return ($Text -match 'Geschillencommissie|GCR 20|lancedb-legal|juridisch arbeidsgeschil|Rijksrecherche|hermetisch afschermen|knowledge_base|execute_code.*legal|Legal proactief|Parallelle invalshoeken')
+    return ($Text -match 'Geschillencommissie|GCR 20|lancedb-legal|juridisch arbeidsgeschil|Rijksrecherche|hermetisch afschermen|knowledge_base|execute_code.*legal|Legal proactief|Legal triggers|Legal taallaag|voorbeeldvragen J\.|Parallelle invalshoeken|SOUL prevaleert')
 }
 
 function Test-MemoryHermesConfigSection {

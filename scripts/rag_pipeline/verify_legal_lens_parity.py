@@ -28,21 +28,28 @@ from sync_legal_lens_table_from_taxonomy import (  # noqa: E402
 
 
 def _parse_soul_lens_rows(text: str) -> list[tuple[str, str, str]]:
-    """Return (signals, lens, submap) from SOUL lens table (skip header)."""
+    """Return (signals, lens, submap) from the Juridische lenzen table only (ignore other markdown tables)."""
     rows: list[tuple[str, str, str]] = []
     in_table = False
     for line in text.splitlines():
-        if line.startswith("| Signaal"):
-            in_table = True
-            continue
+        stripped = line.strip()
         if not in_table:
+            if stripped.startswith("| Signaal"):
+                in_table = True
             continue
-        if not line.startswith("|") or line.startswith("|----"):
+        if not stripped:
             continue
-        parts = [p.strip() for p in line.split("|")[1:-1]]
+        if not stripped.startswith("|"):
+            break
+        if stripped.startswith("|----") or stripped.startswith("|------"):
+            continue
+        parts = [p.strip() for p in stripped.split("|")[1:-1]]
         if len(parts) < 3:
-            continue
-        signals, lens, submap = parts[0], parts[1], parts[2].strip("`")
+            break
+        signals, lens, submap = parts[0], parts[1], parts[2].strip("`").strip()
+        # Lens rows always have a Bron-submap folder; other tables (USER.md, parallelle) do not.
+        if "/" not in submap:
+            break
         rows.append((signals, lens, submap))
     return rows
 

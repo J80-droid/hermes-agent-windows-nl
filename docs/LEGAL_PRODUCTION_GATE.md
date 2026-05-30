@@ -65,7 +65,7 @@ GitHub `fork-windows-institutional.yml` draait hardening (legal skills pytest), 
 ```bat
 powershell -NoProfile -ExecutionPolicy Bypass -File windows\tests\LegalDomainE2E.Unit.Tests.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File windows\tests\SoulSnippetRepair.Unit.Tests.ps1
-pytest tests/windows/test_legal_domain_e2e_unit.py tests/audits/test_legal_production_e2e_harness.py tests/audits/test_legal_proactive_sparring_e2e_harness.py tests/scripts/test_verify_legal_lens_parity.py tests/scripts/test_legal_lens_from_path.py tests/hermes_cli/test_legal_architecture_brief.py tests/windows/test_legal_meta_contract.py -q
+pytest tests/windows/test_legal_domain_e2e_unit.py tests/audits/test_legal_production_e2e_harness.py tests/audits/test_legal_proactive_sparring_e2e_harness.py tests/windows/test_legal_memory_language_layers.py tests/scripts/test_verify_legal_lens_parity.py tests/scripts/test_legal_lens_from_path.py tests/hermes_cli/test_legal_architecture_brief.py tests/windows/test_legal_meta_contract.py -q
 ```
 
 `RUN_AUDITS.bat -IncludeLegalDomainE2E` draait eerst de geïsoleerde unit (gemockte paden), daarna `RUN_LEGAL_DOMAIN_E2E.bat`, daarna `Invoke-LegalProactiveSparringE2E.ps1`.

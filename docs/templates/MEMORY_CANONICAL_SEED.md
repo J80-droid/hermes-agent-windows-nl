@@ -2,6 +2,17 @@
 
 > Gebruik door `windows/scripts/sync_profile_memories.ps1`. Entries worden **bovenaan** geplaatst (prioriteit in system prompt). Scheid entries met `§` op een eigen regel (Hermes memory-formaat).
 
+## Taal- en triggerlagen (legal profiel)
+
+| Laag | Sectie in dit bestand | Taal | Rol |
+|------|------------------------|------|-----|
+| Trust | `USER.md entries` | EN | Fork-breed gedrag (forensisch, geen pleaser) |
+| Legal triggers | `legal USER.md entries` | NL | Signaalwoorden + voorbeeldvragen → verwijzen naar SOUL § Parallelle invalshoeken |
+| Gedrag | `SOUL_LEGAL_DOMAIN.md` (runtime SOUL) | NL | Volledige regels, tone B1 NL |
+| Zaak | `LEGAL_ACTIVE_MATTERS.md` (runtime) | NL | Adjacent checks per dossier |
+
+Geen i18n: geen dubbele SOUL/USER per taal. Zie `docs/LEGAL_DOMAIN_ARCHITECTURE.md` § Taal- en triggerlagen.
+
 ## USER.md entries
 
 ```
@@ -11,7 +22,15 @@ J. demands absolute trust, zero babysitting, and no pleaser-behavior. Provide co
 ## legal USER.md entries
 
 ```
-Legal proactief (NL): Naast het antwoord op J.'s vraag — waar zinvol sectie Parallelle invalshoeken (tabel: Invalshoek | Waarom relevant | Status). Bij sanctie, disciplinair of maatregel: altijd benoemen of mandaat, bevoegdheid, procedure en hoorplicht zijn meegenomen (vraag expliciet: heb je ook het mandaat van de oplegger onderzocht?). Bij overheid/BZ: lens bbk naast arb. Bij GCR/VSO: LEGAL_ACTIVE_MATTERS.md + mandaat opdrachtgever vóór bindende strategie; search_knowledge waar dossier speelt.
+Legal proactief (NL): SOUL § Parallelle invalshoeken. Na substantieel antwoord: tabel Invalshoek|Waarom|Status waar zinvol. disciplinair/sanctie/maatregel/ontslag staande voet → mandaat, bevoegdheid, procedure, hoorplicht; vraag: mandaat oplegger onderzocht? BZ/overheid → bbk+arb. GCR/VSO/klokkenluiders → MATTERS+Adjacent checks+lancedb-legal vóór bindend advies. USER vs SOUL: SOUL prevaleert.
+```
+
+```
+Legal triggers — voorbeeldvragen J. (NL): Strategiewerk + parallelle invalshoeken indien plausibel bij o.a.: disciplinaire maatregel; mandaat commissie/geschillencommissie; procedure sanctie; mandaat oplegger; GCR/VSO-strategie → MATTERS+RAG.
+```
+
+```
+Legal taallaag (NL): Trust (EN) hierboven fork-breed. Deze § = NL triggers only. Antwoord B1 NL (SOUL Communication). Geen SOUL/MATTERS dupliceren.
 ```
 
 ## MEMORY.md entries

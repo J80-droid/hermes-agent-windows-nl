@@ -68,10 +68,19 @@ $seedOptional = (Get-Command Get-HermesMemorySeedEntries).Parameters.ContainsKey
 Write-E2eStep 'Get-HermesMemorySeedEntries -Optional' $seedOptional
 
 $legalSeed = Get-HermesMemorySeedEntries -RepoRoot $RepoRoot -SectionName 'legal USER.md' -Optional
-Write-E2eStep 'legal USER seed non-empty' ($legalSeed.Count -ge 1) "entries=$($legalSeed.Count)"
+Write-E2eStep 'legal USER seed three NL entries' ($legalSeed.Count -ge 3) "entries=$($legalSeed.Count)"
 
-$legalSectionDetect = Test-MemoryLegalDomainSection -Text ($legalSeed -join ' ')
+$legalJoined = $legalSeed -join ' '
+$legalSectionDetect = Test-MemoryLegalDomainSection -Text $legalJoined
 Write-E2eStep 'Test-MemoryLegalDomainSection legal seed' $legalSectionDetect
+Write-E2eStep 'legal seed proactief + triggers + taallaag' (
+    ($legalJoined -match 'Legal proactief') -and
+    ($legalJoined -match 'Legal triggers') -and
+    ($legalJoined -match 'Legal taallaag') -and
+    ($legalJoined -match 'SOUL prevaleert')
+)
+$legalSeedChars = ($legalJoined).Length
+Write-E2eStep 'legal seed compact under 1200 chars' ($legalSeedChars -lt 1200) "chars=$legalSeedChars"
 
 # --- Anatomy sync roept config repair aan ---
 $anatomy = Get-Content -LiteralPath (Join-Path $RepoRoot 'windows\scripts\sync_soul_anatomy_snippets.ps1') -Raw -Encoding UTF8
@@ -98,7 +107,17 @@ if (Test-Path -LiteralPath $legalSoul) {
 $legalUser = Join-Path $root 'profiles\legal\memories\USER.md'
 if (Test-Path -LiteralPath $legalUser) {
     $user = Get-Content -LiteralPath $legalUser -Raw -Encoding UTF8
-    Write-E2eStep 'runtime legal USER Legal proactief' ($user -match 'Legal proactief|Parallelle invalshoeken')
+    $userNlOk = ($user -match 'Legal proactief') -and
+        ($user -match 'Legal triggers|voorbeeldvragen') -and
+        ($user -match 'SOUL prevaleert')
+    if ($userNlOk) {
+        Write-E2eStep 'runtime legal USER NL triggers (3 entries)' $true
+    } elseif ($user -match 'Legal proactief|Parallelle invalshoeken') {
+        Write-Host '[WARN] runtime legal USER.md verouderd — windows\SYNC_TRUST_RUNTIME.bat' -ForegroundColor Yellow
+        Write-E2eStep 'runtime legal USER NL triggers (3 entries)' $false 'run SYNC_TRUST_RUNTIME'
+    } else {
+        Write-E2eStep 'runtime legal USER NL triggers (3 entries)' $false
+    }
 } else {
     Write-Host '[WARN] runtime legal USER.md ontbreekt — SYNC_TRUST_RUNTIME' -ForegroundColor Yellow
 }

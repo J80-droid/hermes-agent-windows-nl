@@ -11,7 +11,7 @@ Geen live LLM-chat.
 | S1 | Repo-artefacten (templates, scripts, module-export) |
 | S2 | `SOUL_LEGAL_DOMAIN.md` contract (parallelle invalshoeken, pushback, voorbeeld mandaat) |
 | S3 | `LEGAL_ACTIVE_MATTERS.example.md` (GCR + Adjacent checks) |
-| S4 | `MEMORY_CANONICAL_SEED.md` (`legal USER.md` + proactief NL) |
+| S4–S7 | `MEMORY_CANONICAL_SEED.md` (3× legal USER NL + taallaag-doc) + SOUL USER-sectie + `LEGAL_DOMAIN_ARCHITECTURE` |
 | S5 | `SOUL_SHARED_OUTPUT_FORMAT.md` legal parallelle-regel |
 | S6 | `sync_soul_config_governance_snippet.ps1` insert vóór Identity (geen dubbele-insert) |
 | S7 | `sync_profile_memories.ps1` + `HermesMemoryMergeCommon` (Optional seed, legal pad) |

@@ -49,16 +49,39 @@ Zaak-specifieke strategie, speerpunten en terminologie horen **niet** in SOUL Id
 
 Optioneel per zaak in `LEGAL_ACTIVE_MATTERS.md`: **Adjacent checks** (mandaat, procedure, P-Direkt vs arb, enz.) — de agent gebruikt die bij strategievraag.
 
+## Taal- en triggerlagen (100% — geen i18n)
+
+Hermes legal gebruikt **taal per laag**, niet vertaalde dubbele bestanden.
+
+| Laag | Bestand | Taal | Wat erin hoort |
+|------|---------|------|----------------|
+| A — Trust | `profiles/legal/memories/USER.md` (eerste §) | **EN** | Forensisch gedrag, tool-failures (fork-breed seed) |
+| B — Domein-triggers | `profiles/legal/memories/USER.md` (legal §) | **NL** | Signaal→actie, voorbeeldvragen J. (mandaat, disciplinair, GCR/VSO) |
+| C — Gedrag | `profiles/legal/SOUL.md` | **NL** | Tone B1, parallelle invalshoeken, lenzen, hard limits |
+| D — Zaak | `profiles/legal/LEGAL_ACTIVE_MATTERS.md` | **NL** | Adjacent checks per dossier |
+
+**Regels**
+
+1. USER **triggert**; SOUL **beschrijft**; MATTERS **zaak** — geen volledige SOUL-procedures in USER kopiëren.
+2. Bij conflict USER ↔ SOUL: **SOUL prevaleert** (staat in seed + SOUL template).
+3. Geen `USER.nl.md` / i18n-framework — tenzij later een apart profiel `legal-en` voor andere gebruikers.
+4. Char-budget: legal `USER.md` ~1800 tekens totaal; triggers compact houden (`enforce_profile_memory_char_limits.ps1`).
+
+**Sync:** `docs/templates/MEMORY_CANONICAL_SEED.md` sectie `legal USER.md entries` (3 §-entries) → `sync_profile_memories.ps1` alleen voor `profiles/legal/memories/USER.md`.
+
+**Verificatie:** `audits/RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat` (seed + runtime USER); `pytest tests/windows/test_legal_memory_language_layers.py`.
+
 ## Proactief meedenken (antwoordstructuur)
 
 | Onderdeel | Waar |
 |-----------|------|
 | **`### Parallelle invalshoeken`** | `SOUL_LEGAL_DOMAIN.md` + runtime SOUL; tabel *Invalshoek \| Waarom relevant \| Status* |
 | Gap-blok per strategie | Shared Values (`Ontbrekende informatie`) |
-| Legal USER seed | `MEMORY_CANONICAL_SEED.md` → `profiles/legal/memories/USER.md` via `SYNC_TRUST_RUNTIME.bat` |
+| Legal USER seed (NL triggers) | `MEMORY_CANONICAL_SEED.md` → `profiles/legal/memories/USER.md` via `SYNC_TRUST_RUNTIME.bat` |
+| Voorbeeldvragen J. | Zelfde seed (`Legal triggers — voorbeeldvragen J. (NL)`) |
 | Compact modus | `<institutional_check>` mag weg; parallelle sectie **niet** bij materieel strategiewerk (`SOUL_SHARED_OUTPUT_FORMAT.md`) |
 
-Voorbeeld: vraag over disciplinaire straffen → ook mandaat/bevoegdheid oplegger benoemen indien plausibel.
+Voorbeeld: vraag over disciplinaire straffen → parallelle invalshoeken + expliciet mandaat oplegger (USER-trigger + SOUL-sectie).
 
 ## Mapconventies
 

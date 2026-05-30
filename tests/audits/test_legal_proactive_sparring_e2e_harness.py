@@ -54,12 +54,18 @@ def _valid_template_reads() -> dict[str, str]:
         "docs/templates/SOUL_LEGAL_DOMAIN.md": (
             "Parallelle invalshoeken\nProactief meedenken\nPushback\n"
             "parallelle invalshoeken\nmandaat\ndisciplinair\n"
+            "USER.md (trust EN + legal triggers NL)\nSOUL prevaleert\n"
         ),
         "docs/templates/LEGAL_ACTIVE_MATTERS.example.md": (
             "GCR 2024-00145\nAdjacent checks\n"
         ),
         "docs/templates/MEMORY_CANONICAL_SEED.md": (
-            "## legal USER.md entries\nLegal proactief\n"
+            "## legal USER.md entries\nLegal proactief\nLegal triggers\n"
+            "voorbeeldvragen\ndisciplinaire maatregel\nLegal taallaag\n"
+            "SOUL prevaleert\nTaal- en triggerlagen\nGeen i18n\n"
+        ),
+        "docs/LEGAL_DOMAIN_ARCHITECTURE.md": (
+            "Taal- en triggerlagen\nSOUL prevaleert\n"
         ),
         "docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md": (
             "Parallelle invalshoeken\nSOUL_LEGAL_DOMAIN\n"
@@ -211,7 +217,7 @@ class TestMainHappyPath:
         ):
             assert harness.main() == 0
         assert harness.FAILURES == 0
-        assert harness.STEP == 14
+        assert harness.STEP == 19
 
     def test_main_prints_banner_and_success_line(
         self, harness: ModuleType, capsys: pytest.CaptureFixture[str]

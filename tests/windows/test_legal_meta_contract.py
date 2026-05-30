@@ -26,6 +26,8 @@ def test_memory_canonical_seed_has_legal_user_section():
     text = (REPO / "docs/templates/MEMORY_CANONICAL_SEED.md").read_text(encoding="utf-8")
     assert "## legal USER.md entries" in text
     assert "Parallelle invalshoeken" in text
+    assert "Legal triggers" in text
+    assert "SOUL prevaleert" in text
 
 
 def test_legal_active_matters_example_adjacent_checks():

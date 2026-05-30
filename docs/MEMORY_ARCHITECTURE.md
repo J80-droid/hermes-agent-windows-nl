@@ -4,7 +4,7 @@ Operationele samenvatting; vault-details staan in `Documents/Hermes Knowledge/RE
 
 ## Aanbevolen stack
 
-- **L1** — `MEMORY.md` / `USER.md` per profiel (trust limits 4000/1800)
+- **L1** — `MEMORY.md` / `USER.md` per profiel (trust limits 4000/1800). Legal: EN trust + NL triggers in één `USER.md` — zie [LEGAL_DOMAIN_ARCHITECTURE.md](LEGAL_DOMAIN_ARCHITECTURE.md) § Taal- en triggerlagen en `docs/templates/MEMORY_CANONICAL_SEED.md`.
 - **L2** — FTS5 `state.db` (`session_search`)
 - **L3** — **uit** op productie-profielen (geen Honcho/Mem0)
 - **L4** — Obsidian vault = `Hermes Knowledge` (`OBSIDIAN_VAULT_PATH`)
