@@ -256,13 +256,38 @@ function Resolve-HermesPythonExe {
     return $null
 }
 
+function Test-HermesRagExtrasManifestVerified {
+    <#
+    .SYNOPSIS
+        True als rag-deps.json rag_extras_verified heeft voor deze python_exe (geen import-probe).
+    #>
+    param([Parameter(Mandatory)][string]$PythonExe)
+    $manifestPath = Get-HermesRagDepsManifestPath
+    if (-not (Test-Path -LiteralPath $manifestPath)) { return $false }
+    try {
+        $j = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        if ($j.rag_extras_verified -ne $true) { return $false }
+        if ($j.python_exe -and ($j.python_exe.ToString().Trim() -ne $PythonExe)) { return $false }
+        return $true
+    } catch {
+        return $false
+    }
+}
+
 function Test-HermesRagExtrasInstalled {
     <#
     .SYNOPSIS
-        True als lancedb + sentence_transformers importeerbaar zijn. Ongeldige .exe → $false (catch).
+        True als RAG extras beschikbaar zijn: eerst rag-deps.json fast-path, anders import-probe.
+        Ongeldige .exe → $false (catch). HERMES_RAG_EXTRAS_MANIFEST_ONLY=1: geen import (tests).
     #>
     param([Parameter(Mandatory)][string]$PythonExe)
     if (-not (Test-Path -LiteralPath $PythonExe)) { return $false }
+    if ($env:HERMES_RAG_EXTRAS_MANIFEST_ONLY -eq '1') {
+        return (Test-HermesRagExtrasManifestVerified -PythonExe $PythonExe)
+    }
+    if (Test-HermesRagExtrasManifestVerified -PythonExe $PythonExe) {
+        return $true
+    }
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'SilentlyContinue'
     try {

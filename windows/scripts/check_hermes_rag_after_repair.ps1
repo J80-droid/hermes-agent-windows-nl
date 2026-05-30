@@ -1,5 +1,6 @@
 # Na REPAIR_PYTHON: controleer RAG extras (pip extra rag) - niet-blokkerend.
 # NonInteractive: -NonInteractive, HERMES_NONINTERACTIVE=1, of redirected stdin (geen Read-Host hang).
+# Snel pad: rag-deps.json met rag_extras_verified (HermesPythonPolicy) vóór import-probe.
 param(
     [string]$RepoRoot = '',
     [switch]$Quiet,

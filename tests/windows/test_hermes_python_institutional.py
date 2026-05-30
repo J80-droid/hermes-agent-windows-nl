@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -801,7 +803,21 @@ exit 0
         Path(stub).unlink(missing_ok=True)
 
 
-def test_check_rag_after_repair_noninteractive_exits_quickly():
+def test_check_rag_after_repair_noninteractive_exits_quickly(tmp_path: Path) -> None:
+    """NonInteractive pad + manifest fast-path (geen trage lancedb-import in unit run)."""
+    local = tmp_path / "LocalAppData"
+    policy_dir = local / "Hermes"
+    policy_dir.mkdir(parents=True)
+    py = sys.executable
+    manifest = {
+        "installed_at": "2026-01-01T00:00:00Z",
+        "python_exe": py,
+        "rag_extra": "rag",
+        "rag_extras_verified": True,
+    }
+    (policy_dir / "rag-deps.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+    env = {**os.environ, "LOCALAPPDATA": str(local), "HERMES_NONINTERACTIVE": "1", "HERMES_PYTHON": py}
     proc = subprocess.run(
         [
             "powershell",
@@ -819,9 +835,42 @@ def test_check_rag_after_repair_noninteractive_exits_quickly():
         text=True,
         encoding="utf-8",
         errors="replace",
-        env={**os.environ, "HERMES_NONINTERACTIVE": "1"},
+        env=env,
         cwd=str(REPO),
-        timeout=30,
+        timeout=45,
+        check=False,
+    )
+    assert proc.returncode == 0, (proc.stdout + proc.stderr)[-2000:]
+    assert "Read-Host" not in (proc.stdout + proc.stderr)
+
+
+@pytest.mark.integration
+@pytest.mark.timeout(120)
+def test_check_rag_after_repair_import_probe_when_manifest_missing() -> None:
+    """Volledige import-probe (traag); alleen met -m integration."""
+    env = {**os.environ, "HERMES_NONINTERACTIVE": "1"}
+    if "HERMES_RAG_EXTRAS_MANIFEST_ONLY" in env:
+        del env["HERMES_RAG_EXTRAS_MANIFEST_ONLY"]
+    proc = subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(CHECK_RAG_PS1),
+            "-RepoRoot",
+            str(REPO),
+            "-NonInteractive",
+            "-Quiet",
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=env,
+        cwd=str(REPO),
+        timeout=110,
         check=False,
     )
     assert proc.returncode in (0, 1)
