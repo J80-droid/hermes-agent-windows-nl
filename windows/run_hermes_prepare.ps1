@@ -34,9 +34,8 @@ if (Invoke-HermesEnsureInteractiveConsole -RepoRoot $repoRoot) {
 }
 
 Reset-HermesConsoleInputModes
-try { Clear-Host } catch { $null = $_.Exception.Message }
 Set-HermesWin32ChatEnv -RepoRoot $repoRoot
-[void](Stop-HermesGhostInputBlockers -RepoRoot $repoRoot)
+Invoke-HermesDisableConsoleQuickEdit
 Reset-HermesConsoleInputModes
 
 $hermesPy = Get-HermesAuditPython -RepoRoot $repoRoot
@@ -98,6 +97,11 @@ if ($env:HERMES_MINIMAL_LAUNCH -ne '1') {
 }
 Invoke-HermesDisableConsoleQuickEdit
 Reset-HermesConsoleInputModes
-try { Clear-Host } catch { $null = $_.Exception.Message }
-Write-Host '[INFO] Chat starten...' -ForegroundColor Green
+if (
+    $env:HERMES_SKIP_DASHBOARD_ON_START -ne '1' -and
+    $env:HERMES_DASHBOARD_ON_START -ne '0' -and
+    $env:HERMES_DASHBOARD_AFTER_CHAT -ne '0'
+) {
+    [void](Start-HermesDashboardAfterChatDetached -RepoRoot $repoRoot)
+}
 exit 0

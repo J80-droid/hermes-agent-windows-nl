@@ -500,6 +500,21 @@ public static class HermesWin32WindowUtil {
     private static extern bool GetConsoleScreenBufferInfo(IntPtr hConsoleOutput, out CONSOLE_SCREEN_BUFFER_INFO lpConsoleScreenBufferInfo);
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool SetConsoleScreenBufferSize(IntPtr hConsoleOutput, COORD dwSize);
+    public static bool RestoreConsoleFromWorkAreaOverlay() {
+        IntPtr h = GetConsoleWindow();
+        if (h == IntPtr.Zero) { return false; }
+        HermesRect rect;
+        if (!GetWindowRect(h, out rect)) { return false; }
+        HermesRect wa = new HermesRect();
+        if (!SystemParametersInfo(SPI_GETWORKAREA, 0, ref wa, 0)) { return false; }
+        int w = rect.Right - rect.Left;
+        int ht = rect.Bottom - rect.Top;
+        int workW = Math.Max(400, wa.Right - wa.Left);
+        int workH = Math.Max(300, wa.Bottom - wa.Top);
+        if (w < (int)(workW * 0.72) || ht < (int)(workH * 0.72)) { return false; }
+        ShowWindow(h, SW_RESTORE);
+        return true;
+    }
     public static bool ExpandConsoleToWorkArea() {
         IntPtr h = GetConsoleWindow();
         if (h == IntPtr.Zero) { return false; }
@@ -588,7 +603,8 @@ public static class HermesWin32WindowUtil {
             var cls = new StringBuilder(64);
             GetClassNameW(hWnd, cls, 64);
             string className = cls.ToString();
-            if (className != "ConsoleWindowClass" && className != "CASCADIA_HOSTING_WINDOW_CLASS") {
+            // WT Cascadia-host niet minimaliseren (lege tabs, muisfocus kapot) — alleen cmd conhost.
+            if (className != "ConsoleWindowClass") {
                 return true;
             }
             HermesRect rect;
@@ -617,16 +633,102 @@ function Invoke-HermesFocusConsoleWindow {
     }
 }
 
+function Invoke-HermesEnableConsoleAnsi {
+    <#
+    .SYNOPSIS
+        VT/ANSI op stdout/stderr (goudgele launch-titel in cmd + WT).
+    #>
+    if (-not ('HermesConsoleVt' -as [type])) {
+        $csharp = @'
+using System;
+using System.Runtime.InteropServices;
+public class HermesConsoleVt {
+    private const int STD_OUTPUT_HANDLE = -11;
+    private const int STD_ERROR_HANDLE = -12;
+    private const uint ENABLE_VIRTUAL_TERMINAL_PROCESSING = 4;
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr GetStdHandle(int nStdHandle);
+    [DllImport("kernel32.dll")]
+    private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
+    [DllImport("kernel32.dll")]
+    private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+    public static void Enable() {
+        EnableHandle(GetStdHandle(STD_OUTPUT_HANDLE));
+        EnableHandle(GetStdHandle(STD_ERROR_HANDLE));
+    }
+    private static void EnableHandle(IntPtr h) {
+        if (h == IntPtr.Zero || h == new IntPtr(-1)) return;
+        uint mode;
+        if (!GetConsoleMode(h, out mode)) return;
+        SetConsoleMode(h, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+    }
+}
+'@
+        try {
+            Add-Type -TypeDefinition $csharp -Language CSharp -ErrorAction Stop
+        } catch {
+            return $false
+        }
+    }
+    try {
+        [HermesConsoleVt]::Enable()
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+function Test-HermesWindowsTerminalSession {
+    return (
+        $env:WT_SESSION -or
+        $env:WT_PROFILE_ID -or
+        $env:WT_PROFILE_NAME
+    )
+}
+
+function Invoke-HermesRepairConsoleForChat {
+    <#
+    .SYNOPSIS
+        Herstel muisklik/scroll: VT-reset, QuickEdit uit, ghost-consoles minimaliseren, focus chat-venster.
+    #>
+    param([string]$RepoRoot = '')
+    [void](Invoke-HermesEnableConsoleAnsi)
+    Reset-HermesConsoleInputModes
+    Invoke-HermesDisableConsoleQuickEdit
+    Initialize-HermesWin32WindowUtil
+    if ('HermesWin32WindowUtil' -as [type]) {
+        [void][HermesWin32WindowUtil]::RestoreConsoleFromWorkAreaOverlay()
+        [void][HermesWin32WindowUtil]::ConfigureConsoleInputForScroll()
+    }
+    if ($env:HERMES_DISMISS_GHOST_CONSOLES -eq '1') {
+        try {
+            [void](Invoke-HermesDismissGhostConsoleWindows)
+        } catch {
+            $null = $_.Exception.Message
+        }
+    }
+    if ($RepoRoot) {
+        [void](Stop-HermesGhostInputBlockers -RepoRoot $RepoRoot)
+    } else {
+        Reset-HermesConsoleInputModes
+    }
+    Invoke-HermesFocusConsoleWindow
+}
+
 function Invoke-HermesPostConsoleLayoutFix {
     <#
     .SYNOPSIS
         Na venstergrootte-wijziging: QuickEdit uit, geen console-muiscapture, focus herstellen.
-        Ghost-dismiss alleen met HERMES_DISMISS_GHOST_CONSOLES=1 (anders minimaliseert WT zichzelf).
+        Minimaliseert grote ghost-consoles (onzichtbare overlay op titelbalk/muis).
     #>
     Reset-HermesConsoleInputModes
     Invoke-HermesDisableConsoleQuickEdit
     if ($env:HERMES_DISMISS_GHOST_CONSOLES -eq '1') {
-        [void](Invoke-HermesDismissGhostConsoleWindows)
+        try {
+            [void](Invoke-HermesDismissGhostConsoleWindows)
+        } catch {
+            $null = $_.Exception.Message
+        }
     }
     Reset-HermesConsoleInputModes
     Invoke-HermesFocusConsoleWindow
@@ -646,14 +748,18 @@ function Invoke-HermesExpandConsoleWindow {
     if ($layout -eq 'off' -or $layout -eq 'none') { return $false }
     Initialize-HermesWin32WindowUtil
     $ok = $false
+    $inWt = Test-HermesWindowsTerminalSession
     if ('HermesWin32WindowUtil' -as [type]) {
-        if ($layout -in @('maximized', 'max', 'workarea', 'full')) {
-            $ok = [HermesWin32WindowUtil]::ExpandConsoleToWorkArea()
-        } elseif ($layout -in @('comfortable', 'compact', 'windowed')) {
-            $ok = [HermesWin32WindowUtil]::ExpandConsoleComfortably(0.88)
-        } else {
-            Write-Warning ('Onbekende HERMES_CONSOLE_LAYOUT=' + $layout + ' - gebruik maximized')
-            $ok = [HermesWin32WindowUtil]::ExpandConsoleToWorkArea()
+        [void][HermesWin32WindowUtil]::RestoreConsoleFromWorkAreaOverlay()
+        if (-not $inWt) {
+            if ($layout -in @('maximized', 'max', 'workarea', 'full')) {
+                $ok = [HermesWin32WindowUtil]::ExpandConsoleToWorkArea()
+            } elseif ($layout -in @('comfortable', 'compact', 'windowed')) {
+                $ok = [HermesWin32WindowUtil]::ExpandConsoleComfortably(0.88)
+            } else {
+                Write-Warning ('Onbekende HERMES_CONSOLE_LAYOUT=' + $layout + ' - gebruik maximized')
+                $ok = [HermesWin32WindowUtil]::ExpandConsoleToWorkArea()
+            }
         }
         $scrollMin = 999
         if ($env:HERMES_CONSOLE_SCROLLBACK -match '^\d+$') { $scrollMin = [int]$env:HERMES_CONSOLE_SCROLLBACK }
@@ -662,6 +768,42 @@ function Invoke-HermesExpandConsoleWindow {
     }
     Invoke-HermesPostConsoleLayoutFix
     return $ok
+}
+
+function Invoke-HermesFixMouseBlocked {
+    <#
+    .SYNOPSIS
+        Volledige muisklik-herstel (FIX_MOUSE_BLOCKED / RESET_TERMINAL): overlay conhost terug, dashboard stop, VT-reset.
+    #>
+    param([string]$RepoRoot = '')
+    $env:HERMES_DISMISS_GHOST_CONSOLES = '1'
+    $env:HERMES_DASHBOARD_USE_NOWINDOW = '1'
+    if ($RepoRoot) {
+        [void](Stop-HermesGhostInputBlockers -RepoRoot $RepoRoot)
+    } else {
+        Reset-HermesConsoleInputModes
+    }
+    [void](Invoke-HermesRepairConsoleForChat -RepoRoot $RepoRoot)
+    if ($RepoRoot) {
+        $py = $null
+        try { $py = Get-HermesAuditPython -RepoRoot $RepoRoot } catch { $py = $null }
+        if ($py -and (Test-Path -LiteralPath $py)) {
+            try {
+                $null = & $py -c "from hermes_cli.win32_console import release_terminal_capture, configure_interactive_console; release_terminal_capture(); configure_interactive_console()" 2>&1
+            } catch {
+                $null = $_.Exception.Message
+            }
+        }
+    }
+    $dismissed = 0
+    if ($env:HERMES_DISMISS_GHOST_CONSOLES -eq '1') {
+        try {
+            $dismissed = [int](Invoke-HermesDismissGhostConsoleWindows)
+        } catch {
+            $null = $_.Exception.Message
+        }
+    }
+    return $dismissed
 }
 
 function Invoke-HermesMaximizeConsoleWindow {
@@ -1208,6 +1350,35 @@ function Start-HermesNoWindowProcess {
         [void][System.Threading.Tasks.Task]::Run($copyStderr)
     }
     return $proc
+}
+
+function Start-HermesDashboardAfterChatDetached {
+    <#
+    .SYNOPSIS
+        Start deferred dashboard zonder extra cmd/WT-venster (CreateNoWindow, geen start "" / start /B).
+    #>
+    param([string]$RepoRoot = '')
+    if ($env:HERMES_SKIP_DASHBOARD_ON_START -eq '1') { return $null }
+    if ($env:HERMES_DASHBOARD_ON_START -eq '0') { return $null }
+    if ($env:HERMES_DASHBOARD_AFTER_CHAT -eq '0') { return $null }
+    if (-not $RepoRoot) {
+        if ($env:HERMES_REPO_ROOT) { $RepoRoot = $env:HERMES_REPO_ROOT }
+        else { return $null }
+    }
+    $script = Join-Path $PSScriptRoot 'scripts\Start-HermesDashboardAfterChat.ps1'
+    if (-not (Test-Path -LiteralPath $script)) { return $null }
+    $psExe = (Get-Command powershell.exe -ErrorAction SilentlyContinue).Source
+    if (-not $psExe) { $psExe = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" }
+    $argList = @(
+        '-NoProfile',
+        '-ExecutionPolicy', 'Bypass',
+        '-File', $script,
+        '-RepoRoot', $RepoRoot
+    )
+    if ($env:HERMES_DASHBOARD_USE_NOWINDOW -ne '0') {
+        $env:HERMES_DASHBOARD_USE_NOWINDOW = '1'
+    }
+    return Start-HermesNoWindowProcess -FilePath $psExe -ArgumentList $argList -WorkingDirectory $RepoRoot
 }
 
 function Stop-HermesGhostInputBlockers {

@@ -40,11 +40,15 @@ def test_full_profile_enables_dashboard_and_disables_minimal() -> None:
         f". '{PROFILE_PS1}' ; "
         "$m = Get-HermesLaunchProfileEnvMap -Profile full; "
         "Write-Output ($m['HERMES_MINIMAL_LAUNCH']); "
-        "Write-Output ($m['HERMES_SKIP_DASHBOARD_ON_START'])"
+        "Write-Output ($m['HERMES_SKIP_DASHBOARD_ON_START']); "
+        "Write-Output ($m['HERMES_SKIP_DASHBOARD_BROWSER']); "
+        "Write-Output ([string]::IsNullOrEmpty($m['HERMES_DASHBOARD_OPEN_PATH']))"
     )
     lines = [ln.strip() for ln in out.splitlines() if ln.strip()]
     assert lines[0] == "0"
     assert lines[1] == "0"
+    assert lines[2] == "1"
+    assert lines[3].lower() == "true"
 
 
 def test_cli_args_filter_strips_launch_profile_flags() -> None:

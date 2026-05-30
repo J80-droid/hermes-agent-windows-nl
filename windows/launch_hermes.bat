@@ -10,6 +10,12 @@ cd /d "%REPO_ROOT%"
 
 rem RAG: per-domein via profiles + domains.yaml (geen globale my_lancedb default).
 if not defined HERMES_RAG_RAW_SOURCE set "HERMES_RAG_RAW_SOURCE=%USERPROFILE%\data\raw_source_files"
+rem Dashboard pas na chat-start (pre-chat blijft 7 stappen). Oud gedrag: set HERMES_DASHBOARD_AFTER_CHAT=0
+if not defined HERMES_DASHBOARD_AFTER_CHAT set "HERMES_DASHBOARD_AFTER_CHAT=1"
+rem Dashboard zonder conhost-venster (voorkomt onzichtbare muisklik-overlay).
+if not defined HERMES_DASHBOARD_USE_NOWINDOW set "HERMES_DASHBOARD_USE_NOWINDOW=1"
+if not defined HERMES_SKIP_DASHBOARD_BROWSER set "HERMES_SKIP_DASHBOARD_BROWSER=1"
+rem Ghost-dismiss alleen via FIX_MOUSE_BLOCKED.bat (niet standaard — minimaliseert anders WT-tabbladen).
 
 rem Optioneel (productie-gateway): weiger start bij auth/config split-brain.
 rem set "HERMES_STRICT_CONFIG_COHERENCE=1"
@@ -124,6 +130,10 @@ cd /d "%REPO_ROOT%"
 rem Eerst venster + schone console (vóór alle echo) — voorkomt buffer-corruptie en muiscapture.
 powershell -NoProfile -ExecutionPolicy Bypass -Command ". '%REPO_ROOT%\windows\HermesShellCommon.ps1'; Reset-HermesConsoleInputModes; Invoke-HermesDisableConsoleQuickEdit; if ($env:HERMES_SKIP_CONSOLE_MAXIMIZE -ne '1') { [void](Invoke-HermesExpandConsoleWindow) }; try { Clear-Host } catch { }; Reset-HermesConsoleInputModes" 2>nul
 cls >nul 2>&1
+echo.
+echo %GOUD%  Hermes Agent - starten%RESET%
+echo %GOUD%  ------------------------------------------%RESET%
+echo.
 
 if /I "!HERMES_MINIMAL_LAUNCH!"=="1" goto :launch_chat
 
@@ -145,11 +155,10 @@ if !errorLevel! neq 0 (
 goto :launch_chat
 
 :launch_chat
-echo %GROEN%[INFO] Hermes Agent starten...%RESET%
+echo %GOUD%  Hermes Agent - starten%RESET%
 echo [%DATE% %TIME%] Launching runtime wrapper... >> "%LAUNCH_LOG%"
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command ". '%REPO_ROOT%\windows\HermesShellCommon.ps1'; Reset-HermesConsoleInputModes; Invoke-HermesDisableConsoleQuickEdit; [void](Stop-HermesGhostInputBlockers -RepoRoot '%REPO_ROOT%'); try { Clear-Host } catch { }" 2>nul
-cls >nul 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command ". '%REPO_ROOT%\windows\HermesShellCommon.ps1'; Reset-HermesConsoleInputModes; Invoke-HermesDisableConsoleQuickEdit" 2>nul
 
 rem --- PREMIUM: Auto-Backup before Update ---
 echo "!CLEAN_ARGS!" | findstr /I "update" >nul

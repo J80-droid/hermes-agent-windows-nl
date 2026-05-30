@@ -13234,7 +13234,8 @@ class HermesCLI:
                 )
 
                 configure_interactive_console()
-                align_win32_viewport_to_bottom()
+                if not os.environ.get("WT_SESSION"):
+                    align_win32_viewport_to_bottom()
             except Exception:
                 pass
 

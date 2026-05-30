@@ -109,23 +109,25 @@ function Get-HermesLaunchProfileEnvMap {
         [string]$Profile
     )
     $common = @{
-        HERMES_LAUNCH_PROFILE       = $Profile
-        HERMES_MAX_FLAG             = '1'
-        HERMES_AUTO_WINDOWS_TERMINAL = '1'
-        HERMES_CONSOLE_LAYOUT       = 'maximized'
+        HERMES_LAUNCH_PROFILE          = $Profile
+        HERMES_MAX_FLAG                = '1'
+        HERMES_AUTO_WINDOWS_TERMINAL     = '1'
+        HERMES_CONSOLE_LAYOUT            = 'maximized'
+        HERMES_SKIP_DASHBOARD_BROWSER    = '1'
+        HERMES_DASHBOARD_OPEN_PATH       = ''
     }
     if ($Profile -eq 'full') {
         return $common + @{
             HERMES_MINIMAL_LAUNCH                   = '0'
             HERMES_SKIP_DASHBOARD_ON_START          = '0'
-            HERMES_DASHBOARD_OPEN_PATH              = '/sessions'
+            HERMES_DASHBOARD_AFTER_CHAT             = '1'
             HERMES_SKIP_DOCKER_ON_START             = '0'
             HERMES_SKIP_SOUL_DEPLOY_ON_START        = ''
             HERMES_SKIP_TRUST_RUNTIME_ON_START      = ''
             HERMES_SKIP_INSTITUTIONAL_RUNTIME       = ''
             HERMES_SKIP_PENDING_TRUST_ON_START      = ''
             HERMES_SKIP_HARDWARE_PROBE              = '0'
-            HERMES_NO_WAKE_LOCAL_LLM                = '0'
+            HERMES_NO_WAKE_LOCAL_LLM                = '1'
             HERMES_AUTOREPAIR_MODEL_ON_DRIFT        = '1'
             HERMES_AUTOREPAIR_MODEL_CATALOG         = '1'
             HERMES_SKIP_SHORTCUT_MAINT_ON_START     = ''

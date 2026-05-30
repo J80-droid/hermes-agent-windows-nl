@@ -33,9 +33,14 @@ if ($env:HERMES_SKIP_SOUL_DEPLOY_ON_START -ne '1') { $total++ }
 if ($env:HERMES_SKIP_TRUST_RUNTIME_ON_START -ne '1') { $total++ }
 if ($env:HERMES_SKIP_INSTITUTIONAL_RUNTIME -ne '1') { $total++ }
 if ($env:HERMES_SKIP_PENDING_TRUST_ON_START -ne '1') { $total++ }
+$script:DeferDashboardAfterChat = (
+    $env:HERMES_SKIP_DASHBOARD_ON_START -ne '1' -and
+    $env:HERMES_DASHBOARD_ON_START -ne '0' -and
+    $env:HERMES_DASHBOARD_AFTER_CHAT -ne '0'
+)
 if ($env:HERMES_SKIP_DASHBOARD_ON_START -ne '1') {
     if (-not $env:HERMES_DASHBOARD_ON_START) { $env:HERMES_DASHBOARD_ON_START = '1' }
-    if ($env:HERMES_DASHBOARD_ON_START -ne '0') { $total++ }
+    if ($env:HERMES_DASHBOARD_ON_START -ne '0' -and -not $script:DeferDashboardAfterChat) { $total++ }
 }
 if ($total -lt 1) { $total = 1 }
 
@@ -44,8 +49,6 @@ Initialize-HermesLaunchVisual -TotalSteps $total
 
 $step = 0
 $maintenancePath = Join-Path $PSScriptRoot 'HermesSessionMaintenance.ps1'
-
-[void](Stop-HermesGhostInputBlockers -RepoRoot $RepoRoot)
 
 if ($env:HERMES_SKIP_DOCKER_ON_START -ne '1') {
     $step++
@@ -105,27 +108,34 @@ if ($env:HERMES_SKIP_PENDING_TRUST_ON_START -ne '1') {
     }
 }
 
-if ($env:HERMES_SKIP_DASHBOARD_ON_START -ne '1') {
-    if (-not $env:HERMES_DASHBOARD_ON_START) { $env:HERMES_DASHBOARD_ON_START = '1' }
-    if ($env:HERMES_DASHBOARD_ON_START -ne '0') {
-        $step++
-        $dash = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/launch_dashboard_on_start.ps1'
-        $prevQuick = $env:HERMES_DASHBOARD_QUICK_START
-        if (-not $RunInstitutionalE2E) { $env:HERMES_DASHBOARD_QUICK_START = '1' }
-        try {
-            Invoke-HermesLaunchPhase -Step $step -Total $total -Label 'Web dashboard (achtergrond)' -AllowFailure -ActivityReason 'Dashboard + pygount cache...' -Action {
-                [void](& $dash -RepoRoot $RepoRoot -Quiet)
-            }
-        } finally {
-            if ($null -eq $prevQuick) {
-                Remove-Item Env:HERMES_DASHBOARD_QUICK_START -ErrorAction SilentlyContinue
-            } else {
-                $env:HERMES_DASHBOARD_QUICK_START = $prevQuick
+if (-not $script:DeferDashboardAfterChat) {
+    if ($env:HERMES_SKIP_DASHBOARD_ON_START -ne '1') {
+        if (-not $env:HERMES_DASHBOARD_ON_START) { $env:HERMES_DASHBOARD_ON_START = '1' }
+        if ($env:HERMES_DASHBOARD_ON_START -ne '0') {
+            $step++
+            $dash = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/launch_dashboard_on_start.ps1'
+            $prevQuick = $env:HERMES_DASHBOARD_QUICK_START
+            if (-not $RunInstitutionalE2E) { $env:HERMES_DASHBOARD_QUICK_START = '1' }
+            try {
+                Invoke-HermesLaunchPhase -Step $step -Total $total -Label 'Web dashboard (achtergrond)' -AllowFailure -ActivityReason 'Dashboard controleren...' -Action {
+                    [void](& $dash -RepoRoot $RepoRoot -Quiet)
+                }
+            } finally {
+                if ($null -eq $prevQuick) {
+                    Remove-Item Env:HERMES_DASHBOARD_QUICK_START -ErrorAction SilentlyContinue
+                } else {
+                    $env:HERMES_DASHBOARD_QUICK_START = $prevQuick
+                }
             }
         }
     }
+} elseif ($env:HERMES_LAUNCH_LOG) {
+    Add-HermesLaunchLogLine -Message 'Dashboard uitgesteld tot na chat (HERMES_DASHBOARD_AFTER_CHAT).'
 }
 
 Stop-HermesLaunchActivity
 $global:HermesLaunchVisualState.Initialized = $false
+if (Get-Command Write-HermesLaunchBanner -ErrorAction SilentlyContinue) {
+    Write-HermesLaunchBanner
+}
 exit 0

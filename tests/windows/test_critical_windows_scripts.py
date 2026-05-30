@@ -292,4 +292,10 @@ def test_run_hermes_uses_direct_python_not_conda_run():
     chat_text = (REPO / "windows/hermes_chat.cmd").read_text(encoding="utf-8")
     assert 'set "TERM="' in chat_text or "set TERM=" in chat_text
     assert "HERMES_PYTHON" in chat_text
-    assert "powershell" not in chat_text.lower() or "-c \"import sys" in chat_text
+    assert "powershell -noprofile" not in chat_text.lower()
+    assert "invoke-hermesrepairconsoleforchat" not in chat_text.lower()
+    assert "start /B" not in chat_text.lower()
+    assert "Clear-Host" not in prepare_ps1
+    assert "Start-HermesDashboardAfterChatDetached" in prepare_ps1
+    launch_ui = (REPO / "windows/HermesLaunchUi.ps1").read_text(encoding="utf-8")
+    assert "Write-HermesLaunchPinnedHeader" in launch_ui

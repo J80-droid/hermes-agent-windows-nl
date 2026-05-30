@@ -271,7 +271,7 @@ function Install-HermesWebDashboardPackage {
     $changed = $false
     try {
         if ($py) {
-            Update-HermesLaunchActivity -Reason 'Dashboard: pip install -e [web]...'
+            Update-HermesLaunchActivity -Reason 'Dashboard: deps bijwerken (eenmalig bij wijziging)...'
             $null = & $py -m pip install -e $editable -q 2>&1
             if ($requirePygount) {
                 $null = & $py -m pip install pygount -q 2>&1
@@ -378,10 +378,11 @@ function Ensure-CodebaseVizPygountCache {
     $checkCode = Invoke-HermesCodebaseVizPygountCacheCheckOnly -RepoRoot $RepoRoot -PythonExe $PythonExe
     if ($checkCode -eq 0) {
         Write-DashLog '[OK] Codebase Viz pygount-schijfcache aanwezig.' -Color DarkGray
+        Update-HermesLaunchActivity -Reason 'Codebase Viz: cache OK'
         return $false
     }
-    Write-DashLog '[INFO] Codebase Viz: pygount-cache opbouwen (eenmalig, kan tot 10 min duren)...' -Color Cyan
-    Update-HermesLaunchActivity -Reason 'Codebase Viz: pygount-cache opbouwen (tot ~10 min)...'
+    Write-DashLog '[INFO] Codebase Viz: pygount-cache opbouwen (alleen bij ontbrekende/ongeldige cache)...' -Color Cyan
+    Update-HermesLaunchActivity -Reason 'Codebase Viz: pygount-cache opbouwen...'
     if ((Get-Command Test-HermesLaunchConsoleCapture -ErrorAction SilentlyContinue) -and (Test-HermesLaunchConsoleCapture)) {
         $warmCode = Invoke-HermesCapturedProcess -FilePath $PythonExe -ArgumentList @($warmScript) -Quiet -FilterNoise
         if ($warmCode -eq 0) {
@@ -566,6 +567,14 @@ if ($workspacePlugins) {
     }
 }
 
+if ($workspacePlugins -and (Get-Command Update-HermesLaunchActivity -ErrorAction SilentlyContinue)) {
+    if (-not $pipNeeded -and $pygountCacheOk) {
+        Update-HermesLaunchActivity -Reason 'Dashboard-deps en cache OK — starten...'
+    } elseif (-not $pipNeeded) {
+        Update-HermesLaunchActivity -Reason 'Dashboard-deps OK — pygount controleren...'
+    }
+}
+
 $pipChanged = Install-HermesWebDashboardPackage -RepoRoot $RepoRoot
 
 $dashPy = if ($dashPyEarly) { $dashPyEarly } else { Get-DashboardPythonExe -RepoRoot $RepoRoot }
@@ -600,7 +609,8 @@ $windowStyleRaw = ''
 if ($null -ne $env:HERMES_DASHBOARD_WINDOW_STYLE) {
     $windowStyleRaw = "$env:HERMES_DASHBOARD_WINDOW_STYLE".Trim().ToLowerInvariant()
 }
-$useNoWindow = ($env:HERMES_DASHBOARD_USE_NOWINDOW -eq '1')
+# Standaard NoWindow (geen verborgen conhost die muisklikken op WT/cmd blokkeert).
+$useNoWindow = ($env:HERMES_DASHBOARD_USE_NOWINDOW -ne '0')
 try {
     if ($useNoWindow) {
         $proc = Start-HermesNoWindowProcess `

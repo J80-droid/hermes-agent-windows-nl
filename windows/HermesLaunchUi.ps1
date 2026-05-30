@@ -5,16 +5,33 @@ if (-not $global:HermesLaunchVisualState) {
     $global:HermesLaunchVisualState = @{
         Initialized       = $false
         TotalSteps        = 0
+        HeaderTitle       = 'Hermes Agent - starten'
         SpinnerActive     = $false
         SpinnerTimer      = $null
         SpinnerEventSub   = $null
         SpinnerStarted    = $null
+        SpinnerStopwatch  = $null
         SpinnerStep       = 0
         SpinnerTotal      = 0
         SpinnerLabel      = ''
         SpinnerFrame      = 0
         SpinnerUiMode     = 'normal'
     }
+}
+
+function Format-HermesLaunchElapsedSeconds {
+    param(
+        [Nullable[datetime]]$Started,
+        [System.Diagnostics.Stopwatch]$Stopwatch = $null
+    )
+    $sec = 0.0
+    if ($Stopwatch -and $Stopwatch.IsRunning) {
+        $sec = $Stopwatch.Elapsed.TotalSeconds
+    } elseif ($Started) {
+        $sec = ((Get-Date) - $Started).TotalSeconds
+    }
+    if ($sec -lt 0) { $sec = 0 }
+    return ([math]::Round($sec, 1)).ToString('0.0', [System.Globalization.CultureInfo]::InvariantCulture)
 }
 
 function Test-HermesConsoleCapability {
@@ -186,16 +203,65 @@ function Write-HermesLaunchPhaseResult {
     }
 }
 
+function Write-HermesLaunchPinnedHeader {
+    if (-not (Test-HermesLaunchSupportsInlineRefresh)) { return }
+    $title = if ($global:HermesLaunchVisualState.HeaderTitle) {
+        $global:HermesLaunchVisualState.HeaderTitle
+    } else {
+        'Hermes Agent - starten'
+    }
+    $rule = '-' * 42
+    $esc = [char]27
+    try {
+        $row = 0
+        $col = 0
+        try {
+            $row = [Console]::CursorTop
+            $col = [Console]::CursorLeft
+        } catch {
+            $row = 0
+            $col = 0
+        }
+        [Console]::Out.Write($esc + '[1;1H' + $esc + '[2K' + $esc + '[93m  ' + $title + $esc + '[0m')
+        [Console]::Out.Write($esc + '[2;1H' + $esc + '[2K' + $esc + '[90m  ' + $rule + $esc + '[0m')
+        $restoreRow = [math]::Max(3, $row + 1)
+        [Console]::Out.Write($esc + '[' + $restoreRow + ';' + ($col + 1) + 'H')
+        [Console]::Out.Flush()
+    } catch { }
+}
+
+function Write-HermesLaunchBanner {
+    param([string]$Title = 'Hermes Agent - starten')
+    if (Get-Command Invoke-HermesEnableConsoleAnsi -ErrorAction SilentlyContinue) {
+        [void](Invoke-HermesEnableConsoleAnsi)
+    }
+    $rule = '-' * 42
+    $esc = [char]27
+    try {
+        Write-Host ($esc + '[93m  ' + $Title + $esc + '[0m') -ForegroundColor Yellow
+        Write-Host ($esc + '[90m  ' + $rule + $esc + '[0m')
+        Write-Host ''
+    } catch {
+        Write-Host ('  ' + $Title) -ForegroundColor Yellow
+        Write-Host ('  ' + $rule) -ForegroundColor DarkGray
+        Write-Host ''
+    }
+}
+
 function Initialize-HermesLaunchVisual {
     param(
         [Parameter(Mandatory)][int]$TotalSteps,
         [string]$Title = 'Hermes Agent - starten'
     )
+    if (Get-Command Invoke-HermesEnableConsoleAnsi -ErrorAction SilentlyContinue) {
+        [void](Invoke-HermesEnableConsoleAnsi)
+    }
+    $global:HermesLaunchVisualState.HeaderTitle = $Title
+    Write-HermesLaunchBanner -Title $Title
+    Write-HermesLaunchPinnedHeader
     if (-not (Test-HermesLaunchVisualEnabled)) { return }
     $global:HermesLaunchVisualState.Initialized = $true
     $global:HermesLaunchVisualState.TotalSteps = $TotalSteps
-    Write-HermesLaunchConsoleLine -Message ('  ' + $Title) -ForegroundColor DarkYellow -NewLine
-    Write-HermesLaunchConsoleLine -Message ('  ' + ('-' * 42)) -ForegroundColor DarkGray -NewLine
 }
 
 function Stop-HermesLaunchActivity {
@@ -217,6 +283,10 @@ function Stop-HermesLaunchActivity {
     }
     $global:HermesLaunchVisualState.SpinnerActive = $false
     $global:HermesLaunchVisualState.SpinnerStarted = $null
+    if ($global:HermesLaunchVisualState.SpinnerStopwatch) {
+        try { $global:HermesLaunchVisualState.SpinnerStopwatch.Stop() } catch { }
+        $global:HermesLaunchVisualState.SpinnerStopwatch = $null
+    }
     Remove-Item Env:HERMES_LAUNCH_ACTIVITY_REASON -ErrorAction SilentlyContinue
     Remove-Item Env:HERMES_LAUNCH_ACTIVITY_PROGRESS -ErrorAction SilentlyContinue
     $esc = [char]27
@@ -256,13 +326,12 @@ function Write-HermesLaunchActivityTick {
             $suffix = ' [' + $bar + '] ' + $pct + '%'
         }
     }
-    $elapsed = 0
-    if ($global:HermesLaunchVisualState.SpinnerStarted) {
-        $elapsed = [math]::Round(((Get-Date) - $global:HermesLaunchVisualState.SpinnerStarted).TotalSeconds, 0)
-    }
-    $line = '  [' + $marker + '] ' + $Step + '/' + $Total + '  ' + $Label + '  ' + $frame + '  ' + $rsn + $suffix + ' (' + $elapsed + 's)'
+    $elapsedText = Format-HermesLaunchElapsedSeconds -Started $global:HermesLaunchVisualState.SpinnerStarted `
+        -Stopwatch $global:HermesLaunchVisualState.SpinnerStopwatch
+    $line = '  [' + $marker + '] ' + $Step + '/' + $Total + '  ' + $Label + '  ' + $frame + '  ' + $rsn + $suffix + ' (' + $elapsedText + 's)'
     $esc = [char]27
     try {
+        Write-HermesLaunchPinnedHeader
         [Console]::Out.Write("`r" + $esc + '[2K' + $line)
         [Console]::Out.Flush()
     } catch { }
@@ -291,6 +360,8 @@ function Start-HermesLaunchActivity {
     Stop-HermesLaunchActivity
     $global:HermesLaunchVisualState.SpinnerActive = $true
     $global:HermesLaunchVisualState.SpinnerStarted = Get-Date
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $global:HermesLaunchVisualState.SpinnerStopwatch = $sw
     $global:HermesLaunchVisualState.SpinnerStep = $Step
     $global:HermesLaunchVisualState.SpinnerTotal = $Total
     $global:HermesLaunchVisualState.SpinnerLabel = $Label
@@ -300,7 +371,7 @@ function Start-HermesLaunchActivity {
     $mode = Get-HermesLaunchUiMode
     $global:HermesLaunchVisualState.SpinnerUiMode = $mode
     if (Test-HermesLaunchSupportsInlineRefresh) {
-        $timer = New-Object System.Timers.Timer(80)
+        $timer = New-Object System.Timers.Timer(50)
         $timer.AutoReset = $true
         $sub = Register-ObjectEvent -InputObject $timer -EventName Elapsed -Action {
             if (-not $global:HermesLaunchVisualState.SpinnerActive) { return }
@@ -350,6 +421,7 @@ function Write-HermesLaunchStepDone {
     )
     Stop-HermesLaunchActivity
     if (-not (Test-HermesLaunchVisualEnabled)) { return }
+    Write-HermesLaunchPinnedHeader
     Clear-HermesLaunchSpinnerLine
     $secText = [string]$Seconds
     $padLen = [math]::Max(1, 28 - $Label.Length)

@@ -7,6 +7,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
+[void](Invoke-HermesEnableConsoleAnsi)
 
 if (-not $RepoRoot) {
     if ($env:HERMES_REPO_ROOT) { $RepoRoot = $env:HERMES_REPO_ROOT }
@@ -26,7 +27,10 @@ try {
     }
 } catch { }
 # bat heeft console al uitgevouwen (launch_hermes.bat) — dubbele expand veroorzaakt ghost-overlay
-try { Clear-Host } catch { }
+# Geen tweede Clear-Host in rich-modus: gele startbanner blijft zichtbaar tot orchestrator klaar is.
+if ((Get-HermesLaunchUiMode) -ne 'rich') {
+    try { Clear-Host } catch { }
+}
 Reset-HermesConsoleInputModes
 
 if ($Setup -or $env:HERMES_RUN_FULL_SETUP_ON_LAUNCH -eq '1') {

@@ -36,6 +36,7 @@ def test_ps1_skip_env_flags(ps1_text: str) -> None:
     assert "HERMES_DASHBOARD_ON_START" in ps1_text
     assert "HERMES_BUNDLED_PLUGINS" in ps1_text
     assert "HERMES_DASHBOARD_OPEN_PATH" in ps1_text
+    assert "HERMES_SKIP_DASHBOARD_BROWSER" in ps1_text
     assert "Initialize-WorkspaceDashboardPlugins" in ps1_text
     assert "Install-HermesWebDashboardPackage" in ps1_text
     assert "Test-HermesNeedsWebDashboardPipInstall" in ps1_text
@@ -79,13 +80,46 @@ def test_ps1_no_unicode_em_dash_in_strings(ps1_text: str) -> None:
             pytest.fail(f"Unicode dash in PS1 line: {line[:80]}")
 
 
+def test_mouse_regression_contracts() -> None:
+    """TERMINAL_WINDOWS: geen start /B dashboard; prepare zonder Clear-Host; NoWindow default."""
+    chat = (REPO / "windows/hermes_chat.cmd").read_text(encoding="utf-8")
+    prepare = (REPO / "windows/run_hermes_prepare.ps1").read_text(encoding="utf-8")
+    bat = BAT.read_text(encoding="utf-8")
+    launch_ui = (REPO / "windows/HermesLaunchUi.ps1").read_text(encoding="utf-8")
+    orch = (REPO / "windows/scripts/launch_pre_chat_orchestrator.ps1").read_text(encoding="utf-8")
+    assert "start /B" not in chat.lower()
+    assert 'start "" powershell' not in chat.lower()
+    prepare = (REPO / "windows/run_hermes_prepare.ps1").read_text(encoding="utf-8")
+    assert "Start-HermesDashboardAfterChatDetached" in prepare
+    assert "Invoke-HermesRepairConsoleForChat" not in chat
+    common = (REPO / "windows/HermesShellCommon.ps1").read_text(encoding="utf-8")
+    assert "Start-HermesDashboardAfterChatDetached" in common
+    assert "Start-HermesNoWindowProcess" in common
+    assert "CASCADIA_HOSTING_WINDOW_CLASS" not in common
+    assert "Test-HermesWindowsTerminalSession" in common
+    assert "RestoreConsoleFromWorkAreaOverlay" in common
+    assert "Invoke-HermesFixMouseBlocked" in common
+    assert "Clear-Host" not in prepare
+    assert "HERMES_DASHBOARD_USE_NOWINDOW=1" in bat
+    assert "Write-HermesLaunchPinnedHeader" in launch_ui
+    assert "[93m" in launch_ui
+    assert "Start-HermesDashboardAfterChatDetached" in prepare
+    assert "Invoke-HermesRepairConsoleForChat" not in prepare
+
+
 def test_launch_hermes_bat_wires_script() -> None:
     bat = BAT.read_text(encoding="utf-8")
     launch_ps1 = (REPO / "windows/scripts/launch_hermes.ps1").read_text(encoding="utf-8")
     orch = (REPO / "windows/scripts/launch_pre_chat_orchestrator.ps1").read_text(encoding="utf-8")
+    chat_cmd = (REPO / "windows/hermes_chat.cmd").read_text(encoding="utf-8")
+    defer_ps1 = (REPO / "windows/scripts/Start-HermesDashboardAfterChat.ps1").read_text(encoding="utf-8")
     assert "launch_hermes.ps1" in bat
     assert "launch_pre_chat_orchestrator.ps1" in launch_ps1
-    assert "launch_dashboard_on_start.ps1" in orch
+    assert "HERMES_DASHBOARD_AFTER_CHAT" in bat
+    assert "HERMES_DASHBOARD_AFTER_CHAT" in orch
+    assert "Start-HermesDashboardAfterChat" in chat_cmd
+    assert "launch_dashboard_on_start.ps1" in defer_ps1
+    assert "launch_dashboard_on_start.ps1" in orch or "DeferDashboardAfterChat" in orch
     assert "HERMES_SKIP_DASHBOARD_ON_START" in orch
     assert "HERMES_DASHBOARD_ON_START" in orch
     assert "HERMES_AUTO_WINDOWS_TERMINAL" in bat

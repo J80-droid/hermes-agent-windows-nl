@@ -27,7 +27,7 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 
 ## Dagelijks gebruik
 
-**Hermes starten:** `start_hermes.bat` (repo-root, standaard **full**) → **[START.md](START.md)**, **[LAUNCH_PROFILES.md](LAUNCH_PROFILES.md)**. Terminal/kleuren/muisklik/exit: **[TERMINAL_WINDOWS.md](TERMINAL_WINDOWS.md)**.
+**Hermes starten:** `start_hermes.bat` (repo-root, standaard **full**) → **[START.md](START.md)**, **[LAUNCH_PROFILES.md](LAUNCH_PROFILES.md)**. Terminal/kleuren/muisklik/exit: **[TERMINAL_WINDOWS.md](TERMINAL_WINDOWS.md)**. **Titelbalk/muis overlay (opgelost 2026-05-30):** **[MOUSE_OVERLAY_FIX.md](MOUSE_OVERLAY_FIX.md)**.
 
 ### Klassieke CLI — prompt-wachtrij (`/queue`)
 
@@ -77,7 +77,7 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 | Nieuw profiel (runtime) | `set HERMES_HOME=%LOCALAPPDATA%\hermes` → `SYNC_DOMAIN_TOOLSETS.bat --create-missing` — zie `docs\DOMAIN_BLUEPRINT.md` |
 | Provision E2E (smoke) | `audits\RUN_PROVISION_DOMAIN_E2E.bat` |
 | Toolset E2E (14 profielen) | `audits\RUN_TOOLSET_DOMAIN_E2E.bat` of `RUN_AUDITS.bat -IncludeToolsetDomainE2E` |
-| Web dashboard (9119, geen tab) | Automatisch bij start via orchestrator; pip `[web]` alleen bij gewijzigde deps (`%LOCALAPPDATA%\hermes\web-dashboard-deps.json`); uit: `HERMES_SKIP_DASHBOARD_ON_START=1` |
+| Web dashboard (9119, geen tab) | Standaard **na chat-start** (`HERMES_DASHBOARD_AFTER_CHAT=1`, `Start-HermesDashboardAfterChat.ps1`); pip `[web]` alleen bij gewijzigde deps; uit: `HERMES_SKIP_DASHBOARD_ON_START=1`; pre-chat stap 8: `HERMES_DASHBOARD_AFTER_CHAT=0` |
 | Pygount-cache corrupt / pytest-pad | `FIX_CODEBASE_VIZ_CACHE.bat` (verwijdert ongeldige cache, bouwt opnieuw voor huidige repo) |
 | **Alles-in-één na codewijziging** | `hermes_onderhoud.bat` of `windows\HERMES_ONDERHOUD.bat` (snelkoppelingen + dashboard + Codebase Viz) |
 | Snelkoppelingen kapot / verkeerd pad | Automatisch bij **update** en **start** (`fix_hermes_taskbar_pins.ps1` → ook `%LOCALAPPDATA%\Hermes\shortcuts\`). Handmatig: `FIX_TASKBAR_ICONS.bat` · verify: `scripts\verify_hermes_shortcut_paths.ps1 -IncludePinned` |

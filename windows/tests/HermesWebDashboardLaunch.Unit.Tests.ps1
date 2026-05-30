@@ -38,11 +38,55 @@ function New-TempHermesDir {
 $fp = Get-HermesWebDashboardDepsFingerprint -RepoRoot $repoRoot
 Assert-True ($fp.Length -gt 10) 'fingerprint non-empty for real repo'
 
-# --- Test-HermesNeedsWebDashboardPipInstall: geen manifest (kan true zijn als geen python) ---
+# --- Test-HermesNeedsWebDashboardPipInstall: geen manifest ---
 $manifestPath = Get-HermesWebDashboardDepsManifestPath
 $hadManifest = Test-Path -LiteralPath $manifestPath
 if (-not $hadManifest) {
-    Assert-True (Test-HermesNeedsWebDashboardPipInstall -RepoRoot $repoRoot) 'missing manifest => need pip'
+    $pyReal = $null
+    if (Get-Command Resolve-HermesPythonExe -ErrorAction SilentlyContinue) {
+        $pyReal = Resolve-HermesPythonExe -RepoRoot $repoRoot -RequirePip
+    }
+    $extrasOk = $false
+    if ($pyReal -and (Get-Command Test-HermesWebDashboardExtrasInstalled -ErrorAction SilentlyContinue)) {
+        $extrasOk = Test-HermesWebDashboardExtrasInstalled -PythonExe $pyReal
+    }
+    if ($extrasOk) {
+        Assert-False (Test-HermesNeedsWebDashboardPipInstall -RepoRoot $repoRoot) 'missing manifest but deps OK => bootstrap manifest, skip pip'
+        Assert-True (Test-Path -LiteralPath (Get-HermesWebDashboardDepsManifestPath)) 'bootstrap wrote manifest on disk'
+    } else {
+        Assert-True (Test-HermesNeedsWebDashboardPipInstall -RepoRoot $repoRoot) 'missing manifest and deps missing => need pip'
+    }
+}
+
+# --- Test-HermesNeedsWebDashboardPipInstall: manifest bootstrap als deps al geïnstalleerd ---
+$tempBootstrap = New-TempHermesDir
+$bootstrapPy = 'C:\hermes-unit-bootstrap-python.exe'
+$prevLocalBootstrap = $env:LOCALAPPDATA
+try {
+    $env:LOCALAPPDATA = $tempBootstrap
+    $bootstrapManifest = Get-HermesWebDashboardDepsManifestPath
+    if (Test-Path -LiteralPath $bootstrapManifest) {
+        Remove-Item -LiteralPath $bootstrapManifest -Force
+    }
+    Remove-Item Function:Resolve-HermesPythonExe -ErrorAction SilentlyContinue
+    Remove-Item Function:Test-HermesWebDashboardExtrasInstalled -ErrorAction SilentlyContinue
+    function Resolve-HermesPythonExe {
+        param([string]$RepoRoot, [switch]$RequirePip)
+        return $bootstrapPy
+    }
+    function Test-HermesWebDashboardExtrasInstalled {
+        param([string]$PythonExe, [switch]$RequirePygount)
+        return $true
+    }
+    Assert-False (Test-HermesNeedsWebDashboardPipInstall -RepoRoot $repoRoot) 'extras OK without manifest => stamp manifest, skip pip'
+    Assert-True (Test-Path -LiteralPath $bootstrapManifest) 'bootstrap wrote manifest'
+} finally {
+    Remove-Item Function:Resolve-HermesPythonExe -ErrorAction SilentlyContinue
+    Remove-Item Function:Test-HermesWebDashboardExtrasInstalled -ErrorAction SilentlyContinue
+    . (Join-Path $windowsRoot 'HermesPythonPolicy.ps1')
+    if ($null -eq $prevLocalBootstrap) { Remove-Item Env:LOCALAPPDATA -ErrorAction SilentlyContinue }
+    else { $env:LOCALAPPDATA = $prevLocalBootstrap }
+    Remove-Item -LiteralPath $tempBootstrap -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 # --- Test-HermesNeedsWebDashboardPipInstall: mocked fast-path ---

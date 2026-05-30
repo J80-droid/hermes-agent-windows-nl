@@ -49,13 +49,14 @@ start_hermes.bat
 | `HERMES_MINIMAL_LAUNCH=1` | alleen met `--minimal` / `start_hermes_minimal.bat` | Direct chat |
 | `HERMES_SKIP_DOCKER_ON_START=1` | aan | Geen `docker info` / WSL-spawn bij start |
 | `HERMES_SKIP_DASHBOARD_ON_START=1` | aan | Geen dashboard op poort 9119 bij start |
-| `HERMES_DASHBOARD_OPEN_PATH` | *(full profile: `/sessions`)* | Browser openen na start; anders alleen URL in console |
+| `HERMES_DASHBOARD_OPEN_PATH` | *(standaard leeg)* | Alleen zetten om browser te openen (bv. `/codebase-viz`); standaard **geen** tab |
+| `HERMES_SKIP_DASHBOARD_BROWSER` | `1` in launcher/profiel | Geen automatische browser bij dashboard-start |
 | `HERMES_MINIMAL_LAUNCH=1` / snel-profiel | aan | Dashboard wordt **niet** gestart |
 | `HERMES_CONSOLE_LAYOUT=maximized` | aan | Venster op werkgebied (taakbalk zichtbaar) |
 
 **Snelle launcher** (alleen chat): `start_hermes_minimal.bat` of `start_hermes.bat --minimal`. Standaard is **volledig** via `start_hermes.bat` (zie `launch_profiles.ps1`).
 
-**Maximaliseren:** één keer vóór chat in `launch_hermes.bat` (niet handmatig opnieuw — dat veroorzaakt ghost-overlays). **QuickEdit** uit via `HermesShellCommon.ps1` + `hermes_cli.win32_console`. **Config:** eenmalig `windows\OPEN_SETUP.bat` → `%LOCALAPPDATA%\hermes\config.yaml`.
+**Maximaliseren:** één keer vóór chat in `launch_hermes.bat` — **niet** in Windows Terminal (`WT_SESSION`): `ExpandConsoleToWorkArea` op conhost geeft een onzichtbare fullscreen overlay op de titelbalk (minimize/maximize/close werken niet). In WT alleen QuickEdit/muis uit; grootte regelt WT zelf. Legacy cmd: work-area expand wel. **QuickEdit** uit via `HermesShellCommon.ps1` + `hermes_cli.win32_console`. **Config:** eenmalig `windows\OPEN_SETUP.bat` → `%LOCALAPPDATA%\hermes\config.yaml`.
 
 Of dubbelklik **`windows\Start Hermes - naar taakbalk slepen.lnk`** of bureaublad **`Hermes Agent.lnk`** (beide → `start_hermes.bat` in WT). Optioneel: `Hermes Agent (met logo).lnk` (ASCII-logo, daarna dezelfde startketen). Na wijzigingen: `CREATE_DESKTOP_SHORTCUT.bat`; taakbalk-pin opnieuw vastmaken.
 
@@ -162,7 +163,7 @@ De fork biedt drie verschillende manieren om flexibel en robuust van profiel te 
 
 **Hang na config-pad (model-banner):** nooit `(?ms)` + `.*` op hele `config.yaml` — gebruikt `Get-HermesModelFieldsFromConfigYaml` (regelscanner). Dashboard bij start: `HERMES_DASHBOARD_QUICK_START=1` (geen 100s /health-wacht).
 
-**Muisklik geblokkeerd (minimaliseren/sluiten/titelbalk):** **niet handmatig opnieuw maximaliseren** na start. Oorzaak: `ENABLE_MOUSE_INPUT` of een ghost-console vangt klikken af. **Fix:** `windows\FIX_MOUSE_BLOCKED.bat` (reset + ghost-dismiss). In WT: **Ctrl+Shift+M** = markeermodus uit. Launcher: muismodus uit in `HermesShellCommon.ps1`; chat: `mouse_support=False` in `cli.py`.
+**Muisklik geblokkeerd (minimaliseren/sluiten/titelbalk):** **OPGELOST (2026-05-30)** — zie **[MOUSE_OVERLAY_FIX.md](MOUSE_OVERLAY_FIX.md)** (volledige root cause + verificatie). Kort: in **Windows Terminal** mag `ExpandConsoleToWorkArea` **niet** (onzichtbare conhost-overlay op titelbalk). Recovery: `FIX_MOUSE_BLOCKED.bat` of `RESET_TERMINAL.bat` → alle tabs dicht → `start_hermes.bat`. **Ctrl+Shift+M** = markeermodus uit. Chat: `mouse_support=False`; QuickEdit/muis uit via `HermesShellCommon.ps1` + `win32_console.py`.
 
 **Scherm springt omhoog bij typen / alleen `core >` bovenaan:** viewport stond midden in de scrollbuffer, of prompt_toolkit “reserve vertical space” scrollde elke toetsaanslag. **Fix in fork:** `align_win32_viewport_to_bottom()` + osd-patch ook op Win32. **Reset:** `windows\RESET_TERMINAL.bat`, alle WT-tabbladen sluiten, opnieuw `start_hermes.bat`.
 
@@ -174,13 +175,18 @@ De fork biedt drie verschillende manieren om flexibel en robuust van profiel te 
 | `HERMES_LAUNCH_UI=quiet` | Alleen log + stapresultaten; geen live detail |
 | `HERMES_LAUNCH_UI=verbose` | Alle detailregels op console |
 | `HERMES_LAUNCH_VISUAL=0` | Geen spinner/checklist-animatie (tekst-only stappen) |
-| Rich visual (spinner/checklist) | Alleen met `WT_SESSION` (echte Windows Terminal-tab); legacy cmd = klassieke stapregels |
+| Rich visual (spinner/checklist) | Alleen met `WT_SESSION`; goudgele kopregel `[33m` (geen dubbele titel op spinner); verstreken tijd per tiende seconde (50 ms tick) |
+| `HERMES_DASHBOARD_AFTER_CHAT` | Default `1`: dashboard start **na** chat via `Start-HermesDashboardAfterChat.ps1` (pre-chat 7 stappen). Oud: `=0` |
+| `HERMES_DASHBOARD_USE_NOWINDOW` | Default `1`: dashboard zonder conhost (voorkomt onzichtbare muisklik-overlay) |
+| Muisklik vast / geen scroll | `windows\FIX_MOUSE_BLOCKED.bat` of `RESET_TERMINAL.bat`; in chat: **Ctrl+Shift+M** (markeermodus uit). Geen extra `powershell`-repair in `hermes_chat.cmd` (alleen Python `configure_interactive_console`). |
 | Ghost overlay / muisklik geblokkeerd | Geen dubbele `Invoke-HermesExpandConsoleWindow`; `Stop-HermesGhostInputBlockers` vóór start; zie `FIX_MOUSE_BLOCKED.bat` |
 | `HERMES_LAUNCH_VERBOSE=1` | Subprocess-detail ook op console tijdens capture |
 
 E2E: `audits\RUN_LAUNCH_UI_SINK_E2E.bat` (8/8). Zie `audits/LAUNCH_UI_SINK_E2E_README.md`.
 
-**Stap 8 (dashboard) traag of spinner blijft hangen:** `pip install -e .[web]` draait **niet** elke start — alleen bij gewijzigde `pyproject.toml` / Codebase Viz `package.json` of ontbrekend manifest (`%LOCALAPPDATA%\hermes\web-dashboard-deps.json`). Pygount pre-warm alleen als `output\research\codebase_viz_pygount_cache.json` ontbreekt of ongeldig is (bijv. pytest-temp in `repo_path`). **Repair:** `windows\FIX_CODEBASE_VIZ_CACHE.bat`. Workspace-dev: dashboard wordt **niet** herstart als deps, dist, pygount-cache en poort 9119 al OK zijn.
+**Dashboard (9119) na chat:** standaard niet meer als pre-chat stap 8; `hermes_chat.cmd` start `windows\scripts\Start-HermesDashboardAfterChat.ps1` op de achtergrond zodra Python-chat draait.
+
+**Stap 8 (dashboard) traag of spinner blijft hangen (alleen bij `HERMES_DASHBOARD_AFTER_CHAT=0`):** `pip install -e .[web]` draait **niet** elke start — alleen bij gewijzigde `pyproject.toml` / Codebase Viz `package.json` of ontbrekend manifest (`%LOCALAPPDATA%\hermes\web-dashboard-deps.json`). Pygount pre-warm alleen als `output\research\codebase_viz_pygount_cache.json` ontbreekt of ongeldig is (bijv. pytest-temp in `repo_path`). **Repair:** `windows\FIX_CODEBASE_VIZ_CACHE.bat`. Workspace-dev: dashboard wordt **niet** herstart als deps, dist, pygount-cache en poort 9119 al OK zijn.
 
 | Variabele | Effect |
 | --------- | ------ |
@@ -201,6 +207,35 @@ E2E optimalisaties: `audits\RUN_DASHBOARD_LAUNCH_OPTIMIZATIONS_E2E.bat`. Unit: `
 | `HERMES_NO_WAKE_LOCAL_LLM=1` | Geen HTTP naar `localhost:11434` bij agent-init (voorkomt Ollama-GUI) |
 
 Ollama bij auxiliary-taken: start `ollama serve` in tray of verwijder `auxiliary.*` uit config. Zwart **ollama.exe**-venster = Ollama Desktop (niet Hermes); sluit via systeemvak of schakel “Launch at login” uit in Ollama.
+
+## Productie-fix titelbalk-muis (2026-05-30)
+
+**Status: geverifieerd werkend.** Documentatie: [MOUSE_OVERLAY_FIX.md](MOUSE_OVERLAY_FIX.md).
+
+| Check na pull | Verwacht |
+| ------------- | -------- |
+| Start via `start_hermes.bat` | Venster heet **Windows Terminal** (of WT-tab met cmd-host) |
+| Titelbalk minimize/close | Werkt op **WT-chrome**, niet alleen in zwart vlak |
+| Geen auto-browser | Geen tab naar `127.0.0.1:9119/sessions` tenzij je `HERMES_DASHBOARD_OPEN_PATH` zet |
+| `git log -1` | `fix(windows):` WT titelbalk-muis / overlay |
+
+---
+
+## Regressies na launch-wijzigingen (2026-05-29)
+
+Recente launch-UI- en deferred-dashboard-wijzigingen kunnen het bewezen muis-contract breken. Controleer vóór nieuwe “muis-fixes”:
+
+| Symptoom / regressie | Oorzaak | Herstel (canoniek) |
+| -------------------- | ------- | ------------------ |
+| Overlay op titelbalk / geen scroll | `start /B` of `start "" powershell` voor deferred dashboard (extra conhost/WT-tab) | `Start-HermesDashboardAfterChatDetached` → `Start-HermesNoWindowProcess` + `HERMES_DASHBOARD_USE_NOWINDOW=1` |
+| Lege WT-tabbladen / derde venster | `DismissGhost` minimaliseerde `CASCADIA_HOSTING_WINDOW_CLASS` | Alleen `ConsoleWindowClass` ghost-cmd minimaliseren |
+| Extra `ollama.exe`-venster | `HERMES_NO_WAKE_LOCAL_LLM=0` in full-profiel | Standaard `1`; alleen `HERMES_ALLOW_WAKE_LOCAL_LLM=1` om te wekken |
+| Gele titel verdwijnt tijdens stappen | `Clear-Host` in `run_hermes_prepare.ps1` of spinner zonder vaste kop | Geen `Clear-Host` in prepare; `Write-HermesLaunchPinnedHeader` in `HermesLaunchUi.ps1`; bat-echo `%GOUD%` behouden |
+| Dubbele fullscreen cmd | Tweede `Invoke-HermesExpandConsoleWindow` of `Invoke-HermesEnsureInteractiveConsole` → `start /max cmd /k` (alleen zonder Win32-buffer; normaal WT-pad triggert dit niet) | Start via `start_hermes.bat` / `hermes_wt_entry.cmd`; eén expand in `launch_hermes.bat`; vermijd handmatig maximaliseren |
+| Ghost minimaliseren “te agressief” | `HERMES_DISMISS_GHOST_CONSOLES=1` standaard in launcher | **Niet** standaard in `launch_hermes.bat` (alleen `FIX_MOUSE_BLOCKED.bat`); anders minimaliseert WT zichzelf |
+| Scroll lijkt dood (viewport onderaan) | `align_win32_viewport_to_bottom` bij chat-start | Scroll via WT-schuifbalk; markeermodus: **Ctrl+Shift+M** |
+
+**Handmatige verificatie:** zie checklist hieronder (`FIX_MOUSE_BLOCKED.bat` → WT → `start_hermes.bat`). **Automatisch:** `tests/windows/test_launch_dashboard_on_start.py::test_mouse_regression_contracts`, `tests/windows/test_critical_windows_scripts.py`, `tests/cli/test_cli_windows_mouse.py`. **Niet** vertrouwen op `RUN_LAUNCH_UI_SINK_E2E` alleen — die harness test geen live WT/muisklik.
 
 ## Problemen oplossen (checklist)
 

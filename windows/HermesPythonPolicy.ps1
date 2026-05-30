@@ -569,7 +569,13 @@ function Test-HermesNeedsWebDashboardPipInstall {
 
     $fingerprint = Get-HermesWebDashboardDepsFingerprint -RepoRoot $RepoRoot
     $manifestPath = Get-HermesWebDashboardDepsManifestPath
-    if (-not (Test-Path -LiteralPath $manifestPath)) { return $true }
+    if (-not (Test-Path -LiteralPath $manifestPath)) {
+        if (Test-HermesWebDashboardExtrasInstalled -PythonExe $py -RequirePygount:$RequirePygount) {
+            [void](Write-HermesWebDashboardDepsManifest -RepoRoot $RepoRoot -PythonExe $py -RequirePygount:$RequirePygount)
+            return $false
+        }
+        return $true
+    }
 
     try {
         $j = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -607,10 +613,14 @@ function Write-HermesWebDashboardDepsManifest {
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'SilentlyContinue'
     try {
-        $verOut = & $PythonExe -c "import importlib.metadata as m; print(m.version('hermes-agent'))"
-        if ($LASTEXITCODE -eq 0 -and $verOut) {
-            $version = ($verOut | Select-Object -Last 1).ToString().Trim()
+        if (Test-Path -LiteralPath $PythonExe) {
+            $verOut = & $PythonExe -c "import importlib.metadata as m; print(m.version('hermes-agent'))"
+            if ($LASTEXITCODE -eq 0 -and $verOut) {
+                $version = ($verOut | Select-Object -Last 1).ToString().Trim()
+            }
         }
+    } catch {
+        $null = $_.Exception.Message
     } finally {
         $ErrorActionPreference = $prevEap
     }
