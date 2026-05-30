@@ -3,9 +3,13 @@ rem WT titelbalk / muisklik overlay — pytest contract + handmatige checklist (
 setlocal EnableExtensions
 cd /d "%~dp0..\.."
 set "ERR=0"
+set "PY=%USERPROFILE%\miniconda3\envs\hermes-env\python.exe"
+if not exist "%PY%" set "PY=%LOCALAPPDATA%\miniconda3\envs\hermes-env\python.exe"
+if not exist "%PY%" set "PY=%USERPROFILE%\anaconda3\envs\hermes-env\python.exe"
+if not exist "%PY%" set "PY=python"
 
 echo [1/2] pytest mouse overlay contracts...
-python -m pytest tests\windows\test_launch_dashboard_on_start.py::test_mouse_regression_contracts tests\windows\test_launch_dashboard_on_start.py::test_expand_console_to_work_area_guarded_in_wt tests\windows\test_launch_dashboard_on_start.py::test_cli_align_viewport_skipped_in_wt -q --tb=short
+"%PY%" -m pytest tests\windows\test_launch_dashboard_on_start.py::test_mouse_regression_contracts tests\windows\test_launch_dashboard_on_start.py::test_expand_console_to_work_area_guarded_in_wt tests\windows\test_launch_dashboard_on_start.py::test_cli_align_viewport_skipped_in_wt -q --tb=short
 if errorlevel 1 set "ERR=1"
 
 echo.
