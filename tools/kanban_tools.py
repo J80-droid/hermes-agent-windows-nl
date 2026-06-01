@@ -52,9 +52,16 @@ def _profile_has_kanban_toolset() -> bool:
     # (~30s) by the tool registry.
     try:
         from hermes_cli.config import load_config
+        from hermes_cli.tools_config import _get_platform_tools
+
         cfg = load_config()
-        toolsets = cfg.get("toolsets", [])
-        return "kanban" in toolsets
+        # Modern path: ``hermes tools`` / ``platform_toolsets.cli`` (not legacy ``toolsets:``).
+        if "kanban" in _get_platform_tools(
+            cfg, "cli", include_default_mcp_servers=False
+        ):
+            return True
+        legacy = cfg.get("toolsets") or []
+        return "kanban" in legacy
     except Exception:
         return False
 
@@ -63,8 +70,8 @@ def _check_kanban_mode() -> bool:
     """Task-lifecycle tools are available when:
 
     1. ``HERMES_KANBAN_TASK`` is set (dispatcher-spawned worker), OR
-    2. The current profile has ``kanban`` in its toolsets config
-       (orchestrator profiles like techlead that route work via Kanban).
+    2. The current profile has ``kanban`` in ``platform_toolsets.cli``
+       (or legacy ``toolsets:``) — set via ``hermes -p <profiel> tools``.
 
     Humans running ``hermes chat`` without the kanban toolset see zero
     kanban tools. Workers spawned by the kanban dispatcher (gateway-

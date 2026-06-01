@@ -5,8 +5,12 @@ Unified tool configuration for Hermes Agent.
 Select a platform → toggle toolsets on/off → for newly enabled tools
 that need API keys, run through provider-aware configuration.
 
-Saves per-platform tool configuration to ~/.hermes/config.yaml under
-the `platform_toolsets` key.
+Saves per-platform tool configuration to the active Hermes config
+(``HERMES_HOME/config.yaml`` — profile dir when ``-p`` is set) under
+``platform_toolsets``. A save from this UI sets
+``platform_toolsets._user_customized.<platform>: true`` so
+``SYNC_DOMAIN_TOOLSETS.bat`` does not overwrite hand-picked lists (use
+``--force-manifest`` to reset to ``docs/domain_toolsets.yaml``).
 """
 
 import json as _json
@@ -35,6 +39,29 @@ from utils import base_url_hostname, is_truthy_value
 logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
+
+# Set when the user saves via ``hermes tools``; manifest sync must not overwrite.
+_PLATFORM_TOOLSETS_USER_CUSTOMIZED_KEY = "_user_customized"
+
+
+def _platform_toolsets_user_customized(config: dict, platform: str) -> bool:
+    pt = config.get("platform_toolsets")
+    if not isinstance(pt, dict):
+        return False
+    meta = pt.get(_PLATFORM_TOOLSETS_USER_CUSTOMIZED_KEY)
+    if isinstance(meta, dict):
+        return bool(meta.get(platform))
+    return bool(meta)
+
+
+def _mark_platform_toolsets_user_customized(config: dict, platform: str) -> None:
+    config.setdefault("platform_toolsets", {})
+    pt = config["platform_toolsets"]
+    meta = pt.get(_PLATFORM_TOOLSETS_USER_CUSTOMIZED_KEY)
+    if not isinstance(meta, dict):
+        meta = {}
+        pt[_PLATFORM_TOOLSETS_USER_CUSTOMIZED_KEY] = meta
+    meta[platform] = True
 
 
 # ─── UI Helpers (shared with setup.py) ────────────────────────────────────────
@@ -1191,6 +1218,7 @@ def _get_platform_tools(
     # "hermes-cli" (which include all _HERMES_CORE_TOOLS) cause disabled
     # toolsets to re-appear as enabled.
     has_explicit_config = any(ts in configurable_keys for ts in toolset_names)
+    user_customized = _platform_toolsets_user_customized(config, platform)
 
     if _explicit_empty_cli:
         enabled_toolsets = set()
@@ -1206,13 +1234,16 @@ def _get_platform_tools(
         # tools. Mirror the else-branch's subset inference, but apply
         # _DEFAULT_OFF_TOOLSETS only to the implicit expansion — anything the
         # user explicitly listed (e.g. ``spotify``) must survive.
+        # Skip when the user saved an explicit checklist — otherwise disabled
+        # tools reappear via hermes-cli subset inference (Windows/legal profiles).
         composite_tools = set()
-        for ts_name in toolset_names:
-            if ts_name in configurable_keys or ts_name in plugin_ts_keys:
-                continue
-            if ts_name not in TOOLSETS:
-                continue
-            composite_tools.update(resolve_toolset(ts_name))
+        if not user_customized:
+            for ts_name in toolset_names:
+                if ts_name in configurable_keys or ts_name in plugin_ts_keys:
+                    continue
+                if ts_name not in TOOLSETS:
+                    continue
+                composite_tools.update(resolve_toolset(ts_name))
 
         if composite_tools:
             expanded = set()
@@ -1327,7 +1358,7 @@ def _get_platform_tools(
     # A plugin toolset is "known" for a platform once `hermes tools`
     # has been saved for that platform (tracked via known_plugin_toolsets).
     # Unknown plugins default to enabled; known-but-absent = disabled.
-    if plugin_ts_keys and not _explicit_empty_cli:
+    if plugin_ts_keys and not _explicit_empty_cli and not user_customized:
         known_map = config.get("known_plugin_toolsets", {})
         known_for_platform = set(known_map.get(platform, []))
         for pts in plugin_ts_keys:
@@ -1341,6 +1372,10 @@ def _get_platform_tools(
                 # New plugin not yet seen by hermes tools — default enabled
                 enabled_toolsets.add(pts)
             # else: known but not in config = user disabled it
+    elif plugin_ts_keys and user_customized:
+        for pts in plugin_ts_keys:
+            if pts in toolset_names:
+                enabled_toolsets.add(pts)
 
     # Context-engine tools are runtime-provided by the active engine, so they
     # are not part of any static platform composite. When a non-default engine
@@ -1357,7 +1392,12 @@ def _get_platform_tools(
         and isinstance(platform_toolsets.get(platform), list)
         and not toolset_names
     )
-    if context_engine_name and context_engine_name != "compressor" and not explicit_empty_selection:
+    if (
+        context_engine_name
+        and context_engine_name != "compressor"
+        and not explicit_empty_selection
+        and not (user_customized and "context_engine" not in toolset_names)
+    ):
         enabled_toolsets.add("context_engine")
 
     # Preserve any explicit non-configurable toolset entries (for example,
@@ -1457,6 +1497,7 @@ def _save_platform_tools(config: dict, platform: str, enabled_toolset_keys: Set[
 
     # Merge preserved entries with new enabled toolsets
     config["platform_toolsets"][platform] = sorted(enabled_toolset_keys | preserved_entries)
+    _mark_platform_toolsets_user_customized(config, platform)
 
     # Track which plugin toolsets are "known" for this platform so we can
     # distinguish "new plugin, default enabled" from "user disabled it".
@@ -3254,39 +3295,34 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
                 all_current,
                 force_fresh=True,
             )
-            if new_enabled != all_current:
-                for pk in platform_keys:
-                    prev = _get_platform_tools(config, pk, include_default_mcp_servers=False)
-                    added = new_enabled - prev
-                    removed = prev - new_enabled
-                    pinfo_inner = PLATFORMS[pk]
-                    if added or removed:
-                        print(color(f"  {pinfo_inner['label']}:", Colors.DIM))
-                        for ts in sorted(added):
-                            label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
-                            print(color(f"    + {label}", Colors.GREEN))
-                        for ts in sorted(removed):
-                            label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
-                            print(color(f"    - {label}", Colors.RED))
-                    # Configure API keys for newly enabled tools
-                    for ts_key in sorted(added):
-                        if (TOOL_CATEGORIES.get(ts_key) or TOOLSET_ENV_REQUIREMENTS.get(ts_key)):
-                            if _toolset_needs_configuration_prompt(
-                                ts_key,
-                                config,
-                                force_fresh=True,
-                            ):
-                                _configure_toolset(ts_key, config)
-                    _save_platform_tools(config, pk, new_enabled)
-                save_config(config)
-                print(color("  ✓ Saved configuration for all platforms", Colors.GREEN))
-                # Update choice labels
-                for ci, pk in enumerate(platform_keys):
-                    new_count = len(_get_platform_tools(config, pk, include_default_mcp_servers=False))
-                    total = len(_get_effective_configurable_toolsets())
-                    platform_choices[ci] = f"Configure {PLATFORMS[pk]['label']}  ({new_count}/{total} enabled)"
-            else:
-                print(color("  No changes", Colors.DIM))
+            for pk in platform_keys:
+                prev = _get_platform_tools(config, pk, include_default_mcp_servers=False)
+                added = new_enabled - prev
+                removed = prev - new_enabled
+                pinfo_inner = PLATFORMS[pk]
+                if added or removed:
+                    print(color(f"  {pinfo_inner['label']}:", Colors.DIM))
+                    for ts in sorted(added):
+                        label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
+                        print(color(f"    + {label}", Colors.GREEN))
+                    for ts in sorted(removed):
+                        label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
+                        print(color(f"    - {label}", Colors.RED))
+                for ts_key in sorted(added):
+                    if (TOOL_CATEGORIES.get(ts_key) or TOOLSET_ENV_REQUIREMENTS.get(ts_key)):
+                        if _toolset_needs_configuration_prompt(
+                            ts_key,
+                            config,
+                            force_fresh=True,
+                        ):
+                            _configure_toolset(ts_key, config)
+                _save_platform_tools(config, pk, new_enabled)
+            save_config(config)
+            print(color("  ✓ Saved configuration for all platforms", Colors.GREEN))
+            for ci, pk in enumerate(platform_keys):
+                new_count = len(_get_platform_tools(config, pk, include_default_mcp_servers=False))
+                total = len(_get_effective_configurable_toolsets())
+                platform_choices[ci] = f"Configure {PLATFORMS[pk]['label']}  ({new_count}/{total} enabled)"
             print()
             continue
 
@@ -3303,34 +3339,33 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
             force_fresh=True,
         )
 
-        if new_enabled != current_enabled:
-            added = new_enabled - current_enabled
-            removed = current_enabled - new_enabled
+        added = new_enabled - current_enabled
+        removed = current_enabled - new_enabled
 
-            if added:
-                for ts in sorted(added):
-                    label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
-                    print(color(f"  + {label}", Colors.GREEN))
-            if removed:
-                for ts in sorted(removed):
-                    label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
-                    print(color(f"  - {label}", Colors.RED))
+        if added:
+            for ts in sorted(added):
+                label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
+                print(color(f"  + {label}", Colors.GREEN))
+        if removed:
+            for ts in sorted(removed):
+                label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
+                print(color(f"  - {label}", Colors.RED))
 
-            # Configure newly enabled toolsets that need API keys
-            for ts_key in sorted(added):
-                if (TOOL_CATEGORIES.get(ts_key) or TOOLSET_ENV_REQUIREMENTS.get(ts_key)):
-                    if _toolset_needs_configuration_prompt(
-                        ts_key,
-                        config,
-                        force_fresh=True,
-                    ):
-                        _configure_toolset(ts_key, config)
+        # Configure newly enabled toolsets that need API keys
+        for ts_key in sorted(added):
+            if (TOOL_CATEGORIES.get(ts_key) or TOOLSET_ENV_REQUIREMENTS.get(ts_key)):
+                if _toolset_needs_configuration_prompt(
+                    ts_key,
+                    config,
+                    force_fresh=True,
+                ):
+                    _configure_toolset(ts_key, config)
 
-            _save_platform_tools(config, pkey, new_enabled)
-            save_config(config)
+        _save_platform_tools(config, pkey, new_enabled)
+        if added or removed:
             print(color(f"  ✓ Saved {pinfo['label']} configuration", Colors.GREEN))
         else:
-            print(color(f"  No changes to {pinfo['label']}", Colors.DIM))
+            print(color(f"  ✓ {pinfo['label']} toolkeuzes bevestigd en opgeslagen", Colors.GREEN))
 
         print()
 
@@ -3340,8 +3375,9 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
         platform_choices[idx] = f"Configure {pinfo['label']}  ({new_count}/{total} enabled)"
 
     print()
-    from hermes_constants import display_hermes_home
-    print(color(f"  Tool configuration saved to {display_hermes_home()}/config.yaml", Colors.DIM))
+    from hermes_constants import get_config_path
+
+    print(color(f"  Tool configuration saved to {get_config_path()}", Colors.DIM))
     print(color("  Changes take effect on next 'hermes' or gateway restart.", Colors.DIM))
     print()
 

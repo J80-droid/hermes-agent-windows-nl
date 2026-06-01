@@ -28,14 +28,27 @@ flowchart LR
 1. Agent meldt welke toolset ontbreekt en waarom.
 2. J. draait: `hermes -p <profiel> tools` (of bewerkt `platform_toolsets.cli` in profiel-`config.yaml`).
 3. **Nieuwe chat** in dat profiel.
-4. Optioneel: `windows\SYNC_DOMAIN_TOOLSETS.bat` na git pull (zet manifest terug als handmatige drift).
+4. Optioneel: `windows\SYNC_DOMAIN_TOOLSETS.bat` na git pull (alleen als je manifest-drift wilt terugzetten — zie hieronder).
 
-### mcp + kanban (checklist + manifest)
+### Persistente keuzes (`hermes tools`)
+
+- Na **Enter** in de checklist schrijft Hermes naar `profiles\<naam>\config.yaml` (of root bij geen `-p`) en zet:
+  ```yaml
+  platform_toolsets:
+    _user_customized:
+      cli: true
+    cli: [web, browser, mcp, kanban, ...]
+  ```
+- **`SYNC_DOMAIN_TOOLSETS.bat`** overschrijft **niet** meer een profiel met `_user_customized.cli: true`. Reset naar manifest: `SYNC_DOMAIN_TOOLSETS.bat --profile legal --force-manifest`.
+- **Nieuwe chat** (`/new` of Hermes herstarten) na wijziging — tool-schema’s worden bij sessiestart geladen.
+
+### mcp + kanban (checklist + runtime)
 
 - **Alle 14 domeinprofielen:** `mcp` en `kanban` staan in `platform_toolsets.cli` (`docs/domain_toolsets.yaml`).
-- **`hermes tools` / setup:** beide zitten in `CONFIGURABLE_TOOLSETS` (genummerde checklist, niet alleen via config-YAML).
-- **MCP per server:** na de checklist → menu **Configure MCP server tools** (include/exclude per tool).
-- **Sync:** `windows\SYNC_DOMAIN_TOOLSETS.bat` schrijft manifest naar `profiles\<naam>\config.yaml`.
+- **`hermes tools` / setup:** beide zitten in `CONFIGURABLE_TOOLSETS` (genummerde checklist).
+- **Kanban in chat:** `kanban` in `platform_toolsets.cli` → `kanban_*` tools in het model-schema (niet alleen legacy `toolsets:`).
+- **MCP in chat:** checklist-`mcp` + **`mcp_servers`** in profiel-config (zonder servers geen MCP-tools); per server: menu **Configure MCP server tools**.
+- **Sync:** `windows\SYNC_DOMAIN_TOOLSETS.bat` schrijft manifest naar profielen **zonder** `_user_customized`.
 
 ## Toolset → tools (referentie)
 

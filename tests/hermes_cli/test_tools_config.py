@@ -270,6 +270,26 @@ def test_get_platform_tools_configurable_only_no_expansion():
     assert "web" not in enabled
 
 
+def test_save_platform_tools_marks_user_customized():
+    config = {"platform_toolsets": {"cli": ["web"]}}
+    with patch("hermes_cli.tools_config.save_config"):
+        _save_platform_tools(config, "cli", {"web", "terminal"})
+    assert config["platform_toolsets"]["_user_customized"]["cli"] is True
+
+
+def test_get_platform_tools_user_customized_skips_hermes_cli_expansion():
+    """After ``hermes tools`` save, hermes-cli subset inference must not
+    re-enable tools the user unchecked."""
+    config = {
+        "platform_toolsets": {
+            "_user_customized": {"cli": True},
+            "cli": ["hermes-cli", "web", "terminal"],
+        }
+    }
+    enabled = _get_platform_tools(config, "cli", include_default_mcp_servers=False)
+    assert enabled == {"web", "terminal"}
+
+
 def test_get_platform_tools_mixed_does_not_resurrect_default_off():
     """Expansion must subtract _DEFAULT_OFF_TOOLSETS from the implicit
     pull-in. Without this, ``hermes-cli`` expansion would re-enable

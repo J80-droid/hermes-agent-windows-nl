@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Sync platform_toolsets.cli from docs/domain_toolsets.yaml to Hermes profiles + root."""
+"""Sync platform_toolsets.cli from docs/domain_toolsets.yaml to Hermes profiles + root.
+
+Profiles with ``platform_toolsets._user_customized.cli: true`` (set by
+``hermes tools``) are skipped unless ``--force-manifest`` is passed.
+"""
 
 from __future__ import annotations
 
@@ -39,6 +43,16 @@ def _load_manifest(repo: Path) -> dict[str, Any]:
     if not isinstance(data.get("profiles"), dict):
         raise ValueError("domain_toolsets.yaml mist profiles")
     return data
+
+
+def _platform_cli_user_customized(raw: dict[str, Any]) -> bool:
+    pt = raw.get("platform_toolsets")
+    if not isinstance(pt, dict):
+        return False
+    meta = pt.get("_user_customized")
+    if isinstance(meta, dict):
+        return bool(meta.get("cli"))
+    return bool(meta)
 
 
 def _apply_toolsets_to_config(
@@ -83,7 +97,14 @@ def _merge_skills_disabled(root_cfg: dict[str, Any], manifest: dict[str, Any]) -
     return False
 
 
-def _sync_root(repo: Path, hermes: Path, manifest: dict[str, Any], *, dry_run: bool) -> bool:
+def _sync_root(
+    repo: Path,
+    hermes: Path,
+    manifest: dict[str, Any],
+    *,
+    dry_run: bool,
+    force_manifest: bool = False,
+) -> bool:
     root_spec = manifest.get("root") or {}
     cli = list((root_spec.get("platform_toolsets") or {}).get("cli") or [])
     cfg_path = hermes / "config.yaml"
@@ -91,6 +112,11 @@ def _sync_root(repo: Path, hermes: Path, manifest: dict[str, Any], *, dry_run: b
         print(f"[WARN] Root config ontbreekt: {cfg_path}")
         return True
     raw = _read_yaml(cfg_path)
+    if not force_manifest and _platform_cli_user_customized(raw):
+        print(
+            "[OK] root config.yaml — platform_toolsets.cli door gebruiker aangepast; sync overgeslagen"
+        )
+        return True
     if raw.get("toolsets"):
         raw = dict(raw)
         raw.pop("toolsets", None)
@@ -125,6 +151,7 @@ def _sync_profile(
     *,
     dry_run: bool,
     check: bool,
+    force_manifest: bool = False,
 ) -> bool:
     cli = list((spec.get("platform_toolsets") or {}).get("cli") or [])
     cfg_path = hermes / "profiles" / name / "config.yaml"
@@ -132,6 +159,12 @@ def _sync_profile(
         print(f"[FAIL] {name}: config.yaml ontbreekt ({cfg_path})")
         return False
     raw = _read_yaml(cfg_path)
+    if not check and not force_manifest and _platform_cli_user_customized(raw):
+        print(
+            f"[OK] {name}: platform_toolsets.cli door gebruiker aangepast "
+            f"(hermes tools) — sync overgeslagen"
+        )
+        return True
     if check:
         current = list((raw.get("platform_toolsets") or {}).get("cli") or [])
         if sorted(current) != sorted(cli):
@@ -374,6 +407,11 @@ def main() -> int:
         action="store_true",
         help="Alleen ontbrekende profielen aanmaken, geen toolset-sync",
     )
+    parser.add_argument(
+        "--force-manifest",
+        action="store_true",
+        help="Overschrijf ook platform_toolsets.cli na handmatige hermes tools-keuze",
+    )
     args = parser.parse_args()
 
     repo = Path(args.repo_root).resolve()
@@ -383,7 +421,13 @@ def main() -> int:
 
     ok = True
     if not args.profile:
-        ok = _sync_root(repo, hermes, manifest, dry_run=args.dry_run) and ok
+        ok = _sync_root(
+            repo,
+            hermes,
+            manifest,
+            dry_run=args.dry_run,
+            force_manifest=args.force_manifest,
+        ) and ok
     names = [args.profile] if args.profile else sorted(profiles.keys())
     inject_soul = not args.no_soul_inject
     clone_from = (args.clone_from or "legal").strip()
@@ -407,7 +451,14 @@ def main() -> int:
                     continue
         if args.provision_only:
             continue
-        if not _sync_profile(hermes, name, profiles[name], dry_run=args.dry_run, check=args.check):
+        if not _sync_profile(
+            hermes,
+            name,
+            profiles[name],
+            dry_run=args.dry_run,
+            check=args.check,
+            force_manifest=args.force_manifest,
+        ):
             ok = False
     if ok and args.sync_soul_snippets and not args.check:
         ok = _run_soul_snippets_sync(repo, dry_run=args.dry_run) and ok

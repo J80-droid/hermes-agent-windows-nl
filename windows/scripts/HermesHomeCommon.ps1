@@ -364,6 +364,10 @@ function Test-HermesModelCatalogAvailability {
         $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
         $runtimeRoot = Get-HermesRuntimeRoot
         $python = Get-HermesAuditPython -RepoRoot $repoRoot
+        if (-not $python) {
+            if (-not $Quiet) { Write-HermesFail 'Geen Python voor model/catalog check (conda of .venv).' }
+            return $false
+        }
         $code = @'
 import os
 import sys

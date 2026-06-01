@@ -39,6 +39,32 @@ def test_kanban_tools_hidden_without_env_var(monkeypatch, tmp_path):
     )
 
 
+def test_kanban_tools_visible_when_platform_toolsets_cli_has_kanban(
+    monkeypatch, tmp_path,
+):
+    """``hermes tools`` saves kanban under platform_toolsets.cli, not legacy toolsets:."""
+    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    home = tmp_path / ".hermes"
+    home.mkdir()
+    cfg_path = home / "config.yaml"
+    cfg_path.write_text(
+        "platform_toolsets:\n  cli:\n    - kanban\n    - web\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("HERMES_HOME", str(home))
+
+    import tools.kanban_tools  # ensure registered
+    from model_tools import _clear_tool_defs_cache, get_tool_definitions
+    from tools.registry import invalidate_check_fn_cache
+
+    invalidate_check_fn_cache()
+    _clear_tool_defs_cache()
+    schema = get_tool_definitions(enabled_toolsets=["kanban", "web"], quiet_mode=True)
+    names = {s["function"]["name"] for s in schema if "function" in s}
+    assert "kanban_show" in names
+    assert "kanban_list" in names
+
+
 def test_kanban_tools_visible_with_env_var(monkeypatch, tmp_path):
     """Worker sessions get task lifecycle tools, not board-routing tools."""
     monkeypatch.setenv("HERMES_KANBAN_TASK", "t_fake")

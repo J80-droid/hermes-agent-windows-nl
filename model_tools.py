@@ -217,6 +217,45 @@ _last_resolved_tool_names: List[str] = []
 # Legacy toolset name mapping  (old _tools-suffixed names -> tool name lists)
 # =============================================================================
 
+# Platform checklist sentinels — not entries in toolsets.TOOLSETS.
+_PLATFORM_TOOLSET_SENTINELS = frozenset({"mcp", "no_mcp"})
+
+def _expand_mcp_sentinel_toolsets(
+    enabled_toolsets: List[str],
+    tools_to_include: set,
+) -> None:
+    """Resolve checklist ``mcp`` to configured MCP server toolsets.
+
+    Skips when ``no_mcp`` is set or MCP server names are already present in
+    *enabled_toolsets* (typical CLI path via ``_get_platform_tools``).
+    """
+    if "mcp" not in enabled_toolsets or "no_mcp" in enabled_toolsets:
+        return
+    try:
+        from toolsets import _get_registry_toolset_aliases
+
+        aliases = _get_registry_toolset_aliases()
+        if any(
+            (aliases.get(name) or name).startswith("mcp-")
+            for name in enabled_toolsets
+            if name not in _PLATFORM_TOOLSET_SENTINELS
+        ):
+            return
+        from hermes_cli.config import load_config
+        from hermes_cli.tools_config import _get_platform_tools
+
+        cfg = load_config()
+        for ts_name in _get_platform_tools(
+            cfg, "cli", include_default_mcp_servers=True
+        ):
+            if ts_name in _PLATFORM_TOOLSET_SENTINELS:
+                continue
+            if validate_toolset(ts_name):
+                tools_to_include.update(resolve_toolset(ts_name))
+    except Exception:
+        logger.debug("MCP sentinel expansion skipped", exc_info=True)
+
+
 _LEGACY_TOOLSET_MAP = {
     "web_tools": ["web_search", "web_extract"],
     "terminal_tools": ["terminal"],
@@ -364,8 +403,11 @@ def _compute_tool_definitions(
                 tools_to_include.update(legacy_tools)
                 if not quiet_mode:
                     print(f"✅ Enabled legacy toolset '{toolset_name}': {', '.join(legacy_tools)}")
+            elif toolset_name in _PLATFORM_TOOLSET_SENTINELS:
+                continue
             elif not quiet_mode:
                 print(f"⚠️  Unknown toolset: {toolset_name}")
+        _expand_mcp_sentinel_toolsets(effective_enabled_toolsets, tools_to_include)
     else:
         # Default: start with everything
         from toolsets import get_all_toolsets

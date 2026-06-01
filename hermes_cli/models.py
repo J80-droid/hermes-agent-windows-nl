@@ -14,7 +14,7 @@ import urllib.error
 import time
 from difflib import get_close_matches
 from pathlib import Path
-from typing import Any, NamedTuple, Optional
+from typing import Any, Iterable, NamedTuple, Optional
 
 from hermes_cli import __version__ as _HERMES_VERSION
 
@@ -3337,34 +3337,40 @@ _MODEL_VARIANT_SUFFIXES: tuple[str, ...] = (":free", ":extended", ":fast")
 
 
 def _catalog_match_keys(model_id: str) -> set[str]:
-    """Lowercase lookup keys for loose catalog membership (variant suffixes)."""
+    """Lowercase lookup keys for catalog membership (variant suffixes only).
+
+    Deliberately omits bare ``vendor/model`` tails (text after ``/``) so
+    ``anthropic/claude-opus-4.8`` does not match ``openai/claude-opus-4.8``.
+    """
     low = (model_id or "").strip().lower()
     if not low:
         return set()
     keys: set[str] = {low}
-    bare = low.split("/", 1)[1] if "/" in low else low
-    if bare:
-        keys.add(bare)
     for suffix in _MODEL_VARIANT_SUFFIXES:
         if low.endswith(suffix):
-            keys.add(low[: -len(suffix)])
-            if bare.endswith(suffix):
-                keys.add(bare[: -len(suffix)])
-    return {k for k in keys if k}
+            stripped = low[: -len(suffix)]
+            if stripped:
+                keys.add(stripped)
+    return keys
+
+
+def _union_catalog_match_keys(catalog: Iterable[str]) -> set[str]:
+    merged: set[str] = set()
+    for mid in catalog:
+        merged |= _catalog_match_keys(mid)
+    return merged
 
 
 def model_matches_provider_catalog(
     model_id: str,
-    catalog: list[str],
+    catalog: Iterable[str],
 ) -> bool:
     """Return True when *model_id* matches any catalog entry (incl. ``:free`` variants)."""
     wanted = _catalog_match_keys(model_id)
-    if not wanted or not catalog:
+    if not wanted:
         return False
-    for mid in catalog:
-        if wanted & _catalog_match_keys(mid):
-            return True
-    return False
+    catalog_keys = _union_catalog_match_keys(catalog)
+    return bool(wanted & catalog_keys)
 
 
 def model_default_passes_startup_catalog_guard(
@@ -3385,6 +3391,7 @@ def model_default_passes_startup_catalog_guard(
     if normalized in {"custom", "auto"}:
         return True
 
+    catalog: list[str] = []
     try:
         catalog = list(provider_model_ids(normalized, force_refresh=force_refresh) or [])
     except Exception:
@@ -3398,14 +3405,28 @@ def model_default_passes_startup_catalog_guard(
 
         cfg = load_config() or {}
         model_cfg = cfg.get("model") if isinstance(cfg.get("model"), dict) else {}
-        base_url = str(model_cfg.get("base_url") or "").strip()
+        base_url = str(model_cfg.get("base_url") or "").strip() or None
+        api_key: Optional[str] = None
+        if normalized == "nous":
+            try:
+                from hermes_cli.auth import resolve_nous_runtime_credentials
+
+                creds = resolve_nous_runtime_credentials()
+                if creds:
+                    api_key = str(creds.get("api_key") or "").strip() or None
+                    if not base_url:
+                        base_url = str(creds.get("base_url") or "").strip() or None
+            except Exception:
+                pass
         validation = validate_requested_model(
             requested,
             normalized,
-            base_url=base_url or None,
+            api_key=api_key,
+            base_url=base_url,
         )
         return bool(validation.get("accepted"))
     except Exception:
+        # Fail open only when we have no static/live catalog to check against.
         return not catalog
 
 
