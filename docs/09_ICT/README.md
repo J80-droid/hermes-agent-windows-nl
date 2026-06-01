@@ -26,7 +26,8 @@
 ## Governance
 
 - **Productie wijzigingen:** altijd J.-goedkeuring
-- **Optionele tools:** vision, session_search, todo, kanban — agent vraagt J.
+- **Standaard:** mcp, kanban (manifest + `hermes tools`-checklist)
+- **Optionele tools:** vision, session_search, todo — agent vraagt J.
 - **Escalatie:** Bij incidenten → `security` (indien breach) of `dev` (indien code-gerelateerd)
 
 ## Procedures

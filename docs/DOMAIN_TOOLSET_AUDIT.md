@@ -30,11 +30,18 @@ flowchart LR
 3. **Nieuwe chat** in dat profiel.
 4. Optioneel: `windows\SYNC_DOMAIN_TOOLSETS.bat` na git pull (zet manifest terug als handmatige drift).
 
+### mcp + kanban (checklist + manifest)
+
+- **Alle 14 domeinprofielen:** `mcp` en `kanban` staan in `platform_toolsets.cli` (`docs/domain_toolsets.yaml`).
+- **`hermes tools` / setup:** beide zitten in `CONFIGURABLE_TOOLSETS` (genummerde checklist, niet alleen via config-YAML).
+- **MCP per server:** na de checklist → menu **Configure MCP server tools** (include/exclude per tool).
+- **Sync:** `windows\SYNC_DOMAIN_TOOLSETS.bat` schrijft manifest naar `profiles\<naam>\config.yaml`.
+
 ## Toolset → tools (referentie)
 
 | Toolset | Belangrijkste tools |
 |---------|-------------------|
-| mcp | `search_knowledge`, … (per `lancedb-<domein>`) |
+| mcp | `search_knowledge`, … (per `lancedb-<domein>`; alle domeinen + `hermes tools`-checklist) |
 | file | `read_file`, `write_file`, `patch`, `search_files` |
 | memory | `memory` |
 | skills | `skills_list`, `skill_view`, `skill_manage` |
@@ -44,7 +51,7 @@ flowchart LR
 | terminal | `terminal`, `process` |
 | browser | `browser_*`, `web_search` |
 | todo | `todo` |
-| kanban | `kanban_*` (core) |
+| kanban | `kanban_*` (alle domeinen standaard via manifest; ook in `hermes tools`-checklist) |
 | vision | `vision_analyze` |
 | session_search | `session_search` |
 | delegation | `delegate_task` |
@@ -70,8 +77,7 @@ Profiel-`config.yaml` is leidend voor CLI-chat (`hermes -p legal`). Zonder `-p` 
 | Toolset | Standaard | Optioneel | Uit |
 |---------|-----------|-----------|-----|
 | mcp, file, memory, skills, clarify | Aan | | |
-| web, terminal, browser | Aan | | |
-| kanban, todo | Aan | | |
+| web, terminal, browser, kanban, todo | Aan | | |
 | delegation | | Vraag J. | |
 | session_search | | Vraag J. | |
 | hermes-cli, moa, image_gen, cronjob | | | Uit |
@@ -92,9 +98,9 @@ Profiel-`config.yaml` is leidend voor CLI-chat (`hermes -p legal`). Zonder `-p` 
 | Toolset | Standaard | Optioneel | Uit |
 |---------|-----------|-----------|-----|
 | mcp, file, memory, skills, clarify | Aan | | |
-| web, terminal, browser | Aan (behoud huidige setup) | | |
+| web, terminal, browser, kanban | Aan | | |
 | vision, session_search, todo | | Vraag J. | |
-| delegation, code_execution, kanban, moa | | | Uit |
+| delegation, code_execution, moa | | | Uit |
 
 ### Per lens (gedrag, geen config-wijziging)
 
@@ -114,7 +120,7 @@ Profiel-`config.yaml` is leidend voor CLI-chat (`hermes -p legal`). Zonder `-p` 
 
 | Standaard | Optioneel | Uit |
 |-----------|-----------|-----|
-| mcp, file, memory, skills, clarify, web, terminal, browser | vision | delegation, kanban, code_execution |
+| mcp, file, memory, skills, clarify, web, terminal, browser, kanban | vision | delegation, code_execution |
 
 **Vraag vision wanneer:** figuren in papers buiten RAG-tekst.
 
@@ -124,7 +130,7 @@ Profiel-`config.yaml` is leidend voor CLI-chat (`hermes -p legal`). Zonder `-p` 
 
 | Standaard | Optioneel | Uit |
 |-----------|-----------|-----|
-| mcp, file, memory, skills, clarify, web, terminal, browser | code_execution, vision | delegation, kanban |
+| mcp, file, memory, skills, clarify, web, terminal, browser, kanban | code_execution, vision | delegation |
 
 ---
 
@@ -132,7 +138,7 @@ Profiel-`config.yaml` is leidend voor CLI-chat (`hermes -p legal`). Zonder `-p` 
 
 | Standaard | Optioneel | Uit |
 |-----------|-----------|-----|
-| mcp, file, memory, skills, clarify, web, terminal, browser, todo | delegation | kanban |
+| mcp, file, memory, skills, clarify, web, terminal, browser, todo, kanban | delegation | |
 
 ---
 
@@ -140,7 +146,7 @@ Profiel-`config.yaml` is leidend voor CLI-chat (`hermes -p legal`). Zonder `-p` 
 
 | Standaard | Optioneel | Uit |
 |-----------|-----------|-----|
-| mcp, file, memory, skills, clarify, web, browser | terminal | delegation, code_execution |
+| mcp, file, memory, skills, clarify, web, browser, kanban | terminal | delegation, code_execution |
 
 **Lichter:** geen terminal standaard; `search` kan via manifest worden gebruikt — huidige manifest: `web`+`browser`.
 
@@ -150,7 +156,7 @@ Profiel-`config.yaml` is leidend voor CLI-chat (`hermes -p legal`). Zonder `-p` 
 
 | Standaard | Optioneel | Uit |
 |-----------|-----------|-----|
-| mcp, file, memory, skills, clarify, **search** | web | terminal, browser, delegation |
+| mcp, file, memory, skills, clarify, **search**, kanban | web | terminal, browser, delegation |
 
 ---
 
@@ -158,7 +164,7 @@ Profiel-`config.yaml` is leidend voor CLI-chat (`hermes -p legal`). Zonder `-p` 
 
 | Standaard | Optioneel | Uit |
 |-----------|-----------|-----|
-| mcp, file, memory, skills, clarify, web, browser | vision | cronjob, homeassistant |
+| mcp, file, memory, skills, clarify, web, browser, kanban | vision | cronjob, homeassistant |
 
 ---
 
@@ -166,7 +172,7 @@ Profiel-`config.yaml` is leidend voor CLI-chat (`hermes -p legal`). Zonder `-p` 
 
 | Standaard | Optioneel | Uit |
 |-----------|-----------|-----|
-| mcp, file, memory, skills, clarify, web, terminal, browser, todo | code_execution | delegation, image_gen |
+| mcp, file, memory, skills, clarify, web, terminal, browser, todo, kanban | code_execution | delegation, image_gen |
 
 ---
 
@@ -174,7 +180,7 @@ Profiel-`config.yaml` is leidend voor CLI-chat (`hermes -p legal`). Zonder `-p` 
 
 || Standaard | Optioneel | Uit |
 ||-----------|-----------|-----|
-|| mcp, file, memory, skills, clarify, web, terminal, browser | vision, session_search, todo, kanban | delegation, code_execution, moa |
+|| mcp, file, memory, skills, clarify, web, terminal, browser, kanban | vision, session_search, todo | delegation, code_execution, moa |
 
 **Vraag optioneel wanneer:**
 - `vision`: Screenshot van error/UI of gescande netwerkdiagrammen
@@ -190,7 +196,7 @@ Profiel-`config.yaml` is leidend voor CLI-chat (`hermes -p legal`). Zonder `-p` 
 
 || Standaard | Optioneel | Uit |
 ||-----------|-----------|-----|
-|| mcp, file, memory, skills, clarify, web, terminal, browser, **code_execution** | vision, session_search, todo, delegation | moa, image_gen, video_gen |
+|| mcp, file, memory, skills, clarify, web, terminal, browser, **code_execution**, kanban | vision, session_search, todo, delegation | moa, image_gen, video_gen |
 
 **Vraag optioneel wanneer:**
 - `vision`: CVE dashboard screenshots
@@ -206,7 +212,7 @@ Profiel-`config.yaml` is leidend voor CLI-chat (`hermes -p legal`). Zonder `-p` 
 
 || Standaard | Optioneel | Uit |
 ||-----------|-----------|-----|
-|| mcp, file, memory, skills, clarify, web, terminal, browser, **code_execution** | vision, session_search, todo, kanban | delegation, moa, image_gen |
+|| mcp, file, memory, skills, clarify, web, terminal, browser, **code_execution**, kanban | vision, session_search, todo | delegation, moa, image_gen |
 
 **Vraag optioneel wanneer:**
 - `vision`: UI screenshots voor bug-reports
@@ -222,7 +228,7 @@ Profiel-`config.yaml` is leidend voor CLI-chat (`hermes -p legal`). Zonder `-p` 
 
 || Standaard | Optioneel | Uit |
 ||-----------|-----------|-----|
-|| mcp, file, memory, skills, clarify, web, terminal, browser | code_execution, session_search, todo | delegation, moa, image_gen, vision |
+|| mcp, file, memory, skills, clarify, web, terminal, browser, kanban | code_execution, session_search, todo | delegation, moa, image_gen, vision |
 
 **Vraag optioneel wanneer:**
 - `code_execution`: ETL scripts testen in sandbox
@@ -266,7 +272,7 @@ Verwacht: agent noemt alleen ingeschakelde tools; bij ontbrekende optionele tool
 
 | Standaard | Optioneel | Uit |
 |-----------|-----------|-----|
-| mcp, file, memory, skills, clarify, web, browser, **terminal** | image_gen, vision, code_execution | moa, cronjob, delegation, homeassistant |
+| mcp, file, memory, skills, clarify, web, browser, **terminal**, kanban | image_gen, vision, code_execution | moa, cronjob, delegation, homeassistant |
 
 **Lenzen:** visual, motion, interactive, writing (`creative_lenses` in manifest).
 

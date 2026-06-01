@@ -76,7 +76,7 @@ Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):
 | Pending trust na mislukte UPDATE | `launch_pending_trust_runtime.ps1` of mislukte start-sync → `pending_trust_runtime.json`; skip: `HERMES_SKIP_PENDING_TRUST_ON_START=1` |
 | Pending trust E2E | `audits\RUN_PENDING_TRUST_START_E2E.bat` of `RUN_AUDITS.bat -IncludePendingTrustStartE2E` |
 | Memory-trust integratie E2E | `audits\RUN_MEMORY_TRUST_INTEGRATION_E2E.bat` (10/10: post-sync, pending trust, workspace template, AST, unit tests) |
-| Domein-toolsets (minimaal + opt-in) | `SYNC_DOMAIN_TOOLSETS.bat` — `docs\domain_toolsets.yaml`, `docs\DOMAIN_TOOLSET_AUDIT.md` |
+| Domein-toolsets (mcp+kanban standaard) | `SYNC_DOMAIN_TOOLSETS.bat` — `docs\domain_toolsets.yaml`, `docs\DOMAIN_TOOLSET_AUDIT.md`; checklist: `hermes -p <naam> tools` |
 | Nieuw profiel (runtime) | `set HERMES_HOME=%LOCALAPPDATA%\hermes` → `SYNC_DOMAIN_TOOLSETS.bat --create-missing` — zie `docs\DOMAIN_BLUEPRINT.md` (A) / `docs\INSTITUTIONAL_DOMAIN_PLAN.md` (B) |
 | Provision E2E (smoke) | `audits\RUN_PROVISION_DOMAIN_E2E.bat` |
 | Toolset E2E (14 profielen) | `audits\RUN_TOOLSET_DOMAIN_E2E.bat` of `RUN_AUDITS.bat -IncludeToolsetDomainE2E` |

@@ -49,9 +49,10 @@ from hermes_cli.cli_output import (  # noqa: E402 — late import block
 
 # ─── Toolset Registry ─────────────────────────────────────────────────────────
 
-# Toolsets shown in the configurator, grouped for display.
-# Each entry: (toolset_name, label, description)
-# These map to keys in toolsets.py TOOLSETS dict.
+# Toolsets shown in the configurator (`hermes tools` / setup), grouped for display.
+# Each entry: (toolset_name, label, description) — keys in toolsets.py TOOLSETS.
+# ``mcp`` and ``kanban`` are checklist toggles (not only passthrough names in
+# platform_toolsets.cli). Default-on per profile: docs/domain_toolsets.yaml.
 CONFIGURABLE_TOOLSETS = [
     ("web",             "🔍 Web Search & Scraping",    "web_search, web_extract"),
     ("browser",         "🌐 Browser Automation",       "navigate, click, type, scroll"),
@@ -66,6 +67,8 @@ CONFIGURABLE_TOOLSETS = [
     ("moa",             "🧠 Mixture of Agents",         "mixture_of_agents"),
     ("tts",             "🔊 Text-to-Speech",            "text_to_speech"),
     ("skills",          "📚 Skills",                    "list, view, manage"),
+    ("mcp",             "🔌 MCP Servers",               "search_knowledge, … (per mcp_servers config)"),
+    ("kanban",          "📌 Kanban Board",               "kanban_show, kanban_list, kanban_create, …"),
     ("todo",            "📋 Task Planning",             "todo"),
     ("memory",          "💾 Memory",                    "persistent memory across sessions"),
     ("context_engine",  "🧩 Context Engine",            "runtime tools from the active context engine"),

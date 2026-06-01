@@ -1180,6 +1180,12 @@ def test_discord_toolsets_in_configurable_toolsets():
     assert "discord_admin" in keys
 
 
+def test_mcp_and_kanban_in_configurable_toolsets():
+    keys = {ts_key for ts_key, _, _ in CONFIGURABLE_TOOLSETS}
+    assert "mcp" in keys
+    assert "kanban" in keys
+
+
 def test_discord_toolsets_in_default_off():
     assert "discord" in _DEFAULT_OFF_TOOLSETS
     assert "discord_admin" in _DEFAULT_OFF_TOOLSETS

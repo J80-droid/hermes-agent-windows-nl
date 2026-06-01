@@ -3332,6 +3332,83 @@ def fetch_ollama_cloud_models(
     return []
 
 
+# OpenRouter / Nous Portal pricing-tier suffixes (see model_switch.py).
+_MODEL_VARIANT_SUFFIXES: tuple[str, ...] = (":free", ":extended", ":fast")
+
+
+def _catalog_match_keys(model_id: str) -> set[str]:
+    """Lowercase lookup keys for loose catalog membership (variant suffixes)."""
+    low = (model_id or "").strip().lower()
+    if not low:
+        return set()
+    keys: set[str] = {low}
+    bare = low.split("/", 1)[1] if "/" in low else low
+    if bare:
+        keys.add(bare)
+    for suffix in _MODEL_VARIANT_SUFFIXES:
+        if low.endswith(suffix):
+            keys.add(low[: -len(suffix)])
+            if bare.endswith(suffix):
+                keys.add(bare[: -len(suffix)])
+    return {k for k in keys if k}
+
+
+def model_matches_provider_catalog(
+    model_id: str,
+    catalog: list[str],
+) -> bool:
+    """Return True when *model_id* matches any catalog entry (incl. ``:free`` variants)."""
+    wanted = _catalog_match_keys(model_id)
+    if not wanted or not catalog:
+        return False
+    for mid in catalog:
+        if wanted & _catalog_match_keys(mid):
+            return True
+    return False
+
+
+def model_default_passes_startup_catalog_guard(
+    provider: Optional[str],
+    default_model: str,
+    *,
+    force_refresh: bool = False,
+) -> bool:
+    """Windows startup guard: align with ``validate_requested_model`` + live catalog.
+
+    Prefer ``provider_model_ids`` (live ``/models`` for Nous when OAuth works),
+    then variant-suffix matching, then the same accept/warn rules as ``/model``.
+    """
+    normalized = normalize_provider(provider)
+    requested = (default_model or "").strip()
+    if not normalized or not requested:
+        return True
+    if normalized in {"custom", "auto"}:
+        return True
+
+    try:
+        catalog = list(provider_model_ids(normalized, force_refresh=force_refresh) or [])
+    except Exception:
+        catalog = []
+
+    if catalog and model_matches_provider_catalog(requested, catalog):
+        return True
+
+    try:
+        from hermes_cli.config import load_config
+
+        cfg = load_config() or {}
+        model_cfg = cfg.get("model") if isinstance(cfg.get("model"), dict) else {}
+        base_url = str(model_cfg.get("base_url") or "").strip()
+        validation = validate_requested_model(
+            requested,
+            normalized,
+            base_url=base_url or None,
+        )
+        return bool(validation.get("accepted"))
+    except Exception:
+        return not catalog
+
+
 def validate_requested_model(
     model_name: str,
     provider: Optional[str],

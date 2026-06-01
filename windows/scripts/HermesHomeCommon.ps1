@@ -151,7 +151,12 @@ sys.path.insert(0, r'__REPO_ROOT__')
 os.environ['HERMES_HOME'] = r'__RUNTIME_ROOT__'
 os.environ.setdefault('HERMES_WIN_PREFER_LOCALAPPDATA', '1')
 from hermes_cli.config import load_config
-from hermes_cli.models import normalize_provider, provider_model_ids
+from hermes_cli.models import (
+    model_default_passes_startup_catalog_guard,
+    model_matches_provider_catalog,
+    normalize_provider,
+    provider_model_ids,
+)
 from hermes_cli.model_runtime_config import persist_model_runtime
 
 cfg = load_config() or {}
@@ -162,17 +167,17 @@ provider = normalize_provider((model.get('provider') or '').strip())
 default_model = (model.get('default') or model.get('model') or '').strip()
 if not provider or provider in {'custom', 'auto'}:
     sys.exit(0)
+if model_default_passes_startup_catalog_guard(provider, default_model):
+    sys.exit(0)
 catalog = list(provider_model_ids(provider) or [])
 if not catalog:
     sys.exit(1)
 pick = catalog[0]
-for mid in catalog:
-    m = (mid or '').strip().lower()
-    d = default_model.lower()
-    bare = d.split('/', 1)[1] if '/' in d else d
-    if m == d or m == bare or ( '/' in m and m.split('/', 1)[1] == bare):
-        pick = mid
-        break
+if default_model and model_matches_provider_catalog(default_model, catalog):
+    for mid in catalog:
+        if model_matches_provider_catalog(default_model, [mid]):
+            pick = mid
+            break
 persist_model_runtime(provider, default_model=pick, sync_auth=True)
 print(f'ok: model.default -> {pick}')
 sys.exit(0)
@@ -347,6 +352,8 @@ sys.exit(1)
     }
 }
 
+# Startup guard: model.default vs provider catalog (live /models when OAuth works,
+# :free variant suffixes, else validate_requested_model — see model_default_passes_startup_catalog_guard).
 function Test-HermesModelCatalogAvailability {
     param([switch]$Quiet)
     $configPath = Get-HermesCanonicalConfigPath
@@ -364,7 +371,11 @@ sys.path.insert(0, r'__REPO_ROOT__')
 os.environ['HERMES_HOME'] = r'__RUNTIME_ROOT__'
 os.environ.setdefault('HERMES_WIN_PREFER_LOCALAPPDATA', '1')
 from hermes_cli.config import load_config
-from hermes_cli.models import normalize_provider, provider_model_ids
+from hermes_cli.models import (
+    model_default_passes_startup_catalog_guard,
+    normalize_provider,
+    provider_model_ids,
+)
 
 cfg = load_config() or {}
 model = cfg.get('model') or {}
@@ -377,28 +388,12 @@ if not provider or not default_model:
 if provider in {'custom', 'auto'}:
     sys.exit(0)
 
-catalog = provider_model_ids(provider)
-if not catalog:
+if model_default_passes_startup_catalog_guard(provider, default_model):
     sys.exit(0)
 
-name_l = default_model.lower()
-bare_l = name_l.split('/', 1)[1] if '/' in name_l else name_l
-
-def _match(mid: str) -> bool:
-    m = (mid or '').strip().lower()
-    if not m:
-        return False
-    if m == name_l or m == bare_l:
-        return True
-    if '/' in m and m.split('/', 1)[1] == bare_l:
-        return True
-    return False
-
-if any(_match(mid) for mid in catalog):
-    sys.exit(0)
-
+catalog = list(provider_model_ids(provider) or [])
 print(f"error: model '{default_model}' staat niet in catalog voor provider '{provider}'")
-sample = ', '.join((catalog[:8] if isinstance(catalog, list) else list(catalog)[:8]))
+sample = ', '.join(catalog[:8])
 if sample:
     print(f"hint: voorbeelden: {sample}")
 sys.exit(1)

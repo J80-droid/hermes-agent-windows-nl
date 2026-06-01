@@ -297,8 +297,8 @@ Override conda: `HERMES_PYTHON`, `HERMES_CONDA_ROOT`, `HERMES_CONDA_ENV`.
 | UPDATE stopt op dirty repo (exit 2) | `UPDATE_HERMES.bat -QuickFix` of commit/stash; alleen iconen: branding-waarschuwing OK |
 | Rommel in repo-root | `docs/WORKSPACE_CONVENTIONS.md`, `guard_git_clean.ps1`, E2E `audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat` (14/14); gecombineerd in `RUN_INSTITUTIONAL_PRODUCTION_GATE.bat` |
 | Legacy `.venv` | Quarantaine via `ensure_hermes_python.ps1`; niet productie-default |
-| Runtime 404: model niet gevonden | Nieuwe startup-guard blokkeert chatstart als `model.default` niet in provider-catalog staat; run `hermes model` |
-| Model-catalog mismatch | Startup faalt hard zonder fallback-auto-switch; gebruik `hermes model` of herstel `model.provider` + `model.default` expliciet |
+| Runtime 404: model niet gevonden | Startup-guard (`Test-HermesModelCatalogAvailability`) vs live Nous `/models` of manifest; run `hermes model` |
+| Model-catalog mismatch | Guard accepteert o.a. `:free`-varianten (`stepfun/…:free`) via `model_default_passes_startup_catalog_guard`; opt-in repair: `HERMES_AUTOREPAIR_MODEL_CATALOG=1` |
 | Extra dashboard-venster bij start | Standaard hidden; override via `HERMES_DASHBOARD_WINDOW_STYLE=minimized|normal` |
 
 ## Pre-release (handmatig)

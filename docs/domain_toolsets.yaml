@@ -1,4 +1,5 @@
 # Canonieke toolset-policy per Hermes-profiel (Windows NL fork).
+# Alle profielen: mcp + kanban in platform_toolsets.cli (ook in hermes tools-checklist).
 # Sync: windows/scripts/sync_profile_toolsets_from_manifest.ps1
 # Audit: docs/DOMAIN_TOOLSET_AUDIT.md
 version: '1.0'
@@ -64,6 +65,7 @@ profiles:
         - web
         - terminal
         - browser
+        - kanban
     optional_toolsets:
       - vision
       - session_search
@@ -71,7 +73,6 @@ profiles:
     never_default:
       - delegation
       - code_execution
-      - kanban
       - moa
     max_tools: 24
     ask_triggers:
@@ -100,11 +101,11 @@ profiles:
         - web
         - terminal
         - browser
+        - kanban
     optional_toolsets:
       - vision
     never_default:
       - delegation
-      - kanban
       - code_execution
     max_tools: 24
     ask_triggers:
@@ -121,12 +122,12 @@ profiles:
         - web
         - terminal
         - browser
+        - kanban
     optional_toolsets:
       - code_execution
       - vision
     never_default:
       - delegation
-      - kanban
     max_tools: 24
     ask_triggers:
       code_execution: "Backtest/script met meerdere tool-calls in één run."
@@ -144,10 +145,9 @@ profiles:
         - terminal
         - browser
         - todo
+        - kanban
     optional_toolsets:
       - delegation
-    never_default:
-      - kanban
     max_tools: 24
     ask_triggers:
       delegation: "Parallelle subprocessen voor zware operationele analyse."
@@ -162,6 +162,7 @@ profiles:
         - clarify
         - web
         - browser
+        - kanban
     optional_toolsets:
       - terminal
     never_default:
@@ -180,6 +181,7 @@ profiles:
         - skills
         - clarify
         - search
+        - kanban
     optional_toolsets:
       - web
     never_default:
@@ -200,6 +202,7 @@ profiles:
         - clarify
         - web
         - browser
+        - kanban
     optional_toolsets:
       - vision
     never_default:
@@ -221,6 +224,7 @@ profiles:
         - terminal
         - browser
         - todo
+        - kanban
     optional_toolsets:
       - code_execution
     never_default:
@@ -241,11 +245,11 @@ profiles:
         - web
         - terminal
         - browser
+        - kanban
     optional_toolsets:
       - vision
       - session_search
       - todo
-      - kanban
     never_default:
       - delegation
       - code_execution
@@ -274,6 +278,7 @@ profiles:
         - terminal
         - browser
         - code_execution
+        - kanban
     optional_toolsets:
       - vision
       - session_search
@@ -308,11 +313,11 @@ profiles:
         - terminal
         - browser
         - code_execution
+        - kanban
     optional_toolsets:
       - vision
       - session_search
       - todo
-      - kanban
     never_default:
       - delegation
       - moa
@@ -340,6 +345,7 @@ profiles:
         - web
         - terminal
         - browser
+        - kanban
     optional_toolsets:
       - code_execution
       - session_search
@@ -371,6 +377,7 @@ profiles:
         - web
         - browser
         - terminal
+        - kanban
     optional_toolsets:
       - image_gen
       - vision
