@@ -42,6 +42,19 @@ PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
 # Set when the user saves via ``hermes tools``; manifest sync must not overwrite.
 _PLATFORM_TOOLSETS_USER_CUSTOMIZED_KEY = "_user_customized"
+# Keys under ``platform_toolsets`` that are metadata, not toolset name lists.
+_RESERVED_PLATFORM_TOOLSET_META_KEYS = frozenset({
+    _PLATFORM_TOOLSETS_USER_CUSTOMIZED_KEY,
+})
+
+
+def _filter_toolset_name_list(names: list) -> list[str]:
+    """Drop reserved meta keys so they never enter ``platform_toolsets.<platform>``."""
+    return [
+        str(ts)
+        for ts in names
+        if str(ts) not in _RESERVED_PLATFORM_TOOLSET_META_KEYS
+    ]
 
 
 def _platform_toolsets_user_customized(config: dict, platform: str) -> bool:
@@ -1239,7 +1252,7 @@ def _get_platform_tools(
 
     # YAML may parse bare numeric names (e.g. ``12306:``) as int.
     # Normalise to str so downstream sorted() never mixes types.
-    toolset_names = [str(ts) for ts in toolset_names]
+    toolset_names = _filter_toolset_name_list(toolset_names)
 
     # Fork: ``platform_toolsets.cli: []`` is intentional minimal mode (root / no -p).
     # Do not auto-attach all MCP servers or default-on plugin toolsets.
@@ -1505,7 +1518,8 @@ def _save_platform_tools(config: dict, platform: str, enabled_toolset_keys: Set[
     # from turning on, say, the `discord` toolset for Telegram.
     enabled_toolset_keys = {
         ts for ts in enabled_toolset_keys
-        if _toolset_allowed_for_platform(ts, platform)
+        if ts not in _RESERVED_PLATFORM_TOOLSET_META_KEYS
+        and _toolset_allowed_for_platform(ts, platform)
     }
 
     # Get the set of all configurable toolset keys (built-in + plugin)
@@ -1522,7 +1536,7 @@ def _save_platform_tools(config: dict, platform: str, enabled_toolset_keys: Set[
     existing_toolsets = cfg_get(config, "platform_toolsets", platform, default=[])
     if not isinstance(existing_toolsets, list):
         existing_toolsets = []
-    existing_toolsets = [str(ts) for ts in existing_toolsets]
+    existing_toolsets = _filter_toolset_name_list(existing_toolsets)
 
     # Preserve any entries that are NOT configurable toolsets and NOT platform
     # defaults (i.e. only MCP server names should be preserved)

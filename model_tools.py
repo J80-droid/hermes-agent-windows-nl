@@ -218,7 +218,7 @@ _last_resolved_tool_names: List[str] = []
 # =============================================================================
 
 # Platform checklist sentinels — not entries in toolsets.TOOLSETS.
-_PLATFORM_TOOLSET_SENTINELS = frozenset({"mcp", "no_mcp"})
+_PLATFORM_TOOLSET_SENTINELS = frozenset({"mcp", "no_mcp", "_user_customized"})
 
 def _expand_mcp_sentinel_toolsets(
     enabled_toolsets: List[str],

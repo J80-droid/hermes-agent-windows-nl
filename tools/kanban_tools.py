@@ -63,6 +63,7 @@ def _profile_has_kanban_toolset() -> bool:
         legacy = cfg.get("toolsets") or []
         return "kanban" in legacy
     except Exception:
+        logger.debug("kanban toolset gating check failed", exc_info=True)
         return False
 
 

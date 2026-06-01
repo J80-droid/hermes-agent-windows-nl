@@ -108,6 +108,16 @@ Profiel-`config.yaml` is leidend voor CLI-chat (`hermes -p legal`). Zonder `-p` 
 
 ## Profiel: legal (+ lenzen arb, bbk, aanspr, klok, corp)
 
+### Workspace (file-tools)
+
+| Instelling | Waarde |
+|------------|--------|
+| `workspace.root` | Pad naar **git-repo-root** `hermes-agent\` (niet `%LOCALAPPDATA%\hermes\workspace`) |
+| `workspace.enforce_sandbox` | `true` |
+| Zaakoutput | `output/legal/*.txt`, `*.md` (gitignored) |
+
+Zonder `workspace.root` op de repo kunnen `read_file` / audits op `output/legal/` falen; MCP `search_knowledge` telt geen bestanden in een map. Zie [WORKSPACE_CONVENTIONS.md](WORKSPACE_CONVENTIONS.md).
+
 | Toolset | Standaard | Optioneel | Uit |
 |---------|-----------|-----------|-----|
 | mcp, file, memory, skills, clarify | Aan | | |

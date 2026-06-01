@@ -277,6 +277,18 @@ def test_save_platform_tools_marks_user_customized():
     assert config["platform_toolsets"]["_user_customized"]["cli"] is True
 
 
+def test_get_platform_tools_ignores_reserved_meta_key_in_cli_list():
+    """``_user_customized`` must never be treated as a toolset name."""
+    config = {
+        "platform_toolsets": {
+            "cli": ["_user_customized", "web", "terminal"],
+        }
+    }
+    enabled = _get_platform_tools(config, "cli", include_default_mcp_servers=False)
+    assert "_user_customized" not in enabled
+    assert enabled == {"web", "terminal"}
+
+
 def test_get_platform_tools_user_customized_skips_hermes_cli_expansion():
     """After ``hermes tools`` save, hermes-cli subset inference must not
     re-enable tools the user unchecked."""

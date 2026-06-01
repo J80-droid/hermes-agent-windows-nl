@@ -14,6 +14,23 @@ Institutionele afspraken voor **waar** werk hoort: repo-root blijft upstream-syn
 | Rapporten (TXT, JSON, MD) | `output/research/reports/` | Nee |
 | RAG-bronnen (productie) | `%USERPROFILE%\data\raw_source_files\` | Nee (user data) |
 | Juridische index (LanceDB) | `%USERPROFILE%\data\lancedb\legal\` | Nee |
+| File-tools sandbox (legal) | `hermes-agent\` (repo-root via `workspace.root`) | Repo ja; `output/legal/` nee |
+
+## File-tools sandbox (`workspace.root`)
+
+Standaard wijst Hermes file-tools (`read_file`, `write_file`, `search_files`) naar `%LOCALAPPDATA%\hermes\workspace`, **niet** naar deze git-repo. Juridische bronnen en concepten staan in `output/legal/` onder de repo — zonder aanpassing krijg je sandbox-fouten buiten de workspace.
+
+**Profiel `legal` (aanbevolen):** in `%LOCALAPPDATA%\hermes\profiles\legal\config.yaml`:
+
+```yaml
+workspace:
+  root: D:/A.I/APPS/Hermes_agent_WS/hermes-agent
+  enforce_sandbox: true
+```
+
+Pas het pad aan als je repo elders staat. Na wijziging: Hermes herstarten of `/new`. Root-config (`%LOCALAPPDATA%\hermes\config.yaml`) leeg laten als alleen `hermes -p legal` de repo moet zien.
+
+Zie ook [DOMAIN_TOOLSET_AUDIT.md](DOMAIN_TOOLSET_AUDIT.md) (legal + `file` toolset).
 
 ## Cursor workspace vs. git root
 

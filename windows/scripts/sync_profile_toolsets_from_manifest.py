@@ -20,6 +20,7 @@ if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
 from hermes_cli.profile_mcp_format import _read_yaml, _split_header, _write_yaml  # noqa: E402
+from hermes_cli.tools_config import _platform_toolsets_user_customized  # noqa: E402
 
 
 def _hermes_root() -> Path:
@@ -43,16 +44,6 @@ def _load_manifest(repo: Path) -> dict[str, Any]:
     if not isinstance(data.get("profiles"), dict):
         raise ValueError("domain_toolsets.yaml mist profiles")
     return data
-
-
-def _platform_cli_user_customized(raw: dict[str, Any]) -> bool:
-    pt = raw.get("platform_toolsets")
-    if not isinstance(pt, dict):
-        return False
-    meta = pt.get("_user_customized")
-    if isinstance(meta, dict):
-        return bool(meta.get("cli"))
-    return bool(meta)
 
 
 def _apply_toolsets_to_config(
@@ -112,7 +103,7 @@ def _sync_root(
         print(f"[WARN] Root config ontbreekt: {cfg_path}")
         return True
     raw = _read_yaml(cfg_path)
-    if not force_manifest and _platform_cli_user_customized(raw):
+    if not force_manifest and _platform_toolsets_user_customized(raw, "cli"):
         print(
             "[OK] root config.yaml — platform_toolsets.cli door gebruiker aangepast; sync overgeslagen"
         )
@@ -159,7 +150,7 @@ def _sync_profile(
         print(f"[FAIL] {name}: config.yaml ontbreekt ({cfg_path})")
         return False
     raw = _read_yaml(cfg_path)
-    if not check and not force_manifest and _platform_cli_user_customized(raw):
+    if not check and not force_manifest and _platform_toolsets_user_customized(raw, "cli"):
         print(
             f"[OK] {name}: platform_toolsets.cli door gebruiker aangepast "
             f"(hermes tools) — sync overgeslagen"

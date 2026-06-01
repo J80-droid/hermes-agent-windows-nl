@@ -19,6 +19,9 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 | RAG-manifest | `%LOCALAPPDATA%\Hermes\rag-deps.json` (`rag_extras_verified` fast-path) |
 | Bootstrap-state | `%LOCALAPPDATA%\hermes\launch_bootstrap.json` (schema v1) — snelle start stap 2/7; uitzetten: `HERMES_SKIP_LAUNCH_BOOTSTRAP_FAST_PATH=1` |
 | Future-proof | Eén waarheid: Hermes scripts + Cursor interpreter =zelfde `hermes-env` |
+| Kapotte `python` (encodings) | Meestal incomplete **Python 3.13** op PATH — `REPAIR_PYTHON.bat` of herinstalleer 3.13; Hermes zelf gebruikt conda |
+| Toolset-sync | `SYNC_DOMAIN_TOOLSETS.bat` — respecteert `platform_toolsets._user_customized.cli`; reset: `--force-manifest` — zie `docs/DOMAIN_TOOLSET_AUDIT.md` |
+| Legal file-tools | `profiles\legal\config.yaml` → `workspace.root` = repo `hermes-agent\` — zie `docs/WORKSPACE_CONVENTIONS.md` |
 
 ## Eerste installatie
 
