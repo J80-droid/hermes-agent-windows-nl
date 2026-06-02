@@ -32,6 +32,7 @@ def select_model_from_live_list(
             menu_items,
             selected=default_idx,
             cancel_returns=-1,
+            searchable=True,
         )
         print()
         if idx < 0 or idx >= len(models):
