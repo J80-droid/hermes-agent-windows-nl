@@ -173,7 +173,10 @@ Legacy `providers.venice` / `providers.jatevo` worden gemerged via migratie-kete
 **Venice DIEM** (`agent/venice_usage.py`, template `docs/templates/PROVIDERS_VENICE.yaml`):
 - Statusbalk **`VN 90/100`** of **`VN 9.5 DIEM`** — alleen `GET /billing/balance` + `GET /api_keys/rate_limits` (90s cache).
 - **`/vquota`** en **`/usage`** — extended APIs parallel: [billing/usage](https://docs.venice.ai/api-reference/endpoint/billing/usage), [usage-analytics](https://docs.venice.ai/api-reference/endpoint/billing/usage-analytics) (beta), [rate_limits/log](https://docs.venice.ai/api-reference/endpoint/api_keys/rate_limit_logs), [models/traits](https://docs.venice.ai/api-reference/endpoint/models/traits), [compatibility_mapping](https://docs.venice.ai/api-reference/endpoint/models/compatibility_mapping). Bij gedeeltelijke HTTP-fouten: regels in `extended_errors`.
-- Chat-opties: `providers.venice.extra_body.venice_parameters` (web search, `character_slug`, …). Bij **429** → hint naar `/vquota`.
+- **`hermes model` / setup → Venice:** trait-filter + OpenAI-mapping; setup vraagt optioneel `extra_body.venice_parameters` (web search, `character_slug`).
+- **Telegram `/model` → Venice:** helper-menu (`vf:all`, `vf:t:N`, `vf:o:N`) vóór de modellenlijst; vereist `VENICE_API_KEY` in runtime `.env`.
+- **Typed `/model` (alle platforms):** `gpt-4o --provider venice` wordt via `compatibility_mapping` naar Venice-model-id vertaald.
+- Chat-opties in config: `providers.venice.extra_body.venice_parameters`. Bij **429** → hint naar `/vquota`.
 
 **Jatevo:** `hermes model` → key-stap → live `/v1/models`; base URL **`https://jatevo.ai/v1`**; **`/jquota`**, statusbalk **`JV 0/562`** (`GET /v1/usage`, 90s cache); **429** → `/jquota`. Code: `agent/jatevo_usage.py`.
 

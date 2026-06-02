@@ -16,5 +16,8 @@ providers:
 # Requires VENICE_API_KEY in runtime .env (sync: windows/SYNC_HERMES_API_ENV.bat)
 # Quota UX (agent/venice_usage.py):
 #   Status bar VN … — billing/balance + api_keys/rate_limits only (fast, 90s cache)
-#   /vquota, /usage — above + parallel extended: billing/usage, billing/usage-analytics,
-#                     api_keys/rate_limits/log, models/traits, models/compatibility_mapping
+#   /vquota (full extended) · /usage (account: usage + usage-analytics)
+# Model pickers (hermes_cli/venice_model_picker.py):
+#   hermes model / setup — trait filter + OpenAI mapping; optional venice_parameters prompt
+#   Telegram /model — vf:* helper keyboard before model list (traits + compatibility_mapping)
+#   Typed /model gpt-4o --provider venice — OpenAI name resolved via compatibility_mapping

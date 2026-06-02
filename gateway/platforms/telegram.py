@@ -2988,10 +2988,80 @@ class TelegramAdapter(BasePlatformAdapter):
         page_info = f" ({start + 1}–{end} of {total})" if total_pages > 1 else ""
         return InlineKeyboardMarkup(rows), page_info
 
+    async def _maybe_show_venice_helper_menu(
+        self,
+        query,
+        state: dict,
+        provider_slug: str,
+        provider: dict,
+        models: list,
+        api_url: str,
+    ) -> bool:
+        """Show Venice trait/OpenAI helper keyboard when metadata is available."""
+        try:
+            from agent.venice_usage import is_venice_runtime
+            from hermes_cli.venice_model_picker import (
+                build_venice_helper_button_rows,
+                load_venice_picker_metadata,
+                resolve_venice_api_key,
+            )
+        except ImportError:
+            return False
+
+        if not is_venice_runtime(provider_slug, api_url):
+            return False
+
+        api_key = resolve_venice_api_key(provider_slug=provider_slug)
+        if not api_key:
+            return False
+
+        base_url = api_url or "https://api.venice.ai/api/v1"
+        try:
+            traits, mapping, _, _ = await asyncio.to_thread(
+                load_venice_picker_metadata,
+                api_key=api_key,
+                base_url=base_url,
+                timeout=8.0,
+            )
+        except Exception as exc:
+            logger.warning("Venice picker metadata fetch failed: %s", exc)
+            return False
+        if not traits and not mapping:
+            return False
+
+        state["venice_traits"] = traits
+        state["venice_mapping"] = mapping
+
+        button_rows = build_venice_helper_button_rows(traits, mapping)
+        keyboard_rows = [
+            [
+                InlineKeyboardButton(label, callback_data=cb)
+                for cb, label in row
+            ]
+            for row in button_rows
+        ]
+        keyboard = InlineKeyboardMarkup(keyboard_rows)
+
+        pname = provider.get("name", provider_slug)
+        hint = "Traits / OpenAI mapping (Venice API):"
+        await query.edit_message_text(
+            text=self.format_message(
+                (
+                    f"⚙ *Model Configuration*\n\n"
+                    f"Provider: *{pname}*\n"
+                    f"{hint}\n"
+                    f"Choose a filter or browse all models:"
+                )
+            ),
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=keyboard,
+        )
+        return True
+
     async def _handle_model_picker_callback(
         self, query, data: str, chat_id: str
     ) -> None:
-        """Handle model picker inline keyboard callbacks (mp:/mm:/mb:/mx:/mg:)."""
+        """Handle model picker callbacks (mp:/mm:/mb:/mx:/mg:/vf: Venice helpers)."""
         state = self._model_picker_state.get(chat_id)
         if not state:
             await query.answer(text="Picker expired — use /model again.")
@@ -3017,6 +3087,18 @@ class TelegramAdapter(BasePlatformAdapter):
             models = provider.get("models", [])
             state["selected_provider"] = provider_slug
             state["selected_provider_name"] = provider.get("name", provider_slug)
+            state["venice_models_full"] = list(models)
+            state.pop("venice_traits", None)
+            state.pop("venice_mapping", None)
+
+            api_url = str(provider.get("api_url") or "")
+            venice_helpers = await self._maybe_show_venice_helper_menu(
+                query, state, provider_slug, provider, models, api_url
+            )
+            if venice_helpers:
+                await query.answer()
+                return
+
             state["model_list"] = models
             state["model_page"] = 0
 
@@ -3026,6 +3108,77 @@ class TelegramAdapter(BasePlatformAdapter):
             total = provider.get("total_models", len(models))
             shown = len(models)
             extra = f"\n_{total - shown} more available — type `/model <name>` directly_" if total > shown else ""
+
+            await query.edit_message_text(
+                text=self.format_message(
+                    (
+                        f"⚙ *Model Configuration*\n\n"
+                        f"Provider: *{pname}*{page_info}\n"
+                        f"Select a model:{extra}"
+                    )
+                ),
+                parse_mode=ParseMode.MARKDOWN_V2,
+                reply_markup=keyboard,
+            )
+            await query.answer()
+
+        elif data.startswith("vf:"):
+            choice = data[3:]
+            models = state.get("venice_models_full") or state.get("model_list", [])
+            traits = state.get("venice_traits") or {}
+            mapping = state.get("venice_mapping") or {}
+            try:
+                from hermes_cli.venice_model_picker import apply_venice_helper_callback
+
+                filtered, preset = apply_venice_helper_callback(
+                    choice, models, traits, mapping
+                )
+            except Exception as exc:
+                logger.warning("Venice helper callback failed: %s", exc)
+                await query.answer(text="Venice helper failed.")
+                return
+
+            if not filtered and not preset:
+                await query.answer(text="No models match this filter.")
+                return
+
+            provider_slug = state.get("selected_provider", "")
+            callback = state.get("on_model_selected")
+
+            if preset and callback:
+                try:
+                    result_text = await callback(str(chat_id), preset, provider_slug)
+                except Exception as exc:
+                    logger.error("Model picker switch failed: %s", exc)
+                    result_text = f"Error switching model: {exc}"
+                try:
+                    await query.edit_message_text(
+                        text=self.format_message(result_text),
+                        parse_mode=ParseMode.MARKDOWN_V2,
+                        reply_markup=None,
+                    )
+                except Exception:
+                    try:
+                        await query.edit_message_text(
+                            text=result_text,
+                            parse_mode=None,
+                            reply_markup=None,
+                        )
+                    except Exception:
+                        pass
+                await query.answer(text="Model switched!")
+                self._model_picker_state.pop(chat_id, None)
+                return
+
+            state["model_list"] = filtered
+            state["model_page"] = 0
+            keyboard, page_info = self._build_model_keyboard(filtered, 0)
+            pname = state.get("selected_provider_name", "")
+            total = len(models)
+            shown = len(filtered)
+            extra = ""
+            if total > shown:
+                extra = f"\n_{total - shown} more available — type `/model <name>` directly_"
 
             await query.edit_message_text(
                 text=self.format_message(
@@ -3221,7 +3374,7 @@ class TelegramAdapter(BasePlatformAdapter):
         query_user_name = getattr(query.from_user, "first_name", None)
 
         # --- Model picker callbacks ---
-        if data.startswith(("mp:", "mpg:", "mm:", "mb", "mx", "mg:")):
+        if data.startswith(("mp:", "mpg:", "mm:", "mb", "mx", "mg:", "vf:")):
             chat_id = str(query.message.chat_id) if query.message else None
             if chat_id:
                 await self._handle_model_picker_callback(query, data, chat_id)

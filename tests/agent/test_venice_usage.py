@@ -3,10 +3,12 @@ import httpx
 from agent.venice_usage import (
     append_venice_429_hint_if_needed,
     fetch_venice_quota,
+    filter_models_by_venice_trait,
     format_venice_status_bar_quota,
     is_venice_runtime,
     render_venice_quota_lines,
     resolve_status_bar_venice_quota,
+    resolve_venice_openai_model,
 )
 from agent.account_usage import fetch_account_usage, render_account_usage_lines
 
@@ -36,7 +38,7 @@ class _RoutingClient:
 
     def get(self, url, headers=None, params=None):
         path = url.split("?", 1)[0]
-        for prefix, payload in self._routes.items():
+        for prefix, payload in sorted(self._routes.items(), key=lambda item: -len(item[0])):
             if path.endswith(prefix) or prefix in path:
                 if payload is None:
                     request = httpx.Request("GET", url)
@@ -236,7 +238,7 @@ def test_fetch_venice_quota_extended(monkeypatch):
         ),
     )
 
-    report = fetch_venice_quota(api_key="vn-ext", include_extended=True)
+    report = fetch_venice_quota(api_key="vn-ext", include_extended="full")
 
     assert len(report.usage_entries) == 1
     assert report.usage_total_count == 42
@@ -246,7 +248,7 @@ def test_fetch_venice_quota_extended(monkeypatch):
     assert len(report.rate_limit_logs) == 1
     assert report.model_traits[0].startswith("default")
     assert "gpt-4o" in report.compatibility_mappings[0]
-    lines = render_venice_quota_lines(report, include_extended=True)
+    lines = render_venice_quota_lines(report, include_extended="full")
     assert any("Usage (7d)" in line for line in lines)
     assert any("Recent charges" in line for line in lines)
 
@@ -283,8 +285,23 @@ def test_fetch_venice_extended_records_http_errors(monkeypatch):
         ),
     )
 
-    report = fetch_venice_quota(api_key="vn-ext", include_extended=True)
+    report = fetch_venice_quota(api_key="vn-ext", include_extended="account")
 
     assert report.diem_remaining == 1.0
+    assert not report.model_traits
+    assert not report.rate_limit_logs
     assert any("billing/usage" in err for err in report.extended_errors)
     assert any("usage-analytics" in err for err in report.extended_errors)
+
+
+def test_filter_models_by_venice_trait_suffix():
+    models = ["zai-org-glm-5-1", "zai-org-glm-5-1:web", "other-model"]
+    matched = filter_models_by_venice_trait(models, "zai-org-glm-5-1")
+    assert matched == ["zai-org-glm-5-1", "zai-org-glm-5-1:web"]
+
+
+def test_resolve_venice_openai_model_case_insensitive():
+    mapping = {"gpt-4o": "zai-org-glm-5-1", "GPT-4.1": "other-id"}
+    assert resolve_venice_openai_model("gpt-4o", mapping) == "zai-org-glm-5-1"
+    assert resolve_venice_openai_model("GPT-4.1", mapping) == "other-id"
+    assert resolve_venice_openai_model("unknown", mapping) is None

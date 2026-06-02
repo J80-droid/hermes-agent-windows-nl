@@ -8863,8 +8863,7 @@ class HermesCLI:
         from agent.venice_usage import (
             VeniceQuotaError,
             fetch_venice_quota,
-            format_venice_local_timestamp,
-            format_venice_reset,
+            render_venice_quota_lines,
         )
 
         provider = getattr(self, "provider", None) or ""
@@ -8875,7 +8874,7 @@ class HermesCLI:
                 base_url=base_url,
                 api_key=api_key,
                 requested_provider=provider or "venice",
-                include_extended=True,
+                include_extended="full",
             )
         except VeniceQuotaError as exc:
             self._console_print(f"  [yellow]{exc}[/]")
@@ -8888,81 +8887,15 @@ class HermesCLI:
             return
 
         self._console_print()
-        self._console_print("  [bold]Venice quota[/]  (venice.ai · DIEM)")
-        self._console_print()
-        if report.diem_epoch_allocation and report.diem_remaining is not None:
-            pct = max(0.0, min(1.0, report.diem_used_fraction))
-            width = 20
-            filled = int(round(pct * width))
-            bar = "▓" * filled + "░" * (width - filled)
-            self._console_print(
-                f"    {'DIEM epoch':40s}  {bar}  {int(pct * 100):3d}%"
-            )
-            used = report.diem_used or 0.0
-            self._console_print(
-                f"    {used:.2f} / {report.diem_epoch_allocation:.2f} used "
-                f"({report.diem_remaining:.2f} remaining)"
-            )
-        elif report.diem_remaining is not None:
-            self._console_print(
-                f"    DIEM balance: {report.diem_remaining:.4f}"
-            )
-            if not report.billing_available:
-                self._console_print(
-                    "    [dim]Epoch cap: /billing/balance needs admin API key "
-                    "(rate_limits shows balance only)[/]"
-                )
-        if report.usd_balance is not None:
-            self._console_print(f"    USD balance: ${report.usd_balance:.4f}")
-        if report.next_epoch_begins:
-            self._console_print(
-                f"    Next epoch {format_venice_reset(report.next_epoch_begins)}"
-            )
-        if report.analytics_lookback is not None:
-            self._console_print()
-            self._console_print(
-                f"    Usage ({report.analytics_lookback}): "
-                f"{(report.analytics_period_diem or 0):.4f} DIEM, "
-                f"${(report.analytics_period_usd or 0):.4f} USD  "
-                f"[dim](usage-analytics, beta)[/]"
-            )
-            for model_line in report.analytics_top_models:
-                self._console_print(f"      {model_line}")
-        if report.usage_entries:
-            self._console_print()
-            self._console_print("    Recent charges [dim](billing/usage, 7d)[/]")
-            for entry in report.usage_entries:
-                self._console_print(
-                    f"      {format_venice_local_timestamp(entry.timestamp)}  "
-                    f"{entry.sku}  {abs(entry.amount):.4f} {entry.currency}"
-                )
-        if report.rate_limit_logs:
-            self._console_print()
-            self._console_print("    Rate-limit hits [dim](api_keys/rate_limits/log)[/]")
-            for log in report.rate_limit_logs:
-                self._console_print(
-                    f"      {format_venice_local_timestamp(log.timestamp)}  "
-                    f"{log.model_id}  {log.rate_limit_type} ({log.rate_limit_tier})"
-                )
-        if report.extended_errors:
-            self._console_print()
-            for err in report.extended_errors:
-                self._console_print(f"    [dim]{err}[/]")
-        if report.model_traits:
-            self._console_print()
-            self._console_print("    Traits (text) [dim](models/traits)[/]")
-            for trait_line in report.model_traits:
-                self._console_print(f"      {trait_line}")
-        if report.compatibility_mappings:
-            self._console_print()
-            self._console_print("    OpenAI mapping [dim](models/compatibility_mapping)[/]")
-            for mapping in report.compatibility_mappings:
-                self._console_print(f"      {mapping}")
-        self._console_print()
-        self._console_print(
-            "    [dim]Docs: billing/balance · billing/usage · usage-analytics · "
-            "api_keys/rate_limits/log[/]"
-        )
+        for line in render_venice_quota_lines(
+            report,
+            include_extended="full",
+            include_epoch_bar=True,
+            style="rich",
+            include_rate_limits_note=False,
+            include_footer_docs=True,
+        ):
+            self._console_print(f"  {line}")
         self._console_print()
 
     def _handle_personality_command(self, cmd: str):

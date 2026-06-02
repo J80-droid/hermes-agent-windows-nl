@@ -4706,6 +4706,35 @@ def _prompt_named_custom_api_key(
     return _commit_key(entered), False
 
 
+def _prompt_venice_extra_body_optional() -> Optional[dict]:
+    """Optional ``extra_body.venice_parameters`` for setup / ``hermes model`` (Venice only)."""
+    print()
+    print("  Venice parameters (optional — press Enter to skip all)")
+    try:
+        web_search = input(
+            "  enable_web_search [auto/off/on, Enter=skip]: "
+        ).strip().lower()
+    except (KeyboardInterrupt, EOFError):
+        print("\nCancelled.")
+        return None
+    venice_params: dict = {}
+    if web_search and web_search not in {"auto", "off", "on"}:
+        print(f"  Unknown enable_web_search '{web_search}' — skipped.")
+        web_search = ""
+    if web_search in {"auto", "off", "on"}:
+        venice_params["enable_web_search"] = web_search
+    try:
+        character_slug = input("  character_slug [Enter=skip]: ").strip()
+    except (KeyboardInterrupt, EOFError):
+        print("\nCancelled.")
+        return None
+    if character_slug:
+        venice_params["character_slug"] = character_slug
+    if not venice_params:
+        return None
+    return {"venice_parameters": venice_params}
+
+
 def _model_flow_named_custom(config, provider_info):
     """Handle a named custom provider from config.yaml ``providers`` / ``custom_providers``.
 
@@ -4762,48 +4791,35 @@ def _model_flow_named_custom(config, provider_info):
         )
         print()
 
+    preset_model = None
     if models:
-        default_idx = 0
-        if saved_model and saved_model in models:
-            default_idx = models.index(saved_model)
+        from agent.venice_usage import is_venice_runtime
 
-        print(f"Found {len(models)} model(s):\n")
-        try:
-            from hermes_cli.curses_ui import curses_radiolist
+        if is_venice_runtime(provider_key or name, base_url):
+            from hermes_cli.venice_model_picker import run_venice_model_picker_preflight
 
-            menu_items = [
-                f"{m} (current)" if m == saved_model else m for m in models
-            ] + ["Cancel"]
-            idx = curses_radiolist(
-                f"Select model from {name}:",
-                menu_items,
-                selected=default_idx,
-                cancel_returns=-1,
+            models, preset_model = run_venice_model_picker_preflight(
+                api_key=api_key,
+                base_url=base_url,
+                models=models,
+                timeout=float(fetch_kwargs.get("timeout", 8.0)),
             )
-            print()
-            if idx < 0 or idx >= len(models):
+            if not models and not preset_model:
                 print("Cancelled.")
                 return
-            model_name = models[idx]
-        except (ImportError, NotImplementedError, OSError, subprocess.SubprocessError):
-            for i, m in enumerate(models, 1):
-                suffix = " (current)" if m == saved_model else ""
-                print(f"  {i}. {m}{suffix}")
-            print(f"  {len(models) + 1}. Cancel")
-            print()
-            try:
-                val = input(f"Choice [1-{len(models) + 1}]: ").strip()
-                if not val:
-                    print("Cancelled.")
-                    return
-                idx = int(val) - 1
-                if idx < 0 or idx >= len(models):
-                    print("Cancelled.")
-                    return
-                model_name = models[idx]
-            except (ValueError, KeyboardInterrupt, EOFError):
-                print("\nCancelled.")
-                return
+
+    model_name = ""
+    if preset_model:
+        model_name = preset_model
+    elif models:
+        from hermes_cli.model_list_ui import select_model_from_live_list
+
+        picked = select_model_from_live_list(
+            models, saved_model=saved_model, provider_label=name
+        )
+        if picked is None:
+            return
+        model_name = picked
     elif saved_model:
         print("Could not fetch models from endpoint.")
         try:
@@ -4822,6 +4838,26 @@ def _model_flow_named_custom(config, provider_info):
         if not model_name:
             print("No model specified. Cancelled.")
             return
+
+    from agent.venice_usage import is_venice_runtime as _is_venice_runtime
+
+    if _is_venice_runtime(provider_key or name, base_url):
+        venice_extra = _prompt_venice_extra_body_optional()
+        if venice_extra and provider_key:
+            cfg = load_config()
+            providers_cfg = cfg.get("providers")
+            if isinstance(providers_cfg, dict):
+                provider_entry = providers_cfg.get(provider_key)
+                if isinstance(provider_entry, dict):
+                    extra_body = provider_entry.get("extra_body")
+                    if not isinstance(extra_body, dict):
+                        extra_body = {}
+                    extra_body.update(venice_extra)
+                    provider_entry["extra_body"] = extra_body
+                    providers_cfg[provider_key] = provider_entry
+                    cfg["providers"] = providers_cfg
+                    save_config(cfg)
+                    print("  Saved Venice extra_body to providers.venice in config.yaml")
 
     extra_fields: dict = {}
     custom_api_mode = provider_info.get("api_mode", "")

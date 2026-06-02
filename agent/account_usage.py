@@ -266,7 +266,7 @@ def _fetch_venice_account_usage(
             base_url=base_url,
             api_key=api_key,
             requested_provider=provider_label,
-            include_extended=True,
+            include_extended="account",
         )
     except VeniceQuotaError as exc:
         return AccountUsageSnapshot(
@@ -277,7 +277,7 @@ def _fetch_venice_account_usage(
         )
     except Exception:
         return None
-    detail_lines = render_venice_quota_lines(report, include_extended=True)[1:]
+    detail_lines = render_venice_quota_lines(report, include_extended="account")[1:]
     return AccountUsageSnapshot(
         provider=provider_label,
         source="venice_usage_api",

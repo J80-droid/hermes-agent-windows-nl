@@ -899,6 +899,22 @@ def switch_model(
             if not api_key:
                 api_key = "no-key-required"
 
+    # Venice: map OpenAI-style names (e.g. gpt-4o) via compatibility_mapping.
+    try:
+        from agent.venice_usage import is_venice_runtime
+
+        if is_venice_runtime(target_provider, base_url) and api_key and new_model:
+            from hermes_cli.venice_model_picker import resolve_venice_model_for_switch
+
+            mapped = resolve_venice_model_for_switch(
+                new_model, api_key=api_key, base_url=base_url or ""
+            )
+            if mapped and mapped != new_model:
+                logger.debug("Venice OpenAI mapping: %s -> %s", new_model, mapped)
+                new_model = mapped
+    except Exception as exc:
+        logger.debug("Venice model mapping skipped: %s", exc)
+
     # --- Normalize model name for target provider ---
     new_model = normalize_model_for_provider(new_model, target_provider)
 

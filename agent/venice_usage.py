@@ -13,6 +13,10 @@ Extended detail (``include_extended=True`` for ``/vquota`` and ``/usage``):
 
 Partial HTTP failures are recorded on ``VeniceQuotaReport.extended_errors``.
 Status bar uses ``include_extended=False`` and a 90s TTL cache (``VN …`` label).
+
+Model picker (``hermes model`` for Venice): ``fetch_venice_model_traits``,
+``fetch_venice_compatibility_mapping``, ``filter_models_by_venice_trait``,
+``resolve_venice_openai_model`` — wired via ``hermes_cli/venice_model_picker.py``.
 """
 
 from __future__ import annotations
@@ -23,7 +27,9 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Literal, Optional, Union
+
+VeniceExtendedScope = Literal["none", "account", "full"]
 
 import httpx
 
@@ -104,6 +110,33 @@ def format_venice_local_timestamp(dt: Optional[datetime]) -> str:
     if not dt:
         return "?"
     return dt.astimezone().strftime("%Y-%m-%d %H:%M")
+
+
+def coerce_venice_extended_scope(value: Union[bool, str, VeniceExtendedScope, None]) -> VeniceExtendedScope:
+    """Map legacy ``include_extended`` booleans to a fetch/render scope."""
+    if value in (False, None, "", 0, "none", "false", "False"):
+        return "none"
+    if value is True or value in {"full", "true", "True"}:
+        return "full"
+    if value == "account":
+        return "account"
+    return "none"
+
+
+def format_venice_epoch_bar_line(
+    report: VeniceQuotaReport,
+    *,
+    rich: bool = False,
+) -> Optional[str]:
+    """ASCII epoch progress bar (CLI ``/vquota`` only)."""
+    if not (report.diem_epoch_allocation and report.diem_remaining is not None):
+        return None
+    pct = max(0.0, min(1.0, report.diem_used_fraction))
+    width = 20
+    filled = int(round(pct * width))
+    bar = "▓" * filled + "░" * (width - filled)
+    label = f"{'DIEM epoch':40s}  {bar}  {int(pct * 100):3d}%"
+    return label if not rich else label
 
 
 def format_venice_reset(dt: Optional[datetime]) -> str:
@@ -537,7 +570,7 @@ def _fetch_rate_limit_logs(
         return (), err
     rows = payload.get("data")
     if not isinstance(rows, list):
-        return ()
+        return (), "api_keys/rate_limits/log returned unexpected payload"
     logs: list[VeniceRateLimitLog] = []
     for row in rows:
         if not isinstance(row, dict):
@@ -552,6 +585,124 @@ def _fetch_rate_limit_logs(
         )
     logs.sort(key=lambda item: item.timestamp or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
     return tuple(logs[: _clamp_int(max_items, 5, lo=1, hi=50)]), None
+
+
+def _parse_string_map_payload(payload: Optional[dict[str, Any]], data_key: str = "data") -> dict[str, str]:
+    if not payload:
+        return {}
+    data = payload.get(data_key)
+    if not isinstance(data, dict):
+        return {}
+    result: dict[str, str] = {}
+    for key, value in data.items():
+        name = str(key or "").strip()
+        model_id = str(value or "").strip()
+        if name and model_id:
+            result[name] = model_id
+    return result
+
+
+def fetch_venice_model_traits(
+    *,
+    base_url: Optional[str] = None,
+    api_key: Optional[str] = None,
+    model_type: str = "text",
+    timeout: float = 8.0,
+) -> tuple[dict[str, str], Optional[str]]:
+    """Load ``GET /models/traits`` as ``{trait: model_id}`` (e.g. ``default``, ``fastest``)."""
+    try:
+        api_root, headers = _resolve_venice_auth(
+            base_url=base_url,
+            api_key=api_key,
+            requested_provider="venice",
+        )
+    except VeniceQuotaError as exc:
+        return {}, str(exc)
+    with httpx.Client(timeout=timeout) as client:
+        payload, status = _fetch_json_response(
+            client,
+            f"{api_root}/models/traits",
+            headers,
+            params={"type": model_type},
+        )
+    if not payload:
+        err = f"models/traits unavailable (HTTP {status})" if status else "models/traits unreachable"
+        return {}, err
+    traits = _parse_string_map_payload(payload)
+    if not traits:
+        return {}, "models/traits returned no entries"
+    return traits, None
+
+
+def fetch_venice_compatibility_mapping(
+    *,
+    base_url: Optional[str] = None,
+    api_key: Optional[str] = None,
+    model_type: str = "text",
+    timeout: float = 8.0,
+) -> tuple[dict[str, str], Optional[str]]:
+    """Load ``GET /models/compatibility_mapping`` as ``{openai_name: venice_model_id}``."""
+    try:
+        api_root, headers = _resolve_venice_auth(
+            base_url=base_url,
+            api_key=api_key,
+            requested_provider="venice",
+        )
+    except VeniceQuotaError as exc:
+        return {}, str(exc)
+    with httpx.Client(timeout=timeout) as client:
+        payload, status = _fetch_json_response(
+            client,
+            f"{api_root}/models/compatibility_mapping",
+            headers,
+            params={"type": model_type},
+        )
+    if not payload:
+        err = (
+            f"models/compatibility_mapping unavailable (HTTP {status})"
+            if status
+            else "models/compatibility_mapping unreachable"
+        )
+        return {}, err
+    mapping = _parse_string_map_payload(payload)
+    if not mapping:
+        return {}, "models/compatibility_mapping returned no entries"
+    return mapping, None
+
+
+def filter_models_by_venice_trait(
+    models: list[str],
+    trait_model_id: str,
+) -> list[str]:
+    """Keep live ``/models`` IDs that match a trait's Venice model id (incl. ``:suffix``)."""
+    needle = str(trait_model_id or "").strip()
+    if not needle:
+        return list(models)
+    matched = [
+        model_id
+        for model_id in models
+        if model_id == needle or model_id.startswith(f"{needle}:")
+    ]
+    if matched:
+        return matched
+    return [needle]
+
+
+def resolve_venice_openai_model(
+    openai_name: str,
+    mapping: dict[str, str],
+) -> Optional[str]:
+    """Map an OpenAI-style model name to a Venice model id via compatibility_mapping."""
+    query = str(openai_name or "").strip()
+    if not query or not mapping:
+        return None
+    if query in mapping:
+        return mapping[query]
+    lowered = query.lower()
+    for key, value in mapping.items():
+        if key.lower() == lowered:
+            return value
+    return None
 
 
 def _fetch_model_trait_lines(
@@ -571,12 +722,13 @@ def _fetch_model_trait_lines(
     if not payload:
         err = f"models/traits unavailable (HTTP {status})" if status else "models/traits unreachable"
         return (), err
-    data = payload.get("data")
-    if not isinstance(data, dict):
+    traits = _parse_string_map_payload(payload)
+    if not traits:
         return (), "models/traits returned unexpected payload"
-    lines: list[str] = []
-    for trait, model_id in list(data.items())[: _clamp_int(max_items, 6, lo=1, hi=20)]:
-        lines.append(f"{trait} → {model_id}")
+    lines = [
+        f"{trait} → {model_id}"
+        for trait, model_id in list(traits.items())[: _clamp_int(max_items, 6, lo=1, hi=20)]
+    ]
     return tuple(lines), None
 
 
@@ -601,12 +753,13 @@ def _fetch_compatibility_mapping_lines(
             else "models/compatibility_mapping unreachable"
         )
         return (), err
-    data = payload.get("data")
-    if not isinstance(data, dict):
+    mapping = _parse_string_map_payload(payload)
+    if not mapping:
         return (), "models/compatibility_mapping returned unexpected payload"
-    lines: list[str] = []
-    for openai_name, venice_id in list(data.items())[: _clamp_int(max_items, 6, lo=1, hi=20)]:
-        lines.append(f"{openai_name} → {venice_id}")
+    lines = [
+        f"{openai_name} → {venice_id}"
+        for openai_name, venice_id in list(mapping.items())[: _clamp_int(max_items, 6, lo=1, hi=20)]
+    ]
     return tuple(lines), None
 
 
@@ -640,8 +793,13 @@ def _fetch_venice_extended_parallel(
     headers: dict[str, str],
     *,
     timeout: float = _EXTENDED_FETCH_TIMEOUT_SECONDS,
+    scope: VeniceExtendedScope = "full",
 ) -> _VeniceExtendedData:
-    """Fetch optional Venice endpoints in parallel (separate clients per thread)."""
+    """Fetch optional Venice endpoints in parallel (separate clients per thread).
+
+    ``account`` scope (for ``/usage``): billing/usage + usage-analytics only.
+    ``full`` scope (for ``/vquota``): all extended endpoints including traits.
+    """
     tasks: dict[str, Callable[[], Any]] = {
         "usage": lambda: _run_with_client(
             timeout, _fetch_billing_usage, api_root, headers
@@ -649,16 +807,21 @@ def _fetch_venice_extended_parallel(
         "analytics": lambda: _run_with_client(
             timeout, _fetch_usage_analytics, api_root, headers
         ),
-        "rate_logs": lambda: _run_with_client(
-            timeout, _fetch_rate_limit_logs, api_root, headers
-        ),
-        "traits": lambda: _run_with_client(
-            timeout, _fetch_model_trait_lines, api_root, headers
-        ),
-        "compat": lambda: _run_with_client(
-            timeout, _fetch_compatibility_mapping_lines, api_root, headers
-        ),
     }
+    if scope == "full":
+        tasks.update(
+            {
+                "rate_logs": lambda: _run_with_client(
+                    timeout, _fetch_rate_limit_logs, api_root, headers
+                ),
+                "traits": lambda: _run_with_client(
+                    timeout, _fetch_model_trait_lines, api_root, headers
+                ),
+                "compat": lambda: _run_with_client(
+                    timeout, _fetch_compatibility_mapping_lines, api_root, headers
+                ),
+            }
+        )
     errors: list[str] = []
     usage_entries: tuple[VeniceBillingUsageEntry, ...] = ()
     usage_total_count: Optional[int] = None
@@ -728,14 +891,15 @@ def fetch_venice_quota(
     api_key: Optional[str] = None,
     requested_provider: str = "venice",
     timeout: float = _FETCH_TIMEOUT_SECONDS,
-    include_extended: bool = False,
+    include_extended: Union[bool, VeniceExtendedScope] = False,
 ) -> VeniceQuotaReport:
     """Load Venice balances.
 
-    When ``include_extended`` is True, also loads usage, analytics, rate-limit logs,
-    and model hints in parallel. Core endpoints always run on the caller's ``client``
-    timeout; extended batch uses at least ``_EXTENDED_FETCH_TIMEOUT_SECONDS`` per request.
+    ``include_extended`` may be ``False``, ``True``/``"full"``, or ``"account"``.
+    ``account`` loads billing/usage + usage-analytics only (faster, for ``/usage``).
+    ``full`` adds rate-limit logs and model metadata (for ``/vquota``).
     """
+    extended_scope = coerce_venice_extended_scope(include_extended)
     api_root, headers = _resolve_venice_auth(
         base_url=base_url,
         api_key=api_key,
@@ -795,10 +959,10 @@ def fetch_venice_quota(
     model_traits: tuple[str, ...] = ()
     compatibility_mappings: tuple[str, ...] = ()
     extended_errors: tuple[str, ...] = ()
-    if include_extended:
+    if extended_scope != "none":
         extended_timeout = max(timeout, _EXTENDED_FETCH_TIMEOUT_SECONDS)
         extended = _fetch_venice_extended_parallel(
-            api_root, headers, timeout=extended_timeout
+            api_root, headers, timeout=extended_timeout, scope=extended_scope
         )
         usage_entries = extended.usage_entries
         usage_total_count = extended.usage_total_count
@@ -833,18 +997,24 @@ def fetch_venice_quota(
         next_epoch_begins=next_epoch_begins,
         billing_available=billing_available,
         fetched_at=_utc_now(),
-        usage_entries=usage_entries if include_extended else (),
-        usage_total_count=usage_total_count if include_extended else None,
-        usage_warning=usage_warning if include_extended else None,
-        analytics_lookback=analytics_lookback if include_extended else None,
-        analytics_period_diem=analytics_period_diem if include_extended else None,
-        analytics_period_usd=analytics_period_usd if include_extended else None,
-        analytics_top_models=analytics_top_models if include_extended else (),
-        rate_limit_logs=rate_limit_logs if include_extended else (),
-        model_traits=model_traits if include_extended else (),
-        compatibility_mappings=compatibility_mappings if include_extended else (),
-        extended_errors=extended_errors if include_extended else (),
+        usage_entries=usage_entries if extended_scope != "none" else (),
+        usage_total_count=usage_total_count if extended_scope != "none" else None,
+        usage_warning=usage_warning if extended_scope != "none" else None,
+        analytics_lookback=analytics_lookback if extended_scope != "none" else None,
+        analytics_period_diem=analytics_period_diem if extended_scope != "none" else None,
+        analytics_period_usd=analytics_period_usd if extended_scope != "none" else None,
+        analytics_top_models=analytics_top_models if extended_scope != "none" else (),
+        rate_limit_logs=rate_limit_logs if extended_scope == "full" else (),
+        model_traits=model_traits if extended_scope == "full" else (),
+        compatibility_mappings=compatibility_mappings if extended_scope == "full" else (),
+        extended_errors=extended_errors if extended_scope != "none" else (),
     )
+
+
+def _render_style_dim(text: str, *, style: Literal["plain", "rich"]) -> str:
+    if style == "rich":
+        return f"[dim]{text}[/]"
+    return text
 
 
 def render_venice_quota_lines(
@@ -852,26 +1022,61 @@ def render_venice_quota_lines(
     *,
     markdown: bool = False,
     include_rate_limits_note: bool = True,
-    include_extended: bool = False,
+    include_extended: Union[bool, VeniceExtendedScope] = False,
+    include_epoch_bar: bool = False,
+    style: Literal["plain", "rich"] = "plain",
+    include_footer_docs: bool = False,
 ) -> list[str]:
+    """Render Venice quota for CLI, ``/usage``, or markdown.
+
+    Use ``include_extended="account"`` for fast account limits; ``"full"`` for ``/vquota``.
+    ``include_epoch_bar`` + ``style=\"rich\"`` adds the ASCII bar (CLI only).
+    """
+    extended_scope = coerce_venice_extended_scope(include_extended)
     bold = "**" if markdown else ""
-    lines = [
-        f"📊 {bold}Venice quota (DIEM){bold}" if markdown else "📊 Venice quota (DIEM)"
-    ]
+    if style == "rich":
+        lines: list[str] = ["[bold]Venice quota[/]  (venice.ai · DIEM)"]
+    else:
+        lines = [
+            f"📊 {bold}Venice quota (DIEM){bold}" if markdown else "📊 Venice quota (DIEM)"
+        ]
 
     if report.diem_epoch_allocation and report.diem_remaining is not None:
         used = report.diem_used or 0.0
-        lines.append(
-            f"DIEM epoch: {used:.2f} / {report.diem_epoch_allocation:.2f} used "
-            f"({report.diem_remaining:.2f} remaining)"
-        )
+        if include_epoch_bar:
+            bar_line = format_venice_epoch_bar_line(report, rich=(style == "rich"))
+            if bar_line:
+                lines.append(f"    {bar_line}" if style == "rich" else bar_line)
+            lines.append(
+                f"    {used:.2f} / {report.diem_epoch_allocation:.2f} used "
+                f"({report.diem_remaining:.2f} remaining)"
+                if style == "rich"
+                else (
+                    f"{used:.2f} / {report.diem_epoch_allocation:.2f} used "
+                    f"({report.diem_remaining:.2f} remaining)"
+                )
+            )
+        else:
+            lines.append(
+                f"DIEM epoch: {used:.2f} / {report.diem_epoch_allocation:.2f} used "
+                f"({report.diem_remaining:.2f} remaining)"
+            )
     elif report.diem_remaining is not None:
         lines.append(f"DIEM balance: {report.diem_remaining:.4f}")
         if not report.billing_available:
-            lines.append(
-                "DIEM epoch cap: unavailable (GET /billing/balance requires admin API key — "
-                "see docs.venice.ai/api-reference/endpoint/billing/balance)"
-            )
+            if style == "rich":
+                lines.append(
+                    _render_style_dim(
+                        "Epoch cap: /billing/balance needs admin API key "
+                        "(rate_limits shows balance only)",
+                        style=style,
+                    )
+                )
+            else:
+                lines.append(
+                    "DIEM epoch cap: unavailable (GET /billing/balance requires admin API key — "
+                    "see docs.venice.ai/api-reference/endpoint/billing/balance)"
+                )
 
     if report.usd_balance is not None:
         lines.append(f"USD balance: ${report.usd_balance:.4f}")
@@ -886,17 +1091,22 @@ def render_venice_quota_lines(
     if report.next_epoch_begins:
         lines.append(f"Next epoch {_format_venice_reset_line(report.next_epoch_begins)}")
 
-    if include_extended:
+    if extended_scope != "none":
+        analytics_suffix = _render_style_dim("(usage-analytics, beta)", style=style)
         if report.analytics_lookback is not None:
             diem = report.analytics_period_diem or 0.0
             usd = report.analytics_period_usd or 0.0
             lines.append(
-                f"Usage ({report.analytics_lookback}): {diem:.4f} DIEM, ${usd:.4f} USD (usage-analytics, beta)"
+                f"Usage ({report.analytics_lookback}): {diem:.4f} DIEM, ${usd:.4f} USD {analytics_suffix}"
             )
             for model_line in report.analytics_top_models:
                 lines.append(f"  Top model: {model_line}")
         if report.usage_entries:
-            lines.append("Recent charges (billing/usage, beta, last 7d):")
+            lines.append(
+                _render_style_dim("Recent charges (billing/usage, 7d)", style=style)
+                if style == "rich"
+                else "Recent charges (billing/usage, beta, last 7d):"
+            )
             for entry in report.usage_entries:
                 when = format_venice_local_timestamp(entry.timestamp)
                 amount = abs(entry.amount)
@@ -913,8 +1123,12 @@ def render_venice_quota_lines(
                 lines.append(f"  … {report.usage_total_count} total rows in period")
         if report.usage_warning:
             lines.append(f"Note: {report.usage_warning}")
-        if report.rate_limit_logs:
-            lines.append("Recent rate-limit hits (last 50 max):")
+        if extended_scope == "full" and report.rate_limit_logs:
+            lines.append(
+                _render_style_dim("Recent rate-limit hits (api_keys/rate_limits/log)", style=style)
+                if style == "rich"
+                else "Recent rate-limit hits (last 50 max):"
+            )
             for log in report.rate_limit_logs:
                 lines.append(
                     f"  {format_venice_local_timestamp(log.timestamp)} "
@@ -922,24 +1136,40 @@ def render_venice_quota_lines(
                 )
         if report.extended_errors:
             for err in report.extended_errors:
-                lines.append(f"Extended API: {err}")
-        if report.model_traits:
-            lines.append("Model traits (text):")
+                if style == "rich":
+                    lines.append(_render_style_dim(err, style=style))
+                else:
+                    lines.append(f"Extended API: {err}")
+        if extended_scope == "full" and report.model_traits:
+            lines.append(_render_style_dim("Model traits (text)", style=style) if style == "rich" else "Model traits (text):")
             for trait_line in report.model_traits:
                 lines.append(f"  {trait_line}")
-        if report.compatibility_mappings:
-            lines.append("OpenAI name mapping (text):")
+        if extended_scope == "full" and report.compatibility_mappings:
+            header = (
+                _render_style_dim("OpenAI mapping (models/compatibility_mapping)", style=style)
+                if style == "rich"
+                else "OpenAI name mapping (text):"
+            )
+            lines.append(header)
             for mapping in report.compatibility_mappings:
                 lines.append(f"  {mapping}")
-        lines.append(
-            "Venice chat options: set providers.venice.extra_body.venice_parameters in config "
-            "(web search, character_slug, etc.)"
-        )
+        if extended_scope == "full":
+            lines.append(
+                "Venice chat options: set providers.venice.extra_body.venice_parameters in config "
+                "(web search, character_slug, etc.)"
+            )
 
     if include_rate_limits_note:
         lines.append(
             "Per-model RPM/TPM: GET /api_keys/rate_limits — "
             "https://docs.venice.ai/api-reference/endpoint/api_keys/rate_limits"
+        )
+    if include_footer_docs and style == "rich":
+        lines.append(
+            _render_style_dim(
+                "Docs: billing/balance · billing/usage · usage-analytics · api_keys/rate_limits/log",
+                style=style,
+            )
         )
     return lines
 
