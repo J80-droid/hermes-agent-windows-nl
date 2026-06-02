@@ -16,6 +16,11 @@ import {
   statusRuleMinLeftWidth
 } from '../domain/usageCostBar.js'
 import { resolveStatusBarThroughputLabel } from '../domain/statusBarThroughput.js'
+import {
+  joinStatusBarSegments,
+  resolveStatusRuleLineCount,
+  type StatusBarTextSegment
+} from '../domain/statusRuleLines.js'
 import type { CostBarMode } from '../domain/usageCostBar.js'
 import { stickyPromptFromViewport } from '../domain/viewport.js'
 import { buildSubagentTree, treeTotals, widthByDepth } from '../lib/subagentTree.js'
@@ -179,14 +184,18 @@ export function statusRuleWidths(cols: number, cwdLabel: string) {
   return { leftWidth, rightWidth, separatorWidth }
 }
 
-function SpawnHud({ t }: { t: Theme }) {
-  // Tight HUD that only appears when the session is actually fanning out.
-  // Colour escalates to warn/error as depth or concurrency approaches the cap.
-  const delegation = useStore($delegationState)
-  const subagents = useTurnSelector(state => state.subagents)
+type SpawnHudLayout = {
+  atCap: boolean
+  label: string
+  ratio: number
+}
 
-  const tree = useMemo(() => buildSubagentTree(subagents), [subagents])
-  const totals = useMemo(() => treeTotals(tree), [tree])
+function resolveSpawnHudLayout(
+  delegation: { paused: boolean; maxSpawnDepth: number; maxConcurrentChildren: number },
+  subagents: Parameters<typeof buildSubagentTree>[0]
+): SpawnHudLayout | null {
+  const tree = buildSubagentTree(subagents)
+  const totals = treeTotals(tree)
 
   if (!totals.descendantCount && !delegation.paused) {
     return null
@@ -196,19 +205,10 @@ function SpawnHud({ t }: { t: Theme }) {
   const maxConc = delegation.maxConcurrentChildren
   const depth = Math.max(0, totals.maxDepthFromHere)
   const active = totals.activeCount
-
-  // `max_concurrent_children` is a per-parent cap, not a global one.
-  // `activeCount` sums every running agent across the tree and would
-  // over-warn for multi-orchestrator runs.  The widest level of the tree
-  // is a closer proxy to "most concurrent spawns that could be hitting a
-  // single parent's slot budget".
   const widestLevel = widthByDepth(tree).reduce((a, b) => Math.max(a, b), 0)
   const depthRatio = maxDepth ? depth / maxDepth : 0
   const concRatio = maxConc ? widestLevel / maxConc : 0
   const ratio = Math.max(depthRatio, concRatio)
-
-  const color = delegation.paused || ratio >= 1 ? t.color.error : ratio >= 0.66 ? t.color.warn : t.color.muted
-
   const pieces: string[] = []
 
   if (delegation.paused) {
@@ -220,9 +220,6 @@ function SpawnHud({ t }: { t: Theme }) {
     pieces.push(`d${depthLabel}`)
 
     if (active > 0) {
-      // Label pairs the widest-level count (drives concRatio above) with
-      // the total active count for context.  `W/cap` triggers the warn,
-      // `+N` is everything else currently running across the tree.
       const extra = Math.max(0, active - widestLevel)
       const widthLabel = maxConc ? `${widestLevel}/${maxConc}` : `${widestLevel}`
       const suffix = extra > 0 ? `+${extra}` : ''
@@ -232,10 +229,46 @@ function SpawnHud({ t }: { t: Theme }) {
 
   const atCap = depthRatio >= 1 || concRatio >= 1
 
+  return {
+    atCap,
+    label: pieces.join(' '),
+    ratio
+  }
+}
+
+/** Plain label for spawn HUD width measurement (must match ``SpawnHud`` output). */
+export function spawnHudMeasureSegment(
+  delegation: { paused: boolean; maxSpawnDepth: number; maxConcurrentChildren: number },
+  subagents: Parameters<typeof buildSubagentTree>[0]
+): StatusBarTextSegment | null {
+  const layout = resolveSpawnHudLayout(delegation, subagents)
+
+  if (!layout) {
+    return null
+  }
+
+  return { text: `${layout.atCap ? ' │ ⚠ ' : ' │ '}${layout.label}` }
+}
+
+function SpawnHud({ t }: { t: Theme }) {
+  const delegation = useStore($delegationState)
+  const subagents = useTurnSelector(state => state.subagents)
+  const layout = useMemo(
+    () => resolveSpawnHudLayout(delegation, subagents),
+    [delegation, subagents]
+  )
+
+  if (!layout) {
+    return null
+  }
+
+  const color =
+    delegation.paused || layout.ratio >= 1 ? t.color.error : layout.ratio >= 0.66 ? t.color.warn : t.color.muted
+
   return (
-    <Text color={color}>
-      {atCap ? ' │ ⚠ ' : ' │ '}
-      {pieces.join(' ')}
+    <Text color={color} wrap="truncate-end">
+      {layout.atCap ? ' │ ⚠ ' : ' │ '}
+      {layout.label}
     </Text>
   )
 }
@@ -320,6 +353,8 @@ export function StatusRule({
   onSessionCountClick,
   t
 }: StatusRuleProps) {
+  const delegation = useStore($delegationState)
+  const subagents = useTurnSelector(state => state.subagents)
   const lastCallTps = useTurnSelector(state => state.lastCallTps)
   const streamGenStartedAt = useTurnSelector(state => state.streamGenStartedAt)
   const streamOutputTokens = useTurnSelector(state => state.streamOutputTokens)
@@ -377,94 +412,200 @@ export function StatusRule({
     )
   ) : null
 
+  const modelPart = ` │ ${modelLabel(model, modelReasoningEffort, modelFast)}`
+  const line1Measure = `${busy ? '─       ' : `─ ${status} `}${modelPart}`
+
+  const { metricsText, useTwoLines } = useMemo(() => {
+    const metricSegments: StatusBarTextSegment[] = []
+
+    if (costLabel) {
+      metricSegments.push({ text: costLabel })
+    }
+
+    if (throughputLabel) {
+      metricSegments.push({ text: throughputLabel })
+    }
+
+    if (ctxLabel) {
+      metricSegments.push({ text: ctxLabel })
+    }
+
+    if (bar) {
+      metricSegments.push({ text: `[${bar}]${pct != null ? ` ${pct}%` : ''}` })
+    }
+
+    if (typeof usage.compressions === 'number' && usage.compressions > 0) {
+      metricSegments.push({ text: `cmp ${usage.compressions}` })
+    }
+
+    if (voiceLabel) {
+      metricSegments.push({ text: voiceLabel })
+    }
+
+    if (sessionCountText) {
+      metricSegments.push({ text: sessionCountText })
+    }
+
+    if (bgCount > 0) {
+      metricSegments.push({ text: `${bgCount} bg` })
+    }
+
+    const spawnSegment = spawnHudMeasureSegment(delegation, subagents)
+
+    if (spawnSegment) {
+      metricSegments.push(spawnSegment)
+    }
+
+    const measureSegments = [
+      ...metricSegments,
+      ...(sessionStartedAt ? [{ text: '00:00' }] : [])
+    ]
+    const joined = joinStatusBarSegments(measureSegments)
+
+    return {
+      metricsText: joined,
+      useTwoLines:
+        resolveStatusRuleLineCount({
+          leftWidth,
+          line1Text: line1Measure,
+          metricsText: joined
+        }) === 2
+    }
+  }, [
+    bar,
+    bgCount,
+    costLabel,
+    ctxLabel,
+    delegation,
+    leftWidth,
+    line1Measure,
+    pct,
+    sessionCountText,
+    sessionStartedAt,
+    subagents,
+    throughputLabel,
+    usage.compressions,
+    voiceLabel
+  ])
+
+  const line1Header = (
+    <>
+      <Text color={t.color.border} wrap="truncate-end">
+        {'─ '}
+      </Text>
+      {busy ? (
+        <FaceTicker color={statusColor} startedAt={turnStartedAt} />
+      ) : (
+        <Text color={statusColor} wrap="truncate-end">
+          {status}
+        </Text>
+      )}
+      <Text color={t.color.muted} wrap="truncate-end">
+        {modelPart}
+      </Text>
+    </>
+  )
+
+  const metricNodes = (
+    <>
+      {costLabel ? (
+        <Text color={t.color.accent} wrap="truncate-end">
+          {' │ '}
+          {costLabel}
+        </Text>
+      ) : null}
+      {throughputLabel ? (
+        <Text color={t.color.statusTps} wrap="truncate-end">
+          {' │ '}
+          {throughputLabel}
+        </Text>
+      ) : null}
+      {ctxLabel ? (
+        <Text color={t.color.muted} wrap="truncate-end">
+          {' │ '}
+          {ctxLabel}
+        </Text>
+      ) : null}
+      {bar ? (
+        <Text color={t.color.muted} wrap="truncate-end">
+          {' │ '}
+          <Text color={barColor}>[{bar}]</Text> <Text color={barColor}>{pct != null ? `${pct}%` : ''}</Text>
+        </Text>
+      ) : null}
+      {sessionStartedAt ? (
+        <Text color={t.color.muted} wrap="truncate-end">
+          {' │ '}
+          <SessionDuration startedAt={sessionStartedAt} />
+        </Text>
+      ) : null}
+      {typeof usage.compressions === 'number' && usage.compressions > 0 ? (
+        <Text color={t.color.muted} wrap="truncate-end">
+          {' │ '}
+          <Text
+            color={usage.compressions >= 10 ? t.color.error : usage.compressions >= 5 ? t.color.warn : t.color.muted}
+          >
+            cmp {usage.compressions}
+          </Text>
+        </Text>
+      ) : null}
+      <SpawnHud t={t} />
+      {voiceLabel ? (
+        <Text
+          color={
+            voiceLabel.startsWith('●') ? t.color.error : voiceLabel.startsWith('◉') ? t.color.warn : t.color.muted
+          }
+          wrap="truncate-end"
+        >
+          {' │ '}
+          {voiceLabel}
+        </Text>
+      ) : null}
+      {sessionCountNode}
+      {bgCount > 0 ? (
+        <Text color={t.color.muted} wrap="truncate-end">
+          {' │ '}
+          {bgCount} bg
+        </Text>
+      ) : null}
+    </>
+  )
+
+  const cwdNode =
+    rightWidth > 0 ? (
+      <>
+        <Text color={t.color.border}>{separatorWidth >= 3 ? ' ─ ' : ' '}</Text>
+        <Box flexShrink={0} width={rightWidth}>
+          <Text color={t.color.label} wrap="truncate-end">
+            {cwdLabel}
+          </Text>
+        </Box>
+      </>
+    ) : null
+
+  // Two rows max: line 1 = status + model + cwd; line 2 = metrics over full ruleCols.
+  if (useTwoLines) {
+    return (
+      <Box flexDirection="column" width={ruleCols}>
+        <Box flexDirection="row" height={1} width={ruleCols}>
+          <Box flexDirection="row" flexShrink={1} overflow="hidden" width={leftWidth}>
+            {line1Header}
+          </Box>
+          {cwdNode}
+        </Box>
+        <Box flexDirection="row" flexShrink={1} height={1} width={ruleCols} overflow="hidden">
+          {metricNodes}
+        </Box>
+      </Box>
+    )
+  }
+
   return (
     <Box flexDirection="row" height={1} width={ruleCols}>
       <Box flexDirection="row" flexShrink={1} overflow="hidden" width={leftWidth}>
-        <Text color={t.color.border} wrap="truncate-end">
-          {'─ '}
-        </Text>
-        {busy ? (
-          <FaceTicker color={statusColor} startedAt={turnStartedAt} />
-        ) : (
-          <Text color={statusColor} wrap="truncate-end">
-            {status}
-          </Text>
-        )}
-        <Text color={t.color.muted} wrap="truncate-end">
-          {' │ '}
-          {modelLabel(model, modelReasoningEffort, modelFast)}
-        </Text>
-        {costLabel ? (
-          <Text color={t.color.accent} wrap="truncate-end">
-            {' │ '}
-            {costLabel}
-          </Text>
-        ) : null}
-        {throughputLabel ? (
-          <Text color={t.color.statusTps} wrap="truncate-end">
-            {' │ '}
-            {throughputLabel}
-          </Text>
-        ) : null}
-        {ctxLabel ? (
-          <Text color={t.color.muted} wrap="truncate-end">
-            {' │ '}
-            {ctxLabel}
-          </Text>
-        ) : null}
-        {bar ? (
-          <Text color={t.color.muted} wrap="truncate-end">
-            {' │ '}
-            <Text color={barColor}>[{bar}]</Text> <Text color={barColor}>{pct != null ? `${pct}%` : ''}</Text>
-          </Text>
-        ) : null}
-        {sessionStartedAt ? (
-          <Text color={t.color.muted} wrap="truncate-end">
-            {' │ '}
-            <SessionDuration startedAt={sessionStartedAt} />
-          </Text>
-        ) : null}
-        {typeof usage.compressions === 'number' && usage.compressions > 0 ? (
-          <Text color={t.color.muted} wrap="truncate-end">
-            {' │ '}
-            <Text
-              color={usage.compressions >= 10 ? t.color.error : usage.compressions >= 5 ? t.color.warn : t.color.muted}
-            >
-              cmp {usage.compressions}
-            </Text>
-          </Text>
-        ) : null}
-        <SpawnHud t={t} />
-        {voiceLabel ? (
-          <Text
-            color={
-              voiceLabel.startsWith('●') ? t.color.error : voiceLabel.startsWith('◉') ? t.color.warn : t.color.muted
-            }
-            wrap="truncate-end"
-          >
-            {' │ '}
-            {voiceLabel}
-          </Text>
-        ) : null}
-        {sessionCountNode}
-        {bgCount > 0 ? (
-          <Text color={t.color.muted} wrap="truncate-end">
-            {' │ '}
-            {bgCount} bg
-          </Text>
-        ) : null}
+        {line1Header}
+        {metricNodes}
       </Box>
-
-      {rightWidth > 0 ? (
-        <>
-          <Text color={t.color.border}>{separatorWidth >= 3 ? ' ─ ' : ' '}</Text>
-          <Box flexShrink={0} width={rightWidth}>
-            <Text color={t.color.label} wrap="truncate-end">
-              {cwdLabel}
-            </Text>
-          </Box>
-        </>
-      ) : null}
+      {cwdNode}
     </Box>
   )
 }

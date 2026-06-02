@@ -3344,6 +3344,7 @@ class HermesCLI:
 
         # Status bar visibility (toggled via /statusbar)
         self._status_bar_visible = True
+        self._status_bar_layout_lines = 1
         # When True, the input separator rules and the dynamic status bar are
         # hidden until the next user input. Set by _recover_after_resize() so a
         # SIGWINCH cannot stamp a freshly-drawn status bar on top of one that
@@ -3994,6 +3995,48 @@ class HermesCLI:
             width += ch_width
         return "".join(out).rstrip() + ellipsis
 
+    def _status_bar_window_height(self) -> int:
+        """Return 1 or 2 rows for the classic TUI status bar."""
+        return min(2, max(1, int(getattr(self, "_status_bar_layout_lines", 1))))
+
+    def _pack_status_bar_fragment_rows(self, header_frags, metric_frags, width: int):
+        """Lay out status fragments on one or two rows (max ``STATUS_BAR_MAX_LINES``)."""
+        from hermes_cli.status_bar_layout import (
+            fragments_plain_text,
+            should_use_status_bar_second_line,
+        )
+
+        width = max(1, int(width or 1))
+        combined = list(header_frags) + list(metric_frags)
+        metrics_plain = fragments_plain_text(metric_frags).strip()
+        if not metrics_plain:
+            self._status_bar_layout_lines = 1
+            total_width = sum(self._status_bar_display_width(text) for _, text in combined)
+            if total_width > width:
+                plain = fragments_plain_text(combined)
+                return [("class:status-bar", self._trim_status_bar_text(plain, width))]
+            return combined
+
+        line1_text = fragments_plain_text(header_frags)
+        if not should_use_status_bar_second_line(
+            line1_width=width,
+            line1_text=line1_text,
+            metrics_text=metrics_plain,
+        ):
+            self._status_bar_layout_lines = 1
+            total_width = sum(self._status_bar_display_width(text) for _, text in combined)
+            if total_width > width:
+                plain = fragments_plain_text(combined)
+                return [("class:status-bar", self._trim_status_bar_text(plain, width))]
+            return combined
+
+        line1_trim = self._trim_status_bar_text(line1_text, width)
+        line2_trim = self._trim_status_bar_text(metrics_plain, width)
+        self._status_bar_layout_lines = 2
+        if line1_trim != line1_text or line2_trim != metrics_plain:
+            return [("class:status-bar", f" {line1_trim}\n {line2_trim} ")]
+        return list(header_frags) + [("class:status-bar", "\n")] + list(metric_frags)
+
     @staticmethod
     def _get_tui_terminal_width(default: tuple[int, int] = (80, 24)) -> int:
         """Return the live prompt_toolkit width, falling back to ``shutil``.
@@ -4222,6 +4265,7 @@ class HermesCLI:
         if not self._status_bar_visible or getattr(self, '_model_picker_state', None):
             return []
         try:
+            self._status_bar_layout_lines = 1
             snapshot = self._get_status_bar_snapshot()
             # Use prompt_toolkit's own terminal width when running inside the
             # TUI — shutil.get_terminal_size() can return stale or fallback
@@ -4303,46 +4347,47 @@ class HermesCLI:
                     compressions = snapshot.get("compressions", 0)
                     bg_count = snapshot.get("active_background_tasks", 0)
                     bg_proc_count = snapshot.get("active_background_processes", 0)
-                    frags = [
+                    header_frags = [
                         ("class:status-bar", " ⚕ "),
                         ("class:status-bar-strong", snapshot["model_short"]),
                     ]
                     self._append_status_bar_provider_quota_fragments(
-                        frags, snapshot, separator=" │ "
+                        header_frags, snapshot, separator=" │ "
                     )
-                    frags.extend([
+                    metric_frags = [
                         ("class:status-bar-dim", " │ "),
                         ("class:status-bar-dim", context_label),
                         ("class:status-bar-dim", " │ "),
                         (bar_style, self._build_context_bar(percent)),
                         ("class:status-bar-dim", " "),
                         (bar_style, percent_label),
-                    ])
+                    ]
                     if compressions:
-                        frags.append(("class:status-bar-dim", " │ "))
-                        frags.append((self._compression_count_style(compressions), f"🗜️ {compressions}"))
+                        metric_frags.append(("class:status-bar-dim", " │ "))
+                        metric_frags.append((self._compression_count_style(compressions), f"🗜️ {compressions}"))
                     if bg_count:
-                        frags.append(("class:status-bar-dim", " │ "))
-                        frags.append(("class:status-bar-strong", f"▶ {bg_count}"))
+                        metric_frags.append(("class:status-bar-dim", " │ "))
+                        metric_frags.append(("class:status-bar-strong", f"▶ {bg_count}"))
                     if bg_proc_count:
-                        frags.append(("class:status-bar-dim", " │ "))
-                        frags.append(("class:status-bar-strong", f"⚙ {bg_proc_count}"))
-                    frags.extend([
+                        metric_frags.append(("class:status-bar-dim", " │ "))
+                        metric_frags.append(("class:status-bar-strong", f"⚙ {bg_proc_count}"))
+                    metric_frags.extend([
                         ("class:status-bar-dim", " │ "),
                         ("class:status-bar-dim", duration_label),
                     ])
                     # Per-prompt elapsed timer (live or frozen) before cost segment
                     prompt_elapsed = snapshot.get("prompt_elapsed")
                     if prompt_elapsed:
-                        frags.append(("class:status-bar-dim", " │ "))
-                        frags.append(("class:status-bar-dim", prompt_elapsed))
-                    self._append_status_bar_cost_fragments(frags, snapshot, width)
-                    self._append_status_bar_throughput_fragments(frags, snapshot, width)
-                    self._append_pending_queue_status_fragments(frags, separator=" │ ")
+                        metric_frags.append(("class:status-bar-dim", " │ "))
+                        metric_frags.append(("class:status-bar-dim", prompt_elapsed))
+                    self._append_status_bar_cost_fragments(metric_frags, snapshot, width)
+                    self._append_status_bar_throughput_fragments(metric_frags, snapshot, width)
+                    self._append_pending_queue_status_fragments(metric_frags, separator=" │ ")
                     if yolo_active:
-                        frags.append(("class:status-bar-dim", " │ "))
-                        frags.append(("class:status-bar-yolo", "⚠ YOLO"))
-                    frags.append(("class:status-bar", " "))
+                        metric_frags.append(("class:status-bar-dim", " │ "))
+                        metric_frags.append(("class:status-bar-yolo", "⚠ YOLO"))
+                    metric_frags.append(("class:status-bar", " "))
+                    return self._pack_status_bar_fragment_rows(header_frags, metric_frags, width)
 
             total_width = sum(self._status_bar_display_width(text) for _, text in frags)
             if total_width > width:
@@ -15560,15 +15605,14 @@ class HermesCLI:
         status_bar = ConditionalContainer(
             Window(
                 content=FormattedTextControl(lambda: cli_ref._get_status_bar_fragments()),
-                height=1,
+                height=lambda: cli_ref._status_bar_window_height(),
                 # Prevent fragments that overflow the terminal width from
                 # wrapping onto a second line, which causes the status bar to
                 # appear duplicated (one full + one partial row) during long
                 # sessions, especially on SSH where shutil.get_terminal_size
                 # may return stale values.  _get_status_bar_fragments now reads
-                # width from prompt_toolkit's own output object, so fragments
-                # will always fit; wrap_lines=False is the belt-and-suspenders
-                # guard against any future width mismatch.
+                # width from prompt_toolkit's own output object and may use up
+                # to two explicit rows when the model name is long.
                 wrap_lines=False,
             ),
             filter=Condition(
