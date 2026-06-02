@@ -114,7 +114,7 @@ Hermes has two entry points: start the terminal UI with `hermes`, or run the gat
 | Set a personality              | `/personality [name]`                         | `/personality [name]`                                                            |
 | Retry or undo the last turn    | `/retry`, `/undo`                             | `/retry`, `/undo`                                                                |
 | Compress context / check usage | `/compress`, `/usage`, `/insights [--days N]` | `/compress`, `/usage`, `/insights [days]`                                        |
-| Provider day quota (Jatevo)    | `/jquota` (CLI; status bar `JV used/max` while chatting) | — (CLI-only; use `/usage` on messaging if Jatevo is active)                    |
+| Provider day quota (Jatevo)    | `/jquota` (CLI: requests 0/N, tokens today, cost today; status bar `JV used/max`) | — (CLI-only; use `/usage` on messaging if Jatevo is active)                    |
 | Venice DIEM / USD quota        | `/vquota` (CLI; status bar `VN …` = balance only, 90s cache) | — (CLI-only; `/usage` shows the same Venice lines when Venice is active)   |
 | Browse skills                  | `/skills` or `/<skill-name>`                  | `/<skill-name>`                                                                  |
 | Interrupt current work         | `Ctrl+C` or send a new message                | `/stop` or send a new message                                                    |

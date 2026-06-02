@@ -8853,6 +8853,11 @@ class HermesCLI:
             self._console_print(
                 f"    Resets {format_jatevo_reset(report.reset_at)}"
             )
+        from agent.jatevo_usage import render_jatevo_quota_lines
+
+        for line in render_jatevo_quota_lines(report, include_usage_stats=True):
+            if line.startswith(("Tokens today:", "Cost today:")):
+                self._console_print(f"    {line}")
         self._console_print(
             "    [dim]JTVO balance: dashboard only (no /v1 endpoint)[/]"
         )

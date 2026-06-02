@@ -7,7 +7,9 @@ Public API
 - ``detect_model_provider_incoherence`` — split-brain, vendor-slug, stale
   ``base_url`` host checks.
 - ``repair_model_provider_coherence`` — align config to auth (default) or the
-  inverse via ``prefer=``.
+  inverse via ``prefer=`` (doctor ``--fix`` uses ``auth_from_config``: root
+  config is canonical).
+- ``auth_store_for_coherence_check`` — root auth when a profile inherits model.
 
 Callers: ``hermes model`` flows via ``_commit_provider_model`` in ``main.py``,
 ``_update_config_for_provider`` in ``auth.py``, ``hermes doctor --fix``, setup
@@ -178,13 +180,31 @@ def persist_model_runtime(
         pass
 
     if sync_auth:
-        from hermes_cli.auth import _auth_store_lock, _load_auth_store, _save_auth_store
+        from hermes_cli.auth import sync_root_active_provider
 
         try:
-            with _auth_store_lock():
-                auth_store = _load_auth_store()
-                auth_store["active_provider"] = provider
-                _save_auth_store(auth_store)
+            sync_root_active_provider(provider)
+            try:
+                from hermes_cli.config import get_hermes_home
+                from hermes_cli.profile_model_inheritance import is_profile_hermes_home
+
+                if is_profile_hermes_home(get_hermes_home()):
+                    from hermes_cli.auth import (
+                        _auth_store_lock,
+                        _load_auth_store,
+                        _save_auth_store,
+                    )
+
+                    with _auth_store_lock():
+                        profile_store = _load_auth_store()
+                        if str(profile_store.get("active_provider") or "").strip() != provider:
+                            profile_store["active_provider"] = provider
+                            _save_auth_store(profile_store)
+            except Exception as profile_sync_exc:
+                logger.debug(
+                    "persist_model_runtime: profile auth active_provider sync skipped: %s",
+                    profile_sync_exc,
+                )
         except Exception as exc:
             logger.warning(
                 "persist_model_runtime: config saved but auth.json sync failed "
@@ -206,6 +226,35 @@ def persist_model_runtime(
     )
 
 
+def auth_store_for_coherence_check(
+    auth_store: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    """Auth store to compare against inherited root ``model.provider``.
+
+    In profile mode, ``HERMES_HOME`` auth may still say ``nous`` while root
+    config says ``jatevo`` — compare against root ``auth.json`` instead.
+    """
+    if auth_store is not None:
+        return auth_store
+    try:
+        from hermes_cli.auth import _load_auth_store, _load_global_auth_store
+        from hermes_cli.config import get_hermes_home
+        from hermes_cli.profile_model_inheritance import is_profile_hermes_home
+
+        if is_profile_hermes_home(get_hermes_home()):
+            global_store = _load_global_auth_store()
+            if str(global_store.get("active_provider") or "").strip():
+                return global_store
+    except Exception:
+        pass
+    try:
+        from hermes_cli.auth import _load_auth_store
+
+        return _load_auth_store()
+    except Exception:
+        return {}
+
+
 def detect_model_provider_incoherence(
     config: Optional[dict[str, Any]] = None,
     auth_store: Optional[dict[str, Any]] = None,
@@ -220,13 +269,7 @@ def detect_model_provider_incoherence(
             config = load_config()
         except Exception:
             config = {}
-    if auth_store is None:
-        try:
-            from hermes_cli.auth import _load_auth_store
-
-            auth_store = _load_auth_store()
-        except Exception:
-            auth_store = {}
+    auth_store = auth_store_for_coherence_check(auth_store)
 
     model_cfg = _model_section_from_config(config or {})
     cfg_provider = _normalize_provider_id(str(model_cfg.get("provider") or ""))

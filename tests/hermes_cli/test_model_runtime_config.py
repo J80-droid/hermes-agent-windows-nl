@@ -312,7 +312,7 @@ class TestPersistModelRuntimeNegative:
 
         original = (flat_home / "config.yaml").read_text(encoding="utf-8")
 
-        def _fail_save(_store):
+        def _fail_save(_store, auth_file=None):
             raise OSError("disk full")
 
         monkeypatch.setattr(

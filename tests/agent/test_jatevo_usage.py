@@ -72,6 +72,43 @@ def test_fetch_jatevo_quota_dashboard_fields(monkeypatch):
     assert "Daily quota: 562 requests/day" in lines
 
 
+def test_render_jatevo_quota_lines_includes_usage_stats_by_default(monkeypatch):
+    monkeypatch.setattr(
+        "agent.jatevo_usage.resolve_runtime_provider",
+        lambda requested, explicit_base_url=None, explicit_api_key=None: {
+            "base_url": "https://jatevo.ai/v1",
+            "api_key": "sk-clb-test",
+        },
+    )
+    monkeypatch.setattr(
+        "agent.jatevo_usage.httpx.Client",
+        lambda timeout=12.0: _Client(
+            {
+                "request_count": 12,
+                "total_tokens": 45000,
+                "total_cost_usd": 0.0832,
+                "limits": [
+                    {
+                        "limit_type": "requests",
+                        "limit_window": "daily",
+                        "max_value": 562,
+                        "current_value": 12,
+                        "remaining_value": 550,
+                        "reset_at": "2026-06-03T00:00:00Z",
+                    }
+                ],
+            }
+        ),
+    )
+    report = fetch_jatevo_quota(api_key="sk-clb-test")
+    stat_lines = render_jatevo_quota_lines(report)
+    assert "Tokens today: 45,000" in stat_lines
+    assert "Cost today: $0.0832" in stat_lines
+    assert "Tokens today" not in render_jatevo_quota_lines(
+        report, include_usage_stats=False
+    )
+
+
 def test_is_jatevo_runtime_detects_custom_with_jatevo_url():
     assert is_jatevo_runtime("custom", "https://jatevo.ai/v1")
     assert is_jatevo_runtime("custom", "https://2.lb.jatevo.ai/v1")

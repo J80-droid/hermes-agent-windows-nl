@@ -96,7 +96,7 @@ providers:
 | Persist key → runtime + legacy + actief profiel | `_persist_named_custom_api_key` |
 | Live `/v1/models` | `fetch_api_models` — **geen** hardcoded modellenlijst |
 | Env-sync dynamisch | `windows/scripts/collect_env_sync_keys.py` leest `api_key_env` uit root config |
-| Jatevo dagquota (optioneel) | `agent/jatevo_usage.py` — `GET /v1/usage`; `/jquota`; statusbalk `JV used/max`; `account_usage.fetch_account_usage` |
+| Jatevo dagquota (optioneel) | `agent/jatevo_usage.py` — `GET /v1/usage`; `/jquota` (requests + tokens + cost today); statusbalk `JV used/max`; `/usage` account snapshot |
 | Venice DIEM (optioneel) | `agent/venice_usage.py` — balance/rate_limits + `/vquota` (full) / `/usage` (account); `hermes_cli/venice_model_picker.py` — CLI setup + Telegram `vf:*` picker + typed `/model` OpenAI mapping; setup wizard schrijft `extra_body.venice_parameters` |
 
 Geen wijziging in `providers/` Python-packages nodig voor standaard OpenAI-compat endpoints. Quota-UI is **provider-specifiek** (Jatevo `/jquota`, Venice `/vquota`, Gemini `/gquota`).
@@ -130,4 +130,4 @@ Geen wijziging in `providers/` Python-packages nodig voor standaard OpenAI-compa
 
 ## Credits / dagquota (provider-specifiek)
 
-Hermes toont provider-quota waar geïntegreerd (bijv. `/gquota` voor Gemini). **Jatevo:** **`/jquota`**, statusbalk **`JV 0/562`**, `GET /v1/usage`. **Venice (DIEM):** statusbalk **`VN …`**; **`/vquota`** (full extended); **`/usage`** (account-scope); modelkeuze via **`hermes model`**, Telegram **`/model`** (`vf:*`), of typed `/model <openai-name> --provider venice`. **`venice_parameters`:** `providers.venice.extra_body` (ook via setup-wizard). Bij **429** → `/vquota`.
+Hermes toont provider-quota waar geïntegreerd (bijv. `/gquota` voor Gemini). **Jatevo:** **`/jquota`** (dagrequests 0/N, tokens today, cost today), statusbalk **`JV 0/562`**, `GET /v1/usage` (562 = requests/dag, geen dollars). **Venice (DIEM):** statusbalk **`VN …`**; **`/vquota`** (full extended); **`/usage`** (account-scope); modelkeuze via **`hermes model`**, Telegram **`/model`** (`vf:*`), of typed `/model <openai-name> --provider venice`. **`venice_parameters`:** `providers.venice.extra_body` (ook via setup-wizard). Bij **429** → `/vquota`.

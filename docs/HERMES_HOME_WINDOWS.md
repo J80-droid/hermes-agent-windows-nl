@@ -87,7 +87,8 @@ Symptoom: `auth.json` heeft `active_provider: nous` maar chat gebruikt nog **Gem
 
 - `persist_model_runtime()` — atomisch `model.provider`, `model.default`, `base_url` naar **root** + sync `auth.active_provider`
 - `detect_model_provider_incoherence()` — auth/config-mismatch, vendor-slug vs provider, stale host in `base_url`
-- `repair_model_provider_coherence()` — herstel (default: config volgt auth)
+- `repair_model_provider_coherence()` — herstel; `hermes doctor --fix` en `REPAIR_MODEL_PROVIDER.bat` gebruiken **`prefer=auth_from_config`** (root `config.yaml` is canoniek); profiel-modus vergelijkt tegen root `auth.json`
+- `sync_root_active_provider()` — `persist_model_runtime` synct altijd root `auth.json`, ook vanuit `hermes -p <profiel>`
 
 **Oorzaak (opgelost):** oude flows schreven alleen `model.default` vóór `model.provider`, naar profiel-yaml i.p.v. root, of wisten `active_provider` na persist via `deactivate_provider()`. Gebruik `hermes model` / setup; intern via `_commit_provider_model()`.
 
@@ -178,7 +179,7 @@ Legacy `providers.venice` / `providers.jatevo` worden gemerged via migratie-kete
 - **Typed `/model` (alle platforms):** `gpt-4o --provider venice` wordt via `compatibility_mapping` naar Venice-model-id vertaald.
 - Chat-opties in config: `providers.venice.extra_body.venice_parameters`. Bij **429** → hint naar `/vquota`.
 
-**Jatevo:** `hermes model` → key-stap → live `/v1/models`; base URL **`https://jatevo.ai/v1`**; **`/jquota`**, statusbalk **`JV 0/562`** (`GET /v1/usage`, 90s cache); **429** → `/jquota`. Code: `agent/jatevo_usage.py`.
+**Jatevo:** `hermes model` → key-stap → live `/v1/models`; base URL **`https://jatevo.ai/v1`**; **`/jquota`** (requests + tokens + cost today), statusbalk **`JV 0/562`** (`GET /v1/usage`, 90s cache); **429** → `/jquota`. Code: `agent/jatevo_usage.py`.
 
 ## Drift / diagnose
 

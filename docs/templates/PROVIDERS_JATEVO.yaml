@@ -11,4 +11,4 @@ providers:
     discover_models: true
 
 # Requires JATEVO_API_KEY in legacy ~/.hermes/.env (sync: windows/SYNC_HERMES_API_ENV.bat)
-# Quota in Hermes (agent/jatevo_usage.py): status bar JV used/max; /jquota; /usage; 429 → /jquota hint
+# Quota in Hermes (agent/jatevo_usage.py): status bar JV used/max; /jquota (requests + tokens + cost today); /usage; 429 → /jquota hint

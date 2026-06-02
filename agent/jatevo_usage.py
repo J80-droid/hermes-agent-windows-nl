@@ -1,4 +1,10 @@
-"""Jatevo account quota via ``GET /v1/usage`` (dashboard-style display)."""
+"""Jatevo account quota via ``GET /v1/usage`` (dashboard-style display).
+
+Hermes surfaces:
+- Status bar ``JV used/max`` (90s cache)
+- ``/jquota`` and ``/usage`` — daily requests, optional ``total_tokens`` / ``total_cost_usd`` today
+- HTTP 429 hint → ``/jquota`` + 00:00 UTC reset
+"""
 
 from __future__ import annotations
 
@@ -343,7 +349,7 @@ def render_jatevo_quota_lines(
     report: JatevoQuotaReport,
     *,
     markdown: bool = False,
-    include_usage_stats: bool = False,
+    include_usage_stats: bool = True,
 ) -> list[str]:
     """Lines matching jatevo.ai dashboard cards (daily requests + daily quota)."""
     bold = "**" if markdown else ""
@@ -355,7 +361,7 @@ def render_jatevo_quota_lines(
     if report.reset_at:
         lines.append(f"Resets {format_jatevo_reset(report.reset_at)} (00:00 UTC)")
     if include_usage_stats:
-        if report.total_tokens is not None and report.total_tokens > 0:
+        if report.total_tokens is not None:
             lines.append(f"Tokens today: {report.total_tokens:,}")
         if report.total_cost_usd is not None:
             lines.append(f"Cost today: ${report.total_cost_usd:.4f}")

@@ -1020,7 +1020,12 @@ def run_doctor(args):
                     repair_model_provider_coherence,
                 )
 
-                coherence_issues = detect_model_provider_incoherence(cfg)
+                from hermes_cli.model_runtime_config import auth_store_for_coherence_check
+
+                coherence_auth = auth_store_for_coherence_check()
+                coherence_issues = detect_model_provider_incoherence(
+                    cfg, auth_store=coherence_auth
+                )
                 for ci in coherence_issues:
                     if ci.severity == "error":
                         check_fail(
@@ -1034,7 +1039,10 @@ def run_doctor(args):
                         )
                     issues.append(ci.message)
                 if should_fix and coherence_issues:
-                    actions = repair_model_provider_coherence(issues=coherence_issues)
+                    actions = repair_model_provider_coherence(
+                        prefer="auth_from_config",
+                        issues=coherence_issues,
+                    )
                     for action in actions:
                         check_ok(action)
                     if actions:

@@ -112,7 +112,7 @@ Type `/` in the CLI to open the autocomplete menu. Built-in commands are case-in
 | `/debug` | Upload debug report (system info + logs) and get shareable links. Also available in messaging. |
 | `/profile` | Show active profile name and home directory |
 | `/gquota` | Show Google Gemini Code Assist quota usage with progress bars (only available when the `google-gemini-cli` provider is active). |
-| `/jquota` | Show Jatevo daily request quota in dashboard form (`0 / N` current key usage, daily cap, reset). CLI-only. Status bar shows compact `JV used/max` while Jatevo is active (`custom` + `jatevo.ai` base URL). Data from `GET {base_url}/usage`. |
+| `/jquota` | Show Jatevo daily request quota (`0 / N`), **tokens today**, **cost today**, reset, and JTVO dashboard hint. CLI-only. Status bar: `JV used/max`. Data from `GET {base_url}/usage`. |
 | `/vquota` | Venice DIEM/USD, epoch, 7d [usage-analytics](https://docs.venice.ai/api-reference/endpoint/billing/usage-analytics), recent [billing/usage](https://docs.venice.ai/api-reference/endpoint/billing/usage), [rate_limits/log](https://docs.venice.ai/api-reference/endpoint/api_keys/rate_limit_logs), [models/traits](https://docs.venice.ai/api-reference/endpoint/models/traits) + [compatibility_mapping](https://docs.venice.ai/api-reference/endpoint/models/compatibility_mapping). Extended calls run in parallel; partial HTTP failures appear as `Extended API:` lines. Status bar: `VN 90/100` or `VN 9.5 DIEM` (balance APIs only, 90s cache). |
 
 ### Exit

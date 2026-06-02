@@ -1064,6 +1064,27 @@ def _auth_store_lock(timeout_seconds: float = AUTH_LOCK_TIMEOUT_SECONDS):
         yield
 
 
+def sync_root_active_provider(provider_id: str) -> Path:
+    """Set ``active_provider`` on root ``auth.json`` (matches root ``config.yaml`` model).
+
+    ``persist_model_runtime`` always writes model config to the runtime root; auth
+    sync must target the same root store even when ``HERMES_HOME`` is a profile.
+    """
+    from hermes_constants import get_default_hermes_root
+
+    root_auth = get_default_hermes_root() / "auth.json"
+    root_lock = root_auth.with_suffix(".lock")
+    with _file_lock(
+        root_lock,
+        _auth_lock_holder,
+        AUTH_LOCK_TIMEOUT_SECONDS,
+        "Timed out waiting for root auth store lock",
+    ):
+        auth_store = _load_auth_store(root_auth)
+        auth_store["active_provider"] = str(provider_id or "").strip()
+        return _save_auth_store(auth_store, auth_file=root_auth)
+
+
 def _load_auth_store(auth_file: Optional[Path] = None) -> Dict[str, Any]:
     auth_file = auth_file or _auth_file_path()
     if not auth_file.exists():
@@ -1144,13 +1165,19 @@ def _load_auth_store(auth_file: Optional[Path] = None) -> Dict[str, Any]:
     return {"version": AUTH_STORE_VERSION, "providers": {}}
 
 
-def _save_auth_store(auth_store: Dict[str, Any]) -> Path:
+def _save_auth_store(
+    auth_store: Dict[str, Any],
+    auth_file: Optional[Path] = None,
+) -> Path:
     """Persist Hermes auth store atomically as UTF-8 JSON without BOM.
 
     Always use this helper (or ``persist_*_credentials``) for writes so
     ``read_auth_json`` / ``utf-8-sig`` reads stay compatible with external tools.
+
+    ``auth_file`` defaults to the process ``HERMES_HOME`` auth store; pass an
+    explicit path when syncing root ``auth.json`` from profile mode.
     """
-    auth_file = _auth_file_path()
+    auth_file = auth_file or _auth_file_path()
     auth_file.parent.mkdir(parents=True, exist_ok=True)
     # Tighten parent dir to 0o700 so siblings can't traverse to creds.
     # No-op on Windows (POSIX mode bits not enforced); ignore failures.
