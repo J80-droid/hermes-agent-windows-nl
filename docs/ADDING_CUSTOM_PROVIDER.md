@@ -97,8 +97,9 @@ providers:
 | Live `/v1/models` | `fetch_api_models` — **geen** hardcoded modellenlijst |
 | Env-sync dynamisch | `windows/scripts/collect_env_sync_keys.py` leest `api_key_env` uit root config |
 | Jatevo dagquota (optioneel) | `agent/jatevo_usage.py` — `GET /v1/usage`; `/jquota`; statusbalk `JV used/max`; `account_usage.fetch_account_usage` |
+| Venice DIEM (optioneel) | `agent/venice_usage.py` — balance/rate_limits + `/vquota`/`/usage` met [billing/usage](https://docs.venice.ai/api-reference/endpoint/billing/usage), [usage-analytics](https://docs.venice.ai/api-reference/endpoint/billing/usage-analytics), [rate_limits/log](https://docs.venice.ai/api-reference/endpoint/api_keys/rate_limit_logs), [models/traits](https://docs.venice.ai/api-reference/endpoint/models/traits), [compatibility_mapping](https://docs.venice.ai/api-reference/endpoint/models/compatibility_mapping); `extra_body.venice_parameters` in config |
 
-Geen wijziging in `providers/` Python-packages nodig voor standaard OpenAI-compat endpoints. Quota-UI is **provider-specifiek** (Jatevo ingebouwd; Gemini via `/gquota`).
+Geen wijziging in `providers/` Python-packages nodig voor standaard OpenAI-compat endpoints. Quota-UI is **provider-specifiek** (Jatevo `/jquota`, Venice `/vquota`, Gemini `/gquota`).
 
 ---
 
@@ -129,4 +130,4 @@ Geen wijziging in `providers/` Python-packages nodig voor standaard OpenAI-compa
 
 ## Credits / dagquota (provider-specifiek)
 
-Hermes toont provider-quota waar geïntegreerd (bijv. `/gquota` voor Gemini). **Jatevo:** tijdens chat **`/jquota`** (dashboard: `0 / 562` + dagquota); statusbalk **`JV 0/562`** (90s cache); **`/usage`** =zelfde kaarten; bij **429** automatische hint naar `/jquota` + reset 00:00 UTC. API: `GET {base_url}/usage` alleen; **JTVO balance** niet op `/v1` (dashboard). Overige endpoints: `GET /v1/models`, `POST /v1/chat/completions`, `POST /v1/responses`, `POST /backend-api/codex`.
+Hermes toont provider-quota waar geïntegreerd (bijv. `/gquota` voor Gemini). **Jatevo:** **`/jquota`**, statusbalk **`JV 0/562`**, `GET /v1/usage`. **Venice (DIEM):** **`/vquota`** en **`/usage`** — saldo via [billing/balance](https://docs.venice.ai/api-reference/endpoint/billing/balance) + [api_keys/rate_limits](https://docs.venice.ai/api-reference/endpoint/api_keys/rate_limits); plus [billing/usage](https://docs.venice.ai/api-reference/endpoint/billing/usage), [usage-analytics](https://docs.venice.ai/api-reference/endpoint/billing/usage-analytics) (beta), [rate_limits/log](https://docs.venice.ai/api-reference/endpoint/api_keys/rate_limit_logs), [models/traits](https://docs.venice.ai/api-reference/endpoint/models/traits), [compatibility_mapping](https://docs.venice.ai/api-reference/endpoint/models/compatibility_mapping). Statusbalk blijft snel (alleen balance). **`venice_parameters`:** `providers.venice.extra_body` in root config. Bij **429** → `/vquota`.

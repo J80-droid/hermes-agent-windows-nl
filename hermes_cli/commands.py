@@ -138,6 +138,12 @@ COMMAND_REGISTRY: list[CommandDef] = [
                cli_only=True),
     CommandDef("jquota", "Show Jatevo daily request quota (0/N, like dashboard)", "Info",
                cli_only=True),
+    CommandDef(
+        "vquota",
+        "Show Venice DIEM/USD, epoch, 7d usage, recent charges, and rate-limit logs",
+        "Info",
+        cli_only=True,
+    ),
 
     CommandDef("personality", "Set a predefined personality", "Configuration",
                args_hint="[name]"),

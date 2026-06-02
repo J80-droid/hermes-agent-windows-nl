@@ -113,6 +113,7 @@ Type `/` in the CLI to open the autocomplete menu. Built-in commands are case-in
 | `/profile` | Show active profile name and home directory |
 | `/gquota` | Show Google Gemini Code Assist quota usage with progress bars (only available when the `google-gemini-cli` provider is active). |
 | `/jquota` | Show Jatevo daily request quota in dashboard form (`0 / N` current key usage, daily cap, reset). CLI-only. Status bar shows compact `JV used/max` while Jatevo is active (`custom` + `jatevo.ai` base URL). Data from `GET {base_url}/usage`. |
+| `/vquota` | Venice DIEM/USD, epoch, 7d [usage-analytics](https://docs.venice.ai/api-reference/endpoint/billing/usage-analytics), recent [billing/usage](https://docs.venice.ai/api-reference/endpoint/billing/usage), [rate_limits/log](https://docs.venice.ai/api-reference/endpoint/api_keys/rate_limit_logs), [models/traits](https://docs.venice.ai/api-reference/endpoint/models/traits) + [compatibility_mapping](https://docs.venice.ai/api-reference/endpoint/models/compatibility_mapping). Extended calls run in parallel; partial HTTP failures appear as `Extended API:` lines. Status bar: `VN 90/100` or `VN 9.5 DIEM` (balance APIs only, 90s cache). |
 
 ### Exit
 
@@ -237,7 +238,7 @@ The messaging gateway supports the following built-in commands inside Telegram, 
 
 ## Notes
 
-- `/skin`, `/snapshot`, `/gquota`, `/jquota`, `/reload`, `/tools`, `/toolsets`, `/browser`, `/config`, `/cron`, `/skills`, `/platforms`, `/paste`, `/image`, `/statusbar`, `/cost`, `/plugins`, `/busy`, `/indicator`, `/redraw`, `/clear`, `/history`, `/save`, `/copy`, `/handoff`, and `/quit` are **CLI-only** commands.
+- `/skin`, `/snapshot`, `/gquota`, `/jquota`, `/vquota`, `/reload`, `/tools`, `/toolsets`, `/browser`, `/config`, `/cron`, `/skills`, `/platforms`, `/paste`, `/image`, `/statusbar`, `/cost`, `/plugins`, `/busy`, `/indicator`, `/redraw`, `/clear`, `/history`, `/save`, `/copy`, `/handoff`, and `/quit` are **CLI-only** commands.
 - `/verbose` is **CLI-only by default**, but can be enabled for messaging platforms by setting `display.tool_progress_command: true` in `config.yaml`. When enabled, it cycles the `display.tool_progress` mode and saves to config.
 - `/sethome`, `/update`, `/restart`, `/approve`, `/deny`, `/topic`, and `/commands` are **messaging-only** commands.
 - `/status`, `/background`, `/queue`, `/steer`, `/voice`, `/reload-mcp`, `/reload-skills`, `/rollback`, `/debug`, `/fast`, `/footer`, `/curator`, `/kanban`, `/sessions`, and `/yolo` work in **both** the CLI and the messaging gateway.

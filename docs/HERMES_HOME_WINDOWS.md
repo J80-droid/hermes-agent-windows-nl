@@ -168,7 +168,14 @@ Profiel-modus (`active_profile=core`) erft deze blokken automatisch van root via
 
 ## Venice, Jatevo + custom providers
 
-Legacy `providers.venice` / `providers.jatevo` worden gemerged via migratie-keten. API-keys: `SYNC_HERMES_API_ENV.bat` (incl. `VENICE_API_KEY`, `JATEVO_API_KEY`). Model picker toont custom providers zodra root config + runtime `.env` kloppen. Nieuwe provider toevoegen: [ADDING_CUSTOM_PROVIDER.md](ADDING_CUSTOM_PROVIDER.md). Jatevo: `hermes model` → **31** (key-stap: Keep/Replace/Clear) → live `/v1/models`; base URL **`https://jatevo.ai/v1`** (niet `api.jatevo.ai`); chat: `/model custom:jatevo:<model-id>`. **Dagquota tijdens chat:** statusbalk **`JV 0/562`** (zelfde als dashboard *current key usage*; `GET /v1/usage`, cache 90s); slash **`/jquota`**; **`/usage`** → Account limits; bij HTTP **429** hint naar `/jquota` (reset 00:00 UTC). Code: `agent/jatevo_usage.py`.
+Legacy `providers.venice` / `providers.jatevo` worden gemerged via migratie-keten. API-keys: `SYNC_HERMES_API_ENV.bat` (incl. `VENICE_API_KEY`, `JATEVO_API_KEY`). Model picker toont custom providers zodra root config + runtime `.env` kloppen. Nieuwe provider: [ADDING_CUSTOM_PROVIDER.md](ADDING_CUSTOM_PROVIDER.md).
+
+**Venice DIEM** (`agent/venice_usage.py`, template `docs/templates/PROVIDERS_VENICE.yaml`):
+- Statusbalk **`VN 90/100`** of **`VN 9.5 DIEM`** — alleen `GET /billing/balance` + `GET /api_keys/rate_limits` (90s cache).
+- **`/vquota`** en **`/usage`** — extended APIs parallel: [billing/usage](https://docs.venice.ai/api-reference/endpoint/billing/usage), [usage-analytics](https://docs.venice.ai/api-reference/endpoint/billing/usage-analytics) (beta), [rate_limits/log](https://docs.venice.ai/api-reference/endpoint/api_keys/rate_limit_logs), [models/traits](https://docs.venice.ai/api-reference/endpoint/models/traits), [compatibility_mapping](https://docs.venice.ai/api-reference/endpoint/models/compatibility_mapping). Bij gedeeltelijke HTTP-fouten: regels in `extended_errors`.
+- Chat-opties: `providers.venice.extra_body.venice_parameters` (web search, `character_slug`, …). Bij **429** → hint naar `/vquota`.
+
+**Jatevo:** `hermes model` → key-stap → live `/v1/models`; base URL **`https://jatevo.ai/v1`**; **`/jquota`**, statusbalk **`JV 0/562`** (`GET /v1/usage`, 90s cache); **429** → `/jquota`. Code: `agent/jatevo_usage.py`.
 
 ## Drift / diagnose
 

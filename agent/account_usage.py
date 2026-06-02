@@ -16,6 +16,12 @@ from agent.jatevo_usage import (
     is_jatevo_runtime,
     render_jatevo_quota_lines,
 )
+from agent.venice_usage import (
+    VeniceQuotaError,
+    fetch_venice_quota,
+    is_venice_runtime,
+    render_venice_quota_lines,
+)
 
 
 def _utc_now() -> datetime:
@@ -101,7 +107,9 @@ def render_account_usage_lines(snapshot: Optional[AccountUsageSnapshot], *, mark
         lines.append(f"Provider: {snapshot.provider} ({snapshot.plan})")
     else:
         lines.append(f"Provider: {snapshot.provider}")
-    if "jatevo" in snapshot.provider.lower() and snapshot.source == "usage_api":
+    if snapshot.source in {"usage_api", "venice_usage_api"} and (
+        "jatevo" in snapshot.provider.lower() or "venice" in snapshot.provider.lower()
+    ):
         for detail in snapshot.details:
             lines.append(detail)
         if snapshot.unavailable_reason:
@@ -246,6 +254,39 @@ def _fetch_anthropic_account_usage() -> Optional[AccountUsageSnapshot]:
     )
 
 
+def _fetch_venice_account_usage(
+    base_url: Optional[str],
+    api_key: Optional[str],
+    *,
+    provider_label: str = "venice",
+) -> Optional[AccountUsageSnapshot]:
+    """Venice DIEM/USD via ``agent.venice_usage`` (extended billing + model APIs)."""
+    try:
+        report = fetch_venice_quota(
+            base_url=base_url,
+            api_key=api_key,
+            requested_provider=provider_label,
+            include_extended=True,
+        )
+    except VeniceQuotaError as exc:
+        return AccountUsageSnapshot(
+            provider=provider_label,
+            source="venice_usage_api",
+            fetched_at=_utc_now(),
+            unavailable_reason=str(exc),
+        )
+    except Exception:
+        return None
+    detail_lines = render_venice_quota_lines(report, include_extended=True)[1:]
+    return AccountUsageSnapshot(
+        provider=provider_label,
+        source="venice_usage_api",
+        fetched_at=report.fetched_at,
+        windows=(),
+        details=tuple(detail_lines),
+    )
+
+
 def _fetch_jatevo_account_usage(
     base_url: Optional[str],
     api_key: Optional[str],
@@ -362,12 +403,17 @@ def fetch_account_usage(
     normalized = str(provider or "").strip().lower()
     if normalized in {"", "auto"}:
         return None
-    if normalized == "custom" and not is_jatevo_runtime(normalized, base_url):
+    if normalized == "custom" and not (
+        is_jatevo_runtime(normalized, base_url) or is_venice_runtime(normalized, base_url)
+    ):
         return None
     try:
         if is_jatevo_runtime(normalized, base_url):
             label = "jatevo" if normalized == "custom" else normalized
             return _fetch_jatevo_account_usage(base_url, api_key, provider_label=label)
+        if is_venice_runtime(normalized, base_url):
+            label = "venice" if normalized == "custom" else normalized
+            return _fetch_venice_account_usage(base_url, api_key, provider_label=label)
         if normalized == "openai-codex":
             return _fetch_codex_account_usage()
         if normalized == "anthropic":

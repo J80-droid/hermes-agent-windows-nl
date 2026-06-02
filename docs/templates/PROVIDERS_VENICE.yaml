@@ -6,5 +6,15 @@ providers:
     base_url: https://api.venice.ai/api/v1
     provider: custom
     api_key_env: VENICE_API_KEY
+    # Optional Venice chat features (merged into chat/completions body):
+    # extra_body:
+    #   venice_parameters:
+    #     enable_web_search: auto
+    #     character_slug: my-character
+    # Model suffixes also work: e.g. zai-org-glm-5-1:web
 
 # Requires VENICE_API_KEY in runtime .env (sync: windows/SYNC_HERMES_API_ENV.bat)
+# Quota UX (agent/venice_usage.py):
+#   Status bar VN … — billing/balance + api_keys/rate_limits only (fast, 90s cache)
+#   /vquota, /usage — above + parallel extended: billing/usage, billing/usage-analytics,
+#                     api_keys/rate_limits/log, models/traits, models/compatibility_mapping

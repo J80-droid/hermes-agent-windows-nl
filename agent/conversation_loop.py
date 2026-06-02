@@ -31,6 +31,7 @@ from agent.codex_responses_adapter import _summarize_user_message_for_log
 from agent.display import KawaiiSpinner
 from agent.error_classifier import FailoverReason, classify_api_error
 from agent.jatevo_usage import is_jatevo_runtime
+from agent.venice_usage import is_venice_runtime
 from agent.iteration_budget import IterationBudget
 from agent.memory_manager import build_memory_context_block
 from agent.message_sanitization import (
@@ -1477,12 +1478,15 @@ def run_conversation(
                     elif _resp_error_code == 504:
                         _failure_hint = f"upstream gateway timeout (504, {api_duration:.0f}s)"
                     elif _resp_error_code == 429:
-                        if is_jatevo_runtime(
-                            getattr(agent, "provider", None),
-                            getattr(agent, "base_url", None),
-                        ):
+                        _prov = getattr(agent, "provider", None)
+                        _bu = getattr(agent, "base_url", None)
+                        if is_jatevo_runtime(_prov, _bu):
                             _failure_hint = (
                                 "Jatevo dagquota op (429) — /jquota, reset 00:00 UTC"
+                            )
+                        elif is_venice_runtime(_prov, _bu):
+                            _failure_hint = (
+                                "Venice rate limit (429) — /vquota voor DIEM/USD"
                             )
                         else:
                             _failure_hint = f"rate limited by upstream provider (429)"

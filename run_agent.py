@@ -1789,8 +1789,12 @@ class AIAgent:
         base_url: Optional[str] = None,
     ) -> str:
         from agent.jatevo_usage import append_jatevo_429_hint_if_needed
+        from agent.venice_usage import append_venice_429_hint_if_needed
 
-        return append_jatevo_429_hint_if_needed(
+        summary = append_jatevo_429_hint_if_needed(
+            summary, error, provider=provider, base_url=base_url
+        )
+        return append_venice_429_hint_if_needed(
             summary, error, provider=provider, base_url=base_url
         )
 

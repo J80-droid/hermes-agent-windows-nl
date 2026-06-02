@@ -3739,21 +3739,34 @@ class HermesCLI:
 
         snapshot["jatevo_quota_label"] = None
         snapshot["jatevo_quota_percent"] = None
+        snapshot["venice_quota_label"] = None
+        snapshot["venice_quota_percent"] = None
         provider = getattr(agent, "provider", None) or getattr(self, "provider", None)
         base_url = getattr(agent, "base_url", None) or getattr(self, "base_url", None)
+        api_key = getattr(agent, "api_key", None) or getattr(self, "api_key", None)
+        cache_bucket = str(getattr(self, "session_id", "") or "cli")
         try:
             from agent.jatevo_usage import is_jatevo_runtime, resolve_status_bar_jatevo_quota
+            from agent.venice_usage import is_venice_runtime, resolve_status_bar_venice_quota
 
             if is_jatevo_runtime(provider, base_url):
-                api_key = getattr(agent, "api_key", None) or getattr(self, "api_key", None)
                 jatevo_quota = resolve_status_bar_jatevo_quota(
                     provider=provider,
                     base_url=base_url,
                     api_key=api_key,
-                    cache_bucket=str(getattr(self, "session_id", "") or "cli"),
+                    cache_bucket=cache_bucket,
                 )
                 if jatevo_quota:
                     snapshot["jatevo_quota_label"], snapshot["jatevo_quota_percent"] = jatevo_quota
+            elif is_venice_runtime(provider, base_url):
+                venice_quota = resolve_status_bar_venice_quota(
+                    provider=provider,
+                    base_url=base_url,
+                    api_key=api_key,
+                    cache_bucket=cache_bucket,
+                )
+                if venice_quota:
+                    snapshot["venice_quota_label"], snapshot["venice_quota_percent"] = venice_quota
         except Exception:
             pass
 
@@ -3866,6 +3879,33 @@ class HermesCLI:
         if not label:
             return
         percent = snapshot.get("jatevo_quota_percent")
+        frags.extend([
+            ("class:status-bar-dim", separator),
+            (self._status_bar_context_style(percent), label),
+        ])
+
+    def _append_status_bar_provider_quota_text_part(
+        self,
+        parts: list,
+        snapshot: Dict[str, Any],
+    ) -> None:
+        self._append_status_bar_jatevo_quota_text_part(parts, snapshot)
+        label = snapshot.get("venice_quota_label")
+        if label:
+            parts.append(label)
+
+    def _append_status_bar_provider_quota_fragments(
+        self,
+        frags: list,
+        snapshot: Dict[str, Any],
+        *,
+        separator: str = " │ ",
+    ) -> None:
+        self._append_status_bar_jatevo_quota_fragments(frags, snapshot, separator=separator)
+        label = snapshot.get("venice_quota_label")
+        if not label:
+            return
+        percent = snapshot.get("venice_quota_percent")
         frags.extend([
             ("class:status-bar-dim", separator),
             (self._status_bar_context_style(percent), label),
@@ -4116,6 +4156,8 @@ class HermesCLI:
                 text = f"⚕ {snapshot['model_short']}"
                 if snapshot.get("jatevo_quota_label"):
                     text += f" · {snapshot['jatevo_quota_label']}"
+                if snapshot.get("venice_quota_label"):
+                    text += f" · {snapshot['venice_quota_label']}"
                 text += f" · {duration_label}"
                 parts_narrow = []
                 self._append_pending_queue_status_part(parts_narrow)
@@ -4126,7 +4168,7 @@ class HermesCLI:
                 return self._trim_status_bar_text(text, width)
             if width < 76:
                 parts = [f"⚕ {snapshot['model_short']}"]
-                self._append_status_bar_jatevo_quota_text_part(parts, snapshot)
+                self._append_status_bar_provider_quota_text_part(parts, snapshot)
                 parts.append(percent_label)
                 compressions = snapshot.get("compressions", 0)
                 if compressions:
@@ -4153,7 +4195,7 @@ class HermesCLI:
 
             compressions = snapshot.get("compressions", 0)
             parts = [f"⚕ {snapshot['model_short']}"]
-            self._append_status_bar_jatevo_quota_text_part(parts, snapshot)
+            self._append_status_bar_provider_quota_text_part(parts, snapshot)
             parts.extend([context_label, percent_label])
             if compressions:
                 parts.append(f"🗜️ {compressions}")
@@ -4195,7 +4237,7 @@ class HermesCLI:
                     ("class:status-bar", " ⚕ "),
                     ("class:status-bar-strong", snapshot["model_short"]),
                 ]
-                self._append_status_bar_jatevo_quota_fragments(
+                self._append_status_bar_provider_quota_fragments(
                     frags, snapshot, separator=" · "
                 )
                 frags.extend([
@@ -4218,7 +4260,7 @@ class HermesCLI:
                         ("class:status-bar", " ⚕ "),
                         ("class:status-bar-strong", snapshot["model_short"]),
                     ]
-                    self._append_status_bar_jatevo_quota_fragments(
+                    self._append_status_bar_provider_quota_fragments(
                         frags, snapshot, separator=" · "
                     )
                     frags.extend([
@@ -4265,7 +4307,7 @@ class HermesCLI:
                         ("class:status-bar", " ⚕ "),
                         ("class:status-bar-strong", snapshot["model_short"]),
                     ]
-                    self._append_status_bar_jatevo_quota_fragments(
+                    self._append_status_bar_provider_quota_fragments(
                         frags, snapshot, separator=" │ "
                     )
                     frags.extend([
@@ -8816,6 +8858,113 @@ class HermesCLI:
         )
         self._console_print()
 
+    def _handle_vquota_command(self, cmd_original: str) -> None:
+        """Show Venice DIEM/USD, epoch, usage analytics, charges, and rate-limit logs."""
+        from agent.venice_usage import (
+            VeniceQuotaError,
+            fetch_venice_quota,
+            format_venice_local_timestamp,
+            format_venice_reset,
+        )
+
+        provider = getattr(self, "provider", None) or ""
+        base_url = getattr(self, "base_url", None)
+        api_key = getattr(self, "api_key", None)
+        try:
+            report = fetch_venice_quota(
+                base_url=base_url,
+                api_key=api_key,
+                requested_provider=provider or "venice",
+                include_extended=True,
+            )
+        except VeniceQuotaError as exc:
+            self._console_print(f"  [yellow]{exc}[/]")
+            self._console_print(
+                "  Use [bold]/model[/] → Venice, or set providers.venice + VENICE_API_KEY."
+            )
+            return
+        except Exception as exc:
+            self._console_print(f"  [red]Venice quota lookup failed:[/] {exc}")
+            return
+
+        self._console_print()
+        self._console_print("  [bold]Venice quota[/]  (venice.ai · DIEM)")
+        self._console_print()
+        if report.diem_epoch_allocation and report.diem_remaining is not None:
+            pct = max(0.0, min(1.0, report.diem_used_fraction))
+            width = 20
+            filled = int(round(pct * width))
+            bar = "▓" * filled + "░" * (width - filled)
+            self._console_print(
+                f"    {'DIEM epoch':40s}  {bar}  {int(pct * 100):3d}%"
+            )
+            used = report.diem_used or 0.0
+            self._console_print(
+                f"    {used:.2f} / {report.diem_epoch_allocation:.2f} used "
+                f"({report.diem_remaining:.2f} remaining)"
+            )
+        elif report.diem_remaining is not None:
+            self._console_print(
+                f"    DIEM balance: {report.diem_remaining:.4f}"
+            )
+            if not report.billing_available:
+                self._console_print(
+                    "    [dim]Epoch cap: /billing/balance needs admin API key "
+                    "(rate_limits shows balance only)[/]"
+                )
+        if report.usd_balance is not None:
+            self._console_print(f"    USD balance: ${report.usd_balance:.4f}")
+        if report.next_epoch_begins:
+            self._console_print(
+                f"    Next epoch {format_venice_reset(report.next_epoch_begins)}"
+            )
+        if report.analytics_lookback is not None:
+            self._console_print()
+            self._console_print(
+                f"    Usage ({report.analytics_lookback}): "
+                f"{(report.analytics_period_diem or 0):.4f} DIEM, "
+                f"${(report.analytics_period_usd or 0):.4f} USD  "
+                f"[dim](usage-analytics, beta)[/]"
+            )
+            for model_line in report.analytics_top_models:
+                self._console_print(f"      {model_line}")
+        if report.usage_entries:
+            self._console_print()
+            self._console_print("    Recent charges [dim](billing/usage, 7d)[/]")
+            for entry in report.usage_entries:
+                self._console_print(
+                    f"      {format_venice_local_timestamp(entry.timestamp)}  "
+                    f"{entry.sku}  {abs(entry.amount):.4f} {entry.currency}"
+                )
+        if report.rate_limit_logs:
+            self._console_print()
+            self._console_print("    Rate-limit hits [dim](api_keys/rate_limits/log)[/]")
+            for log in report.rate_limit_logs:
+                self._console_print(
+                    f"      {format_venice_local_timestamp(log.timestamp)}  "
+                    f"{log.model_id}  {log.rate_limit_type} ({log.rate_limit_tier})"
+                )
+        if report.extended_errors:
+            self._console_print()
+            for err in report.extended_errors:
+                self._console_print(f"    [dim]{err}[/]")
+        if report.model_traits:
+            self._console_print()
+            self._console_print("    Traits (text) [dim](models/traits)[/]")
+            for trait_line in report.model_traits:
+                self._console_print(f"      {trait_line}")
+        if report.compatibility_mappings:
+            self._console_print()
+            self._console_print("    OpenAI mapping [dim](models/compatibility_mapping)[/]")
+            for mapping in report.compatibility_mappings:
+                self._console_print(f"      {mapping}")
+        self._console_print()
+        self._console_print(
+            "    [dim]Docs: billing/balance · billing/usage · usage-analytics · "
+            "api_keys/rate_limits/log[/]"
+        )
+        self._console_print()
+
     def _handle_personality_command(self, cmd: str):
         """Handle the /personality command to set predefined personalities."""
         parts = cmd.split(maxsplit=1)
@@ -9425,6 +9574,8 @@ class HermesCLI:
             self._handle_gquota_command(cmd_original)
         elif canonical == "jquota":
             self._handle_jquota_command(cmd_original)
+        elif canonical == "vquota":
+            self._handle_vquota_command(cmd_original)
 
         elif canonical == "personality":
             # Use original case (handler lowercases the personality name itself)
