@@ -168,7 +168,7 @@ Profiel-modus (`active_profile=core`) erft deze blokken automatisch van root via
 
 ## Venice, Jatevo + custom providers
 
-Legacy `providers.venice` / `providers.jatevo` worden gemerged via migratie-keten. API-keys: `SYNC_HERMES_API_ENV.bat` (incl. `VENICE_API_KEY`, `JATEVO_API_KEY`). Model picker toont custom providers zodra root config + runtime `.env` kloppen. Jatevo: `hermes model` → **31** (key-stap: Keep/Replace/Clear) → live `/v1/models`; base URL **`https://jatevo.ai/v1`** (niet `api.jatevo.ai`); chat: `/model custom:jatevo:<model-id>`.
+Legacy `providers.venice` / `providers.jatevo` worden gemerged via migratie-keten. API-keys: `SYNC_HERMES_API_ENV.bat` (incl. `VENICE_API_KEY`, `JATEVO_API_KEY`). Model picker toont custom providers zodra root config + runtime `.env` kloppen. Nieuwe provider toevoegen: [ADDING_CUSTOM_PROVIDER.md](ADDING_CUSTOM_PROVIDER.md). Jatevo: `hermes model` → **31** (key-stap: Keep/Replace/Clear) → live `/v1/models`; base URL **`https://jatevo.ai/v1`** (niet `api.jatevo.ai`); chat: `/model custom:jatevo:<model-id>`. **Dagquota tijdens chat:** statusbalk **`JV 0/562`** (zelfde als dashboard *current key usage*; `GET /v1/usage`, cache 90s); slash **`/jquota`**; **`/usage`** → Account limits; bij HTTP **429** hint naar `/jquota` (reset 00:00 UTC). Code: `agent/jatevo_usage.py`.
 
 ## Drift / diagnose
 

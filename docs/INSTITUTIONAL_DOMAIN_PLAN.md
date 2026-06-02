@@ -1,7 +1,8 @@
 # Plan van aanpak — institutioneel domein (Niveau B)
 
 > **Doel:** gedetailleerd sjabloon om een **zwaar** Hermes-domeinprofiel toe te voegen op de Windows NL-fork — inclusief architectuur, trust, E2E-poorten en productie-gate.  
-> **Referentie-implementatie:** `legal` (2026-05). **Basislaag (Niveau A):** altijd eerst [DOMAIN_BLUEPRINT.md](DOMAIN_BLUEPRINT.md) stappen 1–12.
+> **Referentie-implementatie:** `legal` (2026-05). **Basislaag (Niveau A):** altijd eerst [DOMAIN_BLUEPRINT.md](DOMAIN_BLUEPRINT.md) stappen 1–12.  
+> **Alleen een LLM-provider (geen nieuw domein):** [ADDING_CUSTOM_PROVIDER.md](ADDING_CUSTOM_PROVIDER.md).
 
 ## Placeholders
 

@@ -10,7 +10,7 @@ Domein-profielen (`legal`, `core`, `academics`, …) gebruiken **dezelfde global
 | **`hermes model`** | schrijft naar root | Interactieve modelwijziging via `persist_model_runtime()` |
 | **`hermes config set model.*`** | schrijft naar root | CLI-key-value |
 | **Auxiliary preset** | `windows\APPLY_AUXILIARY_HYBRID_PRESET.bat` | Qwen lokaal + Gemini vision (root only) |
-| **Venice / Jatevo / custom providers** | root config + `SYNC_HERMES_API_ENV.bat` | Templates: `docs/templates/PROVIDERS_VENICE.yaml`, `docs/templates/PROVIDERS_JATEVO.yaml` |
+| **Venice / Jatevo / custom providers** | root config + `SYNC_HERMES_API_ENV.bat` | Checklist: [ADDING_CUSTOM_PROVIDER.md](ADDING_CUSTOM_PROVIDER.md) · templates: `PROVIDERS_VENICE.yaml`, `PROVIDERS_JATEVO.yaml` |
 | **Profiel** | `%LOCALAPPDATA%\hermes\profiles\<naam>\config.yaml` | **Geen** global blocks (alleen MCP, toolsets, agent) |
 
 Na wijziging van root config geldt het automatisch voor:

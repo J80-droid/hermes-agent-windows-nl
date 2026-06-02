@@ -3737,6 +3737,26 @@ class HermesCLI:
             snapshot["stream_tps"] = None
             snapshot["last_call_tps"] = None
 
+        snapshot["jatevo_quota_label"] = None
+        snapshot["jatevo_quota_percent"] = None
+        provider = getattr(agent, "provider", None) or getattr(self, "provider", None)
+        base_url = getattr(agent, "base_url", None) or getattr(self, "base_url", None)
+        try:
+            from agent.jatevo_usage import is_jatevo_runtime, resolve_status_bar_jatevo_quota
+
+            if is_jatevo_runtime(provider, base_url):
+                api_key = getattr(agent, "api_key", None) or getattr(self, "api_key", None)
+                jatevo_quota = resolve_status_bar_jatevo_quota(
+                    provider=provider,
+                    base_url=base_url,
+                    api_key=api_key,
+                    cache_bucket=str(getattr(self, "session_id", "") or "cli"),
+                )
+                if jatevo_quota:
+                    snapshot["jatevo_quota_label"], snapshot["jatevo_quota_percent"] = jatevo_quota
+        except Exception:
+            pass
+
         return snapshot
 
     def _status_bar_cost_format_width(self, terminal_width: int) -> int:
@@ -3825,6 +3845,31 @@ class HermesCLI:
         label = self._resolve_status_bar_throughput_label(snapshot, terminal_width)
         if label:
             parts.append(label)
+
+    def _append_status_bar_jatevo_quota_text_part(
+        self,
+        parts: list,
+        snapshot: Dict[str, Any],
+    ) -> None:
+        label = snapshot.get("jatevo_quota_label")
+        if label:
+            parts.append(label)
+
+    def _append_status_bar_jatevo_quota_fragments(
+        self,
+        frags: list,
+        snapshot: Dict[str, Any],
+        *,
+        separator: str = " │ ",
+    ) -> None:
+        label = snapshot.get("jatevo_quota_label")
+        if not label:
+            return
+        percent = snapshot.get("jatevo_quota_percent")
+        frags.extend([
+            ("class:status-bar-dim", separator),
+            (self._status_bar_context_style(percent), label),
+        ])
 
     def _reset_stream_tps_live(self) -> None:
         self._stream_tps_started_at = None
@@ -4068,7 +4113,10 @@ class HermesCLI:
 
             yolo_active = self._is_session_yolo_active()
             if width < 52:
-                text = f"⚕ {snapshot['model_short']} · {duration_label}"
+                text = f"⚕ {snapshot['model_short']}"
+                if snapshot.get("jatevo_quota_label"):
+                    text += f" · {snapshot['jatevo_quota_label']}"
+                text += f" · {duration_label}"
                 parts_narrow = []
                 self._append_pending_queue_status_part(parts_narrow)
                 if parts_narrow:
@@ -4078,6 +4126,7 @@ class HermesCLI:
                 return self._trim_status_bar_text(text, width)
             if width < 76:
                 parts = [f"⚕ {snapshot['model_short']}"]
+                self._append_status_bar_jatevo_quota_text_part(parts, snapshot)
                 parts.append(percent_label)
                 compressions = snapshot.get("compressions", 0)
                 if compressions:
@@ -4104,6 +4153,7 @@ class HermesCLI:
 
             compressions = snapshot.get("compressions", 0)
             parts = [f"⚕ {snapshot['model_short']}"]
+            self._append_status_bar_jatevo_quota_text_part(parts, snapshot)
             parts.extend([context_label, percent_label])
             if compressions:
                 parts.append(f"🗜️ {compressions}")
@@ -4144,9 +4194,14 @@ class HermesCLI:
                 frags = [
                     ("class:status-bar", " ⚕ "),
                     ("class:status-bar-strong", snapshot["model_short"]),
+                ]
+                self._append_status_bar_jatevo_quota_fragments(
+                    frags, snapshot, separator=" · "
+                )
+                frags.extend([
                     ("class:status-bar-dim", " · "),
                     ("class:status-bar-dim", duration_label),
-                ]
+                ])
                 self._append_pending_queue_status_fragments(frags, separator=" · ")
                 if yolo_active:
                     frags.append(("class:status-bar-dim", " · "))
@@ -4162,9 +4217,14 @@ class HermesCLI:
                     frags = [
                         ("class:status-bar", " ⚕ "),
                         ("class:status-bar-strong", snapshot["model_short"]),
+                    ]
+                    self._append_status_bar_jatevo_quota_fragments(
+                        frags, snapshot, separator=" · "
+                    )
+                    frags.extend([
                         ("class:status-bar-dim", " · "),
                         (self._status_bar_context_style(percent), percent_label),
-                    ]
+                    ])
                     if compressions:
                         frags.append(("class:status-bar-dim", " · "))
                         frags.append((self._compression_count_style(compressions), f"🗜️ {compressions}"))
@@ -4204,13 +4264,18 @@ class HermesCLI:
                     frags = [
                         ("class:status-bar", " ⚕ "),
                         ("class:status-bar-strong", snapshot["model_short"]),
+                    ]
+                    self._append_status_bar_jatevo_quota_fragments(
+                        frags, snapshot, separator=" │ "
+                    )
+                    frags.extend([
                         ("class:status-bar-dim", " │ "),
                         ("class:status-bar-dim", context_label),
                         ("class:status-bar-dim", " │ "),
                         (bar_style, self._build_context_bar(percent)),
                         ("class:status-bar-dim", " "),
                         (bar_style, percent_label),
-                    ]
+                    ])
                     if compressions:
                         frags.append(("class:status-bar-dim", " │ "))
                         frags.append((self._compression_count_style(compressions), f"🗜️ {compressions}"))
@@ -8700,6 +8765,57 @@ class HermesCLI:
             self._console_print(f"    {header:40s}  {bar}  {pct_str}")
         self._console_print()
 
+    def _handle_jquota_command(self, cmd_original: str) -> None:
+        """Show Jatevo daily request quota (dashboard-style) for the active API key."""
+        from agent.jatevo_usage import JatevoQuotaError, fetch_jatevo_quota
+
+        provider = getattr(self, "provider", None) or ""
+        base_url = getattr(self, "base_url", None)
+        api_key = getattr(self, "api_key", None)
+        try:
+            report = fetch_jatevo_quota(
+                base_url=base_url,
+                api_key=api_key,
+                requested_provider=provider or "jatevo",
+            )
+        except JatevoQuotaError as exc:
+            self._console_print(f"  [yellow]{exc}[/]")
+            self._console_print(
+                "  Use [bold]/model[/] → Jatevo, or set providers.jatevo + JATEVO_API_KEY."
+            )
+            return
+        except Exception as exc:
+            self._console_print(f"  [red]Jatevo quota lookup failed:[/] {exc}")
+            return
+
+        pct = max(0.0, min(1.0, report.used_fraction))
+        width = 20
+        filled = int(round(pct * width))
+        bar = "▓" * filled + "░" * (width - filled)
+        pct_str = f"{int(pct * 100):3d}%"
+        self._console_print()
+        self._console_print("  [bold]Jatevo quota[/]  (jatevo.ai/dashboard)")
+        self._console_print()
+        self._console_print(
+            f"    {'Daily requests':40s}  {bar}  {pct_str}"
+        )
+        self._console_print(
+            f"    {report.daily_used} / {report.daily_max}  [dim]current key usage[/]"
+        )
+        self._console_print(
+            f"    Daily quota: {report.daily_max} requests/day"
+        )
+        if report.reset_at:
+            from agent.jatevo_usage import format_jatevo_reset
+
+            self._console_print(
+                f"    Resets {format_jatevo_reset(report.reset_at)}"
+            )
+        self._console_print(
+            "    [dim]JTVO balance: dashboard only (no /v1 endpoint)[/]"
+        )
+        self._console_print()
+
     def _handle_personality_command(self, cmd: str):
         """Handle the /personality command to set predefined personalities."""
         parts = cmd.split(maxsplit=1)
@@ -9307,6 +9423,8 @@ class HermesCLI:
             self._handle_codex_runtime(cmd_original)
         elif canonical == "gquota":
             self._handle_gquota_command(cmd_original)
+        elif canonical == "jquota":
+            self._handle_jquota_command(cmd_original)
 
         elif canonical == "personality":
             # Use original case (handler lowercases the personality name itself)
@@ -12891,7 +13009,10 @@ class HermesCLI:
                     )
                 except Exception as exc:
                     logging.error("run_conversation raised: %s", exc, exc_info=True)
-                    _summary = getattr(self.agent, '_summarize_api_error', lambda e: str(e)[:300])(exc)
+                    _summarize = getattr(
+                        self.agent, "summarize_api_error", None
+                    ) or getattr(self.agent, "_summarize_api_error", None)
+                    _summary = (_summarize(exc) if _summarize else str(exc)[:300])
                     result = {
                         "final_response": f"Error: {_summary}",
                         "messages": [],

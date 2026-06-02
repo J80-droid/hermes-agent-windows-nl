@@ -9,6 +9,8 @@
 | **A — Standaard** | Nieuw domein met SOUL, toolsets, RAG, routing; weinig subdomeinen; geen zaakdossiers | **Dit document** (stappen 1–12) |
 | **B — Institutioneel** | Lenzen + taxonomie, actieve zaken, trust-lagen, dedicated E2E, productie-poort (zoals `legal`) | **[INSTITUTIONAL_DOMAIN_PLAN.md](INSTITUTIONAL_DOMAIN_PLAN.md)** — na stap 12 van Niveau A |
 
+**Parallel (geen domein, wel LLM-provider):** [ADDING_CUSTOM_PROVIDER.md](ADDING_CUSTOM_PROVIDER.md) — Venice/Jatevo/eigen OpenAI-endpoint in root `config.yaml`.
+
 **Referentie Niveau B:** `legal` — architectuur, taxonomie, trust, vier E2E-ketens, [LEGAL_PRODUCTION_GATE.md](LEGAL_PRODUCTION_GATE.md).
 
 ```mermaid

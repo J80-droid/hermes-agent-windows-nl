@@ -421,6 +421,7 @@ TIPS = [
     '/commands paginates the full slash-command + installed-skill list — useful on platforms without tab completion.',
     '/toolsets lists every available toolset so you know what -t/--toolsets accepts.',
     '/gquota shows Google Gemini Code Assist quota usage with progress bars when that provider is active.',
+    '/jquota shows Jatevo daily requests (0/N) and daily quota like jatevo.ai/dashboard — use while chatting on Jatevo.',
     '/voice tts toggles TTS-only mode — agent replies out loud but you still type your prompts.',
     '/reload-skills re-scans ~/.hermes/skills/ so drop-in skills appear without restarting the session.',
     '/indicator kaomoji|emoji|unicode|ascii picks the TUI busy-indicator style shown during agent runs.',

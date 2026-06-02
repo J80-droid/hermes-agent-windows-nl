@@ -143,7 +143,7 @@ def log_stream_retry(
     """
     try:
         try:
-            _summary = agent._summarize_api_error(error)
+            _summary = agent.summarize_api_error(error)
         except Exception:
             _summary = str(error)
         if _summary and len(_summary) > 240:

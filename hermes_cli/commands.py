@@ -136,6 +136,8 @@ COMMAND_REGISTRY: list[CommandDef] = [
                args_hint="[auto|codex_app_server]"),
     CommandDef("gquota", "Show Google Gemini Code Assist quota usage", "Info",
                cli_only=True),
+    CommandDef("jquota", "Show Jatevo daily request quota (0/N, like dashboard)", "Info",
+               cli_only=True),
 
     CommandDef("personality", "Set a predefined personality", "Configuration",
                args_hint="[name]"),

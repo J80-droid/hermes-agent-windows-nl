@@ -955,7 +955,7 @@ class AIAgent:
     def _emit_auxiliary_failure(self, task: str, exc: BaseException) -> None:
         """Surface a compact warning for failed auxiliary work."""
         try:
-            detail = self._summarize_api_error(exc)
+            detail = self.summarize_api_error(exc)
         except Exception:
             detail = str(exc)
         detail = (detail or exc.__class__.__name__).strip()
@@ -1718,7 +1718,12 @@ class AIAgent:
         return f"{detail}{hint}"
 
     @staticmethod
-    def _summarize_api_error(error: Exception) -> str:
+    def _summarize_api_error(
+        error: Exception,
+        *,
+        provider: Optional[str] = None,
+        base_url: Optional[str] = None,
+    ) -> str:
         """Extract a human-readable one-liner from an API error.
 
         Handles Cloudflare HTML error pages (502, 503, etc.) by pulling the
@@ -1731,7 +1736,10 @@ class AIAgent:
             isinstance(error, ValueError)
             and "expected ident at line" in raw.lower()
         ):
-            return f"Malformed provider streaming response: {raw[:300]}"
+            summary = f"Malformed provider streaming response: {raw[:300]}"
+            return AIAgent._decorate_jatevo_quota_error(
+                summary, error, provider=provider, base_url=base_url
+            )
 
         # Cloudflare / proxy HTML pages: grab the <title> for a clean summary
         if "<!DOCTYPE" in raw or "<html" in raw:
@@ -1747,7 +1755,10 @@ class AIAgent:
             parts.append(title)
             if ray_id:
                 parts.append(f"Ray {ray_id}")
-            return " — ".join(parts)
+            summary = " — ".join(parts)
+            return AIAgent._decorate_jatevo_quota_error(
+                summary, error, provider=provider, base_url=base_url
+            )
 
         # JSON body errors from OpenAI/Anthropic SDKs
         body = getattr(error, "body", None)
@@ -1756,12 +1767,40 @@ class AIAgent:
             if msg:
                 status_code = getattr(error, "status_code", None)
                 prefix = f"HTTP {status_code}: " if status_code else ""
-                return AIAgent._decorate_xai_entitlement_error(f"{prefix}{msg[:300]}")
+                summary = AIAgent._decorate_xai_entitlement_error(f"{prefix}{msg[:300]}")
+                return AIAgent._decorate_jatevo_quota_error(
+                    summary, error, provider=provider, base_url=base_url
+                )
 
         # Fallback: truncate the raw string but give more room than 200 chars
         status_code = getattr(error, "status_code", None)
         prefix = f"HTTP {status_code}: " if status_code else ""
-        return AIAgent._decorate_xai_entitlement_error(f"{prefix}{raw[:500]}")
+        summary = AIAgent._decorate_xai_entitlement_error(f"{prefix}{raw[:500]}")
+        return AIAgent._decorate_jatevo_quota_error(
+            summary, error, provider=provider, base_url=base_url
+        )
+
+    @staticmethod
+    def _decorate_jatevo_quota_error(
+        summary: str,
+        error: Exception,
+        *,
+        provider: Optional[str] = None,
+        base_url: Optional[str] = None,
+    ) -> str:
+        from agent.jatevo_usage import append_jatevo_429_hint_if_needed
+
+        return append_jatevo_429_hint_if_needed(
+            summary, error, provider=provider, base_url=base_url
+        )
+
+    def summarize_api_error(self, error: Exception) -> str:
+        """Instance wrapper — passes agent provider/base_url for Jatevo 429 hints."""
+        return self._summarize_api_error(
+            error,
+            provider=getattr(self, "provider", None),
+            base_url=getattr(self, "base_url", None),
+        )
 
     def _mask_api_key_for_logs(self, key: Any) -> Optional[str]:
         # Azure Foundry Entra ID bearer providers are callables — never

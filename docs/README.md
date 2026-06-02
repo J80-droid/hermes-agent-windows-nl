@@ -18,7 +18,8 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | OpenRouter Pareto Code router | `windows/audits/RUN_PARETO_E2E.bat` · `RUN_AUDITS.bat -IncludeParetoE2E` — rapport lokaal: `PARETO_E2E_REPORT_*.md` (gitignored) |
 | Toolsets per domein (minimaal + opt-in) | [DOMAIN_TOOLSET_AUDIT.md](DOMAIN_TOOLSET_AUDIT.md) — sync: `windows/SYNC_DOMAIN_TOOLSETS.bat` |
 | Model/provider voor **alle** profielen instellen | [PROFILE_MODEL_INHERITANCE.md](PROFILE_MODEL_INHERITANCE.md) |
-| Venice / Jatevo custom provider (templates) | [templates/PROVIDERS_VENICE.yaml](templates/PROVIDERS_VENICE.yaml), [templates/PROVIDERS_JATEVO.yaml](templates/PROVIDERS_JATEVO.yaml) |
+| Venice / Jatevo custom provider (templates) | [ADDING_CUSTOM_PROVIDER.md](ADDING_CUSTOM_PROVIDER.md) · [templates/PROVIDERS_VENICE.yaml](templates/PROVIDERS_VENICE.yaml), [templates/PROVIDERS_JATEVO.yaml](templates/PROVIDERS_JATEVO.yaml) |
+| Jatevo dagquota tijdens chat (`JV 0/N`, `/jquota`) | [ADDING_CUSTOM_PROVIDER.md](ADDING_CUSTOM_PROVIDER.md) § Credits · [HERMES_HOME_WINDOWS.md](HERMES_HOME_WINDOWS.md) § Venice/Jatevo |
 | Profiel wisselen (chat, CLI, audit) | [PROFILE_SWITCH.md](PROFILE_SWITCH.md) |
 | SOUL.md per domeinprofiel (waar, bewerken) | [PROFILE_SOUL.md](PROFILE_SOUL.md) |
 | SOUL governance (zekerheid %, 1/N, tools) | [SOUL_GOVERNANCE.md](SOUL_GOVERNANCE.md) |
@@ -52,6 +53,7 @@ Centrale index. Begin hier als je RAG, profielen of configuratie wilt begrijpen.
 | **Windows split-home (config, drift, migratie)** | [HERMES_HOME_WINDOWS.md](HERMES_HOME_WINDOWS.md) · E2E: `RUN_HERMES_HOME_E2E.bat`, `RUN_ROOT_CONFIG_INHERITANCE_E2E.bat`, `audits/RUN_MODEL_PROVIDER_COHERENCE_E2E.bat`, `audits/RUN_MODEL_PROVIDER_HARDENING_E2E.bat` · repair: `windows/REPAIR_MODEL_PROVIDER.bat` · migratie: `windows/APPLY_HERMES_HOME_MIGRATION.bat` |
 | Blauwdruk: nieuw domein (Niveau A) | [DOMAIN_BLUEPRINT.md](DOMAIN_BLUEPRINT.md) |
 | Plan: institutioneel domein (Niveau B, legal-model) | [INSTITUTIONAL_DOMAIN_PLAN.md](INSTITUTIONAL_DOMAIN_PLAN.md) |
+| Checklist: custom inference-provider (Venice, Jatevo, …) | [ADDING_CUSTOM_PROVIDER.md](ADDING_CUSTOM_PROVIDER.md) |
 | Presentatie / Rich renderer (10/10) | [INSTITUTIONAL_PRESENTATION.md](INSTITUTIONAL_PRESENTATION.md), porting [INSTITUTIONAL_PORTING_GUIDE.md](INSTITUTIONAL_PORTING_GUIDE.md), rooktest [templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md](templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md) |
 | Pipeline hardening E2E (normalize → render → score) | `audits/RUN_INSTITUTIONAL_PIPELINE_E2E.bat` · [audits/INSTITUTIONAL_PIPELINE_E2E_README.md](../audits/INSTITUTIONAL_PIPELINE_E2E_README.md) · unit: `pytest tests/audits/test_institutional_pipeline_e2e_harness.py tests/hermes_cli/test_institutional_render_helpers.py -q` |
 | Voortgang / checklist | [../memory-bank/progress.md](../memory-bank/progress.md) |

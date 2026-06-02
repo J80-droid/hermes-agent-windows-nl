@@ -201,3 +201,101 @@ def test_fetch_account_usage_openrouter_omits_quota_window_when_key_has_no_limit
     assert snapshot.windows == ()
     assert "Credits balance: $74.50" in snapshot.details
     assert "API key usage: $25.50 total • $1.25 today • $4.50 this week • $18.00 this month" in snapshot.details
+
+
+def test_fetch_account_usage_jatevo_daily_and_upstream(monkeypatch):
+    monkeypatch.setattr(
+        "agent.jatevo_usage.resolve_runtime_provider",
+        lambda requested, explicit_base_url=None, explicit_api_key=None: {
+            "provider": "custom",
+            "base_url": "https://jatevo.ai/v1",
+            "api_key": "sk-clb-test",
+        },
+    )
+    monkeypatch.setattr(
+        "agent.jatevo_usage.httpx.Client",
+        lambda timeout=12.0: _Client(
+            {
+                "request_count": 5,
+                "total_tokens": 101,
+                "total_cost_usd": 0.001102,
+                "limits": [
+                    {
+                        "limit_type": "requests",
+                        "limit_window": "daily",
+                        "max_value": 562,
+                        "current_value": 0,
+                        "remaining_value": 562,
+                        "reset_at": "2026-06-03T00:00:00Z",
+                        "source": "api_key_limit",
+                    }
+                ],
+                "upstream_limits": [
+                    {
+                        "limit_type": "credits",
+                        "limit_window": "5h",
+                        "max_value": 1500,
+                        "current_value": 15,
+                        "remaining_value": 1485,
+                        "reset_at": "2026-06-02T01:09:33Z",
+                        "source": "aggregate",
+                    }
+                ],
+            }
+        ),
+    )
+
+    snapshot = fetch_account_usage(
+        "custom",
+        base_url="https://jatevo.ai/v1",
+        api_key="sk-clb-test",
+    )
+
+    assert snapshot is not None
+    assert snapshot.provider == "jatevo"
+    assert snapshot.windows == ()
+    lines = render_account_usage_lines(snapshot)
+    assert "Daily requests: 0 / 562 (current key usage)" in lines
+    assert "Daily quota: 562 requests/day" in lines
+    assert "Cost today: $0.0011" in lines
+
+
+def test_fetch_account_usage_jatevo_via_custom_provider_name(monkeypatch):
+    monkeypatch.setattr(
+        "agent.jatevo_usage.resolve_runtime_provider",
+        lambda requested, explicit_base_url=None, explicit_api_key=None: {
+            "base_url": "https://jatevo.ai/v1",
+            "api_key": "sk-clb-test",
+        },
+    )
+    captured = {}
+
+    class _CapturingClient(_Client):
+        def get(self, url, headers=None):
+            captured["url"] = url
+            return super().get(url, headers=headers)
+
+    monkeypatch.setattr(
+        "agent.jatevo_usage.httpx.Client",
+        lambda timeout=12.0: _CapturingClient(
+            {
+                "limits": [
+                    {
+                        "limit_type": "requests",
+                        "limit_window": "daily",
+                        "max_value": 100,
+                        "remaining_value": 80,
+                        "reset_at": "2026-06-03T00:00:00Z",
+                    }
+                ],
+            }
+        ),
+    )
+
+    snapshot = fetch_account_usage("custom:jatevo")
+
+    assert captured["url"] == "https://jatevo.ai/v1/usage"
+    assert snapshot is not None
+    assert snapshot.provider == "custom:jatevo"
+    lines = render_account_usage_lines(snapshot)
+    assert any("Daily requests: 20 / 100" in line for line in lines)
