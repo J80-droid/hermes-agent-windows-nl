@@ -294,7 +294,7 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
 
   const resumeById = useCallback(
     (id: string) => {
-      patchOverlayState({ picker: false })
+      patchOverlayState({ sessions: false })
       patchUiState({ status: 'resuming…' })
 
       rpc<SetupStatusResponse>('setup.status', {}).then(setup => {
