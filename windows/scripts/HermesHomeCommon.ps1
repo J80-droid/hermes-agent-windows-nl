@@ -476,6 +476,29 @@ function Test-HermesVeniceProviderConfigured {
     return $false
 }
 
+function Test-HermesJatevoProviderConfigured {
+    param([switch]$Quiet)
+    $runtimeCfg = Get-HermesCanonicalConfigPath
+    if (-not (Test-Path -LiteralPath $runtimeCfg)) { return $true }
+    $raw = Get-Content -LiteralPath $runtimeCfg -Raw -Encoding UTF8
+    if ($raw -match '(?m)^\s+jatevo:') { return $true }
+    $legacyRoot = Get-HermesLegacyRoot
+    $best = $null
+    $bestSize = 0
+    foreach ($pat in @('config.yaml.bak.*', 'config.yaml.deprecated-*')) {
+        foreach ($f in Get-ChildItem -LiteralPath $legacyRoot -Filter $pat -File -ErrorAction SilentlyContinue) {
+            if ($f.Length -gt $bestSize) { $bestSize = $f.Length; $best = $f.FullName }
+        }
+    }
+    if (-not $best) { return $true }
+    $legacyRaw = Get-Content -LiteralPath $best -Raw -Encoding UTF8
+    if ($legacyRaw -notmatch '(?m)^providers:\s*\r?\n\s+jatevo:') { return $true }
+    if (-not $Quiet) {
+        Write-HermesWarn 'Jatevo provider ontbreekt in runtime config - run merge_legacy_providers_config.py'
+    }
+    return $false
+}
+
 function Initialize-UserHermesHomeRoot {
     param(
         [switch]$FixUserEnv,

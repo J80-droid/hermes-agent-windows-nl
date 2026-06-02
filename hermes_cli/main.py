@@ -201,6 +201,7 @@ if _try_termux_ultrafast_version():
     raise SystemExit(0)
 
 import argparse
+import getpass
 import json
 import shutil
 import subprocess
@@ -4556,12 +4557,162 @@ def _remove_custom_provider(config):
     print(f'✅ Removed "{removed_name}" from custom providers.')
 
 
-def _model_flow_named_custom(config, provider_info):
-    """Handle a named custom provider from config.yaml custom_providers list.
+def _named_custom_runtime_env_path() -> Path:
+    """Root runtime ``.env`` (not the active profile subdir)."""
+    from hermes_constants import get_default_hermes_root
 
-    Always probes the endpoint's /models API to let the user pick a model.
-    If a model was previously saved, it is pre-selected in the menu.
-    Falls back to the saved model if probing fails.
+    return get_default_hermes_root() / ".env"
+
+
+def _persist_named_custom_api_key(key_env: str, value: str) -> None:
+    """Write API key to root runtime, legacy hub, and active profile when needed."""
+    from hermes_cli.config import get_env_path, save_env_value
+
+    runtime_env = _named_custom_runtime_env_path()
+    legacy_env = Path.home() / ".hermes" / ".env"
+    profile_env = get_env_path()
+
+    runtime_env.parent.mkdir(parents=True, exist_ok=True)
+    save_env_value(key_env, value, env_path=runtime_env)
+
+    for extra in (legacy_env, profile_env):
+        try:
+            if extra.resolve() == runtime_env.resolve():
+                continue
+        except OSError:
+            continue
+        if extra.parent.exists():
+            save_env_value(key_env, value, env_path=extra)
+
+
+def _read_env_key_from_file(env_path: Path, key_env: str) -> str:
+    """Read a single key from an on-disk ``.env`` (bypasses ``os.environ`` shadowing)."""
+    if not env_path.is_file():
+        return ""
+    prefix = f"{key_env}="
+    try:
+        for line in env_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            stripped = line.strip()
+            if stripped.startswith(prefix):
+                return stripped[len(prefix) :].strip().strip('"').strip("'")
+    except OSError:
+        return ""
+    return ""
+
+
+def _env_key_length(key_env: str) -> int:
+    from hermes_cli.config import get_env_value
+
+    return len(str(get_env_value(key_env) or "").strip())
+
+
+def _prompt_named_custom_api_key(
+    provider_info: dict, existing_key: str = ""
+) -> tuple[str, bool]:
+    """Always configure ``key_env`` after picking a named custom provider."""
+    from hermes_cli.config import get_env_path, get_env_value
+    from hermes_cli.secret_prompt import masked_secret_prompt
+
+    key_env = str(provider_info.get("key_env") or "").strip()
+    name = str(
+        provider_info.get("name") or provider_info.get("provider_key") or "custom"
+    ).strip()
+    if not key_env:
+        return str(existing_key or provider_info.get("api_key") or "").strip(), False
+
+    resolved = str(
+        existing_key
+        or provider_info.get("api_key")
+        or get_env_value(key_env)
+        or os.environ.get(key_env)
+        or ""
+    ).strip()
+
+    def _read_new_key() -> str:
+        print(f"Paste {name} API key ({key_env}, input is masked).")
+        if os.name == "nt":
+            print("  Windows: right-click to paste if Ctrl+V does nothing.")
+        print()
+        try:
+            entered = masked_secret_prompt(f"{key_env}: ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print()
+            return ""
+        if len(entered) < 8:
+            print("  Key looks too short — visible paste fallback:")
+            try:
+                entered = getpass.getpass(f"{key_env}: ").strip()
+            except (KeyboardInterrupt, EOFError):
+                print()
+                return ""
+        return entered
+
+    def _commit_key(value: str) -> str:
+        _persist_named_custom_api_key(key_env, value)
+        os.environ[key_env] = value
+        runtime_env = _named_custom_runtime_env_path()
+        legacy_env = Path.home() / ".hermes" / ".env"
+        profile_env = get_env_path()
+        persisted_len = len(_read_env_key_from_file(runtime_env, key_env))
+        if value and persisted_len < 8:
+            print(
+                f"  Warning: {key_env} was not written to {runtime_env} — "
+                "check permissions or managed-mode restrictions."
+            )
+        elif value:
+            seen: set[str] = set()
+            locations: list[str] = []
+            for path in (runtime_env, legacy_env, profile_env):
+                key = str(path)
+                if key in seen:
+                    continue
+                seen.add(key)
+                locations.append(key)
+            print(f"API key saved ({', '.join(locations)}).")
+        else:
+            print(f"API key cleared ({key_env}).")
+        print()
+        return value
+
+    if len(resolved) >= 8:
+        preview = f"{resolved[:8]}..."
+        print(f"  {name} API key ({key_env}): {preview}")
+        try:
+            choice = input("  [K]eep / [R]eplace / [C]lear (default K): ").strip().lower()
+        except (KeyboardInterrupt, EOFError):
+            print()
+            return resolved, False
+        if choice.startswith("r"):
+            entered = _read_new_key()
+            if not entered:
+                print("Cancelled.")
+                return "", True
+            return _commit_key(entered), False
+        if choice.startswith("c"):
+            _persist_named_custom_api_key(key_env, "")
+            os.environ.pop(key_env, None)
+            entered = _read_new_key()
+            if not entered:
+                print("Cancelled.")
+                return "", True
+            return _commit_key(entered), False
+        return resolved, False
+
+    print(f"No {name} API key configured ({key_env}).")
+    entered = _read_new_key()
+    if not entered:
+        print("Cancelled.")
+        return "", True
+    return _commit_key(entered), False
+
+
+def _model_flow_named_custom(config, provider_info):
+    """Handle a named custom provider from config.yaml ``providers`` / ``custom_providers``.
+
+    Flow: show provider → prompt for ``key_env`` (Keep/Replace/Clear) → live
+    ``GET /v1/models`` → pick model. No hardcoded model list in config.
+    Keys persist to root runtime ``.env``, legacy ``~/.hermes/.env``, and the
+    active profile ``.env`` when split-home / ``hermes -p`` applies.
     """
     from hermes_cli.auth import _save_model_choice, deactivate_provider
     from hermes_cli.config import load_config, save_config
@@ -4575,22 +4726,41 @@ def _model_flow_named_custom(config, provider_info):
     saved_model = provider_info.get("model", "")
     provider_key = (provider_info.get("provider_key") or "").strip()
 
-    # Resolve key from env var if api_key not set directly
-    if not api_key and key_env:
-        api_key = os.environ.get(key_env, "")
-    config_api_key = _custom_provider_api_key_config_value(provider_info, api_key)
-
     print(f"  Provider: {name}")
     print(f"  URL:      {base_url}")
     if saved_model:
         print(f"  Current:  {saved_model}")
     print()
 
+    # API key step immediately after provider selection (before /v1/models).
+    if not api_key and key_env:
+        api_key = os.environ.get(key_env, "")
+    api_key, abort = _prompt_named_custom_api_key(provider_info, api_key)
+    if abort:
+        return
+    config_api_key = _custom_provider_api_key_config_value(provider_info, api_key)
+
+    if key_env and len(str(api_key or "").strip()) < 8:
+        print(f"  {key_env} is required for live model discovery. Cancelled.")
+        return
+
     print("Fetching available models...")
     fetch_kwargs = {"timeout": 8.0}
     if api_mode:
         fetch_kwargs["api_mode"] = api_mode
     models = fetch_api_models(api_key, base_url, **fetch_kwargs)
+    if not models:
+        from hermes_cli.models import probe_api_models
+
+        probe = probe_api_models(api_key, base_url, timeout=fetch_kwargs.get("timeout", 8.0))
+        probed = probe.get("probed_url") or f"{base_url.rstrip('/')}/models"
+        print(f"  Live probe failed ({probed}).")
+        print(
+            "  If the key is new: confirm sk-clb-... at jatevo.ai/dashboard. "
+            "HTTP 401 on api.jatevo.ai often means wrong base_url — use https://jatevo.ai/v1 "
+            "in providers.jatevo (see docs/templates/PROVIDERS_JATEVO.yaml)."
+        )
+        print()
 
     if models:
         default_idx = 0
@@ -4643,6 +4813,7 @@ def _model_flow_named_custom(config, provider_info):
             return
     else:
         print("Could not fetch models from endpoint. Enter model name manually.")
+        print("  Check API key and base URL, or pick [R]eplace on the key step and retry.")
         try:
             model_name = input("Model name: ").strip()
         except (KeyboardInterrupt, EOFError):

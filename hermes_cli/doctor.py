@@ -541,6 +541,15 @@ def _check_windows_split_home_config(issues: list, *, should_fix: bool = False) 
         )
         issues.append("Sync Venice API key (SYNC_HERMES_API_ENV.bat)")
 
+    if _env_has_non_empty_key(legacy_env, "JATEVO_API_KEY") and not _env_has_non_empty_key(
+        runtime_env, "JATEVO_API_KEY"
+    ):
+        check_warn(
+            "JATEVO_API_KEY only in legacy ~/.hermes/.env",
+            "Run windows\\SYNC_HERMES_API_ENV.bat",
+        )
+        issues.append("Sync Jatevo API key (SYNC_HERMES_API_ENV.bat)")
+
     try:
         import yaml
 
@@ -556,6 +565,30 @@ def _check_windows_split_home_config(issues: list, *, should_fix: bool = False) 
                         "Run windows\\APPLY_HERMES_HOME_MIGRATION.bat or merge_legacy_providers_config.py",
                     )
                     issues.append("Restore Venice provider in root config.yaml")
+            if not (isinstance(providers, dict) and providers.get("jatevo")):
+                legacy_backup = _find_legacy_config_backup(legacy_root)
+                if legacy_backup and "jatevo" in _read_yaml_providers(legacy_backup):
+                    check_warn(
+                        "Jatevo provider missing from runtime config",
+                        "Run windows\\APPLY_HERMES_HOME_MIGRATION.bat or merge_legacy_providers_config.py",
+                    )
+                    issues.append("Restore Jatevo provider in root config.yaml")
+            jatevo_entry = (
+                providers.get("jatevo") if isinstance(providers, dict) else None
+            )
+            if isinstance(jatevo_entry, dict):
+                jatevo_url = str(
+                    jatevo_entry.get("base_url")
+                    or jatevo_entry.get("url")
+                    or jatevo_entry.get("api")
+                    or ""
+                ).strip().lower()
+                if "api.jatevo.ai" in jatevo_url:
+                    check_warn(
+                        "Jatevo base_url uses api.jatevo.ai (sk-clb- keys often 401)",
+                        "Set providers.jatevo.base_url to https://jatevo.ai/v1 — see docs/templates/PROVIDERS_JATEVO.yaml",
+                    )
+                    issues.append("Fix Jatevo base_url (use https://jatevo.ai/v1)")
     except Exception:
         pass
 

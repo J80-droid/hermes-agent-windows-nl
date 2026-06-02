@@ -162,13 +162,13 @@ Deze keys horen **alleen** in `%LOCALAPPDATA%\hermes\config.yaml` (root), niet i
 | --- | --- |
 | `model:` | `hermes model` / root config |
 | `auxiliary:` | `APPLY_AUXILIARY_HYBRID_PRESET.bat` |
-| `providers:` / `custom_providers:` | Model picker; Venice: `docs/templates/PROVIDERS_VENICE.yaml` |
+| `providers:` / `custom_providers:` | Model picker; templates: `docs/templates/PROVIDERS_VENICE.yaml`, `docs/templates/PROVIDERS_JATEVO.yaml` |
 
 Profiel-modus (`active_profile=core`) erft deze blokken automatisch van root via `profile_model_inheritance.py`. Stale profiel-blokken: `strip_profile_global_config_blocks.py` of migratie-keten. Partial profiel-save (bijv. alleen `agent.max_turns`) overschrijft root `providers` **niet**.
 
-## Venice + custom providers
+## Venice, Jatevo + custom providers
 
-Legacy `providers.venice` wordt gemerged via migratie-keten. API-key: `SYNC_HERMES_API_ENV.bat` (incl. `VENICE_API_KEY`). Model picker toont Venice zodra config + runtime `.env` kloppen.
+Legacy `providers.venice` / `providers.jatevo` worden gemerged via migratie-keten. API-keys: `SYNC_HERMES_API_ENV.bat` (incl. `VENICE_API_KEY`, `JATEVO_API_KEY`). Model picker toont custom providers zodra root config + runtime `.env` kloppen. Jatevo: `hermes model` → **31** (key-stap: Keep/Replace/Clear) → live `/v1/models`; base URL **`https://jatevo.ai/v1`** (niet `api.jatevo.ai`); chat: `/model custom:jatevo:<model-id>`.
 
 ## Drift / diagnose
 
@@ -177,7 +177,7 @@ Legacy `providers.venice` wordt gemerged via migratie-keten. API-key: `SYNC_HERM
 | Agent schrijft config op verkeerd pad | `DEPRECATE_LEGACY_CONFIG.bat`; SOUL governance snippet sync |
 | Twee verschillende auxiliary-blokken | `VERIFY_HERMES_CONFIG_DRIFT.bat` → migratie |
 | Auxiliary in profiel-yaml (core) | `APPLY_HERMES_HOME_MIGRATION.bat` (strip + preset) |
-| Venice ontbreekt in picker | `merge_legacy_providers_config.py` + `SYNC_HERMES_API_ENV.bat` |
+| Venice/Jatevo ontbreekt in picker | `merge_legacy_providers_config.py` + `SYNC_HERMES_API_ENV.bat` |
 | Tekst-aux nog op `provider: auto` | `APPLY_AUXILIARY_HYBRID_PRESET.bat` |
 | `HERMES_HOME=profiles\…` | `hermes profile use <naam> --fix-hermes-home` |
 | Gateway verkeerde home | `VERIFY_GATEWAY_HOME.bat` → `REPAIR_GATEWAY_HOME.bat` |
@@ -194,7 +194,7 @@ windows\audits\RUN_AUDITS.bat -IncludeHermesHomeE2E
 
 **Root-inheritance E2E** (`RUN_ROOT_CONFIG_INHERITANCE_E2E.bat`): **10/10 PASS** — pytest inheritance/merge, isolated harness (8 scenario's), `py_compile`-guard op env-sync script, runtime Venice + profiel auxiliary inheritance.
 
-**HermesHome E2E** (`RUN_HERMES_HOME_E2E.bat`): **14/14 PASS** — split-home drift, Venice env, auxiliary inheritance live checks.
+**HermesHome E2E** (`RUN_HERMES_HOME_E2E.bat`): **16/16 PASS** — split-home drift, Venice/Jatevo env, auxiliary inheritance live checks.
 
 ## Feature flag (Python fallback)
 

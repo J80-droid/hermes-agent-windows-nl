@@ -1,0 +1,13 @@
+# Reference fragment — Jatevo custom provider (OpenAI-compatible API).
+# Restore via windows/scripts/merge_legacy_providers_config.py or manually in root config.
+#
+# Use https://jatevo.ai/v1 (not api.jatevo.ai) — sk-clb- keys return 401 on api.jatevo.ai.
+
+providers:
+  jatevo:
+    base_url: https://jatevo.ai/v1
+    provider: custom
+    api_key_env: JATEVO_API_KEY
+    discover_models: true
+
+# Requires JATEVO_API_KEY in legacy ~/.hermes/.env (sync: windows/SYNC_HERMES_API_ENV.bat)

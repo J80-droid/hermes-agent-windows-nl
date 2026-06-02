@@ -5417,8 +5417,8 @@ def _check_non_ascii_credential(key: str, value: str) -> str:
     return sanitized
 
 
-def save_env_value(key: str, value: str):
-    """Save or update a value in ~/.hermes/.env."""
+def save_env_value(key: str, value: str, *, env_path: Optional[Path] = None):
+    """Save or update a value in ~/.hermes/.env (or an explicit ``env_path``)."""
     if is_managed():
         managed_error(f"set {key}")
         return
@@ -5429,7 +5429,11 @@ def save_env_value(key: str, value: str):
     # API keys / tokens must be ASCII — strip non-ASCII with a warning.
     value = _check_non_ascii_credential(key, value)
     ensure_hermes_home()
-    env_path = get_env_path()
+    if env_path is None:
+        env_path = get_env_path()
+    else:
+        env_path = Path(env_path)
+        env_path.parent.mkdir(parents=True, exist_ok=True)
 
     # On Windows, open() defaults to the system locale (cp1252) which can
     # cause OSError errno 22 on UTF-8 .env files.

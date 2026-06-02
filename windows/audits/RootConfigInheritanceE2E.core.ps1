@@ -62,6 +62,7 @@ $repoArtifacts = @(
     'windows/scripts/apply_auxiliary_hybrid_preset.py',
     'windows/scripts/strip_profile_global_config_blocks.py',
     'docs/templates/PROVIDERS_VENICE.yaml',
+    'docs/templates/PROVIDERS_JATEVO.yaml',
     'windows/audits/RootConfigInheritanceE2E.harness.py',
     'windows/audits/RootConfigInheritanceE2E.core.ps1',
     'windows/audits/RUN_ROOT_CONFIG_INHERITANCE_E2E.ps1'

@@ -37,3 +37,19 @@ def test_merge_skips_existing_provider(tmp_path):
     merged, changes = merge_legacy_into_runtime(legacy=legacy, runtime=runtime)
     assert merged["providers"]["venice"]["base_url"] == "https://api.venice.ai/api/v1"
     assert changes == []
+
+
+def test_merge_jatevo_provider_only_when_missing(tmp_path):
+    legacy = {
+        "providers": {
+            "jatevo": {
+                "base_url": "https://jatevo.ai/v1",
+                "provider": "custom",
+                "api_key_env": "JATEVO_API_KEY",
+            }
+        }
+    }
+    runtime = {"providers": {}, "model": {"default": "gemini-3.1-pro-preview"}}
+    merged, changes = merge_legacy_into_runtime(legacy=legacy, runtime=runtime)
+    assert "jatevo" in merged["providers"]
+    assert any("providers.jatevo" in c for c in changes)

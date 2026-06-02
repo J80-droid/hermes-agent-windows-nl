@@ -1,6 +1,6 @@
 # Profiel-config — overerven van root (model, auxiliary, providers)
 
-Domein-profielen (`legal`, `core`, `academics`, …) gebruiken **dezelfde globale inference-config** als je centrale Hermes-installatie: model, auxiliary-taken en custom providers (bijv. Venice). Je hoeft die **niet** per profiel te onderhouden.
+Domein-profielen (`legal`, `core`, `academics`, …) gebruiken **dezelfde globale inference-config** als je centrale Hermes-installatie: model, auxiliary-taken en custom providers (bijv. Venice, Jatevo). Je hoeft die **niet** per profiel te onderhouden.
 
 ## Waar regel je globale config?
 
@@ -10,7 +10,7 @@ Domein-profielen (`legal`, `core`, `academics`, …) gebruiken **dezelfde global
 | **`hermes model`** | schrijft naar root | Interactieve modelwijziging via `persist_model_runtime()` |
 | **`hermes config set model.*`** | schrijft naar root | CLI-key-value |
 | **Auxiliary preset** | `windows\APPLY_AUXILIARY_HYBRID_PRESET.bat` | Qwen lokaal + Gemini vision (root only) |
-| **Venice / custom providers** | root config + `SYNC_HERMES_API_ENV.bat` | Template: `docs/templates/PROVIDERS_VENICE.yaml` |
+| **Venice / Jatevo / custom providers** | root config + `SYNC_HERMES_API_ENV.bat` | Templates: `docs/templates/PROVIDERS_VENICE.yaml`, `docs/templates/PROVIDERS_JATEVO.yaml` |
 | **Profiel** | `%LOCALAPPDATA%\hermes\profiles\<naam>\config.yaml` | **Geen** global blocks (alleen MCP, toolsets, agent) |
 
 Na wijziging van root config geldt het automatisch voor:
@@ -19,7 +19,7 @@ Na wijziging van root config geldt het automatisch voor:
 - `hermes -p core doctor`
 - gateway/cron onder elk profiel
 - klassieke CLI (`load_cli_config`)
-- model picker (Venice zodra `providers.venice` + `VENICE_API_KEY` aanwezig zijn)
+- model picker (Venice/Jatevo zodra `providers.*` + bijbehorende `*_API_KEY` in runtime `.env` staan)
 
 ## Wat staat wél in een domein-profiel?
 
@@ -77,6 +77,7 @@ Bij `--clone` / `--clone-config` wordt `config.yaml` eerst gekopieerd en daarna 
 | Doctor toont OpenRouter terwijl root Gemini is | Verouderd `model:`-blok in `profiles\legal\config.yaml` | `hermes doctor --fix` of handmatig blok verwijderen |
 | Auxiliary in profiel-yaml (core) | Stale `auxiliary:` na preset | `APPLY_HERMES_HOME_MIGRATION.bat` of strip-script |
 | Venice ontbreekt in model picker | `providers.venice` niet in root of key niet gesynced | `merge_legacy_providers_config.py` + `SYNC_HERMES_API_ENV.bat` |
+| Jatevo ontbreekt of 401 | `providers.jatevo` / `JATEVO_API_KEY` / verkeerde host | `base_url: https://jatevo.ai/v1`; sync `.env`; `hermes model` → jatevo → Replace key |
 | `search_knowledge` niet geladen in chat | `mcp.servers` i.p.v. `mcp_servers` in profiel | `sync_profile_mcp_from_domains.py` of `hermes doctor --fix` |
 | Chat 401 / verkeerde provider | Profiel had eigen model; keys in root `.env` | Root model + keys in `%LOCALAPPDATA%\hermes\.env` |
 | `hermes -p legal model` lijkt profiel te wijzigen | Oud gedrag vóór overerving | Update repo; model gaat naar root |
@@ -112,7 +113,7 @@ Zelfde patroon voor `auxiliary.inherit: false` of `providers.inherit: false`. Da
 | `set_config_value()` / `cli.save_config_value` | `model.*` / `auxiliary.*` / `providers.*` → root pad |
 | `merge_legacy_providers_config.py` / `collect_env_sync_keys.py` | Altijd runtime root (niet profiel-`HERMES_HOME`) |
 | `hermes profile create` | Stript global blocks na `--clone` / `--clone-all` |
-| `hermes doctor` | Meldt inheritance + Venice gap; `--fix` stript stale blokken |
+| `hermes doctor` | Meldt inheritance + Venice/Jatevo gaps; `--fix` stript stale blokken |
 | Tests | `test_profile_model_inheritance.py`, `test_model_runtime_config.py` (45), `test_doctor_model_coherence.py`, `test_merge_legacy_providers_config.py` |
 | E2E | `audits/RUN_MODEL_PROVIDER_COHERENCE_E2E.bat` (**10/10**) · `RUN_ROOT_CONFIG_INHERITANCE_E2E.bat` (**10/10**) |
 
