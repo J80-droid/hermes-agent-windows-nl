@@ -17,8 +17,13 @@ if (-not $WorkspaceRoot) {
 }
 
 $templatePath = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'docs/templates/Hermes_agent_WS.vscode.settings.json'
+$repoHygieneTemplate = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'docs/templates/repo-hygiene.mdc'
 if (-not (Test-Path -LiteralPath $templatePath)) {
     Write-HermesFail ('Template ontbreekt: ' + $templatePath)
+    exit 1
+}
+if (-not (Test-Path -LiteralPath $repoHygieneTemplate)) {
+    Write-HermesFail ('Template ontbreekt: ' + $repoHygieneTemplate)
     exit 1
 }
 
@@ -50,6 +55,23 @@ if ($allOk) {
 } else {
     Write-HermesFail 'Geschreven settings.json mist verwachte sleutels'
     exit 1
+}
+
+# Cursor repo-hygiene rule (parent workspace + repo copy)
+$repoHygieneText = Read-HermesRepoText -Path $repoHygieneTemplate
+$repoCursorRules = Join-Path $repoRoot '.cursor/rules'
+if (-not (Test-Path -LiteralPath $repoCursorRules)) {
+    New-Item -ItemType Directory -Path $repoCursorRules -Force | Out-Null
+}
+[System.IO.File]::WriteAllText((Join-Path $repoCursorRules 'repo-hygiene.mdc'), $repoHygieneText, $utf8)
+
+$parentCursorRules = Join-Path $WorkspaceRoot '.cursor/rules'
+if (-not (Test-Path -LiteralPath $parentCursorRules)) {
+    New-Item -ItemType Directory -Path $parentCursorRules -Force | Out-Null
+}
+[System.IO.File]::WriteAllText((Join-Path $parentCursorRules 'repo-hygiene.mdc'), $repoHygieneText, $utf8)
+if (-not $Quiet) {
+    Write-HermesOk 'Cursor rule repo-hygiene.mdc geschreven (repo + parent workspace)'
 }
 
 if (-not $SkipCacheRefresh) {

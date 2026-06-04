@@ -78,6 +78,7 @@ hermes --help          # Alle beschikbare commando's
 
 | Methode | Commando | Beschrijving |
 | ------- | -------- | ------------ |
+| **Nous + overlay (drift-gate)** | `windows\SYNC_NOUS.bat` | Merge upstream + overlay + `Test-NousTreeIdentical` — zie `docs/NOUS_OVERLAY_ARCHITECTURE.md` |
 | **Primair (Windows fork)** | `windows\UPDATE_HERMES.bat` | Preflight + Nous-merge + RAG + verify (`.ps1`, geen pause in keten) |
 | **Alternatief** | `irm .../update-J..ps1 \| iex` | Keuzemenu bij lokale wijzigingen |
 | **CLI** | `hermes update` | Ingebouwd (zelfde merge; minder post-merge Windows-stappen) |

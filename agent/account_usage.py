@@ -10,19 +10,6 @@ from agent.anthropic_adapter import _is_oauth_token, resolve_anthropic_token
 from hermes_cli.auth import _read_codex_tokens, resolve_codex_runtime_credentials
 from hermes_cli.runtime_provider import resolve_runtime_provider
 
-from agent.jatevo_usage import (
-    JatevoQuotaError,
-    fetch_jatevo_quota,
-    is_jatevo_runtime,
-    render_jatevo_quota_lines,
-)
-from agent.venice_usage import (
-    VeniceQuotaError,
-    fetch_venice_quota,
-    is_venice_runtime,
-    render_venice_quota_lines,
-)
-
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -107,14 +94,6 @@ def render_account_usage_lines(snapshot: Optional[AccountUsageSnapshot], *, mark
         lines.append(f"Provider: {snapshot.provider} ({snapshot.plan})")
     else:
         lines.append(f"Provider: {snapshot.provider}")
-    if snapshot.source in {"usage_api", "venice_usage_api"} and (
-        "jatevo" in snapshot.provider.lower() or "venice" in snapshot.provider.lower()
-    ):
-        for detail in snapshot.details:
-            lines.append(detail)
-        if snapshot.unavailable_reason:
-            lines.append(f"Unavailable: {snapshot.unavailable_reason}")
-        return lines
     for window in snapshot.windows:
         if window.used_percent is None:
             base = f"{window.label}: unavailable"
@@ -254,74 +233,6 @@ def _fetch_anthropic_account_usage() -> Optional[AccountUsageSnapshot]:
     )
 
 
-def _fetch_venice_account_usage(
-    base_url: Optional[str],
-    api_key: Optional[str],
-    *,
-    provider_label: str = "venice",
-) -> Optional[AccountUsageSnapshot]:
-    """Venice DIEM/USD via ``agent.venice_usage`` (extended billing + model APIs)."""
-    try:
-        report = fetch_venice_quota(
-            base_url=base_url,
-            api_key=api_key,
-            requested_provider=provider_label,
-            include_extended="account",
-        )
-    except VeniceQuotaError as exc:
-        return AccountUsageSnapshot(
-            provider=provider_label,
-            source="venice_usage_api",
-            fetched_at=_utc_now(),
-            unavailable_reason=str(exc),
-        )
-    except Exception:
-        return None
-    detail_lines = render_venice_quota_lines(report, include_extended="account")[1:]
-    return AccountUsageSnapshot(
-        provider=provider_label,
-        source="venice_usage_api",
-        fetched_at=report.fetched_at,
-        windows=(),
-        details=tuple(detail_lines),
-    )
-
-
-def _fetch_jatevo_account_usage(
-    base_url: Optional[str],
-    api_key: Optional[str],
-    *,
-    provider_label: str = "jatevo",
-) -> Optional[AccountUsageSnapshot]:
-    """Jatevo dashboard quota via ``agent.jatevo_usage`` (GET /v1/usage)."""
-    try:
-        report = fetch_jatevo_quota(
-            base_url=base_url,
-            api_key=api_key,
-            requested_provider=provider_label,
-        )
-    except JatevoQuotaError as exc:
-        return AccountUsageSnapshot(
-            provider=provider_label,
-            source="usage_api",
-            fetched_at=_utc_now(),
-            unavailable_reason=str(exc),
-        )
-    except Exception:
-        return None
-    # Dashboard cards only in details; skip generic percent bars.
-    detail_lines = render_jatevo_quota_lines(
-        report, include_usage_stats=True
-    )[1:]
-    return AccountUsageSnapshot(
-        provider=provider_label,
-        source="usage_api",
-        fetched_at=report.fetched_at,
-        windows=(),
-        details=tuple(detail_lines),
-    )
-
-
 def _fetch_openrouter_account_usage(base_url: Optional[str], api_key: Optional[str]) -> Optional[AccountUsageSnapshot]:
     runtime = resolve_runtime_provider(
         requested="openrouter",
@@ -401,19 +312,9 @@ def fetch_account_usage(
     api_key: Optional[str] = None,
 ) -> Optional[AccountUsageSnapshot]:
     normalized = str(provider or "").strip().lower()
-    if normalized in {"", "auto"}:
-        return None
-    if normalized == "custom" and not (
-        is_jatevo_runtime(normalized, base_url) or is_venice_runtime(normalized, base_url)
-    ):
+    if normalized in {"", "auto", "custom"}:
         return None
     try:
-        if is_jatevo_runtime(normalized, base_url):
-            label = "jatevo" if normalized == "custom" else normalized
-            return _fetch_jatevo_account_usage(base_url, api_key, provider_label=label)
-        if is_venice_runtime(normalized, base_url):
-            label = "venice" if normalized == "custom" else normalized
-            return _fetch_venice_account_usage(base_url, api_key, provider_label=label)
         if normalized == "openai-codex":
             return _fetch_codex_account_usage()
         if normalized == "anthropic":

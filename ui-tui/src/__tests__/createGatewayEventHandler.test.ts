@@ -5,7 +5,6 @@ import { getOverlayState, patchOverlayState, resetOverlayState } from '../app/ov
 import { turnController } from '../app/turnController.js'
 import { getTurnState, resetTurnState } from '../app/turnStore.js'
 import { getUiState, patchUiState, resetUiState } from '../app/uiStore.js'
-import { STREAM_BATCH_MS } from '../config/timing.js'
 import { estimateTokensRough } from '../lib/text.js'
 import type { Msg } from '../types.js'
 
@@ -1115,101 +1114,67 @@ describe('createGatewayEventHandler', () => {
     }
   })
 
-  it('tracks turn cost delta and tool executions for the rich status bar', () => {
+  it('persists an abandoned (timed-out) clarify into the transcript when the clarify tool completes', () => {
     const appended: Msg[] = []
     const onEvent = createGatewayEventHandler(buildCtx(appended))
 
-    patchUiState({
-      usage: {
-        calls: 2,
-        cost_usd: 1,
-        input: 100,
-        output: 50,
-        session_tools_executed: 3,
-        total: 150,
-        turn_cost_usd: 0.4
-      }
+    // Backend clarify timed out: the overlay is still live (Python returned an
+    // empty answer), and the clarify tool's own tool.complete then fires.
+    patchOverlayState({
+      clarify: { choices: ['Scope A', 'Scope B'], question: 'How do you want to scope?', requestId: 'req-1' }
     })
 
-    onEvent({ payload: {}, type: 'message.start' } as any)
-    expect(getUiState().usage.turn_cost_usd).toBe(0)
+    onEvent({ payload: { duration_s: 300, name: 'clarify', tool_id: 'clar-1' }, type: 'tool.complete' } as any)
 
-    onEvent({
-      payload: { name: 'search', tool_id: 'tool-1' },
-      type: 'tool.complete'
-    } as any)
-    expect(getUiState().usage.session_tools_executed).toBe(4)
-
-    onEvent({
-      payload: { usage: { calls: 3, cost_usd: 1.23, input: 120, output: 60, total: 180 } },
-      type: 'message.complete'
-    } as any)
-
-    expect(getUiState().usage.turn_cost_usd).toBeCloseTo(0.23, 5)
-    expect(getUiState().usage.cost_usd).toBe(1.23)
-    expect(getUiState().usage.turn_cost_estimated).toBe(false)
+    const record = appended.find(msg => msg.role === 'system' && msg.text.startsWith('ask How do you want to scope?'))
+    expect(record).toBeDefined()
+    expect(record?.text).toContain('1. Scope A')
+    expect(record?.text).toContain('2. Scope B')
+    expect(record?.text).toContain('timed out — no selection')
+    // The live overlay is cleared so it doesn't double-render with the record.
+    expect(getOverlayState().clarify).toBeNull()
   })
 
-  it('estimates live turn cost during streaming from token deltas', () => {
-    vi.useFakeTimers()
+  it('only persists an abandoned clarify once even if tool.complete fires twice', () => {
     const appended: Msg[] = []
     const onEvent = createGatewayEventHandler(buildCtx(appended))
 
-    patchUiState({
-      usage: {
-        calls: 2,
-        cost_breakdown_usd: { input: 1, output: 1 },
-        cost_usd: 2,
-        input: 1000,
-        output: 1000,
-        session_tools_executed: 0,
-        total: 2000
-      }
+    patchOverlayState({
+      clarify: { choices: ['A'], question: 'Pick?', requestId: 'req-3' }
     })
 
-    onEvent({ payload: {}, type: 'message.start' } as any)
-    onEvent({ payload: { text: 'abcd' }, type: 'message.delta' } as any)
+    onEvent({ payload: { name: 'clarify', tool_id: 'clar-1' }, type: 'tool.complete' } as any)
+    // A duplicate clarify tool.complete must not re-persist the same prompt.
+    onEvent({ payload: { name: 'clarify', tool_id: 'clar-1' }, type: 'tool.complete' } as any)
 
-    vi.advanceTimersByTime(STREAM_BATCH_MS + 1)
-
-    expect(getUiState().usage.turn_cost_estimated).toBe(true)
-    expect(getUiState().usage.turn_cost_usd).toBeGreaterThan(0)
-
-    onEvent({
-      payload: { usage: { calls: 3, cost_usd: 2.05, input: 1100, output: 1104, total: 2204 } },
-      type: 'message.complete'
-    } as any)
-
-    expect(getUiState().usage.turn_cost_estimated).toBe(false)
-    expect(getUiState().usage.turn_cost_usd).toBeCloseTo(0.05, 5)
-
-    vi.useRealTimers()
+    const records = appended.filter(msg => msg.role === 'system' && msg.text.startsWith('ask Pick?'))
+    expect(records).toHaveLength(1)
   })
 
-  it('tracks live turn tokens when session USD pricing is unavailable', () => {
-    vi.useFakeTimers()
+  it('does not flush the clarify overlay when a non-clarify tool completes', () => {
     const appended: Msg[] = []
     const onEvent = createGatewayEventHandler(buildCtx(appended))
 
-    patchUiState({
-      usage: {
-        calls: 1,
-        cost_status: 'unknown',
-        input: 1000,
-        output: 0,
-        total: 1000
-      }
+    // A clarify is live, but it's a *different* tool that just completed — the
+    // clarify itself is still pending, so we must not persist or clear it.
+    patchOverlayState({
+      clarify: { choices: ['A', 'B'], question: 'Pick?', requestId: 'req-4' }
     })
 
-    onEvent({ payload: {}, type: 'message.start' } as any)
-    onEvent({ payload: { text: 'abcd' }, type: 'message.delta' } as any)
+    onEvent({ payload: { name: 'search', tool_id: 'tool-1' }, type: 'tool.complete' } as any)
 
-    vi.advanceTimersByTime(STREAM_BATCH_MS + 1)
+    expect(appended.some(msg => msg.role === 'system' && msg.text.startsWith('ask '))).toBe(false)
+    expect(getOverlayState().clarify).not.toBeNull()
+  })
 
-    expect(getUiState().usage.turn_cost_estimated).toBe(true)
-    expect(getUiState().usage.turn_live_tokens).toBeGreaterThan(0)
-    expect(getUiState().usage.turn_cost_usd).toBe(0)
+  it('does not persist when an answered clarify already cleared the overlay before tool.complete', () => {
+    const appended: Msg[] = []
+    const onEvent = createGatewayEventHandler(buildCtx(appended))
 
-    vi.useRealTimers()
+    // Answered path (answerClarify) clears the overlay before the agent's
+    // tool.complete arrives, so there's nothing live to persist.
+    onEvent({ payload: { duration_s: 4.2, name: 'clarify', tool_id: 'clar-1' }, type: 'tool.complete' } as any)
+
+    expect(appended.some(msg => msg.role === 'system' && msg.text.startsWith('ask '))).toBe(false)
   })
 })

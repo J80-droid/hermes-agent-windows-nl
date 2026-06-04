@@ -1,5 +1,4 @@
 import { attachedImageNotice, introMsg, toTranscriptMessages } from '../../../domain/messages.js'
-import { mergeUsage } from '../../../domain/usage.js'
 import { TUI_SESSION_MODEL_FLAG } from '../../../domain/slash.js'
 import type {
   BackgroundStartResponse,
@@ -181,7 +180,7 @@ export const sessionCommands: SlashCommand[] = [
             }
 
             if (r.usage) {
-              patchUiState(state => ({ ...state, usage: mergeUsage(state.usage, r.usage!) }))
+              patchUiState(state => ({ ...state, usage: { ...state.usage, ...r.usage } }))
             }
 
             if (r.summary?.headline) {
@@ -528,26 +527,9 @@ export const sessionCommands: SlashCommand[] = [
         }
 
         if (r) {
-          patchUiState(state => ({
-            usage: mergeUsage(state.usage, {
-              cache_read: r.cache_read,
-              cache_write: r.cache_write,
-              calls: r.calls,
-              compressions: r.compressions,
-              context_max: r.context_max,
-              context_percent: r.context_percent,
-              context_used: r.context_used,
-              cost_breakdown_pct: r.cost_breakdown_pct,
-              cost_breakdown_usd: r.cost_breakdown_usd,
-              cost_status: r.cost_status,
-              cost_usd: r.cost_usd,
-              input: r.input,
-              output: r.output,
-              session_tools_executed: r.session_tools_executed,
-              total: r.total,
-              turn_cost_usd: r.turn_cost_usd
-            })
-          }))
+          patchUiState({
+            usage: { calls: r.calls ?? 0, input: r.input ?? 0, output: r.output ?? 0, total: r.total ?? 0 }
+          })
         }
 
         if (!r?.calls) {
@@ -555,8 +537,7 @@ export const sessionCommands: SlashCommand[] = [
         }
 
         const f = (v: number | undefined) => (v ?? 0).toLocaleString()
-        const fmtCost = (amount: number | undefined, status?: string) =>
-          amount == null ? null : `${status === 'estimated' ? '~' : ''}$${amount.toFixed(4)}`
+        const cost = r.cost_usd != null ? `${r.cost_status === 'estimated' ? '~' : ''}$${r.cost_usd.toFixed(4)}` : null
 
         const rows: [string, string][] = [
           ['Model', r.model ?? ''],
@@ -568,43 +549,11 @@ export const sessionCommands: SlashCommand[] = [
           ['API calls', f(r.calls)]
         ]
 
-        if (typeof r.session_tools_executed === 'number') {
-          rows.push(['Tool executions', f(r.session_tools_executed)])
-        }
-
-        const sessionCost = fmtCost(r.cost_usd, r.cost_status)
-        if (sessionCost) {
-          rows.push(['Session cost', sessionCost])
-        }
-
-        const turnCost = fmtCost(r.turn_cost_usd, r.turn_cost_estimated ? 'estimated' : r.cost_status)
-        if (turnCost) {
-          rows.push(['Turn cost', turnCost])
-        }
-
-        if (r.cost_breakdown_usd) {
-          const b = r.cost_breakdown_usd
-          rows.push(['Cost input', fmtCost(b.input, r.cost_status) ?? '—'])
-          rows.push(['Cost output', fmtCost(b.output, r.cost_status) ?? '—'])
-          rows.push(['Cost cache read', fmtCost(b.cache_read, r.cost_status) ?? '—'])
-          rows.push(['Cost cache write', fmtCost(b.cache_write, r.cost_status) ?? '—'])
+        if (cost) {
+          rows.push(['Cost', cost])
         }
 
         const sections: PanelSection[] = [{ rows }]
-
-        if (r.cost_breakdown_pct) {
-          const p = r.cost_breakdown_pct
-          const pctParts = [
-            typeof p.cw === 'number' ? `cw ${p.cw}%` : null,
-            typeof p.out === 'number' ? `out ${p.out}%` : null,
-            typeof p.in === 'number' ? `in ${p.in}%` : null,
-            typeof p.cr === 'number' ? `cr ${p.cr}%` : null
-          ].filter(Boolean)
-
-          if (pctParts.length) {
-            sections.push({ text: `Cost mix: ${pctParts.join(' │ ')}` })
-          }
-        }
 
         if (r.context_max) {
           sections.push({ text: `Context: ${f(r.context_used)} / ${f(r.context_max)} (${r.context_percent}%)` })

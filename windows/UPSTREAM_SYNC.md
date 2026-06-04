@@ -4,6 +4,7 @@
 
 | Wat je wilt | Commando |
 | ----------- | -------- |
+| **Nous sync + overlay + drift-gate** | `windows\SYNC_NOUS.bat` (zie [NOUS_OVERLAY_ARCHITECTURE.md](../docs/NOUS_OVERLAY_ARCHITECTURE.md)) |
 | **Normale wekelijkse update** | `windows\UPDATE_HERMES.bat` |
 | **Grote achterstand, geen j/N-vraag** | `windows\UPDATE_HERMES.bat -Yes` of `windows\UPDATE_HERMES_YES.bat` |
 | **Alleen rommel in repo-root** | `windows\UPDATE_HERMES.bat -QuickFix` |

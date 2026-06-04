@@ -409,7 +409,37 @@ _OFFICIAL_DOCS_PRICING: Dict[tuple[str, str], PricingEntry] = {
         source_url="https://api-docs.deepseek.com/quick_start/pricing",
         pricing_version="deepseek-pricing-2026-05-12",
     ),
-    # Google Gemini — see _GOOGLE_GEMINI_PRICING + _google_pricing_entry()
+    # Google Gemini
+    (
+        "google",
+        "gemini-2.5-pro",
+    ): PricingEntry(
+        input_cost_per_million=Decimal("1.25"),
+        output_cost_per_million=Decimal("10.00"),
+        source="official_docs_snapshot",
+        source_url="https://ai.google.dev/pricing",
+        pricing_version="google-pricing-2026-03-16",
+    ),
+    (
+        "google",
+        "gemini-2.5-flash",
+    ): PricingEntry(
+        input_cost_per_million=Decimal("0.15"),
+        output_cost_per_million=Decimal("0.60"),
+        source="official_docs_snapshot",
+        source_url="https://ai.google.dev/pricing",
+        pricing_version="google-pricing-2026-03-16",
+    ),
+    (
+        "google",
+        "gemini-2.0-flash",
+    ): PricingEntry(
+        input_cost_per_million=Decimal("0.10"),
+        output_cost_per_million=Decimal("0.40"),
+        source="official_docs_snapshot",
+        source_url="https://ai.google.dev/pricing",
+        pricing_version="google-pricing-2026-03-16",
+    ),
     # AWS Bedrock — pricing per the Bedrock pricing page.
     # Bedrock charges the same per-token rates as the model provider but
     # through AWS billing.  These are the on-demand prices (no commitment).
@@ -544,13 +574,6 @@ def resolve_billing_route(
         return BillingRoute(provider="anthropic", model=model.split("/")[-1], base_url=base_url or "", billing_mode="official_docs_snapshot")
     if provider_name == "openai":
         return BillingRoute(provider="openai", model=model.split("/")[-1], base_url=base_url or "", billing_mode="official_docs_snapshot")
-    if provider_name in {"google", "gemini", "google-gemini-cli"}:
-        return BillingRoute(
-            provider="google",
-            model=model.split("/")[-1],
-            base_url=base_url or "",
-            billing_mode="official_docs_snapshot",
-        )
     if provider_name in {"minimax", "minimax-cn"}:
         return BillingRoute(provider=provider_name, model=model.split("/")[-1], base_url=base_url or "", billing_mode="official_docs_snapshot")
     if provider_name in {"custom", "local"} or (base and "localhost" in base):
@@ -575,95 +598,6 @@ def _normalize_anthropic_model_name(model: str) -> str:
     return name
 
 
-_GOOGLE_PRICING_SOURCE_URL = "https://ai.google.dev/gemini-api/docs/pricing"
-_GOOGLE_PRICING_VERSION = "google-pricing-2026-05-23"
-
-# Standard tier, text/image/video (USD per 1M tokens).
-# cache_write defaults to input (explicit cache creation billed at input rate).
-# Cache storage ($/M tok/hr) is not in API usage metadata — omitted from estimates.
-_GOOGLE_GEMINI_PRICING: Dict[str, Dict[str, Decimal]] = {
-    "gemini-3.5-flash": {
-        "input": Decimal("1.50"),
-        "output": Decimal("9.00"),
-        "cache_read": Decimal("0.15"),
-    },
-    "gemini-3.1-flash-lite": {
-        "input": Decimal("0.25"),
-        "output": Decimal("1.50"),
-        "cache_read": Decimal("0.025"),
-    },
-    "gemini-2.5-pro": {
-        "input": Decimal("1.25"),
-        "output": Decimal("10.00"),
-        "cache_read": Decimal("0.125"),
-    },
-    "gemini-2.5-flash": {
-        "input": Decimal("0.30"),
-        "output": Decimal("2.50"),
-        "cache_read": Decimal("0.03"),
-    },
-    "gemini-2.5-flash-lite": {
-        "input": Decimal("0.10"),
-        "output": Decimal("0.40"),
-        "cache_read": Decimal("0.01"),
-    },
-    "gemini-2.0-flash": {
-        "input": Decimal("0.10"),
-        "output": Decimal("0.40"),
-        "cache_read": Decimal("0.025"),
-    },
-}
-
-
-def _normalize_google_model_name(model: str) -> str:
-    """Map Gemini preview ids to the nearest priced catalog entry."""
-    name = model.lower().strip()
-    if name.startswith("google/"):
-        name = name.split("/", 1)[1]
-    if name in _GOOGLE_GEMINI_PRICING:
-        return name
-    aliases = {
-        "gemini-3-flash-preview": "gemini-3.5-flash",
-        "gemini-3-flash": "gemini-3.5-flash",
-        "gemini-3-pro-preview": "gemini-2.5-pro",
-        "gemini-3.1-pro-preview": "gemini-2.5-pro",
-        "gemini-3.1-flash-lite-preview": "gemini-3.1-flash-lite",
-    }
-    if name in aliases:
-        return aliases[name]
-    if "flash-lite" in name and name.startswith("gemini-3"):
-        return "gemini-3.1-flash-lite"
-    if "flash-lite" in name and name.startswith("gemini-2"):
-        return "gemini-2.5-flash-lite"
-    if name.startswith("gemini-3") and "flash" in name:
-        return "gemini-3.5-flash"
-    if name.startswith("gemini-3") and "pro" in name:
-        return "gemini-2.5-pro"
-    return name
-
-
-def _google_pricing_entry(model: str) -> Optional[PricingEntry]:
-    """Build a Google Gemini PricingEntry from the catalog table."""
-    normalized = _normalize_google_model_name(model)
-    row = _GOOGLE_GEMINI_PRICING.get(normalized)
-    if not row:
-        return None
-
-    input_rate = row["input"]
-    cache_read = row.get("cache_read")
-    cache_write = row.get("cache_write", input_rate)
-
-    return PricingEntry(
-        input_cost_per_million=input_rate,
-        output_cost_per_million=row["output"],
-        cache_read_cost_per_million=cache_read,
-        cache_write_cost_per_million=cache_write,
-        source="official_docs_snapshot",
-        source_url=_GOOGLE_PRICING_SOURCE_URL,
-        pricing_version=_GOOGLE_PRICING_VERSION,
-    )
-
-
 def _lookup_official_docs_pricing(route: BillingRoute) -> Optional[PricingEntry]:
     model = route.model.lower()
     # Direct lookup first
@@ -677,10 +611,6 @@ def _lookup_official_docs_pricing(route: BillingRoute) -> Optional[PricingEntry]
             entry = _OFFICIAL_DOCS_PRICING.get((route.provider, normalized))
             if entry:
                 return entry
-    if route.provider == "google":
-        entry = _google_pricing_entry(model)
-        if entry:
-            return entry
     return None
 
 

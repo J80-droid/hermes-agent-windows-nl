@@ -96,6 +96,8 @@ models-dev-upstream/
 # Local editor / agent tooling (machine-specific; keep in global config, not the repo)
 .codex/
 .cursor/
+!.cursor/rules/
+!.cursor/rules/**
 .gemini/
 .zed/
 .mcp.json

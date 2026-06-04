@@ -1,5 +1,13 @@
 # System patterns
 
+## Nous overlay (Tier A / Tier B)
+
+- **Tier A** = byte-gelijk `upstream/main` (`agent/`, `cli.py`, `hermes_cli/` upstream-bestanden, `web/`, `ui-tui/`, …).
+- **Tier B** = `overlay/`, `windows/`, `scripts/rag_pipeline/`, skills, runtime.
+- **Bootstrap:** `overlay/bootstrap.py` + `PYTHONSTARTUP` via `Invoke-HermesOverlayBootstrap.ps1` (launch + SYNC_NOUS).
+- **Sync:** `windows/SYNC_NOUS.bat` → merge → `Invoke-ApplyHermesOverlay` → drift-test → post-merge.
+- **Gate:** `Test-NousTreeIdentical.ps1` (CI met `-AllowTransitional` tot `cli`/web/TUI gemigreerd).
+
 ## Config-scheiding (drie bestanden)
 
 1. **Root** `%LOCALAPPDATA%\hermes\config.yaml` (Windows runtime) — globaal gedrag + **model/provider**. Legacy `%USERPROFILE%\.hermes\config.yaml` is **deprecated** (zie `docs/HERMES_HOME_WINDOWS.md`).

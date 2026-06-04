@@ -13,7 +13,6 @@ import {
   compactPreview,
   hasAnsi,
   isPasteBackedText,
-  normalizeAssistantMarkdown,
   sanitizeAnsiForRender,
   stripAnsi
 } from '../lib/text.js'
@@ -162,15 +161,14 @@ export const MessageLine = memo(function MessageLine({
 
     if (msg.role === 'assistant') {
       const bodyWidth = transcriptBodyWidth(cols, msg.role, t.brand.prompt, TERMUX_TUI_MODE)
-      const mdText = normalizeAssistantMarkdown(msg.text)
 
       return isStreaming ? (
         // Incremental markdown: split at the last stable block boundary so
         // only the in-flight tail re-tokenizes per delta. See
         // streamingMarkdown.tsx for the cost model.
-        <StreamingMd cols={bodyWidth} compact={compact} t={t} text={boundedLiveRenderText(mdText)} />
+        <StreamingMd cols={bodyWidth} compact={compact} t={t} text={boundedLiveRenderText(msg.text)} />
       ) : (
-        <Md cols={bodyWidth} compact={compact} t={t} text={mdText} />
+        <Md cols={bodyWidth} compact={compact} t={t} text={msg.text} />
       )
     }
 

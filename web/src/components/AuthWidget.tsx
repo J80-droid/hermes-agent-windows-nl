@@ -46,11 +46,6 @@ export function AuthWidget({ className }: AuthWidgetProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Loopback dashboard: geen OAuth-gate → /api/auth/me 401 is verwacht; niet ophalen.
-    if (typeof window !== "undefined" && !window.__HERMES_AUTH_REQUIRED__) {
-      setHidden(true);
-      return undefined;
-    }
     let cancelled = false;
     api
       .getAuthMe()

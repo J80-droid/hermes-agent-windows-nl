@@ -1226,9 +1226,7 @@ def _read_nous_auth() -> Optional[dict]:
     try:
         if not _AUTH_JSON_PATH.is_file():
             return None
-        from hermes_cli.auth import read_auth_json
-
-        data = read_auth_json(_AUTH_JSON_PATH)
+        data = json.loads(_AUTH_JSON_PATH.read_text())
         if data.get("active_provider") != "nous":
             return None
         provider = data.get("providers", {}).get("nous", {})

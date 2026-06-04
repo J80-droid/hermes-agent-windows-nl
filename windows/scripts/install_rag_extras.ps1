@@ -47,9 +47,21 @@ if (-not $SkipPip) {
             continue
         }
         Write-RagMsg ('[INFO] RAG-deps via: {0}' -f $py) 'Cyan'
-        & $py -m pip install -e ($RepoRoot + '[rag]')
-        if (Test-NativeCommandFailed) {
-            Write-Error ('pip install -e [rag] mislukt voor {0} (exit {1}).' -f $py, $LASTEXITCODE)
+        $overlayReq = Join-Path $RepoRoot 'overlay\requirements-fork-extras.txt'
+        if (Test-Path -LiteralPath $overlayReq) {
+            & $py -m pip install -r $overlayReq
+            if (Test-NativeCommandFailed) {
+                Write-Error ('pip install -r overlay requirements mislukt voor {0} (exit {1}).' -f $py, $LASTEXITCODE)
+            }
+            & $py -m pip install -e $RepoRoot
+            if (Test-NativeCommandFailed) {
+                Write-RagMsg '[WARN] pip install -e . (base) mislukt na overlay extras.' 'Yellow'
+            }
+        } else {
+            & $py -m pip install -e ($RepoRoot + '[rag]')
+            if (Test-NativeCommandFailed) {
+                Write-Error ('pip install -e [rag] mislukt voor {0} (exit {1}).' -f $py, $LASTEXITCODE)
+            }
         }
         & $py -m pip install 'markitdown[all]==0.1.5'
         if (Test-NativeCommandFailed) {

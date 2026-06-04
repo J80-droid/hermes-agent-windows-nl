@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useState,
-  type CSSProperties,
-} from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import {
   Brain,
   ChevronDown,
@@ -121,13 +115,20 @@ function TokenBar({
         {segments.map((s, i) => (
           <div
             key={i}
-            className={`models-segment-bar relative flex items-center transition-all duration-300`}
+            className="relative flex items-center transition-all duration-300"
             style={{
               backgroundColor: `color-mix(in srgb, ${s.color} 70%, transparent)`,
               width: `${(s.value / total) * 100}%`,
             }}
           >
-            <div aria-hidden className="models-segment-pattern" />
+            {/* Stepped fill pattern overlay */}
+            <div
+              className="absolute inset-0 opacity-30"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(to right, transparent 0 0.4rem, currentColor 0.4rem calc(0.4rem + 1px))",
+              }}
+            />
           </div>
         ))}
       </div>
@@ -804,8 +805,8 @@ export default function ModelsPage() {
       });
   }, []);
 
-  const load = useCallback((showSpinner = true) => {
-    if (showSpinner) setLoading(true);
+  const load = useCallback(() => {
+    setLoading(true);
     setError(null);
     Promise.all([
       api.getModelsAnalytics(days),
@@ -852,7 +853,7 @@ export default function ModelsPage() {
           ghost
           size="icon"
           className="text-muted-foreground hover:text-foreground"
-          onClick={() => load()}
+          onClick={load}
           disabled={loading}
           aria-label={t.common.refresh}
         >
@@ -868,7 +869,7 @@ export default function ModelsPage() {
   }, [days, loading, load, setAfterTitle, setEnd, t.common.refresh]);
 
   useEffect(() => {
-    queueMicrotask(() => load(false));
+    load();
   }, [load]);
 
   return (

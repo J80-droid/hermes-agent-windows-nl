@@ -5,9 +5,8 @@ import { Button } from "@nous-research/ui/ui/components/button";
 import { BottomSheet } from "@nous-research/ui/ui/components/bottom-sheet";
 import { Typography } from "@nous-research/ui/ui/components/typography/index";
 import { useBelowBreakpoint } from "@nous-research/ui/hooks/use-below-breakpoint";
-import { useI18n, LOCALE_META } from "@/i18n";
-import { dropUpMenuCssVars, useDropUpFixedStyle } from "@/hooks/useDropUpFixedStyle";
-import { ariaBool } from "@/lib/aria";
+import { useI18n } from "@/i18n/context";
+import { LOCALE_META } from "@/i18n";
 import type { Locale } from "@/i18n";
 import { cn } from "@/lib/utils";
 
@@ -105,64 +104,35 @@ export function LanguageSwitcher({ collapsed = false, dropUp = false }: Language
         </BottomSheet>
       )}
 
-      {open && !useMobileSheet && (
-        <LanguageSwitcherDropdown
-          allLocales={allLocales}
-          containerRef={containerRef}
-          dropdownRef={dropdownRef}
-          dropUp={dropUp}
-          locale={locale}
-          setLocale={setLocale}
-          setOpen={setOpen}
-          sheetTitle={sheetTitle}
-        />
-      )}
+      {open && !useMobileSheet && (() => {
+        const rect = containerRef.current?.getBoundingClientRect();
+        const dropdown = (
+          <div
+            ref={dropdownRef}
+            aria-label={sheetTitle}
+            className={cn(
+              "min-w-[10rem] border border-border bg-popover shadow-md py-1 max-h-80 overflow-y-auto",
+              dropUp ? "fixed z-[100]" : "absolute z-50 right-0 top-full mt-1",
+            )}
+            role="listbox"
+            style={
+              dropUp && rect
+                ? { bottom: window.innerHeight - rect.top + 4, left: rect.left }
+                : undefined
+            }
+          >
+            <LanguageSwitcherOptions
+              allLocales={allLocales}
+              locale={locale}
+              setLocale={setLocale}
+              setOpen={setOpen}
+            />
+          </div>
+        );
+        return dropUp ? createPortal(dropdown, document.body) : dropdown;
+      })()}
     </div>
   );
-}
-
-function LanguageSwitcherDropdown({
-  allLocales,
-  containerRef,
-  dropdownRef,
-  dropUp,
-  locale,
-  setLocale,
-  setOpen,
-  sheetTitle,
-}: LanguageSwitcherDropdownProps) {
-  const fixedStyle = useDropUpFixedStyle(containerRef, dropUp);
-  const dropdown = (
-    <div
-      ref={dropdownRef}
-      aria-label={sheetTitle}
-      className={cn(
-        "min-w-[10rem] border border-border bg-popover shadow-md py-1 max-h-80 overflow-y-auto",
-        dropUp ? "drop-up-menu-positioned fixed z-[100]" : "absolute z-50 right-0 top-full mt-1",
-      )}
-      role="listbox"
-      style={dropUp ? dropUpMenuCssVars(fixedStyle) : undefined}
-    >
-      <LanguageSwitcherOptions
-        allLocales={allLocales}
-        locale={locale}
-        setLocale={setLocale}
-        setOpen={setOpen}
-      />
-    </div>
-  );
-  return dropUp ? createPortal(dropdown, document.body) : dropdown;
-}
-
-interface LanguageSwitcherDropdownProps {
-  allLocales: Array<[Locale, (typeof LOCALE_META)[Locale]]>;
-  containerRef: React.RefObject<HTMLDivElement | null>;
-  dropdownRef: React.RefObject<HTMLDivElement | null>;
-  dropUp: boolean;
-  locale: Locale;
-  setLocale: (code: Locale) => void;
-  setOpen: (open: boolean) => void;
-  sheetTitle: string;
 }
 
 function LanguageSwitcherOptions({
@@ -171,32 +141,36 @@ function LanguageSwitcherOptions({
   setLocale,
   setOpen,
 }: LanguageSwitcherOptionsProps) {
-  return allLocales.map(([code, meta]) => {
-    const selected = code === locale;
+  return (
+    <>
+      {allLocales.map(([code, meta]) => {
+        const selected = code === locale;
 
-    return (
-      <button
-        aria-selected={ariaBool(selected)}
-        className={cn(
-          "w-full text-left px-3 py-1.5 flex items-center gap-2 cursor-pointer",
-          "font-mondwest text-display text-xs tracking-[0.08em]",
-          "hover:bg-accent hover:text-accent-foreground transition-colors",
-          selected ? "font-semibold text-foreground" : "text-muted-foreground",
-        )}
-        key={code}
-        onClick={() => {
-          setLocale(code);
-          setOpen(false);
-        }}
-        role="option"
-        type="button"
-      >
-        <span className="truncate">{meta.name}</span>
+        return (
+          <button
+            aria-selected={selected}
+            className={cn(
+              "w-full text-left px-3 py-1.5 flex items-center gap-2 cursor-pointer",
+              "font-mondwest text-display text-xs tracking-[0.08em]",
+              "hover:bg-accent hover:text-accent-foreground transition-colors",
+              selected ? "font-semibold text-foreground" : "text-muted-foreground",
+            )}
+            key={code}
+            onClick={() => {
+              setLocale(code);
+              setOpen(false);
+            }}
+            role="option"
+            type="button"
+          >
+            <span className="truncate">{meta.name}</span>
 
-        {selected && <Check className="ml-auto h-3 w-3 shrink-0 text-midground" />}
-      </button>
-    );
-  });
+            {selected && <Check className="ml-auto h-3 w-3 shrink-0 text-midground" />}
+          </button>
+        );
+      })}
+    </>
+  );
 }
 
 interface LanguageSwitcherOptionsProps {

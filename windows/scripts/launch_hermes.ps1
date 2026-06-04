@@ -17,6 +17,9 @@ if (-not $RepoRoot) {
 }
 $env:HERMES_REPO_ROOT = $RepoRoot
 
+. (Join-Path $PSScriptRoot 'Invoke-HermesOverlayBootstrap.ps1')
+Invoke-HermesOverlayBootstrap -RepoRoot $RepoRoot
+
 [void](Stop-HermesGhostInputBlockers -RepoRoot $RepoRoot)
 
 Reset-HermesConsoleInputModes

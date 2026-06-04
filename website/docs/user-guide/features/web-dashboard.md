@@ -74,7 +74,6 @@ The **Chat** tab embeds the full Hermes TUI (the same interface you get from `he
 **How it works:**
 
 - `/api/pty` opens a WebSocket authenticated with the dashboard's session token
-- Each chat tab gets an opaque **channel** id (query param) so the embedded TUI and sidebar stay paired; when resuming a session the id is `resume-{sessionId}` (letters, digits, `.`, `_`, `-` only — required by the server)
 - The server spawns `hermes --tui` behind a POSIX pseudo-terminal
 - Keystrokes travel to the PTY; ANSI output streams back to the browser
 - xterm.js's WebGL renderer paints each cell to an integer-pixel grid; mouse tracking (SGR 1006), wide characters (Unicode 11), and box-drawing glyphs all render natively
@@ -921,15 +920,6 @@ npm run dev
 ```
 
 The Vite dev server at `http://localhost:5173` proxies `/api` requests to the FastAPI backend at `http://127.0.0.1:9119`.
-
-Before committing frontend changes, run the quality gate from `web/`:
-
-```bash
-npm run lint
-npm run build
-```
-
-(`tsc` enforces `noUnusedLocals`; CI/fork E2E: `audits/RUN_WEB_UI_CLEAN_E2E.bat` on Windows.)
 
 The frontend is built with React 19, TypeScript, Tailwind CSS v4, and shadcn/ui-style components. Production builds output to `hermes_cli/web_dist/` which the FastAPI server serves as a static SPA.
 

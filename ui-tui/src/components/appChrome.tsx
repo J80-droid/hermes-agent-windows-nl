@@ -9,10 +9,6 @@ import { useTurnSelector } from '../app/turnStore.js'
 import { FACES } from '../content/faces.js'
 import { VERBS } from '../content/verbs.js'
 import { fmtDuration } from '../domain/messages.js'
-import { resolveStatusRuleLayout, statusRuleColumns } from '../domain/usageCostBar.js'
-import { resolveStatusBarThroughputLabel } from '../domain/statusBarThroughput.js'
-import type { StatusBarTextSegment } from '../domain/statusRuleLines.js'
-import type { CostBarMode } from '../domain/usageCostBar.js'
 import { stickyPromptFromViewport } from '../domain/viewport.js'
 import { buildSubagentTree, treeTotals, widthByDepth } from '../lib/subagentTree.js'
 import { fmtK } from '../lib/text.js'
@@ -250,18 +246,14 @@ export function statusBarSegments(cols: number): StatusBarSegments {
   }
 }
 
-type SpawnHudLayout = {
-  atCap: boolean
-  label: string
-  ratio: number
-}
+function SpawnHud({ t }: { t: Theme }) {
+  // Tight HUD that only appears when the session is actually fanning out.
+  // Colour escalates to warn/error as depth or concurrency approaches the cap.
+  const delegation = useStore($delegationState)
+  const subagents = useTurnSelector(state => state.subagents)
 
-function resolveSpawnHudLayout(
-  delegation: { paused: boolean; maxSpawnDepth: number; maxConcurrentChildren: number },
-  subagents: Parameters<typeof buildSubagentTree>[0]
-): SpawnHudLayout | null {
-  const tree = buildSubagentTree(subagents)
-  const totals = treeTotals(tree)
+  const tree = useMemo(() => buildSubagentTree(subagents), [subagents])
+  const totals = useMemo(() => treeTotals(tree), [tree])
 
   if (!totals.descendantCount && !delegation.paused) {
     return null
@@ -271,10 +263,19 @@ function resolveSpawnHudLayout(
   const maxConc = delegation.maxConcurrentChildren
   const depth = Math.max(0, totals.maxDepthFromHere)
   const active = totals.activeCount
+
+  // `max_concurrent_children` is a per-parent cap, not a global one.
+  // `activeCount` sums every running agent across the tree and would
+  // over-warn for multi-orchestrator runs.  The widest level of the tree
+  // is a closer proxy to "most concurrent spawns that could be hitting a
+  // single parent's slot budget".
   const widestLevel = widthByDepth(tree).reduce((a, b) => Math.max(a, b), 0)
   const depthRatio = maxDepth ? depth / maxDepth : 0
   const concRatio = maxConc ? widestLevel / maxConc : 0
   const ratio = Math.max(depthRatio, concRatio)
+
+  const color = delegation.paused || ratio >= 1 ? t.color.error : ratio >= 0.66 ? t.color.warn : t.color.muted
+
   const pieces: string[] = []
 
   if (delegation.paused) {
@@ -286,6 +287,9 @@ function resolveSpawnHudLayout(
     pieces.push(`d${depthLabel}`)
 
     if (active > 0) {
+      // Label pairs the widest-level count (drives concRatio above) with
+      // the total active count for context.  `W/cap` triggers the warn,
+      // `+N` is everything else currently running across the tree.
       const extra = Math.max(0, active - widestLevel)
       const widthLabel = maxConc ? `${widestLevel}/${maxConc}` : `${widestLevel}`
       const suffix = extra > 0 ? `+${extra}` : ''
@@ -295,46 +299,10 @@ function resolveSpawnHudLayout(
 
   const atCap = depthRatio >= 1 || concRatio >= 1
 
-  return {
-    atCap,
-    label: pieces.join(' '),
-    ratio
-  }
-}
-
-/** Plain label for spawn HUD width measurement (must match ``SpawnHud`` output). */
-export function spawnHudMeasureSegment(
-  delegation: { paused: boolean; maxSpawnDepth: number; maxConcurrentChildren: number },
-  subagents: Parameters<typeof buildSubagentTree>[0]
-): StatusBarTextSegment | null {
-  const layout = resolveSpawnHudLayout(delegation, subagents)
-
-  if (!layout) {
-    return null
-  }
-
-  return { text: `${layout.atCap ? ' │ ⚠ ' : ' │ '}${layout.label}` }
-}
-
-function SpawnHud({ t }: { t: Theme }) {
-  const delegation = useStore($delegationState)
-  const subagents = useTurnSelector(state => state.subagents)
-  const layout = useMemo(
-    () => resolveSpawnHudLayout(delegation, subagents),
-    [delegation, subagents]
-  )
-
-  if (!layout) {
-    return null
-  }
-
-  const color =
-    delegation.paused || layout.ratio >= 1 ? t.color.error : layout.ratio >= 0.66 ? t.color.warn : t.color.muted
-
   return (
-    <Text color={color} wrap="truncate-end">
-      {layout.atCap ? ' │ ⚠ ' : ' │ '}
-      {layout.label}
+    <Text color={color}>
+      {atCap ? ' │ ⚠ ' : ' │ '}
+      {pieces.join(' ')}
     </Text>
   )
 }
@@ -412,23 +380,15 @@ export function StatusRule({
   bgCount,
   liveSessionCount,
   sessionStartedAt,
-  costBarMode,
   showCost,
-  showStatusBarTps,
   turnStartedAt,
   voiceLabel,
   onSessionCountClick,
   t
 }: StatusRuleProps) {
-  const lastCallTps = useTurnSelector(state => state.lastCallTps)
-  const streamGenStartedAt = useTurnSelector(state => state.streamGenStartedAt)
-  const streamOutputTokens = useTurnSelector(state => state.streamOutputTokens)
-  const reasoningTokens = useTurnSelector(state => state.reasoningTokens)
-  const toolTokens = useTurnSelector(state => state.toolTokens)
-  const ruleCols = statusRuleColumns(cols)
   const pct = usage.context_percent
   const barColor = ctxBarColor(pct, t)
-  const segs = statusBarSegments(ruleCols)
+  const segs = statusBarSegments(cols)
 
   // On narrow terminals the context read-out collapses to a bare token count
   // (`12k tok`) and the visual fill bar is dropped entirely.
@@ -454,36 +414,13 @@ export function StatusRule({
     stringWidth(modelText) +
     (ctxLabel ? stringWidth(' │ ') + stringWidth(ctxLabel) : 0)
 
-  const { leftWidth, rightWidth, separatorWidth } = statusRuleWidths(ruleCols, cwdLabel, essentialWidth)
-
-  const { costLabel } = resolveStatusRuleLayout({
-    cols,
-    cwdReserve: rightWidth + separatorWidth,
-    leftWidth,
-    costBarMode,
-    cwdLabel,
-    showCost,
-    showStatusBarTps,
-    usage
-  })
-
-  const throughputLabel = resolveStatusBarThroughputLabel({
-    busy,
-    showStatusBarTps,
-    signals: {
-      lastCallTps: lastCallTps ?? usage.last_call_tps ?? null,
-      reasoningTokens,
-      streamGenStartedAt,
-      streamOutputTokens,
-      toolTokens
-    },
-    width: ruleCols
-  })
+  const { leftWidth, rightWidth, separatorWidth } = statusRuleWidths(cols, cwdLabel, essentialWidth)
 
   // Whole-segment progressive disclosure for the tail: a segment renders only
   // if it fits in the space left after the pinned essentials, evaluated in
   // descending priority order — bar, duration, compressions, voice, session
-  // count, bg, throughput, cost. Lower-priority segments drop first.
+  // count, bg, cost. Lower-priority segments drop first and nothing truncates
+  // mid-segment, so status/model/context are never crushed.
   const SEP = stringWidth(' │ ')
   let tailBudget = Math.max(0, leftWidth - essentialWidth)
   const fits = (w: number) => {
@@ -498,6 +435,7 @@ export function StatusRule({
 
   const sessionCountText = liveSessionCount > 0 ? statusSessionCountLabel(liveSessionCount) : ''
   const compressions = typeof usage.compressions === 'number' ? usage.compressions : 0
+  const costText = typeof usage.cost_usd === 'number' ? `$${usage.cost_usd.toFixed(4)}` : ''
 
   const showBar = !!bar && fits(SEP + stringWidth(`[${bar}] ${pct != null ? `${pct}%` : ''}`))
   const showDuration = segs.duration && !!sessionStartedAt && fits(SEP + MAX_DURATION_WIDTH)
@@ -505,8 +443,7 @@ export function StatusRule({
   const showVoice = segs.voice && !!voiceLabel && fits(SEP + stringWidth(voiceLabel))
   const showSessionCount = !!sessionCountText && fits(SEP + stringWidth(sessionCountText))
   const showBg = segs.bg && bgCount > 0 && fits(SEP + stringWidth(`${bgCount} bg`))
-  const showThroughput = !!throughputLabel && fits(SEP + stringWidth(throughputLabel))
-  const showCostSeg = segs.cost && !!costLabel && fits(SEP + stringWidth(costLabel))
+  const showCostSeg = segs.cost && showCost && !!costText && fits(SEP + stringWidth(costText))
 
   const handleSessionCountClick = (event: { stopImmediatePropagation?: () => void }) => {
     event.stopImmediatePropagation?.()
@@ -583,18 +520,15 @@ export function StatusRule({
             {bgCount} bg
           </Text>
         ) : null}
-        {showThroughput ? (
-          <Text color={t.color.statusTps} wrap="truncate-end">
-            {' │ '}
-            {throughputLabel}
-          </Text>
-        ) : null}
         {showCostSeg ? (
-          <Text color={t.color.accent} wrap="truncate-end">
+          <Text color={t.color.muted} wrap="truncate-end">
             {' │ '}
-            {costLabel}
+            {costText}
           </Text>
         ) : null}
+        {/* SpawnHud isn't part of the tail budget (its width is dynamic), so it
+            renders last — any overflow truncates the HUD itself rather than the
+            budgeted segments before it. It self-hides when no delegation runs. */}
         <SpawnHud t={t} />
       </Box>
 
@@ -721,9 +655,7 @@ interface StatusRuleProps {
   modelReasoningEffort?: string
   indicatorStyle?: IndicatorStyle
   sessionStartedAt?: null | number
-  costBarMode: CostBarMode
   showCost: boolean
-  showStatusBarTps: boolean
   status: string
   statusColor: string
   t: Theme

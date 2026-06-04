@@ -338,8 +338,6 @@ export const api = {
   getModelsAnalytics: (days: number) =>
     fetchJSON<ModelsAnalyticsResponse>(`/api/analytics/models?days=${days}`),
   getConfig: () => fetchJSON<Record<string, unknown>>("/api/config"),
-  getAssistantDisplay: () =>
-    fetchJSON<AssistantDisplaySettings>("/api/display/assistant"),
   getDefaults: () => fetchJSON<Record<string, unknown>>("/api/config/defaults"),
   getSchema: () => fetchJSON<{ fields: Record<string, unknown>; category_order: string[] }>("/api/config/schema"),
   getModelInfo: () => fetchJSON<ModelInfoResponse>("/api/model/info"),
@@ -1249,13 +1247,6 @@ export interface StatusResponse {
   latest_config_version: number;
   release_date: string;
   version: string;
-}
-
-/** Live display.assistant_* settings (mirrors CLI get_assistant_render_settings). */
-export interface AssistantDisplaySettings {
-  assistant_render_style: string;
-  assistant_palette: string;
-  assistant_label_columns: boolean;
 }
 
 export interface SessionInfo {

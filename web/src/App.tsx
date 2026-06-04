@@ -1,12 +1,10 @@
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type ComponentType,
-  type CSSProperties,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -60,9 +58,7 @@ import { Typography } from "@nous-research/ui/ui/components/typography/index";
 import { cn } from "@/lib/utils";
 import { Backdrop } from "@/components/Backdrop";
 import { SidebarFooter } from "@/components/SidebarFooter";
-import { SidebarStatusStrip } from "@/components/SidebarStatusStrip";
-import { gatewayLine } from "@/components/gatewayLine";
-import { useTooltipAnchor } from "@/hooks/useTooltipAnchor";
+import { SidebarStatusStrip, gatewayLine } from "@/components/SidebarStatusStrip";
 import { useBelowBreakpoint } from "@nous-research/ui/hooks/use-below-breakpoint";
 import { useSidebarStatus } from "@/hooks/useSidebarStatus";
 import { AuthWidget } from "@/components/AuthWidget";
@@ -481,11 +477,16 @@ export default function App() {
 
       <header
         className={cn(
-          "app-header-surface lg:hidden fixed top-0 left-0 right-0 z-40 min-h-14",
+          "lg:hidden fixed top-0 left-0 right-0 z-40 min-h-14",
           "flex items-center gap-2 px-4 py-2",
           "border-b border-current/20",
           "bg-background-base/90 backdrop-blur-sm",
         )}
+        style={{
+          background: "var(--component-header-background)",
+          borderImage: "var(--component-header-border-image)",
+          clipPath: "var(--component-header-clip-path)",
+        }}
       >
         <Button
           ghost
@@ -499,7 +500,10 @@ export default function App() {
           <Menu />
         </Button>
 
-        <Typography className="blend-lighter font-bold text-[0.95rem] leading-[0.95] tracking-[0.05em] text-midground">
+        <Typography
+          className="font-bold text-[0.95rem] leading-[0.95] tracking-[0.05em] text-midground"
+          style={{ mixBlendMode: "plus-lighter" }}
+        >
           {t.app.brand}
         </Typography>
       </header>
@@ -524,7 +528,7 @@ export default function App() {
             id="app-sidebar"
             aria-label={t.app.navigation}
             className={cn(
-              "app-sidebar-surface fixed top-0 left-0 z-50 flex h-dvh max-h-dvh w-64 min-h-0 flex-col",
+              "fixed top-0 left-0 z-50 flex h-dvh max-h-dvh w-64 min-h-0 flex-col",
               "border-r border-current/20",
               "bg-background-base/95 backdrop-blur-sm",
               "transition-[transform] duration-200 ease-out",
@@ -533,6 +537,11 @@ export default function App() {
               "lg:transition-[width] lg:duration-[600ms] lg:ease-[cubic-bezier(0.33,1.35,0.62,1)]",
               collapsed && "lg:w-14",
             )}
+            style={{
+              background: "var(--component-sidebar-background)",
+              clipPath: "var(--component-sidebar-clip-path)",
+              borderImage: "var(--component-sidebar-border-image)",
+            }}
           >
             <div
               className={cn(
@@ -549,7 +558,10 @@ export default function App() {
               >
                 <PluginSlot name="header-left" />
 
-                <Typography className="blend-lighter font-bold text-[1.125rem] leading-[0.95] tracking-[0.0525rem] text-midground uppercase">
+                <Typography
+                  className="font-bold text-[1.125rem] leading-[0.95] tracking-[0.0525rem] text-midground uppercase"
+                  style={{ mixBlendMode: "plus-lighter" }}
+                >
                   Hermes
                   <br />
                   Agent
@@ -742,7 +754,7 @@ export default function App() {
                         "min-h-0 min-w-0",
                         isChatRoute ? "flex flex-1 flex-col" : "hidden",
                       )}
-                      aria-hidden={isChatRoute ? undefined : "true"}
+                      aria-hidden={!isChatRoute}
                     >
                       <ChatPage isActive={isChatRoute} />
                     </div>
@@ -769,7 +781,6 @@ function SidebarNavLink({
   const { path, label, labelKey, icon: Icon } = item;
   const liRef = useRef<HTMLLIElement>(null);
   const [hovered, setHovered] = useState(false);
-  const tooltipAnchor = useTooltipAnchor(liRef, collapsed && hovered);
 
   const navLabel = labelKey
     ? ((t.app.nav as Record<string, string>)[labelKey] ?? label)
@@ -790,7 +801,7 @@ function SidebarNavLink({
         onBlur={collapsed ? () => setHovered(false) : undefined}
         className={({ isActive }) =>
           cn(
-            "nav-tab-clip group/nav relative flex items-center gap-3",
+            "group/nav relative flex items-center gap-3",
             "px-5 py-2.5",
             "font-mondwest text-display uppercase text-sm tracking-[0.12em]",
             "whitespace-nowrap transition-colors cursor-pointer",
@@ -800,6 +811,9 @@ function SidebarNavLink({
               : "text-text-secondary hover:text-midground",
           )
         }
+        style={{
+          clipPath: "var(--component-tab-clip-path)",
+        }}
       >
         {({ isActive }) => (
           <>
@@ -822,15 +836,16 @@ function SidebarNavLink({
             {isActive && (
               <span
                 aria-hidden
-                className="blend-lighter absolute left-0 top-0 bottom-0 w-px bg-midground"
+                className="absolute left-0 top-0 bottom-0 w-px bg-midground"
+                style={{ mixBlendMode: "plus-lighter" }}
               />
             )}
           </>
         )}
       </NavLink>
 
-      {tooltipAnchor && (
-        <SidebarTooltip anchor={tooltipAnchor} label={navLabel} warmRef={tooltipWarmRef} />
+      {collapsed && hovered && liRef.current && (
+        <SidebarTooltip anchor={liRef.current} label={navLabel} warmRef={tooltipWarmRef} />
       )}
     </li>
   );
@@ -925,7 +940,6 @@ function SystemActionButton({
   const { icon: Icon, label, runningLabel, spin } = item;
   const liRef = useRef<HTMLLIElement>(null);
   const [hovered, setHovered] = useState(false);
-  const tooltipAnchor = useTooltipAnchor(liRef, collapsed && hovered);
   const busy = isPending || isActionRunning;
   const displayLabel = isActionRunning ? runningLabel : label;
 
@@ -938,7 +952,7 @@ function SystemActionButton({
       <button
         onClick={onClick}
         disabled={disabled}
-        aria-busy={busy ? "true" : undefined}
+        aria-busy={busy}
         aria-label={collapsed ? displayLabel : undefined}
         onFocus={collapsed ? () => setHovered(true) : undefined}
         onBlur={collapsed ? () => setHovered(false) : undefined}
@@ -983,13 +997,14 @@ function SystemActionButton({
         {busy && (
           <span
             aria-hidden
-            className="blend-lighter absolute left-0 top-0 bottom-0 w-px bg-midground"
+            className="absolute left-0 top-0 bottom-0 w-px bg-midground"
+            style={{ mixBlendMode: "plus-lighter" }}
           />
         )}
       </button>
 
-      {tooltipAnchor && (
-        <SidebarTooltip anchor={tooltipAnchor} label={displayLabel} warmRef={tooltipWarmRef} />
+      {collapsed && hovered && liRef.current && (
+        <SidebarTooltip anchor={liRef.current} label={displayLabel} warmRef={tooltipWarmRef} />
       )}
     </li>
   );
@@ -1003,7 +1018,6 @@ function SidebarIconWithTooltip({
 }: SidebarIconWithTooltipProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
-  const tooltipAnchor = useTooltipAnchor(ref, collapsed && hovered);
 
   return (
     <div
@@ -1024,8 +1038,8 @@ function SidebarIconWithTooltip({
         />
       )}
 
-      {tooltipAnchor && (
-        <SidebarTooltip anchor={tooltipAnchor} label={label} warmRef={tooltipWarmRef} />
+      {collapsed && hovered && ref.current && (
+        <SidebarTooltip anchor={ref.current} label={label} warmRef={tooltipWarmRef} />
       )}
     </div>
   );
@@ -1035,7 +1049,6 @@ function GatewayDot({ collapsed, status, tooltipWarmRef }: GatewayDotProps) {
   const { t } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
-  const tooltipAnchor = useTooltipAnchor(ref, hovered);
 
   const toneToColor: Record<string, string> = {
     "text-success": "bg-success",
@@ -1076,8 +1089,8 @@ function GatewayDot({ collapsed, status, tooltipWarmRef }: GatewayDotProps) {
         className={cn("h-1.5 w-1.5 rounded-full", color)}
       />
 
-      {tooltipAnchor && (
-        <SidebarTooltip anchor={tooltipAnchor} label={label} warmRef={tooltipWarmRef} />
+      {hovered && ref.current && (
+        <SidebarTooltip anchor={ref.current} label={label} warmRef={tooltipWarmRef} />
       )}
     </div>
   );
@@ -1088,15 +1101,7 @@ function SidebarTooltip({ anchor, label, warmRef }: SidebarTooltipProps) {
   const sidebar = document.getElementById("app-sidebar");
   const sidebarRight = sidebar?.getBoundingClientRect().right ?? rect.right;
 
-  const [isWarm, setIsWarm] = useState(false);
-
-  useLayoutEffect(() => {
-    if (!warmRef) {
-      setIsWarm(false);
-      return;
-    }
-    setIsWarm(Date.now() - warmRef.current < 300);
-  }, [warmRef, anchor, label]);
+  const isWarm = warmRef ? Date.now() - warmRef.current < 300 : false;
 
   useEffect(() => {
     if (warmRef) warmRef.current = Date.now();
@@ -1108,18 +1113,18 @@ function SidebarTooltip({ anchor, label, warmRef }: SidebarTooltipProps) {
   return createPortal(
     <span
       className={cn(
-        "sidebar-tooltip-positioned fixed z-[100] pointer-events-none",
+        "fixed z-[100] pointer-events-none",
         "px-2 py-1",
         "bg-background-base/95 border border-current/20 backdrop-blur-sm shadow-lg",
         "font-mondwest text-display text-xs tracking-[0.1em] text-midground uppercase",
       )}
-      style={
-        {
-          "--tooltip-top": `${rect.top + rect.height / 2}px`,
-          "--tooltip-left": `${sidebarRight + 8}px`,
-          "--tooltip-animation": isWarm ? "none" : undefined,
-        } as CSSProperties
-      }
+      style={{
+        top: rect.top + rect.height / 2,
+        left: sidebarRight + 8,
+        transform: "translateY(-50%)",
+        opacity: isWarm ? 1 : undefined,
+        animation: isWarm ? "none" : "sidebar-tooltip-in 120ms ease-out",
+      }}
     >
       {label}
     </span>,

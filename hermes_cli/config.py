@@ -437,14 +437,6 @@ def recommended_update_command_for_method(method: str) -> str:
         if shutil.which("uv"):
             return "uv pip install --upgrade hermes-agent"
         return "pip install --upgrade hermes-agent"
-    if method == "git":
-        import sys
-
-        project_root = Path(__file__).parent.parent.resolve()
-        win_update = project_root / "windows" / "UPDATE_HERMES.bat"
-        if sys.platform == "win32" and win_update.is_file():
-            return r"windows\UPDATE_HERMES.bat"
-        return "hermes update"
     return "hermes update"
 
 
@@ -997,15 +989,6 @@ DEFAULT_CONFIG = {
         "persistent_shell": True,
     },
 
-    "workspace": {
-        # Agent file tools (read_file, write_file, patch, search_files) are
-        # confined to this directory tree.  Empty = TERMINAL_CWD when set,
-        # otherwise %LOCALAPPDATA%\\hermes\\workspace (Windows) or
-        # ~/.hermes/workspace.
-        "root": "",
-        "enforce_sandbox": True,
-    },
-
     "web": {
         "backend": "",           # shared fallback — applies to both search and extract
         "search_backend": "",    # per-capability override for web_search (e.g. "searxng")
@@ -1384,13 +1367,7 @@ DEFAULT_CONFIG = {
         "show_reasoning": False,
         "streaming": False,
         "timestamps": False,      # Show [HH:MM] on user and assistant labels
-        # render | strip | raw — "render" + streaming:true is incompatible with
-        # the classic CLI (Rich Markdown only on the final panel); load_config forces streaming off.
-        "final_response_markdown": "strip",
-        # Assistant answers only (not UI skin): institutional_rich | markdown_legacy
-        "assistant_render_style": "institutional_rich",
-        "assistant_palette": "demo",
-        "assistant_label_columns": True,
+        "final_response_markdown": "strip",  # render | strip | raw
         # Preserve recent classic CLI output across Ctrl+L, /redraw, and
         # terminal resize full-screen clears. Disable if a terminal emulator
         # behaves badly with replayed scrollback.
@@ -1412,10 +1389,7 @@ DEFAULT_CONFIG = {
         # iteration/budget limit.  Replaces the bare "(empty)" sentinel so the
         # failure isn't silent from the UI's perspective.  Set false to suppress.
         "turn_completion_explainer": True,
-        "show_cost": True,        # Show estimated session cost in TUI + classic CLI status bar (fork default on)
-        "show_status_bar_tps": True,  # Show generation throughput (tok/s) in status bar
-        "show_prompt_timer_emoji": False,  # prefix on prompt timer; fork default off (/timer-emoji)
-        "cost_bar_mode": "rich",  # rich = turn/session + breakdown; minimal = legacy ~$0.0042
+        "show_cost": False,       # Show $ cost in the status bar (off by default)
         "skin": "default",
         # UI language for static user-facing messages (approval prompts, a
         # handful of gateway slash-command replies).  Does NOT affect agent
@@ -1598,7 +1572,7 @@ DEFAULT_CONFIG = {
             "ref_audio": "",  # Path to reference voice audio (empty = bundled default)
             "ref_text": "",   # Path to reference voice transcript (empty = bundled default)
             "model": "neuphonic/neutts-air-q4-gguf",  # HuggingFace model repo
-            "device": "auto",  # auto, cpu, cuda, or mps
+            "device": "cpu",  # cpu, cuda, or mps
         },
         "piper": {
             # Voice name (e.g. "en_US-lessac-medium") downloaded on first
@@ -1606,19 +1580,13 @@ DEFAULT_CONFIG = {
             # Full voice list: https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/VOICES.md
             "voice": "en_US-lessac-medium",
             # "voices_dir": "",        # Override voice cache dir; default = ~/.hermes/cache/piper-voices/
-            # "accelerator": "auto",   # auto (CUDA -> DirectML -> CPU) | cuda | directml | cpu
-            # "use_cuda": False,       # Legacy: forces CUDA when True (prefer onnxruntime-gpu)
+            # "use_cuda": False,       # Requires onnxruntime-gpu
             # "length_scale": 1.0,     # 2.0 = twice as slow
             # "noise_scale": 0.667,
             # "noise_w_scale": 0.8,
             # "volume": 1.0,
             # "normalize_audio": True,
         },
-    },
-
-    "hardware": {
-        # Print probed/selected local inference backends in the CLI banner at startup.
-        "log_backends_at_startup": True,
     },
     
     "stt": {
@@ -1627,7 +1595,6 @@ DEFAULT_CONFIG = {
         "local": {
             "model": "base",  # tiny, base, small, medium, large-v3
             "language": "",  # auto-detect by default; set to "en", "es", "fr", etc. to force
-            "device": "auto",  # auto (CUDA -> CPU) | cuda | cpu — DirectML not supported by faster-whisper
         },
         "openai": {
             "model": "whisper-1",  # whisper-1, gpt-4o-mini-transcribe, gpt-4o-transcribe
@@ -4966,58 +4933,6 @@ def _normalize_max_turns_config(config: Dict[str, Any]) -> Dict[str, Any]:
     return config
 
 
-def _truthy_display_bool(value: Any) -> bool:
-    """Interpret display.* boolean-like YAML values after merge or env expansion."""
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, (int, float)):
-        return value != 0
-    if isinstance(value, str):
-        return value.strip().lower() in ("1", "true", "yes", "on")
-    return bool(value)
-
-
-def _normalize_display_markdown_streaming(config: Dict[str, Any]) -> Dict[str, Any]:
-    """Turn off display.streaming when final_response_markdown is render.
-
-    The classic Hermes CLI prints streamed assistant tokens as plain lines;
-    Rich ``Markdown`` is only used on the final ``Panel``. With both enabled,
-    users see raw ``###`` / ``**`` and the formatted panel is skipped.
-    """
-    if not isinstance(config, dict):
-        return config
-    config = dict(config)
-    raw_disp = config.get("display")
-    if not isinstance(raw_disp, dict):
-        return config
-    display = dict(raw_disp)
-
-    raw_mode = display.get("final_response_markdown", "")
-    if isinstance(raw_mode, str):
-        mode = raw_mode.strip().lower()
-    else:
-        mode = str(raw_mode or "").strip().lower()
-
-    if mode == "render" and _truthy_display_bool(display.get("streaming", False)):
-        display["streaming"] = False
-        logger.warning(
-            "display.streaming was true while display.final_response_markdown is 'render'; "
-            "streaming is incompatible with Rich markdown in the classic CLI, so streaming "
-            "was forced to false. Use final_response_markdown 'strip' or 'raw' if you need "
-            "token streaming."
-        )
-
-    config["display"] = display
-    return config
-
-
-def _normalize_post_merge_config(config: Dict[str, Any]) -> Dict[str, Any]:
-    """Run post-merge normalizers: display/streaming invariant, max_turns, root model keys."""
-    return _normalize_root_model_keys(
-        _normalize_max_turns_config(_normalize_display_markdown_streaming(config))
-    )
-
-
 def cfg_get(cfg: Optional[Dict[str, Any]], *keys: str, default: Any = None) -> Any:
     """Traverse nested dict keys safely, returning ``default`` on any miss.
 
@@ -5174,27 +5089,10 @@ def _load_config_impl(*, want_deepcopy: bool) -> Dict[str, Any]:
                     user_config.pop("max_turns", None)
 
                 config = _deep_merge(config, user_config)
-                try:
-                    from hermes_cli.profile_model_inheritance import (
-                        apply_profile_root_config_inheritance,
-                    )
-
-                    config = apply_profile_root_config_inheritance(config, user_config)
-                except Exception:
-                    pass
             except Exception as e:
                 _warn_config_parse_failure(config_path, e)
-        else:
-            try:
-                from hermes_cli.profile_model_inheritance import (
-                    apply_profile_root_config_inheritance,
-                )
 
-                config = apply_profile_root_config_inheritance(config, {})
-            except Exception:
-                pass
-
-        normalized = _normalize_post_merge_config(config)
+        normalized = _normalize_root_model_keys(_normalize_max_turns_config(config))
         expanded = _expand_env_vars(normalized)
         _LAST_EXPANDED_CONFIG_BY_PATH[path_key] = copy.deepcopy(expanded)
         if cache_key is not None:
@@ -5304,52 +5202,15 @@ def save_config(config: Dict[str, Any]):
 
         ensure_hermes_home()
         config_path = get_config_path()
-        current_normalized = _normalize_post_merge_config(config)
+        current_normalized = _normalize_root_model_keys(_normalize_max_turns_config(config))
         normalized = current_normalized
-        raw_existing = _normalize_post_merge_config(read_raw_config())
+        raw_existing = _normalize_root_model_keys(_normalize_max_turns_config(read_raw_config()))
         if raw_existing:
             normalized = _preserve_env_ref_templates(
                 normalized,
                 raw_existing,
                 _LAST_EXPANDED_CONFIG_BY_PATH.get(str(config_path)),
             )
-
-        # Named profiles: global blocks live in root config, not profile yaml.
-        # Redirect naar root alleen als model/auxiliary/providers expliciet in `config` zitten
-        # (voorkomt per ongeluk overschrijven van root providers bij partial profiel-save).
-        incoming_keys = set(config.keys()) if isinstance(config, dict) else set()
-        try:
-            from hermes_cli.profile_model_inheritance import (
-                save_auxiliary_section_to_root,
-                save_model_section_to_root,
-                save_providers_sections_to_root,
-                should_redirect_auxiliary_save_to_root,
-                should_redirect_model_save_to_root,
-                should_redirect_providers_save_to_root,
-            )
-
-            if should_redirect_model_save_to_root():
-                model_section = normalized.pop("model", None)
-                if "model" in incoming_keys and model_section is not None:
-                    save_model_section_to_root(model_section)
-            if should_redirect_auxiliary_save_to_root():
-                auxiliary_section = normalized.pop("auxiliary", None)
-                if "auxiliary" in incoming_keys and auxiliary_section is not None:
-                    save_auxiliary_section_to_root(auxiliary_section)
-            if should_redirect_providers_save_to_root():
-                providers_section = normalized.pop("providers", None)
-                custom_providers_section = normalized.pop("custom_providers", None)
-                providers_in_save = "providers" in incoming_keys
-                custom_in_save = "custom_providers" in incoming_keys
-                if (providers_in_save or custom_in_save) and (
-                    providers_section is not None or custom_providers_section is not None
-                ):
-                    save_providers_sections_to_root(
-                        providers_section if isinstance(providers_section, dict) else {},
-                        custom_providers_section if custom_in_save else None,
-                    )
-        except Exception:
-            pass
 
         # Build optional commented-out sections for features that are off by
         # default or only relevant when explicitly configured.
@@ -5598,8 +5459,8 @@ def _check_non_ascii_credential(key: str, value: str) -> str:
     return sanitized
 
 
-def save_env_value(key: str, value: str, *, env_path: Optional[Path] = None):
-    """Save or update a value in ~/.hermes/.env (or an explicit ``env_path``)."""
+def save_env_value(key: str, value: str):
+    """Save or update a value in ~/.hermes/.env."""
     if is_managed():
         managed_error(f"set {key}")
         return
@@ -5610,11 +5471,7 @@ def save_env_value(key: str, value: str, *, env_path: Optional[Path] = None):
     # API keys / tokens must be ASCII — strip non-ASCII with a warning.
     value = _check_non_ascii_credential(key, value)
     ensure_hermes_home()
-    if env_path is None:
-        env_path = get_env_path()
-    else:
-        env_path = Path(env_path)
-        env_path.parent.mkdir(parents=True, exist_ok=True)
+    env_path = get_env_path()
 
     # On Windows, open() defaults to the system locale (cp1252) which can
     # cause OSError errno 22 on UTF-8 .env files.
@@ -6030,35 +5887,6 @@ def edit_config():
     subprocess.run([editor, str(config_path)])
 
 
-def get_config_value(key: str) -> None:
-    """Print a dotted config key (e.g. auxiliary.vision.provider)."""
-    cfg = load_config()
-    parts = [p for p in key.split(".") if p]
-    if not parts:
-        print("", end="")
-        return
-    cur: object = cfg
-    for part in parts:
-        if isinstance(cur, list):
-            try:
-                cur = cur[int(part)]
-            except (ValueError, IndexError):
-                print("", end="")
-                return
-        elif isinstance(cur, dict):
-            if part not in cur:
-                print("", end="")
-                return
-            cur = cur[part]
-        else:
-            print("", end="")
-            return
-    if isinstance(cur, (dict, list)):
-        print(yaml.safe_dump(cur, sort_keys=False, allow_unicode=True).rstrip())
-    else:
-        print(cur)
-
-
 def set_config_value(key: str, value: str):
     """Set a configuration value."""
     if is_managed():
@@ -6082,15 +5910,10 @@ def set_config_value(key: str, value: str):
         print(f"✓ Set {key} in {get_env_path()}")
         return
     
-    # Otherwise it goes to config.yaml (root when profile + model.* key)
-    try:
-        from hermes_cli.profile_model_inheritance import config_path_for_user_key
-
-        config_path = config_path_for_user_key(key)
-    except Exception:
-        config_path = get_config_path()
+    # Otherwise it goes to config.yaml
     # Read the raw user config (not merged with defaults) to avoid
     # dumping all default values back to the file
+    config_path = get_config_path()
     user_config = {}
     if config_path.exists():
         try:
@@ -6120,20 +5943,7 @@ def set_config_value(key: str, value: str):
     ensure_hermes_home()
     from utils import atomic_yaml_write
     atomic_yaml_write(config_path, user_config, sort_keys=False)
-    try:
-        from hermes_cli.profile_model_inheritance import (
-            bust_config_caches,
-            is_global_root_config_key,
-            root_config_path,
-        )
-
-        if is_global_root_config_key(key):
-            bust_config_caches(root_config_path())
-        else:
-            bust_config_caches(config_path)
-    except Exception:
-        pass
-
+    
     # Keep .env in sync for keys that terminal_tool reads directly from env vars.
     # config.yaml is authoritative, but terminal_tool only reads TERMINAL_ENV etc.
     _config_to_env_sync = {
@@ -6148,6 +5958,11 @@ def set_config_value(key: str, value: str):
         "terminal.docker_persist_across_processes": "TERMINAL_DOCKER_PERSIST_ACROSS_PROCESSES",
         "terminal.docker_orphan_reaper": "TERMINAL_DOCKER_ORPHAN_REAPER",
         "terminal.docker_env": "TERMINAL_DOCKER_ENV",
+        # JSON-valued keys (terminal_tool parses these via json.loads). The user
+        # passes JSON on the CLI, so str(value) below already yields valid JSON —
+        # same as terminal.docker_env. cli.py and gateway/run.py bridge these too.
+        "terminal.docker_volumes": "TERMINAL_DOCKER_VOLUMES",
+        "terminal.docker_forward_env": "TERMINAL_DOCKER_FORWARD_ENV",
         # terminal.cwd intentionally excluded — CLI resolves at runtime,
         # gateway bridges it in gateway/run.py. Persisting to .env causes
         # stale values to poison child processes.
@@ -6194,17 +6009,7 @@ def config_command(args):
     
     elif subcmd == "path":
         print(get_config_path())
-
-    elif subcmd == "get":
-        key = getattr(args, "key", None)
-        if not key:
-            print("Usage: hermes config get <dotted.key>")
-            print("Examples:")
-            print("  hermes config get auxiliary")
-            print("  hermes config get auxiliary.vision.provider")
-            sys.exit(1)
-        get_config_value(key)
-
+    
     elif subcmd == "env-path":
         print(get_env_path())
     
@@ -6309,7 +6114,6 @@ def config_command(args):
         print("  hermes config           Show current configuration")
         print("  hermes config edit      Open config in editor")
         print("  hermes config set <key> <value>   Set a config value")
-        print("  hermes config get <key>           Get a config value (dotted path)")
         print("  hermes config check     Check for missing/outdated config")
         print("  hermes config migrate   Update config with new options")
         print("  hermes config path      Show config file path")

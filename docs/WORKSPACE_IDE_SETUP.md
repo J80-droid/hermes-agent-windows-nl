@@ -31,8 +31,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File windows\scripts\Apply-Hermes
 Dit script:
 
 1. Kopieert `docs/templates/Hermes_agent_WS.vscode.settings.json` → `..\..\.vscode\settings.json` (parent)
-2. Valideert de geschreven sleutels
-3. Draait `Refresh-PsesIdeCache.ps1` + `Test-PsesTokenizer.ps1` (AST)
+2. Kopieert `docs/templates/repo-hygiene.mdc` → `hermes-agent/.cursor/rules/` en parent `Hermes_agent_WS/.cursor/rules/` (Cursor agents: geen scripts in repo-root)
+3. Valideert de geschreven sleutels
+4. Draait `Refresh-PsesIdeCache.ps1` + `Test-PsesTokenizer.ps1` (AST)
 
 ### Stap 2 — Cursor (verplicht, eenmalig per sessie-fix)
 

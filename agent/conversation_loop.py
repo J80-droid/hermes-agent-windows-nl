@@ -30,8 +30,6 @@ from typing import Any, Dict, List, Optional
 from agent.codex_responses_adapter import _summarize_user_message_for_log
 from agent.display import KawaiiSpinner
 from agent.error_classifier import FailoverReason, classify_api_error
-from agent.jatevo_usage import is_jatevo_runtime
-from agent.venice_usage import is_venice_runtime
 from agent.iteration_budget import IterationBudget
 from agent.memory_manager import build_memory_context_block
 from agent.message_sanitization import (
@@ -1138,12 +1136,6 @@ def run_conversation(
             logging.debug(f"Total message size: ~{approx_tokens:,} tokens")
         
         api_start_time = time.time()
-        try:
-            from hermes_cli.status_bar_throughput import reset_agent_stream_tps_live
-
-            reset_agent_stream_tps_live(agent)
-        except Exception:
-            pass
         retry_count = 0
         max_retries = agent._api_max_retries
         primary_recovery_attempted = False
@@ -1523,18 +1515,7 @@ def run_conversation(
                     elif _resp_error_code == 504:
                         _failure_hint = f"upstream gateway timeout (504, {api_duration:.0f}s)"
                     elif _resp_error_code == 429:
-                        _prov = getattr(agent, "provider", None)
-                        _bu = getattr(agent, "base_url", None)
-                        if is_jatevo_runtime(_prov, _bu):
-                            _failure_hint = (
-                                "Jatevo dagquota op (429) — /jquota, reset 00:00 UTC"
-                            )
-                        elif is_venice_runtime(_prov, _bu):
-                            _failure_hint = (
-                                "Venice rate limit (429) — /vquota voor DIEM/USD"
-                            )
-                        else:
-                            _failure_hint = f"rate limited by upstream provider (429)"
+                        _failure_hint = f"rate limited by upstream provider (429)"
                     elif _resp_error_code in {500, 502}:
                         _failure_hint = f"upstream server error ({_resp_error_code}, {api_duration:.0f}s)"
                     elif _resp_error_code in {503, 529}:
@@ -1952,13 +1933,6 @@ def run_conversation(
                         prompt_tokens, completion_tokens, total_tokens,
                         api_duration, _cache_pct,
                     )
-
-                    try:
-                        from hermes_cli.status_bar_throughput import finalize_agent_call_tps
-
-                        finalize_agent_call_tps(agent, completion_tokens, api_duration)
-                    except Exception:
-                        pass
 
                     cost_result = estimate_usage_cost(
                         agent.model,
@@ -2681,7 +2655,7 @@ def run_conversation(
                 
                 error_type = type(api_error).__name__
                 error_msg = str(api_error).lower()
-                _error_summary = agent.summarize_api_error(api_error)
+                _error_summary = agent._summarize_api_error(api_error)
                 logger.warning(
                     "API call failed (attempt %s/%s) error_type=%s %s summary=%s",
                     retry_count,
@@ -3244,12 +3218,12 @@ def run_conversation(
                     if classified.reason == FailoverReason.content_policy_blocked:
                         agent._emit_status(
                             f"❌ Provider safety filter blocked this request: "
-                            f"{agent.summarize_api_error(api_error)}"
+                            f"{agent._summarize_api_error(api_error)}"
                         )
                     else:
                         agent._emit_status(
                             f"❌ Non-retryable error (HTTP {status_code}): "
-                            f"{agent.summarize_api_error(api_error)}"
+                            f"{agent._summarize_api_error(api_error)}"
                         )
                     agent._vprint(f"{agent.log_prefix}❌ Non-retryable client error (HTTP {status_code}). Aborting.", force=True)
                     agent._vprint(f"{agent.log_prefix}   🔌 Provider: {_provider}  Model: {_model}", force=True)
@@ -3334,7 +3308,7 @@ def run_conversation(
                     else:
                         agent._persist_session(messages, conversation_history)
                     if classified.reason == FailoverReason.content_policy_blocked:
-                        _summary = agent.summarize_api_error(api_error)
+                        _summary = agent._summarize_api_error(api_error)
                         _policy_response = (
                             f"⚠️  The model provider's safety filter blocked this request "
                             f"(not a Hermes/gateway failure).\n\n"
@@ -3380,7 +3354,7 @@ def run_conversation(
                         continue
                     # Terminal — flush buffered retry/fallback trace.
                     agent._flush_status_buffer()
-                    _final_summary = agent.summarize_api_error(api_error)
+                    _final_summary = agent._summarize_api_error(api_error)
                     _billing_guidance = ""
                     if classified.reason == FailoverReason.billing:
                         agent._emit_status(f"❌ Billing or credits exhausted — {_final_summary}")
@@ -4822,10 +4796,8 @@ def run_conversation(
     # so it never competes with the user's task for model attention.
     if final_response and not interrupted and (_should_review_memory or _should_review_skills):
         try:
-            from agent.review_snapshot import snapshot_messages_for_background_review
-
             agent._spawn_background_review(
-                messages_snapshot=snapshot_messages_for_background_review(messages),
+                messages_snapshot=list(messages),
                 review_memory=_should_review_memory,
                 review_skills=_should_review_skills,
             )

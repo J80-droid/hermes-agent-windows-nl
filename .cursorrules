@@ -1,3 +1,14 @@
+# Repo-root hygiene (fork — Cursor + agents)
+
+- **Git-root** = map `hermes-agent/` (niet de parent `Hermes_agent_WS/`).
+- **Geen** nieuwe `.py` / `.ps1` / `.sh` / data in **repo-root** (`hermes-agent\*.ps1` naast `cli.py`).
+- **Tijdelijk:** `hermes-agent/output/research/scripts/` (of `output/research/data/`).
+- **Herbruikbaar:** `hermes-agent/skills/<categorie>/<naam>/scripts/`.
+- **Legal zaakwerk:** `hermes-agent/output/legal/`.
+- **RAG-bronnen:** `%USERPROFILE%\data\raw_source_files\<domein>\`.
+- Vóór `UPDATE_HERMES.bat`: schone `git status` in `hermes-agent/` of `windows\UPDATE_HERMES.bat -QuickFix`.
+- Details: `docs/WORKSPACE_CONVENTIONS.md` · Cursor rule `.cursor/rules/repo-hygiene.mdc`.
+
 # Hermes — RAG / LanceDB-knowledge (MCP)
 
 Bij het genereren van een **chronologie**, **feitenoverzicht** of **juridische analyse** op basis van de MCP-tool **`search_knowledge`**, ben je **VERPLICHT** om achter **elk specifiek feit of elke datum** direct een **inline referentie** te plaatsen in de vorm:

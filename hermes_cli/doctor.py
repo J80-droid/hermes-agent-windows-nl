@@ -445,183 +445,6 @@ def _build_apikey_providers_list() -> list:
     return _static
 
 
-def _env_has_non_empty_key(env_path: Path, key: str) -> bool:
-    if not env_path.is_file():
-        return False
-    try:
-        for line in env_path.read_text(encoding="utf-8", errors="replace").splitlines():
-            stripped = line.strip()
-            if not stripped or stripped.startswith("#"):
-                continue
-            if stripped.startswith(f"{key}="):
-                val = stripped.split("=", 1)[1].strip().strip('"').strip("'")
-                return bool(val)
-    except OSError:
-        return False
-    return False
-
-
-def _find_legacy_config_backup(legacy_root: Path) -> Path | None:
-    """Best-effort largest legacy config backup for provider restore hints."""
-    best: Path | None = None
-    best_size = -1
-    patterns = ("config.yaml.bak.*", "config.yaml.deprecated-*", "config.yaml.backup.*")
-    for pattern in patterns:
-        for path in legacy_root.glob(pattern):
-            try:
-                size = path.stat().st_size
-                if size > best_size:
-                    best_size = size
-                    best = path
-            except OSError:
-                continue
-    legacy_cfg = legacy_root / "config.yaml"
-    if legacy_cfg.is_file():
-        try:
-            size = legacy_cfg.stat().st_size
-            if size > best_size:
-                best = legacy_cfg
-        except OSError:
-            pass
-    return best
-
-
-def _read_yaml_providers(path: Path) -> dict:
-    if not path.is_file():
-        return {}
-    try:
-        import yaml
-
-        with open(path, encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
-        providers = data.get("providers") if isinstance(data, dict) else {}
-        return providers if isinstance(providers, dict) else {}
-    except Exception:
-        return {}
-
-
-def _check_windows_split_home_config(issues: list, *, should_fix: bool = False) -> None:
-    """Warn when legacy ~/.hermes/config.yaml coexists with Windows runtime config."""
-    if sys.platform != "win32":
-        return
-
-    localappdata = os.environ.get("LOCALAPPDATA", "")
-    if not localappdata:
-        return
-
-    runtime_root = Path(localappdata) / "hermes"
-    runtime_cfg = runtime_root / "config.yaml"
-    legacy_root = Path.home() / ".hermes"
-    legacy_cfg = legacy_root / "config.yaml"
-
-    if runtime_cfg.is_file() and legacy_cfg.is_file():
-        check_warn(
-            "Windows split-home: legacy ~/.hermes/config.yaml exists alongside runtime config",
-            f"Canoniek: {runtime_cfg}. Run windows\\APPLY_HERMES_HOME_MIGRATION.bat or DEPRECATE_LEGACY_CONFIG.bat",
-        )
-        issues.append("Deprecate legacy ~/.hermes/config.yaml (APPLY_HERMES_HOME_MIGRATION.bat)")
-
-    legacy_env = legacy_root / ".env"
-    runtime_env = runtime_root / ".env"
-    if _env_has_non_empty_key(legacy_env, "GOOGLE_API_KEY") and not _env_has_non_empty_key(
-        runtime_env, "GOOGLE_API_KEY"
-    ):
-        check_warn(
-            "GOOGLE_API_KEY only in legacy ~/.hermes/.env",
-            "Run windows\\SYNC_HERMES_API_ENV.bat",
-        )
-        issues.append("Sync API keys (SYNC_HERMES_API_ENV.bat)")
-
-    if _env_has_non_empty_key(legacy_env, "VENICE_API_KEY") and not _env_has_non_empty_key(
-        runtime_env, "VENICE_API_KEY"
-    ):
-        check_warn(
-            "VENICE_API_KEY only in legacy ~/.hermes/.env",
-            "Run windows\\SYNC_HERMES_API_ENV.bat",
-        )
-        issues.append("Sync Venice API key (SYNC_HERMES_API_ENV.bat)")
-
-    if _env_has_non_empty_key(legacy_env, "JATEVO_API_KEY") and not _env_has_non_empty_key(
-        runtime_env, "JATEVO_API_KEY"
-    ):
-        check_warn(
-            "JATEVO_API_KEY only in legacy ~/.hermes/.env",
-            "Run windows\\SYNC_HERMES_API_ENV.bat",
-        )
-        issues.append("Sync Jatevo API key (SYNC_HERMES_API_ENV.bat)")
-
-    try:
-        import yaml
-
-        if runtime_cfg.is_file():
-            with open(runtime_cfg, encoding="utf-8") as f:
-                rt_data = yaml.safe_load(f) or {}
-            providers = rt_data.get("providers") if isinstance(rt_data, dict) else {}
-            if not (isinstance(providers, dict) and providers.get("venice")):
-                legacy_backup = _find_legacy_config_backup(legacy_root)
-                if legacy_backup and "venice" in _read_yaml_providers(legacy_backup):
-                    check_warn(
-                        "Venice provider missing from runtime config",
-                        "Run windows\\APPLY_HERMES_HOME_MIGRATION.bat or merge_legacy_providers_config.py",
-                    )
-                    issues.append("Restore Venice provider in root config.yaml")
-            if not (isinstance(providers, dict) and providers.get("jatevo")):
-                legacy_backup = _find_legacy_config_backup(legacy_root)
-                if legacy_backup and "jatevo" in _read_yaml_providers(legacy_backup):
-                    check_warn(
-                        "Jatevo provider missing from runtime config",
-                        "Run windows\\APPLY_HERMES_HOME_MIGRATION.bat or merge_legacy_providers_config.py",
-                    )
-                    issues.append("Restore Jatevo provider in root config.yaml")
-            jatevo_entry = (
-                providers.get("jatevo") if isinstance(providers, dict) else None
-            )
-            if isinstance(jatevo_entry, dict):
-                jatevo_url = str(
-                    jatevo_entry.get("base_url")
-                    or jatevo_entry.get("url")
-                    or jatevo_entry.get("api")
-                    or ""
-                ).strip().lower()
-                if "api.jatevo.ai" in jatevo_url:
-                    check_warn(
-                        "Jatevo base_url uses api.jatevo.ai (sk-clb- keys often 401)",
-                        "Set providers.jatevo.base_url to https://jatevo.ai/v1 — see docs/templates/PROVIDERS_JATEVO.yaml",
-                    )
-                    issues.append("Fix Jatevo base_url (use https://jatevo.ai/v1)")
-    except Exception:
-        pass
-
-    try:
-        from hermes_cli.profile_model_inheritance import (
-            list_profiles_with_global_config_blocks,
-        )
-
-        global_block_profiles = list_profiles_with_global_config_blocks()
-        if global_block_profiles:
-            first = global_block_profiles[0]
-            check_warn(
-                f"Profile '{first}' has global config blocks (auxiliary/providers)",
-                "Run 'hermes doctor --fix' or APPLY_HERMES_HOME_MIGRATION.bat",
-            )
-            issues.append(f"Strip global blocks from profile {first}")
-    except Exception:
-        pass
-
-    if should_fix:
-        try:
-            from hermes_cli.profile_switch import normalize_user_hermes_home
-
-            normalized, msg = normalize_user_hermes_home(fix=True)
-            if msg:
-                if normalized:
-                    check_ok("HERMES_HOME normalized", msg)
-                else:
-                    check_warn("HERMES_HOME profile subdir", msg)
-        except Exception as exc:
-            check_warn("Could not normalize HERMES_HOME", str(exc))
-
-
 def run_doctor(args):
     """Run diagnostic checks."""
     should_fix = getattr(args, 'fix', False)
@@ -773,25 +596,7 @@ def run_doctor(args):
             check_ok(name, "(optional)")
         except ImportError:
             check_warn(name, "(optional, not installed)")
-
-    if sys.platform == "win32":
-        tinker_pyproject = PROJECT_ROOT / "tinker-atropos" / "pyproject.toml"
-        if tinker_pyproject.is_file():
-            try:
-                __import__("tinker_atropos")
-            except ImportError:
-                marker = PROJECT_ROOT / ".hermes_windows_tinker_install_fail"
-                hint = ""
-                if marker.is_file():
-                    hint = (
-                        f" Remove {marker.name} or re-run windows/setup with --force-tinker "
-                        "after a successful `git lfs pull` in tinker-atropos."
-                    )
-                check_warn(
-                    "Optional RL package tinker-atropos is not importable",
-                    "(often Git LFS quota or missing LFS objects)." + hint,
-                )
-
+    
     _section("Configuration Files")
     # Check ~/.hermes/.env (primary location for user config)
     env_path = HERMES_HOME / '.env'
@@ -831,29 +636,16 @@ def run_doctor(args):
             else:
                 check_info("Run 'hermes setup' to create one")
                 issues.append("Run 'hermes setup' to create .env")
-
-    if sys.platform == "win32":
-        _check_windows_split_home_config(issues, should_fix=should_fix)
-
+    
     # Check ~/.hermes/config.yaml (primary) or project cli-config.yaml (fallback)
     config_path = HERMES_HOME / 'config.yaml'
     if config_path.exists():
         check_ok(f"{_DHH}/config.yaml exists")
 
-        # Validate model.provider and model.default (profiles inherit from root)
+        # Validate model.provider and model.default values
         try:
             import yaml as _yaml
-            from hermes_cli.profile_model_inheritance import is_profile_hermes_home
-
-            if is_profile_hermes_home(HERMES_HOME):
-                from hermes_cli.config import load_config as _load_config
-
-                cfg = _load_config()
-                check_info(
-                    "Inference model/provider: inherited from root ~/.hermes/config.yaml"
-                )
-            else:
-                cfg = _yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+            cfg = _yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
             model_section = cfg.get("model") or {}
             provider_raw = (model_section.get("provider") or "").strip()
             provider = provider_raw.lower()
@@ -1014,45 +806,6 @@ def run_doctor(args):
                 except Exception:
                     pass
 
-            try:
-                from hermes_cli.model_runtime_config import (
-                    detect_model_provider_incoherence,
-                    repair_model_provider_coherence,
-                )
-
-                from hermes_cli.model_runtime_config import auth_store_for_coherence_check
-
-                coherence_auth = auth_store_for_coherence_check()
-                coherence_issues = detect_model_provider_incoherence(
-                    cfg, auth_store=coherence_auth
-                )
-                for ci in coherence_issues:
-                    if ci.severity == "error":
-                        check_fail(
-                            "Model/provider coherence",
-                            f"({ci.code})",
-                        )
-                    else:
-                        check_warn(
-                            "Model/provider coherence",
-                            f"({ci.code})",
-                        )
-                    issues.append(ci.message)
-                if should_fix and coherence_issues:
-                    actions = repair_model_provider_coherence(
-                        prefer="auth_from_config",
-                        issues=coherence_issues,
-                    )
-                    for action in actions:
-                        check_ok(action)
-                    if actions:
-                        fixed_count += 1
-            except Exception as coherence_exc:
-                check_warn(
-                    "Model/provider coherence check skipped",
-                    f"({coherence_exc})",
-                )
-
         except Exception as e:
             check_warn("Could not validate model/provider config", f"({e})")
     else:
@@ -1073,133 +826,6 @@ def run_doctor(args):
                 fixed_count += 1
             else:
                 check_warn("config.yaml not found", "(using defaults)")
-
-    # Stale model: blocks in domain profiles (ignored at runtime; clutters config)
-    try:
-        from hermes_constants import get_default_hermes_root
-        from hermes_cli.profile_model_inheritance import (
-            profile_has_explicit_model_override,
-            strip_all_profile_model_blocks,
-            _read_yaml,
-        )
-
-        profiles_root = get_default_hermes_root() / "profiles"
-        stale_profiles: list[str] = []
-        if profiles_root.is_dir():
-            for entry in sorted(profiles_root.iterdir()):
-                if not entry.is_dir():
-                    continue
-                raw = _read_yaml(entry / "config.yaml")
-                if "model" not in raw:
-                    continue
-                if profile_has_explicit_model_override(raw.get("model")):
-                    continue
-                stale_profiles.append(entry.name)
-        if stale_profiles:
-            joined = ", ".join(stale_profiles)
-            if should_fix:
-                removed = strip_all_profile_model_blocks()
-                if removed:
-                    check_ok(
-                        f"Removed ignored model: blocks from profile(s): {', '.join(removed)}"
-                    )
-                    fixed_count += len(removed)
-            else:
-                check_warn(
-                    "Profile config contains model: (ignored — use root config)",
-                    f"({joined})",
-                )
-                issues.append(
-                    "Remove model: from domain profile configs or run "
-                    "'hermes doctor --fix' (model is set in ~/.hermes/config.yaml only)."
-                )
-        elif profiles_root.is_dir() and any(
-            p.is_dir() for p in profiles_root.iterdir()
-        ):
-            check_ok("Domain profiles inherit model from root config")
-    except Exception:
-        pass
-
-    # Stale auxiliary/providers in domain profiles (YAML top-level keys; not comments)
-    try:
-        from hermes_cli.profile_model_inheritance import (
-            list_profiles_with_global_config_blocks,
-            strip_all_profile_global_blocks,
-        )
-
-        global_block_profiles = list_profiles_with_global_config_blocks()
-        if global_block_profiles:
-            joined = ", ".join(global_block_profiles)
-            if should_fix:
-                stripped = strip_all_profile_global_blocks()
-                if stripped:
-                    check_ok(
-                        "Removed global auxiliary/providers blocks from profile(s): "
-                        + ", ".join(stripped)
-                    )
-                    fixed_count += len(stripped)
-            else:
-                check_warn(
-                    "Profile config contains global blocks (auxiliary/providers)",
-                    f"({joined})",
-                )
-                issues.append(
-                    "Strip auxiliary/providers from domain profiles or run "
-                    "'hermes doctor --fix' (globals live in root config.yaml only)."
-                )
-    except Exception:
-        pass
-
-    # Legacy mcp.servers → mcp_servers (CLI/chat ignores nested mcp:)
-    try:
-        from hermes_constants import get_default_hermes_root
-        from hermes_cli.profile_mcp_format import (
-            migrate_all_profile_mcp_configs,
-            profiles_with_legacy_mcp,
-        )
-
-        profiles_root = get_default_hermes_root() / "profiles"
-        legacy_mcp = profiles_with_legacy_mcp(profiles_root)
-        if legacy_mcp:
-            joined = ", ".join(legacy_mcp)
-            if should_fix:
-                fixed_mcp = migrate_all_profile_mcp_configs()
-                try:
-                    import subprocess as _sp
-
-                    _repo = Path(__file__).resolve().parent.parent
-                    _sync_py = _repo / "scripts" / "rag_pipeline" / "sync_profile_mcp_from_domains.py"
-                    if _sync_py.is_file():
-                        _sp.run(
-                            [sys.executable, str(_sync_py)],
-                            cwd=str(_repo),
-                            timeout=120,
-                            check=False,
-                        )
-                except Exception:
-                    pass
-                if fixed_mcp:
-                    check_ok(
-                        f"Migrated mcp.servers → mcp_servers in: {', '.join(fixed_mcp)}"
-                    )
-                    fixed_count += len(fixed_mcp)
-                elif not legacy_mcp:
-                    check_ok("Profile MCP synced from domains.yaml")
-            else:
-                check_warn(
-                    "Profile config uses legacy mcp.servers (CLI expects mcp_servers:)",
-                    f"({joined})",
-                )
-                issues.append(
-                    "Run 'hermes doctor --fix' to migrate profile MCP config "
-                    "(or fix manually — see cli-config.yaml.example)"
-                )
-        elif profiles_root.is_dir() and any(
-            p.is_dir() for p in profiles_root.iterdir()
-        ):
-            check_ok("Profile MCP config uses mcp_servers (CLI-compatible)")
-    except Exception:
-        pass
 
     # Check config version and stale keys
     config_path = HERMES_HOME / 'config.yaml'
@@ -2335,22 +1961,6 @@ def run_doctor(args):
     
     _section("Skills Hub")
     hub_dir = HERMES_HOME / "skills" / ".hub"
-    if should_fix and not hub_dir.exists():
-        try:
-            from hermes_cli.skills_hub_init import ensure_skills_hub_default_and_profiles
-
-            inited = ensure_skills_hub_default_and_profiles()
-            hub_dir = HERMES_HOME / "skills" / ".hub"
-            if inited:
-                check_ok(
-                    "Skills Hub initialized",
-                    f"({', '.join(inited)})",
-                )
-                fixed_count += 1
-            else:
-                check_ok("Skills Hub directory exists")
-        except Exception as e:
-            check_warn("Skills Hub init failed", f"({e})")
     if hub_dir.exists():
         check_ok("Skills Hub directory exists")
         lock_file = hub_dir / "lock.json"
@@ -2366,11 +1976,8 @@ def run_doctor(args):
         q_count = sum(1 for d in quarantine.iterdir() if d.is_dir()) if quarantine.exists() else 0
         if q_count > 0:
             check_warn(f"{q_count} skill(s) in quarantine", "(pending review)")
-    elif not should_fix:
-        check_warn(
-            "Skills Hub directory not initialized",
-            "(run: hermes doctor --fix or hermes skills list)",
-        )
+    else:
+        check_warn("Skills Hub directory not initialized", "(run: hermes skills list)")
 
     from hermes_cli.config import get_env_value
 
@@ -2483,65 +2090,43 @@ def run_doctor(args):
             check_warn(f"{_active_memory_provider} check failed", str(_e))
 
     try:
-        from hermes_cli.profiles import (
-            _get_wrapper_dir,
-            iter_orphan_profile_wrappers,
-            list_profiles,
-            remove_orphan_profile_wrappers,
-        )
+        from hermes_cli.profiles import list_profiles, _get_wrapper_dir, profile_exists
+        import re as _re
 
-        wrapper_dir = _get_wrapper_dir()
         named_profiles = [p for p in list_profiles() if not p.is_default]
-        orphans = (
-            iter_orphan_profile_wrappers(wrapper_dir)
-            if wrapper_dir.is_dir()
-            else []
-        )
-
-        if named_profiles or orphans:
+        if named_profiles:
             _section("Profiles")
-            if named_profiles:
-                check_ok(f"{len(named_profiles)} profile(s) found")
-                for p in named_profiles:
-                    parts = []
-                    if p.gateway_running:
-                        parts.append("gateway running")
-                    if p.model:
-                        parts.append(p.model[:30])
-                    if not (p.path / "config.yaml").exists():
-                        parts.append("⚠ missing config")
-                    if not (p.path / ".env").exists():
-                        parts.append("no .env")
-                    wrapper = wrapper_dir / p.name
-                    if not wrapper.exists():
-                        parts.append("no alias")
-                    status = ", ".join(parts) if parts else "configured"
-                    check_ok(f"  {p.name}: {status}")
+            check_ok(f"{len(named_profiles)} profile(s) found")
+            wrapper_dir = _get_wrapper_dir()
+            for p in named_profiles:
+                parts = []
+                if p.gateway_running:
+                    parts.append("gateway running")
+                if p.model:
+                    parts.append(p.model[:30])
+                if not (p.path / "config.yaml").exists():
+                    parts.append("⚠ missing config")
+                if not (p.path / ".env").exists():
+                    parts.append("no .env")
+                wrapper = wrapper_dir / p.name
+                if not wrapper.exists():
+                    parts.append("no alias")
+                status = ", ".join(parts) if parts else "configured"
+                check_ok(f"  {p.name}: {status}")
 
-            if orphans:
-                if should_fix:
-                    removed = remove_orphan_profile_wrappers(wrapper_dir)
-                    if removed:
-                        check_ok(
-                            f"Removed orphan alias(es): {', '.join(removed)}"
-                        )
-                        fixed_count += len(removed)
-                    else:
-                        for wrapper_name, profile_name in orphans:
-                            check_warn(
-                                f"Orphan alias: {wrapper_name} → profile '{profile_name}' no longer exists",
-                                "(could not remove — check permissions)",
-                            )
-                else:
-                    for wrapper_name, profile_name in orphans:
-                        check_warn(
-                            f"Orphan alias: {wrapper_name} → profile '{profile_name}' no longer exists"
-                        )
-                    issues.append(
-                        "Run 'hermes doctor --fix' to remove orphan profile aliases"
-                    )
-            elif named_profiles:
-                check_ok("No orphan profile aliases in PATH")
+            # Check for orphan wrappers
+            if wrapper_dir.is_dir():
+                for wrapper in wrapper_dir.iterdir():
+                    if not wrapper.is_file():
+                        continue
+                    try:
+                        content = wrapper.read_text()
+                        if "hermes -p" in content:
+                            _m = _re.search(r"hermes -p (\S+)", content)
+                            if _m and not profile_exists(_m.group(1)):
+                                check_warn(f"Orphan alias: {wrapper.name} → profile '{_m.group(1)}' no longer exists")
+                    except Exception:
+                        pass
     except ImportError:
         pass
     except Exception:

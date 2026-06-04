@@ -5,10 +5,8 @@ import {
   applyDisplay,
   hydrateFullConfig,
   normalizeBusyInputMode,
-  normalizeCostBarMode,
   normalizeIndicatorStyle,
   normalizeMouseTracking,
-  normalizeShowCost,
   normalizeStatusBar
 } from '../app/useConfigSync.js'
 import type { ParsedVoiceRecordKey } from '../lib/platform.js'
@@ -29,7 +27,6 @@ describe('applyDisplay', () => {
             details_mode: 'expanded',
             inline_diffs: false,
             show_cost: true,
-            cost_bar_mode: 'minimal',
             show_reasoning: true,
             streaming: false,
             tui_compact: true,
@@ -46,7 +43,6 @@ describe('applyDisplay', () => {
     expect(s.detailsMode).toBe('expanded')
     expect(s.inlineDiffs).toBe(false)
     expect(s.showCost).toBe(true)
-    expect(s.costBarMode).toBe('minimal')
     expect(s.showReasoning).toBe(true)
     expect(s.statusBar).toBe('off')
     expect(s.streaming).toBe(false)
@@ -70,29 +66,11 @@ describe('applyDisplay', () => {
     const s = $uiState.get()
     expect(setBell).toHaveBeenCalledWith(false)
     expect(s.inlineDiffs).toBe(true)
-    expect(s.showCost).toBe(true)
-    expect(s.showStatusBarTps).toBe(true)
-    expect(s.costBarMode).toBe('rich')
+    expect(s.showCost).toBe(false)
     expect(s.showReasoning).toBe(false)
     expect(s.statusBar).toBe('top')
     expect(s.streaming).toBe(true)
     expect(s.sections).toEqual({})
-  })
-
-  it('normalizes cost bar mode with rich default', () => {
-    expect(normalizeCostBarMode('minimal')).toBe('minimal')
-    expect(normalizeCostBarMode('rich')).toBe('rich')
-    expect(normalizeCostBarMode(undefined)).toBe('rich')
-    expect(normalizeCostBarMode('unknown')).toBe('rich')
-  })
-
-  it('normalizes show_cost string and numeric off values', () => {
-    expect(normalizeShowCost(true)).toBe(true)
-    expect(normalizeShowCost(false)).toBe(false)
-    expect(normalizeShowCost('off')).toBe(false)
-    expect(normalizeShowCost('false')).toBe(false)
-    expect(normalizeShowCost(0)).toBe(false)
-    expect(normalizeShowCost('on')).toBe(true)
   })
 
   it('uses documented mouse_tracking with legacy tui_mouse fallback', () => {

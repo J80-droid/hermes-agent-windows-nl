@@ -120,7 +120,14 @@ Overslaan guard: `upstream_sync.ps1 -SkipGuard`. Strikte CI: `$env:HERMES_REPO_G
 
 ## Cursor / IDE
 
-Regel: `.cursor/rules/repo-hygiene.mdc` — herhaalt deze conventies voor agents in deze workspace.
+| Artifact | Pad |
+|----------|-----|
+| Cursor rule (always apply) | `hermes-agent/.cursor/rules/repo-hygiene.mdc` (in git) |
+| Template (sync parent) | `docs/templates/repo-hygiene.mdc` |
+| Parent workspace kopie | `Hermes_agent_WS/.cursor/rules/repo-hygiene.mdc` via `windows/APPLY_WORKSPACE_IDE_SETTINGS.bat` |
+| Backup in prompts | `hermes-agent/.cursorrules` (sectie Repo-root hygiene) |
+
+Regel: herhaalt deze conventies voor Cursor/Composer — geen scripts in repo-root.
 
 ## Zie ook
 

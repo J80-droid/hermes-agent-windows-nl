@@ -6,7 +6,7 @@ import { type RefObject, useCallback } from 'react'
 
 import { buildSetupRequiredSections, SETUP_REQUIRED_TITLE } from '../content/setup.js'
 import { introMsg, toTranscriptMessages } from '../domain/messages.js'
-import { ZERO, usageFromPartial } from '../domain/usage.js'
+import { ZERO } from '../domain/usage.js'
 import { type GatewayClient } from '../gatewayClient.js'
 import type {
   SessionActivateResponse,
@@ -17,7 +17,6 @@ import type {
   SessionTitleResponse,
   SetupStatusResponse
 } from '../gatewayTypes.js'
-import { clearNewChatNotice } from '../lib/newChatNotice.js'
 import { asRpcResult } from '../lib/rpc.js'
 import type { Msg, PanelSection, SessionInfo, Usage } from '../types.js'
 
@@ -148,7 +147,7 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
       setLastUserMsg('')
       composerActions.setPasteSnips([])
       patchTurnState({ activity: [] })
-      patchUiState({ info, usage: usageFromPartial(info?.usage) })
+      patchUiState({ info, usage: usageFrom(info) })
     },
     [composerActions, setHistoryItems, setLastUserMsg, setStickyPrompt]
   )
@@ -187,7 +186,7 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
         info,
         sid: r.session_id,
         status: info?.version ? 'ready' : 'starting agent…',
-        usage: usageFromPartial(info?.usage)
+        usage: usageFrom(info)
       })
 
       if (info) {
@@ -205,8 +204,6 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
       if (msg) {
         sys(msg)
       }
-
-      clearNewChatNotice()
 
       if (requestedTitle) {
         rpc<SessionTitleResponse>('session.title', {
@@ -332,7 +329,7 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
               info,
               sid: r.session_id,
               status: statusFromLiveSession(r.status, running),
-              usage: usageFromPartial(info?.usage)
+              usage: usageFrom(info)
             })
             hydrateLiveSessionInflight(r.inflight)
 

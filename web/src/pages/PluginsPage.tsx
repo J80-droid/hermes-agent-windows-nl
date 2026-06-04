@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ExternalLink, RefreshCw, Trash2, Eye, EyeOff } from "lucide-react";
 import type { Translations } from "@/i18n/types";
 import { Link } from "react-router-dom";
@@ -54,26 +54,11 @@ export default function PluginsPage() {
   }, [showToast, t.common.loading]);
 
   useEffect(() => {
+    setLoading(true);
     void loadHub().finally(() => setLoading(false));
   }, [loadHub]);
 
-  const onRescan = useCallback(async () => {
-    setRescanBusy(true);
-    try {
-      const rc = await api.rescanPlugins();
-      showToast(
-        `${t.pluginsPage.refreshDashboard} (${rc.count})`,
-        "success",
-      );
-      await loadHub();
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : "Rescan failed", "error");
-    } finally {
-      setRescanBusy(false);
-    }
-  }, [loadHub, showToast, t.pluginsPage.refreshDashboard]);
-
-  useLayoutEffect(() => {
+  useEffect(() => {
     setAfterTitle(
       <Button
         ghost
@@ -87,7 +72,7 @@ export default function PluginsPage() {
       </Button>,
     );
     return () => setAfterTitle(null);
-  }, [loading, onRescan, rescanBusy, setAfterTitle, t.pluginsPage.refreshDashboard]);
+  }, [loading, rescanBusy, setAfterTitle, t.pluginsPage.refreshDashboard]);
 
   const onInstall = async () => {
     const id = installId.trim();
@@ -112,6 +97,22 @@ export default function PluginsPage() {
       showToast(e instanceof Error ? e.message : "Install failed", "error");
     } finally {
       setInstallBusy(false);
+    }
+  };
+
+  const onRescan = async () => {
+    setRescanBusy(true);
+    try {
+      const rc = await api.rescanPlugins();
+      showToast(
+        `${t.pluginsPage.refreshDashboard} (${rc.count})`,
+        "success",
+      );
+      await loadHub();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Rescan failed", "error");
+    } finally {
+      setRescanBusy(false);
     }
   };
 

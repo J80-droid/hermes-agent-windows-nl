@@ -1,8 +1,6 @@
 import { STARTUP_IMAGE, STARTUP_QUERY } from '../config/env.js'
 import { STREAM_BATCH_MS } from '../config/timing.js'
 import { buildSetupRequiredSections, SETUP_REQUIRED_TITLE } from '../content/setup.js'
-import { mergeUsage } from '../domain/usage.js'
-import { estimateLiveTurnCostUsd, sumLiveTurnTokens } from '../domain/liveTurnCost.js'
 import type {
   CommandsCatalogResponse,
   ConfigFullResponse,
@@ -11,14 +9,9 @@ import type {
   GatewaySkin,
   SessionMostRecentResponse
 } from '../gatewayTypes.js'
-import {
-  clearNewChatNotice,
-  formatNewChatNoticeSysMessage,
-  hasPendingNewChatNotice
-} from '../lib/newChatNotice.js'
 import { rpcErrorMessage } from '../lib/rpc.js'
 import { topLevelSubagents } from '../lib/subagentTree.js'
-import { formatToolCall, stripAnsi } from '../lib/text.js'
+import { formatAbandonedClarify, formatToolCall, stripAnsi } from '../lib/text.js'
 import { fromSkin } from '../theme.js'
 import type { Msg, SubagentProgress, SubagentStatus } from '../types.js'
 
@@ -26,7 +19,6 @@ import { applyDelegationStatus, getDelegationState } from './delegationStore.js'
 import type { GatewayEventHandlerContext } from './interfaces.js'
 import { getOverlayState, patchOverlayState } from './overlayStore.js'
 import { turnController } from './turnController.js'
-import { getTurnState } from './turnStore.js'
 import { getUiState, patchUiState } from './uiStore.js'
 
 const NO_PROVIDER_RE = /\bNo (?:LLM|inference) provider configured\b/i
@@ -94,6 +86,35 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
   let pendingThinkingStatus = ''
   let thinkingStatusTimer: null | ReturnType<typeof setTimeout> = null
   let startupPromptSubmitted = false
+
+  // Request IDs of clarify prompts we've already flushed to the transcript as
+  // an abandoned-prompt record, so the tool.complete and message.complete
+  // paths can't both persist the same prompt twice.
+  const persistedAbandonedClarify = new Set<string>()
+
+  // When a clarify prompt is dismissed without an answer (the backend _block
+  // timed out and returned an empty string), the live ClarifyPrompt overlay is
+  // left set until the next turn's idle() silently nulls it — so the question
+  // and options vanish from the screen while the agent's follow-up still refers
+  // to them.  The reliable signal is the clarify tool's own tool.complete (and,
+  // as a backstop, message.complete): at those points the overlay is provably
+  // still set on a timeout, but already cleared by answerClarify() on a real
+  // answer (so this no-ops there).  Flush the question + options into the
+  // transcript as a persistent system line, then clear the overlay.
+  const flushAbandonedClarify = () => {
+    const { clarify } = getOverlayState()
+
+    if (!clarify || persistedAbandonedClarify.has(clarify.requestId)) {
+      return
+    }
+
+    persistedAbandonedClarify.add(clarify.requestId)
+    appendMessage({
+      role: 'system',
+      text: formatAbandonedClarify(clarify.question, clarify.choices, 'timed out')
+    })
+    patchOverlayState({ clarify: null })
+  }
 
   // Inject the disk-save callback into turnController so recordMessageComplete
   // can fire-and-forget a persist without having to plumb a gateway ref around.
@@ -291,16 +312,6 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
       applySkin(skin)
     }
 
-    if (hasPendingNewChatNotice()) {
-      patchUiState({ status: 'forging session (sync)…' })
-      void Promise.resolve(newSession(formatNewChatNoticeSysMessage())).then(() => {
-        clearNewChatNotice()
-        scheduleStartupPrompt()
-      })
-
-      return
-    }
-
     rpc<CommandsCatalogResponse>('commands.catalog', {})
       .then(r => {
         if (!r?.pairs) {
@@ -385,65 +396,6 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
       })
   }
 
-  let usageCostAtTurnStart = 0
-  let usageToolsAtTurnStart = 0
-  let liveTurnCostTimer: null | ReturnType<typeof setTimeout> = null
-
-  const scheduleLiveTurnCost = () => {
-    if (!getUiState().busy) {
-      return
-    }
-
-    if (liveTurnCostTimer) {
-      return
-    }
-
-    liveTurnCostTimer = setTimeout(() => {
-      liveTurnCostTimer = null
-
-      if (!getUiState().busy) {
-        return
-      }
-
-      const usage = getUiState().usage
-      const turn = getTurnState()
-      const toolsDelta = Math.max(0, (usage.session_tools_executed ?? 0) - usageToolsAtTurnStart)
-      const signals = {
-        reasoningTokens: turn.reasoningTokens,
-        streamOutputTokens: turn.streamOutputTokens,
-        toolTokens: turn.toolTokens,
-        toolsExecutedDelta: toolsDelta
-      }
-      const estimate = estimateLiveTurnCostUsd(usage, signals)
-      const liveTokens = sumLiveTurnTokens(signals)
-
-      if (estimate != null && estimate > 0) {
-        patchUiState(state => ({
-          ...state,
-          usage: mergeUsage(state.usage, {
-            turn_cost_estimated: true,
-            turn_cost_usd: estimate,
-            turn_live_tokens: 0
-          })
-        }))
-        return
-      }
-
-      if (liveTokens <= 0) {
-        return
-      }
-
-      patchUiState(state => ({
-        ...state,
-        usage: mergeUsage(state.usage, {
-          turn_cost_estimated: true,
-          turn_cost_usd: 0,
-          turn_live_tokens: liveTokens
-        })
-      }))
-    }, STREAM_BATCH_MS)
-  }
-
   return (ev: GatewayEvent) => {
     const sid = getUiState().sid
 
@@ -466,15 +418,11 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
       case 'session.info': {
         const info = ev.payload
 
-        if (info?.usage?.cost_usd != null) {
-          usageCostAtTurnStart = info.usage.cost_usd
-        }
-
         patchUiState(state => ({
           ...state,
           info,
           status: state.status === 'starting agent…' ? 'ready' : state.status,
-          usage: info.usage ? mergeUsage(state.usage, info.usage) : state.usage
+          usage: info.usage ? { ...state.usage, ...info.usage } : state.usage
         }))
 
         setHistoryItems(prev => prev.map(m => (m.kind === 'intro' ? { ...m, info } : m)))
@@ -495,7 +443,6 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
 
           if (value) {
             turnController.recordReasoningDelta(value)
-            scheduleLiveTurnCost()
           }
         }
 
@@ -504,16 +451,6 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
 
       case 'message.start':
         resetAgentsNudgeTurnState()
-        usageCostAtTurnStart = getUiState().usage.cost_usd ?? 0
-        usageToolsAtTurnStart = getUiState().usage.session_tools_executed ?? 0
-        patchUiState(state => ({
-          ...state,
-          usage: mergeUsage(state.usage, {
-            turn_cost_estimated: false,
-            turn_cost_usd: 0,
-            turn_live_tokens: 0
-          })
-        }))
         turnController.startMessage()
 
         return
@@ -682,7 +619,6 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
       case 'reasoning.delta':
         if (ev.payload?.text) {
           turnController.recordReasoningDelta(ev.payload.text, Boolean(ev.payload.verbose))
-          scheduleLiveTurnCost()
         }
 
         return
@@ -714,10 +650,17 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
           ev.payload.context ?? '',
           ev.payload.args_text ? stripAnsi(String(ev.payload.args_text)) : undefined
         )
-        scheduleLiveTurnCost()
 
         return
       case 'tool.complete': {
+        // The clarify tool finishing with its overlay still live means it was
+        // abandoned (backend _block timed out, empty answer). A real answer
+        // clears the overlay in answerClarify() before this fires, so this
+        // no-ops there. Persist the question + options so they don't vanish.
+        if (ev.payload.name === 'clarify') {
+          flushAbandonedClarify()
+        }
+
         const inlineDiffText =
           ev.payload.inline_diff && getUiState().inlineDiffs ? stripAnsi(String(ev.payload.inline_diff)).trim() : ''
 
@@ -743,14 +686,6 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
             resultText
           )
         }
-
-        patchUiState(state => ({
-          ...state,
-          usage: mergeUsage(state.usage, {
-            session_tools_executed: (state.usage.session_tools_executed ?? 0) + 1
-          })
-        }))
-        scheduleLiveTurnCost()
 
         return
       }
@@ -906,7 +841,6 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
 
       case 'message.delta':
         turnController.recordMessageDelta(ev.payload ?? {})
-        scheduleLiveTurnCost()
 
         return
       case 'message.complete': {
@@ -924,23 +858,7 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
         setStatus('ready')
 
         if (ev.payload?.usage) {
-          patchUiState(state => {
-            const merged = mergeUsage(state.usage, ev.payload!.usage!)
-            const sessionCost = merged.cost_usd
-            const turnCost =
-              typeof sessionCost === 'number'
-                ? Math.max(0, sessionCost - usageCostAtTurnStart)
-                : undefined
-
-            return {
-              ...state,
-              usage: mergeUsage(merged, {
-                turn_cost_estimated: false,
-                turn_cost_usd: turnCost,
-                turn_live_tokens: 0
-              })
-            }
-          })
+          patchUiState(state => ({ ...state, usage: { ...state.usage, ...ev.payload!.usage } }))
         }
 
         return

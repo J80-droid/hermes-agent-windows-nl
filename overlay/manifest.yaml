@@ -1,0 +1,30 @@
+# Hermes fork overlay manifest — Tier B, applied after upstream merge (not committed into Tier A).
+schema_version: 1
+repo_role: j80-windows-nl
+
+python:
+  bootstrap: overlay/bootstrap.py
+  startup: overlay/bootstrap_startup.py
+  hermes_cli_modules: overlay/hermes_cli/
+  plugin: plugins/j80-windows-nl/
+
+paths:
+  tier_b:
+    - windows/
+    - overlay/
+    - scripts/rag_pipeline/
+    - scripts/windows/
+    - skills/legal/
+    - skills/productivity/landkaart/
+    - plugins/j80-windows-nl/
+    - memory-bank/
+
+extras:
+  pyproject_fragment: overlay/pyproject.extras.toml
+  install_script: windows/scripts/install_rag_extras.ps1
+
+web_tui:
+  vite_overlay_roots:
+    - overlay/web/src
+    - overlay/ui-tui/src
+  build_script: windows/scripts/build_fork_ui_assets.ps1

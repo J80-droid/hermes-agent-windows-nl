@@ -210,7 +210,6 @@ The local slash handler covers the built-ins that need direct client behavior:
 - `/details`
 - `/logs`
 - `/statusbar`, `/sb`
-- `/cost`
 - `/queue`
 - `/undo`
 - `/retry`
@@ -222,14 +221,6 @@ Notes:
 - Text paste remains inline-only; `Cmd+V` / `Ctrl+V` handle layered text/OSC52/image fallback before `/paste` is needed.
 - `/details [hidden|collapsed|expanded|cycle]` controls thinking/tool-detail visibility.
 - `/statusbar` toggles the status rule on/off.
-- `/cost [on|off|toggle|status]` toggles **visibility** of estimated session cost in the status bar (`display.show_cost`; default **on**).
-- `/tps [on|off|toggle|status]` toggles **generation throughput** (`NN tok/s`) after the cost segment (`display.show_status_bar_tps`; default **on**; hidden below 76 cols; color `theme.color.statusTps` — dimmed white, not gold `muted`). Module: `src/domain/statusBarThroughput.ts`.
-- **Bar format** (`display.cost_bar_mode`, default **rich**):
-  - **rich** — `$turn / $session │ cw/out/in/cr % │ calls │ tools` (responsive tiers by terminal width). When `/cost` is on, the bar is **always** shown: session falls back to `included`, `n/a`, or `$0.00` when USD pricing is missing.
-  - **minimal** — legacy single-line `~$0.0042` (session only, four decimals); same fallbacks when USD is unavailable.
-- Change format without a dedicated slash command: `config.set cost_bar_mode rich|minimal|toggle|status` (persisted to `config.yaml`; picked up by config sync). There is no `/costbar` slash alias — only `/cost` for on/off.
-- **Live turn cost during stream:** while a turn is in progress, the TUI estimates `$turn` client-side from token deltas (output/reasoning/tool text) and session `cost_breakdown_usd` rates (or breakdown totals when `cost_usd` is missing). Shown as `~$0.05 / $5.74` until `message.complete` replaces it with the exact session-cost delta. When USD rates are unavailable, the turn slot shows live tokens instead (`~1.2K tok / n/a`). Module: `src/domain/liveTurnCost.ts`; wiring: `createGatewayEventHandler.ts` + `turnStore.streamOutputTokens`.
-- **Layout:** `ComposerPane` uses `paddingX={1}`; `statusRuleColumns()` subtracts 2 cols (non-finite `cols` clamp to 1). `StatusRule` first calls `statusRuleWidths(ruleCols, cwdLabel)` using shared `statusRuleMinLeftWidth()` (8 cols when effective width ≥24, else 1), then `resolveStatusRuleLayout({ cwdReserve: rightWidth + separatorWidth, leftWidth, … })` so cost-tier width uses the **actual** left box width minus a fixed reserve for status/model — not UTF-16 `cwdLabel.length` (CJK-safe via Ink `stringWidth`). When status+model would crowd out cost/ctx/spawn HUD, metrics move to a **second row** (max **2** rows; line 1 = status + model + cwd; line 2 = full `ruleCols`). `resolveStatusRuleLineCount` / `normalizeStatusRuleLeftWidth` in `src/domain/statusRuleLines.ts`; spawn HUD width uses the same `resolveSpawnHudLayout` text as `SpawnHud`. Cost renders inline with metrics on one row, or on row 2 when split (accent color). Breakdown `%` skips non-finite values. Classic CLI mirror: `hermes_cli/status_bar_layout.py`. Modules: `src/components/appChrome.tsx` (`statusRuleWidths`, `spawnHudMeasureSegment`), `src/domain/usageCostBar.ts`. Tests: `src/__tests__/statusRule.test.ts`, `src/__tests__/statusRuleLines.test.ts`, `src/__tests__/usageCostBar.test.ts`; Python: `tests/hermes_cli/test_status_bar_layout.py`.
 
 Anything else falls through to:
 

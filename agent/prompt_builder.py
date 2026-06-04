@@ -178,25 +178,6 @@ SKILLS_GUIDANCE = (
     "Skills that aren't maintained become liabilities."
 )
 
-LANCEDB_RAG_STRICT_CITATION_GUIDANCE = (
-    "# LanceDB RAG — strikte broncitatie (search_knowledge)\n"
-    "Bij chronologie, feitenoverzicht of juridische analyse op basis van "
-    "`search_knowledge`:\n"
-    "- Plaats achter **elk specifiek feit of elke datum** direct: `[Bron: <bestandsnaam>]`.\n"
-    "- Gebruik **alleen de bestandsnaam** (basename), exact zoals in `bron_bestand` / "
-    "`inline_citeer_sjabloon` uit de tool-output — geen pad, geen hash, geen chunk-id.\n"
-    "- Geen feiten zonder bracket-citatie; geen verzonnen bronnen.\n"
-    "\n"
-    "## Vergelijking (geen Markdown-tabel)\n"
-    "Zet feiten af tegen procedureel/juridisch kader (CAO, Wbk, wet) in **verticale dossierblokken**:\n"
-    "**Feitelijke handeling:** … `[Bron: bestand]`\n"
-    "**Toepasselijke norm:** … `[Bron: bestand]`\n"
-    "Scheid opeenvolgende vergelijkingen met een regel `---`.\n"
-    "\n"
-    "## Leesbaarheid (lijsten)\n"
-    "Titel/label/datum **vet op eigen regel**, lege regel, dan toelichting.\n"
-)
-
 KANBAN_GUIDANCE = (
     "# Kanban task execution protocol\n"
     "You have been assigned ONE task from "
@@ -839,24 +820,6 @@ def build_environment_hints() -> str:
                 "above to construct paths under C:\\Users\\<user>\\, never the "
                 "hostname."
             )
-            try:
-                from hermes_cli.config import get_config_path
-
-                cfg_path = get_config_path()
-                localappdata = os.environ.get("LOCALAPPDATA", "")
-                if localappdata:
-                    runtime_home = os.path.join(localappdata, "hermes")
-                    host_lines.append(f"HERMES_RUNTIME_HOME={runtime_home}")
-                host_lines.append(f"HERMES_CONFIG={cfg_path}")
-                host_lines.append(
-                    "Config wijzigen: hermes config set / hermes model — niet write_file op yaml. "
-                    "Verify: hermes config get auxiliary.vision.provider"
-                )
-                host_lines.append(
-                    "Legacy secrets hub: %USERPROFILE%\\.hermes\\.env (niet config.yaml)."
-                )
-            except Exception:
-                pass
         hints.append("\n".join(host_lines))
 
         # Windows-local terminal runs bash, not PowerShell — the model must
@@ -1537,18 +1500,15 @@ def build_context_files_prompt(cwd: Optional[str] = None, skip_soul: bool = Fals
     cwd_path = Path(cwd).resolve()
     sections = []
 
-    # Project context: priority HERMES.md > AGENTS.md > CLAUDE.md; .cursorrules altijd erbij (fork RAG).
-    hermes_md = _load_hermes_md(cwd_path)
-    agents_md = _load_agents_md(cwd_path)
-    claude_md = _load_claude_md(cwd_path)
-    cursorrules = _load_cursorrules(cwd_path)
-    primary = hermes_md or agents_md or claude_md
-    if primary:
-        sections.append(primary)
-    if cursorrules and primary:
-        sections.append(cursorrules)
-    elif cursorrules:
-        sections.append(cursorrules)
+    # Priority-based project context: first match wins
+    project_context = (
+        _load_hermes_md(cwd_path)
+        or _load_agents_md(cwd_path)
+        or _load_claude_md(cwd_path)
+        or _load_cursorrules(cwd_path)
+    )
+    if project_context:
+        sections.append(project_context)
 
     # SOUL.md from HERMES_HOME only — skip when already loaded as identity
     if not skip_soul:
@@ -1559,51 +1519,3 @@ def build_context_files_prompt(cwd: Optional[str] = None, skip_soul: bool = Fals
     if not sections:
         return ""
     return "# Project Context\n\nThe following project context files have been loaded and should be followed:\n\n" + "\n".join(sections)
-
-
-def _safe_path_for_prompt(path: Path) -> str:
-    """Absolute pad voor prompts; faalt niet als tussenliggende mappen ontbreken."""
-    try:
-        return str(path.resolve())
-    except OSError:
-        return str(path)
-
-
-def build_legal_runtime_paths_block() -> str:
-    """Ephemeral path hints for legal profile (file tools; not cached in SOUL)."""
-    try:
-        from agent.file_safety import _resolve_active_profile_name
-        from hermes_cli.profiles import get_active_profile
-    except Exception:
-        return ""
-    # Sticky profiel op Windows root-HERMES_HOME; file_safety alleen is onvoldoende.
-    if get_active_profile() != "legal" and _resolve_active_profile_name() != "legal":
-        return ""
-    try:
-        from hermes_constants import get_default_hermes_root
-
-        root = get_default_hermes_root()
-    except Exception:
-        return ""
-    matters = root / "profiles" / "legal" / "LEGAL_ACTIVE_MATTERS.md"
-    userprofile = os.environ.get("USERPROFILE") or str(Path.home())
-    raw_legal = Path(userprofile) / "data" / "raw_source_files" / "04_Legal_Corporate"
-    lance_legal = Path(userprofile) / "data" / "lancedb" / "legal"
-    return (
-        "## Runtime paths (legal profile — file tools)\n"
-        f"- LEGAL_ACTIVE_MATTERS: {_safe_path_for_prompt(matters)}\n"
-        f"- Legal bronnen: {_safe_path_for_prompt(raw_legal)}\n"
-        f"- LanceDB legal: {_safe_path_for_prompt(lance_legal)}\n"
-        "Gebruik deze absolute paden; open geen letterlijke `%LOCALAPPDATA%`-placeholders."
-    )
-
-
-def augment_ephemeral_for_legal_profile(ephemeral: str | None) -> str | None:
-    """Append legal runtime path block to ephemeral_system_prompt when profile is legal."""
-    block = build_legal_runtime_paths_block()
-    if not block:
-        return ephemeral
-    base = (ephemeral or "").strip()
-    if base:
-        return f"{base}\n\n{block}"
-    return block

@@ -1802,22 +1802,6 @@ async def get_config():
     return {k: v for k, v in config.items() if not k.startswith("_")}
 
 
-@app.get("/api/display/assistant")
-async def get_assistant_display_settings():
-    """Live assistant render settings (same source as CLI/gateway Rich pipeline)."""
-    try:
-        from hermes_cli.display_markdown import get_assistant_render_settings
-
-        return get_assistant_render_settings()
-    except Exception:
-        _log.exception("GET /api/display/assistant failed")
-        return {
-            "assistant_render_style": "institutional_rich",
-            "assistant_palette": "demo",
-            "assistant_label_columns": True,
-        }
-
-
 @app.get("/api/config/defaults")
 async def get_defaults():
     return DEFAULT_CONFIG
@@ -2078,8 +2062,7 @@ def get_auxiliary_models():
 async def set_model_assignment(body: ModelAssignment):
     """Assign a model to the main slot or an auxiliary task slot.
 
-    Writes to the active Hermes config (``get_config_path()`` / ``HERMES_HOME``) via
-    ``save_config`` — applies to **new** sessions only.
+    Writes to ``~/.hermes/config.yaml`` — applies to **new** sessions only.
     The currently running chat PTY (if any) is not affected; use the
     ``/model`` slash command inside a chat to hot-swap that specific session.
     """

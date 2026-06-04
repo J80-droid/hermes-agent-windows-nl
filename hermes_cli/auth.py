@@ -64,8 +64,6 @@ except Exception:
 # =============================================================================
 
 AUTH_STORE_VERSION = 1
-# Guard: avoid re-entrant repair when corrupt auth triggers coherence repair.
-_AUTH_CORRUPT_REPAIR_IN_PROGRESS = False
 AUTH_LOCK_TIMEOUT_SECONDS = 15.0
 
 # Nous Portal defaults
@@ -854,29 +852,6 @@ def _oauth_trace(event: str, *, sequence_id: Optional[str] = None, **fields: Any
 # Auth Store — persistence layer for ~/.hermes/auth.json
 # =============================================================================
 
-
-def read_auth_json(auth_file: Optional[Path] = None) -> Dict[str, Any]:
-    """Load Hermes ``auth.json`` with UTF-8 BOM tolerance.
-
-    Use this for all reads of ``%LOCALAPPDATA%/hermes/auth.json`` (and profile
-    copies). External tools (PowerShell, editors) may write a BOM prefix; plain
-    ``utf-8`` decodes fail with ``JSONDecodeError`` and previously caused empty
-    auth stores plus accidental ``.corrupt`` backups.
-
-    Empty or whitespace-only files return ``{}``. Non-dict JSON returns ``{}``.
-    ``_load_auth_store`` preserves corrupt files as ``.json.corrupt`` and may run
-    a one-shot config-side coherence repair (error-severity only) when parse fails.
-    """
-    path = auth_file or _auth_file_path()
-    if not path.is_file():
-        return {}
-    text = path.read_text(encoding="utf-8-sig")
-    if not text.strip():
-        return {}
-    raw = json.loads(text)
-    return raw if isinstance(raw, dict) else {}
-
-
 def _auth_file_path() -> Path:
     path = get_hermes_home() / "auth.json"
     # Seat belt: if pytest is running and HERMES_HOME resolves to the real
@@ -1064,34 +1039,13 @@ def _auth_store_lock(timeout_seconds: float = AUTH_LOCK_TIMEOUT_SECONDS):
         yield
 
 
-def sync_root_active_provider(provider_id: str) -> Path:
-    """Set ``active_provider`` on root ``auth.json`` (matches root ``config.yaml`` model).
-
-    ``persist_model_runtime`` always writes model config to the runtime root; auth
-    sync must target the same root store even when ``HERMES_HOME`` is a profile.
-    """
-    from hermes_constants import get_default_hermes_root
-
-    root_auth = get_default_hermes_root() / "auth.json"
-    root_lock = root_auth.with_suffix(".lock")
-    with _file_lock(
-        root_lock,
-        _auth_lock_holder,
-        AUTH_LOCK_TIMEOUT_SECONDS,
-        "Timed out waiting for root auth store lock",
-    ):
-        auth_store = _load_auth_store(root_auth)
-        auth_store["active_provider"] = str(provider_id or "").strip()
-        return _save_auth_store(auth_store, auth_file=root_auth)
-
-
 def _load_auth_store(auth_file: Optional[Path] = None) -> Dict[str, Any]:
     auth_file = auth_file or _auth_file_path()
     if not auth_file.exists():
         return {"version": AUTH_STORE_VERSION, "providers": {}}
 
     try:
-        raw = read_auth_json(auth_file)
+        raw = json.loads(auth_file.read_text())
     except Exception as exc:
         corrupt_path = auth_file.with_suffix(".json.corrupt")
         try:
@@ -1099,45 +1053,11 @@ def _load_auth_store(auth_file: Optional[Path] = None) -> Dict[str, Any]:
             shutil.copy2(auth_file, corrupt_path)
         except Exception:
             pass
-        if os.environ.get("HERMES_SUPPRESS_AUTH_CORRUPT_LOG") != "1":
-            logger.error(
-                "auth: failed to parse %s (%s). Corrupt file preserved at %s. "
-                "Restore from backup or run windows\\REPAIR_MODEL_PROVIDER.bat / "
-                "'hermes doctor --fix' after fixing credentials.",
-                auth_file,
-                exc,
-                corrupt_path,
-            )
-        global _AUTH_CORRUPT_REPAIR_IN_PROGRESS
-        if not _AUTH_CORRUPT_REPAIR_IN_PROGRESS:
-            _AUTH_CORRUPT_REPAIR_IN_PROGRESS = True
-            try:
-                from hermes_cli.model_runtime_config import (
-                    detect_model_provider_incoherence,
-                    repair_model_provider_coherence,
-                )
-
-                empty_auth: Dict[str, Any] = {
-                    "version": AUTH_STORE_VERSION,
-                    "providers": {},
-                }
-                issues = detect_model_provider_incoherence(auth_store=empty_auth)
-                errors = [i for i in issues if i.severity == "error"]
-                if errors:
-                    actions = repair_model_provider_coherence(
-                        prefer="auth_from_config",
-                        issues=errors,
-                    )
-                    if actions:
-                        logger.warning(
-                            "auth: config-side coherence repair while auth "
-                            "unreadable: %s",
-                            "; ".join(actions),
-                        )
-            except Exception as repair_exc:
-                logger.debug("auth: config-side repair skipped: %s", repair_exc)
-            finally:
-                _AUTH_CORRUPT_REPAIR_IN_PROGRESS = False
+        logger.warning(
+            "auth: failed to parse %s (%s) — starting with empty store. "
+            "Corrupt file preserved at %s",
+            auth_file, exc, corrupt_path,
+        )
         return {"version": AUTH_STORE_VERSION, "providers": {}}
 
     if isinstance(raw, dict) and (
@@ -1145,12 +1065,6 @@ def _load_auth_store(auth_file: Optional[Path] = None) -> Dict[str, Any]:
         or isinstance(raw.get("credential_pool"), dict)
     ):
         raw.setdefault("providers", {})
-        return raw
-
-    # Minimal store: active_provider set without a populated providers map yet.
-    if isinstance(raw, dict) and str(raw.get("active_provider") or "").strip():
-        raw.setdefault("providers", {})
-        raw.setdefault("version", AUTH_STORE_VERSION)
         return raw
 
     # Migrate from PR's "systems" format if present
@@ -1165,19 +1079,8 @@ def _load_auth_store(auth_file: Optional[Path] = None) -> Dict[str, Any]:
     return {"version": AUTH_STORE_VERSION, "providers": {}}
 
 
-def _save_auth_store(
-    auth_store: Dict[str, Any],
-    auth_file: Optional[Path] = None,
-) -> Path:
-    """Persist Hermes auth store atomically as UTF-8 JSON without BOM.
-
-    Always use this helper (or ``persist_*_credentials``) for writes so
-    ``read_auth_json`` / ``utf-8-sig`` reads stay compatible with external tools.
-
-    ``auth_file`` defaults to the process ``HERMES_HOME`` auth store; pass an
-    explicit path when syncing root ``auth.json`` from profile mode.
-    """
-    auth_file = auth_file or _auth_file_path()
+def _save_auth_store(auth_store: Dict[str, Any]) -> Path:
+    auth_file = _auth_file_path()
     auth_file.parent.mkdir(parents=True, exist_ok=True)
     # Tighten parent dir to 0o700 so siblings can't traverse to creds.
     # No-op on Windows (POSIX mode bits not enforced); ignore failures.
@@ -4651,7 +4554,7 @@ def _read_shared_nous_state() -> Optional[Dict[str, Any]]:
     if not path.is_file():
         return None
     try:
-        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+        payload = json.loads(path.read_text())
     except (OSError, ValueError) as exc:
         logger.debug("Shared Nous auth store at %s is unreadable: %s", path, exc)
         return None
@@ -6076,32 +5979,65 @@ def _update_config_for_provider(
     inference_base_url: str,
     default_model: Optional[str] = None,
 ) -> Path:
-    """Update root config.yaml and auth.json to reflect the active provider.
+    """Update config.yaml and auth.json to reflect the active provider.
 
-    Delegates to ``persist_model_runtime`` so profile-mode ``HERMES_HOME``
-    never writes a discarded ``model:`` block under ``profiles/<name>/``.
+    When *default_model* is provided the function also writes it as the
+    ``model.default`` value.  This prevents a race condition where the
+    gateway (which re-reads config per-message) picks up the new provider
+    before the caller has finished model selection, resulting in a
+    mismatched model/provider (e.g. ``anthropic/claude-opus-4.6`` sent to
+    MiniMax's API).
     """
-    from hermes_cli.model_runtime_config import (
-        _model_section_from_config,
-        _read_root_yaml,
-        persist_model_runtime,
-    )
+    # Set active_provider in auth.json so auto-resolution picks this provider
+    with _auth_store_lock():
+        auth_store = _load_auth_store()
+        auth_store["active_provider"] = provider_id
+        _save_auth_store(auth_store)
 
-    effective_default = default_model
+    # Update config.yaml model section
+    config_path = get_config_path()
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+
+    config = read_raw_config()
+
+    current_model = config.get("model")
+    if isinstance(current_model, dict):
+        model_cfg = dict(current_model)
+    elif isinstance(current_model, str) and current_model.strip():
+        model_cfg = {"default": current_model.strip()}
+    else:
+        model_cfg = {}
+
+    model_cfg["provider"] = provider_id
+    if inference_base_url and inference_base_url.strip():
+        model_cfg["base_url"] = inference_base_url.rstrip("/")
+    else:
+        # Clear stale base_url to prevent contamination when switching providers
+        model_cfg.pop("base_url", None)
+
+    # Clear stale api_key/api_mode left over from a previous custom provider.
+    # When the user switches from e.g. a MiniMax custom endpoint
+    # (api_mode=anthropic_messages, api_key=mxp-...) to a built-in provider
+    # (e.g. OpenRouter), the stale api_key/api_mode would override the new
+    # provider's credentials and transport choice.  Built-in providers that
+    # need a specific api_mode (copilot, xai) set it at request-resolution
+    # time via `_copilot_runtime_api_mode` / `_detect_api_mode_for_url`, so
+    # removing the persisted value here is safe.
+    model_cfg.pop("api_key", None)
+    model_cfg.pop("api_mode", None)
+
+    # When switching to a non-OpenRouter provider, ensure model.default is
+    # valid for the new provider.  An OpenRouter-formatted name like
+    # "anthropic/claude-opus-4.6" will fail on direct-API providers.
     if default_model:
-        cur = str(
-            _model_section_from_config(_read_root_yaml()).get("default") or ""
-        ).strip()
-        if cur and "/" not in cur:
-            effective_default = None
+        cur_default = model_cfg.get("default", "")
+        if not cur_default or "/" in cur_default:
+            model_cfg["default"] = default_model
 
-    result = persist_model_runtime(
-        provider_id,
-        default_model=effective_default,
-        inference_base_url=inference_base_url,
-        sync_auth=True,
-    )
-    return result.config_path
+    config["model"] = model_cfg
+
+    atomic_yaml_write(config_path, config, sort_keys=False)
+    return config_path
 
 
 def _get_config_provider() -> Optional[str]:
@@ -6153,16 +6089,22 @@ def _logout_default_provider_from_config() -> Optional[str]:
 
 
 def _reset_config_provider() -> Path:
-    """Reset root model.provider to auto after logout (never profile-local yaml)."""
-    from hermes_cli.model_runtime_config import persist_model_runtime
+    """Reset config.yaml provider back to auto after logout."""
+    config_path = get_config_path()
+    if not config_path.exists():
+        return config_path
 
-    result = persist_model_runtime(
-        "auto",
-        inference_base_url=OPENROUTER_BASE_URL,
-        sync_auth=False,
-    )
-    deactivate_provider()
-    return result.config_path
+    config = read_raw_config()
+    if not config:
+        return config_path
+
+    model = config.get("model")
+    if isinstance(model, dict):
+        model["provider"] = "auto"
+        if "base_url" in model:
+            model["base_url"] = OPENROUTER_BASE_URL
+    atomic_yaml_write(config_path, config, sort_keys=False)
+    return config_path
 
 
 def _prompt_model_selection(
@@ -6352,23 +6294,20 @@ def _prompt_model_selection(
 
 
 def _save_model_choice(model_id: str) -> None:
-    """Save only ``model.default`` to root config — does NOT change provider.
+    """Save the selected model to config.yaml (single source of truth).
 
-    Prefer ``persist_model_runtime`` when switching provider + model together.
-    Updating default alone can leave a mismatched provider if interrupted;
-    provider flows must call ``persist_model_runtime`` once at the end.
+    The model is stored in config.yaml only — NOT in .env.  This avoids
+    conflicts in multi-agent setups where env vars would stomp each other.
     """
-    from hermes_cli.profile_model_inheritance import save_model_section_to_root
+    from hermes_cli.config import save_config, load_config
 
-    root_cfg = {}
-    try:
-        from hermes_cli.model_runtime_config import _read_root_yaml, _model_section_from_config
-
-        root_cfg = _model_section_from_config(_read_root_yaml())
-    except Exception:
-        pass
-    root_cfg["default"] = model_id
-    save_model_section_to_root(root_cfg)
+    config = load_config()
+    # Always use dict format so provider/base_url can be stored alongside
+    if isinstance(config.get("model"), dict):
+        config["model"]["default"] = model_id
+    else:
+        config["model"] = {"default": model_id}
+    save_config(config)
 
 
 def login_command(args) -> None:
@@ -7754,7 +7693,9 @@ def _login_nous(args, pconfig: ProviderConfig) -> None:
         config_path = _update_config_for_provider(
             "nous", inference_base_url, default_model=selected_model,
         )
-        print(f"Default model set to: {selected_model}")
+        if selected_model:
+            _save_model_choice(selected_model)
+            print(f"Default model set to: {selected_model}")
         print(f"  Config updated: {config_path} (model.provider=nous)")
 
     except KeyboardInterrupt:

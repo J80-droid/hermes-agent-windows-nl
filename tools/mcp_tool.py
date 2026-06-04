@@ -70,10 +70,6 @@ Architecture:
     block, ensuring the anyio cancel-scope cleanup happens in the *same*
     Task that opened the connection (required by anyio).
 
-    Stdio child PIDs are persisted to ``logs/mcp-child-pids.json`` (owner PID
-    + session UUID) so the next process can reap orphans after an unclean exit.
-    Windows uses ``taskkill /T /F`` via ``gateway.status.terminate_pid``.
-
 Thread safety:
     _servers and _mcp_loop/_mcp_thread are accessed from both the MCP
     background thread and caller threads.  All mutations are protected by
@@ -82,7 +78,6 @@ Thread safety:
 """
 
 import asyncio
-import atexit
 import concurrent.futures
 import inspect
 import json
@@ -94,10 +89,8 @@ import shutil
 import sys
 import threading
 import time
-import uuid
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
@@ -1433,7 +1426,6 @@ class MCPServerTask:
                         for _pid in new_pids:
                             _stdio_pids[_pid] = self.name
                         _stdio_pgids.update(new_pgids)
-                    _sync_mcp_children_registry()
                 async with ClientSession(
                     read_stream, write_stream, **sampling_kwargs
                 ) as session:
@@ -2390,228 +2382,7 @@ _stdio_pids: Dict[int, str] = {}  # pid -> server_name
 # can be cleaned up asynchronously by _kill_orphaned_mcp_children().
 # Separate from _stdio_pids so cleanup sweeps never race with active
 # sessions (e.g. concurrent cron jobs or live user chats).
-_orphan_stdio_pids: Set[int] = set()
-
-# Persisted across process death so the next Hermes/Cursor session can reap
-# stdio MCP children when the owner PID is gone (unclean gateway exit).
-_MCP_CHILDREN_REGISTRY_VERSION = 1
-_mcp_registry_session_id: str = str(uuid.uuid4())
-_mcp_shutdown_atexit_registered = False
-
-
-def _mcp_children_registry_path() -> Path:
-    from hermes_constants import get_hermes_home
-
-    return get_hermes_home() / "logs" / "mcp-child-pids.json"
-
-
-def _snapshot_tracked_stdio_pids() -> Dict[int, str]:
-    with _lock:
-        merged: Dict[int, str] = dict(_stdio_pids)
-        for opid in _orphan_stdio_pids:
-            merged.setdefault(opid, "orphan")
-    return merged
-
-
-def _sync_mcp_children_registry() -> None:
-    """Atomically persist tracked stdio MCP child PIDs for cross-session cleanup."""
-    try:
-        path = _mcp_children_registry_path()
-        path.parent.mkdir(parents=True, exist_ok=True)
-        children = {str(pid): name for pid, name in _snapshot_tracked_stdio_pids().items()}
-        payload = {
-            "version": _MCP_CHILDREN_REGISTRY_VERSION,
-            "owner_pid": os.getpid(),
-            "session_id": _mcp_registry_session_id,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-            "children": children,
-        }
-        tmp = path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        tmp.replace(path)
-    except Exception as exc:
-        logger.debug("Failed to sync MCP children registry: %s", exc)
-
-
-def _clear_mcp_children_registry() -> None:
-    try:
-        path = _mcp_children_registry_path()
-        if path.exists():
-            path.unlink()
-    except Exception as exc:
-        logger.debug("Failed to clear MCP children registry: %s", exc)
-
-
-def _load_mcp_children_registry() -> Optional[dict]:
-    try:
-        path = _mcp_children_registry_path()
-        if not path.exists():
-            return None
-        data = json.loads(path.read_text(encoding="utf-8"))
-        return data if isinstance(data, dict) else None
-    except Exception as exc:
-        logger.debug("Failed to read MCP children registry: %s", exc)
-        return None
-
-
-def _reap_stale_mcp_children_from_registry() -> int:
-    """Kill stdio MCP children left behind when a prior Hermes owner died uncleanly.
-
-    Returns the number of PIDs targeted for termination. Safe to call on every
-    ``discover_mcp_tools()`` / ``register_mcp_servers()`` entry — concurrent live
-    owners are not touched because their owner PID is still alive.
-    """
-    data = _load_mcp_children_registry()
-    if not data:
-        return 0
-
-    reg_version = data.get("version")
-    if reg_version not in (None, _MCP_CHILDREN_REGISTRY_VERSION):
-        logger.warning(
-            "MCP children registry version %r unsupported (expected %s); reaping anyway",
-            reg_version,
-            _MCP_CHILDREN_REGISTRY_VERSION,
-        )
-
-    try:
-        owner_pid = int(data.get("owner_pid") or 0)
-    except (TypeError, ValueError):
-        logger.debug("MCP children registry has invalid owner_pid; clearing")
-        _clear_mcp_children_registry()
-        return 0
-
-    reg_session = data.get("session_id")
-    if owner_pid == os.getpid() and reg_session == _mcp_registry_session_id:
-        return 0
-
-    from gateway.status import _pid_exists
-
-    if owner_pid and owner_pid != os.getpid() and _pid_exists(owner_pid):
-        return 0
-
-    if owner_pid == os.getpid() and reg_session != _mcp_registry_session_id:
-        logger.warning(
-            "MCP registry PID %s reused with new session; reaping stale children",
-            owner_pid,
-        )
-
-    raw_children = data.get("children") or {}
-    if not isinstance(raw_children, dict) or not raw_children:
-        _clear_mcp_children_registry()
-        return 0
-
-    pids: Dict[int, str] = {}
-    for pid_str, server_name in raw_children.items():
-        try:
-            pids[int(pid_str)] = str(server_name)
-        except (TypeError, ValueError):
-            continue
-
-    if not pids:
-        _clear_mcp_children_registry()
-        return 0
-
-    logger.info(
-        "Reaping %d stale MCP child process(es) from prior Hermes session (owner PID %s)",
-        len(pids),
-        owner_pid or "?",
-    )
-    _terminate_mcp_pids(pids)
-    _clear_mcp_children_registry()
-    return len(pids)
-
-
-def _terminate_mcp_pids(
-    pids: Dict[int, str],
-    pgids: Optional[Dict[int, int]] = None,
-) -> None:
-    """SIGTERM → wait → force-kill survivors; on Windows use taskkill /T /F."""
-    import signal as _signal
-
-    from gateway.status import _pid_exists, terminate_pid
-
-    if not pids:
-        return
-
-    if sys.platform == "win32":
-        for pid, server_name in pids.items():
-            if not _pid_exists(pid):
-                continue
-            try:
-                terminate_pid(pid, force=True)
-                logger.debug(
-                    "Terminated stale MCP process %d (%s) via taskkill",
-                    pid,
-                    server_name,
-                )
-            except (ProcessLookupError, PermissionError, OSError) as exc:
-                logger.debug(
-                    "Could not terminate stale MCP process %d (%s): %s",
-                    pid,
-                    server_name,
-                    exc,
-                )
-        return
-
-    killpg = getattr(os, "killpg", None)
-    pgids = pgids or {}
-
-    def _send_signal(pid: int, sig: int, server_name: str) -> None:
-        pgid = pgids.get(pid)
-        if pgid is not None and killpg is not None:
-            try:
-                killpg(pgid, sig)
-                return
-            except (ProcessLookupError, PermissionError, OSError) as exc:
-                logger.debug(
-                    "killpg(%d, %d) failed for MCP server '%s': %s; falling back to kill(pid)",
-                    pgid,
-                    sig,
-                    server_name,
-                    exc,
-                )
-        try:
-            os.kill(pid, sig)
-        except (ProcessLookupError, PermissionError, OSError):
-            pass
-
-    for pid, server_name in pids.items():
-        _send_signal(pid, _signal.SIGTERM, server_name)
-        logger.debug("Sent SIGTERM to MCP process %d (%s)", pid, server_name)
-
-    time.sleep(2)
-
-    _sigkill = getattr(_signal, "SIGKILL", _signal.SIGTERM)
-    for pid, server_name in pids.items():
-        if not _pid_exists(pid):
-            continue
-        _send_signal(pid, _sigkill, server_name)
-        logger.warning(
-            "Force-killed MCP process %d (%s) after SIGTERM timeout",
-            pid,
-            server_name,
-        )
-
-
-def _mcp_shutdown_atexit() -> None:
-    """Last-resort MCP cleanup when the interpreter exits without gateway shutdown."""
-    try:
-        shutdown_mcp_servers()
-    except Exception as exc:
-        logger.debug("MCP atexit shutdown_mcp_servers failed: %s", exc)
-    try:
-        _kill_orphaned_mcp_children(include_active=True)
-    except Exception as exc:
-        logger.debug("MCP atexit orphan kill failed: %s", exc)
-    _clear_mcp_children_registry()
-
-
-def _register_mcp_shutdown_atexit() -> None:
-    global _mcp_shutdown_atexit_registered
-    if _mcp_shutdown_atexit_registered:
-        return
-    atexit.register(_mcp_shutdown_atexit)
-    _mcp_shutdown_atexit_registered = True
+_orphan_stdio_pids: set = set()
 
 # Process-group IDs of stdio MCP subprocesses, captured at spawn time.
 # The MCP SDK spawns stdio children with ``start_new_session=True`` so each
@@ -2671,7 +2442,6 @@ def _mcp_loop_exception_handler(loop, context):
 def _ensure_mcp_loop():
     """Start the background event loop thread if not already running."""
     global _mcp_loop, _mcp_thread
-    _register_mcp_shutdown_atexit()
     with _lock:
         if _mcp_loop is not None and _mcp_loop.is_running():
             return
@@ -3732,8 +3502,6 @@ def register_mcp_servers(servers: Dict[str, dict]) -> List[str]:
         logger.debug("MCP SDK not available -- skipping explicit MCP registration")
         return []
 
-    _reap_stale_mcp_children_from_registry()
-
     if not servers:
         logger.debug("No explicit MCP servers provided")
         return []
@@ -3828,8 +3596,6 @@ def discover_mcp_tools() -> List[str]:
     if not _MCP_AVAILABLE:
         logger.debug("MCP SDK not available -- skipping MCP tool discovery")
         return []
-
-    _reap_stale_mcp_children_from_registry()
 
     servers = _load_mcp_config()
     if not servers:
@@ -4007,8 +3773,6 @@ def shutdown_mcp_servers():
     # Fast path: nothing to shut down.
     if not servers_snapshot:
         _stop_mcp_loop()
-        _kill_orphaned_mcp_children(include_active=True)
-        _clear_mcp_children_registry()
         return
 
     async def _shutdown():
@@ -4040,17 +3804,6 @@ def shutdown_mcp_servers():
                 logger.debug("Error during MCP shutdown: %s", exc)
 
     _stop_mcp_loop()
-    global _mcp_stderr_log_fh
-    with _mcp_stderr_log_lock:
-        fh = _mcp_stderr_log_fh
-        if fh is not None and fh not in (sys.stderr, sys.stdout):
-            try:
-                fh.close()
-            except Exception as exc:
-                logger.debug("Error closing MCP stderr log handle: %s", exc)
-        _mcp_stderr_log_fh = None
-
-    _clear_mcp_children_registry()
 
 
 def _kill_orphaned_mcp_children(include_active: bool = False) -> None:
@@ -4062,8 +3815,9 @@ def _kill_orphaned_mcp_children(include_active: bool = False) -> None:
     ``_orphan_stdio_pids`` are reaped so concurrent cron jobs and live user
     sessions are not disrupted.
 
-    On Windows uses ``taskkill /T /F`` via ``gateway.status.terminate_pid``
-    because ``os.kill(SIGTERM)`` does not reliably terminate MCP child trees.
+    Sends SIGTERM, waits 2 seconds, then escalates to SIGKILL for any
+    survivors, avoiding shared-resource collisions when multiple hermes
+    processes run on the same host (each has its own ``_stdio_pids`` dict).
 
     On POSIX, signals are sent via ``os.killpg`` to the spawn-time pgid when
     one is tracked, so reparented grandchildren in the same process group
@@ -4075,6 +3829,8 @@ def _kill_orphaned_mcp_children(include_active: bool = False) -> None:
     used only at final shutdown, after the MCP event loop has stopped and no
     sessions can still be in flight.
     """
+    import signal as _signal
+
     with _lock:
         pids: Dict[int, str] = {}
         for opid in _orphan_stdio_pids:
@@ -4089,14 +3845,52 @@ def _kill_orphaned_mcp_children(include_active: bool = False) -> None:
         for pid in pgids:
             _stdio_pgids.pop(pid, None)
 
+    # Fast path: no tracked stdio PIDs to reap. Skip the SIGTERM/sleep/SIGKILL
+    # dance entirely — otherwise every MCP-free shutdown pays a 2s sleep tax.
     if not pids:
         return
 
-    _terminate_mcp_pids(pids, pgids=pgids)
-    if include_active:
-        _clear_mcp_children_registry()
-    else:
-        _sync_mcp_children_registry()
+    def _send_signal(pid: int, sig: int, server_name: str) -> None:
+        """SIGTERM/SIGKILL via pgroup on POSIX, fall back to pid signal."""
+        pgid = pgids.get(pid)
+        killpg = getattr(os, "killpg", None)
+        if pgid is not None and killpg is not None:
+            try:
+                killpg(pgid, sig)
+                return
+            except (ProcessLookupError, PermissionError, OSError) as exc:
+                # Pgroup gone (all members exited) or refused — fall back to
+                # the per-pid path so we still try the direct child if alive.
+                logger.debug(
+                    "killpg(%d, %d) failed for MCP server '%s': %s; falling back to kill(pid)",
+                    pgid, sig, server_name, exc,
+                )
+        try:
+            os.kill(pid, sig)
+        except (ProcessLookupError, PermissionError, OSError):
+            pass
+
+    # Phase 1: SIGTERM (graceful)
+    for pid, server_name in pids.items():
+        _send_signal(pid, _signal.SIGTERM, server_name)
+        logger.debug("Sent SIGTERM to orphaned MCP process %d (%s)", pid, server_name)
+
+    # Phase 2: Wait for graceful exit
+    time.sleep(2)
+
+    # Phase 3: SIGKILL any survivors
+    _sigkill = getattr(_signal, "SIGKILL", _signal.SIGTERM)
+    # ``os.kill(pid, 0)`` is NOT a no-op on Windows. Use the cross-platform
+    # existence check before escalating to SIGKILL.
+    from gateway.status import _pid_exists
+    for pid, server_name in pids.items():
+        if not _pid_exists(pid):
+            continue  # Good — exited after SIGTERM
+        _send_signal(pid, _sigkill, server_name)
+        logger.warning(
+            "Force-killed MCP process %d (%s) after SIGTERM timeout",
+            pid, server_name,
+        )
 
 
 def _stop_mcp_loop():

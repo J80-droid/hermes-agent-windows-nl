@@ -17,6 +17,7 @@ Instructions for AI coding assistants and developers working on the hermes-agent
 ### Ad-hoc werk & repo-hygiene (deze fork)
 
 - **Geen** nieuwe `.py`-scripts of data in de **repo-root** — gebruik `output/research/` (gitignored) of een skill onder `skills/<categorie>/<naam>/scripts/`.
+- **Cursor:** `.cursor/rules/repo-hygiene.mdc` (`alwaysApply`) + `.cursorrules` — parent workspace: `windows/APPLY_WORKSPACE_IDE_SETTINGS.bat` kopieert de rule naar `Hermes_agent_WS/.cursor/rules/`.
 - Canonical layout: `docs/WORKSPACE_CONVENTIONS.md`. **Alle handige commando's (één cheat sheet):** `docs/INSTITUTIONAL_OPERATIONS.md#handige-commandos-fork`.
 - Legal fork-skills (zoeken, parseren, web): `skills/legal/` + `tests/skills/test_*_skill.py` (101 pytest, gemockte HTTP).
 - Preflight guard: `windows/scripts/guard_git_clean.ps1` (via `UPDATE_HERMES.bat` / `upstream_sync.ps1`).

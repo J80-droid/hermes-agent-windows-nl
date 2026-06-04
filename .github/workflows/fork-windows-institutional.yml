@@ -33,6 +33,12 @@ jobs:
         run: python -m pip install --upgrade pip && pip install -e ".[dev]"
 
       # Volledige RUN_LEGAL_DOMAIN_E2E vereist %LOCALAPPDATA%\hermes runtime — lokaal vóór release (zie docs/LEGAL_PRODUCTION_GATE.md).
+      - name: Nous Tier A drift gate (strict)
+        run: powershell -NoProfile -File windows/scripts/Test-NousTreeIdentical.ps1
+
+      - name: SYNC_NOUS overlay E2E
+        run: windows\audits\RUN_SYNC_NOUS_E2E.bat
+
       - name: Institutional hardening E2E (H1–H14, incl. legal pytest)
         env:
           HERMES_SKIP_PAUSE_AFTER_UPDATE: '1'

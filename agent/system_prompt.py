@@ -31,7 +31,6 @@ from agent.prompt_builder import (
     GOOGLE_MODEL_OPERATIONAL_GUIDANCE,
     HERMES_AGENT_HELP_GUIDANCE,
     KANBAN_GUIDANCE,
-    LANCEDB_RAG_STRICT_CITATION_GUIDANCE,
     MEMORY_GUIDANCE,
     OPENAI_MODEL_EXECUTION_GUIDANCE,
     PLATFORM_HINTS,
@@ -129,8 +128,6 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     elif _kanban_guidance is None and "kanban_show" in agent.valid_tool_names:
         # Fallback for code paths that bypass agent_init (rare).
         tool_guidance.append(KANBAN_GUIDANCE)
-    if "search_knowledge" in agent.valid_tool_names:
-        tool_guidance.append(LANCEDB_RAG_STRICT_CITATION_GUIDANCE)
     if tool_guidance:
         stable_parts.append(" ".join(tool_guidance))
 

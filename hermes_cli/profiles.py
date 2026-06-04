@@ -422,49 +422,6 @@ def remove_wrapper_script(name: str) -> bool:
     return False
 
 
-_ORPHAN_WRAPPER_RE = re.compile(r"hermes -p (\S+)", re.IGNORECASE)
-
-
-def iter_orphan_profile_wrappers(
-    wrapper_dir: Path | None = None,
-) -> list[tuple[str, str]]:
-    """Return ``(wrapper_filename, missing_profile_name)`` for stale aliases."""
-    root = wrapper_dir or _get_wrapper_dir()
-    orphans: list[tuple[str, str]] = []
-    if not root.is_dir():
-        return orphans
-    for wrapper in root.iterdir():
-        if not wrapper.is_file():
-            continue
-        try:
-            content = wrapper.read_text(encoding="utf-8")
-        except Exception:
-            continue
-        if "hermes -p" not in content:
-            continue
-        match = _ORPHAN_WRAPPER_RE.search(content)
-        if not match:
-            continue
-        profile_name = match.group(1)
-        if not profile_exists(profile_name):
-            orphans.append((wrapper.name, profile_name))
-    return orphans
-
-
-def remove_orphan_profile_wrappers(
-    wrapper_dir: Path | None = None,
-) -> list[str]:
-    """Remove wrapper scripts whose target profile no longer exists.
-
-    Returns wrapper filenames that were removed (e.g. ``analyst``, ``reviewer``).
-    """
-    removed: list[str] = []
-    for wrapper_name, _profile in iter_orphan_profile_wrappers(wrapper_dir):
-        if remove_wrapper_script(wrapper_name):
-            removed.append(wrapper_name)
-    return removed
-
-
 # ---------------------------------------------------------------------------
 # ProfileInfo
 # ---------------------------------------------------------------------------
@@ -524,11 +481,20 @@ def _read_distribution_meta(profile_dir: Path) -> tuple:
 
 
 def _read_config_model(profile_dir: Path) -> tuple:
-    """Effectief model/provider (profiel erft van root ~/.hermes/config.yaml)."""
+    """Read model/provider from a profile's config.yaml. Returns (model, provider)."""
+    config_path = profile_dir / "config.yaml"
+    if not config_path.exists():
+        return None, None
     try:
-        from hermes_cli.profile_model_inheritance import effective_model_provider
-
-        return effective_model_provider(profile_dir)
+        import yaml
+        with open(config_path, "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f) or {}
+        model_cfg = cfg.get("model", {})
+        if isinstance(model_cfg, str):
+            return model_cfg, None
+        if isinstance(model_cfg, dict):
+            return model_cfg.get("default") or model_cfg.get("model"), model_cfg.get("provider")
+        return None, None
     except Exception:
         return None, None
 
@@ -848,15 +814,6 @@ def create_profile(
             )
         except Exception:
             pass  # non-fatal — user can describe later with `hermes profile describe`
-
-    # Fork: drop cloned model: blocks so domain profiles inherit root config.
-    # ImportError only — strip_model_block_from_profile_config handles I/O/YAML internally.
-    try:
-        from hermes_cli.profile_model_inheritance import strip_model_block_from_profile_config
-    except ImportError:
-        pass  # minimal / partial installs
-    else:
-        strip_model_block_from_profile_config(profile_dir)
 
     # Phase 4: when running inside a container under s6, register the
     # new profile's gateway as a runtime s6 service so
@@ -1236,8 +1193,7 @@ def get_active_profile() -> str:
     """
     path = _get_active_profile_path()
     try:
-        # utf-8-sig: strip BOM if active_profile was written by PowerShell Set-Content
-        name = path.read_text(encoding="utf-8-sig").strip()
+        name = path.read_text().strip()
         if not name:
             return "default"
         return name
@@ -1266,7 +1222,7 @@ def set_active_profile(name: str) -> None:
     else:
         # Atomic write
         tmp = path.with_suffix(".tmp")
-        tmp.write_text(canon + "\n", encoding="utf-8")
+        tmp.write_text(canon + "\n")
         tmp.replace(path)
 
 

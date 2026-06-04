@@ -11,7 +11,6 @@ Also works when ``hermes`` is not on PATH (e.g. ``nix run`` or ``python -m``).
 import os
 import shutil
 import sys
-import threading
 from typing import Optional, Sequence
 
 from hermes_cli._parser import (
@@ -153,85 +152,11 @@ def build_relaunch_argv(
     return argv
 
 
-def _hermes_root_for_profile_relaunch() -> str:
-    """Return the Hermes root path (not a profile subdirectory)."""
-    from hermes_constants import get_default_hermes_root
-
-    return str(get_default_hermes_root())
-
-
-def _subprocess_env_with_root_hermes_home() -> dict[str, str]:
-    """Child env: HERMES_HOME at root so -p / active_profile apply correctly."""
-    env = os.environ.copy()
-    env["HERMES_HOME"] = _hermes_root_for_profile_relaunch()
-    return env
-
-
-def _print_profile_relaunch_progress(step: int, message: str) -> None:
-    print(f"  Stap {step}/3: {message}", file=sys.stderr, flush=True)
-
-
-def _argv_relaunches_interactive_chat(argv: Sequence[str]) -> bool:
-    """Return True when the child will own the prompt_toolkit TUI."""
-    return any(arg == "chat" for arg in argv)
-
-
-def _clear_startup_spinner_line() -> None:
-    sys.stderr.write("\r          \r")
-    sys.stderr.flush()
-
-
-def _run_subprocess_with_startup_spinner(argv: list[str], env: dict[str, str]):
-    """Windows: brief stderr spinner while a short child process starts.
-
-    Never spin during ``chat`` relaunch: the child owns the terminal for the
-  full session and stderr ``\\r`` updates corrupt the TUI prompt (shows
-    ``⟳ Opstarten`` instead of ``legal ❯``).
-    """
-    import subprocess
-    import time
-
-    if sys.platform != "win32":
-        return subprocess.run(argv, env=env)
-
-    if _argv_relaunches_interactive_chat(argv):
-        return subprocess.run(argv, env=env)
-
-    stop = threading.Event()
-    frames = ["|", "/", "-", "\\"]
-    spinner_max_sec = 20.0
-
-    def _spinner() -> None:
-        i = 0
-        while not stop.wait(0.12):
-            frame = frames[i % len(frames)]
-            sys.stderr.write(f"\r  ⟳ Opstarten {frame} ")
-            sys.stderr.flush()
-            i += 1
-
-    proc = subprocess.Popen(argv, env=env)
-    thread = threading.Thread(target=_spinner, daemon=True)
-    thread.start()
-    started = time.monotonic()
-    try:
-        while proc.poll() is None:
-            if time.monotonic() - started >= spinner_max_sec:
-                stop.set()
-                break
-            time.sleep(0.12)
-    finally:
-        stop.set()
-        thread.join(timeout=0.5)
-        _clear_startup_spinner_line()
-    return subprocess.CompletedProcess(argv, proc.wait())
-
-
 def relaunch(
     extra_args: Sequence[str],
     *,
     preserve_inherited: bool = True,
     original_argv: Optional[Sequence[str]] = None,
-    reset_hermes_home_to_root: bool = False,
 ) -> None:
     """Replace the current process with a fresh hermes invocation.
 
@@ -256,22 +181,11 @@ def relaunch(
     new_argv = build_relaunch_argv(
         extra_args, preserve_inherited=preserve_inherited, original_argv=original_argv
     )
-    if reset_hermes_home_to_root:
-        os.environ["HERMES_HOME"] = _hermes_root_for_profile_relaunch()
     if sys.platform == "win32":
         # Windows: subprocess + exit, because execvp can't swap to .cmd/.exe shims.
+        import subprocess
         try:
-            env = (
-                _subprocess_env_with_root_hermes_home()
-                if reset_hermes_home_to_root
-                else None
-            )
-            if reset_hermes_home_to_root:
-                result = _run_subprocess_with_startup_spinner(new_argv, env)
-            else:
-                import subprocess
-
-                result = subprocess.run(new_argv, env=env)
+            result = subprocess.run(new_argv)
             sys.exit(result.returncode)
         except KeyboardInterrupt:
             sys.exit(130)
@@ -280,67 +194,12 @@ def relaunch(
             # caller used to see ``[Errno 8] Exec format error`` which is
             # cryptic.  Common causes: ``hermes`` not on PATH yet (install
             # hasn't propagated User PATH into this shell) or a stale shim.
-            from hermes_cli.profiles import get_active_profile
-
-            active = get_active_profile()
-            hint = (
-                f"hermes -p {active} chat"
-                if active and active != "default"
-                else "hermes chat"
-            )
             print(
                 f"\nHermes relaunch failed: {exc}\n"
                 f"Command: {' '.join(new_argv)}\n"
-                f"Sticky profiel staat al op '{active}'.\n"
-                f"Start handmatig: {hint}\n"
-                f"Of open een nieuwe terminal en probeer opnieuw.",
+                f"Fix: open a new terminal so PATH picks up, then re-run hermes.",
                 file=sys.stderr,
             )
             sys.exit(1)
     else:
         os.execvp(new_argv[0], new_argv)
-
-
-def strip_profile_flags(argv: Sequence[str]) -> list[str]:
-    """Remove -p, --profile, and --profile=name from argv to prevent overriding
-    the sticky active profile on relaunch.
-    """
-    cleaned: list[str] = []
-    i = 0
-    while i < len(argv):
-        arg = argv[i]
-        if arg == "-p" or arg == "--profile":
-            i += 1  # Skip flag
-            if i < len(argv) and not argv[i].startswith("-"):
-                i += 1  # Skip profile name value
-            continue
-        if arg.startswith("--profile="):
-            i += 1  # Skip --profile=name
-            continue
-        cleaned.append(arg)
-        i += 1
-    return cleaned
-
-
-def relaunch_chat_after_profile_switch(
-    profile_name: str,
-    original_argv: Optional[Sequence[str]] = None,
-) -> None:
-    """Relaunch chat with an explicit profile after a sticky profile switch.
-
-    Passes ``-p <profile_name>`` so the child wins over a stale inherited
-    ``HERMES_HOME`` (e.g. ``profiles/core``).  Resets ``HERMES_HOME`` to the
-    Hermes root in the child environment on Windows.
-    """
-    src = original_argv if original_argv is not None else sys.argv[1:]
-    cleaned_src = strip_profile_flags(src)
-    _print_profile_relaunch_progress(
-        3,
-        f"Hermes start op (profiel {profile_name}) — dit duurt vaak 5–15 s op Windows…",
-    )
-    relaunch(
-        ["chat", "-p", profile_name],
-        preserve_inherited=True,
-        original_argv=cleaned_src,
-        reset_hermes_home_to_root=True,
-    )

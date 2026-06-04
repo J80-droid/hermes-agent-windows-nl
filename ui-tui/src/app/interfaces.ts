@@ -95,8 +95,6 @@ export interface TranscriptRow {
   msg: Msg
 }
 
-export type CostBarMode = 'minimal' | 'rich'
-
 export interface UiState {
   bgTasks: Set<string>
   busy: boolean
@@ -112,9 +110,7 @@ export interface UiState {
   pasteCollapseChars: number
 
   sections: SectionVisibility
-  costBarMode: CostBarMode
   showCost: boolean
-  showStatusBarTps: boolean
   showReasoning: boolean
   indicatorStyle: IndicatorStyle
   sid: null | string

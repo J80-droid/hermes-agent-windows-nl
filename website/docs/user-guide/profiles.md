@@ -50,7 +50,7 @@ You can also set or auto-generate the description later with `hermes profile des
 hermes profile create work --clone
 ```
 
-Copies your current profile's `config.yaml`, `.env`, and `SOUL.md` into the new profile. Fresh sessions and memory. **`model:` is stripped** from the new profile — inference model/provider are inherited from root `~/.hermes/config.yaml` (see [Model inheritance](#model-inheritance) below). Edit `~/.hermes/profiles/work/.env` for different API keys, or `~/.hermes/profiles/work/SOUL.md` for a different personality.
+Copies your current profile's `config.yaml`, `.env`, and `SOUL.md` into the new profile. Same API keys and model, but fresh sessions and memory. Edit `~/.hermes/profiles/work/.env` for different API keys, or `~/.hermes/profiles/work/SOUL.md` for a different personality.
 
 ### Clone everything (`--clone-all`)
 
@@ -82,7 +82,7 @@ coder setup                   # configure coder's settings
 coder gateway start           # start coder's gateway
 coder doctor                  # check coder's health
 coder skills list             # list coder's skills
-hermes config set model.default anthropic/claude-sonnet-4   # writes to root when using named profiles
+coder config set model.default anthropic/claude-sonnet-4
 ```
 
 The alias works with every hermes subcommand — it's just `hermes -p <name>` under the hood.
@@ -180,37 +180,16 @@ Each profile gets its own service name. They run independently.
 Per-profile gateways are supervised by [s6-overlay](https://github.com/just-containers/s6-overlay) (PID 1 in the container), so `hermes profile create <name>` automatically registers an s6 service slot at `/run/service/gateway-<name>/`. `hermes -p <name> gateway start/stop/restart` dispatches to `s6-svc` instead of spawning a bare process — crashes are auto-restarted and `docker restart` preserves the previously-running set of gateways. See [Per-profile gateway supervision](/user-guide/docker#per-profile-gateway-supervision) for details.
 :::
 
-## Model inheritance
-
-Named profiles under `~/.hermes/profiles/<name>/` **inherit** the main inference `model` and `provider` from root `~/.hermes/config.yaml` by default.
-
-- Change the model for **all** profiles once: `hermes model` or edit root `config.yaml`.
-- Profile `config.yaml` should contain MCP servers, toolsets, agent settings — **not** a duplicate `model:` block.
-- `hermes model`, `save_config`, and `hermes config set model.*` write to **root** when you are in a named profile (unless you set `model.inherit: false` in that profile).
-- `hermes doctor --fix` removes stale ignored `model:` blocks from domain profiles.
-
-Per-profile override (rare):
-
-```yaml
-model:
-  inherit: false
-  provider: openrouter
-  default: openrouter/anthropic/claude-sonnet-4
-```
-
-Fork-specific NL guide: `docs/PROFILE_MODEL_INHERITANCE.md` in the Jamel Windows fork.
-
 ## Configuring profiles
 
 Each profile has its own:
 
-- **`config.yaml`** — toolsets, MCP, agent settings (model inherited from root by default)
+- **`config.yaml`** — model, provider, toolsets, all settings
 - **`.env`** — API keys, bot tokens
 - **`SOUL.md`** — personality and instructions
 
 ```bash
-hermes model                              # sets model for all profiles (root config)
-coder config set terminal.cwd /path/to/project
+coder config set model.default anthropic/claude-sonnet-4
 echo "You are a focused coding assistant." > ~/.hermes/profiles/coder/SOUL.md
 ```
 

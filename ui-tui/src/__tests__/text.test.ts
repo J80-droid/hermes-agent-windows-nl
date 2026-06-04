@@ -16,7 +16,6 @@ import {
   sameToolTrailGroup,
   sanitizeAnsiForRender,
   splitToolDuration,
-  normalizeAssistantMarkdown,
   stripAnsi,
   thinkingPreview
 } from '../lib/text.js'
@@ -181,28 +180,6 @@ describe('ANSI sanitizers', () => {
 
   it('detects non-CSI escape prefixes too', () => {
     expect(hasAnsi(`ok${ESC}Ppayload${ESC}\\`)).toBe(true)
-  })
-})
-
-describe('normalizeAssistantMarkdown', () => {
-  it('splits inline heading and bold label lines', () => {
-    const raw = '## Analyse Dit is tekst.\n**Label:** waarde'
-    const out = normalizeAssistantMarkdown(raw)
-    expect(out).toContain('## Analyse\n\nDit is tekst.')
-    expect(out).toContain('**Label:**\n\nwaarde')
-  })
-
-  it('adds section break before second heading', () => {
-    const raw = 'Einde.\n## Tweede'
-    const out = normalizeAssistantMarkdown(raw)
-    expect(out).toContain('Einde.\n\n## Tweede')
-  })
-
-  it('converts numbered step lines to markdown headings', () => {
-    const raw = '1 Stap 1: Eerste\n2 Stap 2: Tweede'
-    const out = normalizeAssistantMarkdown(raw)
-    expect(out).toContain('## Stap 1: Eerste')
-    expect(out).toContain('## Stap 2: Tweede')
   })
 })
 

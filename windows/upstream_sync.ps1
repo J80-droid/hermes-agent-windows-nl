@@ -478,8 +478,12 @@ try {
         }
     }
 
-    # Post-merge keten: Invoke-UpstreamPostMerge.ps1 (windows/sync_hermes_api_env.ps1, SYNC_TRUST_RUNTIME.bat, trust/memory).
+    # Post-merge: overlay bootstrap + extras, then trust/RAG keten.
     if ($script:UpstreamExitCode -eq 0 -and $Phase -eq 'PostMerge') {
+        $overlayApply = Join-HermesRepoPath -RepoRoot $repo -RelativePath 'scripts/Invoke-ApplyHermesOverlay.ps1'
+        if (Test-Path -LiteralPath $overlayApply) {
+            & $overlayApply -RepoRoot $repo -Quiet
+        }
         . (Join-HermesRepoPath -RepoRoot $PSScriptRoot -RelativePath 'scripts/Invoke-UpstreamPostMerge.ps1')
         $script:UpstreamExitCode = Invoke-UpstreamPostMerge @{
             Repo                 = $repo

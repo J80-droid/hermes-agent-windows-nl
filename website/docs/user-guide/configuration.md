@@ -27,8 +27,6 @@ Run `hermes setup --portal` — one OAuth gets you a model provider and all four
 └── logs/           # Logs (errors.log, gateway.log — secrets auto-redacted)
 ```
 
-Named profiles live under `~/.hermes/profiles/<name>/` with their own `config.yaml`, `.env`, and sessions. **Inference model and provider are inherited from root `~/.hermes/config.yaml`** unless that profile sets `model.inherit: false`. Do not duplicate `model:` in every profile — use `hermes model` once. See [Profiles — Model inheritance](./profiles#model-inheritance).
-
 ## Managing Configuration
 
 ```bash
@@ -45,7 +43,7 @@ hermes config set OPENROUTER_API_KEY sk-or-...  # Saves to .env
 ```
 
 :::tip
-The `hermes config set` command automatically routes values to the right file — API keys are saved to `.env`, everything else to `config.yaml`. Keys under `model.*` are saved to **root** `~/.hermes/config.yaml` when you are using a named profile (not into `profiles/<name>/config.yaml`).
+The `hermes config set` command automatically routes values to the right file — API keys are saved to `.env`, everything else to `config.yaml`.
 :::
 
 ## Configuration Precedence
@@ -1208,8 +1206,7 @@ display:
   bell_on_complete: false # Play terminal bell when agent finishes (great for long tasks)
   show_reasoning: false   # Show model reasoning/thinking above each response (toggle with /reasoning show|hide)
   streaming: false        # Stream tokens to terminal as they arrive (real-time output)
-  show_cost: true         # Show estimated session cost in TUI + classic CLI status bar (toggle with /cost)
-  cost_bar_mode: rich     # rich = turn/session + breakdown; minimal = legacy ~$0.0042
+  show_cost: false        # Show estimated $ cost in the CLI status bar
   timestamps: false       # When true, prefixes user and assistant labels with [HH:MM] timestamps in the CLI / TUI transcript
   tool_preview_length: 0  # Max chars for tool call previews (0 = no limit, show full paths/commands)
   runtime_footer:         # Gateway: append a runtime-context footer to final replies

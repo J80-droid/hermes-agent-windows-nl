@@ -355,13 +355,6 @@ def _prompt_api_key(var: dict):
 
 def _print_setup_summary(config: dict, hermes_home):
     """Print the setup completion summary."""
-    try:
-        from hermes_cli.skills_hub_init import ensure_skills_hub_default_and_profiles
-
-        ensure_skills_hub_default_and_profiles()
-    except Exception:
-        pass
-
     # Tool availability summary
     print()
     print_header("Tool Availability Summary")
@@ -736,20 +729,6 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     _refreshed = load_config()
     config.clear()
     config.update(_refreshed)
-
-    try:
-        from hermes_cli.model_runtime_config import detect_model_provider_incoherence
-
-        coherence = detect_model_provider_incoherence(_refreshed)
-        if coherence:
-            print_warning(
-                "Model/provider config is inconsistent after provider setup."
-            )
-            for ci in coherence:
-                print_warning(f"  {ci.message}")
-            print_info("  Fix with: hermes doctor --fix")
-    except Exception:
-        pass
 
     # Derive the selected provider for downstream steps (vision setup).
     selected_provider = None
@@ -2396,16 +2375,6 @@ def _model_section_has_credentials(config: dict) -> bool:
     return False
 
 
-def _model_section_is_coherent(config: dict) -> bool:
-    """False when auth.json and config model.provider disagree."""
-    try:
-        from hermes_cli.model_runtime_config import detect_model_provider_incoherence
-
-        return len(detect_model_provider_incoherence(config)) == 0
-    except Exception:
-        return False
-
-
 def _gateway_platform_short_label(label: str) -> str:
     """Strip trailing parenthetical qualifiers from a gateway platform label."""
     base = label.split("(", 1)[0].strip()
@@ -2424,16 +2393,9 @@ def _get_section_config_summary(config: dict, section_key: str) -> Optional[str]
             return None
         model = config.get("model")
         if isinstance(model, str) and model.strip():
-            slug = model.strip()
-            return slug
+            return model.strip()
         if isinstance(model, dict):
-            prov = str(model.get("provider") or "").strip()
-            default = str(model.get("default") or model.get("model") or "").strip()
-            if prov and default:
-                return f"{prov} / {default}"
-            if prov:
-                return prov
-            return default or "configured"
+            return str(model.get("default") or model.get("model") or "configured")
         return "configured"
 
     elif section_key == "terminal":
@@ -2483,21 +2445,6 @@ def _skip_configured_section(
     """
     summary = _get_section_config_summary(config, section_key)
     if not summary:
-        return False
-    if section_key == "model" and not _model_section_is_coherent(config):
-        print()
-        print_warning(
-            f"  {label}: credentials present but auth.json and config model.provider "
-            "disagree — reconfigure required."
-        )
-        try:
-            from hermes_cli.model_runtime_config import detect_model_provider_incoherence
-
-            for ci in detect_model_provider_incoherence(config):
-                print_warning(f"    {ci.message}")
-        except Exception:
-            pass
-        print_info("  Run 'hermes doctor --fix' after setup, or reconfigure now.")
         return False
     print()
     print_success(f"  {label}: {summary}")
@@ -3079,16 +3026,7 @@ def run_setup_wizard(args):
     if not (migration_ran and _skip_configured_section(config, "tools", "Tools")):
         setup_tools(config, first_install=not is_existing)
 
-    # Save and show summary (#4172: refresh model from disk so stale wizard dict
-    # cannot overwrite provider changes made during setup_model_provider).
-    try:
-        from hermes_cli.config import load_config as _load_config
-
-        _disk = _load_config()
-        if isinstance(_disk.get("model"), dict):
-            config["model"] = dict(_disk["model"])
-    except Exception:
-        pass
+    # Save and show summary
     save_config(config)
     if _backup_path and _backup_path.exists():
         print_info(f"Previous config backed up to: {_backup_path}")

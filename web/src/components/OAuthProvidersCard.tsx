@@ -59,31 +59,20 @@ export function OAuthProvidersCard({ onError, onSuccess }: Props) {
   const { t } = useI18n();
 
   const onErrorRef = useRef(onError);
-  useEffect(() => {
-    onErrorRef.current = onError;
-  }, [onError]);
-
-  const fetchProviders = useCallback(() => {
-    return api
-      .getOAuthProviders()
-      .then((resp) => setProviders(resp.providers))
-      .catch((e) => onErrorRef.current?.(`Failed to load providers: ${e}`));
-  }, []);
+  onErrorRef.current = onError;
 
   const refresh = useCallback(() => {
     setLoading(true);
-    void fetchProviders().finally(() => setLoading(false));
-  }, [fetchProviders]);
+    api
+      .getOAuthProviders()
+      .then((resp) => setProviders(resp.providers))
+      .catch((e) => onErrorRef.current?.(`Failed to load providers: ${e}`))
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
-    let active = true;
-    void fetchProviders().finally(() => {
-      if (active) setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, [fetchProviders]);
+    refresh();
+  }, [refresh]);
 
   const handleDisconnect = async (provider: OAuthProvider) => {
     setBusyId(provider.id);
@@ -117,7 +106,7 @@ export function OAuthProvidersCard({ onError, onSuccess }: Props) {
             ghost
             size="icon"
             className="text-muted-foreground hover:text-foreground"
-            onClick={() => void refresh()}
+            onClick={refresh}
             disabled={loading}
             aria-label={t.common.refresh}
           >

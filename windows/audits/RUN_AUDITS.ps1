@@ -30,6 +30,7 @@ param(
     [switch]$IncludeRepoHygieneE2E,
     [switch]$IncludeInstitutionalHardeningE2E,
     [switch]$IncludeUpdateHermesIntegrationE2E,
+    [switch]$IncludeSyncNousE2E,
     [switch]$IncludeCodebaseSmoke,
     [switch]$IncludeCodebaseSmokeE2E,
     [switch]$SkipPytest,
@@ -394,6 +395,14 @@ if ($IncludeUpdateHermesIntegrationE2E) {
     $updateIntBat = Join-Path $repoRoot 'audits\RUN_UPDATE_HERMES_INTEGRATION_E2E.bat'
     Invoke-Step 'update-hermes-integration-e2e' {
         cmd /c "`"$updateIntBat`""
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeSyncNousE2E -or $IncludeAllE2E) {
+    $syncNousBat = Join-Path $scriptRoot 'RUN_SYNC_NOUS_E2E.bat'
+    Invoke-Step 'sync-nous-e2e' {
+        cmd /c "`"$syncNousBat`""
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

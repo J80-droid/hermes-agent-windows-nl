@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""File Tools Module - LLM agent file manipulation tools.
-
-Paths are validated against the workspace sandbox (``hermes_cli/filesystem_sandbox``)
-before read/write/patch/search when ``workspace.enforce_sandbox`` is enabled.
-Cross-profile and credential guards remain in ``agent/file_safety``.
-"""
+"""File Tools Module - LLM agent file manipulation tools."""
 
 import errno
 import json
@@ -155,38 +150,13 @@ def _resolve_base_dir(task_id: str = "default") -> Path:
 def _resolve_path_for_task(filepath: str, task_id: str = "default") -> Path:
     """Resolve *filepath* against the task's absolute base directory.
 
-    See :func:`_resolve_base_dir` for how the base is chosen. When the
-    filesystem sandbox is enabled, the path must stay within the workspace root.
+    See :func:`_resolve_base_dir` for how the base is chosen. Absolute input
+    paths are returned resolved-but-unanchored.
     """
-    from hermes_cli.filesystem_sandbox import (
-        is_sandbox_enforced,
-        validate_agent_path_for_task,
-    )
-
-    base = _resolve_base_dir(task_id)
-    if is_sandbox_enforced():
-        resolved, error = validate_agent_path_for_task(
-            filepath,
-            resolution_base=str(base),
-        )
-        if error:
-            raise PermissionError(error)
-        assert resolved is not None
-        return resolved
-
     p = Path(filepath).expanduser()
     if p.is_absolute():
         return p.resolve()
-    return (base / p).resolve()
-
-
-def _check_filesystem_sandbox(filepath: str, task_id: str = "default") -> str | None:
-    """Return a sandbox violation message, or None when the path is allowed."""
-    from hermes_cli.filesystem_sandbox import check_filesystem_sandbox
-
-    return check_filesystem_sandbox(
-        filepath, resolution_base=str(_resolve_base_dir(task_id))
-    )
+    return (_resolve_base_dir(task_id) / p).resolve()
 
 
 def _path_resolution_warning(filepath: str, resolved: Path, task_id: str = "default") -> str | None:
@@ -735,10 +705,7 @@ def read_file_tool(path: str, offset: int = 1, limit: int = 500, task_id: str = 
                 ),
             })
 
-        try:
-            _resolved = _resolve_path_for_task(path, task_id)
-        except PermissionError as exc:
-            return json.dumps({"error": str(exc)})
+        _resolved = _resolve_path_for_task(path, task_id)
 
         # ── Binary file guard ─────────────────────────────────────────
         # Block binary files by extension (no I/O).
@@ -1083,9 +1050,6 @@ def write_file_tool(path: str, content: str, task_id: str = "default",
     Pass ``True`` after explicit user direction — same shape as ``force``
     on the terminal tool.
     """
-    sandbox_err = _check_filesystem_sandbox(path, task_id)
-    if sandbox_err:
-        return tool_error(sandbox_err)
     sensitive_err = _check_sensitive_path(path, task_id)
     if sensitive_err:
         return tool_error(sensitive_err)
@@ -1104,8 +1068,6 @@ def write_file_tool(path: str, content: str, task_id: str = "default",
         # check below still runs.
         try:
             _resolved = str(_resolve_path_for_task(path, task_id))
-        except PermissionError as exc:
-            return tool_error(str(exc))
         except Exception:
             _resolved = None
 
@@ -1190,9 +1152,6 @@ def patch_tool(mode: str = "replace", path: str = None, old_string: str = None,
                 )
             _paths_to_check.append(v4a_path)
     for _p in _paths_to_check:
-        sandbox_err = _check_filesystem_sandbox(_p, task_id)
-        if sandbox_err:
-            return tool_error(sandbox_err)
         sensitive_err = _check_sensitive_path(_p, task_id)
         if sensitive_err:
             return tool_error(sensitive_err)
@@ -1209,8 +1168,6 @@ def patch_tool(mode: str = "replace", path: str = None, old_string: str = None,
         for _p in _paths_to_check:
             try:
                 _r = str(_resolve_path_for_task(_p, task_id))
-            except PermissionError:
-                raise
             except Exception:
                 _r = None
             if _r and _r not in _seen:
@@ -1233,8 +1190,6 @@ def patch_tool(mode: str = "replace", path: str = None, old_string: str = None,
             for _p in _paths_to_check:
                 try:
                     _r = str(_resolve_path_for_task(_p, task_id))
-                except PermissionError:
-                    raise
                 except Exception:
                     _r = None
                 _path_to_resolved[_p] = _r
@@ -1330,8 +1285,6 @@ def patch_tool(mode: str = "replace", path: str = None, old_string: str = None,
                     "content, or search_files to locate the text."
                 )
         return json.dumps(result_dict, ensure_ascii=False)
-    except PermissionError:
-        raise
     except Exception as e:
         return tool_error(str(e))
 
@@ -1343,10 +1296,6 @@ def search_tool(pattern: str, target: str = "content", path: str = ".",
     """Search for content or files."""
     try:
         offset, limit = normalize_search_pagination(offset, limit)
-
-        sandbox_err = _check_filesystem_sandbox(path, task_id)
-        if sandbox_err:
-            return json.dumps({"error": sandbox_err})
 
         # Track searches to detect *consecutive* repeated search loops.
         # Include pagination args so users can page through truncated

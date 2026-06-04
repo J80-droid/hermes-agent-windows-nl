@@ -261,14 +261,6 @@ def init_agent(
     agent.verbose_logging = verbose_logging
     agent.quiet_mode = quiet_mode
     agent.ephemeral_system_prompt = ephemeral_system_prompt
-    try:
-        from agent.prompt_builder import augment_ephemeral_for_legal_profile
-
-        agent.ephemeral_system_prompt = augment_ephemeral_for_legal_profile(
-            agent.ephemeral_system_prompt
-        )
-    except Exception:
-        pass
     agent.platform = platform  # "cli", "telegram", "discord", "whatsapp", etc.
     agent._user_id = user_id  # Platform user identifier (gateway sessions)
     agent._user_id_alt = user_id_alt  # Optional stable alternate platform identifier
@@ -1553,7 +1545,6 @@ def init_agent(
     agent.session_completion_tokens = 0
     agent.session_total_tokens = 0
     agent.session_api_calls = 0
-    agent.session_tool_executions = 0
     agent.session_input_tokens = 0
     agent.session_output_tokens = 0
     agent.session_cache_read_tokens = 0
@@ -1562,9 +1553,6 @@ def init_agent(
     agent.session_estimated_cost_usd = 0.0
     agent.session_cost_status = "unknown"
     agent.session_cost_source = "none"
-    agent._stream_gen_started_at = None
-    agent._stream_gen_tokens_est = 0
-    agent._last_call_tps = None
     
     # ── Ollama num_ctx injection ──
     # Ollama defaults to 2048 context regardless of the model's capabilities.
@@ -1582,12 +1570,7 @@ def init_agent(
             agent._ollama_num_ctx = int(_ollama_num_ctx_override)
         except (TypeError, ValueError):
             _ra().logger.debug("Invalid ollama_num_ctx config value: %r", _ollama_num_ctx_override)
-    if (
-        agent._ollama_num_ctx is None
-        and agent.base_url
-        and is_local_endpoint(agent.base_url)
-        and os.environ.get("HERMES_NO_WAKE_LOCAL_LLM") != "1"
-    ):
+    if agent._ollama_num_ctx is None and agent.base_url and is_local_endpoint(agent.base_url):
         try:
             # ``agent.api_key`` may be a callable (Entra token provider).
             # Ollama detection makes a manual HTTP request and expects a

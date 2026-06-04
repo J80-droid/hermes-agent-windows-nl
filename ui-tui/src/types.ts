@@ -168,31 +168,12 @@ export interface Usage {
   context_max?: number
   context_percent?: number
   context_used?: number
-  cost_breakdown_pct?: {
-    cr?: number
-    cw?: number
-    in?: number
-    out?: number
-  }
-  cost_breakdown_usd?: {
-    cache_read?: number
-    cache_write?: number
-    input?: number
-    output?: number
-  }
   cost_status?: string
   cost_usd?: number
   input: number
   output: number
   reasoning?: number
-  session_tools_executed?: number
   total: number
-  turn_cost_estimated?: boolean
-  turn_cost_usd?: number
-  /** Live turn token delta when USD pricing is unavailable (client-side during stream). */
-  turn_live_tokens?: number
-  /** Last completed API-call generation throughput (tok/s). */
-  last_call_tps?: number
 }
 
 export interface SudoReq {

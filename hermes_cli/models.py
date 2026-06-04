@@ -14,7 +14,7 @@ import urllib.error
 import time
 from difflib import get_close_matches
 from pathlib import Path
-from typing import Any, Iterable, NamedTuple, Optional
+from typing import Any, NamedTuple, Optional
 
 from hermes_cli import __version__ as _HERMES_VERSION
 
@@ -3386,104 +3386,6 @@ def fetch_ollama_cloud_models(
         return stale["models"]
 
     return []
-
-
-# OpenRouter / Nous Portal pricing-tier suffixes (see model_switch.py).
-_MODEL_VARIANT_SUFFIXES: tuple[str, ...] = (":free", ":extended", ":fast")
-
-
-def _catalog_match_keys(model_id: str) -> set[str]:
-    """Lowercase lookup keys for catalog membership (variant suffixes only).
-
-    Deliberately omits bare ``vendor/model`` tails (text after ``/``) so
-    ``anthropic/claude-opus-4.8`` does not match ``openai/claude-opus-4.8``.
-    """
-    low = (model_id or "").strip().lower()
-    if not low:
-        return set()
-    keys: set[str] = {low}
-    for suffix in _MODEL_VARIANT_SUFFIXES:
-        if low.endswith(suffix):
-            stripped = low[: -len(suffix)]
-            if stripped:
-                keys.add(stripped)
-    return keys
-
-
-def _union_catalog_match_keys(catalog: Iterable[str]) -> set[str]:
-    merged: set[str] = set()
-    for mid in catalog:
-        merged |= _catalog_match_keys(mid)
-    return merged
-
-
-def model_matches_provider_catalog(
-    model_id: str,
-    catalog: Iterable[str],
-) -> bool:
-    """Return True when *model_id* matches any catalog entry (incl. ``:free`` variants)."""
-    wanted = _catalog_match_keys(model_id)
-    if not wanted:
-        return False
-    catalog_keys = _union_catalog_match_keys(catalog)
-    return bool(wanted & catalog_keys)
-
-
-def model_default_passes_startup_catalog_guard(
-    provider: Optional[str],
-    default_model: str,
-    *,
-    force_refresh: bool = False,
-) -> bool:
-    """Windows startup guard: align with ``validate_requested_model`` + live catalog.
-
-    Prefer ``provider_model_ids`` (live ``/models`` for Nous when OAuth works),
-    then variant-suffix matching, then the same accept/warn rules as ``/model``.
-    """
-    normalized = normalize_provider(provider)
-    requested = (default_model or "").strip()
-    if not normalized or not requested:
-        return True
-    if normalized in {"custom", "auto"}:
-        return True
-
-    catalog: list[str] = []
-    try:
-        catalog = list(provider_model_ids(normalized, force_refresh=force_refresh) or [])
-    except Exception:
-        catalog = []
-
-    if catalog and model_matches_provider_catalog(requested, catalog):
-        return True
-
-    try:
-        from hermes_cli.config import load_config
-
-        cfg = load_config() or {}
-        model_cfg = cfg.get("model") if isinstance(cfg.get("model"), dict) else {}
-        base_url = str(model_cfg.get("base_url") or "").strip() or None
-        api_key: Optional[str] = None
-        if normalized == "nous":
-            try:
-                from hermes_cli.auth import resolve_nous_runtime_credentials
-
-                creds = resolve_nous_runtime_credentials()
-                if creds:
-                    api_key = str(creds.get("api_key") or "").strip() or None
-                    if not base_url:
-                        base_url = str(creds.get("base_url") or "").strip() or None
-            except Exception:
-                pass
-        validation = validate_requested_model(
-            requested,
-            normalized,
-            api_key=api_key,
-            base_url=base_url,
-        )
-        return bool(validation.get("accepted"))
-    except Exception:
-        # Fail open only when we have no static/live catalog to check against.
-        return not catalog
 
 
 def validate_requested_model(

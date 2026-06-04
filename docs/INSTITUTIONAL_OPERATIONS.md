@@ -123,6 +123,7 @@ Guard-log (lokaal): `windows\_upstream_sync_guard.log`. CI op push: `.github/wor
 ### Upstream (Nous → fork)
 
 ```cmd
+windows\SYNC_NOUS.bat
 windows\UPDATE_HERMES.bat
 windows\UPDATE_HERMES_YES.bat
 windows\hermes_update.bat

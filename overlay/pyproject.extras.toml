@@ -1,0 +1,21 @@
+# Fork optional dependencies (Tier B). Install via windows/scripts/install_rag_extras.ps1
+# without modifying upstream pyproject.toml [rag] during transition.
+
+[project.optional-dependencies]
+rag = [
+  "lancedb==0.30.2",
+  "sentence-transformers==5.5.0",
+  "markitdown==0.1.5",
+  "pymupdf==1.25.5",
+  "pyarrow==24.0.0",
+  "mcp==1.26.0",
+  "starlette==1.0.1",
+  "faster-whisper==1.2.1",
+]
+voice-windows = [
+  "faster-whisper==1.2.1",
+  "sounddevice==0.5.5",
+  "numpy==2.4.3",
+  "onnxruntime-directml>=1.17.0; sys_platform == 'win32'",
+  "onnxruntime-gpu>=1.17.0; sys_platform == 'win32'",
+]

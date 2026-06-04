@@ -62,14 +62,14 @@ export default function LogsPage() {
   const [lineCount, setLineCount] = useState<(typeof LINE_COUNTS)[number]>(100);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [lines, setLines] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { t } = useI18n();
   const { setAfterTitle, setEnd } = usePageHeader();
 
-  const fetchLogs = useCallback((showSpinner = true) => {
-    if (showSpinner) setLoading(true);
+  const fetchLogs = useCallback(() => {
+    setLoading(true);
     setError(null);
     api
       .getLogs({ file, lines: lineCount, level, component })
@@ -97,7 +97,7 @@ export default function LogsPage() {
           ghost
           size="icon"
           className="text-muted-foreground hover:text-foreground"
-          onClick={() => fetchLogs()}
+          onClick={fetchLogs}
           disabled={loading}
           aria-label={t.common.refresh}
         >
@@ -144,7 +144,7 @@ export default function LogsPage() {
   ]);
 
   useEffect(() => {
-    queueMicrotask(() => fetchLogs(false));
+    fetchLogs();
   }, [fetchLogs]);
 
   useEffect(() => {

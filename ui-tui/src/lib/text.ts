@@ -108,11 +108,6 @@ export const pasteTokenLabel = (text: string, lineCount: number) => {
 const THINKING_STATUS_RE = new RegExp(`^(?:${VERBS.join('|')})\\.{0,3}$`, 'i')
 const THINKING_STATUS_CHUNK_RE = new RegExp(`[^A-Za-z\n]+\\s*(?:${VERBS.join('|')})\\.{0,3}\\s*`, 'giu')
 
-import { normalizeAssistantMarkdown as normalizeInstitutionalMarkdown } from './institutionalMarkdownNormalize.js'
-
-/** Institutional layout: headings, section breaks, and **Label:** on their own line. */
-export const normalizeAssistantMarkdown = (text: string) => normalizeInstitutionalMarkdown(text)
-
 export const cleanThinkingText = (reasoning: string) =>
   reasoning
     .split('\n')
@@ -341,6 +336,22 @@ export const estimateRows = (text: string, w: number, compact = false) => {
   }
 
   return Math.max(1, rows)
+}
+
+/**
+ * Render an unanswered clarify prompt (timed out, or cancelled with Esc/Ctrl+C)
+ * as a persistent transcript block.  The live `ClarifyPrompt` overlay is torn
+ * down the moment the turn settles, so without this the question + options
+ * vanish from the screen while the agent's follow-up still refers to "the
+ * options above".  Mirrors the option formatting in ClarifyPrompt (the same
+ * 1-based numbered list) so the persisted record reads identically to what was
+ * on screen.  `reason` states why the prompt ended ("timed out", "cancelled").
+ */
+export const formatAbandonedClarify = (question: string, choices: string[] | null, reason: string) => {
+  const head = `ask ${question.trim()}`
+  const opts = (choices ?? []).map((c, i) => `  ${i + 1}. ${c}`)
+
+  return [head, ...opts, `  (${reason} — no selection)`].join('\n')
 }
 
 export const flat = (r: Record<string, string[]>) => Object.values(r).flat()

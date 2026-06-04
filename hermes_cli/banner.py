@@ -144,35 +144,12 @@ def _check_via_rev(local_rev: str) -> Optional[int]:
     return 0 if upstream_rev == local_rev else UPDATE_AVAILABLE_NO_COUNT
 
 
-def _resolve_update_compare_ref(repo_dir: Path) -> tuple[str, str, str]:
-    """Return (remote, ref, label) for behind-count.
-
-    Forks with an ``upstream`` remote compare against Nous ``upstream/main``;
-    otherwise ``origin/main``.
-    """
-    try:
-        result = subprocess.run(
-            ["git", "remote", "get-url", "upstream"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-            cwd=str(repo_dir),
-        )
-        if result.returncode == 0 and (result.stdout or "").strip():
-            return "upstream", "upstream/main", "upstream"
-    except Exception:
-        pass
-    return "origin", "origin/main", "origin"
-
-
 def _check_via_local_git(repo_dir: Path) -> Optional[int]:
-    """Count commits behind origin/main (or upstream/main on forks)."""
-    remote, compare_ref, _label = _resolve_update_compare_ref(repo_dir)
+    """Count commits behind origin/main in a local checkout."""
     try:
         subprocess.run(
-            ["git", "fetch", remote, "--quiet"],
-            capture_output=True,
-            timeout=10,
+            ["git", "fetch", "origin", "--quiet"],
+            capture_output=True, timeout=10,
             cwd=str(repo_dir),
         )
     except Exception:
@@ -180,10 +157,8 @@ def _check_via_local_git(repo_dir: Path) -> Optional[int]:
 
     try:
         result = subprocess.run(
-            ["git", "rev-list", "--count", f"HEAD..{compare_ref}"],
-            capture_output=True,
-            text=True,
-            timeout=5,
+            ["git", "rev-list", "--count", "HEAD..origin/main"],
+            capture_output=True, text=True, timeout=5,
             cwd=str(repo_dir),
         )
         if result.returncode == 0:
@@ -450,36 +425,20 @@ def format_banner_version_label() -> str:
 
 _update_result: Optional[int] = None
 _update_check_done = threading.Event()
-_update_prefetch_started = False
 
 
 def prefetch_update_check():
     """Kick off update check in a background daemon thread."""
-    global _update_prefetch_started
-    _update_prefetch_started = True
-
     def _run():
         global _update_result
         _update_result = check_for_updates()
         _update_check_done.set()
-
-    if _update_check_done.is_set():
-        return
     t = threading.Thread(target=_run, daemon=True)
     t.start()
 
 
-def ensure_update_check_started() -> None:
-    """Start the background update check once per process if not already done."""
-    if _update_check_done.is_set():
-        return
-    if not _update_prefetch_started:
-        prefetch_update_check()
-
-
-def get_update_result(timeout: float = 2.5) -> Optional[int]:
+def get_update_result(timeout: float = 0.5) -> Optional[int]:
     """Get result of prefetched check. Returns None if not ready."""
-    ensure_update_check_started()
     _update_check_done.wait(timeout=timeout)
     return _update_result
 
@@ -729,19 +688,13 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
 
     # Update check — use prefetched result if available
     try:
-        behind = get_update_result(timeout=2.5)
+        behind = get_update_result(timeout=0.5)
         if behind is not None and behind != 0:
             from hermes_cli.config import get_managed_update_command, recommended_update_command
             if behind > 0:
                 commits_word = "commit" if behind == 1 else "commits"
-                repo_dir = _resolve_repo_dir()
-                _remote, _ref, compare_label = (
-                    _resolve_update_compare_ref(repo_dir)
-                    if repo_dir is not None
-                    else ("origin", "origin/main", "origin")
-                )
                 right_lines.append(
-                    f"[bold yellow]⚠ {behind} {commits_word} behind {compare_label}[/]"
+                    f"[bold yellow]⚠ {behind} {commits_word} behind[/]"
                     f"[dim yellow] — run [bold]{recommended_update_command()}[/bold] to update[/]"
                 )
             else:

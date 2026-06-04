@@ -1,7 +1,6 @@
 import { Box, Link, stringWidth, Text } from '@hermes/ink'
 import { Fragment, memo, type ReactNode, useMemo } from 'react'
 
-import { assistantHeadingColor, assistantTableHeaderColor, ASSISTANT_LABEL_COLOR } from '../lib/institutionalColors.js'
 import { ensureEmojiPresentation } from '../lib/emoji.js'
 import { normalizeExternalUrl, urlSlugTitleLabel, useLinkTitle } from '../lib/externalLink.js'
 import { BOX_CLOSE, BOX_OPEN, texToUnicode } from '../lib/mathUnicode.js'
@@ -442,7 +441,7 @@ const renderTable = (k: number, rows: string[][], t: Theme, cols?: number) => {
     if (normalizedRows.length <= 1) {
       return (
         <Box flexDirection="column" key={k} paddingLeft={TABLE_PADDING_LEFT}>
-          <Text bold color={assistantTableHeaderColor(0)} wrap="wrap-trim">
+          <Text bold color={t.color.accent} wrap="wrap-trim">
             {normalizedRows[0]!.map(h => stripInlineMarkup(h)).join(' · ')}
           </Text>
         </Box>
@@ -465,9 +464,8 @@ const renderTable = (k: number, rows: string[][], t: Theme, cols?: number) => {
               const label = stripInlineMarkup(header) || `Col ${ci + 1}`
               return (
                 <Text key={ci} wrap="wrap-trim">
-                  <Text bold color={assistantTableHeaderColor(ci)}>{label}:</Text>
-                  {' '}
-                  <Text color={assistantTableHeaderColor(ci)}>{stripInlineMarkup(cell)}</Text>
+                  <Text bold color={t.color.accent}>{label}:</Text>
+                  {' '}{stripInlineMarkup(cell)}
                 </Text>
               )
             })}
@@ -477,34 +475,19 @@ const renderTable = (k: number, rows: string[][], t: Theme, cols?: number) => {
     )
   }
 
-  const headerCells = normalizedRows[0]!
-  const sepEntry = allEntries.find(e => e.kind === 'separator')
-  const bodyEntries = allEntries.filter(e => e.kind === 'body')
-
+  // Render wrapped horizontal rows — one <Text> per visual line.
   return (
     <Box flexDirection="column" key={k} paddingLeft={TABLE_PADDING_LEFT}>
-      <Box flexDirection="row">
-        {headerCells.map((cell, ci) => (
-          <Text key={ci} bold color={assistantTableHeaderColor(ci)} wrap="truncate-end">
-            {stripInlineMarkup(cell)}
-            {ci < numCols - 1 ? '  ' : ''}
-          </Text>
-        ))}
-      </Box>
-      {sepEntry ? (
-        <Text color={t.color.muted} dimColor>
-          {sepEntry.text}
+      {allEntries.map((entry, i) => (
+        <Text
+          bold={entry.kind === 'header'}
+          color={entry.kind === 'header' ? t.color.accent : entry.kind === 'separator' ? t.color.muted : undefined}
+          dimColor={entry.kind === 'separator'}
+          key={i}
+          wrap="truncate-end"
+        >
+          {entry.text}
         </Text>
-      ) : null}
-      {normalizedRows.slice(1).map((row, ri) => (
-        <Box key={ri} flexDirection="row">
-          {row.map((cell, ci) => (
-            <Text key={ci} color={assistantTableHeaderColor(ci)} wrap="truncate-end">
-              {stripInlineMarkup(cell)}
-              {ci < numCols - 1 ? '  ' : ''}
-            </Text>
-          ))}
-        </Box>
       ))}
     </Box>
   )
@@ -887,93 +870,24 @@ function MdImpl({ cols, compact, t, text }: MdProps) {
         continue
       }
 
-      if (line.trim().startsWith('Controle')) {
-        start('paragraph')
-        const body = line.trim().replace(/^Controle\s*[·.]?\s*/, '')
-        nodes.push(
-          <Text key={key} wrap="wrap-trim">
-            <Text bold color={ASSISTANT_LABEL_COLOR}>Controle  </Text>
-            <Text dimColor>{body.split(/\s·\s/).join('  ·  ')}</Text>
-          </Text>
-        )
-        i++
-        continue
-      }
-
-      const headingMatch = line.match(HEADING_RE)
-      const heading = headingMatch?.[2]
+      const heading = line.match(HEADING_RE)?.[2]
 
       if (heading) {
-        const level = headingMatch![1]!.length
         start('heading')
-        const headingNode = (
-          <Text bold color={assistantHeadingColor(level)} key={`${key}-h`} wrap="wrap-trim">
+        nodes.push(
+          <Text bold color={t.color.accent} key={key} wrap="wrap-trim">
             <MdInline t={t} text={heading} />
           </Text>
         )
         i++
 
-        let j = i
-        while (j < lines.length && !lines[j]!.trim()) {
-          j++
-        }
-
-        if (
-          j < lines.length &&
-          lines[j]!.includes('|') &&
-          j + 1 < lines.length &&
-          isTableDivider(lines[j + 1]!)
-        ) {
-          const rows: string[][] = [splitRow(lines[j]!)]
-          let k = j + 2
-          for (; k < lines.length && lines[k]!.includes('|') && lines[k]!.trim(); k++) {
-            rows.push(splitRow(lines[k]!))
-          }
-          nodes.push(
-            <Box flexDirection="column" key={key}>
-              {headingNode}
-              {renderTable(`${key}-tbl`, rows, t, cols)}
-            </Box>
-          )
-          i = k
-          continue
-        }
-
-        if (j < lines.length && BULLET_RE.test(lines[j]!)) {
-          const listNodes: ReactNode[] = []
-          let k = j
-          while (k < lines.length && BULLET_RE.test(lines[k]!)) {
-            const bullet = lines[k]!.match(BULLET_RE)!
-            const task = bullet[2]!.match(TASK_RE)
-            const marker = task ? (task[1]!.toLowerCase() === 'x' ? '☑' : '☐') : '•'
-            listNodes.push(
-              <Box key={`${key}-b-${k}`} paddingLeft={indentDepth(bullet[1]!) * 2}>
-                <Text wrap="wrap-trim">
-                  <Text color={t.color.muted}>{marker} </Text>
-                  <MdInline t={t} text={task ? task[2]! : bullet[2]!} />
-                </Text>
-              </Box>
-            )
-            k++
-          }
-          nodes.push(
-            <Box flexDirection="column" key={key}>
-              {headingNode}
-              {listNodes}
-            </Box>
-          )
-          i = k
-          continue
-        }
-
-        nodes.push(headingNode)
         continue
       }
 
       if (i + 1 < lines.length && SETEXT_RE.test(lines[i + 1]!)) {
         start('heading')
         nodes.push(
-          <Text bold color={assistantHeadingColor(2)} key={key} wrap="wrap-trim">
+          <Text bold color={t.color.accent} key={key} wrap="wrap-trim">
             <MdInline t={t} text={line.trim()} />
           </Text>
         )
@@ -1178,45 +1092,6 @@ function MdImpl({ cols, compact, t, text }: MdProps) {
         }
 
         continue
-      }
-
-      const labelOnly = line.match(/^\*\*(.+?):\*\*\s*$/)
-
-      if (labelOnly && i + 1 < lines.length && lines[i + 1]!.trim()) {
-        const bodyLines: string[] = []
-        let j = i + 1
-
-        while (
-          j < lines.length &&
-          lines[j]!.trim() &&
-          !HEADING_RE.test(lines[j]!) &&
-          !/^\*\*(.+?):\*\*\s*$/.test(lines[j]!)
-        ) {
-          bodyLines.push(lines[j]!)
-          j++
-        }
-
-        if (bodyLines.length) {
-          start('paragraph')
-          nodes.push(
-            <Box key={key} flexDirection="row">
-              <Box width={28}>
-                <Text bold color={ASSISTANT_LABEL_COLOR} wrap="wrap-trim">
-                  {labelOnly[1]}:
-                </Text>
-              </Box>
-              <Box flexDirection="column" flexGrow={1}>
-                {bodyLines.map((bl, bi) => (
-                  <Text key={bi} wrap="wrap-trim">
-                    <MdInline t={t} text={bl} />
-                  </Text>
-                ))}
-              </Box>
-            </Box>
-          )
-          i = j
-          continue
-        }
       }
 
       start('paragraph')

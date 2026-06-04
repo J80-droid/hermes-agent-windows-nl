@@ -73,7 +73,6 @@ Type `/` in the CLI to open the autocomplete menu. Built-in commands are case-in
 | `/reasoning` | Manage reasoning effort and display (usage: /reasoning [level\|show\|hide]) |
 | `/skin` | Show or change the display skin/theme |
 | `/statusbar` (alias: `/sb`) | Toggle the context/model status bar on or off |
-| `/cost [on\|off\|toggle\|status]` | Toggle estimated session cost in the status bar (TUI and classic CLI). Default **on**; format via `display.cost_bar_mode` (`rich` or `minimal`). |
 | `/voice [on\|off\|tts\|status]` | Toggle CLI voice mode and spoken playback. Recording uses `voice.record_key` (default: `Ctrl+B`). |
 | `/yolo` | Toggle YOLO mode — skip all dangerous command approval prompts. |
 | `/footer [on\|off\|status]` | Toggle the gateway runtime-metadata footer on final replies (shows model, tool counts, timing). |
@@ -112,8 +111,6 @@ Type `/` in the CLI to open the autocomplete menu. Built-in commands are case-in
 | `/debug` | Upload debug report (system info + logs) and get shareable links. Also available in messaging. |
 | `/profile` | Show active profile name and home directory |
 | `/gquota` | Show Google Gemini Code Assist quota usage with progress bars (only available when the `google-gemini-cli` provider is active). |
-| `/jquota` | Show Jatevo daily request quota (`0 / N`), **tokens today**, **cost today**, reset, and JTVO dashboard hint. CLI-only. Status bar: `JV used/max`. Data from `GET {base_url}/usage`. |
-| `/vquota` | Venice DIEM/USD, epoch, 7d [usage-analytics](https://docs.venice.ai/api-reference/endpoint/billing/usage-analytics), recent [billing/usage](https://docs.venice.ai/api-reference/endpoint/billing/usage), [rate_limits/log](https://docs.venice.ai/api-reference/endpoint/api_keys/rate_limit_logs), [models/traits](https://docs.venice.ai/api-reference/endpoint/models/traits) + [compatibility_mapping](https://docs.venice.ai/api-reference/endpoint/models/compatibility_mapping). Extended calls run in parallel; partial HTTP failures appear as `Extended API:` lines. Status bar: `VN 90/100` or `VN 9.5 DIEM` (balance APIs only, 90s cache). |
 
 ### Exit
 
@@ -238,7 +235,7 @@ The messaging gateway supports the following built-in commands inside Telegram, 
 
 ## Notes
 
-- `/skin`, `/snapshot`, `/gquota`, `/jquota`, `/vquota`, `/reload`, `/tools`, `/toolsets`, `/browser`, `/config`, `/cron`, `/skills`, `/platforms`, `/paste`, `/image`, `/statusbar`, `/cost`, `/plugins`, `/busy`, `/indicator`, `/redraw`, `/clear`, `/history`, `/save`, `/copy`, `/handoff`, and `/quit` are **CLI-only** commands.
+- `/skin`, `/snapshot`, `/gquota`, `/reload`, `/tools`, `/toolsets`, `/browser`, `/config`, `/cron`, `/skills`, `/platforms`, `/paste`, `/image`, `/statusbar`, `/plugins`, `/busy`, `/indicator`, `/redraw`, `/clear`, `/history`, `/save`, `/copy`, `/handoff`, and `/quit` are **CLI-only** commands.
 - `/verbose` is **CLI-only by default**, but can be enabled for messaging platforms by setting `display.tool_progress_command: true` in `config.yaml`. When enabled, it cycles the `display.tool_progress` mode and saves to config.
 - `/sethome`, `/update`, `/restart`, `/approve`, `/deny`, `/topic`, and `/commands` are **messaging-only** commands.
 - `/status`, `/background`, `/queue`, `/steer`, `/voice`, `/reload-mcp`, `/reload-skills`, `/rollback`, `/debug`, `/fast`, `/footer`, `/curator`, `/kanban`, `/sessions`, and `/yolo` work in **both** the CLI and the messaging gateway.

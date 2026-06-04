@@ -253,7 +253,6 @@ if _try_termux_ultrafast_version():
     raise SystemExit(0)
 
 import argparse
-import getpass
 import hashlib
 import json
 import shutil
@@ -347,14 +346,8 @@ def _apply_profile_override() -> None:
     # See issue #22502.
     hermes_home_env = os.environ.get("HERMES_HOME", "")
     if profile_name is None and hermes_home_env:
-        env_profile_dir = Path(hermes_home_env).parent.name == "profiles"
-        if env_profile_dir:
-            # Gateway-spawns keep inherited profile dirs stable. Interactive
-            # chat/manual starts should still respect sticky active_profile.
-            cmd_argv = [a.lower() for a in argv]
-            is_gateway_flow = len(cmd_argv) >= 2 and cmd_argv[0] == "gateway"
-            if is_gateway_flow:
-                return
+        if Path(hermes_home_env).parent.name == "profiles":
+            return
 
     # 2. If no flag, check active_profile in the hermes root
     if profile_name is None:
@@ -707,9 +700,7 @@ def _has_any_provider_configured() -> bool:
         try:
             import json
 
-            from hermes_cli.auth import read_auth_json
-
-            auth = read_auth_json(auth_file)
+            auth = json.loads(auth_file.read_text())
             active = auth.get("active_provider")
             if active:
                 status = get_auth_status(active)
@@ -2643,25 +2634,6 @@ def select_provider_and_model(args=None):
     print()
     print(f"  Current model:    {current_model}")
     print(f"  Active provider:  {active_label}")
-    try:
-        from hermes_cli.auth import get_active_provider
-        from hermes_cli.model_runtime_config import detect_model_provider_incoherence
-
-        auth_provider = (get_active_provider() or "").strip().lower()
-        cfg_provider = ""
-        if isinstance(model_cfg, dict):
-            cfg_provider = str(model_cfg.get("provider") or "").strip().lower()
-        for ci in detect_model_provider_incoherence(config):
-            if ci.code == "auth_config_provider_mismatch":
-                auth_label = provider_labels.get(auth_provider, auth_provider or "none")
-                print(
-                    f"  Warning: auth active provider is {auth_label} but "
-                    f"config model.provider is {cfg_provider or 'unset'} — "
-                    "run 'hermes doctor --fix'"
-                )
-                break
-    except Exception:
-        pass
     print()
 
     # Step 1: Provider selection.
@@ -3286,38 +3258,6 @@ def _prompt_provider_choice(choices, *, default=0):
             return None
 
 
-def _commit_provider_model(
-    provider_id: str,
-    model_id: str,
-    *,
-    inference_base_url: str = "",
-    deactivate_oauth: bool = False,
-    extra_model_fields: Optional[dict] = None,
-) -> None:
-    """Atomically persist provider + model to root config (and auth when requested).
-
-    ``deactivate_oauth`` is retained for call-site compatibility; auth sync via
-    ``persist_model_runtime`` replaces the old ``deactivate_provider()`` pattern
-    that cleared ``active_provider`` and caused auth/config split-brain.
-    """
-    from hermes_cli.model_runtime_config import persist_model_runtime
-
-    persist_model_runtime(
-        provider_id,
-        default_model=model_id,
-        inference_base_url=inference_base_url,
-        sync_auth=True,
-        extra_model_fields=extra_model_fields,
-    )
-    if deactivate_oauth:
-        from hermes_cli.config import get_env_value, save_env_value
-
-        if get_env_value("OPENAI_BASE_URL"):
-            save_env_value("OPENAI_BASE_URL", "")
-        if get_env_value("OPENAI_API_KEY"):
-            save_env_value("OPENAI_API_KEY", "")
-
-
 def _model_flow_openrouter(config, current_model=""):
     """OpenRouter provider: ensure API key, then pick model."""
     from hermes_constants import OPENROUTER_BASE_URL
@@ -3359,13 +3299,21 @@ def _model_flow_openrouter(config, current_model=""):
         openrouter_models, current_model=current_model, pricing=pricing
     )
     if selected:
-        _commit_provider_model(
-            "openrouter",
-            selected,
-            inference_base_url=OPENROUTER_BASE_URL,
-            deactivate_oauth=True,
-            extra_model_fields={"api_mode": "chat_completions"},
-        )
+        _save_model_choice(selected)
+
+        # Update config provider and deactivate any OAuth provider
+        from hermes_cli.config import load_config, save_config
+
+        cfg = load_config()
+        model = cfg.get("model")
+        if not isinstance(model, dict):
+            model = {"default": model} if model else {}
+            cfg["model"] = model
+        model["provider"] = "openrouter"
+        model["base_url"] = OPENROUTER_BASE_URL
+        model["api_mode"] = "chat_completions"
+        save_config(cfg)
+        deactivate_provider()
         print(f"Default model set to: {selected} (via OpenRouter)")
     else:
         print("No change.")
@@ -3560,20 +3508,29 @@ def _model_flow_nous(config, current_model="", args=None):
         unavailable_message=unavailable_message,
     )
     if selected:
-        from hermes_cli.model_runtime_config import persist_model_runtime
-
+        _save_model_choice(selected)
+        # Reactivate Nous as the provider and update config
         inference_url = creds.get("base_url", "")
-        persist_model_runtime(
-            "nous",
-            default_model=selected,
-            inference_base_url=inference_url,
-            sync_auth=True,
-        )
+        _update_config_for_provider("nous", inference_url)
+        current_model_cfg = config.get("model")
+        if isinstance(current_model_cfg, dict):
+            model_cfg = dict(current_model_cfg)
+        elif isinstance(current_model_cfg, str) and current_model_cfg.strip():
+            model_cfg = {"default": current_model_cfg.strip()}
+        else:
+            model_cfg = {}
+        model_cfg["provider"] = "nous"
+        model_cfg["default"] = selected
+        if inference_url and inference_url.strip():
+            model_cfg["base_url"] = inference_url.rstrip("/")
+        else:
+            model_cfg.pop("base_url", None)
+        config["model"] = model_cfg
+        # Clear any custom endpoint that might conflict
         if get_env_value("OPENAI_BASE_URL"):
             save_env_value("OPENAI_BASE_URL", "")
             save_env_value("OPENAI_API_KEY", "")
-        config.clear()
-        config.update(load_config())
+        save_config(config)
         print(f"Default model set to: {selected} (via Nous Portal)")
         # Offer Tool Gateway enablement for paid subscribers
         prompt_enable_tool_gateway(config)
@@ -3664,7 +3621,8 @@ def _model_flow_openai_codex(config, current_model=""):
 
     selected = _prompt_model_selection(codex_models, current_model=current_model)
     if selected:
-        _update_config_for_provider("openai-codex", DEFAULT_CODEX_BASE_URL, default_model=selected)
+        _save_model_choice(selected)
+        _update_config_for_provider("openai-codex", DEFAULT_CODEX_BASE_URL)
         print(f"Default model set to: {selected} (via OpenAI Codex)")
     else:
         print("No change.")
@@ -3756,7 +3714,8 @@ def _model_flow_xai_oauth(_config, current_model="", *, args=None):
     models = list(_PROVIDER_MODELS.get("xai-oauth") or _PROVIDER_MODELS.get("xai") or [])
     selected = _prompt_model_selection(models, current_model=current_model or (models[0] if models else "grok-4.3"))
     if selected:
-        _update_config_for_provider("xai-oauth", base_url, default_model=selected)
+        _save_model_choice(selected)
+        _update_config_for_provider("xai-oauth", base_url)
         print(f"Default model set to: {selected} (via xAI Grok OAuth — SuperGrok / Premium+)")
     else:
         print("No change.")
@@ -3804,7 +3763,8 @@ def _model_flow_qwen_oauth(_config, current_model=""):
     default = current_model or (models[0] if models else "qwen3-coder-plus")
     selected = _prompt_model_selection(models, current_model=default)
     if selected:
-        _update_config_for_provider("qwen-oauth", DEFAULT_QWEN_BASE_URL, default_model=selected)
+        _save_model_choice(selected)
+        _update_config_for_provider("qwen-oauth", DEFAULT_QWEN_BASE_URL)
         print(f"Default model set to: {selected} (via Qwen OAuth)")
     else:
         print("No change.")
@@ -3854,7 +3814,8 @@ def _model_flow_minimax_oauth(config, current_model="", args=None):
     selected = _prompt_model_selection(model_ids, current_model)
     if not selected:
         return
-    _update_config_for_provider("minimax-oauth", creds["base_url"], default_model=selected)
+    _save_model_choice(selected)
+    _update_config_for_provider("minimax-oauth", creds["base_url"])
     print(f"\u2713 Using MiniMax model: {selected}")
 
 
@@ -3922,10 +3883,9 @@ def _model_flow_google_gemini_cli(_config, current_model=""):
     default = current_model or (models[0] if models else "gemini-3-flash-preview")
     selected = _prompt_model_selection(models, current_model=default)
     if selected:
+        _save_model_choice(selected)
         _update_config_for_provider(
-            "google-gemini-cli",
-            DEFAULT_GEMINI_CLOUDCODE_BASE_URL,
-            default_model=selected,
+            "google-gemini-cli", DEFAULT_GEMINI_CLOUDCODE_BASE_URL
         )
         print(
             f"Default model set to: {selected} (via Google Gemini OAuth / Code Assist)"
@@ -4097,47 +4057,49 @@ def _model_flow_custom(config):
             context_length = None
 
     if model_name:
-        extra: dict = {}
-        if effective_key:
-            extra["api_key"] = effective_key
-        if api_mode:
-            extra["api_mode"] = api_mode
-        _commit_provider_model(
-            "custom",
-            model_name,
-            inference_base_url=effective_url,
-            deactivate_oauth=True,
-            extra_model_fields=extra or None,
-        )
+        _save_model_choice(model_name)
+
+        # Update config and deactivate any OAuth provider
         cfg = load_config()
         model = cfg.get("model")
         if not isinstance(model, dict):
-            model = {"default": model_name}
+            model = {"default": model} if model else {}
+            cfg["model"] = model
+        model["provider"] = "custom"
+        model["base_url"] = effective_url
+        if effective_key:
+            model["api_key"] = effective_key
+        if api_mode:
+            model["api_mode"] = api_mode
+        else:
+            model.pop("api_mode", None)
+        save_config(cfg)
+        deactivate_provider()
+
+        # Sync the caller's config dict so the setup wizard's final
+        # save_config(config) preserves our model settings.  Without
+        # this, the wizard overwrites model.provider/base_url with
+        # the stale values from its own config dict (#4172).
         config["model"] = dict(model)
 
         print(f"Default model set to: {model_name} (via {effective_url})")
     else:
-        extra: dict = {}
+        if base_url or api_key:
+            deactivate_provider()
+        # Even without a model name, persist the custom endpoint on the
+        # caller's config dict so the setup wizard doesn't lose it.
+        _caller_model = config.get("model")
+        if not isinstance(_caller_model, dict):
+            _caller_model = {"default": _caller_model} if _caller_model else {}
+        _caller_model["provider"] = "custom"
+        _caller_model["base_url"] = effective_url
         if effective_key:
-            extra["api_key"] = effective_key
+            _caller_model["api_key"] = effective_key
         if api_mode:
-            extra["api_mode"] = api_mode
+            _caller_model["api_mode"] = api_mode
         else:
-            extra["api_mode"] = None
-        from hermes_cli.model_runtime_config import persist_model_runtime
-
-        persist_model_runtime(
-            "custom",
-            default_model=None,
-            inference_base_url=effective_url,
-            extra_model_fields=extra or None,
-            sync_auth=False,
-        )
-        deactivate_provider()
-        cfg = load_config()
-        model = cfg.get("model")
-        if isinstance(model, dict):
-            config["model"] = dict(model)
+            _caller_model.pop("api_mode", None)
+        config["model"] = _caller_model
         print("Endpoint saved. Use `/model` in chat or `hermes model` to set a model.")
 
     # Auto-save to custom_providers so it appears in the menu next time
@@ -4638,35 +4600,38 @@ def _model_flow_azure_foundry(config, current_model=""):
     if not use_entra:
         save_env_value("AZURE_FOUNDRY_API_KEY", effective_key)
 
-    clean_entra: dict = {}
+    cfg = load_config()
+    model = cfg.get("model")
+    if not isinstance(model, dict):
+        model = {"default": model} if model else {}
+        cfg["model"] = model
+
+    model["provider"] = "azure-foundry"
+    model["base_url"] = effective_url
+    model["api_mode"] = api_mode
+    model["default"] = effective_model
+    model["auth_mode"] = auth_mode_label
     if use_entra:
+        # Persist only the non-default Entra scope so config.yaml stays tidy.
+        # Azure identity selection stays in standard AZURE_* env vars.
+        clean_entra: dict = {}
         for key in ("scope",):
             val = entra_overrides.get(key)
             if val:
                 clean_entra[key] = val
-
-    extra_fields: dict = {
-        "api_mode": api_mode,
-        "auth_mode": auth_mode_label,
-    }
-    if ctx_len:
-        extra_fields["context_length"] = ctx_len
-    if use_entra:
         if clean_entra:
-            extra_fields["entra"] = clean_entra
-        else:
-            extra_fields["entra"] = None
+            model["entra"] = clean_entra
+        elif "entra" in model:
+            del model["entra"]
     else:
-        extra_fields["entra"] = None
+        if "entra" in model:
+            del model["entra"]
+    if ctx_len:
+        model["context_length"] = ctx_len
 
-    _commit_provider_model(
-        "azure-foundry",
-        effective_model,
-        inference_base_url=effective_url,
-        extra_model_fields=extra_fields,
-    )
-    cfg = load_config()
-    config["model"] = dict(cfg.get("model") or {})
+    save_config(cfg)
+    deactivate_provider()
+    config["model"] = dict(model)
 
     # Clear any conflicting env vars so auxiliary clients don't poison
     # themselves with a stale OpenAI base URL / key.
@@ -4750,191 +4715,12 @@ def _remove_custom_provider(config):
     print(f'✅ Removed "{removed_name}" from custom providers.')
 
 
-def _named_custom_runtime_env_path() -> Path:
-    """Root runtime ``.env`` (not the active profile subdir)."""
-    from hermes_constants import get_default_hermes_root
-
-    return get_default_hermes_root() / ".env"
-
-
-def _persist_named_custom_api_key(key_env: str, value: str) -> None:
-    """Write API key to root runtime, legacy hub, and active profile when needed."""
-    from hermes_cli.config import get_env_path, save_env_value
-
-    runtime_env = _named_custom_runtime_env_path()
-    legacy_env = Path.home() / ".hermes" / ".env"
-    profile_env = get_env_path()
-
-    runtime_env.parent.mkdir(parents=True, exist_ok=True)
-    save_env_value(key_env, value, env_path=runtime_env)
-
-    for extra in (legacy_env, profile_env):
-        try:
-            if extra.resolve() == runtime_env.resolve():
-                continue
-        except OSError:
-            continue
-        if extra.parent.exists():
-            save_env_value(key_env, value, env_path=extra)
-
-
-def _read_env_key_from_file(env_path: Path, key_env: str) -> str:
-    """Read a single key from an on-disk ``.env`` (bypasses ``os.environ`` shadowing)."""
-    if not env_path.is_file():
-        return ""
-    prefix = f"{key_env}="
-    try:
-        for line in env_path.read_text(encoding="utf-8", errors="replace").splitlines():
-            stripped = line.strip()
-            if stripped.startswith(prefix):
-                return stripped[len(prefix) :].strip().strip('"').strip("'")
-    except OSError:
-        return ""
-    return ""
-
-
-def _env_key_length(key_env: str) -> int:
-    from hermes_cli.config import get_env_value
-
-    return len(str(get_env_value(key_env) or "").strip())
-
-
-def _prompt_named_custom_api_key(
-    provider_info: dict, existing_key: str = ""
-) -> tuple[str, bool]:
-    """Always configure ``key_env`` after picking a named custom provider."""
-    from hermes_cli.config import get_env_path, get_env_value
-    from hermes_cli.secret_prompt import masked_secret_prompt
-
-    key_env = str(provider_info.get("key_env") or "").strip()
-    name = str(
-        provider_info.get("name") or provider_info.get("provider_key") or "custom"
-    ).strip()
-    if not key_env:
-        return str(existing_key or provider_info.get("api_key") or "").strip(), False
-
-    resolved = str(
-        existing_key
-        or provider_info.get("api_key")
-        or get_env_value(key_env)
-        or os.environ.get(key_env)
-        or ""
-    ).strip()
-
-    def _read_new_key() -> str:
-        print(f"Paste {name} API key ({key_env}, input is masked).")
-        if os.name == "nt":
-            print("  Windows: right-click to paste if Ctrl+V does nothing.")
-        print()
-        try:
-            entered = masked_secret_prompt(f"{key_env}: ").strip()
-        except (KeyboardInterrupt, EOFError):
-            print()
-            return ""
-        if len(entered) < 8:
-            print("  Key looks too short — visible paste fallback:")
-            try:
-                entered = getpass.getpass(f"{key_env}: ").strip()
-            except (KeyboardInterrupt, EOFError):
-                print()
-                return ""
-        return entered
-
-    def _commit_key(value: str) -> str:
-        _persist_named_custom_api_key(key_env, value)
-        os.environ[key_env] = value
-        runtime_env = _named_custom_runtime_env_path()
-        legacy_env = Path.home() / ".hermes" / ".env"
-        profile_env = get_env_path()
-        persisted_len = len(_read_env_key_from_file(runtime_env, key_env))
-        if value and persisted_len < 8:
-            print(
-                f"  Warning: {key_env} was not written to {runtime_env} — "
-                "check permissions or managed-mode restrictions."
-            )
-        elif value:
-            seen: set[str] = set()
-            locations: list[str] = []
-            for path in (runtime_env, legacy_env, profile_env):
-                key = str(path)
-                if key in seen:
-                    continue
-                seen.add(key)
-                locations.append(key)
-            print(f"API key saved ({', '.join(locations)}).")
-        else:
-            print(f"API key cleared ({key_env}).")
-        print()
-        return value
-
-    if len(resolved) >= 8:
-        preview = f"{resolved[:8]}..."
-        print(f"  {name} API key ({key_env}): {preview}")
-        try:
-            choice = input("  [K]eep / [R]eplace / [C]lear (default K): ").strip().lower()
-        except (KeyboardInterrupt, EOFError):
-            print()
-            return resolved, False
-        if choice.startswith("r"):
-            entered = _read_new_key()
-            if not entered:
-                print("Cancelled.")
-                return "", True
-            return _commit_key(entered), False
-        if choice.startswith("c"):
-            _persist_named_custom_api_key(key_env, "")
-            os.environ.pop(key_env, None)
-            entered = _read_new_key()
-            if not entered:
-                print("Cancelled.")
-                return "", True
-            return _commit_key(entered), False
-        return resolved, False
-
-    print(f"No {name} API key configured ({key_env}).")
-    entered = _read_new_key()
-    if not entered:
-        print("Cancelled.")
-        return "", True
-    return _commit_key(entered), False
-
-
-def _prompt_venice_extra_body_optional() -> Optional[dict]:
-    """Optional ``extra_body.venice_parameters`` for setup / ``hermes model`` (Venice only)."""
-    print()
-    print("  Venice parameters (optional — press Enter to skip all)")
-    try:
-        web_search = input(
-            "  enable_web_search [auto/off/on, Enter=skip]: "
-        ).strip().lower()
-    except (KeyboardInterrupt, EOFError):
-        print("\nCancelled.")
-        return None
-    venice_params: dict = {}
-    if web_search and web_search not in {"auto", "off", "on"}:
-        print(f"  Unknown enable_web_search '{web_search}' — skipped.")
-        web_search = ""
-    if web_search in {"auto", "off", "on"}:
-        venice_params["enable_web_search"] = web_search
-    try:
-        character_slug = input("  character_slug [Enter=skip]: ").strip()
-    except (KeyboardInterrupt, EOFError):
-        print("\nCancelled.")
-        return None
-    if character_slug:
-        venice_params["character_slug"] = character_slug
-    if not venice_params:
-        return None
-    return {"venice_parameters": venice_params}
-
-
 def _model_flow_named_custom(config, provider_info):
-    """Handle a named custom provider from config.yaml ``providers`` / ``custom_providers``.
+    """Handle a named custom provider from config.yaml custom_providers list.
 
-    Flow: show provider → prompt for ``key_env`` (Keep/Replace/Clear) → live
-    ``GET /v1/models`` → pick model. No hardcoded model list in config.
-    Keys persist to root runtime ``.env``, legacy ``~/.hermes/.env``, and the
-    active profile ``.env`` when split-home / ``hermes -p`` applies.
+    Always probes the endpoint's /models API to let the user pick a model.
+    If a model was previously saved, it is pre-selected in the menu.
+    Falls back to the saved model if probing fails.
     """
     from hermes_cli.auth import _save_model_choice, deactivate_provider
     from hermes_cli.config import load_config, save_config
@@ -4948,71 +4734,66 @@ def _model_flow_named_custom(config, provider_info):
     saved_model = provider_info.get("model", "")
     provider_key = (provider_info.get("provider_key") or "").strip()
 
+    # Resolve key from env var if api_key not set directly
+    if not api_key and key_env:
+        api_key = os.environ.get(key_env, "")
+    config_api_key = _custom_provider_api_key_config_value(provider_info, api_key)
+
     print(f"  Provider: {name}")
     print(f"  URL:      {base_url}")
     if saved_model:
         print(f"  Current:  {saved_model}")
     print()
 
-    # API key step immediately after provider selection (before /v1/models).
-    if not api_key and key_env:
-        api_key = os.environ.get(key_env, "")
-    api_key, abort = _prompt_named_custom_api_key(provider_info, api_key)
-    if abort:
-        return
-    config_api_key = _custom_provider_api_key_config_value(provider_info, api_key)
-
-    if key_env and len(str(api_key or "").strip()) < 8:
-        print(f"  {key_env} is required for live model discovery. Cancelled.")
-        return
-
     print("Fetching available models...")
     fetch_kwargs = {"timeout": 8.0}
     if api_mode:
         fetch_kwargs["api_mode"] = api_mode
     models = fetch_api_models(api_key, base_url, **fetch_kwargs)
-    if not models:
-        from hermes_cli.models import probe_api_models
 
-        probe = probe_api_models(api_key, base_url, timeout=fetch_kwargs.get("timeout", 8.0))
-        probed = probe.get("probed_url") or f"{base_url.rstrip('/')}/models"
-        print(f"  Live probe failed ({probed}).")
-        print(
-            "  If the key is new: confirm sk-clb-... at jatevo.ai/dashboard. "
-            "HTTP 401 on api.jatevo.ai often means wrong base_url — use https://jatevo.ai/v1 "
-            "in providers.jatevo (see docs/templates/PROVIDERS_JATEVO.yaml)."
-        )
-        print()
-
-    preset_model = None
     if models:
-        from agent.venice_usage import is_venice_runtime
+        default_idx = 0
+        if saved_model and saved_model in models:
+            default_idx = models.index(saved_model)
 
-        if is_venice_runtime(provider_key or name, base_url):
-            from hermes_cli.venice_model_picker import run_venice_model_picker_preflight
+        print(f"Found {len(models)} model(s):\n")
+        try:
+            from hermes_cli.curses_ui import curses_radiolist
 
-            models, preset_model = run_venice_model_picker_preflight(
-                api_key=api_key,
-                base_url=base_url,
-                models=models,
-                timeout=float(fetch_kwargs.get("timeout", 8.0)),
+            menu_items = [
+                f"{m} (current)" if m == saved_model else m for m in models
+            ] + ["Cancel"]
+            idx = curses_radiolist(
+                f"Select model from {name}:",
+                menu_items,
+                selected=default_idx,
+                cancel_returns=-1,
+                searchable=True,
             )
-            if not models and not preset_model:
+            print()
+            if idx < 0 or idx >= len(models):
                 print("Cancelled.")
                 return
-
-    model_name = ""
-    if preset_model:
-        model_name = preset_model
-    elif models:
-        from hermes_cli.model_list_ui import select_model_from_live_list
-
-        picked = select_model_from_live_list(
-            models, saved_model=saved_model, provider_label=name
-        )
-        if picked is None:
-            return
-        model_name = picked
+            model_name = models[idx]
+        except (ImportError, NotImplementedError, OSError, subprocess.SubprocessError):
+            for i, m in enumerate(models, 1):
+                suffix = " (current)" if m == saved_model else ""
+                print(f"  {i}. {m}{suffix}")
+            print(f"  {len(models) + 1}. Cancel")
+            print()
+            try:
+                val = input(f"Choice [1-{len(models) + 1}]: ").strip()
+                if not val:
+                    print("Cancelled.")
+                    return
+                idx = int(val) - 1
+                if idx < 0 or idx >= len(models):
+                    print("Cancelled.")
+                    return
+                model_name = models[idx]
+            except (ValueError, KeyboardInterrupt, EOFError):
+                print("\nCancelled.")
+                return
     elif saved_model:
         print("Could not fetch models from endpoint.")
         try:
@@ -5022,7 +4803,6 @@ def _model_flow_named_custom(config, provider_info):
             return
     else:
         print("Could not fetch models from endpoint. Enter model name manually.")
-        print("  Check API key and base URL, or pick [R]eplace on the key step and retry.")
         try:
             model_name = input("Model name: ").strip()
         except (KeyboardInterrupt, EOFError):
@@ -5032,50 +4812,33 @@ def _model_flow_named_custom(config, provider_info):
             print("No model specified. Cancelled.")
             return
 
-    from agent.venice_usage import is_venice_runtime as _is_venice_runtime
+    # Activate and save the model to the custom_providers entry
+    _save_model_choice(model_name)
 
-    if _is_venice_runtime(provider_key or name, base_url):
-        venice_extra = _prompt_venice_extra_body_optional()
-        if venice_extra and provider_key:
-            cfg = load_config()
-            providers_cfg = cfg.get("providers")
-            if isinstance(providers_cfg, dict):
-                provider_entry = providers_cfg.get(provider_key)
-                if isinstance(provider_entry, dict):
-                    extra_body = provider_entry.get("extra_body")
-                    if not isinstance(extra_body, dict):
-                        extra_body = {}
-                    extra_body.update(venice_extra)
-                    provider_entry["extra_body"] = extra_body
-                    providers_cfg[provider_key] = provider_entry
-                    cfg["providers"] = providers_cfg
-                    save_config(cfg)
-                    print("  Saved Venice extra_body to providers.venice in config.yaml")
-
-    extra_fields: dict = {}
+    cfg = load_config()
+    model = cfg.get("model")
+    if not isinstance(model, dict):
+        model = {"default": model} if model else {}
+        cfg["model"] = model
+    if provider_key:
+        model["provider"] = provider_key
+        model.pop("base_url", None)
+        model.pop("api_key", None)
+    else:
+        model["provider"] = "custom"
+        model["base_url"] = _custom_provider_base_url_config_value(
+            provider_info, base_url
+        )
+        if config_api_key:
+            model["api_key"] = config_api_key
+    # Apply api_mode from custom_providers entry, or clear stale value
     custom_api_mode = provider_info.get("api_mode", "")
     if custom_api_mode:
-        extra_fields["api_mode"] = custom_api_mode
-    if provider_key:
-        _commit_provider_model(
-            provider_key,
-            model_name,
-            deactivate_oauth=True,
-            extra_model_fields=extra_fields or None,
-        )
+        model["api_mode"] = custom_api_mode
     else:
-        if config_api_key:
-            extra_fields["api_key"] = config_api_key
-        _commit_provider_model(
-            "custom",
-            model_name,
-            inference_base_url=_custom_provider_base_url_config_value(
-                provider_info, base_url
-            ),
-            deactivate_oauth=True,
-            extra_model_fields=extra_fields or None,
-        )
-    cfg = load_config()
+        model.pop("api_mode", None)  # let runtime auto-detect from URL
+    save_config(cfg)
+    deactivate_provider()
 
     # Persist the selected model back to whichever schema owns this endpoint.
     if provider_key:
@@ -5399,25 +5162,24 @@ def _model_flow_copilot(config, current_model=""):
                 reasoning_efforts, current_effort=current_effort
             )
 
-        _commit_provider_model(
-            provider_id,
+        _save_model_choice(selected)
+
+        cfg = load_config()
+        model = cfg.get("model")
+        if not isinstance(model, dict):
+            model = {"default": model} if model else {}
+            cfg["model"] = model
+        model["provider"] = provider_id
+        model["base_url"] = effective_base
+        model["api_mode"] = copilot_model_api_mode(
             selected,
-            inference_base_url=effective_base,
-            deactivate_oauth=True,
-            extra_model_fields={
-                "api_mode": copilot_model_api_mode(
-                    selected,
-                    catalog=catalog,
-                    api_key=api_key,
-                ),
-            },
+            catalog=catalog,
+            api_key=api_key,
         )
         if selected_effort is not None:
-            from hermes_cli.config import load_config, save_config
-
-            cfg = load_config()
             _set_reasoning_effort(cfg, selected_effort)
-            save_config(cfg)
+        save_config(cfg)
+        deactivate_provider()
 
         print(f"Default model set to: {selected} (via {pconfig.name})")
         if reasoning_efforts:
@@ -5527,13 +5289,18 @@ def _model_flow_copilot_acp(config, current_model=""):
         )
         or selected
     )
-    _commit_provider_model(
-        provider_id,
-        selected,
-        inference_base_url=effective_base,
-        deactivate_oauth=True,
-        extra_model_fields={"api_mode": "chat_completions"},
-    )
+    _save_model_choice(selected)
+
+    cfg = load_config()
+    model = cfg.get("model")
+    if not isinstance(model, dict):
+        model = {"default": model} if model else {}
+        cfg["model"] = model
+    model["provider"] = provider_id
+    model["base_url"] = effective_base
+    model["api_mode"] = "chat_completions"
+    save_config(cfg)
+    deactivate_provider()
 
     print(f"Default model set to: {selected} (via {pconfig.name})")
 
@@ -5698,12 +5465,19 @@ def _model_flow_kimi(config, current_model=""):
             selected = None
 
     if selected:
-        _commit_provider_model(
-            provider_id,
-            selected,
-            inference_base_url=effective_base,
-            deactivate_oauth=True,
-        )
+        _save_model_choice(selected)
+
+        # Update config with provider and base URL
+        cfg = load_config()
+        model = cfg.get("model")
+        if not isinstance(model, dict):
+            model = {"default": model} if model else {}
+            cfg["model"] = model
+        model["provider"] = provider_id
+        model["base_url"] = effective_base
+        model.pop("api_mode", None)  # let runtime auto-detect from URL
+        save_config(cfg)
+        deactivate_provider()
 
         endpoint_label = "Kimi Coding" if is_coding_plan else "Moonshot"
         print(f"Default model set to: {selected} (via {endpoint_label})")
@@ -5820,16 +5594,20 @@ def _model_flow_stepfun(config, current_model=""):
             selected = None
 
     if selected:
-        _commit_provider_model(
-            provider_id,
-            selected,
-            inference_base_url=effective_base,
-            deactivate_oauth=True,
-        )
-        config.clear()
-        from hermes_cli.config import load_config
+        _save_model_choice(selected)
 
-        config.update(load_config())
+        cfg = load_config()
+        model = cfg.get("model")
+        if not isinstance(model, dict):
+            model = {"default": model} if model else {}
+            cfg["model"] = model
+        model["provider"] = provider_id
+        model["base_url"] = effective_base
+        model.pop("api_mode", None)
+        save_config(cfg)
+        deactivate_provider()
+
+        config["model"] = dict(model)
         print(f"Default model set to: {selected} (via {pconfig.name})")
     else:
         print("No change.")
@@ -5893,21 +5671,31 @@ def _model_flow_bedrock_api_key(config, region, current_model=""):
             selected = None
 
     if selected:
-        _commit_provider_model(
-            "custom",
-            selected,
-            inference_base_url=mantle_base_url,
-            deactivate_oauth=True,
-        )
+        _save_model_choice(selected)
+
+        # Save as custom provider pointing to bedrock-mantle
         cfg = load_config()
+        model = cfg.get("model")
+        if not isinstance(model, dict):
+            model = {"default": model} if model else {}
+            cfg["model"] = model
+        model["provider"] = "custom"
+        model["base_url"] = mantle_base_url
+        model.pop("api_mode", None)  # chat_completions is the default
+
+        # Also save region in bedrock config for reference
         bedrock_cfg = cfg.get("bedrock", {})
         if not isinstance(bedrock_cfg, dict):
             bedrock_cfg = {}
         bedrock_cfg["region"] = region
         cfg["bedrock"] = bedrock_cfg
+
+        # Save the API key env var name so hermes knows where to find it
         save_env_value("OPENAI_API_KEY", existing_key)
         save_env_value("OPENAI_BASE_URL", mantle_base_url)
+
         save_config(cfg)
+        deactivate_provider()
 
         print(f"  Default model set to: {selected} (via Bedrock API Key, {region})")
         print(f"  Endpoint: {mantle_base_url}")
@@ -6073,19 +5861,25 @@ def _model_flow_bedrock(config, current_model=""):
             selected = None
 
     if selected:
-        _commit_provider_model(
-            "bedrock",
-            selected,
-            inference_base_url=f"https://bedrock-runtime.{region}.amazonaws.com",
-            deactivate_oauth=True,
-        )
+        _save_model_choice(selected)
+
         cfg = load_config()
+        model = cfg.get("model")
+        if not isinstance(model, dict):
+            model = {"default": model} if model else {}
+            cfg["model"] = model
+        model["provider"] = "bedrock"
+        model["base_url"] = f"https://bedrock-runtime.{region}.amazonaws.com"
+        model.pop("api_mode", None)  # bedrock_converse is auto-detected
+
         bedrock_cfg = cfg.get("bedrock", {})
         if not isinstance(bedrock_cfg, dict):
             bedrock_cfg = {}
         bedrock_cfg["region"] = region
         cfg["bedrock"] = bedrock_cfg
+
         save_config(cfg)
+        deactivate_provider()
 
         print(f"  Default model set to: {selected} (via AWS Bedrock, {region})")
     else:
@@ -6354,16 +6148,22 @@ def _model_flow_api_key_provider(config, provider_id, current_model=""):
         if provider_id in {"opencode-zen", "opencode-go"}:
             selected = normalize_opencode_model_id(provider_id, selected)
 
-        extra_fields: dict = {}
+        _save_model_choice(selected)
+
+        # Update config with provider, base URL, and provider-specific API mode
+        cfg = load_config()
+        model = cfg.get("model")
+        if not isinstance(model, dict):
+            model = {"default": model} if model else {}
+            cfg["model"] = model
+        model["provider"] = provider_id
+        model["base_url"] = effective_base
         if provider_id in {"opencode-zen", "opencode-go"}:
-            extra_fields["api_mode"] = opencode_model_api_mode(provider_id, selected)
-        _commit_provider_model(
-            provider_id,
-            selected,
-            inference_base_url=effective_base,
-            deactivate_oauth=True,
-            extra_model_fields=extra_fields or None,
-        )
+            model["api_mode"] = opencode_model_api_mode(provider_id, selected)
+        else:
+            model.pop("api_mode", None)
+        save_config(cfg)
+        deactivate_provider()
 
         print(f"Default model set to: {selected} (via {pconfig.name})")
     else:
@@ -6595,11 +6395,21 @@ def _model_flow_anthropic(config, current_model=""):
             selected = None
 
     if selected:
-        _commit_provider_model(
-            "anthropic",
-            selected,
-            deactivate_oauth=True,
-        )
+        _save_model_choice(selected)
+
+        # Update config with provider — clear base_url since
+        # resolve_runtime_provider() always hardcodes Anthropic's URL.
+        # Leaving a stale base_url in config can contaminate other
+        # providers if the user switches without running 'hermes model'.
+        cfg = load_config()
+        model = cfg.get("model")
+        if not isinstance(model, dict):
+            model = {"default": model} if model else {}
+            cfg["model"] = model
+        model["provider"] = "anthropic"
+        model.pop("base_url", None)
+        save_config(cfg)
+        deactivate_provider()
 
         print(f"Default model set to: {selected} (via Anthropic)")
     else:
@@ -11882,35 +11692,12 @@ def cmd_profile(args):
 
     elif action == "use":
         name = args.profile_name
-        use_full_switch = (
-            getattr(args, "fix_hermes_home", False)
-            or getattr(args, "no_restart_gateway", False)
-            or getattr(args, "no_sync_env", False)
-        )
         try:
-            if use_full_switch:
-                from hermes_cli.profile_switch import (
-                    execute_profile_switch,
-                    print_switch_messages,
-                )
-
-                restart_gateway = (
-                    False if getattr(args, "no_restart_gateway", False) else None
-                )
-                sync_env = False if getattr(args, "no_sync_env", False) else None
-                result = execute_profile_switch(
-                    name,
-                    fix_hermes_home=getattr(args, "fix_hermes_home", False),
-                    restart_gateway=restart_gateway,
-                    sync_env=sync_env,
-                )
-                print_switch_messages(result)
+            set_active_profile(name)
+            if name == "default":
+                print(f"Switched to: default (~/.hermes)")
             else:
-                set_active_profile(name)
-                if name == "default":
-                    print(f"Switched to: default (~/.hermes)")
-                else:
-                    print(f"Switched to: {name}")
+                print(f"Switched to: {name}")
         except (ValueError, FileNotFoundError) as e:
             print(f"Error: {e}")
             sys.exit(1)
@@ -12968,12 +12755,6 @@ def _try_termux_fast_tui_launch() -> bool:
 
 def main():
     """Main entry point for hermes CLI."""
-    try:
-        from hermes_runtime_warnings import apply_runtime_warning_filters
-
-        apply_runtime_warning_filters()
-    except Exception:
-        pass
     # Cosmetic: make the process show up as 'hermes' instead of 'python3.11'
     # in ps/top/htop.  Non-fatal — just a nicer UX.
     _set_process_title()
@@ -14252,14 +14033,6 @@ Examples:
 
     # config edit
     config_subparsers.add_parser("edit", help="Open config file in editor")
-
-    # config get
-    config_get = config_subparsers.add_parser(
-        "get", help="Get a configuration value by dotted key"
-    )
-    config_get.add_argument(
-        "key", help="Configuration key (e.g., auxiliary.vision.provider)"
-    )
 
     # config set
     config_set = config_subparsers.add_parser("set", help="Set a configuration value")
@@ -15667,21 +15440,6 @@ Examples:
         "use", help="Set sticky default profile"
     )
     profile_use.add_argument("profile_name", help="Profile name (or 'default')")
-    profile_use.add_argument(
-        "--fix-hermes-home",
-        action="store_true",
-        help="Normalize HERMES_HOME to match the sticky profile",
-    )
-    profile_use.add_argument(
-        "--no-restart-gateway",
-        action="store_true",
-        help="Do not restart gateway after switch",
-    )
-    profile_use.add_argument(
-        "--no-sync-env",
-        action="store_true",
-        help="Skip Windows API environment sync",
-    )
 
     profile_create = profile_subparsers.add_parser(
         "create", help="Create a new profile"

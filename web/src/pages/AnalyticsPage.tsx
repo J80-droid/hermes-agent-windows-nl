@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useState,
-  type CSSProperties,
-} from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -171,8 +164,8 @@ function TokenBarChart({ daily }: { daily: AnalyticsDailyEntry[] }) {
       </CardHeader>
       <CardContent>
         <div
-          className="analytics-chart-column flex items-end gap-[2px]"
-          style={{ "--chart-column-height": `${CHART_HEIGHT_PX}px` } as CSSProperties}
+          className="flex items-end gap-[2px]"
+          style={{ height: CHART_HEIGHT_PX }}
         >
           {daily.map((d) => {
             const total = d.input_tokens + d.output_tokens;
@@ -185,8 +178,8 @@ function TokenBarChart({ daily }: { daily: AnalyticsDailyEntry[] }) {
             return (
               <div
                 key={d.day}
-                className="analytics-chart-column flex-1 min-w-0 group relative flex flex-col justify-end"
-                style={{ "--chart-column-height": `${CHART_HEIGHT_PX}px` } as CSSProperties}
+                className="flex-1 min-w-0 group relative flex flex-col justify-end"
+                style={{ height: CHART_HEIGHT_PX }}
               >
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10 pointer-events-none">
                   <div className="font-mondwest normal-case bg-card border border-border px-2.5 py-1.5 text-xs text-foreground shadow-lg whitespace-nowrap">
@@ -204,7 +197,7 @@ function TokenBarChart({ daily }: { daily: AnalyticsDailyEntry[] }) {
                 </div>
 
                 <div
-                  className="analytics-bar-segment w-full"
+                  className="w-full"
                   style={{
                     backgroundColor:
                       "color-mix(in srgb, var(--series-input-token) 70%, transparent)",
@@ -213,7 +206,7 @@ function TokenBarChart({ daily }: { daily: AnalyticsDailyEntry[] }) {
                 />
 
                 <div
-                  className="analytics-bar-segment w-full"
+                  className="w-full"
                   style={{
                     backgroundColor:
                       "color-mix(in srgb, var(--series-output-token) 70%, transparent)",
@@ -433,9 +426,9 @@ export default function AnalyticsPage() {
       .catch(() => setShowTokens(false));
   }, []);
 
-  const load = useCallback((showSpinner = true) => {
+  const load = useCallback(() => {
     if (!showTokens) return;
-    if (showSpinner) setLoading(true);
+    setLoading(true);
     setError(null);
     api
       .getAnalytics(days)
@@ -468,7 +461,7 @@ export default function AnalyticsPage() {
             ghost
             size="icon"
             className="text-muted-foreground hover:text-foreground"
-            onClick={() => load()}
+            onClick={load}
             disabled={loading}
             aria-label={t.common.refresh}
           >
@@ -485,7 +478,7 @@ export default function AnalyticsPage() {
   }, [days, loading, load, setAfterTitle, setEnd, t.common.refresh, showTokens]);
 
   useEffect(() => {
-    queueMicrotask(() => load(false));
+    load();
   }, [load]);
 
   return (

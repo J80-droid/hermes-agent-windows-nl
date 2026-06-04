@@ -59,7 +59,6 @@ export interface ConfigDisplayConfig {
   inline_diffs?: boolean
   mouse_tracking?: boolean | null | number | string
   sections?: Record<string, string>
-  cost_bar_mode?: 'minimal' | 'rich'
   show_cost?: boolean
   show_reasoning?: boolean
   streaming?: boolean
@@ -217,29 +216,12 @@ export interface SessionUsageResponse {
   context_max?: number
   context_percent?: number
   context_used?: number
-  cost_breakdown_pct?: {
-    cr?: number
-    cw?: number
-    in?: number
-    out?: number
-  }
-  cost_breakdown_usd?: {
-    cache_read?: number
-    cache_write?: number
-    input?: number
-    output?: number
-  }
-  cost_status?: 'estimated' | 'exact' | string
+  cost_status?: 'estimated' | 'exact'
   cost_usd?: number
   input?: number
   model?: string
   output?: number
-  session_tools_executed?: number
   total?: number
-  turn_cost_estimated?: boolean
-  turn_cost_usd?: number
-  turn_live_tokens?: number
-  last_call_tps?: number
 }
 
 export interface SessionStatusResponse {

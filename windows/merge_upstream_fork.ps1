@@ -85,34 +85,18 @@ function Get-MergeConflictResolution {
         [switch]$LockTheirs
     )
 
+    # Tier B (fork-owned) — keep ours on conflict. Tier A defaults to upstream (see $takeTheirsTierA).
     $keepOurs = @(
+        'overlay/**',
         'scripts/rag_pipeline/**',
-        'windows/scripts/update_knowledge.bat',
-        'windows/scripts/install_rag_extras.ps1',
-        'windows/scripts/register_lancedb_mcp.ps1',
-        'scripts/rag_pipeline/register_mcp_config.py',
+        'windows/**',
+        'scripts/windows/**',
         'memory-bank/**',
-        'windows/UPSTREAM_SYNC.md',
-        'windows/INSTITUTIONAL.md',
-        'windows/merge_upstream_fork.ps1',
-        'windows/MERGE_UPSTREAM.bat',
-        'hermes_cli/institutional_render.py',
-        'hermes_cli/markdown_output_normalize.py',
-        'hermes_cli/display_markdown.py',
-        'hermes_cli/usage_snapshot.py',
-        'hermes_cli/status_bar_cost.py',
-        'hermes_cli/status_bar_throughput.py',
-        'hermes_cli/status_bar_prompt_elapsed.py',
-        'scripts/verify_fork_status_bar_display.py',
-        'web/src/components/Markdown.tsx',
-        'web/src/lib/institutionalMarkdown.ts',
-        'web/src/lib/institutionalWebPalette.ts',
-        'windows/apply_team_display.ps1',
-        'windows/scripts/apply_team_display_profiles.py',
-        'web/src/lib/assistantDisplayEvents.ts',
-        'web/src/contexts/AssistantDisplayProvider.tsx',
-        'web/src/contexts/assistant-display-context.ts',
-        'web/src/contexts/useAssistantDisplay.ts',
+        'skills/legal/**',
+        'skills/productivity/landkaart/**',
+        'plugins/j80-windows-nl/**',
+        'docs/NOUS_OVERLAY_ARCHITECTURE.md',
+        'docs/NOUS_DRIFT_BASELINE.md',
         'docs/INSTITUTIONAL_PRESENTATION.md',
         'docs/INSTITUTIONAL_PORTING_GUIDE.md',
         '.cursor/rules/institutional-presentatie.mdc',
@@ -120,12 +104,8 @@ function Get-MergeConflictResolution {
         'docs/templates/SOUL_SHARED_INTERACTION.md',
         'docs/templates/SOUL_SHARED_ADVISORY.md',
         'docs/templates/INSTITUTIONAL_RENDERER_TEST_PROMPT.md',
+        'overlay/config/palettes.yaml',
         'config/palettes.yaml',
-        'scripts/score_institutional_render.py',
-        'scripts/verify_institutional_guard.py',
-        'scripts/diagnose_renderer.py',
-        'cli.py',
-        'web/src/lib/ragCitations.ts',
         'tests/rag_pipeline/**',
         'tests/cli/test_institutional_rich_render.py',
         'tests/cli/test_institutional_profile_chat_ux.py',
@@ -134,24 +114,24 @@ function Get-MergeConflictResolution {
         'tests/hermes_cli/test_status_bar_cost.py',
         'tests/hermes_cli/test_status_bar_throughput.py',
         'tests/hermes_cli/test_status_bar_prompt_elapsed.py',
-        'ui-tui/src/domain/usageCostBar.ts',
-        'ui-tui/src/__tests__/usageCostBar.test.ts',
-        'scripts/verify_usage_cost_bar.py',
-        'scripts/status_bar_cost_gateway_smoke.py',
-        'windows/audits/RUN_STATUS_BAR_COST_E2E.ps1',
-        'windows/audits/RUN_STATUS_BAR_COST_E2E.bat',
         'tests/windows/test_status_bar_cost_e2e.py',
-        'windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.ps1',
-        'windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat',
-        'windows/audits/ClassicCliStatusBarCostE2E.core.ps1',
-        'scripts/status_bar_cost_classic_cli_smoke.py',
-        'scripts/status_bar_cost_classic_cli_live_smoke.py'
+        '.github/workflows/fork-windows-institutional.yml'
     )
 
     $takeTheirs = @(
         'gateway/**',
         'tools/**',
-        'hermes_cli/main.py'
+        'hermes_cli/main.py',
+        'agent/**',
+        'cli.py',
+        'run_agent.py',
+        'tui_gateway/**'
+    )
+
+    $takeTheirsTierA = @(
+        'hermes_cli/**',
+        'web/**',
+        'ui-tui/**'
     )
 
     $manualReview = @(
@@ -159,7 +139,6 @@ function Get-MergeConflictResolution {
         'uv.lock',
         'scripts/run_tests.sh',
         'scripts/run_tests_parallel.py',
-        'agent/prompt_builder.py',
         '.github/workflows/tests.yml'
     )
 
@@ -173,8 +152,17 @@ function Get-MergeConflictResolution {
     if (Test-PathMatchesGlob -Path $Path -Globs $takeTheirs) {
         return @{
             Strategy = 'theirs'
-            Reason   = 'upstream core (gateway/tools/main)'
-            IdeHint  = 'Neem upstream over; controleer daarna of RAG/institutional hooks nog werken.'
+            Reason   = 'upstream core (gateway/tools/main/agent/cli)'
+            IdeHint  = 'Neem upstream over; daarna overlay/bootstrap + Invoke-ApplyHermesOverlay.'
+        }
+    }
+    if (Test-PathMatchesGlob -Path $Path -Globs $takeTheirsTierA) {
+        if (-not (Test-PathMatchesGlob -Path $Path -Globs $keepOurs)) {
+            return @{
+                Strategy = 'theirs'
+                Reason   = 'Tier A Nous path (100% intact policy)'
+                IdeHint  = 'Upstream overnemen; fork-gedrag via overlay/ + plugins/j80-windows-nl/.'
+            }
         }
     }
     if ($Path -match '^tests/' -and -not (Test-PathMatchesGlob -Path $Path -Globs @('tests/rag_pipeline/**', 'tests/cli/test_institutional*', 'tests/hermes_cli/test_normalizer*'))) {
@@ -195,8 +183,7 @@ function Get-MergeConflictResolution {
         $hints = @{
             'pyproject.toml'           = 'Combineer: upstream core deps + behoud fork `[project.optional-dependencies] rag`. Geen blind `[all,rag]`.'
             'uv.lock'                  = 'Vaak upstream lock + daarna uv lock / pip install -e ".[rag]".'
-            'agent/prompt_builder.py'  = 'Handmatig: behoud LANCEDB_RAG_* / citatie-hooks uit fork; neem upstream structuur over waar geen RAG-conflict.'
-            '.github/workflows/tests.yml' = 'Combineer: upstream matrix-slicing + fork RAG-job (niet of-of).'
+            '.github/workflows/tests.yml' = 'Behoud if: github.repository != J80-droid/hermes-agent-windows-nl op upstream jobs; zie README-FORK.md.'
         }
         $ideHint = if ($hints.ContainsKey($Path)) { $hints[$Path] } else { 'Lees beide kanten; geen checkout --ours/--theirs zonder review.' }
         return @{

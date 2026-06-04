@@ -13,11 +13,6 @@ Background processes execute THROUGH the environment interface -- nothing
 runs on the host machine unless TERMINAL_ENV=local. For Docker, Singularity,
 Modal, Daytona, and SSH backends, the command runs inside the sandbox.
 
-Windows PTY (``use_pty=True``): ``_pty_spawn_argv()`` spawns ``python -c`` directly
-(winpty expects ``str`` on write); detached kills use ``_terminate_host_pid`` (taskkill).
-POSIX orphan-pipe reconcile uses ``Popen.poll()``; PTY sessions reconcile via
-``pty.isalive()`` / host PID liveness.
-
 Usage:
     from tools.process_registry import process_registry
 
@@ -78,29 +73,6 @@ WATCH_STRIKE_LIMIT = 3            # Strikes in a row → disable watch + promote
 WATCH_GLOBAL_MAX_PER_WINDOW = 15
 WATCH_GLOBAL_WINDOW_SECONDS = 10
 WATCH_GLOBAL_COOLDOWN_SECONDS = 30
-
-
-def _pty_spawn_argv(command: str, user_shell: str) -> list[str]:
-    """Build argv for PTY spawn.
-
-    On Windows, invoke ``<exe> -c ...`` directly when the executable path is
-    known so ``sendeof()`` reaches the child stdin. Other commands still run
-    through the login shell (``bash -lic``).
-    """
-    if not _IS_WINDOWS:
-        return [user_shell, "-lic", f"set +m; {command}"]
-    try:
-        parts = shlex.split(command, posix=False)
-    except ValueError:
-        parts = None
-    if parts and len(parts) >= 3 and parts[1] in ("-c", "-m"):
-        exe = parts[0].strip("\"'")
-        code = parts[2]
-        if len(code) >= 2 and code[0] == code[-1] and code[0] in "\"'":
-            code = code[1:-1]
-        if os.path.isfile(exe):
-            return [exe, parts[1], code]
-    return [user_shell, "-lic", f"set +m; {command}"]
 
 
 def format_uptime_short(seconds: int) -> str:
@@ -193,7 +165,7 @@ class ProcessRegistry:
         # both land here, distinguished by "type" field.  CLI process_loop and
         # gateway drain this after each agent turn to auto-trigger new turns.
         import queue as _queue_mod
-        self.completion_queue: _queue_mod.Queue = _queue_mod.Queue(maxsize=256)
+        self.completion_queue: _queue_mod.Queue = _queue_mod.Queue()
 
         # Track sessions whose completion was already consumed by the agent
         # via wait/poll/log.  Drain loops skip notifications for these.
@@ -297,7 +269,7 @@ class ProcessRegistry:
             if should_disable:
                 # Emit exactly one "watch disabled, falling back to notify_on_complete"
                 # summary event so the agent/user sees why things went quiet.
-                self._enqueue_completion_event({
+                self.completion_queue.put({
                     "session_id": session.id,
                     "session_key": session.session_key,
                     "command": session.command,
@@ -328,7 +300,7 @@ class ProcessRegistry:
         if not self._global_watch_admit(now):
             return
 
-        self._enqueue_completion_event({
+        self.completion_queue.put({
             "session_id": session.id,
             "session_key": session.session_key,
             "command": session.command,
@@ -410,9 +382,9 @@ class ProcessRegistry:
 
         # Queue summary events outside the lock.
         if release_msg is not None:
-            self._enqueue_completion_event(release_msg)
+            self.completion_queue.put(release_msg)
         if trip_now is not None:
-            self._enqueue_completion_event({
+            self.completion_queue.put({
                 "session_id": "",
                 "session_key": "",
                 "command": "",
@@ -579,7 +551,7 @@ class ProcessRegistry:
                 pty_env = _sanitize_subprocess_env(os.environ, env_vars)
                 pty_env["PYTHONUNBUFFERED"] = "1"
                 pty_proc = _PtyProcessCls.spawn(
-                    _pty_spawn_argv(command, user_shell),
+                    [user_shell, "-lic", f"set +m; {command}"],
                     cwd=session.cwd,
                     env=pty_env,
                     dimensions=(30, 120),
@@ -773,37 +745,14 @@ class ProcessRegistry:
 
         return session
 
-    @staticmethod
-    def _release_local_popen_io(session: ProcessSession, *, join_reader: bool = True) -> None:
-        """Close Popen pipes and optionally join the stdout reader (Windows fd hygiene)."""
-        proc = getattr(session, "process", None)
-        if proc is not None:
-            for attr in ("stdout", "stderr", "stdin"):
-                stream = getattr(proc, attr, None)
-                if stream is not None:
-                    try:
-                        stream.close()
-                    except Exception:
-                        pass
-        if join_reader:
-            reader = getattr(session, "_reader_thread", None)
-            if reader is not None and reader.is_alive() and reader is not threading.current_thread():
-                reader.join(timeout=2.0)
-
     # ----- Reader / Poller Threads -----
 
     def _reader_loop(self, session: ProcessSession):
         """Background thread: read stdout from a local Popen process."""
         first_chunk = True
-        stdout = getattr(session.process, "stdout", None)
-        if stdout is None:
-            session.exited = True
-            session.exit_code = -1
-            self._move_to_finished(session)
-            return
         try:
             while True:
-                chunk = stdout.read(4096)
+                chunk = session.process.stdout.read(4096)
                 if not chunk:
                     break
                 if first_chunk:
@@ -822,7 +771,6 @@ class ProcessRegistry:
                 session.process.wait(timeout=5)
             except Exception as e:
                 logger.debug("Process wait timed out or failed: %s", e)
-            self._release_local_popen_io(session, join_reader=False)
             session.exited = True
             session.exit_code = session.process.returncode
             self._move_to_finished(session)
@@ -929,7 +877,7 @@ class ProcessRegistry:
         if was_running and session.notify_on_complete:
             from tools.ansi_strip import strip_ansi
             output_tail = strip_ansi(session.output_buffer[-2000:]) if session.output_buffer else ""
-            self._enqueue_completion_event({
+            self.completion_queue.put({
                 "type": "completion",
                 "session_id": session.id,
                 "session_key": session.session_key,
@@ -937,22 +885,6 @@ class ProcessRegistry:
                 "exit_code": session.exit_code,
                 "output": output_tail,
             })
-
-    def _enqueue_completion_event(self, event: dict) -> None:
-        """Enqueue completion; drop oldest entry when queue is full."""
-        import queue as _queue_mod
-
-        try:
-            self.completion_queue.put_nowait(event)
-        except _queue_mod.Full:
-            try:
-                self.completion_queue.get_nowait()
-            except _queue_mod.Empty:
-                pass
-            try:
-                self.completion_queue.put_nowait(event)
-            except _queue_mod.Full:
-                logger.debug("Completion queue full; dropped notification for %s", event.get("session_id"))
 
     # ----- Query Methods -----
 
@@ -1009,24 +941,6 @@ class ProcessRegistry:
         if session is None or session.exited:
             return
         proc = getattr(session, "process", None)
-        pty = getattr(session, "_pty", None)
-        if proc is None and pty is not None:
-            try:
-                alive = pty.isalive()
-            except Exception:
-                alive = True
-            if alive and self._is_host_pid_alive(session.pid):
-                return
-            with session._lock:
-                if session.exited:
-                    return
-                session.exited = True
-                try:
-                    session.exit_code = pty.exitstatus if hasattr(pty, "exitstatus") else None
-                except Exception:
-                    session.exit_code = None
-            self._move_to_finished(session)
-            return
         if proc is None:
             return
         try:
@@ -1074,7 +988,6 @@ class ProcessRegistry:
             "was still blocked (orphaned pipe). Flipped to exited.",
             session.id, rc,
         )
-        self._release_local_popen_io(session)
         self._move_to_finished(session)
 
     def poll(self, session_id: str) -> dict:
@@ -1280,7 +1193,6 @@ class ProcessRegistry:
                 }
             session.exited = True
             session.exit_code = -15  # SIGTERM
-            self._release_local_popen_io(session)
             self._move_to_finished(session)
             self._write_checkpoint()
             return {"status": "killed", "session_id": session.id}
@@ -1295,14 +1207,11 @@ class ProcessRegistry:
         if session.exited:
             return {"status": "already_exited", "error": "Process has already finished"}
 
-        # PTY mode -- winpty (Windows) expects str; ptyprocess (POSIX) expects bytes.
+        # PTY mode -- write through pty handle (expects bytes)
         if hasattr(session, '_pty') and session._pty:
             try:
-                if _IS_WINDOWS:
-                    pty_payload = data if isinstance(data, str) else data.decode("utf-8", errors="replace")
-                else:
-                    pty_payload = data.encode("utf-8") if isinstance(data, str) else data
-                session._pty.write(pty_payload)
+                pty_data = data.encode("utf-8") if isinstance(data, str) else data
+                session._pty.write(pty_data)
                 return {"status": "ok", "bytes_written": len(data)}
             except Exception as e:
                 return {"status": "error", "error": str(e)}

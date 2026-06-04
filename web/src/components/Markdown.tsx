@@ -1,15 +1,4 @@
 import { useMemo, type ReactNode } from "react";
-import { useAssistantDisplay } from "../contexts/useAssistantDisplay";
-import { wrapBronCitationsForDisplay } from "../lib/ragCitations";
-import {
-  normalizeAssistantMarkdown,
-} from "../lib/institutionalMarkdown";
-import {
-  webHeadingClass,
-  webLabelClass,
-  webTableCellClass,
-  webTableHeaderClass,
-} from "../lib/institutionalWebPalette";
 
 /**
  * Lightweight markdown renderer for LLM output.
@@ -24,54 +13,25 @@ export function Markdown({
   content,
   highlightTerms,
   streaming,
-  assistantPalette,
 }: {
   content: string;
   highlightTerms?: string[];
   streaming?: boolean;
-  /** Overrides live gateway config; omit to use display.assistant_palette from API. */
-  assistantPalette?: string;
 }) {
-  const { assistant_palette: configPalette } = useAssistantDisplay();
-  const palette = assistantPalette ?? configPalette;
-  const displayContent = useMemo(
-    () => wrapBronCitationsForDisplay(normalizeAssistantMarkdown(content)),
-    [content],
-  );
-  const blocks = useMemo(() => parseBlocks(displayContent), [displayContent]);
-  const units = useMemo(() => toRenderUnits(blocks), [blocks]);
+  const blocks = useMemo(() => parseBlocks(content), [content]);
   const caret = streaming ? <StreamingCaret /> : null;
 
   return (
-    <div className="text-sm text-foreground leading-relaxed space-y-1 [&_h1]:mb-0 [&_h2]:mb-0 [&_h3]:mb-0 [&_h4]:mb-0 [&_table]:mt-0 [&_ul]:mt-0 [&_ol]:mt-0">
-      {units.map((unit, i) => {
-        const isLast = i === units.length - 1;
-        if (unit.kind === "tight") {
-          return (
-            <div key={i} className="space-y-0">
-              {unit.blocks.map((block, j) => (
-                <Block
-                  key={j}
-                  block={block}
-                  highlightTerms={highlightTerms}
-                  assistantPalette={palette}
-                  caret={caret && isLast && j === unit.blocks.length - 1 ? caret : null}
-                />
-              ))}
-            </div>
-          );
-        }
-        return (
-          <Block
-            key={i}
-            block={unit.block}
-            highlightTerms={highlightTerms}
-            assistantPalette={palette}
-            caret={caret && isLast ? caret : null}
-          />
-        );
-      })}
-      {units.length === 0 && caret}
+    <div className="text-sm text-foreground leading-relaxed space-y-2">
+      {blocks.map((block, i) => (
+        <Block
+          key={i}
+          block={block}
+          highlightTerms={highlightTerms}
+          caret={caret && i === blocks.length - 1 ? caret : null}
+        />
+      ))}
+      {blocks.length === 0 && caret}
     </div>
   );
 }
@@ -94,37 +54,7 @@ type BlockNode =
   | { type: "heading"; level: number; content: string }
   | { type: "hr" }
   | { type: "list"; ordered: boolean; items: string[] }
-  | { type: "table"; headers: string[]; rows: string[][] }
-  | { type: "label"; label: string; content: string }
   | { type: "paragraph"; content: string };
-
-type RenderUnit =
-  | { kind: "tight"; blocks: BlockNode[] }
-  | { kind: "loose"; block: BlockNode };
-
-function toRenderUnits(blocks: BlockNode[]): RenderUnit[] {
-  const units: RenderUnit[] = [];
-  let i = 0;
-  while (i < blocks.length) {
-    const block = blocks[i]!;
-    const next = blocks[i + 1];
-    if (
-      block.type === "heading" &&
-      next &&
-      (next.type === "table" ||
-        next.type === "list" ||
-        next.type === "paragraph" ||
-        next.type === "label")
-    ) {
-      units.push({ kind: "tight", blocks: [block, next] });
-      i += 2;
-      continue;
-    }
-    units.push({ kind: "loose", block });
-    i += 1;
-  }
-  return units;
-}
 
 /* ------------------------------------------------------------------ */
 /*  Block parser                                                       */
@@ -183,57 +113,6 @@ function parseBlocks(text: string): BlockNode[] {
       continue;
     }
 
-    // Markdown table
-    if (
-      line.includes("|") &&
-      i + 1 < lines.length &&
-      /^\s*\|?[\s|:-]+\|?\s*$/.test(lines[i + 1]!)
-    ) {
-      const splitRow = (row: string) =>
-        row
-          .trim()
-          .replace(/^\|/, "")
-          .replace(/\|$/, "")
-          .split("|")
-          .map((c) => c.trim());
-      const headers = splitRow(line);
-      i += 2;
-      const rows: string[][] = [];
-      while (i < lines.length && lines[i].includes("|")) {
-        if (!/^[\s|:-]+$/.test(lines[i])) {
-          rows.push(splitRow(lines[i]));
-        }
-        i++;
-      }
-      blocks.push({ type: "table", headers, rows });
-      continue;
-    }
-
-    // Label column: **Label:** then body lines
-    const labelMatch = line.match(/^\*\*(.+?):\*\*\s*$/);
-    if (labelMatch && i + 1 < lines.length && lines[i + 1].trim()) {
-      const bodyLines: string[] = [];
-      let j = i + 1;
-      while (
-        j < lines.length &&
-        lines[j].trim() &&
-        !lines[j].match(/^#{1,6}\s/) &&
-        !lines[j].match(/^\*\*(.+?):\*\*\s*$/)
-      ) {
-        bodyLines.push(lines[j]);
-        j++;
-      }
-      if (bodyLines.length) {
-        blocks.push({
-          type: "label",
-          label: labelMatch[1],
-          content: bodyLines.join("\n"),
-        });
-        i = j;
-        continue;
-      }
-    }
-
     // Ordered list
     if (/^\d+[.)]\s/.test(line)) {
       const items: string[] = [];
@@ -280,12 +159,10 @@ function parseBlocks(text: string): BlockNode[] {
 function Block({
   block,
   highlightTerms,
-  assistantPalette,
   caret,
 }: {
   block: BlockNode;
   highlightTerms?: string[];
-  assistantPalette?: string;
   caret?: ReactNode;
 }) {
   switch (block.type) {
@@ -308,55 +185,12 @@ function Block({
         h4: "text-sm font-medium",
       };
       return (
-        <Tag className={`${sizes[Tag]} ${webHeadingClass(assistantPalette, block.level)}`}>
+        <Tag className={sizes[Tag]}>
           <InlineContent text={block.content} highlightTerms={highlightTerms} />
           {caret}
         </Tag>
       );
     }
-
-    case "table":
-      return (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr>
-                {block.headers.map((h, ci) => (
-                  <th
-                    key={ci}
-                    className={`text-left font-bold pr-4 pb-1 ${webTableHeaderClass(assistantPalette, ci)}`}
-                  >
-                    <InlineContent text={h} highlightTerms={highlightTerms} />
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {block.rows.map((row, ri) => (
-                <tr key={ri} className="border-t border-border/40">
-                  {row.map((cell, ci) => (
-                    <td key={ci} className={`pr-4 py-1 align-top ${webTableCellClass(assistantPalette, ci)}`}>
-                      <InlineContent text={cell} highlightTerms={highlightTerms} />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {caret}
-        </div>
-      );
-
-    case "label":
-      return (
-        <div className="flex flex-col gap-0.5">
-          <div className={webLabelClass(assistantPalette)}>{block.label}:</div>
-          <div className="min-w-0">
-            <InlineContent text={block.content} highlightTerms={highlightTerms} />
-            {caret}
-          </div>
-        </div>
-      );
 
     case "hr":
       return (
@@ -371,7 +205,7 @@ function Block({
       const last = block.items.length - 1;
       return (
         <Tag
-          className={`space-y-1 ${block.ordered ? "list-decimal" : "list-[circle]"} pl-5 text-sm marker:text-muted-foreground`}
+          className={`space-y-0.5 ${block.ordered ? "list-decimal" : "list-disc"} pl-5 text-sm`}
         >
           {block.items.map((item, i) => (
             <li key={i}>

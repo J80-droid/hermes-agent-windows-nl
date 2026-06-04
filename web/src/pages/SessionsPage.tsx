@@ -286,12 +286,22 @@ function SessionRow({
   const [messages, setMessages] = useState<SessionMessage[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const loadRequestRef = useRef(0);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(session.title ?? "");
   const [renameSaving, setRenameSaving] = useState(false);
   const { t } = useI18n();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isExpanded && messages === null && !loading) {
+      setLoading(true);
+      api
+        .getSessionMessages(session.id)
+        .then((resp) => setMessages(resp.messages))
+        .catch((err) => setError(String(err)))
+        .finally(() => setLoading(false));
+    }
+  }, [isExpanded, session.id, messages, loading]);
 
   const sourceInfo = (session.source
     ? SOURCE_CONFIG[session.source]
@@ -413,31 +423,7 @@ function SessionRow({
     >
       <div
         className="flex cursor-pointer items-start gap-3 p-3 transition-colors hover:bg-secondary/30"
-        onClick={() => {
-          if (!isExpanded && messages === null && !loading) {
-            const requestId = ++loadRequestRef.current;
-            setLoading(true);
-            setError(null);
-            api
-              .getSessionMessages(session.id)
-              .then((resp) => {
-                if (loadRequestRef.current === requestId) {
-                  setMessages(resp.messages);
-                }
-              })
-              .catch((err) => {
-                if (loadRequestRef.current === requestId) {
-                  setError(String(err));
-                }
-              })
-              .finally(() => {
-                if (loadRequestRef.current === requestId) {
-                  setLoading(false);
-                }
-              });
-          }
-          onToggle();
-        }}
+        onClick={onToggle}
       >
         <span className="flex shrink-0 items-center pt-0.5">
           <Checkbox
@@ -718,8 +704,8 @@ export default function SessionsPage() {
     };
   }, [setEnd]);
 
-  const loadSessions = useCallback((p: number, showSpinner = true) => {
-    if (showSpinner) setLoading(true);
+  const loadSessions = useCallback((p: number) => {
+    setLoading(true);
     api
       .getSessions(PAGE_SIZE, p * PAGE_SIZE)
       .then((resp) => {
@@ -742,7 +728,7 @@ export default function SessionsPage() {
   }, [loadStats]);
 
   useEffect(() => {
-    queueMicrotask(() => loadSessions(page, false));
+    loadSessions(page);
     refreshEmptyCount();
   }, [loadSessions, page, refreshEmptyCount]);
 
@@ -802,15 +788,13 @@ export default function SessionsPage() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (!search.trim()) {
-      queueMicrotask(() => {
-        setSearchResults(null);
-        setSearching(false);
-      });
+      setSearchResults(null);
+      setSearching(false);
       return;
     }
 
+    setSearching(true);
     debounceRef.current = setTimeout(() => {
-      setSearching(true);
       api
         .searchSessions(search.trim())
         .then((resp) => setSearchResults(resp.results))
@@ -1092,9 +1076,12 @@ export default function SessionsPage() {
   const isSearching = Boolean(search.trim());
   const showOverviewTab =
     platformEntries.length > 0 || recentSessions.length > 0;
-  const effectiveView = isSearching ? "list" : view;
-  const showList = effectiveView === "list" || isSearching || !showOverviewTab;
+  const showList = view === "list" || isSearching || !showOverviewTab;
   const showPagination = showList && !searchResults && total > PAGE_SIZE;
+
+  useEffect(() => {
+    if (isSearching) setView("list");
+  }, [isSearching]);
 
   const alerts: { message: string; detail?: string }[] = [];
   if (status) {

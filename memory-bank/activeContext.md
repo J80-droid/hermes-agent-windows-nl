@@ -2,6 +2,8 @@
 
 ## Focus
 
+**Nous 100% intact + overlay (2026-06):** Tier A drift-gate `windows/scripts/Test-NousTreeIdentical.ps1`; sync `windows/SYNC_NOUS.bat`; `overlay/` + `overlay/bootstrap.py` (fork `hermes_cli.*`); `plugins/j80-windows-nl/`; merge-beleid Tier A=`theirs` in `merge_upstream_fork.ps1`; docs `docs/NOUS_OVERLAY_ARCHITECTURE.md`, `docs/NOUS_DRIFT_BASELINE.md`; E2E `RUN_SYNC_NOUS_E2E.bat`; CI drift `-AllowTransitional`. Transitional drift: `cli.py`, `main.py`, web/TUI tot volgende migratiefase.
+
 **Profielwissel Windows structureel (2026-05-30, productie OK):** `/profile use` in WT — TUI-modal op achtergrondthread (`_schedule_profile_command_async`); sync/gateway/relaunch na TUI-exit; geen stderr-spinner tijdens `chat` relaunch (prompt `legal ❯`); audit `docs/PROFILE_SWITCH_WINDOWS_AUDIT.md`; E2E `RUN_PROFILE_SWITCH_E2E.bat` + pytest 29 passed.
 
 **Legal memory taal-lagen 100% (2026-05-30):** EN trust + 3× NL legal USER-seed; SOUL § USER.md precedence; `RUN_LEGAL_MEMORY_LANGUAGE_LAYERS_E2E.bat` (9 stappen); pytest `test_legal_memory_language_layers.py` + `test_legal_memory_language_layers_e2e_harness.py` (38); `Get-HermesMemorySeedEntries` retourneert altijd `@()`-array.

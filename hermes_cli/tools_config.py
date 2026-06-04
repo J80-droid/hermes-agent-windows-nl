@@ -5,12 +5,8 @@ Unified tool configuration for Hermes Agent.
 Select a platform → toggle toolsets on/off → for newly enabled tools
 that need API keys, run through provider-aware configuration.
 
-Saves per-platform tool configuration to the active Hermes config
-(``HERMES_HOME/config.yaml`` — profile dir when ``-p`` is set) under
-``platform_toolsets``. A save from this UI sets
-``platform_toolsets._user_customized.<platform>: true`` so
-``SYNC_DOMAIN_TOOLSETS.bat`` does not overwrite hand-picked lists (use
-``--force-manifest`` to reset to ``docs/domain_toolsets.yaml``).
+Saves per-platform tool configuration to ~/.hermes/config.yaml under
+the `platform_toolsets` key.
 """
 
 import json as _json
@@ -40,42 +36,6 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
-# Set when the user saves via ``hermes tools``; manifest sync must not overwrite.
-_PLATFORM_TOOLSETS_USER_CUSTOMIZED_KEY = "_user_customized"
-# Keys under ``platform_toolsets`` that are metadata, not toolset name lists.
-_RESERVED_PLATFORM_TOOLSET_META_KEYS = frozenset({
-    _PLATFORM_TOOLSETS_USER_CUSTOMIZED_KEY,
-})
-
-
-def _filter_toolset_name_list(names: list) -> list[str]:
-    """Drop reserved meta keys so they never enter ``platform_toolsets.<platform>``."""
-    return [
-        str(ts)
-        for ts in names
-        if str(ts) not in _RESERVED_PLATFORM_TOOLSET_META_KEYS
-    ]
-
-
-def _platform_toolsets_user_customized(config: dict, platform: str) -> bool:
-    pt = config.get("platform_toolsets")
-    if not isinstance(pt, dict):
-        return False
-    meta = pt.get(_PLATFORM_TOOLSETS_USER_CUSTOMIZED_KEY)
-    if isinstance(meta, dict):
-        return bool(meta.get(platform))
-    return bool(meta)
-
-
-def _mark_platform_toolsets_user_customized(config: dict, platform: str) -> None:
-    config.setdefault("platform_toolsets", {})
-    pt = config["platform_toolsets"]
-    meta = pt.get(_PLATFORM_TOOLSETS_USER_CUSTOMIZED_KEY)
-    if not isinstance(meta, dict):
-        meta = {}
-        pt[_PLATFORM_TOOLSETS_USER_CUSTOMIZED_KEY] = meta
-    meta[platform] = True
-
 
 # ─── UI Helpers (shared with setup.py) ────────────────────────────────────────
 
@@ -89,10 +49,9 @@ from hermes_cli.cli_output import (  # noqa: E402 — late import block
 
 # ─── Toolset Registry ─────────────────────────────────────────────────────────
 
-# Toolsets shown in the configurator (`hermes tools` / setup), grouped for display.
-# Each entry: (toolset_name, label, description) — keys in toolsets.py TOOLSETS.
-# ``mcp`` and ``kanban`` are checklist toggles (not only passthrough names in
-# platform_toolsets.cli). Default-on per profile: docs/domain_toolsets.yaml.
+# Toolsets shown in the configurator, grouped for display.
+# Each entry: (toolset_name, label, description)
+# These map to keys in toolsets.py TOOLSETS dict.
 CONFIGURABLE_TOOLSETS = [
     ("web",             "🔍 Web Search & Scraping",    "web_search, web_extract"),
     ("browser",         "🌐 Browser Automation",       "navigate, click, type, scroll"),
@@ -107,8 +66,6 @@ CONFIGURABLE_TOOLSETS = [
     ("moa",             "🧠 Mixture of Agents",         "mixture_of_agents"),
     ("tts",             "🔊 Text-to-Speech",            "text_to_speech"),
     ("skills",          "📚 Skills",                    "list, view, manage"),
-    ("mcp",             "🔌 MCP Servers",               "search_knowledge, … (per mcp_servers config)"),
-    ("kanban",          "📌 Kanban Board",               "kanban_show, kanban_list, kanban_create, …"),
     ("todo",            "📋 Task Planning",             "todo"),
     ("memory",          "💾 Memory",                    "persistent memory across sessions"),
     ("context_engine",  "🧩 Context Engine",            "runtime tools from the active context engine"),
@@ -1271,20 +1228,10 @@ def _get_platform_tools(
     """Resolve which individual toolset names are enabled for a platform."""
     from toolsets import resolve_toolset, TOOLSETS
 
-    platform_toolsets = config.get("platform_toolsets")
-    if not isinstance(platform_toolsets, dict):
-        platform_toolsets = {}
+    platform_toolsets = config.get("platform_toolsets") or {}
+    toolset_names = platform_toolsets.get(platform)
 
-    # Explicit ``platform_toolsets.cli: []`` must not fall back to hermes-cli
-    # (domain profiles set minimal toolsets via docs/domain_toolsets.yaml).
-    if platform in platform_toolsets:
-        toolset_names = platform_toolsets[platform]
-        if toolset_names is not None and not isinstance(toolset_names, list):
-            toolset_names = None
-    else:
-        toolset_names = None
-
-    if toolset_names is None:
+    if toolset_names is None or not isinstance(toolset_names, list):
         plat_info = PLATFORMS.get(platform)
         if plat_info:
             default_ts = plat_info["default_toolset"]
@@ -1295,15 +1242,7 @@ def _get_platform_tools(
 
     # YAML may parse bare numeric names (e.g. ``12306:``) as int.
     # Normalise to str so downstream sorted() never mixes types.
-    toolset_names = _filter_toolset_name_list(toolset_names)
-
-    # Fork: ``platform_toolsets.cli: []`` is intentional minimal mode (root / no -p).
-    # Do not auto-attach all MCP servers or default-on plugin toolsets.
-    _explicit_empty_cli = (
-        platform in platform_toolsets
-        and isinstance(platform_toolsets.get(platform), list)
-        and len(platform_toolsets[platform]) == 0
-    )
+    toolset_names = [str(ts) for ts in toolset_names]
 
     configurable_keys = {ts_key for ts_key, _, _ in CONFIGURABLE_TOOLSETS}
     plugin_ts_keys = _get_plugin_toolset_keys()
@@ -1315,11 +1254,8 @@ def _get_platform_tools(
     # "hermes-cli" (which include all _HERMES_CORE_TOOLS) cause disabled
     # toolsets to re-appear as enabled.
     has_explicit_config = any(ts in configurable_keys for ts in toolset_names)
-    user_customized = _platform_toolsets_user_customized(config, platform)
 
-    if _explicit_empty_cli:
-        enabled_toolsets = set()
-    elif has_explicit_config:
+    if has_explicit_config:
         enabled_toolsets = {
             ts for ts in toolset_names
             if ts in configurable_keys and _toolset_allowed_for_platform(ts, platform)
@@ -1331,16 +1267,13 @@ def _get_platform_tools(
         # tools. Mirror the else-branch's subset inference, but apply
         # _DEFAULT_OFF_TOOLSETS only to the implicit expansion — anything the
         # user explicitly listed (e.g. ``spotify``) must survive.
-        # Skip when the user saved an explicit checklist — otherwise disabled
-        # tools reappear via hermes-cli subset inference (Windows/legal profiles).
         composite_tools = set()
-        if not user_customized:
-            for ts_name in toolset_names:
-                if ts_name in configurable_keys or ts_name in plugin_ts_keys:
-                    continue
-                if ts_name not in TOOLSETS:
-                    continue
-                composite_tools.update(resolve_toolset(ts_name))
+        for ts_name in toolset_names:
+            if ts_name in configurable_keys or ts_name in plugin_ts_keys:
+                continue
+            if ts_name not in TOOLSETS:
+                continue
+            composite_tools.update(resolve_toolset(ts_name))
 
         if composite_tools:
             expanded = set()
@@ -1421,32 +1354,31 @@ def _get_platform_tools(
     # checklist or in a user-saved config.  Must run in BOTH branches —
     # otherwise saving via `hermes tools` (which flips has_explicit_config
     # to True) silently drops them.
-    if not _explicit_empty_cli:
-        _plat_info = PLATFORMS.get(platform)
-        _default_ts = _plat_info["default_toolset"] if _plat_info else f"hermes-{platform}"
-        platform_tool_universe = set(resolve_toolset(_default_ts))
-        configurable_tool_universe = set()
-        for ck in configurable_keys:
-            configurable_tool_universe.update(resolve_toolset(ck))
-        claimed = set()
-        for ts_key in enabled_toolsets:
-            claimed.update(resolve_toolset(ts_key))
-        skip = configurable_keys | plugin_ts_keys | platform_default_keys
-        skip |= {k for k in TOOLSETS if k.startswith("hermes-")}
-        skip |= set(_DEFAULT_OFF_TOOLSETS) - {platform}
-        for ts_key, ts_def in TOOLSETS.items():
-            if ts_key in skip:
-                continue
-            if ts_def.get("includes"):
-                continue
-            ts_tools = set(resolve_toolset(ts_key))
-            if not ts_tools or not ts_tools.issubset(platform_tool_universe):
-                continue
-            if ts_tools.issubset(configurable_tool_universe):
-                continue
-            if not ts_tools.issubset(claimed):
-                enabled_toolsets.add(ts_key)
-                claimed.update(ts_tools)
+    _plat_info = PLATFORMS.get(platform)
+    _default_ts = _plat_info["default_toolset"] if _plat_info else f"hermes-{platform}"
+    platform_tool_universe = set(resolve_toolset(_default_ts))
+    configurable_tool_universe = set()
+    for ck in configurable_keys:
+        configurable_tool_universe.update(resolve_toolset(ck))
+    claimed = set()
+    for ts_key in enabled_toolsets:
+        claimed.update(resolve_toolset(ts_key))
+    skip = configurable_keys | plugin_ts_keys | platform_default_keys
+    skip |= {k for k in TOOLSETS if k.startswith("hermes-")}
+    skip |= set(_DEFAULT_OFF_TOOLSETS) - {platform}
+    for ts_key, ts_def in TOOLSETS.items():
+        if ts_key in skip:
+            continue
+        if ts_def.get("includes"):
+            continue
+        ts_tools = set(resolve_toolset(ts_key))
+        if not ts_tools or not ts_tools.issubset(platform_tool_universe):
+            continue
+        if ts_tools.issubset(configurable_tool_universe):
+            continue
+        if not ts_tools.issubset(claimed):
+            enabled_toolsets.add(ts_key)
+            claimed.update(ts_tools)
 
     # Plugin toolsets: enabled by default unless explicitly disabled, or
     # unless the toolset is in _DEFAULT_OFF_TOOLSETS (e.g. spotify —
@@ -1455,7 +1387,7 @@ def _get_platform_tools(
     # A plugin toolset is "known" for a platform once `hermes tools`
     # has been saved for that platform (tracked via known_plugin_toolsets).
     # Unknown plugins default to enabled; known-but-absent = disabled.
-    if plugin_ts_keys and not _explicit_empty_cli and not user_customized:
+    if plugin_ts_keys:
         known_map = config.get("known_plugin_toolsets", {})
         known_for_platform = set(known_map.get(platform, []))
         for pts in plugin_ts_keys:
@@ -1469,10 +1401,6 @@ def _get_platform_tools(
                 # New plugin not yet seen by hermes tools — default enabled
                 enabled_toolsets.add(pts)
             # else: known but not in config = user disabled it
-    elif plugin_ts_keys and user_customized:
-        for pts in plugin_ts_keys:
-            if pts in toolset_names:
-                enabled_toolsets.add(pts)
 
     # Context-engine tools are runtime-provided by the active engine, so they
     # are not part of any static platform composite. When a non-default engine
@@ -1489,12 +1417,7 @@ def _get_platform_tools(
         and isinstance(platform_toolsets.get(platform), list)
         and not toolset_names
     )
-    if (
-        context_engine_name
-        and context_engine_name != "compressor"
-        and not explicit_empty_selection
-        and not (user_customized and "context_engine" not in toolset_names)
-    ):
+    if context_engine_name and context_engine_name != "compressor" and not explicit_empty_selection:
         enabled_toolsets.add("context_engine")
 
     # Preserve any explicit non-configurable toolset entries (for example,
@@ -1526,9 +1449,7 @@ def _get_platform_tools(
         explicit_mcp_servers = explicit_passthrough & enabled_mcp_servers
         enabled_toolsets.update(explicit_passthrough - enabled_mcp_servers)
     if include_default_mcp_servers:
-        if _explicit_empty_cli or "no_mcp" in toolset_names:
-            enabled_toolsets.update(explicit_mcp_servers)
-        elif explicit_mcp_servers:
+        if explicit_mcp_servers or "no_mcp" in toolset_names:
             enabled_toolsets.update(explicit_mcp_servers)
         else:
             enabled_toolsets.update(enabled_mcp_servers)
@@ -1561,8 +1482,7 @@ def _save_platform_tools(config: dict, platform: str, enabled_toolset_keys: Set[
     # from turning on, say, the `discord` toolset for Telegram.
     enabled_toolset_keys = {
         ts for ts in enabled_toolset_keys
-        if ts not in _RESERVED_PLATFORM_TOOLSET_META_KEYS
-        and _toolset_allowed_for_platform(ts, platform)
+        if _toolset_allowed_for_platform(ts, platform)
     }
 
     # Get the set of all configurable toolset keys (built-in + plugin)
@@ -1579,7 +1499,7 @@ def _save_platform_tools(config: dict, platform: str, enabled_toolset_keys: Set[
     existing_toolsets = cfg_get(config, "platform_toolsets", platform, default=[])
     if not isinstance(existing_toolsets, list):
         existing_toolsets = []
-    existing_toolsets = _filter_toolset_name_list(existing_toolsets)
+    existing_toolsets = [str(ts) for ts in existing_toolsets]
 
     # Preserve any entries that are NOT configurable toolsets and NOT platform
     # defaults (i.e. only MCP server names should be preserved)
@@ -1595,7 +1515,6 @@ def _save_platform_tools(config: dict, platform: str, enabled_toolset_keys: Set[
 
     # Merge preserved entries with new enabled toolsets
     config["platform_toolsets"][platform] = sorted(enabled_toolset_keys | preserved_entries)
-    _mark_platform_toolsets_user_customized(config, platform)
 
     # Track which plugin toolsets are "known" for this platform so we can
     # distinguish "new plugin, default enabled" from "user disabled it".
@@ -3570,6 +3489,7 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
                         for ts in sorted(removed):
                             label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
                             print(color(f"    - {label}", Colors.RED))
+                    # Configure API keys for newly enabled tools
                     for ts_key in sorted(added):
                         if (TOOL_CATEGORIES.get(ts_key) or TOOLSET_ENV_REQUIREMENTS.get(ts_key)):
                             if _toolset_needs_configuration_prompt(
@@ -3581,6 +3501,7 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
                     _save_platform_tools(config, pk, new_enabled)
                 save_config(config)
                 print(color("  ✓ Saved configuration for all platforms", Colors.GREEN))
+                # Update choice labels
                 for ci, pk in enumerate(platform_keys):
                     new_count = len(_get_platform_tools(config, pk, include_default_mcp_servers=False))
                     total = len(_get_effective_configurable_toolsets())
@@ -3603,34 +3524,38 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
             force_fresh=True,
         )
 
-        _diff_universe = _checklist_toolset_keys(pkey)
-        added = (new_enabled - current_enabled) & _diff_universe
-        removed = (current_enabled - new_enabled) & _diff_universe
+        if new_enabled != current_enabled:
+            # Scope the printed diff to the checklist's universe (see
+            # _checklist_toolset_keys) so non-configurable toolsets like
+            # ``kanban`` aren't reported as added/removed.
+            _diff_universe = _checklist_toolset_keys(pkey)
+            added = (new_enabled - current_enabled) & _diff_universe
+            removed = (current_enabled - new_enabled) & _diff_universe
 
-        if added:
-            for ts in sorted(added):
-                label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
-                print(color(f"  + {label}", Colors.GREEN))
-        if removed:
-            for ts in sorted(removed):
-                label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
-                print(color(f"  - {label}", Colors.RED))
+            if added:
+                for ts in sorted(added):
+                    label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
+                    print(color(f"  + {label}", Colors.GREEN))
+            if removed:
+                for ts in sorted(removed):
+                    label = next((l for k, l, _ in _get_effective_configurable_toolsets() if k == ts), ts)
+                    print(color(f"  - {label}", Colors.RED))
 
-        # Configure newly enabled toolsets that need API keys
-        for ts_key in sorted(added):
-            if (TOOL_CATEGORIES.get(ts_key) or TOOLSET_ENV_REQUIREMENTS.get(ts_key)):
-                if _toolset_needs_configuration_prompt(
-                    ts_key,
-                    config,
-                    force_fresh=True,
-                ):
-                    _configure_toolset(ts_key, config)
+            # Configure newly enabled toolsets that need API keys
+            for ts_key in sorted(added):
+                if (TOOL_CATEGORIES.get(ts_key) or TOOLSET_ENV_REQUIREMENTS.get(ts_key)):
+                    if _toolset_needs_configuration_prompt(
+                        ts_key,
+                        config,
+                        force_fresh=True,
+                    ):
+                        _configure_toolset(ts_key, config)
 
-        _save_platform_tools(config, pkey, new_enabled)
-        if added or removed:
+            _save_platform_tools(config, pkey, new_enabled)
+            save_config(config)
             print(color(f"  ✓ Saved {pinfo['label']} configuration", Colors.GREEN))
         else:
-            print(color(f"  ✓ {pinfo['label']} toolkeuzes bevestigd en opgeslagen", Colors.GREEN))
+            print(color(f"  No changes to {pinfo['label']}", Colors.DIM))
 
         print()
 
@@ -3640,9 +3565,8 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
         platform_choices[idx] = f"Configure {pinfo['label']}  ({new_count}/{total} enabled)"
 
     print()
-    from hermes_constants import get_config_path
-
-    print(color(f"  Tool configuration saved to {get_config_path()}", Colors.DIM))
+    from hermes_constants import display_hermes_home
+    print(color(f"  Tool configuration saved to {display_hermes_home()}/config.yaml", Colors.DIM))
     print(color("  Changes take effect on next 'hermes' or gateway restart.", Colors.DIM))
     print()
 

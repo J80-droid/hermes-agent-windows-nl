@@ -3560,14 +3560,6 @@ def run_gateway(verbose: int = 0, quiet: bool = False, replace: bool = False):
 
     def _atexit_hook() -> None:
         _exit_diag("atexit.hook", sys_exc=repr(sys.exc_info()))
-        # Belt-and-suspenders: reap MCP stdio children when the gateway exits
-        # without the normal shutdown path (Windows console kill, OOM, etc.).
-        try:
-            from tools.mcp_tool import shutdown_mcp_servers
-
-            shutdown_mcp_servers()
-        except Exception as exc:
-            _exit_diag("atexit.mcp_shutdown_failed", error=repr(exc))
 
     _atexit.register(_atexit_hook)
 
