@@ -292,7 +292,7 @@ Add-StepResult -Name '14/18 alle profiel MEMORY/USER' -Ok $step14Ok -Detail $ste
 $dedupPyPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "scripts/deduplicate_memories.py"
 $dedupPs1 = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/scripts/invoke_deduplicate_memories.ps1"
 $postSync = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/scripts/Invoke-MemoryTrustPostSync.ps1"
-$noticePy = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "hermes_cli/institutional_new_chat_notice.py"
+$noticePy = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "overlay/hermes_cli/institutional_new_chat_notice.py"
 $step15Ok = (Test-Path -LiteralPath $dedupPyPath) -and (Test-Path -LiteralPath $dedupPs1) -and (Test-Path -LiteralPath $postSync) -and (Test-Path -LiteralPath $noticePy)
 if ($step15Ok) {
     $dedupText = Get-Content -LiteralPath $dedupPyPath -Raw -Encoding UTF8

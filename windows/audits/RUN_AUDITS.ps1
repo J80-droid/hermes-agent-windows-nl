@@ -36,7 +36,8 @@ param(
     [switch]$SkipPytest,
     [switch]$SkipFootguns,
     [switch]$SkipRuff,
-    [switch]$SkipVerifyChain
+    [switch]$SkipVerifyChain,
+    [switch]$SkipHermesPreflight
 )
 
 $ErrorActionPreference = 'Stop'
@@ -82,14 +83,16 @@ function Invoke-Step {
     return (-not $stepFailed)
 }
 
-$verify = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/verify_hermes_home.ps1'
-if (Test-Path -LiteralPath $verify) {
-    Invoke-Step 'verify_hermes_home' { & $verify }
-}
+if (-not $SkipHermesPreflight) {
+    $verify = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/verify_hermes_home.ps1'
+    if (Test-Path -LiteralPath $verify) {
+        Invoke-Step 'verify_hermes_home' { & $verify }
+    }
 
-$verifyDrift = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/verify_hermes_config_drift.ps1'
-if (Test-Path -LiteralPath $verifyDrift) {
-    Invoke-Step 'verify_hermes_config_drift' { & $verifyDrift }
+    $verifyDrift = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/verify_hermes_config_drift.ps1'
+    if (Test-Path -LiteralPath $verifyDrift) {
+        Invoke-Step 'verify_hermes_config_drift' { & $verifyDrift }
+    }
 }
 
 if (-not $SkipVerifyChain) {
