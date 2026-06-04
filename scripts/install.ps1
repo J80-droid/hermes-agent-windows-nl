@@ -277,17 +277,19 @@ function Install-AgentBrowser {
 # ============================================================================
 
 function Install-Uv {
-    Write-Info "Checking for uv package manager..."
-    
-    # Check if uv is already available
-    if (Get-Command uv -ErrorAction SilentlyContinue) {
-        $version = uv --version
-        $script:UvCmd = "uv"
-        Write-Success "uv found ($version)"
+    # Hermes owns its own uv at $HermesHome\bin\uv.exe.  Always install there —
+    # no PATH probing, no conda guards, no multi-location resolution chains.
+    # The runtime update path (hermes_cli/managed_uv.py) looks in the same
+    # place, so install.ps1 and `hermes update` stay in sync.
+    $managedUv = Join-Path $HermesHome "bin\uv.exe"
+
+    if (Test-Path $managedUv) {
+        $script:UvCmd = $managedUv
+        $version = & $managedUv --version
+        Write-Success "Managed uv found ($version)"
         return $true
     }
-    
-    # Check common install locations
+    # Check common install locations before managed install
     $uvPaths = @(
         "$env:USERPROFILE\.local\bin\uv.exe",
         "$env:USERPROFILE\.cargo\bin\uv.exe"
@@ -300,44 +302,30 @@ function Install-Uv {
             return $true
         }
     }
-    
-    # Install uv
-    Write-Info "Installing uv (fast Python package manager)..."
-    # Capture EAP outside the try block so the catch restore call always
-    # has a meaningful value if the try body threw before reaching it.
+
+    Write-Info "Installing managed uv into $HermesHome\bin ..."
+    New-Item -ItemType Directory -Path (Join-Path $HermesHome "bin") -Force | Out-Null
+
+    # UV_INSTALL_DIR tells the astral installer to place the binary
+    # directly into $HermesHome\bin instead of ~/.local/bin.
     $prevEAP = $ErrorActionPreference
     try {
-        # Relax EAP around the astral installer (stderr progress must not trip Stop).
         $ErrorActionPreference = "Continue"
-        $uvInstallScript = Invoke-RestMethod -Uri "https://astral.sh/uv/install.ps1" -UseBasicParsing
-        Invoke-Expression $uvInstallScript
+        $env:UV_INSTALL_DIR = Join-Path $HermesHome "bin"
+        powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex" 2>&1 | Out-Null
         $ErrorActionPreference = $prevEAP
 
-        # Find the installed binary
-        $uvExe = "$env:USERPROFILE\.local\bin\uv.exe"
-        if (-not (Test-Path $uvExe)) {
-            $uvExe = "$env:USERPROFILE\.cargo\bin\uv.exe"
-        }
-        if (-not (Test-Path $uvExe)) {
-            # Refresh PATH and try again
-            $env:Path = [Environment]::GetEnvironmentVariable("Path", "User") + ";" + [Environment]::GetEnvironmentVariable("Path", "Machine")
-            if (Get-Command uv -ErrorAction SilentlyContinue) {
-                $uvExe = (Get-Command uv).Source
-            }
-        }
-        
-        if (Test-Path $uvExe) {
-            $script:UvCmd = $uvExe
-            $version = & $uvExe --version
-            Write-Success "uv installed ($version)"
+        if (Test-Path $managedUv) {
+            $script:UvCmd = $managedUv
+            $version = & $managedUv --version
+            Write-Success "Managed uv installed ($version)"
             return $true
         }
-        
-        Write-Err "uv installed but not found on PATH"
-        Write-Info "Try restarting your terminal and re-running"
+
+        Write-Err "uv installed but not found at $managedUv"
+        Write-Info "Install manually: https://docs.astral.sh/uv/getting-started/installation/"
         return $false
     } catch {
-        # Restore EAP in case the try block threw before the assignment
         if ($prevEAP) { $ErrorActionPreference = $prevEAP }
         Write-Err "Failed to install uv: $_"
         Write-Info "Install manually: https://docs.astral.sh/uv/getting-started/installation/"
@@ -362,11 +350,8 @@ function Sync-EnvPath {
 # in a fresh powershell process, so $script:UvCmd set by Install-Uv in a
 # prior process is not visible here.  Later stages (Test-Python,
 # Install-Venv, Install-Dependencies, Install-PlatformSdks) call this
-# at the top to populate $script:UvCmd from PATH or known install paths.
-# Throws if uv is not findable; the caller stage then surfaces a
-# clean error via the stage-driver try/catch.  Fast path is a single
-# Get-Command call when uv is on PATH (the common case after Stage-Uv
-# ran path-modifying installs in a sibling process).
+# at the top to populate $script:UvCmd from managed location, PATH, or known paths.
+# Throws if uv is not findable — the caller's stage then surfaces a clean error.
 function Resolve-UvCmd {
     # Already resolved (default invocation path: Install-Uv ran earlier
     # in the same process and set $script:UvCmd).
@@ -381,9 +366,14 @@ function Resolve-UvCmd {
         # Stale; fall through to re-discover.
     }
 
-    # Try PATH first (covers winget install astral.uv, manual installs,
-    # and the post-Install-Uv state where uv.exe lives in
-    # %USERPROFILE%\.local\bin which the installer added to PATH).
+    # Check the managed location first — this is where Install-Uv puts it.
+    $managedUv = Join-Path $HermesHome "bin\uv.exe"
+    if (Test-Path $managedUv) {
+        $script:UvCmd = $managedUv
+        return
+    }
+
+    # Fall back to PATH (winget, manual installs, %USERPROFILE%\.local\bin).
     if (Get-Command uv -ErrorAction SilentlyContinue) {
         $script:UvCmd = "uv"
         return
@@ -397,16 +387,7 @@ function Resolve-UvCmd {
         return
     }
 
-    # Check the well-known install locations the astral.sh installer drops
-    # uv into.  Mirrors the probe order Install-Uv uses.
-    foreach ($uvPath in @("$env:USERPROFILE\.local\bin\uv.exe", "$env:USERPROFILE\.cargo\bin\uv.exe")) {
-        if (Test-Path $uvPath) {
-            $script:UvCmd = $uvPath
-            return
-        }
-    }
-
-    throw "uv is not installed or not on PATH. Run install.ps1 -Stage uv first."
+    throw "uv is not installed. Run install.ps1 -Stage uv first."
 }
 
 function Test-Python {
@@ -695,19 +676,39 @@ function Set-GitBashEnvVar {
     Write-Info "If needed, set HERMES_GIT_BASH_PATH manually to your bash.exe path."
 }
 
+# The desktop build runs Vite ^8, which refuses to start on Node outside
+# `^20.19 || >=22.12` -- older Node lacks node:util.styleText, so `vite build`
+# crashes with a SyntaxError that surfaces only as the opaque "Build desktop
+# app ... exit code 1" install failure. Returns $true when a `node --version`
+# string clears that floor.
+function Test-NodeVersionOk {
+    param([string]$Version)
+    try {
+        $v = [version]($Version -replace '^v', '' -replace '-.*$', '')
+    } catch {
+        return $false
+    }
+    if ($v.Major -eq 20 -and $v.Minor -ge 19) { return $true }
+    if ($v.Major -ge 22 -and ($v.Major -gt 22 -or $v.Minor -ge 12)) { return $true }
+    return $false
+}
+
 function Test-Node {
     Write-Info "Checking Node.js (for browser tools)..."
 
     if (Get-Command node -ErrorAction SilentlyContinue) {
         $version = node --version
-        Write-Success "Node.js $version found"
-        $script:HasNode = $true
-        return $true
+        if (Test-NodeVersionOk $version) {
+            Write-Success "Node.js $version found"
+            $script:HasNode = $true
+            return $true
+        }
+        Write-Warn "Node.js $version is too old for the desktop build (need ^20.19 or >=22.12)"
     }
 
-    # Check our own managed install from a previous run
+    # Prefer a Hermes-managed Node from a previous run over a too-old system one.
     $managedNode = "$HermesHome\node\node.exe"
-    if (Test-Path $managedNode) {
+    if ((Test-Path $managedNode) -and (Test-NodeVersionOk (& $managedNode --version))) {
         $version = & $managedNode --version
         $env:Path = "$HermesHome\node;$env:Path"
         Write-Success "Node.js $version found (Hermes-managed)"
@@ -715,7 +716,7 @@ function Test-Node {
         return $true
     }
 
-    Write-Info "Node.js not found; installing Node.js $NodeVersion LTS..."
+    Write-Info "Installing Hermes-managed Node.js $NodeVersion LTS..."
 
     # Try the portable-zip path FIRST; no UAC, no admin, no winget MSI.
     # winget install OpenJS.NodeJS.LTS triggers a system-wide MSI install
@@ -1078,6 +1079,19 @@ function Install-Repository {
             $prevEAP = $ErrorActionPreference
             $ErrorActionPreference = "Continue"
             try {
+                # This is a MANAGED checkout, not a repo the user edits. Git for
+                # Windows defaults to core.autocrlf=true, which renormalizes the
+                # repo's LF-only text files to CRLF in the working tree -- so
+                # tracked files (.envrc, AGENTS.md, agent/*.py, workflows, ...)
+                # show as locally modified even though nobody touched them. A
+                # bare `git checkout` then aborts with "Your local changes would
+                # be overwritten by checkout", which is exactly the failure GUI
+                # users hit on update. Two-part fix: (1) stop creating the dirt
+                # by pinning autocrlf=false on this clone, (2) discard any
+                # pre-existing dirt with a hard reset before the checkout. Safe
+                # because nothing here is user-authored.
+                git -c windows.appendAtomically=false config core.autocrlf false 2>$null
+                git -c windows.appendAtomically=false reset --hard HEAD 2>$null
                 git -c windows.appendAtomically=false fetch origin
                 if ($LASTEXITCODE -ne 0) { throw "git fetch failed (exit $LASTEXITCODE)" }
                 # Precedence: Commit, then Tag, then Branch.  Commit and Tag check
@@ -1139,7 +1153,7 @@ function Install-Repository {
         Write-Info "Trying SSH clone..."
         $env:GIT_SSH_COMMAND = "ssh -o BatchMode=yes -o ConnectTimeout=5"
         try {
-            git -c windows.appendAtomically=false clone --branch $Branch --recurse-submodules $RepoUrlSsh $InstallDir
+            git -c windows.appendAtomically=false clone --branch $Branch $RepoUrlSsh $InstallDir
             if ($LASTEXITCODE -eq 0) { $cloneSuccess = $true }
         } catch { }
         $env:GIT_SSH_COMMAND = $null
@@ -1148,7 +1162,7 @@ function Install-Repository {
             if (Test-Path $InstallDir) { Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue }
             Write-Info "SSH failed, trying HTTPS..."
             try {
-                git -c windows.appendAtomically=false clone --branch $Branch --recurse-submodules $RepoUrlHttps $InstallDir
+                git -c windows.appendAtomically=false clone --branch $Branch $RepoUrlHttps $InstallDir
                 if ($LASTEXITCODE -eq 0) { $cloneSuccess = $true }
             } catch { }
         }
@@ -1213,6 +1227,11 @@ function Install-Repository {
     # Set per-repo config (harmless if it fails)
     Push-Location $InstallDir
     git -c windows.appendAtomically=false config windows.appendAtomically false 2>$null
+    # Pin autocrlf=false on the managed clone so git never renormalizes the
+    # repo's LF text files to CRLF in the working tree. Without this, the very
+    # next `hermes update` checkout aborts on a "dirty" tree the user never
+    # touched (see the update path above).
+    git -c windows.appendAtomically=false config core.autocrlf false 2>$null
 
     # Post-clone pin: when a clone (or ZIP-fallback init) just landed us on
     # $Branch tip, honour the higher-precedence $Commit / $Tag by checking
@@ -1245,16 +1264,6 @@ function Install-Repository {
         }
     }
 
-    # Ensure submodules are initialized and updated
-    Write-Info "Initializing submodules..."
-    git -c windows.appendAtomically=false submodule update --init --recursive 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warn "Submodule init failed (terminal/RL tools may need manual setup)"
-    } else {
-        Write-Success "Submodules ready"
-    }
-    Pop-Location
-
     Write-Success "Repository ready"
 }
 
@@ -1275,7 +1284,19 @@ function Install-Venv {
     
     # uv creates the venv and pins the Python version in one step
     & $UvCmd venv venv --python $PythonVersion
-    
+
+    # Neutralize any inherited UV_PYTHON (e.g. $env:UV_PYTHON = "3.14" left in
+    # the user's shell). uv honours UV_PYTHON over an existing venv for the
+    # later `uv sync` / `uv pip install` tiers, so without this it would
+    # silently delete this 3.11 venv and recreate it at the inherited version
+    # -- building Rust transitives that have no wheel for that version from
+    # source via maturin, which fails. Pinning UV_PYTHON to the interpreter we
+    # just created forces every subsequent uv command onto it.
+    $venvPythonExe = Join-Path $InstallDir "venv\Scripts\python.exe"
+    if (Test-Path $venvPythonExe) {
+        $env:UV_PYTHON = $venvPythonExe
+    }
+
     Pop-Location
     
     Write-Success "Virtual environment ready (Python $PythonVersion)"
@@ -1291,8 +1312,16 @@ function Install-Dependencies {
         $env:VIRTUAL_ENV = "$InstallDir\venv"
     }
 
-    # Hash-verified install (Tier 0); when uv.lock is present, prefer
-    # uv sync ; locked. The lockfile records SHA256 hashes for every
+    # Re-pin UV_PYTHON to the venv interpreter (cross-process bootstrap stages).
+    if (-not $NoVenv) {
+        $venvPythonExe = Join-Path $InstallDir "venv\Scripts\python.exe"
+        if (Test-Path $venvPythonExe) {
+            $env:UV_PYTHON = $venvPythonExe
+        }
+    }
+
+    # Hash-verified install (Tier 0) — when uv.lock is present, prefer
+    # `uv sync --locked`. The lockfile records SHA256 hashes for every
     # transitive dependency, so a compromised transitive (different hash
     # than what we shipped) is REJECTED by the resolver. This is the
     # *only* path that protects against the direct dep is fine, but the
@@ -1936,16 +1965,17 @@ function Install-Desktop {
     # so an "unpacked" build (electron-builder --dir) is enough — we
     # don't need to produce an NSIS/MSI artifact here.
 
-    if (-not $HasNode) {
-        # Cross-process driver mode: each `-Stage NAME` invocation runs in a
-        # fresh PowerShell process, so $script:HasNode set by Stage-Node
-        # in the previous process isn't visible. Re-detect rather than
-        # trusting the global.
-        if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
-            Write-Warn "Skipping desktop build (Node.js / npm not on PATH)"
-            $script:_StageSkippedReason = "Node.js not available"
-            return
-        }
+    # Always re-resolve Node here. Stages run in separate PowerShell processes,
+    # so $script:HasNode from Stage-Node isn't visible; more importantly Test-Node
+    # enforces the build floor (^20.19 || >=22.12) and prepends the Hermes-managed
+    # Node to PATH, so the build never runs on a too-old system Node -- the cause
+    # of the opaque "Build desktop app ... exit code 1" failure (Vite crashes on
+    # old Node).
+    Test-Node | Out-Null
+    if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+        Write-Warn "Skipping desktop build (Node.js / npm not on PATH)"
+        $script:_StageSkippedReason = "Node.js not available"
+        return
     }
 
     $desktopDir = "$InstallDir\apps\desktop"
@@ -1988,8 +2018,22 @@ function Install-Desktop {
         # captures every stdout/stderr line as it's emitted, so we don't
         # need a side TEMP log file — the installer's bootstrap log
         # IS the artifact a support engineer reads.
-        & $npmExe install 2>&1 | ForEach-Object { "$_" }
+        #
+        # Prefer `npm ci`: it wipes node_modules and reinstalls from the
+        # lockfile, always producing a complete tree. Bare `npm install`
+        # can report "up to date" against a stale
+        # node_modules\.package-lock.json marker while node_modules is
+        # actually empty (Windows workspace-hoisting flake), leaving
+        # tsc/typescript unresolved so `npm run pack`'s `tsc -b` dies with
+        # no obvious cause. Fall back to `npm install` only if `npm ci`
+        # fails (lockfile out of sync / very old npm without ci).
+        & $npmExe ci 2>&1 | ForEach-Object { "$_" }
         $code = $LASTEXITCODE
+        if ($code -ne 0) {
+            Write-Info "  npm ci failed (exit $code) -- retrying with npm install..."
+            & $npmExe install 2>&1 | ForEach-Object { "$_" }
+            $code = $LASTEXITCODE
+        }
         $ErrorActionPreference = $prevEAP
         if ($code -ne 0) {
             throw "desktop workspace npm install failed (exit $code) -- see lines above for cause"
