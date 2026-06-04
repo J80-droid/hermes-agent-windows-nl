@@ -22,12 +22,15 @@ Fasen: preflight → merge (`upstream_sync.ps1`) → `Invoke-ApplyHermesOverlay`
 - [`windows/scripts/Invoke-HermesOverlayBootstrap.ps1`](../windows/scripts/Invoke-HermesOverlayBootstrap.ps1) zet `PYTHONSTARTUP=overlay/bootstrap_startup.py`.
 - [`windows/scripts/launch_hermes.ps1`](../windows/scripts/launch_hermes.ps1) roept bootstrap aan vóór chat.
 
-## Drift
+## Drift (strict)
 
 ```powershell
+powershell -File windows/scripts/Invoke-RestoreNousTierA.ps1
+powershell -File windows/scripts/Test-NousTreeIdentical.ps1
 powershell -File windows/scripts/Export-NousDriftBaseline.ps1
-powershell -File windows/scripts/Test-NousTreeIdentical.ps1 -AllowTransitional
 ```
+
+E2E: `windows\audits\RUN_SYNC_NOUS_E2E.bat` of `RUN_AUDITS -IncludeSyncNousE2E -SkipHermesPreflight`.
 
 Baseline: [NOUS_DRIFT_BASELINE.md](NOUS_DRIFT_BASELINE.md).
 
