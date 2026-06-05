@@ -43,7 +43,10 @@ Runtime/AST: vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
 | **`RUN_AUDITS.bat -IncludeCodebaseSmoke`** | Alleen smoke-runner (sneller) |
 | **`RUN_AUDITS.bat -IncludeCodebaseSmokeE2E`** | Volledige codebase-smoke E2E |
 | **`RUN_AUDITS.bat -IncludeAllE2E`** | Inclusief codebase-smoke E2E (~30s extra) |
-| **`RUN_AUDITS.bat`** | Gecombineerd: `verify_hermes_home`, PSScriptAnalyzer (SKIP indien ontbreekt), `check-windows-footguns.py`, ruff (SKIP), pytest profiel-subset |
+| **`RUN_AUDITS.bat`** | Gecombineerd: `verify_hermes_home`, PSScriptAnalyzer (SKIP indien ontbreekt), `check-windows-footguns.py`, ruff (SKIP), `pytest tests/overlay/`, pytest profiel-subset |
+| **`RUN_AUDITS.bat -IncludeNousOverlayInstitutionalE2E`** | Nous overlay institutional E2E (`audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat`) |
+| **`RUN_AUDITS.bat -IncludeStatusBarThroughputE2E`** | Throughput tok/s E2E (`audits\RUN_STATUS_BAR_THROUGHPUT_E2E.bat`) |
+| **`RUN_AUDITS.bat -IncludePromptTimerDisplayE2E`** | Prompt-timer zonder emoji E2E (`audits\RUN_PROMPT_TIMER_DISPLAY_E2E.bat`) |
 | **`RUN_AUDITS.bat -IncludeProfileE2E`** | Bovenstaande + profielwissel E2E |
 | **`RUN_AUDITS.bat -IncludeInstitutionalE2E`** | Bovenstaande + landkaart/SOUL-backup/templates E2E |
 | **`RUN_AUDITS.bat -IncludeRepoHygieneE2E`** | Repo-root guard/gitignore/skills (~10s): `audits\RUN_REPO_HYGIENE_E2E.bat` |

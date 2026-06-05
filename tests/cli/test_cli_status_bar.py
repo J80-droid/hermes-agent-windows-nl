@@ -204,7 +204,6 @@ class TestCLIStatusBar:
         text = cli_obj._build_status_bar_text(width=60)
         assert "tok/s" not in text
 
-    @pytest.mark.skip(reason="TPS stream hooks live in overlay/cli_fork_patch backlog (Tier A cli unchanged)")
     def test_stream_delta_records_and_freezes_throughput(self):
         cli_obj = _make_cli()
         cli_obj.agent = None

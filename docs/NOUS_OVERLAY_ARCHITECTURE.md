@@ -42,8 +42,11 @@ E2E sync: `windows\audits\RUN_SYNC_NOUS_E2E.bat` of `RUN_AUDITS -IncludeSyncNous
 | Module | Functie |
 |--------|---------|
 | `overlay/hermes_cli/cli_fork_patch.py` | Statusbalk-kosten, layout, throughput-hooks op `HermesCLI` |
-| `overlay/hermes_cli/cli_command_patches.py` | `/cost` via `process_command` |
+| `overlay/hermes_cli/cli_command_patches.py` | `/cost` en `/tps` via `process_command` |
 | `overlay/hermes_cli/cli_cost_command.py` | `/cost`-handler |
+| `overlay/hermes_cli/cli_tps_command.py` | `/tps`-handler (`display.show_status_bar_tps`) |
+| `overlay/hermes_cli/cli_tps_stream_hooks.py` | CLI stream tok/s (`_record_stream_tps_delta`, `_freeze_stream_tps_segment`) |
+| `overlay/agent/agent_throughput_fork_patch.py` | Agent stream/finalize tok/s op runtime-pad |
 | `overlay/agent/pricing_fork_patch.py` | Google Gemini-catalogus in `usage_pricing` |
 | `overlay/agent/google_gemini_pricing.py` | Prijstabel Gemini 3.x |
 | `overlay/hermes_cli/models_fork_patch.py` | Startup model-catalog guard |
@@ -82,8 +85,15 @@ Baseline: [NOUS_DRIFT_BASELINE.md](NOUS_DRIFT_BASELINE.md).
 |-------|----------|
 | Sync + drift | `windows\audits\RUN_SYNC_NOUS_E2E.bat` |
 | Overlay runtime + cost + drift | `audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat` |
+| Throughput tok/s (overlay) | `audits\RUN_STATUS_BAR_THROUGHPUT_E2E.bat` |
+| Prompt-timer (overlay) | `audits\RUN_PROMPT_TIMER_DISPLAY_E2E.bat` |
 | Klassieke CLI statusbalk | `windows\audits\RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` |
-| Gecombineerd | `windows\audits\RUN_AUDITS.bat -IncludeSyncNousE2E -IncludeClassicCliStatusBarCostE2E` |
+| Gecombineerd | `windows\audits\RUN_AUDITS.bat -IncludeNousOverlayInstitutionalE2E -IncludeSyncNousE2E` |
+| Volledige poort | `windows\audits\RUN_AUDITS.bat -IncludeAllE2E` (incl. overlay + throughput E2E) |
+
+**CI:** `.github/workflows/fork-windows-institutional.yml` — drift gate, `pytest tests/overlay/`, institutional E2E, TUI-build + drift.
+
+**Tier A guard:** `python scripts/verify_institutional_guard.py --check-tier-a-cli`
 
 Preflight: `HERMES_HOME=%LOCALAPPDATA%\hermes` (niet `profiles\legal`).
 
@@ -115,4 +125,11 @@ python scripts\status_bar_cost_classic_cli_live_smoke.py
 
 ## Cadence
 
-Max. 1–2 weken achter op `upstream/main`. Zie [UPSTREAM_SYNC.md](../windows/UPSTREAM_SYNC.md).
+| Ritueel | Frequentie | Commando |
+|---------|------------|----------|
+| Nous sync | max. 1–2 weken | `windows\SYNC_NOUS.bat` |
+| Drift baseline | na elke sync/merge | `windows\scripts\Export-NousDriftBaseline.ps1` |
+| Merge-beleid | bij conflicts | Tier A `theirs`, Tier B `keepOurs` — `windows\merge_upstream_fork.ps1` |
+| UI-build na Web/TUI-pull | na sync | `build_fork_ui_assets.ps1` + `Test-NousTreeIdentical.ps1` |
+
+Max. 1–2 weken achter op `upstream/main`. Zie [UPSTREAM_SYNC.md](../windows/UPSTREAM_SYNC.md) en [NOUS_DRIFT_BASELINE.md](NOUS_DRIFT_BASELINE.md).

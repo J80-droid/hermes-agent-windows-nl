@@ -15,8 +15,6 @@ function Get-HermesAuditPython {
     if ($env:HERMES_AUDIT_PYTHON -and (Test-Path -LiteralPath $env:HERMES_AUDIT_PYTHON)) {
         return $env:HERMES_AUDIT_PYTHON
     }
-    $wsVenv = Join-Path (Split-Path $RepoRoot -Parent) 'venv\Scripts\python.exe'
-    if (Test-Path -LiteralPath $wsVenv) { return $wsVenv }
     $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
     if (Test-Path -LiteralPath $conda) {
         $out = & $conda run -n hermes-env python -c "import sys; print(sys.executable)" 2>$null

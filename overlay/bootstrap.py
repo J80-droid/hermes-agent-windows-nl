@@ -13,7 +13,8 @@ Entry points:
 Required modules: see ``_REQUIRED_HERMES_CLI``; optional gaps log a warning only.
 
 Docs: ``docs/NOUS_OVERLAY_ARCHITECTURE.md`` · E2E: ``audits/RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat``
-"""from __future__ import annotations
+"""
+from __future__ import annotations
 
 import importlib.util
 import logging
@@ -121,6 +122,7 @@ def _load_overlay_modules() -> None:
 
 def _apply_runtime_patches() -> None:
     """Monkey-patch Tier A classes after overlay modules are in ``sys.modules``."""
+    from overlay.agent.agent_throughput_fork_patch import apply_agent_throughput_fork_patch
     from overlay.agent.pricing_fork_patch import apply_pricing_fork_patch
     from overlay.hermes_cli.cli_command_patches import apply_cli_command_patches
     from overlay.hermes_cli.cli_fork_patch import apply_cli_fork_patch
@@ -128,6 +130,7 @@ def _apply_runtime_patches() -> None:
 
     apply_pricing_fork_patch()
     apply_models_fork_patch()
+    apply_agent_throughput_fork_patch()
     apply_cli_fork_patch()
     apply_cli_command_patches()
 

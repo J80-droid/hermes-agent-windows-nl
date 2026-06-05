@@ -621,6 +621,27 @@ def apply_cli_fork_patch() -> None:
     cls._append_pending_queue_status_part = _append_pending_queue_status_part  # type: ignore[attr-defined]
     cls._append_pending_queue_status_fragments = _append_pending_queue_status_fragments  # type: ignore[attr-defined]
 
+    from overlay.hermes_cli.cli_tps_stream_hooks import (
+        freeze_stream_tps_segment,
+        record_stream_tps_delta,
+    )
+
+    cls._record_stream_tps_delta = record_stream_tps_delta  # type: ignore[attr-defined]
+    cls._freeze_stream_tps_segment = freeze_stream_tps_segment  # type: ignore[attr-defined]
+
+    if not getattr(cls, "_fork_stream_delta_wrapped", False):
+        _orig_stream_delta = cls._stream_delta
+
+        def _stream_delta(self, text):  # type: ignore[no-untyped-def]
+            if text is None:
+                freeze_stream_tps_segment(self)
+            elif text:
+                record_stream_tps_delta(self, text)
+            return _orig_stream_delta(self, text)
+
+        cls._stream_delta = _stream_delta  # type: ignore[method-assign]
+        cls._fork_stream_delta_wrapped = True
+
     if not getattr(cls, "_fork_display_init_wrapped", False):
         _orig_init = cls.__init__
 

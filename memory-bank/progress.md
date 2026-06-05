@@ -2,10 +2,12 @@
 
 ## Nous overlay institutioneel (2026-06)
 
-- [x] Runtime patches in `overlay/` (CLI cost, `/cost`, Gemini pricing, model-catalog guard); `bootstrap.py` idempotent + rollback
-- [x] E2E `audits/RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat` (drift + harness + verify + smokes + pytest + windows chain)
-- [x] Unit `tests/overlay/test_bootstrap.py` (26 tests, gemockt)
-- [x] Docs: `NOUS_OVERLAY_ARCHITECTURE.md`, `README-FORK.md`, `audits/README.md`
+- [x] Runtime patches in `overlay/` (CLI cost/TPS, `/cost`, `/tps`, stream hooks, agent throughput, Gemini pricing, model-catalog guard); `bootstrap.py` idempotent + rollback
+- [x] E2E `audits/RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat` (8/8+); throughput **14/14** `RUN_STATUS_BAR_THROUGHPUT_E2E`; prompt-timer **10/10** `RUN_PROMPT_TIMER_DISPLAY_E2E`
+- [x] Unit `tests/overlay/` (bootstrap, cli_fork_patch, cli_command_patches, cost/tps commands, stream hooks, pricing/models patch, usage_snapshot) — **86+** tests
+- [x] `RUN_AUDITS`: `pytest-overlay`, `-IncludeNousOverlayInstitutionalE2E`, throughput/prompt-timer E2E in `-IncludeAllE2E`; preflight `HERMES_HOME` ≠ `profiles\*`
+- [x] CI `fork-windows-institutional.yml`: overlay pytest, institutional E2E, `build_fork_ui_assets -SkipWeb` + drift
+- [x] Docs: `NOUS_OVERLAY_ARCHITECTURE.md`, `verify_institutional_guard.py --check-tier-a-cli`, `windows/audits/README.md`
 
 ## Documentatie — domein-blauwdruk (2026-05-30)
 

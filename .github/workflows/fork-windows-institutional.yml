@@ -32,12 +32,37 @@ jobs:
       - name: Install package (dev)
         run: python -m pip install --upgrade pip && pip install -e ".[dev]"
 
+      - name: Seed minimal HERMES_HOME for overlay E2E
+        shell: pwsh
+        run: |
+          $home = Join-Path $env:LOCALAPPDATA 'hermes'
+          New-Item -ItemType Directory -Force -Path $home | Out-Null
+          if (-not (Test-Path (Join-Path $home 'config.yaml'))) {
+            @'
+          display:
+            show_cost: true
+            show_status_bar_tps: true
+          '@ | Set-Content -Encoding UTF8 (Join-Path $home 'config.yaml')
+          }
+          echo "HERMES_HOME=$home" >> $env:GITHUB_ENV
+
       # Volledige RUN_LEGAL_DOMAIN_E2E vereist %LOCALAPPDATA%\hermes runtime — lokaal vóór release (zie docs/LEGAL_PRODUCTION_GATE.md).
       - name: Nous Tier A drift gate (strict)
         run: powershell -NoProfile -File windows/scripts/Test-NousTreeIdentical.ps1
 
+      - name: Overlay unit tests
+        run: python -m pytest tests/overlay/ -q -o addopts=
+
       - name: SYNC_NOUS overlay E2E
         run: windows\audits\RUN_SYNC_NOUS_E2E.bat
+
+      - name: Nous overlay institutional E2E
+        run: audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat
+
+      - name: Build fork TUI assets (SkipWeb) + drift gate
+        run: |
+          powershell -NoProfile -File windows/scripts/build_fork_ui_assets.ps1 -SkipWeb
+          powershell -NoProfile -File windows/scripts/Test-NousTreeIdentical.ps1
 
       - name: Institutional hardening E2E (H1–H14, incl. legal pytest)
         env:

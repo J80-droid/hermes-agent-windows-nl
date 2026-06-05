@@ -15,6 +15,16 @@ import sys
 from pathlib import Path
 
 # Mirror windows/merge_upstream_fork.ps1 $keepOurs (institutional subset).
+TIER_A_FORK_ONLY_CLI_PATTERNS = (
+    "_append_status_bar_cost_fragments",
+    'canonical == "cost"',
+    "_handle_cost_command",
+    'canonical == "tps"',
+    "_handle_tps_command",
+    "_record_stream_tps_delta",
+    "_freeze_stream_tps_segment",
+)
+
 GUARD_GLOBS = (
     "hermes_cli/institutional_render.py",
     "hermes_cli/markdown_output_normalize.py",
@@ -55,7 +65,7 @@ def _glob_match(path: str, pattern: str) -> bool:
 
 
 def _changed_paths(*, staged_only: bool) -> list[str]:
-    repo = Path(__file__).resolve().parents[1]
+    repo = Path(__file__).resolve().parents[2]
     diff_cmd = ["git", "diff", "--name-only"]
     if staged_only:
         diff_cmd.append("--cached")
@@ -107,6 +117,22 @@ def _touches_guard(paths: list[str]) -> list[str]:
     return hits
 
 
+def _verify_tier_a_cli_no_fork_hooks(repo: Path) -> int:
+    cli_path = repo / "cli.py"
+    if not cli_path.is_file():
+        print("[FAIL] cli.py ontbreekt")
+        return 1
+    text = cli_path.read_text(encoding="utf-8")
+    hits = [p for p in TIER_A_FORK_ONLY_CLI_PATTERNS if p in text]
+    if hits:
+        print("[FAIL] Tier A cli.py bevat fork-only hooks (horen in overlay/):")
+        for h in hits:
+            print(f"  - {h}")
+        return 1
+    print("[OK] Tier A cli.py — geen fork-only cost/tps hooks")
+    return 0
+
+
 def _run_guard_tests(repo: Path) -> int:
     steps = [
         (
@@ -148,11 +174,22 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Institutional guard: tests on renderer file changes")
     parser.add_argument("--ci", action="store_true", help="Only consider staged files (pre-commit)")
     parser.add_argument("--force", action="store_true", help="Always run tests regardless of diff")
+    parser.add_argument(
+        "--check-tier-a-cli",
+        action="store_true",
+        help="Verify Tier A cli.py has no fork-only cost/tps hooks",
+    )
     args = parser.parse_args()
 
-    repo = Path(__file__).resolve().parents[1]
+    repo = Path(__file__).resolve().parents[2]
+    if args.check_tier_a_cli:
+        return _verify_tier_a_cli_no_fork_hooks(repo)
+
     if args.force:
         print("[INFO] --force: institutional guard tests draaien")
+        tier = _verify_tier_a_cli_no_fork_hooks(repo)
+        if tier != 0:
+            return tier
         return _run_guard_tests(repo)
 
     changed = _changed_paths(staged_only=args.ci)

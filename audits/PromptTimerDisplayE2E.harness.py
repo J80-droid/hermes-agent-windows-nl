@@ -39,7 +39,8 @@ def _read(rel: str) -> str:
 
 def test_e1_repo_artefacts() -> None:
     required = [
-        "hermes_cli/status_bar_prompt_elapsed.py",
+        "overlay/hermes_cli/status_bar_prompt_elapsed.py",
+        "overlay/hermes_cli/cli_fork_patch.py",
         "scripts/verify_fork_status_bar_display.py",
         "tests/hermes_cli/test_status_bar_prompt_elapsed.py",
         "tests/cli/test_cli_status_bar.py",
@@ -58,6 +59,9 @@ def test_e1_repo_artefacts() -> None:
 
 
 def test_e2_module_no_emoji_and_finite_guards() -> None:
+    from overlay.bootstrap import install
+
+    install()
     from hermes_cli.status_bar_prompt_elapsed import (
         format_prompt_elapsed_status_bar,
         prompt_elapsed_contains_emoji,
@@ -82,29 +86,33 @@ def test_e2_module_no_emoji_and_finite_guards() -> None:
 
 
 def test_e3_config_and_team_defaults() -> None:
-    cfg = _read("hermes_cli/config.py")
     team = _read("windows/team_display.defaults")
     example = _read("cli-config.yaml.example")
+    fork = _read("overlay/hermes_cli/cli_fork_patch.py")
     ok = (
-        ("show_prompt_timer_emoji\": False" in cfg or "show_prompt_timer_emoji': False" in cfg)
-        and "show_prompt_timer_emoji=false" in team.replace(" ", "")
+        "show_prompt_timer_emoji=false" in team.replace(" ", "")
         and "show_prompt_timer_emoji" in example
+        and "show_prompt_timer_emoji" in fork
     )
-    _step("config + team_display + example documentatie", ok)
+    _step("team_display + example + overlay display attrs", ok)
 
 
-def test_e4_cli_delegation_and_truthy_init() -> None:
-    cli = _read("cli.py")
+def test_e4_overlay_runtime_patch() -> None:
+    from overlay.bootstrap import install
+
+    install()
+    from cli import HermesCLI
+
+    cli_inst = HermesCLI.__new__(HermesCLI)
     ok = (
-        "status_bar_prompt_elapsed" in cli
-        and "format_prompt_elapsed_status_bar" in cli
-        and "_show_prompt_timer_emoji" in cli
-        and "is_truthy_value" in cli
-        and "_handle_timer_emoji_command" in cli
-        and 'canonical == "timer-emoji"' in cli
-        and 'return f"{emoji}' not in cli.split("def _format_prompt_elapsed")[1].split("\n    def ")[0]
+        getattr(HermesCLI, "_fork_status_bar_patch_applied", False)
+        and hasattr(HermesCLI, "_format_prompt_elapsed")
+        and hasattr(cli_inst, "_format_prompt_elapsed")
     )
-    _step("cli.py delegatie + is_truthy_value + /timer-emoji hook", ok)
+    cli_inst._show_prompt_timer_emoji = False
+    out = cli_inst._format_prompt_elapsed(None, 26.0, live=False)
+    ok = ok and out == "26s" and "\u23f1" not in out and "\u23f2" not in out
+    _step("overlay runtime patch + prompt elapsed zonder emoji", ok)
 
 
 def test_e5_verify_fork_script() -> None:
@@ -131,6 +139,9 @@ def test_e5_verify_fork_script() -> None:
 
 
 def test_e6_classic_cli_snapshot_and_status_bar() -> None:
+    from overlay.bootstrap import install
+
+    install()
     from cli import HermesCLI
 
     cli = HermesCLI.__new__(HermesCLI)
@@ -164,13 +175,14 @@ def test_e6_classic_cli_snapshot_and_status_bar() -> None:
 
 
 def test_e7_timer_emoji_toggle_path() -> None:
-    commands = _read("hermes_cli/commands.py")
-    cli = _read("cli.py")
+    team = _read("windows/team_display.defaults")
+    fork = _read("overlay/hermes_cli/cli_fork_patch.py")
     ok = (
-        '"timer-emoji"' in commands
-        and 'save_config_value("display.show_prompt_timer_emoji"' in cli
+        "show_prompt_timer_emoji=false" in team.replace(" ", "")
+        and "_show_prompt_timer_emoji" in fork
+        and 'get("show_prompt_timer_emoji", False)' in fork
     )
-    _step("/timer-emoji command + config persist", ok)
+    _step("prompt timer emoji config via overlay fork patch", ok)
 
 
 def test_e8_merge_upstream_keep_ours() -> None:
@@ -277,7 +289,7 @@ def main() -> int:
     test_e1_repo_artefacts()
     test_e2_module_no_emoji_and_finite_guards()
     test_e3_config_and_team_defaults()
-    test_e4_cli_delegation_and_truthy_init()
+    test_e4_overlay_runtime_patch()
     test_e5_verify_fork_script()
     test_e6_classic_cli_snapshot_and_status_bar()
     test_e7_timer_emoji_toggle_path()

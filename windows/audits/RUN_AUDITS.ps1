@@ -31,6 +31,9 @@ param(
     [switch]$IncludeInstitutionalHardeningE2E,
     [switch]$IncludeUpdateHermesIntegrationE2E,
     [switch]$IncludeSyncNousE2E,
+    [switch]$IncludeNousOverlayInstitutionalE2E,
+    [switch]$IncludeStatusBarThroughputE2E,
+    [switch]$IncludePromptTimerDisplayE2E,
     [switch]$IncludeCodebaseSmoke,
     [switch]$IncludeCodebaseSmokeE2E,
     [switch]$SkipPytest,
@@ -84,6 +87,12 @@ function Invoke-Step {
 }
 
 if (-not $SkipHermesPreflight) {
+    . (Join-Path $repoRoot 'windows/scripts/HermesHomeCommon.ps1')
+    if ($env:HERMES_HOME -and (Test-HermesProfileSubdirPath $env:HERMES_HOME)) {
+        Write-Host '[FAIL] HERMES_HOME wijst naar profiles\* — zet runtime-root (%LOCALAPPDATA%\hermes)' -ForegroundColor Red
+        $failures++
+    }
+
     $verify = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/verify_hermes_home.ps1'
     if (Test-Path -LiteralPath $verify) {
         Invoke-Step 'verify_hermes_home' { & $verify }
@@ -178,15 +187,36 @@ if ($IncludeCodebaseSmokeE2E -or $IncludeAllE2E) {
     }
 }
 
+if (-not (Get-Command Test-HermesProfileSubdirPath -ErrorAction SilentlyContinue)) {
+    . (Join-Path $repoRoot 'windows/scripts/HermesHomeCommon.ps1')
+}
+
+$runtimeHermesHome = Join-Path $env:LOCALAPPDATA 'hermes'
+$env:HERMES_HOME = $runtimeHermesHome
+
+function Get-HermesAuditPythonExe {
+    $condaPy = Join-Path $env:USERPROFILE 'miniconda3\envs\hermes-env\python.exe'
+    if (Test-Path -LiteralPath $condaPy) { return $condaPy }
+    return 'python'
+}
+
 if (-not $SkipPytest) {
+    Invoke-Step 'pytest-overlay' {
+        $py = Get-HermesAuditPythonExe
+        $env:HERMES_HOME = $runtimeHermesHome
+        & $py -m pytest tests/overlay/ -q -o addopts= --tb=short
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+
     Invoke-Step 'pytest-profile-subset' {
-        $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
-        if (-not (Test-Path -LiteralPath $conda)) {
-            Write-Host 'SKIP: conda niet gevonden' -ForegroundColor Yellow
+        $py = Get-HermesAuditPythonExe
+        if ($py -eq 'python' -and -not (Get-Command python -ErrorAction SilentlyContinue)) {
+            Write-Host 'SKIP: python niet gevonden' -ForegroundColor Yellow
             $global:LASTEXITCODE = 2
             return
         }
-        & $conda run -n hermes-env --no-capture-output python -m pytest `
+        $env:HERMES_HOME = $runtimeHermesHome
+        & $py -m pytest `
             tests/hermes_cli/test_apply_profile_override.py `
             tests/hermes_cli/test_profile_switch.py `
             tests/hermes_cli/test_relaunch.py::TestRelaunchChatAfterProfileSwitch `
@@ -408,6 +438,37 @@ if ($IncludeSyncNousE2E -or $IncludeAllE2E) {
     $syncNousBat = Join-Path $scriptRoot 'RUN_SYNC_NOUS_E2E.bat'
     Invoke-Step 'sync-nous-e2e' {
         cmd /c "`"$syncNousBat`""
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeNousOverlayInstitutionalE2E -or $IncludeAllE2E) {
+    if (-not $env:HERMES_HOME) {
+        $env:HERMES_HOME = Join-Path $env:LOCALAPPDATA 'hermes'
+    }
+    $restoreTierA = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/Invoke-RestoreNousTierA.ps1'
+    $nousOverlayBat = Join-Path $repoRoot 'audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat'
+    Invoke-Step 'nous-overlay-institutional-e2e' {
+        if (Test-Path -LiteralPath $restoreTierA) {
+            & $restoreTierA
+        }
+        cmd /c "`"$nousOverlayBat`""
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeStatusBarThroughputE2E -or $IncludeAllE2E) {
+    $throughputBat = Join-Path $repoRoot 'audits\RUN_STATUS_BAR_THROUGHPUT_E2E.bat'
+    Invoke-Step 'status-bar-throughput-e2e' {
+        cmd /c "`"$throughputBat`""
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludePromptTimerDisplayE2E -or $IncludeAllE2E) {
+    $promptTimerBat = Join-Path $repoRoot 'audits\RUN_PROMPT_TIMER_DISPLAY_E2E.bat'
+    Invoke-Step 'prompt-timer-display-e2e' {
+        cmd /c "`"$promptTimerBat`""
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

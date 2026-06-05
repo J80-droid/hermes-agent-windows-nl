@@ -102,6 +102,9 @@ def _smoke_freeze_does_not_clobber_agent_tps() -> None:
 
 
 def _smoke_nan_rejected() -> None:
+    from overlay.bootstrap import install
+
+    install()
     from hermes_cli.status_bar_throughput import format_status_bar_tps
 
     assert format_status_bar_tps(float("nan")) is None
@@ -109,6 +112,9 @@ def _smoke_nan_rejected() -> None:
 
 
 def main() -> int:
+    from overlay.bootstrap import install
+
+    install()
     checks = [
         _smoke_wide_shows_tps_after_cost,
         _smoke_narrow_hides_tps,

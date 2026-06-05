@@ -25,7 +25,11 @@ def _check_tier_a_cli_untouched() -> None:
         _fail("Tier A cli.py contains fork cost hook — must live in overlay patch only")
     if 'canonical == "cost"' in cli and "_handle_cost_command" in cli:
         _fail("Tier A cli.py contains inline /cost dispatch — use overlay/cli_command_patches")
-    _ok("Tier A cli.py has no inline fork cost hooks")
+    if 'canonical == "tps"' in cli and "_handle_tps_command" in cli:
+        _fail("Tier A cli.py contains inline /tps dispatch — use overlay/cli_command_patches")
+    if "_record_stream_tps_delta" in cli or "_freeze_stream_tps_segment" in cli:
+        _fail("Tier A cli.py contains fork TPS stream hooks — use overlay/cli_fork_patch")
+    _ok("Tier A cli.py has no inline fork cost/tps hooks")
 
 
 def _check_overlay_artifacts() -> None:
@@ -36,6 +40,9 @@ def _check_overlay_artifacts() -> None:
         "overlay/hermes_cli/cli_fork_patch.py",
         "overlay/hermes_cli/cli_command_patches.py",
         "overlay/hermes_cli/cli_cost_command.py",
+        "overlay/hermes_cli/cli_tps_command.py",
+        "overlay/hermes_cli/cli_tps_stream_hooks.py",
+        "overlay/agent/agent_throughput_fork_patch.py",
         "overlay/hermes_cli/status_bar_cost.py",
         "overlay/hermes_cli/usage_snapshot.py",
         "overlay/hermes_cli/model_runtime_config.py",
@@ -166,6 +173,39 @@ def _check_cost_command_dispatch() -> None:
     _ok("/cost dispatch via process_command patch")
 
 
+def _check_tps_command_and_stream_hooks() -> None:
+    from overlay.bootstrap import install
+
+    install()
+    from cli import HermesCLI
+
+    cli = HermesCLI.__new__(HermesCLI)
+    cli._show_status_bar_tps = True
+    cli._invalidate = lambda *a, **k: None
+    cli._stream_tps_started_at = None
+    cli._stream_tps_tokens_est = 0
+    cli._last_call_tps = None
+    cli.agent = None
+
+    ok = HermesCLI.process_command(cli, "/tps status")
+    if ok is not True:
+        _fail(f"/tps status expected True, got {ok!r}")
+
+    if not hasattr(HermesCLI, "_record_stream_tps_delta"):
+        _fail("HermesCLI missing _record_stream_tps_delta after fork patch")
+    if not hasattr(HermesCLI, "_freeze_stream_tps_segment"):
+        _fail("HermesCLI missing _freeze_stream_tps_segment after fork patch")
+
+    HermesCLI._record_stream_tps_delta(cli, "token estimate smoke text")
+    if cli._stream_tps_tokens_est < 1:
+        _fail("stream delta did not record estimated tokens")
+    HermesCLI._freeze_stream_tps_segment(cli)
+    if cli._stream_tps_tokens_est != 0:
+        _fail("freeze did not reset stream token counter")
+
+    _ok("/tps dispatch + stream hooks on HermesCLI")
+
+
 def main() -> None:
     print("=== NousOverlayInstitutionalE2E harness ===")
     _check_overlay_artifacts()
@@ -174,6 +214,7 @@ def main() -> None:
     _check_status_bar_cost_runtime()
     _check_gemini_pricing()
     _check_cost_command_dispatch()
+    _check_tps_command_and_stream_hooks()
     print("[OK] NousOverlayInstitutionalE2E harness PASS")
     sys.exit(0)
 

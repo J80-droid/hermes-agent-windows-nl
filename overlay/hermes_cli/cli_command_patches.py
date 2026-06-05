@@ -10,6 +10,23 @@ logger = logging.getLogger(__name__)
 _PATCHED = False
 
 
+def _resolve_tps_command(command: str) -> bool:
+    """True when *command* dispatches to /tps (incl. aliases)."""
+    cmd_lower = (command or "").lower().strip()
+    if not cmd_lower:
+        return False
+    base = cmd_lower.split()[0].lstrip("/")
+    if base == "tps":
+        return True
+    try:
+        from hermes_cli.commands import resolve_command
+
+        cmd_def = resolve_command(base)
+        return bool(cmd_def and cmd_def.name == "tps")
+    except Exception:
+        return False
+
+
 def _resolve_cost_command(command: str) -> bool:
     """True when *command* dispatches to /cost (incl. aliases)."""
     cmd_lower = (command or "").lower().strip()
@@ -34,9 +51,11 @@ def apply_cli_command_patches() -> None:
 
     import cli as cli_mod
     from overlay.hermes_cli.cli_cost_command import handle_cost_command
+    from overlay.hermes_cli.cli_tps_command import handle_tps_command
 
     cls = cli_mod.HermesCLI
     cls._handle_cost_command = handle_cost_command  # type: ignore[attr-defined]
+    cls._handle_tps_command = handle_tps_command  # type: ignore[attr-defined]
 
     _orig: Callable[..., bool] = cls.process_command
 
@@ -51,6 +70,18 @@ def apply_cli_command_patches() -> None:
                     from cli import _cprint
 
                     _cprint("  [red]Cost command failed — see log.[/]")
+                except Exception:
+                    pass
+            return True
+        if _resolve_tps_command(command):
+            try:
+                handle_tps_command(self, (command or "").strip())
+            except Exception:
+                logger.exception("/tps handler failed")
+                try:
+                    from cli import _cprint
+
+                    _cprint("  [red]Throughput command failed — see log.[/]")
                 except Exception:
                     pass
             return True

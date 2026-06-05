@@ -2,3 +2,17 @@ name: j80-windows-nl
 version: 1.0.0
 description: J80 Windows NL fork — slash commands and hooks without Tier A edits.
 author: J80-droid
+fork_overlay:
+  slash_commands:
+    - name: cost
+      handler: overlay.hermes_cli.cli_cost_command.handle_cost_command
+      dispatch: overlay.hermes_cli.cli_command_patches.apply_cli_command_patches
+      config_key: display.show_cost
+    - name: tps
+      handler: overlay.hermes_cli.cli_tps_command.handle_tps_command
+      dispatch: overlay.hermes_cli.cli_command_patches.apply_cli_command_patches
+      config_key: display.show_status_bar_tps
+  runtime_patches:
+    - overlay.bootstrap.install
+    - overlay.hermes_cli.cli_fork_patch.apply_cli_fork_patch
+    - overlay.agent.agent_throughput_fork_patch.apply_agent_throughput_fork_patch

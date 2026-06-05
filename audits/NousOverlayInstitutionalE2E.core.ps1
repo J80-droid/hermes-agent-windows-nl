@@ -136,6 +136,26 @@ if (Test-Path -LiteralPath $chainPs1) {
 }
 Add-Step '8/8 verify_windows_script_chain' -Ok $chainOk
 
+# 9/9 optional ui-tui vitest (statusBarThroughput / usageCostBar)
+$vitestOk = $true
+$uiTui = Join-Path $RepoRoot 'ui-tui'
+if ((Get-Command npm -ErrorAction SilentlyContinue) -and (Test-Path -LiteralPath (Join-Path $uiTui 'package.json'))) {
+    Push-Location $uiTui
+    try {
+        $vitestOk = Invoke-AuditExe -Exe 'npx' -ArgumentList @(
+            'vitest', 'run',
+            'src/domain/statusBarThroughput.test.ts',
+            'src/domain/usageCostBar.test.ts',
+            '--passWithNoTests'
+        )
+    } finally {
+        Pop-Location
+    }
+    Add-Step '9/9 ui-tui vitest (optional)' -Ok $vitestOk -Detail 'statusBarThroughput + usageCostBar'
+} else {
+    Write-Host '[SKIP] 9/9 ui-tui vitest — npm of ui-tui ontbreekt' -ForegroundColor Yellow
+}
+
 $reportPath = Join-Path $scriptRoot ("NOUS_OVERLAY_INSTITUTIONAL_E2E_REPORT_" + $reportStamp + '.md')
 $status = if ($failures -eq 0) { 'PASS' } else { "FAIL ($failures)" }
 @"
