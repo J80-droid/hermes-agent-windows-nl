@@ -85,6 +85,121 @@ def _profile_use_execute(args) -> None:
         sys.exit(1)
 
 
+class CliForkProfileChatUxMixin:
+    """TUI profile switch UX (sticky prompt, inline routing, confirm modal)."""
+
+    def _slash_confirm_footer_hint(self, choice_count: int) -> str:
+        return f"Kies 1–{choice_count} of Esc om te annuleren"
+
+    def _print_slash_confirm_box(
+        self,
+        title: str,
+        detail: str,
+        choices: list[tuple[str, str, str]],
+    ) -> None:
+        import cli as cli_mod
+
+        cli_mod._cprint("")
+        cli_mod._cprint(f"  {cli_mod._ACCENT}{title}{cli_mod._RST}")
+        for line in detail.splitlines():
+            if line.strip():
+                cli_mod._cprint(f"  {cli_mod._DIM}{line}{cli_mod._RST}")
+        for idx, (_val, label, desc) in enumerate(choices):
+            cli_mod._cprint(f"  [{idx + 1}] {label} — {cli_mod._DIM}{desc}{cli_mod._RST}")
+        cli_mod._cprint(f"  {cli_mod._DIM}{self._slash_confirm_footer_hint(len(choices))}{cli_mod._RST}")
+        cli_mod._cprint("")
+
+    def _prompt_slash_confirm_stdin_fallback(
+        self,
+        choices: list[tuple[str, str, str]],
+        *,
+        timeout: float = 90,
+    ) -> str | None:
+        lines = ["", "  ╭─ Bevestiging ─────────────────"]
+        for idx, (_val, label, desc) in enumerate(choices):
+            lines.append(f"  │  [{idx + 1}] {label} — {desc}")
+        lines.append(f"  │  {self._slash_confirm_footer_hint(len(choices))}")
+        lines.append("  ╰──────────────────────────────")
+        lines.append("> ")
+        return self._prompt_text_input("\n".join(lines), timeout=timeout)
+
+    def _prompt_profile_switch_confirm(
+        self,
+        *,
+        title: str,
+        detail: str,
+        choices: list[tuple[str, str, str]],
+        timeout: float = 90,
+    ) -> str | None:
+        if getattr(self, "_app", None):
+            return self._prompt_text_input_modal(
+                title=title,
+                detail=detail,
+                choices=choices,
+                timeout=timeout,
+            )
+        self._print_slash_confirm_box(title, detail, choices)
+        return self._prompt_slash_confirm_stdin_fallback(choices, timeout=timeout)
+
+    def _should_handle_profile_command_inline(self, text: str, has_images: bool = False) -> bool:
+        import cli as cli_mod
+
+        if has_images or not getattr(self, "_app", None):
+            return False
+        if not isinstance(text, str) or not text.strip():
+            return False
+        if cli_mod._looks_like_slash_command(text):
+            try:
+                from hermes_cli.commands import resolve_command
+
+                base = text.strip().split()[0].lower().lstrip("/")
+                cmd = resolve_command(base)
+                return bool(cmd and cmd.name == "profile")
+            except Exception:
+                return False
+        return cli_mod._parse_profile_switch_intent(text) is not None
+
+    def _get_tui_prompt_symbols(self) -> tuple[str, str]:
+        try:
+            from hermes_cli.skin_engine import get_active_prompt_symbol
+
+            symbol = get_active_prompt_symbol("❯ ")
+        except Exception:
+            symbol = "❯ "
+
+        symbol = (symbol or "❯ ").rstrip() + " "
+
+        try:
+            from hermes_cli.profiles import get_active_profile
+
+            profile = get_active_profile()
+            if profile not in {"default", "custom"}:
+                symbol = f"{profile} {symbol}"
+        except Exception:
+            pass
+        stripped = symbol.rstrip()
+        if not stripped:
+            return "❯ ", "❯ "
+
+        parts = stripped.split()
+        candidate = parts[-1] if parts else ""
+        arrow_chars = ("❯", ">", "$", "#", "›", "»", "→")
+        if any(ch in candidate for ch in arrow_chars):
+            return symbol, candidate.rstrip() + " "
+
+        return symbol, symbol
+
+
+_PROFILE_CHAT_UX_METHODS = (
+    "_slash_confirm_footer_hint",
+    "_print_slash_confirm_box",
+    "_prompt_slash_confirm_stdin_fallback",
+    "_prompt_profile_switch_confirm",
+    "_should_handle_profile_command_inline",
+    "_get_tui_prompt_symbols",
+)
+
+
 def apply_cli_profile_fork_patch() -> None:
     import cli as cli_mod
     import hermes_cli.main as main_mod
@@ -93,6 +208,10 @@ def apply_cli_profile_fork_patch() -> None:
         return
 
     cli_mod._parse_profile_switch_intent = parse_profile_switch_intent  # type: ignore[attr-defined]
+
+    cls = cli_mod.HermesCLI
+    for name in _PROFILE_CHAT_UX_METHODS:
+        setattr(cls, name, getattr(CliForkProfileChatUxMixin, name))
 
     _orig_cmd_profile = main_mod.cmd_profile
 

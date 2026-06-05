@@ -2,7 +2,7 @@
 
 ## Focus
 
-**Nous 100% intact + overlay (2026-06, productie):** Tier A strict drift `Test-NousTreeIdentical.ps1`; fork via `overlay/bootstrap.py` + runtime patches (status/cost/tps, `auth_fork_patch`, `gateway_config_fork_patch`, `cli_profile_fork_patch`, `config_fork_patch`, `doctor_fork_patch`, `tools_config_fork_patch`, `prompt_builder_fork_patch`, …); geen fork-only hooks in Tier A `cli.py`; UI overlay `overlay/web` + `overlay/ui-tui` (`gatewayReadyNewChatNotice.ts`, `useInstitutionalNewChatAutoReset`); `RUN_AUDITS` pre/post Tier A restore + `PYTEST_ADDOPTS` Windows; volledige `-IncludeAllE2E` nog deels rood (legal USER.md runtime-seeds, classic live smoke API). Zie `docs/NOUS_OVERLAY_ARCHITECTURE.md`.
+**Nous overlay afwerking (2026-06-05):** Checkpoint-commits `d1fc74044` + `00af22092` + `b429111fa` — Tier A `web/`/`local.py`/`website/` upstream-identiek; fork in `overlay/` (CLI patches incl. `load_config` profiel-overerving, legal prompt builder, TUI `gatewayReadyNewChatNotice.ts`, web fork + `index-overlay-append.css`). `RUN_AUDITS -IncludeSyncNousE2E -IncludeNousOverlayInstitutionalE2E` **PASS**; volledige `-IncludeAllE2E` draait na runtime `sync_profile_memories` + classic live smoke stderr-fix. Zie `docs/NOUS_OVERLAY_ARCHITECTURE.md`.
 
 **Profielwissel Windows structureel (2026-05-30, productie OK):** `/profile use` in WT — TUI-modal op achtergrondthread (`_schedule_profile_command_async`); sync/gateway/relaunch na TUI-exit; geen stderr-spinner tijdens `chat` relaunch (prompt `legal ❯`); audit `docs/PROFILE_SWITCH_WINDOWS_AUDIT.md`; E2E `RUN_PROFILE_SWITCH_E2E.bat` + pytest 29 passed.
 
