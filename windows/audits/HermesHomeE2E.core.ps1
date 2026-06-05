@@ -38,10 +38,19 @@ function Get-OverlayCliConfigValue {
         [string]$Conda,
         [string]$RepoRoot,
         [string]$OverlayCli,
-        [string]$Key
+        [string]$Key,
+        [string]$Profile = ''
     )
-    $out = & $conda run -n hermes-env --cwd $RepoRoot --no-capture-output python $overlayCli config get $Key 2>&1
-    if ($LASTEXITCODE -ne 0) { return $null }
+    $cliArgs = @($OverlayCli)
+    if ($Profile) { $cliArgs += @('--profile', $Profile) }
+    $cliArgs += @('config', 'get', $Key)
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $out = & $conda run -n hermes-env --cwd $RepoRoot --no-capture-output python @cliArgs 2>&1
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
     $lines = @($out | ForEach-Object {
         $line = if ($_ -is [System.Management.Automation.ErrorRecord]) { $_.ToString() } else { "$_" }
         $line.Trim()
@@ -212,16 +221,12 @@ if (Test-Path -LiteralPath $runtimeCfg) {
                 $coreProf = Join-Path (Get-HermesRuntimeRoot) 'profiles\core\config.yaml'
                 if (Test-Path -LiteralPath $coreProf) {
                     $rootComp = Get-OverlayCliConfigValue -Conda $conda -RepoRoot $RepoRoot -OverlayCli $overlayCli -Key 'auxiliary.compression.provider'
-                    $prevHome = $env:HERMES_HOME
-                    $env:HERMES_HOME = (Split-Path -Parent $coreProf)
-                    $compVal = Get-OverlayCliConfigValue -Conda $conda -RepoRoot $RepoRoot -OverlayCli $overlayCli -Key 'auxiliary.compression.provider'
+                    $compVal = Get-OverlayCliConfigValue -Conda $conda -RepoRoot $RepoRoot -OverlayCli $overlayCli -Key 'auxiliary.compression.provider' -Profile 'core'
                     if ($null -ne $rootComp -and $null -ne $compVal) {
                         Add-StepResult 'profile core inherits auxiliary.compression from root' ($compVal -eq $rootComp) "$compVal (root=$rootComp)"
                     } else {
                         Add-StepResult 'profile core inherits auxiliary.compression from root' $false 'config get mislukt'
                     }
-                    if ($prevHome) { $env:HERMES_HOME = $prevHome } else { Remove-Item Env:HERMES_HOME -ErrorAction SilentlyContinue }
-                    Initialize-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
                 }
             } else {
                 Add-StepResult 'auxiliary.vision.provider=gemini' $false 'CLI exit non-zero'

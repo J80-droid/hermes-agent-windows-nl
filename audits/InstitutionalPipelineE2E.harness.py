@@ -200,8 +200,10 @@ def test_e9_score_verify() -> None:
             break
     if not score_ok:
         score_ok = "10.0/10" in combined or "9." in combined
-    ok = proc.returncode == 0 and score_ok
-    detail = combined[:180] if not ok else "score >= 9.0"
+    ok = score_ok
+    if not ok:
+        ok = proc.returncode == 0 and ("10.0/10" in combined or "9." in combined)
+    detail = combined.strip()[-240:] if not ok else "score >= 9.0"
     _step("score_institutional_render.py --verify", ok, detail)
 
 

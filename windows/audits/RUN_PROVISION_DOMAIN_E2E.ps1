@@ -60,8 +60,12 @@ try {
         $py = Join-Path $env:USERPROFILE 'miniconda3\envs\hermes-env\python.exe'
     }
     $script = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/sync_profile_toolsets_from_manifest.py'
-    & $py $script --repo-root $RepoRoot --hermes-root $tempHome --profile $testProfile --create-missing
-    if (Test-NativeCommandFailed) { throw "provision sync exit $LASTEXITCODE" }
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $py $script --repo-root $RepoRoot --hermes-root $tempHome --profile $testProfile --create-missing 2>&1 | Out-Host
+        $syncRc = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
+        if ($syncRc -ne 0) { throw "provision sync exit $syncRc" }
 
     $cfg = Join-Path $tempHome "profiles\$testProfile\config.yaml"
     $soul = Join-Path $tempHome "profiles\$testProfile\SOUL.md"
@@ -70,8 +74,12 @@ try {
         Write-Warning "SOUL ontbreekt (geen template voor ${testProfile}) - config OK"
     }
 
-    & $py $script --repo-root $RepoRoot --hermes-root $tempHome --profile $testProfile --check
-    if (Test-NativeCommandFailed) { throw "check exit $LASTEXITCODE" }
+        & $py $script --repo-root $RepoRoot --hermes-root $tempHome --profile $testProfile --check 2>&1 | Out-Host
+        $checkRc = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
+        if ($checkRc -ne 0) { throw "check exit $checkRc" }
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
 
     Write-Host ('[PASS] ' + 'Provision E2E ' + ${testProfile}) -ForegroundColor Green
     exit 0

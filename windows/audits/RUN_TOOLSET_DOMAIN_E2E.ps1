@@ -137,7 +137,7 @@ $prevEapCheck = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 try {
     & $py $checkScript --repo-root $RepoRoot --hermes-root $hermes --check 2>&1 | Out-Host
-    $checkRc = $LASTEXITCODE
+    $checkRc = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
 } finally {
     $ErrorActionPreference = $prevEapCheck
 }
