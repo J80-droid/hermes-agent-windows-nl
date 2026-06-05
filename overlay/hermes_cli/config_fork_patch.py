@@ -1,5 +1,8 @@
-"""``config get`` and dotted config helpers (Tier B overlay)."""
+"""``config get``, dotted config helpers, and profile root inheritance (Tier B overlay)."""
 from __future__ import annotations
+
+import copy
+from typing import Any
 
 import yaml
 
@@ -35,6 +38,32 @@ def get_config_value(key: str) -> None:
         print(cur)
 
 
+def _read_profile_user_config() -> dict[str, Any]:
+    from hermes_cli.config import get_config_path
+
+    path = get_config_path()
+    if not path.is_file():
+        return {}
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def _apply_profile_inheritance(cfg: dict[str, Any]) -> dict[str, Any]:
+    from hermes_cli.profile_model_inheritance import (
+        apply_profile_root_config_inheritance,
+        is_profile_hermes_home,
+    )
+
+    if not is_profile_hermes_home():
+        return cfg
+    profile_user = _read_profile_user_config()
+    return apply_profile_root_config_inheritance(cfg, profile_user)
+
+
 def apply_config_fork_patch() -> None:
     import hermes_cli.config as config_mod
 
@@ -42,6 +71,26 @@ def apply_config_fork_patch() -> None:
         return
 
     config_mod.get_config_value = get_config_value  # type: ignore[attr-defined]
+
+    _orig_load_config = config_mod.load_config
+    _orig_load_config_readonly = config_mod.load_config_readonly
+
+    def load_config():
+        cfg = _orig_load_config()
+        return _apply_profile_inheritance(cfg)
+
+    def load_config_readonly():
+        cfg = _orig_load_config_readonly()
+        if not cfg:
+            return cfg
+        from hermes_cli.profile_model_inheritance import is_profile_hermes_home
+
+        if not is_profile_hermes_home():
+            return cfg
+        return _apply_profile_inheritance(copy.deepcopy(cfg))
+
+    config_mod.load_config = load_config  # type: ignore[assignment]
+    config_mod.load_config_readonly = load_config_readonly  # type: ignore[assignment]
 
     _orig_config_command = config_mod.config_command
 
