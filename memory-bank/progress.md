@@ -1,5 +1,12 @@
 # Progress
 
+## Nous overlay institutioneel (2026-06)
+
+- [x] Runtime patches in `overlay/` (CLI cost, `/cost`, Gemini pricing, model-catalog guard); `bootstrap.py` idempotent + rollback
+- [x] E2E `audits/RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat` (drift + harness + verify + smokes + pytest + windows chain)
+- [x] Unit `tests/overlay/test_bootstrap.py` (26 tests, gemockt)
+- [x] Docs: `NOUS_OVERLAY_ARCHITECTURE.md`, `README-FORK.md`, `audits/README.md`
+
 ## Documentatie — domein-blauwdruk (2026-05-30)
 
 - [x] `docs/INSTITUTIONAL_DOMAIN_PLAN.md` — Niveau B plan (legal als referentie, Fase A–J, master-checklist)

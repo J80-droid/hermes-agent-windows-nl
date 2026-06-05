@@ -148,6 +148,11 @@ function Invoke-HermesModelCatalogAutoRepair {
     $code = @'
 import os, sys
 sys.path.insert(0, r'__REPO_ROOT__')
+try:
+    from overlay.bootstrap import install as _overlay_install
+    _overlay_install()
+except Exception:
+    pass
 os.environ['HERMES_HOME'] = r'__RUNTIME_ROOT__'
 os.environ.setdefault('HERMES_WIN_PREFER_LOCALAPPDATA', '1')
 from hermes_cli.config import load_config
@@ -286,9 +291,21 @@ function Test-HermesConfigDrift {
 
     if ($issues.Count -eq 0) {
         if (-not (Test-HermesModelCatalogAvailability -Quiet:$Quiet)) {
-            $issues.Add(
-                'Model/default staat niet in provider-catalog - run hermes model (of pas model.provider + model.default aan).'
-            )
+            if (Invoke-HermesModelCatalogAutoRepair -Quiet:$Quiet) {
+                if (Test-HermesModelCatalogAvailability -Quiet:$Quiet) {
+                    if (-not $Quiet) {
+                        Write-HermesOk 'Model-catalog hersteld via auto-repair'
+                    }
+                } else {
+                    $issues.Add(
+                        'Model/default staat niet in provider-catalog - run hermes model (of pas model.provider + model.default aan).'
+                    )
+                }
+            } else {
+                $issues.Add(
+                    'Model/default staat niet in provider-catalog - run hermes model (of pas model.provider + model.default aan).'
+                )
+            }
         }
     }
 
@@ -321,6 +338,11 @@ function Test-HermesModelProviderCoherence {
         $code = @"
 import os, sys
 sys.path.insert(0, r'$repoRoot')
+try:
+    from overlay.bootstrap import install as _overlay_install
+    _overlay_install()
+except Exception:
+    pass
 os.environ['HERMES_HOME'] = r'$runtimeRoot'
 os.environ.setdefault('HERMES_WIN_PREFER_LOCALAPPDATA', '1')
 from hermes_cli.config import load_config
@@ -372,6 +394,11 @@ function Test-HermesModelCatalogAvailability {
 import os
 import sys
 sys.path.insert(0, r'__REPO_ROOT__')
+try:
+    from overlay.bootstrap import install as _overlay_install
+    _overlay_install()
+except Exception:
+    pass
 os.environ['HERMES_HOME'] = r'__RUNTIME_ROOT__'
 os.environ.setdefault('HERMES_WIN_PREFER_LOCALAPPDATA', '1')
 from hermes_cli.config import load_config

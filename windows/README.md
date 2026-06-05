@@ -35,6 +35,17 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 
 **Hermes starten:** `start_hermes.bat` (repo-root, standaard **full**) → **[START.md](START.md)**, **[LAUNCH_PROFILES.md](LAUNCH_PROFILES.md)**. Terminal/kleuren/muisklik/exit: **[TERMINAL_WINDOWS.md](TERMINAL_WINDOWS.md)**. **Titelbalk/muis overlay (opgelost 2026-05-30):** **[MOUSE_OVERLAY_FIX.md](MOUSE_OVERLAY_FIX.md)**.
 
+### Nous upstream + overlay (Tier A intact)
+
+| Doel | Script |
+| ---- | ------ |
+| Sync + drift-gate | `SYNC_NOUS.bat` |
+| Dagelijkse update | `UPDATE_HERMES.bat` (drift-check na merge) |
+| Tier A herstellen | `scripts\Invoke-RestoreNousTierA.ps1` |
+| E2E overlay | `..\audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat` |
+
+Architectuur: [`docs/NOUS_OVERLAY_ARCHITECTURE.md`](../docs/NOUS_OVERLAY_ARCHITECTURE.md). Bootstrap: `overlay/bootstrap.py` via `launch_hermes.ps1` / `PYTHONSTARTUP`.
+
 ### Klassieke CLI — prompt-wachtrij (`/queue`)
 
 Terwijl Hermes bezig is (`display.busy_input_mode: queue` of `/busy queue`):

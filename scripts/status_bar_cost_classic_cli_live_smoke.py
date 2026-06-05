@@ -22,7 +22,17 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[1]
 
 
+def _ensure_overlay() -> None:
+    try:
+        from overlay.bootstrap import install
+
+        install()
+    except Exception:
+        pass
+
+
 def _make_post_turn_cli(*, show_cost: bool = True):
+    _ensure_overlay()
     from cli import HermesCLI
 
     cli = HermesCLI.__new__(HermesCLI)
@@ -114,6 +124,7 @@ def smoke_post_turn_cost_toggle_hides_bar() -> None:
 
 def smoke_gemini_35_flash_cache_cost_not_na() -> None:
     """Regression: gemini-3.5-flash + cache hits must show $ estimate, not n/a."""
+    _ensure_overlay()
     from cli import HermesCLI
 
     cli = HermesCLI.__new__(HermesCLI)

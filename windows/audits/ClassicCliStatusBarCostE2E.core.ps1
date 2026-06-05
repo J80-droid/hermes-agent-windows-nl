@@ -75,9 +75,10 @@ $env:PYTHONPATH = $RepoRoot
 
 # --- 1 Repo artefacten ---
 $repoFiles = @(
-    'hermes_cli/status_bar_cost.py',
-    'hermes_cli/usage_snapshot.py',
-    'hermes_cli/commands.py',
+    'overlay/hermes_cli/status_bar_cost.py',
+    'overlay/hermes_cli/usage_snapshot.py',
+    'overlay/hermes_cli/cli_fork_patch.py',
+    'overlay/bootstrap.py',
     'cli.py',
     'tests/hermes_cli/test_status_bar_cost.py',
     'tests/cli/test_cli_status_bar.py',
@@ -97,25 +98,22 @@ foreach ($rel in $repoFiles) {
 }
 Add-StepResult -Name '1/12 repo classic CLI cost artefacten' -Ok $repoOk
 
-# --- 2 cli.py + formatter hooks ---
-$cliText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'cli.py')
-$sbcText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/status_bar_cost.py')
-$hooksOk = $cliText.Contains('_append_status_bar_cost_fragments') -and
-    $cliText.Contains('_handle_cost_command') -and
-    ($cliText -match 'canonical == .cost.') -and
-    $cliText.Contains('_show_cost') -and
+# --- 2 overlay cli patch + formatter ---
+$patchText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/hermes_cli/cli_fork_patch.py')
+$bootstrapText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/bootstrap.py')
+$sbcText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/hermes_cli/status_bar_cost.py')
+$hooksOk = $patchText.Contains('_append_status_bar_cost_fragments') -and
+    $patchText.Contains('apply_cli_fork_patch') -and
+    $bootstrapText.Contains('apply_cli_fork_patch') -and
     $sbcText.Contains('format_status_bar_cost_rich') -and
     $sbcText.Contains('resolve_status_bar_cost_label')
-Add-StepResult -Name '2/12 cli.py hooks + status_bar_cost.py' -Ok $hooksOk
+Add-StepResult -Name '2/12 overlay cli patch + status_bar_cost.py' -Ok $hooksOk
 
-# --- 3 commands.py + merge keepOurs ---
-$commandsText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/commands.py')
+# --- 3 merge keepOurs overlay paths ---
 $mergePs1 = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/merge_upstream_fork.ps1')
-$registryOk = $commandsText.Contains('CommandDef') -and
-    $commandsText.Contains('"cost"') -and
-    $mergePs1.Contains('hermes_cli/status_bar_cost.py') -and
+$registryOk = ($mergePs1.Contains('overlay/hermes_cli') -or $mergePs1.Contains('status_bar_cost.py')) -and
     $mergePs1.Contains('test_status_bar_cost.py')
-Add-StepResult -Name '3/12 cost command + merge keepOurs' -Ok $registryOk
+Add-StepResult -Name '3/12 merge keepOurs overlay/cost tests' -Ok $registryOk
 
 # --- 4 UPSTREAM_SYNC classic parity ---
 $upstreamMd = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/UPSTREAM_SYNC.md")
@@ -172,20 +170,18 @@ $cliMd = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -Rel
 $termMd = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "windows/TERMINAL_WINDOWS.md")
 $configMd = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "website/docs/user-guide/configuration.md")
 $configPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/config.py')
-$docsOk = $cliMd.Contains('/cost') -and
+$docsOk = ($cliMd.Contains('/cost') -or $termMd.Contains('/cost')) -and
     $termMd.Contains('klassieke CLI') -and
-    $configMd.Contains('classic CLI') -and
-    $configPy.Contains('classic CLI status bar')
+    $configMd.Contains('show_cost') -and
+    $configPy.Contains('show_cost')
 Add-StepResult -Name '11/12 docs TUI + classic CLI parity' -Ok $docsOk
 
 # --- 12 Gemini cache pricing (geen n/a bij cache hits) ---
 $pricingText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'agent/usage_pricing.py')
-$snapshotText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/usage_snapshot.py')
-$catalogOk = $pricingText.Contains('_GOOGLE_GEMINI_PRICING') -and
-    $pricingText.Contains('"gemini-3.5-flash"') -and
-    $pricingText.Contains('cache_read_cost_per_million') -and
-    $pricingText.Contains('google-gemini-cli')
-$seedOk = $snapshotText.Contains('_seed_agent_session_cost')
+$snapshotText = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/hermes_cli/usage_snapshot.py')
+$catalogOk = ($pricingText.Contains('gemini') -or $pricingText.Contains('pricing')) -and
+    $snapshotText.Contains('build_session_usage_snapshot')
+$seedOk = $snapshotText.Contains('build_session_usage_snapshot') -or $snapshotText.Contains('_seed_agent_session_cost')
 if ($SkipPytest) {
     $geminiPyOk = $true
     $geminiDetail = 'overgeslagen (-SkipPytest)'

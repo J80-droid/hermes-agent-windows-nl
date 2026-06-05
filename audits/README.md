@@ -397,3 +397,26 @@ audits\RUN_LEGAL_PROACTIVE_SPARRING_E2E.bat
 Auto: `APPLY_SOUL_ANATOMY_RUNTIME.bat`, `launch_soul_anatomy_deploy.ps1` (bij deploy), `SYNC_TRUST_RUNTIME.bat`, `RUN_AUDITS -IncludeLegalDomainE2E`. Skip: `HERMES_SKIP_LEGAL_PROACTIVE_E2E=1`; trust alleen: `HERMES_LEGAL_PROACTIVE_E2E_ON_TRUST=0`.
 
 Unit tests (gemockt): `pytest tests/audits/test_legal_proactive_sparring_e2e_harness.py -q`. Pester: `windows\tests\SoulSnippetRepair.Unit.Tests.ps1`.
+
+---
+
+# Nous overlay institutional E2E
+
+Geïsoleerde E2E voor **Tier A drift (strict)** + **overlay bootstrap/runtime** + statusbalk-kosten verify/smokes. Geen live API.
+
+| Stap | Scenario | Verwachting |
+|------|----------|-------------|
+| 1 | SYNC_NOUS entrypoints | `RUN_SYNC_NOUS_E2E.bat` + `SYNC_NOUS_E2E.core.ps1` |
+| 2 | Drift | `Test-NousTreeIdentical.ps1` PASS |
+| 3 | Harness | `NousOverlayInstitutionalE2E.harness.py` — artefacten, geen hooks in Tier A `cli.py`, patches idempotent |
+| 4–6 | Verify + smokes | `verify_usage_cost_bar.py --verify`, classic + live CLI smoke |
+| 7 | Pytest subset | `test_status_bar_cost`, `test_usage_snapshot` (gemini) |
+| 8 | Windows chain | `verify_windows_script_chain.ps1` |
+
+```bat
+audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat
+```
+
+Preflight: `set HERMES_HOME=%LOCALAPPDATA%\hermes`. Unit (bootstrap): `pytest tests/overlay/test_bootstrap.py -q`.
+
+Gerelateerd: `windows\audits\RUN_SYNC_NOUS_E2E.bat`, `windows\audits\RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`, `docs/NOUS_OVERLAY_ARCHITECTURE.md`.

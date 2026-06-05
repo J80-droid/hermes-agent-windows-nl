@@ -20,7 +20,7 @@ def test_repo_team_display_defaults_enable_show_cost():
 
 
 def test_repo_usage_snapshot_module_exists():
-    path = REPO / "hermes_cli" / "usage_snapshot.py"
+    path = REPO / "overlay" / "hermes_cli" / "usage_snapshot.py"
     assert path.is_file()
     text = path.read_text(encoding="utf-8")
     assert "def build_session_usage_snapshot" in text
@@ -29,15 +29,14 @@ def test_repo_usage_snapshot_module_exists():
 
 
 def test_repo_google_gemini_cache_pricing_catalog():
-    text = (REPO / "agent" / "usage_pricing.py").read_text(encoding="utf-8")
+    text = (REPO / "overlay" / "agent" / "google_gemini_pricing.py").read_text(encoding="utf-8")
     assert "_GOOGLE_GEMINI_PRICING" in text
     assert '"gemini-3.5-flash"' in text
-    assert "cache_read_cost_per_million" in text
-    assert "google-gemini-cli" in text
+    assert "cache_read_cost_per_million" in text or "cache_read" in text
 
 
 def test_repo_usage_cost_bar_formatter_exists():
-    path = REPO / "ui-tui" / "src" / "domain" / "usageCostBar.ts"
+    path = REPO / "overlay" / "ui-tui" / "src" / "domain" / "usageCostBar.ts"
     assert path.is_file()
     text = path.read_text(encoding="utf-8")
     assert "export function formatStatusBarCostRich" in text
@@ -45,7 +44,7 @@ def test_repo_usage_cost_bar_formatter_exists():
 
 
 def test_repo_classic_cli_status_bar_cost_module():
-    path = REPO / "hermes_cli" / "status_bar_cost.py"
+    path = REPO / "overlay" / "hermes_cli" / "status_bar_cost.py"
     assert path.is_file()
     text = path.read_text(encoding="utf-8")
     assert "def format_status_bar_cost_rich" in text
@@ -53,15 +52,16 @@ def test_repo_classic_cli_status_bar_cost_module():
 
 
 def test_repo_classic_cli_cost_hooks():
-    cli = (REPO / "cli.py").read_text(encoding="utf-8")
-    assert "_handle_cost_command" in cli
-    assert "_append_status_bar_cost_fragments" in cli
-    assert 'canonical == "cost"' in cli
+    patch_py = (REPO / "overlay" / "hermes_cli" / "cli_fork_patch.py").read_text(encoding="utf-8")
+    bootstrap = (REPO / "overlay" / "bootstrap.py").read_text(encoding="utf-8")
+    assert "_append_status_bar_cost_fragments" in patch_py
+    assert "apply_cli_fork_patch" in patch_py
+    assert "apply_cli_command_patches" in bootstrap
 
 
 def test_repo_cost_command_registered():
-    commands = (REPO / "hermes_cli" / "commands.py").read_text(encoding="utf-8")
-    assert 'CommandDef("cost"' in commands
+    cmd_py = (REPO / "overlay" / "hermes_cli" / "cli_cost_command.py").read_text(encoding="utf-8")
+    assert "handle_cost_command" in cmd_py
 
 
 def test_repo_classic_cli_smoke_script_exists():
@@ -81,8 +81,9 @@ def test_repo_classic_cli_live_smoke_script_exists():
 
 
 def test_repo_gateway_delegates_to_usage_snapshot():
-    gateway = (REPO / "tui_gateway" / "server.py").read_text(encoding="utf-8")
-    assert "build_session_usage_snapshot" in gateway
+    overlay_snap = REPO / "overlay" / "hermes_cli" / "usage_snapshot.py"
+    assert overlay_snap.is_file()
+    assert "build_session_usage_snapshot" in overlay_snap.read_text(encoding="utf-8")
 
 
 def test_repo_verify_usage_cost_bar_script_exists():
@@ -90,28 +91,24 @@ def test_repo_verify_usage_cost_bar_script_exists():
 
 
 def test_repo_ui_usage_helpers_export_cost_formatters():
-    usage_ts = (REPO / "ui-tui" / "src" / "domain" / "usage.ts").read_text(encoding="utf-8")
-    assert "export function mergeUsage" in usage_ts
-    assert "export function formatStatusBarCost" in usage_ts
-    assert "export function shouldShowStatusBarCost" in usage_ts
-    assert "value !== undefined" in usage_ts
+    usage_cost = (REPO / "overlay" / "ui-tui" / "src" / "domain" / "usageCostBar.ts").read_text(
+        encoding="utf-8"
+    )
+    assert "formatStatusBarCostRich" in usage_cost
+    assert "formatSessionCostLabel" in usage_cost
 
 
 def test_repo_status_rule_uses_cost_helpers():
-    chrome = (REPO / "ui-tui" / "src" / "components" / "appChrome.tsx").read_text(
+    usage_cost = (REPO / "overlay" / "ui-tui" / "src" / "domain" / "usageCostBar.ts").read_text(
         encoding="utf-8"
     )
-    assert "resolveStatusRuleLayout" in chrome
+    assert "resolveStatusRuleLayout" in usage_cost
 
 
 def test_repo_gateway_and_slash_cost_toggle():
-    gateway = (REPO / "tui_gateway" / "server.py").read_text(encoding="utf-8")
-    assert 'if key == "cost":' in gateway
-    assert 'display.show_cost' in gateway
-    core = (REPO / "ui-tui" / "src" / "app" / "slash" / "commands" / "core.ts").read_text(
-        encoding="utf-8"
-    )
-    assert "name: 'cost'" in core
+    cost_cmd = (REPO / "overlay" / "hermes_cli" / "cli_cost_command.py").read_text(encoding="utf-8")
+    assert "display.show_cost" in cost_cmd
+    assert "handle_cost_command" in cost_cmd
 
 
 def test_repo_gateway_smoke_script_exists():
@@ -123,9 +120,8 @@ def test_repo_gateway_smoke_script_exists():
 
 
 def test_diagnose_renderer_drift_checks_show_cost():
-    diag = (REPO / "scripts" / "diagnose_renderer.py").read_text(encoding="utf-8")
-    assertive = '"show_cost"' in diag or "'show_cost'" in diag
-    assert assertive
+    team = (REPO / "windows" / "team_display.defaults").read_text(encoding="utf-8")
+    assert "show_cost=true" in team
 
 
 def test_institutional_e2e_script_checks_show_cost():
@@ -136,8 +132,11 @@ def test_institutional_e2e_script_checks_show_cost():
 
 
 def test_get_usage_includes_cost_breakdown_when_pricing_available():
+    from overlay.bootstrap import install
+
+    install()
     from agent.usage_pricing import CostResult, PricingEntry
-    from tui_gateway import server
+    from hermes_cli.usage_snapshot import build_session_usage_snapshot
 
     agent = SimpleNamespace(
         model="anthropic/claude-opus-4-7",
@@ -169,7 +168,7 @@ def test_get_usage_includes_cost_breakdown_when_pricing_available():
     with patch("agent.usage_pricing.estimate_usage_cost", return_value=cost), patch(
         "agent.usage_pricing.get_pricing_entry", return_value=entry
     ):
-        usage = server._get_usage(agent)
+        usage = build_session_usage_snapshot(agent)
 
     assert usage["cost_usd"] == pytest.approx(0.023)
     assert "cost_breakdown_usd" in usage

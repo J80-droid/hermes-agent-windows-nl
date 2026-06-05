@@ -2,7 +2,7 @@
 
 ## Focus
 
-**Nous 100% intact + overlay (2026-06):** Tier A drift-gate `windows/scripts/Test-NousTreeIdentical.ps1`; sync `windows/SYNC_NOUS.bat`; `overlay/` + `overlay/bootstrap.py` (fork `hermes_cli.*`); `plugins/j80-windows-nl/`; merge-beleid Tier A=`theirs` in `merge_upstream_fork.ps1`; docs `docs/NOUS_OVERLAY_ARCHITECTURE.md`, `docs/NOUS_DRIFT_BASELINE.md`; E2E `RUN_SYNC_NOUS_E2E.bat`; CI drift `-AllowTransitional`. Transitional drift: `cli.py`, `main.py`, web/TUI tot volgende migratiefase.
+**Nous 100% intact + overlay (2026-06, productie):** Tier A strict drift `Test-NousTreeIdentical.ps1`; fork via `overlay/bootstrap.py` + runtime patches (`cli_fork_patch`, `cli_command_patches`, `pricing_fork_patch`, `models_fork_patch`); geen inline hooks in Tier A `cli.py`; UI-build `build_fork_ui_assets.ps1` + `Invoke-CopyHermesOverlaySources.ps1`; E2E `audits/RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat` (8/8), `RUN_SYNC_NOUS_E2E`, `RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E`; unit `tests/overlay/test_bootstrap.py` (26); docs `NOUS_OVERLAY_ARCHITECTURE.md` bijgewerkt.
 
 **Profielwissel Windows structureel (2026-05-30, productie OK):** `/profile use` in WT — TUI-modal op achtergrondthread (`_schedule_profile_command_async`); sync/gateway/relaunch na TUI-exit; geen stderr-spinner tijdens `chat` relaunch (prompt `legal ❯`); audit `docs/PROFILE_SWITCH_WINDOWS_AUDIT.md`; E2E `RUN_PROFILE_SWITCH_E2E.bat` + pytest 29 passed.
 

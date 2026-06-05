@@ -8,7 +8,17 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 
+def _ensure_overlay():
+    try:
+        from overlay.bootstrap import install
+
+        install()
+    except Exception:
+        pass
+
+
 def _make_cli():
+    _ensure_overlay()
     from cli import HermesCLI
 
     cli = HermesCLI.__new__(HermesCLI)

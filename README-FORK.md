@@ -25,6 +25,19 @@ Deze fork is de **enige goedgekeurde bron** voor Hermes-installaties binnen dit 
 | Legal domein (lenzen, één bucket) | `docs/LEGAL_DOMAIN_ARCHITECTURE.md`, `LEGAL_TAXONOMY.md` | Rechtsgebied-lenzen; audit `RUN_LEGAL_DOMAIN_E2E.bat` |
 | Domein-toolsets (token-besparing) | `docs/DOMAIN_TOOLSET_AUDIT.md`, `docs/domain_toolsets.yaml` | Minimale toolbox per profiel; opt-in via agent; `SYNC_DOMAIN_TOOLSETS.bat` |
 | WT titelbalk-muis (overlay-fix) | `windows/MOUSE_OVERLAY_FIX.md`, `FIX_MOUSE_BLOCKED.bat` | Geen conhost work-area expand in `WT_SESSION`; geverifieerd 2026-05-30; tag `windows-wt-titlebar-mouse-2026-05-30` |
+| **Nous 100% intact + dunne overlay** | `overlay/`, `docs/NOUS_OVERLAY_ARCHITECTURE.md` | Tier A = upstream; fork via `overlay/bootstrap.py` + runtime patches; drift `Test-NousTreeIdentical.ps1` |
+
+### Nous overlay (institutioneel, 2026-06)
+
+Upstream Python/UI in Tier A blijft **ongewijzigd** na `SYNC_NOUS`. Fork-features:
+
+- **Bootstrap:** `overlay/bootstrap.py` laadt `overlay/hermes_cli/*` en patchet o.a. statusbalk-kosten, `/cost`, Gemini-pricing.
+- **Sync:** `windows\SYNC_NOUS.bat` — merge + overlay + strict drift-gate.
+- **Herstel Tier A:** `windows\scripts\Invoke-RestoreNousTierA.ps1` vóór drift-test.
+- **E2E:** `audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat` (8 stappen: drift, harness, verify, smokes, pytest).
+- **Unit:** `pytest tests/overlay/test_bootstrap.py`
+
+Zie [`docs/NOUS_OVERLAY_ARCHITECTURE.md`](docs/NOUS_OVERLAY_ARCHITECTURE.md) en [`docs/NOUS_DRIFT_BASELINE.md`](docs/NOUS_DRIFT_BASELINE.md).
 
 ### Windows Terminal — titelbalk-muis (2026-05-30)
 
@@ -43,11 +56,16 @@ Deze fork is de **enige goedgekeurde bron** voor Hermes-installaties binnen dit 
 - **Audit:** `windows\audits\RUN_PROFILE_SWITCH_E2E.bat`
 - **Check:** `windows\scripts\verify_hermes_home.ps1` (User-`HERMES_HOME` = root, geen `profiles\core`)
 
-### Wat NIET is aangepast
+### Wat NIET is aangepast (Tier A)
 
-- `hermes_cli/main.py` — **fork:** sticky `active_profile` (wint over stale `HERMES_HOME`) + `profile use`-handler; verder beperkte diff vs upstream
-- `hermes_cli/banner.py` — update-check vergelijkt tegen `origin/main`
-- Overige Python — grotendeels upstream; fork-modules: `profile_switch.py`, `relaunch.py`, `profile_model_inheritance.py`, …
+- `cli.py` — geen inline fork-hooks voor statusbalk of `/cost` (alleen via `overlay/hermes_cli/cli_*_patch.py`)
+- `hermes_cli/status_bar_cost.py` (upstream-pad) — vervangen door overlay-shim met dezelfde module-naam na bootstrap
+- `web/src`, `ui-tui/src` — alleen tijdelijk tijdens `build_fork_ui_assets.ps1`; daarna `git checkout` Tier A
+
+### Beperkte Tier A-diffs (beleid, niet feature-dump)
+
+- `hermes_cli/main.py` — sticky `active_profile` + `profile use` waar nodig
+- Overige fork-logica: **`overlay/`** + `windows/` + geladen shims (`profile_switch`, `usage_snapshot`, …)
 
 ---
 

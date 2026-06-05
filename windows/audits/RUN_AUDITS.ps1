@@ -191,7 +191,7 @@ if (-not $SkipPytest) {
             tests/hermes_cli/test_profile_switch.py `
             tests/hermes_cli/test_relaunch.py::TestRelaunchChatAfterProfileSwitch `
             tests/hermes_cli/test_relaunch.py::TestStripProfileFlags `
-            -q --tb=short
+            -q -o addopts= --tb=short
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }
@@ -316,8 +316,10 @@ if ($IncludeStatusBarCostE2E -or $IncludeAllE2E) {
 
 if ($IncludeClassicCliStatusBarCostE2E -or $IncludeAllE2E) {
     $classicCostE2e = Join-Path $scriptRoot 'RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.ps1'
+    $classicArgs = @{ RepoRoot = $repoRoot }
+    if ($SkipPytest) { $classicArgs['SkipPytest'] = $true }
     Invoke-Step 'classic-cli-status-bar-cost-e2e' {
-        & $classicCostE2e -RepoRoot $repoRoot
+        & $classicCostE2e @classicArgs
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

@@ -35,7 +35,7 @@ $repo = if ($RepoRoot) { (Resolve-Path -LiteralPath $RepoRoot).Path } else { Get
 $upstreamRef = 'upstream/main'
 
 function Invoke-SyncNousPreflight {
-    $guard = Join-Path $repo 'windows\scripts\guard_git_clean.ps1'
+    $guard = Join-HermesRepoPath -RepoRoot $repo -RelativePath 'windows/scripts/guard_git_clean.ps1'
     if ((Test-Path -LiteralPath $guard) -and -not $AllowDirty) {
         & $guard -Quiet
         if ($LASTEXITCODE -eq 2) { exit 2 }
@@ -45,7 +45,7 @@ function Invoke-SyncNousPreflight {
 
 function Invoke-SyncNousMerge {
     if ($SkipMerge) { return }
-    $syncPs1 = Join-Path $repo 'windows\upstream_sync.ps1'
+    $syncPs1 = Join-HermesRepoPath -RepoRoot $repo -RelativePath 'windows/upstream_sync.ps1'
     if (-not (Test-Path -LiteralPath $syncPs1)) { throw "Missing $syncPs1" }
     $mergeArgs = @('-Phase', 'Update', '-RepoRoot', $repo)
     if ($Force) { $mergeArgs += '-Force' }
@@ -57,12 +57,12 @@ function Invoke-SyncNousMerge {
 }
 
 function Invoke-SyncNousApply {
-    $apply = Join-Path $repo 'windows\scripts\Invoke-ApplyHermesOverlay.ps1'
+    $apply = Join-HermesRepoPath -RepoRoot $repo -RelativePath 'windows/scripts/Invoke-ApplyHermesOverlay.ps1'
     & $apply -RepoRoot $repo
 }
 
 function Invoke-SyncNousVerify {
-    $test = Join-Path $repo 'windows\scripts\Test-NousTreeIdentical.ps1'
+    $test = Join-HermesRepoPath -RepoRoot $repo -RelativePath 'windows/scripts/Test-NousTreeIdentical.ps1'
     $testArgs = @{ RepoRoot = $repo; UpstreamRef = $upstreamRef }
     if ($AllowTransitionalDrift) { $testArgs['AllowTransitional'] = $true }
     & $test @testArgs
@@ -70,7 +70,7 @@ function Invoke-SyncNousVerify {
 }
 
 function Invoke-SyncNousPostMerge {
-    $post = Join-Path $repo 'windows\scripts\Invoke-UpstreamPostMerge.ps1'
+    $post = Join-HermesRepoPath -RepoRoot $repo -RelativePath 'windows/scripts/Invoke-UpstreamPostMerge.ps1'
     if (Test-Path -LiteralPath $post) {
         . $post
         $null = Invoke-UpstreamPostMerge -RepoRoot $repo

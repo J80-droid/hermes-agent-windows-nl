@@ -91,6 +91,15 @@ if not "!ERR!"=="0" (
 
 echo.
 echo [OK] Update-keten geslaagd.
+echo [INFO] Nous+overlay drift-check (Tier A intact)...
+if exist "%~dp0scripts\Test-NousTreeIdentical.ps1" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Test-NousTreeIdentical.ps1" -RepoRoot "%CD%"
+  if errorlevel 1 (
+    echo [WARN] Nous drift-check FAIL — draai windows\SYNC_NOUS.bat -Yes
+  ) else (
+    echo [OK] Nous drift-check PASS
+  )
+)
 echo [INFO] Hermes opnieuw: windows\start_hermes.bat  —  in chat: /new
 echo [INFO] Taakbalk-snelkoppelingen bijwerken (windows\ + taakbalk-kopieen)...
 if exist "%~dp0fix_hermes_taskbar_pins.ps1" (

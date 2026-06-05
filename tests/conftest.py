@@ -34,6 +34,14 @@ PROJECT_ROOT = Path(__file__).parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+# Register fork overlay modules (hermes_cli.* shims) before collection.
+try:
+    from overlay.bootstrap import install as _install_overlay
+
+    _install_overlay()
+except Exception:
+    pass
+
 
 # ── Per-file process isolation ──────────────────────────────────────────────
 # Tests run via ``scripts/run_tests_parallel.py``, which spawns a fresh

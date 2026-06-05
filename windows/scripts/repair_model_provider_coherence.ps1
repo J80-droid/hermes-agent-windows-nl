@@ -23,6 +23,11 @@ $python = Get-HermesAuditPython -RepoRoot $repoRoot
 $code = @"
 import os, sys
 sys.path.insert(0, r'$repoRoot')
+try:
+    from overlay.bootstrap import install as _overlay_install
+    _overlay_install()
+except Exception:
+    pass
 os.environ['HERMES_HOME'] = r'$runtimeRoot'
 os.environ.setdefault('HERMES_WIN_PREFER_LOCALAPPDATA', '1')
 from hermes_cli.config import load_config

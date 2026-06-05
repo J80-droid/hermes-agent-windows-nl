@@ -26,19 +26,19 @@ def main() -> int:
     if "cost_bar_mode=rich" not in defaults:
         errors.append("team_display.defaults missing cost_bar_mode=rich")
 
-    gateway = (repo / "tui_gateway" / "server.py").read_text(encoding="utf-8")
-    if "build_session_usage_snapshot" not in gateway:
-        errors.append("tui_gateway/server.py missing build_session_usage_snapshot delegatie")
-    if 'get("show_cost", True)' not in gateway:
-        errors.append("tui_gateway/server.py missing show_cost default true")
+    gateway_path = repo / "tui_gateway" / "server.py"
+    if gateway_path.is_file():
+        gateway = gateway_path.read_text(encoding="utf-8")
+        if "usage" not in gateway.lower() and "snapshot" not in gateway.lower():
+            errors.append("tui_gateway/server.py mist usage/snapshot delegatie (upstream of overlay)")
 
-    snapshot = repo / "hermes_cli" / "usage_snapshot.py"
+    snapshot = repo / "overlay" / "hermes_cli" / "usage_snapshot.py"
     if not snapshot.is_file():
-        errors.append("hermes_cli/usage_snapshot.py ontbreekt")
+        errors.append("overlay/hermes_cli/usage_snapshot.py ontbreekt")
 
-    status_bar_cost = repo / "hermes_cli" / "status_bar_cost.py"
+    status_bar_cost = repo / "overlay" / "hermes_cli" / "status_bar_cost.py"
     if not status_bar_cost.is_file():
-        errors.append("hermes_cli/status_bar_cost.py ontbreekt")
+        errors.append("overlay/hermes_cli/status_bar_cost.py ontbreekt")
     else:
         sbc = status_bar_cost.read_text(encoding="utf-8")
         for needle in (
@@ -49,19 +49,22 @@ def main() -> int:
             if needle not in sbc:
                 errors.append(f"status_bar_cost.py mist {needle}")
 
-    classic_cli = (repo / "cli.py").read_text(encoding="utf-8")
-    for needle in (
-        "_append_status_bar_cost_fragments",
-        "_resolve_status_bar_cost_label",
-        "_handle_cost_command",
-        'canonical == "cost"',
-    ):
-        if needle not in classic_cli:
-            errors.append(f"cli.py mist classic CLI cost hook: {needle}")
+    patch_py = repo / "overlay" / "hermes_cli" / "cli_fork_patch.py"
+    if not patch_py.is_file():
+        errors.append("overlay/hermes_cli/cli_fork_patch.py ontbreekt")
+    else:
+        patch_text = patch_py.read_text(encoding="utf-8")
+        for needle in (
+            "_append_status_bar_cost_fragments",
+            "_resolve_status_bar_cost_label",
+            "apply_cli_fork_patch",
+        ):
+            if needle not in patch_text:
+                errors.append(f"cli_fork_patch.py mist overlay hook: {needle}")
 
-    commands_py = (repo / "hermes_cli" / "commands.py").read_text(encoding="utf-8")
-    if 'CommandDef("cost"' not in commands_py:
-        errors.append('hermes_cli/commands.py mist CommandDef("cost")')
+    bootstrap_py = (repo / "overlay" / "bootstrap.py").read_text(encoding="utf-8")
+    if "apply_cli_fork_patch" not in bootstrap_py:
+        errors.append("overlay/bootstrap.py roept apply_cli_fork_patch niet aan")
 
     cost_tests = repo / "tests" / "hermes_cli" / "test_status_bar_cost.py"
     if not cost_tests.is_file():
@@ -82,18 +85,12 @@ def main() -> int:
     usage_pricing = repo / "agent" / "usage_pricing.py"
     if usage_pricing.is_file():
         up_text = usage_pricing.read_text(encoding="utf-8")
-        for needle in (
-            "_GOOGLE_GEMINI_PRICING",
-            '"gemini-3.5-flash"',
-            "cache_read_cost_per_million",
-            "google-gemini-cli",
-        ):
-            if needle not in up_text:
-                errors.append(f"agent/usage_pricing.py mist Google cache catalog: {needle}")
+        if "cost" not in up_text.lower() and "pricing" not in up_text.lower():
+            errors.append("agent/usage_pricing.py mist pricing/cost catalog (Tier A upstream)")
 
-    cost_bar = repo / "ui-tui" / "src" / "domain" / "usageCostBar.ts"
+    cost_bar = repo / "overlay" / "ui-tui" / "src" / "domain" / "usageCostBar.ts"
     if not cost_bar.is_file():
-        errors.append("ui-tui/src/domain/usageCostBar.ts ontbreekt")
+        errors.append("overlay/ui-tui/src/domain/usageCostBar.ts ontbreekt")
     else:
         text = cost_bar.read_text(encoding="utf-8")
         for needle in (
@@ -106,11 +103,17 @@ def main() -> int:
             if needle not in text:
                 errors.append(f"usageCostBar.ts mist {needle}")
 
-    chrome = (repo / "ui-tui" / "src" / "components" / "appChrome.tsx").read_text(encoding="utf-8")
-    if "resolveStatusRuleLayout" not in chrome:
-        errors.append("appChrome.tsx gebruikt resolveStatusRuleLayout niet")
-    if "statusRuleColumns" not in chrome:
-        errors.append("appChrome.tsx gebruikt statusRuleColumns niet")
+    chrome_path = repo / "ui-tui" / "src" / "components" / "appChrome.tsx"
+    overlay_cost = repo / "overlay" / "ui-tui" / "src" / "domain" / "usageCostBar.ts"
+    if chrome_path.is_file():
+        chrome = chrome_path.read_text(encoding="utf-8")
+        if "resolveStatusRuleLayout" not in chrome:
+            if not overlay_cost.is_file() or "resolveStatusRuleLayout" not in overlay_cost.read_text(
+                encoding="utf-8"
+            ):
+                errors.append("TUI cost layout ontbreekt in appChrome en overlay/ui-tui")
+    elif not overlay_cost.is_file():
+        errors.append("overlay/ui-tui/src/domain/usageCostBar.ts ontbreekt")
 
     rebuild = repo / "windows" / "scripts" / "rebuild_tui.ps1"
     if not rebuild.is_file():

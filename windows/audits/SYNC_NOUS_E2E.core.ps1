@@ -10,10 +10,10 @@ function Step-Fail([string]$Name, [string]$Detail) {
     $script:fail++
 }
 
-$manifest = Join-Path $repoRoot 'overlay\manifest.yaml'
+$manifest = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'overlay/manifest.yaml'
 if (-not (Test-Path -LiteralPath $manifest)) { Step-Fail 'manifest' 'overlay/manifest.yaml' } else { Step-Ok 'overlay/manifest.yaml' }
 
-$bootstrap = Join-Path $repoRoot 'overlay\bootstrap.py'
+$bootstrap = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'overlay/bootstrap.py'
 if (-not (Test-Path -LiteralPath $bootstrap)) { Step-Fail 'bootstrap' 'overlay/bootstrap.py' } else { Step-Ok 'overlay/bootstrap.py' }
 
 $py = $null
@@ -27,7 +27,7 @@ if ($py) {
     Step-Fail 'python' 'geen interpreter'
 }
 
-$drift = Join-Path $repoRoot 'windows\scripts\Test-NousTreeIdentical.ps1'
+$drift = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/Test-NousTreeIdentical.ps1'
 & $drift -RepoRoot $repoRoot
 if ($LASTEXITCODE -eq 0) { Step-Ok 'Test-NousTreeIdentical (strict green)' } else { Step-Fail 'Test-NousTreeIdentical' 'Tier A drift — zie docs/NOUS_DRIFT_BASELINE.md' }
 
