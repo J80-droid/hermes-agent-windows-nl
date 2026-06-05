@@ -322,8 +322,9 @@ def test_e13_verify_fork_status_bar_display() -> None:
     except Exception as exc:
         _step("verify_fork_status_bar_display.py", False, str(exc))
         return
-    tail = (proc.stdout or proc.stderr or "")[-300:]
-    ok = proc.returncode == 0 and "PASS" in (proc.stdout or "")
+    combined = f"{proc.stdout or ''}{proc.stderr or ''}"
+    tail = combined[-300:]
+    ok = proc.returncode == 0 and "PASS" in combined
     _step("verify_fork_status_bar_display.py", ok, tail.strip() if not ok else "")
 
 
