@@ -60,10 +60,12 @@ set "PS_ARGS="
 set "FORCE_FLAG="
 if "%HERMES_UPSTREAM_AUTO_CONFIRM%"=="1" set "FORCE_FLAG=-Force"
 
+set "STRICT_NOUS=0"
 :parse_args
 if "%~1"=="" goto :parse_done
 if /I "%~1"=="-Yes" set "FORCE_FLAG=-Force" & shift & goto :parse_args
 if /I "%~1"=="-y" set "FORCE_FLAG=-Force" & shift & goto :parse_args
+if /I "%~1"=="-StrictNousSync" set "STRICT_NOUS=1" & shift & goto :parse_args
 set "PS_ARGS=!PS_ARGS! %~1"
 shift
 goto :parse_args
@@ -97,6 +99,11 @@ if exist "%~dp0scripts\Test-NousTreeIdentical.ps1" (
   powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Test-NousTreeIdentical.ps1" -RepoRoot "%CD%"
   if errorlevel 1 (
     echo [WARN] Nous drift-check FAIL — draai windows\SYNC_NOUS.bat -Yes
+    if "%STRICT_NOUS%"=="1" (
+      echo [ERROR] -StrictNousSync: Tier A drift — update afgebroken.
+      pause
+      exit /b 1
+    )
   ) else (
     echo [OK] Nous drift-check PASS
   )
