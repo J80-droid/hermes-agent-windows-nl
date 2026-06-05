@@ -108,11 +108,12 @@ Add-StepResult -Name '1/10 repo platform-hardening artefacten' -Ok $repoOk
 
 # --- 2 Filesystem sandbox wiring ---
 $fsPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/hermes_cli/filesystem_sandbox.py')
-$fileTools = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tools/file_tools.py')
+$fileToolsPatch = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/tools/file_tools_fork_patch.py')
+$bootstrapPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/bootstrap.py')
 $fsOk = ($fsPy -match 'def resolve_path_within_sandbox') -and ($fsPy -match 'def has_forbidden_path_content') -and (
-    ($fileTools -match 'validate_agent_path_for_task') -or (Test-Path -LiteralPath (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_filesystem_sandbox.py'))
+    ($fileToolsPatch -match 'apply_file_tools_fork_patch') -and ($fileToolsPatch -match 'validate_agent_path_for_task') -and ($bootstrapPy -match 'apply_file_tools_fork_patch')
 )
-Add-StepResult -Name '2/10 filesystem sandbox wiring in file_tools' -Ok $fsOk
+Add-StepResult -Name '2/10 filesystem sandbox wiring via overlay patch' -Ok $fsOk
 
 # --- 3 Hardware backend + CLI startup logging ---
 $hwPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/hermes_cli/hardware_backend.py')
@@ -158,8 +159,10 @@ Add-StepResult -Name '6/10 isolated harness (12 scenario''s)' -Ok $harnessOk
 if ($SkipPytest) {
     Add-StepResult -Name '7/10 pytest filesystem sandbox' -Ok $true -Detail 'overgeslagen (-SkipPytest)'
 } else {
+    Remove-Item Env:PYTEST_ADDOPTS -ErrorAction SilentlyContinue
     $fsTestOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_file_tools_fork_patch.py'),
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_filesystem_sandbox.py'),
         '-q', '--tb=short', '-o', 'addopts='
     )

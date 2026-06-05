@@ -35,12 +35,18 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 # Register fork overlay modules (hermes_cli.* shims) before collection.
+import logging as _logging
+
+_overlay_log = _logging.getLogger("tests.conftest.overlay")
 try:
     from overlay.bootstrap import install as _install_overlay
 
     _install_overlay()
-except Exception:
-    pass
+except Exception as _overlay_exc:
+    _overlay_log.warning("overlay.bootstrap.install() failed: %s", _overlay_exc)
+    import pytest as _pytest
+
+    _pytest.exit(f"overlay bootstrap required for tests: {_overlay_exc}", returncode=4)
 
 
 # ── Per-file process isolation ──────────────────────────────────────────────

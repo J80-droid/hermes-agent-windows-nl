@@ -204,12 +204,12 @@ Dedicated audit voor filesystem sandbox, hardware backend fallback en LanceDB st
 | Stap | Controle |
 | ---- | -------- |
 | 1/10 | Repo-artefacten (`filesystem_sandbox.py`, `hardware_backend.py`, `lancedb_storage.py`, tests, runners) |
-| 2/10 | Filesystem sandbox wiring in `file_tools.py` |
+| 2/10 | Filesystem sandbox wiring via `overlay/tools/file_tools_fork_patch.py` |
 | 3/10 | Hardware backend + CLI startup logging (`log_local_inference_backends`) |
 | 4/10 | LanceDB lifecycle wiring (`mcp_server`, `ingest`, preflight, shutdown hooks) |
 | 5/10 | Config `workspace.enforce_sandbox` + `pyproject.toml` extra `voice-windows` |
 | 6/10 | Isolated harness (`WindowsPlatformHardeningE2E.harness.py`, 12 scenario's) |
-| 7–9/10 | pytest: `test_filesystem_sandbox`, `test_hardware_backend`, `test_lancedb_storage` |
+| 7–9/10 | pytest: `test_file_tools_fork_patch`, `test_filesystem_sandbox`, `test_hardware_backend`, `test_lancedb_storage` |
 | 10/10 | `check-windows-footguns.py` op gewijzigde modules |
 
 Optioneel: `-SkipPytest` op `RUN_WINDOWS_PLATFORM_HARDENING_E2E.ps1`.
@@ -232,7 +232,7 @@ Validatie van code-review fixes en PS1-padmigratie (naast de basis hardening E2E
 | 4/10 | `check-windows-footguns.py` PS1-padregel actief |
 | 5/10 | Code wiring: env-var sandbox, GPU fallback, lifecycle shutdown, DI-laag |
 | 6/10 | Isolated harness (`PlatformHardeningRegressionE2E.harness.py`, 10 scenario's) |
-| 7/10 | pytest: sandbox + hardware + lancedb + vector_store + knowledge_repository |
+| 7/10 | pytest: `test_file_tools_fork_patch` + `test_file_tools` + sandbox + hardware + lancedb + vector_store + knowledge_repository |
 | 8/10 | Footguns op gewijzigde modules |
 | 9/10 | Architecture modules (`knowledge_repository`, `vector_store_*`) |
 | 10/10 | ingest + MCP wired via `KnowledgeRepository` |
@@ -251,7 +251,7 @@ Gecombineerde poort (zoals `RUN_MEMORY_PRODUCTION_GATE.bat`):
 
 1. `RUN_WINDOWS_PLATFORM_HARDENING_E2E` (10/10)
 2. `RUN_PLATFORM_HARDENING_REGRESSION_E2E` (10/10)
-3. pytest platform-hardening subset
+3. pytest platform-hardening subset (`test_file_tools_fork_patch`, `test_file_tools`, `test_filesystem_sandbox`, hardware, RAG)
 4. `check-windows-footguns.py --all`
 
 Rapport: `PLATFORM_HARDENING_PRODUCTION_GATE_REPORT_*.md`. Zie `docs/WINDOWS_PLATFORM_HARDENING.md`.

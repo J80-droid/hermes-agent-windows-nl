@@ -138,6 +138,7 @@ def _apply_runtime_patches() -> None:
     from overlay.hermes_cli.doctor_fork_patch import apply_doctor_fork_patch
     from overlay.hermes_cli.models_fork_patch import apply_models_fork_patch
     from overlay.hermes_cli.tools_config_fork_patch import apply_tools_config_fork_patch
+    from overlay.tools.file_tools_fork_patch import apply_file_tools_fork_patch
     from overlay.tui_gateway.gateway_config_fork_patch import apply_gateway_config_fork_patch
 
     apply_argparse_fork_patch()
@@ -153,6 +154,7 @@ def _apply_runtime_patches() -> None:
     apply_cli_profile_fork_patch()
     apply_cli_command_patches()
     apply_gateway_config_fork_patch()
+    apply_file_tools_fork_patch()
 
 
 def install() -> None:

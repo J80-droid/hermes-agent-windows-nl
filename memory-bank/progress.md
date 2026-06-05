@@ -3,13 +3,20 @@
 ## Optionele productie-poorten (Fase 3)
 
 - [x] `repo-hygiene.mdc` toegevoegd (`.cursor/rules/` vanuit `docs/templates/`)
-- [x] `RUN_REPO_HYGIENE_E2E` 9/9; platform hardening E2E overlay-paden; production gate pytest zonder `test_file_tools` (Tier A upstream wijkt af van overlay sandbox)
+- [x] `RUN_REPO_HYGIENE_E2E` 9/9; platform hardening E2E overlay-paden; `RUN_PLATFORM_HARDENING_PRODUCTION_GATE` PASS met `file_tools_fork_patch` + pytest subset (2026-06-06)
 - [x] `RUN_AUDITS -IncludeAllE2E` **PASS** (log `windows/audits/RUN_AUDITS_plan_final3.log`, 2026-06-06)
 
 ## RAG operationeel (Fase 6 — gebruikersdata)
 
 - [ ] Bronmappen `%USERPROFILE%\data\raw_source_files\` (01–03, 05–08, 09–12) — **ontbreken op dev-machine**; ingest/MCP-test uitgesteld tot bronnen aanwezig
 - [ ] `windows\scripts\institutional_p0_p1.bat --ingest-remaining` + `update_knowledge.bat --mcp-test` na bronnen
+
+## Technische schuld — afgerond (2026-06-06)
+
+- [x] Sandbox productie-wiring: `overlay/tools/file_tools_fork_patch.py` + `tests/overlay/test_file_tools_fork_patch.py`
+- [x] Platform production gate: `RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat` PASS; regression harness `install()` + wiring-checks
+- [x] Drift: `Test-NousTreeIdentical` + `Export-NousDriftBaseline`; cadans `INSTITUTIONAL_OPERATIONS.md`
+- [x] `audits/RUN_NOUS_OVERLAY_AFWERKING_E2E.bat` 8/8; memory-bank/docs sync
 
 ## Nous overlay institutioneel (2026-06)
 

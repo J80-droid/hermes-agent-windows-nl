@@ -51,7 +51,7 @@ Alle agent file-tools (`read_file`, `write_file`, `patch`, `search_files`) blijv
 
 **Beperking:** defense-in-depth alleen — de terminal-tool draait als dezelfde OS-gebruiker en kan de grens omzeilen. Zie ook `agent/file_safety.py` (credentials, cross-profile).
 
-Module: `hermes_cli/filesystem_sandbox.py` · wiring: `tools/file_tools.py` · tests: `tests/hermes_cli/test_filesystem_sandbox.py`
+Module: `overlay/hermes_cli/filesystem_sandbox.py` · wiring: `overlay/tools/file_tools_fork_patch.py` → `tools/file_tools._resolve_path_for_task` (via `bootstrap.install()`) · tests: `tests/overlay/test_file_tools_fork_patch.py`, `tests/hermes_cli/test_filesystem_sandbox.py`, `tests/tools/test_file_tools.py` (sandbox uit in unit-fixture)
 
 ## LanceDB storage (VectorStore + lifecycle)
 

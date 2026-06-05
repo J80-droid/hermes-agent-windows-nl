@@ -134,13 +134,14 @@ $ldbLife = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -R
 $ldbPorts = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/vector_store_ports.py')
 $ldbBackend = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/lancedb_backend.py')
 $fileTools = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tools/file_tools.py')
+$fileToolsPatch = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/tools/file_tools_fork_patch.py')
 $wireOk = ($fsPy -match 'os\.path\.expandvars') -and
     ($hwPy -match 'GPU fallback') -and
     ($ldbLife -match '_run_shutdown_hooks') -and
     ($ldbLife -match '_extra_shutdown') -and
     ($ldbPorts -match 'VectorStoreBackend') -and
     ($ldbBackend -match 'LanceDBVectorStoreBackend') -and
-    ($fileTools -match 'except PermissionError')
+    (($fileTools -match 'PermissionError') -or ($fileToolsPatch -match 'FilesystemSandboxViolation'))
 Add-StepResult -Name '5/10 code wiring review-fixes' -Ok $wireOk
 
 # --- 6 Isolated harness (10 scenario''s) ---
@@ -152,8 +153,11 @@ Add-StepResult -Name '6/10 isolated harness (10 scenario''s)' -Ok $harnessOk
 if ($SkipPytest) {
     Add-StepResult -Name '7/10 pytest regressie-subset' -Ok $true -Detail 'overgeslagen (-SkipPytest)'
 } else {
+    Remove-Item Env:PYTEST_ADDOPTS -ErrorAction SilentlyContinue
     $pytestOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_file_tools_fork_patch.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/tools/test_file_tools.py'),
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_filesystem_sandbox.py'),
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_hardware_backend.py'),
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/rag_pipeline/test_lancedb_storage.py'),

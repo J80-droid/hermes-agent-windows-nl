@@ -134,6 +134,17 @@ powershell -NoProfile -File windows\upstream_sync.ps1 -Phase Preflight
 
 Grote achterstand zonder j/N-vraag: `UPDATE_HERMES.bat -Yes` of `UPDATE_HERMES_YES.bat`. Automation: `set HERMES_SKIP_PAUSE_AFTER_UPDATE=1`. Alleen `-QuickFix` als enig argument: stopt na opruimen. Zie [`windows/UPSTREAM_SYNC.md`](../windows/UPSTREAM_SYNC.md).
 
+**Tier A drift (cadans):**
+
+| Wanneer | Commando |
+|---------|----------|
+| Wekelijks / vóór release | `windows\SYNC_NOUS.bat -Yes` → `powershell -File windows\scripts\Test-NousTreeIdentical.ps1` |
+| Na sync/merge | `powershell -File windows\scripts\Export-NousDriftBaseline.ps1` |
+| Bij update (optioneel hard stop) | `windows\UPDATE_HERMES.bat -StrictNousSync` — breekt af bij Tier-A-drift |
+| Herstel Tier A | `powershell -File windows\scripts\Invoke-RestoreNousTierA.ps1` |
+
+Zie [`docs/NOUS_OVERLAY_ARCHITECTURE.md`](NOUS_OVERLAY_ARCHITECTURE.md) en [`docs/NOUS_DRIFT_BASELINE.md`](NOUS_DRIFT_BASELINE.md).
+
 ### Release & zware poorten
 
 ```cmd
@@ -143,7 +154,9 @@ windows\audits\RUN_AUDITS.bat -IncludeAllE2E
 windows\VERIFY_WINDOWS_CHAIN.bat
 ```
 
-`-IncludeAllE2E` bevat hardening **14/14**, maar **niet** de zware productie-poort (~2+ min).
+`-IncludeAllE2E` bevat hardening **14/14**, maar **niet** `RUN_INSTITUTIONAL_PRODUCTION_GATE` (gebruik `-IncludeInstitutionalProductionGate` of losse `.bat`, ~2+ min).
+
+Platform hardening productie-poort (sandbox/file_tools wiring): `windows\audits\RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat`.
 
 ### RAG, legal & domeinen
 

@@ -2,7 +2,9 @@
 
 ## Focus
 
-**Nous overlay afwerking (2026-06-06):** Plan uitgevoerd. **`RUN_AUDITS -IncludeAllE2E` PASS** (`windows/audits/RUN_AUDITS_plan_final3.log`). Tier A restore; fork gates in audit; dedup regel-§; trust preflight in RUN_AUDITS; overlay `usage.ts` + vitest copy `-Force`; bootstrap laadt `filesystem_sandbox`/`hardware_backend`/`config_snapshot`. `SYNC_TRUST_RUNTIME.bat` groen met SOUL+memory retry. Optioneel: repo-hygiene 9/9; platform hardening E2E 10/10; production gate regression E2E nog Tier-A-drift (niet blokkerend). RAG F6 uitgesteld (geen bronmappen).
+**Technische schuld codebase-schoonmaak (2026-06-06):** `overlay/tools/file_tools_fork_patch.py` wired sandbox → `_resolve_path_for_task` + `_check_sensitive_path`; `RUN_PLATFORM_HARDENING_PRODUCTION_GATE` **PASS** (incl. `test_file_tools_fork_patch`, `test_file_tools`); `audits/RUN_NOUS_OVERLAY_AFWERKING_E2E` 8/8; `Test-NousTreeIdentical` groen na `Invoke-RestoreNousTierA`; drift-baseline + cadans in `INSTITUTIONAL_OPERATIONS.md`. **Let op:** `RUN_INSTITUTIONAL_PRODUCTION_GATE` ≠ `RUN_AUDITS -IncludeAllE2E` — platform-poort groen; volledige institutional gate vereist `hermes-env` (o.a. pyarrow voor KnowledgeRepository pytest).
+
+**Nous overlay afwerking (2026-06-06):** Plan uitgevoerd. **`RUN_AUDITS -IncludeAllE2E` PASS** (`windows/audits/RUN_AUDITS_plan_final3.log`). Tier A restore; fork gates in audit; dedup regel-§; trust preflight in RUN_AUDITS; overlay `usage.ts` + vitest copy `-Force`; bootstrap laadt `filesystem_sandbox`/`hardware_backend`/`config_snapshot`. `SYNC_TRUST_RUNTIME.bat` groen met SOUL+memory retry. RAG F6 uitgesteld (geen bronmappen).
 
 **Profielwissel Windows structureel (2026-05-30, productie OK):** `/profile use` in WT — TUI-modal op achtergrondthread (`_schedule_profile_command_async`); sync/gateway/relaunch na TUI-exit; geen stderr-spinner tijdens `chat` relaunch (prompt `legal ❯`); audit `docs/PROFILE_SWITCH_WINDOWS_AUDIT.md`; E2E `RUN_PROFILE_SWITCH_E2E.bat` + pytest 29 passed.
 

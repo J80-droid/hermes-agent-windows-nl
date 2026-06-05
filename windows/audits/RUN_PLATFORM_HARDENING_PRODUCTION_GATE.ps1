@@ -32,6 +32,8 @@ if (-not $SkipPytest) {
     $auditPython = Get-HermesAuditPython -RepoRoot $RepoRoot
     $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
     $pytestTargets = @(
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_file_tools_fork_patch.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/tools/test_file_tools.py'),
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_filesystem_sandbox.py'),
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_hardware_backend.py'),
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/rag_pipeline/test_lancedb_storage.py'),
@@ -40,6 +42,7 @@ if (-not $SkipPytest) {
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/rag_pipeline/test_knowledge_repository.py')
     )
     Write-Host '--- pytest platform hardening subset ---' -ForegroundColor Cyan
+    Remove-Item Env:PYTEST_ADDOPTS -ErrorAction SilentlyContinue
     & $auditPython -m pytest @pytestTargets -q --tb=short -o addopts= 2>&1 | ForEach-Object { Write-Host $_ }
     if (Test-NativeCommandFailed) { $failures++ }
 }

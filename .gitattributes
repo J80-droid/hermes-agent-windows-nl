@@ -1,2 +1,9 @@
-# Auto-generated files — collapse diffs and exclude from language stats
+# Line-ending policy (Windows fork)
+* text=auto
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.psm1 text eol=crlf
+*.sh text eol=lf
+*.py text eol=lf
 web/package-lock.json linguist-generated=true

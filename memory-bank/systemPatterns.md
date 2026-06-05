@@ -6,7 +6,9 @@
 - **Tier B** = `overlay/`, `windows/`, `scripts/rag_pipeline/`, skills, runtime.
 - **Bootstrap:** `overlay/bootstrap.py` + `PYTHONSTARTUP` via `Invoke-HermesOverlayBootstrap.ps1` (launch + SYNC_NOUS).
 - **Sync:** `windows/SYNC_NOUS.bat` → merge → `Invoke-ApplyHermesOverlay` → drift-test → post-merge.
-- **Gate:** `Test-NousTreeIdentical.ps1` (CI met `-AllowTransitional` tot `cli`/web/TUI gemigreerd).
+- **Gate:** `Test-NousTreeIdentical.ps1` (strict in CI `fork-windows-institutional.yml` + `RUN_AUDITS` postflight).
+- **File-tools sandbox:** `overlay/tools/file_tools_fork_patch.py` na `bootstrap.install()` — alleen wanneer `is_sandbox_enforced()`.
+- **Bootstrap modules (overlay):** o.a. `filesystem_sandbox`, `hardware_backend`, `config_snapshot` in `_OVERLAY_HERMES_CLI_MODULES`.
 
 ## Config-scheiding (drie bestanden)
 

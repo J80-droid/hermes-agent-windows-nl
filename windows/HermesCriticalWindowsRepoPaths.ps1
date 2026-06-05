@@ -77,6 +77,7 @@ function Get-HermesCriticalWindowsRepoPathList {
     'windows/scripts/Invoke-HermesOverlayBootstrap.ps1',
     'windows/scripts/Invoke-ApplyHermesOverlay.ps1',
     'overlay/bootstrap.py',
+    'overlay/tools/file_tools_fork_patch.py',
     'overlay/manifest.yaml',
     'overlay/hermes_cli/auth_fork_patch.py',
     'overlay/hermes_cli/argparse_fork_patch.py',

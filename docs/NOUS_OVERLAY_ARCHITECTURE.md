@@ -158,6 +158,7 @@ Max. 1–2 weken achter op `upstream/main`. Zie [UPSTREAM_SYNC.md](../windows/UP
 ## Plugins / optionele overlay-modules
 
 - **`plugins/j80-windows-nl`:** in `overlay/manifest.yaml` maar **niet** geladen door `bootstrap.py`; slash-commands via overlay CLI-patches.
-- **Lazy overlay `hermes_cli`:** `hardware_backend`, `filesystem_sandbox`, `config_snapshot`, `model_catalog_guard` (via `models_fork_patch`), `model_list_ui`, `skills_hub_init`, `win32_console` — niet in `_OVERLAY_HERMES_CLI_MODULES`; E2E's lezen `overlay/hermes_cli/` waar Tier A upstream die modules niet heeft.
+- **Bootstrap `hermes_cli` (overlay):** `filesystem_sandbox`, `hardware_backend`, `config_snapshot` — geladen via `_OVERLAY_HERMES_CLI_MODULES`; file-tools wiring via `overlay/tools/file_tools_fork_patch.py`.
+- **Lazy overlay `hermes_cli`:** `model_catalog_guard` (via `models_fork_patch`), `model_list_ui`, `skills_hub_init`, `win32_console` — niet in `_OVERLAY_HERMES_CLI_MODULES`.
 
 `windows/scripts/collect_env_sync_keys.py` roept `overlay.bootstrap.install()` aan vóór `profile_model_inheritance.root_config_path()`.

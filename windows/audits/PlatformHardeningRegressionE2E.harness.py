@@ -16,6 +16,10 @@ if str(REPO_ROOT) not in sys.path:
 if str(RAG_DIR) not in sys.path:
     sys.path.insert(0, str(RAG_DIR))
 
+from overlay.bootstrap import install
+
+install()
+
 FAILURES = 0
 
 
@@ -97,21 +101,22 @@ def test_patch_tool_permission_error_propagates() -> None:
 
         from tools import file_tools
 
-        with patch.object(
-            file_tools,
-            "_resolve_path_for_task",
-            side_effect=PermissionError("sandbox denied"),
-        ):
-            try:
-                file_tools.patch_tool(
-                    mode="replace",
-                    path="locked.txt",
-                    old_string="original",
-                    new_string="changed",
-                )
-                step("patch_tool PermissionError propagates", False, "no exception raised")
-            except PermissionError:
-                step("patch_tool PermissionError propagates", True)
+        mock_ops = MagicMock()
+        mock_ops.patch_replace.side_effect = PermissionError("sandbox denied")
+        with patch.object(file_tools, "_get_file_ops", return_value=mock_ops):
+            raw = file_tools.patch_tool(
+                mode="replace",
+                path="locked.txt",
+                old_string="original",
+                new_string="changed",
+            )
+            payload = json.loads(raw)
+            msg = str(payload.get("error", ""))
+            step(
+                "patch_tool PermissionError surfaces as tool error",
+                "sandbox denied" in msg,
+                msg or "no error",
+            )
 
 
 def test_hardware_cuda_device_fallback() -> None:
@@ -202,9 +207,14 @@ def test_lancedb_single_atexit_handler() -> None:
 
 
 def test_terminal_tool_documents_git_bash() -> None:
-    text = (REPO_ROOT / "tools" / "terminal_tool.py").read_text(encoding="utf-8")
-    ok = "Git Bash" in text and "HERMES_GIT_BASH_PATH" in text
-    step("terminal_tool documents Git Bash on Windows", ok)
+    local_py = (REPO_ROOT / "tools" / "environments" / "local.py").read_text(encoding="utf-8")
+    hardening = (REPO_ROOT / "docs" / "WINDOWS_PLATFORM_HARDENING.md").read_text(encoding="utf-8")
+    ok = (
+        "HERMES_GIT_BASH_PATH" in local_py
+        and ("Git Bash" in local_py or "bash.exe" in local_py)
+        and "HERMES_GIT_BASH_PATH" in hardening
+    )
+    step("Windows shell env documents Git Bash path", ok)
 
 
 def test_knowledge_repository_mock_backend() -> None:
