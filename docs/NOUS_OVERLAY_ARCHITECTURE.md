@@ -50,6 +50,14 @@ E2E sync: `windows\audits\RUN_SYNC_NOUS_E2E.bat` of `RUN_AUDITS -IncludeSyncNous
 | `overlay/agent/pricing_fork_patch.py` | Google Gemini-catalogus in `usage_pricing` |
 | `overlay/agent/google_gemini_pricing.py` | Prijstabel Gemini 3.x |
 | `overlay/hermes_cli/models_fork_patch.py` | Startup model-catalog guard |
+| `overlay/hermes_cli/auth_fork_patch.py` | `read_auth_json` (BOM), `sync_root_active_provider`, `_read_shared_nous_state` (BOM) |
+| `overlay/tui_gateway/gateway_config_fork_patch.py` | Gateway `/cost`, `cost_bar_mode`, `/tps`, usage snapshot |
+| `overlay/hermes_cli/argparse_fork_patch.py` | `profile use` flags + `config get` subparser |
+| `overlay/hermes_cli/cli_profile_fork_patch.py` | `execute_profile_switch`, `_parse_profile_switch_intent` |
+| `overlay/hermes_cli/config_fork_patch.py` | `get_config_value`, `config get` handler |
+| `overlay/hermes_cli/doctor_fork_patch.py` | `_check_windows_split_home_config` |
+| `overlay/hermes_cli/tools_config_fork_patch.py` | Expliciet lege `platform_toolsets.cli: []` |
+| `overlay/agent/prompt_builder_fork_patch.py` | Legal runtime path block op `agent.prompt_builder` |
 
 **Start:**
 

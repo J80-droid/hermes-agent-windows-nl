@@ -52,6 +52,7 @@ _OVERLAY_HERMES_CLI_MODULES: tuple[str, ...] = (
     "legal_architecture_brief",
     "profile_model_inheritance",
     "profile_switch",
+    "profile_mcp_format",
     "relaunch",
     "venice_model_picker",
     "display_markdown",
@@ -124,15 +125,31 @@ def _apply_runtime_patches() -> None:
     """Monkey-patch Tier A classes after overlay modules are in ``sys.modules``."""
     from overlay.agent.agent_throughput_fork_patch import apply_agent_throughput_fork_patch
     from overlay.agent.pricing_fork_patch import apply_pricing_fork_patch
+    from overlay.agent.prompt_builder_fork_patch import apply_prompt_builder_fork_patch
+    from overlay.hermes_cli.argparse_fork_patch import apply_argparse_fork_patch
+    from overlay.hermes_cli.auth_fork_patch import apply_auth_fork_patch
     from overlay.hermes_cli.cli_command_patches import apply_cli_command_patches
     from overlay.hermes_cli.cli_fork_patch import apply_cli_fork_patch
+    from overlay.hermes_cli.cli_profile_fork_patch import apply_cli_profile_fork_patch
+    from overlay.hermes_cli.config_fork_patch import apply_config_fork_patch
+    from overlay.hermes_cli.doctor_fork_patch import apply_doctor_fork_patch
     from overlay.hermes_cli.models_fork_patch import apply_models_fork_patch
+    from overlay.hermes_cli.tools_config_fork_patch import apply_tools_config_fork_patch
+    from overlay.tui_gateway.gateway_config_fork_patch import apply_gateway_config_fork_patch
 
+    apply_argparse_fork_patch()
     apply_pricing_fork_patch()
     apply_models_fork_patch()
+    apply_auth_fork_patch()
+    apply_config_fork_patch()
+    apply_doctor_fork_patch()
+    apply_tools_config_fork_patch()
+    apply_prompt_builder_fork_patch()
     apply_agent_throughput_fork_patch()
     apply_cli_fork_patch()
+    apply_cli_profile_fork_patch()
     apply_cli_command_patches()
+    apply_gateway_config_fork_patch()
 
 
 def install() -> None:

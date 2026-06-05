@@ -304,14 +304,19 @@ if ($step15Ok) {
 Add-StepResult -Name '15/18 dedup + post-sync keten' -Ok $step15Ok -Detail 'dedup incl. legacy root + post-sync'
 
 # --- 16 TUI auto /new na sync ---
-$tuiNotice = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "ui-tui/src/lib/newChatNotice.ts"
-$tuiWatch = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "ui-tui/src/app/useInstitutionalNewChatAutoReset.ts"
-$tuiHandler = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "ui-tui/src/app/createGatewayEventHandler.ts"
-$step16Ok = (Test-Path -LiteralPath $tuiNotice) -and (Test-Path -LiteralPath $tuiWatch) -and (Test-Path -LiteralPath $tuiHandler)
+$tuiNotice = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "overlay/ui-tui/src/lib/newChatNotice.ts"
+$tuiWatch = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "overlay/ui-tui/src/app/useInstitutionalNewChatAutoReset.ts"
+$tuiGatewayReady = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath "overlay/ui-tui/src/app/gatewayReadyNewChatNotice.ts"
+$step16Ok = (Test-Path -LiteralPath $tuiNotice) -and (Test-Path -LiteralPath $tuiWatch) -and (Test-Path -LiteralPath $tuiGatewayReady)
 if ($step16Ok) {
-    $handlerText = Get-Content -LiteralPath $tuiHandler -Raw -Encoding UTF8
-    if ($handlerText -notmatch 'hasPendingNewChatNotice') { $step16Ok = $false }
-    if ($handlerText -notmatch 'clearNewChatNotice') { $step16Ok = $false }
+    $watchText = Get-Content -LiteralPath $tuiWatch -Raw -Encoding UTF8
+    $readyText = Get-Content -LiteralPath $tuiGatewayReady -Raw -Encoding UTF8
+    if ($watchText -notmatch 'hasPendingNewChatNotice') { $step16Ok = $false }
+    if ($watchText -notmatch 'clearNewChatNotice') { $step16Ok = $false }
+    if ($watchText -notmatch 'watch\(') { $step16Ok = $false }
+    if ($readyText -notmatch 'gateway\.ready') { $step16Ok = $false }
+    if ($readyText -notmatch 'hasPendingNewChatNotice') { $step16Ok = $false }
+    if ($readyText -notmatch 'clearNewChatNotice') { $step16Ok = $false }
 }
 Add-StepResult -Name '16/18 TUI auto /new' -Ok $step16Ok -Detail 'newChatNotice + gateway.ready + fs.watch'
 

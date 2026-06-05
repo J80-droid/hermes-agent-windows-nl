@@ -49,8 +49,15 @@ $scriptRoot = $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $scriptRoot '..\..')).Path
 Set-Location $repoRoot
 
+# Tier A restore resets pyproject.toml; force thread timeouts on Windows audits.
+if (-not $env:PYTEST_ADDOPTS) {
+    $env:PYTEST_ADDOPTS = '-p pytest_timeout --timeout=30 --timeout-method=thread'
+}
+
 $failures = 0
 $skipped = 0
+$restoreTierA = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/Invoke-RestoreNousTierA.ps1'
+$driftGate = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/Test-NousTreeIdentical.ps1'
 
 function Invoke-Step {
     param(
@@ -84,6 +91,16 @@ function Invoke-Step {
         $ErrorActionPreference = $prevEap
     }
     return (-not $stepFailed)
+}
+
+if ($IncludeAllE2E -and -not $SkipHermesPreflight) {
+    Invoke-Step 'tier-a-restore-preflight' {
+        if (-not (Test-Path -LiteralPath $restoreTierA)) {
+            throw "missing $restoreTierA"
+        }
+        & $restoreTierA
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
 }
 
 if (-not $SkipHermesPreflight) {
@@ -144,8 +161,8 @@ if (-not $SkipRuff) {
             return
         }
         & ruff check `
-            hermes_cli/profile_switch.py `
-            hermes_cli/relaunch.py `
+            overlay/hermes_cli/profile_switch.py `
+            overlay/hermes_cli/relaunch.py `
             hermes_cli/main.py `
             cli.py `
             tests/hermes_cli/test_profile_switch.py `
@@ -173,6 +190,13 @@ if ($IncludeAllE2E) {
     }
 }
 
+if (-not (Get-Command Test-HermesProfileSubdirPath -ErrorAction SilentlyContinue)) {
+    . (Join-Path $repoRoot 'windows/scripts/HermesHomeCommon.ps1')
+}
+
+$runtimeHermesHome = Join-Path $env:LOCALAPPDATA 'hermes'
+$env:HERMES_HOME = $runtimeHermesHome
+
 if ($IncludeCodebaseSmokeE2E -or $IncludeAllE2E) {
     $codebaseE2e = Join-Path $scriptRoot 'RUN_CODEBASE_SMOKE_E2E.ps1'
     Invoke-Step 'codebase-smoke-e2e' {
@@ -186,13 +210,6 @@ if ($IncludeCodebaseSmokeE2E -or $IncludeAllE2E) {
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }
-
-if (-not (Get-Command Test-HermesProfileSubdirPath -ErrorAction SilentlyContinue)) {
-    . (Join-Path $repoRoot 'windows/scripts/HermesHomeCommon.ps1')
-}
-
-$runtimeHermesHome = Join-Path $env:LOCALAPPDATA 'hermes'
-$env:HERMES_HOME = $runtimeHermesHome
 
 function Get-HermesAuditPythonExe {
     $condaPy = Join-Path $env:USERPROFILE 'miniconda3\envs\hermes-env\python.exe'
@@ -434,6 +451,15 @@ if ($IncludeUpdateHermesIntegrationE2E) {
     }
 }
 
+if (($IncludeSyncNousE2E -or $IncludeAllE2E -or $IncludeNousOverlayInstitutionalE2E) -and -not $SkipHermesPreflight) {
+    Invoke-Step 'tier-a-restore-pre-overlay' {
+        if (Test-Path -LiteralPath $restoreTierA) {
+            & $restoreTierA
+        }
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
 if ($IncludeSyncNousE2E -or $IncludeAllE2E) {
     $syncNousBat = Join-Path $scriptRoot 'RUN_SYNC_NOUS_E2E.bat'
     Invoke-Step 'sync-nous-e2e' {
@@ -446,13 +472,17 @@ if ($IncludeNousOverlayInstitutionalE2E -or $IncludeAllE2E) {
     if (-not $env:HERMES_HOME) {
         $env:HERMES_HOME = Join-Path $env:LOCALAPPDATA 'hermes'
     }
-    $restoreTierA = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/Invoke-RestoreNousTierA.ps1'
     $nousOverlayBat = Join-Path $repoRoot 'audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat'
     Invoke-Step 'nous-overlay-institutional-e2e' {
-        if (Test-Path -LiteralPath $restoreTierA) {
-            & $restoreTierA
-        }
         cmd /c "`"$nousOverlayBat`""
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeAllE2E) {
+    $nousRuntimeBat = Join-Path $repoRoot 'audits\RUN_NOUS_OVERLAY_RUNTIME_E2E.bat'
+    Invoke-Step 'nous-overlay-runtime-e2e' {
+        cmd /c "`"$nousRuntimeBat`""
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }
@@ -477,6 +507,18 @@ if ($IncludeInstitutionalProductionGate) {
     $instGate = Join-Path $scriptRoot 'RUN_INSTITUTIONAL_PRODUCTION_GATE.ps1'
     Invoke-Step 'institutional-production-gate' {
         & $instGate -RepoRoot $repoRoot
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+}
+
+if ($IncludeAllE2E -and -not $SkipHermesPreflight) {
+    Invoke-Step 'tier-a-drift-postflight' {
+        if (Test-Path -LiteralPath $restoreTierA) {
+            & $restoreTierA
+        }
+        if (Test-Path -LiteralPath $driftGate) {
+            & $driftGate
+        }
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

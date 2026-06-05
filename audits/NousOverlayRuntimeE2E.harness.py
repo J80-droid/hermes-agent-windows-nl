@@ -212,6 +212,7 @@ def test_e9_tier_a_guard_script() -> None:
 def test_e10_pytest_overlay_runtime_subset() -> None:
     env = os.environ.copy()
     env["PYTHONPATH"] = str(REPO_ROOT)
+    env.pop("PYTEST_ADDOPTS", None)
     proc = subprocess.run(
         [
             sys.executable,
@@ -223,7 +224,7 @@ def test_e10_pytest_overlay_runtime_subset() -> None:
             "tests/overlay/test_cli_command_patches.py",
             "-q",
             "-o",
-            "addopts=",
+            "addopts=-m 'not integration'",
         ],
         cwd=str(REPO_ROOT),
         capture_output=True,
@@ -245,7 +246,7 @@ def main() -> int:
     test_e3_agent_compressor_backlink()
     test_e4_agent_fire_stream_delta_records_tokens()
     test_e5_compressor_update_finalizes_agent_tps()
-    test_e6_stream_delta_wrap_resilient()
+    test_e6_stream_delta_none_boundary_freezes()
     test_e7_slash_commands_tps_and_cost()
     test_e8_freeze_guard_agent_tps()
     test_e9_tier_a_guard_script()

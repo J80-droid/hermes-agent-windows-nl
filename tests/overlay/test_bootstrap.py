@@ -226,6 +226,14 @@ class TestApplyRuntimePatches:
                 side_effect=_rec("models"),
             ),
             patch(
+                "overlay.hermes_cli.auth_fork_patch.apply_auth_fork_patch",
+                side_effect=_rec("auth"),
+            ),
+            patch(
+                "overlay.agent.agent_throughput_fork_patch.apply_agent_throughput_fork_patch",
+                side_effect=_rec("agent_tps"),
+            ),
+            patch(
                 "overlay.hermes_cli.cli_fork_patch.apply_cli_fork_patch",
                 side_effect=_rec("cli_fork"),
             ),
@@ -233,10 +241,22 @@ class TestApplyRuntimePatches:
                 "overlay.hermes_cli.cli_command_patches.apply_cli_command_patches",
                 side_effect=_rec("cli_commands"),
             ),
+            patch(
+                "overlay.tui_gateway.gateway_config_fork_patch.apply_gateway_config_fork_patch",
+                side_effect=_rec("gateway_config"),
+            ),
         ):
             bootstrap._apply_runtime_patches()
 
-        assert calls == ["pricing", "models", "cli_fork", "cli_commands"]
+        assert calls == [
+            "pricing",
+            "models",
+            "auth",
+            "agent_tps",
+            "cli_fork",
+            "cli_commands",
+            "gateway_config",
+        ]
 
     def test_propagates_patch_failure(self):
         with patch(

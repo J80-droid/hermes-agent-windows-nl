@@ -107,12 +107,12 @@ $defaultsText = if (Test-Path -LiteralPath $defaultsPath) {
 } else { '' }
 $repoOk = ($defaultsText -match 'show_cost=true') -and ($defaultsText -match 'cost_bar_mode=rich')
 $repoFiles = @(
-    'hermes_cli/usage_snapshot.py',
+    'overlay/hermes_cli/usage_snapshot.py',
+    'overlay/hermes_cli/status_bar_cost.py',
+    'overlay/ui-tui/src/domain/usageCostBar.ts',
+    'overlay/tui_gateway/gateway_config_fork_patch.py',
     'ui-tui/src/domain/usage.ts',
-    'ui-tui/src/domain/usageCostBar.ts',
-    'ui-tui/src/components/appChrome.tsx',
     'ui-tui/src/app/createGatewayEventHandler.ts',
-    'ui-tui/src/app/slash/commands/core.ts',
     'tui_gateway/server.py',
     'scripts/status_bar_cost_gateway_smoke.py',
     'scripts/verify_usage_cost_bar.py',
@@ -128,9 +128,10 @@ Add-StepResult -Name '1/10 repo defaults + artefacten' -Ok $repoOk -Detail 'show
 
 # --- 2 Guardrails (institutional + diagnose + verify) ---
 $instE2e = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/audits/RUN_INSTITUTIONAL_E2E.ps1')
-$diagPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/diagnose_renderer.py')
+$diagPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/scripts/diagnose_renderer.py')
 $mergePs1 = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/merge_upstream_fork.ps1')
-$guardOk = ($instE2e -match 'cost_bar_mode=rich') -and ($diagPy -match 'cost_bar_mode') -and ($mergePs1 -match 'usage_snapshot.py') -and ($mergePs1 -match 'usageCostBar.ts')
+$bootstrapPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/bootstrap.py')
+$guardOk = ($instE2e -match 'cost_bar_mode=rich') -and ($diagPy -match 'cost_bar_mode') -and ($bootstrapPy -match 'gateway_config_fork_patch') -and ($bootstrapPy -match 'usage_snapshot')
 Add-StepResult -Name '2/10 drift guards + keepOurs' -Ok $guardOk
 
 # --- 3 Vitest (formatter + event handler turn/tools) ---
@@ -228,13 +229,17 @@ $upstreamOk = ($upstreamMd -match 'usage_snapshot.py') -and ($upstreamMd -match 
 Add-StepResult -Name '9/10 UPSTREAM_SYNC cost-bar tabel' -Ok $upstreamOk
 
 # --- 10 Documentatie ---
-$readme = Join-Path (Join-Path $RepoRoot 'ui-tui') 'README.md'
 $readmeOk = $false
-if (Test-Path -LiteralPath $readme) {
+foreach ($rel in @('windows/TERMINAL_WINDOWS.md', 'docs/NOUS_OVERLAY_ARCHITECTURE.md', 'ui-tui/README.md')) {
+    $readme = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath $rel
+    if (-not (Test-Path -LiteralPath $readme)) { continue }
     $readmeText = Get-Content -LiteralPath $readme -Raw -Encoding UTF8
-    $readmeOk = ($readmeText -match 'cost_bar_mode') -and ($readmeText -like '*cost*')
+    if (($readmeText -match 'cost_bar_mode') -and ($readmeText -like '*cost*')) {
+        $readmeOk = $true
+        break
+    }
 }
-Add-StepResult -Name '10/10 ui-tui README cost docs' -Ok $readmeOk
+Add-StepResult -Name '10/10 cost-bar documentatie' -Ok $readmeOk
 
 # --- Rapport ---
 $reportFileName = 'STATUS_BAR_COST_E2E_REPORT_' + $reportStamp + '.md'

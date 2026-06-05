@@ -85,6 +85,9 @@ def _smoke_cost_breakdown() -> None:
 
 
 def main() -> None:
+    from overlay.bootstrap import install
+
+    install()
     _smoke_basic_cost()
     _smoke_cost_breakdown()
     print("gateway usage smoke ok")

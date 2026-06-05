@@ -18,6 +18,10 @@ from unittest.mock import patch
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
+from overlay.bootstrap import install
+
+install()
+
 FAILURES = 0
 STEP = 0
 
@@ -54,9 +58,9 @@ def _step(name: str, ok: bool, detail: str = "") -> None:
 
 def test_e1_repo_artifacts() -> None:
     required = [
-        REPO_ROOT / "hermes_cli" / "institutional_render.py",
-        REPO_ROOT / "hermes_cli" / "display_markdown.py",
-        REPO_ROOT / "hermes_cli" / "markdown_output_normalize.py",
+        REPO_ROOT / "overlay" / "hermes_cli" / "institutional_render.py",
+        REPO_ROOT / "overlay" / "hermes_cli" / "display_markdown.py",
+        REPO_ROOT / "overlay" / "hermes_cli" / "markdown_output_normalize.py",
         REPO_ROOT / "scripts" / "score_institutional_render.py",
         REPO_ROOT / "scripts" / "bench_normalize_markdown.py",
         REPO_ROOT / "tests" / "hermes_cli" / "test_render_pipeline_contract.py",

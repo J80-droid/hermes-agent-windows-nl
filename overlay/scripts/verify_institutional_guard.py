@@ -26,9 +26,9 @@ TIER_A_FORK_ONLY_CLI_PATTERNS = (
 )
 
 GUARD_GLOBS = (
-    "hermes_cli/institutional_render.py",
-    "hermes_cli/markdown_output_normalize.py",
-    "hermes_cli/display_markdown.py",
+    "overlay/hermes_cli/institutional_render.py",
+    "overlay/hermes_cli/markdown_output_normalize.py",
+    "overlay/hermes_cli/display_markdown.py",
     "web/src/components/Markdown.tsx",
     "web/src/lib/institutionalMarkdown.ts",
     "ui-tui/src/lib/institutionalMarkdownNormalize.ts",

@@ -117,7 +117,12 @@ def test_orchestrator_routing_doc_exists():
     assert "launch_hermes.ps1" in bat
     assert "launch_pre_chat_orchestrator.ps1" in launch_ps1
     assert (REPO / "tests/cli/test_institutional_profile_chat_ux.py").is_file()
-    assert (REPO / "hermes_cli/institutional_render.py").is_file()
+    from tests.overlay.fork_paths import fork_repo_paths_exist
+
+    assert fork_repo_paths_exist(
+        REPO,
+        "overlay/hermes_cli/institutional_render.py",
+    )
     assert (REPO / "tests/cli/test_institutional_rich_render.py").is_file()
     assert (REPO / "docs/templates/SOUL_CORE_ORCHESTRATOR.md").is_file()
     assert (REPO / "docs/LEGAL_TAXONOMY.md").is_file()

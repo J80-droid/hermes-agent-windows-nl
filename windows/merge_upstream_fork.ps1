@@ -107,6 +107,7 @@ function Get-MergeConflictResolution {
         'overlay/config/palettes.yaml',
         'config/palettes.yaml',
         'tests/rag_pipeline/**',
+        'tests/overlay/**',
         'tests/cli/test_institutional_rich_render.py',
         'tests/cli/test_institutional_profile_chat_ux.py',
         'tests/hermes_cli/test_normalizer_ts_parity.py',

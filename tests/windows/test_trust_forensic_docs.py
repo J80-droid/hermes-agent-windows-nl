@@ -90,17 +90,24 @@ def test_sync_trust_runtime_chain():
 
 
 def test_institutional_new_chat_notice_module():
-    mod = REPO / "hermes_cli/institutional_new_chat_notice.py"
+    from tests.overlay.fork_paths import fork_repo_path
+
+    mod = fork_repo_path(REPO, "overlay/hermes_cli/institutional_new_chat_notice.py")
+    assert mod.is_file()
     text = mod.read_text(encoding="utf-8")
     assert "institutional_new_chat_required.json" in text
     assert "acknowledge_new_chat_notice" in text
 
 
 def test_tui_auto_new_session_files():
-    notice = REPO / "ui-tui/src/lib/newChatNotice.ts"
-    watch = REPO / "ui-tui/src/app/useInstitutionalNewChatAutoReset.ts"
-    handler = REPO / "ui-tui/src/app/createGatewayEventHandler.ts"
-    assert notice.is_file() and watch.is_file() and handler.is_file()
-    handler_text = handler.read_text(encoding="utf-8")
-    assert "hasPendingNewChatNotice" in handler_text
-    assert "clearNewChatNotice" in handler_text
+    from tests.overlay.fork_paths import fork_repo_path
+
+    notice = fork_repo_path(REPO, "overlay/ui-tui/src/lib/newChatNotice.ts")
+    watch = fork_repo_path(REPO, "overlay/ui-tui/src/app/useInstitutionalNewChatAutoReset.ts")
+    gateway_ready = fork_repo_path(REPO, "overlay/ui-tui/src/app/gatewayReadyNewChatNotice.ts")
+    assert notice.is_file() and watch.is_file() and gateway_ready.is_file()
+    watch_text = watch.read_text(encoding="utf-8")
+    ready_text = gateway_ready.read_text(encoding="utf-8")
+    assert "hasPendingNewChatNotice" in watch_text
+    assert "clearNewChatNotice" in watch_text
+    assert "gateway.ready" in ready_text

@@ -55,7 +55,7 @@ $python = Get-HermesAuditPython
 $env:PYTHONPATH = $RepoRoot
 
 $repoArtifacts = @(
-    'hermes_cli/profile_model_inheritance.py',
+    'overlay/hermes_cli/profile_model_inheritance.py',
     'hermes_cli/config.py',
     'windows/scripts/merge_legacy_providers_config.py',
     'windows/scripts/collect_env_sync_keys.py',
@@ -97,7 +97,7 @@ try {
 }
 Add-StepResult '3/10 isolated inheritance harness (8 scenario''s)' ($LASTEXITCODE -eq 0)
 
-$inhPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/profile_model_inheritance.py')
+$inhPy = Read-HermesRepoText -Path (Join-HermesForkModulePath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/profile_model_inheritance.py')
 $cfgPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/config.py')
 $collectScript = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/collect_env_sync_keys.py')
 # Regressie: docstring moet afgesloten zijn vóór imports (py_compile vangt syntaxfouten).

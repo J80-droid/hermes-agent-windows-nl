@@ -6,6 +6,15 @@ if (-not $script:HermesWindowsRoot) {
     $script:HermesWindowsRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 }
 
+$nousTierPaths = Join-Path $script:HermesWindowsRoot 'scripts\HermesNousTierPaths.ps1'
+if (Test-Path -LiteralPath $nousTierPaths) {
+    . $nousTierPaths
+}
+
+if (-not $env:PYTEST_ADDOPTS) {
+    $env:PYTEST_ADDOPTS = '-p pytest_timeout --timeout=30 --timeout-method=thread'
+}
+
 function Test-NativeCommandFailed {
     return ($null -ne $LASTEXITCODE -and [int]$LASTEXITCODE -ne 0)
 }

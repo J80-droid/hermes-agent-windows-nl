@@ -29,6 +29,10 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
+from overlay.bootstrap import install as _install_overlay
+
+_install_overlay()
+
 FAILURES = 0
 STEP = 0
 

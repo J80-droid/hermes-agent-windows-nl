@@ -77,7 +77,7 @@ $env:PYTHONPATH = $RepoRoot
 
 # --- 1 Repo artefacten ---
 $repoFiles = @(
-    'hermes_cli/markdown_output_normalize.py',
+    'overlay/hermes_cli/markdown_output_normalize.py',
     'web/src/lib/institutionalMarkdown.ts',
     'cli.py',
     'scripts/verify_pseudo_table_normalizer.py',
@@ -100,7 +100,7 @@ foreach ($rel in $repoFiles) {
 Add-StepResult -Name '1/12 repo context-aware normalizer artefacten' -Ok $repoOk
 
 # --- 2 Python overview parser wiring ---
-$pyNorm = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/markdown_output_normalize.py')
+$pyNorm = Read-HermesRepoText -Path (Join-HermesForkModulePath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/markdown_output_normalize.py')
 $pyOk = ($pyNorm -match 'def _parse_overview_body_to_rows') -and
     ($pyNorm -match 'def _infer_section_intent') -and
     ($pyNorm -match 'def _parse_section_to_table') -and
@@ -182,7 +182,7 @@ Add-StepResult -Name '10/12 SOUL + presentation overview docs' -Ok $docsOk
 
 # --- 11 py_compile modified modules ---
 $compileTargets = @(
-    'hermes_cli/markdown_output_normalize.py',
+    'overlay/hermes_cli/markdown_output_normalize.py',
     'scripts/verify_pseudo_table_normalizer.py',
     'scripts/diagnose_renderer.py',
     'windows/audits/ContextAwarePseudoTableE2E.harness.py'

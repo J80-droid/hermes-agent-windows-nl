@@ -29,6 +29,7 @@ echo  Hermes Agent: UPDATE ^(Nous + fork^)
 echo ====================================================%ESC%[0m
 echo.
 echo [INFO] Eén commando — 3 fasen: preflight ^(git^) - merge + deps - post-merge ^(trust/RAG^)
+echo [INFO] Optioneel: -IncludeCodebaseSmokeE2E -IncludeCodebaseSmoke ^(door naar upstream_sync / POST_GIT_PULL^)
 echo [INFO] Grote achterstand: typ j in PowerShell, of gebruik -Yes / UPDATE_HERMES_YES.bat
 echo [INFO] Uitleg: windows\UPSTREAM_SYNC.md
 echo.

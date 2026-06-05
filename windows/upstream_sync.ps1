@@ -480,7 +480,7 @@ try {
 
     # Post-merge: overlay bootstrap + extras, then trust/RAG keten.
     if ($script:UpstreamExitCode -eq 0 -and $Phase -eq 'PostMerge') {
-        $overlayApply = Join-HermesRepoPath -RepoRoot $repo -RelativePath 'scripts/Invoke-ApplyHermesOverlay.ps1'
+        $overlayApply = Join-HermesRepoPath -RepoRoot $repo -RelativePath 'windows/scripts/Invoke-ApplyHermesOverlay.ps1'
         if (Test-Path -LiteralPath $overlayApply) {
             & $overlayApply -RepoRoot $repo -Quiet
         }

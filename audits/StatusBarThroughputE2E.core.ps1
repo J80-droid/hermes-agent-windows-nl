@@ -48,10 +48,13 @@ $reportPath = Join-Path $scriptRoot ("STATUS_BAR_THROUGHPUT_E2E_REPORT_" + $repo
 Write-Host "=== Status Bar Throughput E2E (python: $python) ===" -ForegroundColor Cyan
 Push-Location $RepoRoot
 $logPath = Join-Path $scriptRoot ("STATUS_BAR_THROUGHPUT_E2E_LOG_" + $reportStamp + '.txt')
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 try {
     & $python $harness 2>&1 | Tee-Object -FilePath $logPath
     $exitCode = $LASTEXITCODE
 } finally {
+    $ErrorActionPreference = $prevEap
     Pop-Location
 }
 

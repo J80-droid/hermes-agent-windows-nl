@@ -19,7 +19,7 @@ from re import Pattern
 
 _HEADING_LINE_SCORE_RE = re.compile(r"^#{1,6}\s+", re.MULTILINE)
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent
+_REPO_ROOT = Path(__file__).resolve().parents[2]
 ROOKTEST_PATH = (
     _REPO_ROOT
     / "docs"
@@ -217,6 +217,9 @@ def print_report(checks: dict[str, tuple[int, str]]) -> float:
 
 
 def main() -> int:
+    from overlay.bootstrap import install
+
+    install()
     parser = argparse.ArgumentParser(description="Score institutional render quality")
     parser.add_argument(
         "--file",

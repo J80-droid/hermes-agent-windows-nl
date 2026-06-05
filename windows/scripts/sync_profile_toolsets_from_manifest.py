@@ -19,6 +19,10 @@ _REPO = Path(__file__).resolve().parent.parent.parent
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
+from overlay.bootstrap import install
+
+install()
+
 from hermes_cli.profile_mcp_format import _read_yaml, _split_header, _write_yaml  # noqa: E402
 from hermes_cli.tools_config import _platform_toolsets_user_customized  # noqa: E402
 

@@ -237,17 +237,23 @@ def auth_store_for_coherence_check(
     if auth_store is not None:
         return auth_store
     try:
-        from hermes_cli.auth import _load_auth_store, _load_global_auth_store
+        from hermes_cli.auth import _auth_file_path, read_auth_json
         from hermes_cli.config import get_hermes_home
         from hermes_cli.profile_model_inheritance import is_profile_hermes_home
+        from hermes_constants import get_default_hermes_root
 
         if is_profile_hermes_home(get_hermes_home()):
-            global_store = _load_global_auth_store()
-            if str(global_store.get("active_provider") or "").strip():
-                return global_store
+            root_store = read_auth_json(get_default_hermes_root() / "auth.json")
+            if str(root_store.get("active_provider") or "").strip():
+                return root_store
     except Exception:
         pass
     try:
+        from hermes_cli.auth import _auth_file_path, read_auth_json
+
+        store = read_auth_json(_auth_file_path())
+        if store:
+            return store
         from hermes_cli.auth import _load_auth_store
 
         return _load_auth_store()

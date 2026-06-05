@@ -79,6 +79,27 @@ function Test-HermesPathTierAExcluded {
     return $false
 }
 
+function Join-HermesForkModulePath {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$RelativePath
+    )
+    $rel = ($RelativePath -replace '\\', '/').TrimStart('./')
+    $overlay = Join-Path $RepoRoot "overlay/$rel"
+    if (Test-Path -LiteralPath $overlay) {
+        return (Resolve-Path -LiteralPath $overlay).Path
+    }
+    return (Join-Path $RepoRoot $rel)
+}
+
+function Test-HermesForkModuleExists {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$RelativePath
+    )
+    return Test-Path -LiteralPath (Join-HermesForkModulePath -RepoRoot $RepoRoot -RelativePath $RelativePath)
+}
+
 function Get-HermesTierAPathSpec {
     $specs = @()
     foreach ($root in $script:HermesNousTierARoots) {

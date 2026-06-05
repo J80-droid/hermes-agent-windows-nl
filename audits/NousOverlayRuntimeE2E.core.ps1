@@ -40,15 +40,19 @@ $logPath = Join-Path $scriptRoot ("NOUS_OVERLAY_RUNTIME_E2E_LOG_" + $reportStamp
 
 Write-Host "=== Nous Overlay Runtime E2E (python: $python) ===" -ForegroundColor Cyan
 $env:PYTHONPATH = $RepoRoot
+Remove-Item Env:PYTEST_ADDOPTS -ErrorAction SilentlyContinue
 if (-not $env:HERMES_HOME) {
     $env:HERMES_HOME = Join-Path $env:LOCALAPPDATA 'hermes'
 }
 
 Push-Location $RepoRoot
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 try {
     & $python $harness 2>&1 | Tee-Object -FilePath $logPath
     $exitCode = $LASTEXITCODE
 } finally {
+    $ErrorActionPreference = $prevEap
     Pop-Location
 }
 

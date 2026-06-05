@@ -100,17 +100,5 @@ Typography is **opt-in per surface**, not global on layout shells — the app sh
 
 - Prefer **semantic tokens** (`text-text-*`, `bg-card`, `border-border`, `text-foreground`, `text-destructive`, `text-success`, `text-warning`) over raw layer references (`text-midground`, `text-foreground`).
 - `text-muted-foreground` is now wired to `--color-text-secondary`, so existing call sites stay correct, but new code should prefer the semantic name.
-- When you genuinely need a non-token color (icon de-emphasis on a chart), keep alpha at `≥ 0.7` for any text. Prefer CSS classes over `style={{}}` so IDE a11y/Edge Tools hints stay clean.
-
-## Accessibility (listbox menus)
-
-Theme and language pickers use native `<button role="option">` children inside a dedicated `<div role="listbox">` (header/title **outside** the listbox). Active options set `aria-selected="true"` as a literal string; each option has `aria-label` from the theme/locale name.
-
-Drop-up menus (sidebar) position via `src/hooks/useDropUpFixedPosition.ts` (`useLayoutEffect` + `element.style`, no `style` attribute on JSX).
-
-## Data-series charts (Analytics / Models)
-
-Token input/output colours use theme tokens `--series-input-token` / `--series-output-token` via utilities in `index.css` (`series-swatch-*`, `text-series-*`, `analytics-bar-*`, `models-bar-segment-*`). Proportional bar segments use `chart-fg-0` … `chart-fg-100` from `chart-fg-utilities.css` (flex-grow) instead of inline widths/heights.
-
-Theme swatch previews set `--theme-swatch-1..3` on the element via `useLayoutEffect` (dynamic palette hex without inline `background` on spans).
+- When you genuinely need a non-token color (icon de-emphasis on a chart, terminal foreground via inline style), keep alpha at `≥ 0.7` for any text.
 

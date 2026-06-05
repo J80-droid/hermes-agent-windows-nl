@@ -77,9 +77,9 @@ $env:PYTHONPATH = $RepoRoot
 
 # --- 1 Repo artefacten ---
 $repoFiles = @(
-    'hermes_cli/markdown_output_normalize.py',
-    'web/src/lib/institutionalMarkdown.ts',
-    'ui-tui/src/lib/institutionalMarkdownNormalize.ts',
+    'overlay/hermes_cli/markdown_output_normalize.py',
+    'overlay/web/src/lib/institutionalMarkdown.ts',
+    'overlay/ui-tui/src/lib/institutionalMarkdownNormalize.ts',
     'scripts/normalize_assistant_markdown_ts_runner.ts',
     'scripts/normalize_assistant_markdown_ink_runner.ts',
     'scripts/diagnose_renderer.py',
@@ -103,7 +103,7 @@ foreach ($rel in $repoFiles) {
 Add-StepResult -Name '1/10 repo pseudo-tabel artefacten' -Ok $repoOk
 
 # --- 2 Python pipeline wiring ---
-$pyNorm = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/markdown_output_normalize.py')
+$pyNorm = Read-HermesRepoText -Path (Join-HermesForkModulePath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/markdown_output_normalize.py')
 $pyOk = ($pyNorm -match 'def ensure_markdown_table_dividers') -and
     ($pyNorm -match 'def normalize_pseudo_tables_to_markdown') -and
     ($pyNorm -match 'ensure_markdown_table_dividers\(out\)') -and
@@ -112,8 +112,8 @@ $pyOk = ($pyNorm -match 'def ensure_markdown_table_dividers') -and
 Add-StepResult -Name '2/10 python normalizer pipeline' -Ok $pyOk
 
 # --- 3 Web/Ink parity wiring ---
-$tsNorm = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'web/src/lib/institutionalMarkdown.ts')
-$inkNorm = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'ui-tui/src/lib/institutionalMarkdownNormalize.ts')
+$tsNorm = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/web/src/lib/institutionalMarkdown.ts')
+$inkNorm = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/ui-tui/src/lib/institutionalMarkdownNormalize.ts')
 $tsOk = ($tsNorm -match 'function ensureMarkdownTableDividers') -and
     ($tsNorm -match 'function normalizePseudoTablesToMarkdown') -and
     ($tsNorm -match 'ensureMarkdownTableDividers\(out\)') -and

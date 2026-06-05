@@ -21,7 +21,16 @@ from pathlib import Path
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[1]
+    return Path(__file__).resolve().parents[2]
+
+
+def _ensure_overlay() -> None:
+    root = _repo_root()
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    from overlay.bootstrap import install
+
+    install()
 
 
 def _parse_team_display_defaults() -> dict[str, object]:
@@ -399,6 +408,7 @@ def _show_all_palettes() -> None:
 
 
 def main() -> int:
+    _ensure_overlay()
     parser = argparse.ArgumentParser(description="Hermes Institutional Renderer Diagnostic")
     parser.add_argument(
         "--show-palettes",

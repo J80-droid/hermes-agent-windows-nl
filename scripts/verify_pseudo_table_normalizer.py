@@ -93,6 +93,15 @@ def verify_pseudo_table_normalizer() -> tuple[bool, str | None]:
 
 
 def main() -> int:
+    from pathlib import Path
+    import sys
+
+    repo = Path(__file__).resolve().parents[1]
+    if str(repo) not in sys.path:
+        sys.path.insert(0, str(repo))
+    from overlay.bootstrap import install
+
+    install()
     parser = argparse.ArgumentParser(description="Verify pseudo-table normalizer")
     parser.add_argument(
         "--verify",
