@@ -176,7 +176,8 @@ $runtimeCfg = Get-HermesCanonicalConfigPath
 if (Test-Path -LiteralPath $runtimeCfg) {
     $conda = Join-Path $env:USERPROFILE 'miniconda3/Scripts/conda.exe'
     if (Test-Path -LiteralPath $conda) {
-        $visionOut = & $conda run -n hermes-env --no-capture-output hermes config get auxiliary.vision.provider 2>&1
+        $overlayCli = Join-Path $RepoRoot 'scripts/run_hermes_cli_with_overlay.py'
+        $visionOut = & $conda run -n hermes-env --cwd $RepoRoot --no-capture-output python $overlayCli config get auxiliary.vision.provider 2>&1
         if ($LASTEXITCODE -eq 0) {
             $val = ($visionOut | Select-Object -Last 1).ToString().Trim().ToLower()
             Add-StepResult 'auxiliary.vision.provider=gemini' ($val -eq 'gemini') $val
@@ -184,7 +185,7 @@ if (Test-Path -LiteralPath $runtimeCfg) {
             if (Test-Path -LiteralPath $coreProf) {
                 $prevHome = $env:HERMES_HOME
                 $env:HERMES_HOME = (Split-Path -Parent $coreProf)
-                $compOut = & $conda run -n hermes-env --no-capture-output hermes config get auxiliary.compression.provider 2>&1
+                $compOut = & $conda run -n hermes-env --cwd $RepoRoot --no-capture-output python $overlayCli config get auxiliary.compression.provider 2>&1
                 if ($LASTEXITCODE -eq 0) {
                     $compVal = ($compOut | Select-Object -Last 1).ToString().Trim().ToLower()
                     Add-StepResult 'profile core inherits auxiliary.compression=custom' ($compVal -eq 'custom') $compVal
