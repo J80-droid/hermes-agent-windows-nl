@@ -1,10 +1,13 @@
 """Classic CLI stream throughput hooks (overlay; Tier A cli.py unchanged)."""
 from __future__ import annotations
 
+import logging
 import time
 from typing import Any, Optional
 
 from hermes_cli.status_bar_throughput import MIN_ELAPSED_SEC, compute_live_tps
+
+logger = logging.getLogger(__name__)
 
 
 def record_stream_tps_delta(self: Any, text: Optional[str]) -> None:
@@ -30,7 +33,7 @@ def record_stream_tps_delta(self: Any, text: Optional[str]) -> None:
 
             record_agent_stream_delta(agent, text)
         except Exception:
-            pass
+            logger.debug("record_agent_stream_delta from CLI stream failed", exc_info=True)
 
 
 def freeze_stream_tps_segment(self: Any) -> None:

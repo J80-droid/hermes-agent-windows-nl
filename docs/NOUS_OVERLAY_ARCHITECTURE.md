@@ -46,7 +46,7 @@ E2E sync: `windows\audits\RUN_SYNC_NOUS_E2E.bat` of `RUN_AUDITS -IncludeSyncNous
 | `overlay/hermes_cli/cli_cost_command.py` | `/cost`-handler |
 | `overlay/hermes_cli/cli_tps_command.py` | `/tps`-handler (`display.show_status_bar_tps`) |
 | `overlay/hermes_cli/cli_tps_stream_hooks.py` | CLI stream tok/s (`_record_stream_tps_delta`, `_freeze_stream_tps_segment`) |
-| `overlay/agent/agent_throughput_fork_patch.py` | Agent stream/finalize tok/s op runtime-pad |
+| `overlay/agent/agent_throughput_fork_patch.py` | Agent stream/finalize tok/s: `AIAgent.__init__` koppelt compressor via `_fork_throughput_agent` op instantie; `_fire_stream_delta` + `ContextCompressor.update_from_response` (fouten → debug-log) |
 | `overlay/agent/pricing_fork_patch.py` | Google Gemini-catalogus in `usage_pricing` |
 | `overlay/agent/google_gemini_pricing.py` | Prijstabel Gemini 3.x |
 | `overlay/hermes_cli/models_fork_patch.py` | Startup model-catalog guard |
@@ -57,7 +57,7 @@ E2E sync: `windows\audits\RUN_SYNC_NOUS_E2E.bat` of `RUN_AUDITS -IncludeSyncNous
 - [`windows/scripts/Invoke-HermesOverlayBootstrap.ps1`](../windows/scripts/Invoke-HermesOverlayBootstrap.ps1) — zet `PYTHONSTARTUP`.
 - [`windows/scripts/launch_hermes.ps1`](../windows/scripts/launch_hermes.ps1) — bootstrap vóór chat.
 
-**Tests:** `pytest tests/overlay/test_bootstrap.py` (unit, gemockt); `tests/conftest.py` roept `install()` vóór collectie.
+**Tests:** `pytest tests/overlay/` (**112** unit tests, gemockt); `tests/conftest.py` roept `install()` vóór collectie. Agent-throughput: `tests/overlay/test_agent_throughput_fork_patch.py` (helpers + `apply_agent_throughput_fork_patch` met geïsoleerde stubs).
 
 ## UI-build (Tier B, geen Tier A-src-leak)
 
@@ -85,6 +85,7 @@ Baseline: [NOUS_DRIFT_BASELINE.md](NOUS_DRIFT_BASELINE.md).
 |-------|----------|
 | Sync + drift | `windows\audits\RUN_SYNC_NOUS_E2E.bat` |
 | Overlay runtime + cost + drift | `audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat` |
+| Overlay runtime wiring (P0–P5) | `audits\RUN_NOUS_OVERLAY_RUNTIME_E2E.bat` — bootstrap idempotentie, agent/CLI TPS hooks, `/tps`+`/cost`, tier-A guard, overlay pytest-subset |
 | Throughput tok/s (overlay) | `audits\RUN_STATUS_BAR_THROUGHPUT_E2E.bat` |
 | Prompt-timer (overlay) | `audits\RUN_PROMPT_TIMER_DISPLAY_E2E.bat` |
 | Klassieke CLI statusbalk | `windows\audits\RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` |

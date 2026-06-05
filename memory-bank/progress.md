@@ -4,7 +4,9 @@
 
 - [x] Runtime patches in `overlay/` (CLI cost/TPS, `/cost`, `/tps`, stream hooks, agent throughput, Gemini pricing, model-catalog guard); `bootstrap.py` idempotent + rollback
 - [x] E2E `audits/RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat` (8/8+); throughput **14/14** `RUN_STATUS_BAR_THROUGHPUT_E2E`; prompt-timer **10/10** `RUN_PROMPT_TIMER_DISPLAY_E2E`
-- [x] Unit `tests/overlay/` (bootstrap, cli_fork_patch, cli_command_patches, cost/tps commands, stream hooks, pricing/models patch, usage_snapshot) — **86+** tests
+- [x] Unit `tests/overlay/` (bootstrap, cli_fork_patch, cli_command_patches, cost/tps commands, stream hooks, agent_throughput_fork_patch, pricing/models patch, usage_snapshot) — **112** tests
+- [x] E2E runtime wiring `audits/RUN_NOUS_OVERLAY_RUNTIME_E2E.bat` (bootstrap, TPS hooks, `/tps`+`/cost`, tier-A guard)
+- [x] Web dashboard a11y/data-viz: ThemeSwitcher listbox, chart CSS utilities (`chart-fg-*`, `useDropUpFixedPosition`)
 - [x] `RUN_AUDITS`: `pytest-overlay`, `-IncludeNousOverlayInstitutionalE2E`, throughput/prompt-timer E2E in `-IncludeAllE2E`; preflight `HERMES_HOME` ≠ `profiles\*`
 - [x] CI `fork-windows-institutional.yml`: overlay pytest, institutional E2E, `build_fork_ui_assets -SkipWeb` + drift
 - [x] Docs: `NOUS_OVERLAY_ARCHITECTURE.md`, `verify_institutional_guard.py --check-tier-a-cli`, `windows/audits/README.md`

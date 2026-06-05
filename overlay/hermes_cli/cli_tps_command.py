@@ -50,6 +50,9 @@ def handle_tps_command(self, cmd_original: str) -> None:
         _cprint(f"  Status bar throughput: {state}")
     else:
         _cprint("  Failed to save display.show_status_bar_tps to config.yaml")
-    invalidate = getattr(self, "_invalidate", None)
-    if callable(invalidate):
-        invalidate()
+    try:
+        invalidate = getattr(self, "_invalidate", None)
+        if callable(invalidate):
+            invalidate()
+    except Exception:
+        pass

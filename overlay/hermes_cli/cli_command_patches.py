@@ -10,12 +10,18 @@ logger = logging.getLogger(__name__)
 _PATCHED = False
 
 
-def _resolve_tps_command(command: str) -> bool:
-    """True when *command* dispatches to /tps (incl. aliases)."""
+def _command_base(command: str) -> str:
     cmd_lower = (command or "").lower().strip()
     if not cmd_lower:
+        return ""
+    return cmd_lower.split()[0].lstrip("/")
+
+
+def _resolve_tps_command(command: str) -> bool:
+    """True when *command* dispatches to /tps (incl. aliases)."""
+    base = _command_base(command)
+    if not base:
         return False
-    base = cmd_lower.split()[0].lstrip("/")
     if base == "tps":
         return True
     try:
@@ -24,15 +30,15 @@ def _resolve_tps_command(command: str) -> bool:
         cmd_def = resolve_command(base)
         return bool(cmd_def and cmd_def.name == "tps")
     except Exception:
+        logger.debug("resolve_command failed for /tps alias %r", base, exc_info=True)
         return False
 
 
 def _resolve_cost_command(command: str) -> bool:
     """True when *command* dispatches to /cost (incl. aliases)."""
-    cmd_lower = (command or "").lower().strip()
-    if not cmd_lower:
+    base = _command_base(command)
+    if not base:
         return False
-    base = cmd_lower.split()[0].lstrip("/")
     if base == "cost":
         return True
     try:
@@ -41,6 +47,7 @@ def _resolve_cost_command(command: str) -> bool:
         cmd_def = resolve_command(base)
         return bool(cmd_def and cmd_def.name == "cost")
     except Exception:
+        logger.debug("resolve_command failed for /cost alias %r", base, exc_info=True)
         return False
 
 

@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Palette, Check } from "lucide-react";
 import { Button } from "@nous-research/ui/ui/components/button";
-import { ListItem } from "@nous-research/ui/ui/components/list-item";
 import { BottomSheet } from "@nous-research/ui/ui/components/bottom-sheet";
 import { Typography } from "@nous-research/ui/ui/components/typography/index";
 import { useBelowBreakpoint } from "@nous-research/ui/hooks/use-below-breakpoint";
 import { BUILTIN_THEMES, useTheme } from "@/themes";
-import type { DashboardTheme, ThemeListEntry } from "@/themes";
+import type { DashboardTheme } from "@/themes";
 import { useI18n } from "@/i18n";
+import { useDropUpFixedPosition } from "@/hooks/useDropUpFixedPosition";
 import { cn } from "@/lib/utils";
 
 /**
@@ -35,6 +35,12 @@ export function ThemeSwitcher({ collapsed = false, dropUp = false }: ThemeSwitch
 
   const close = useCallback(() => setOpen(false), []);
 
+  useDropUpFixedPosition(
+    Boolean(dropUp && open && !useMobileSheet),
+    wrapperRef,
+    dropdownRef,
+  );
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -59,6 +65,14 @@ export function ThemeSwitcher({ collapsed = false, dropUp = false }: ThemeSwitch
   const current = availableThemes.find((th) => th.name === themeName);
   const label = current?.label ?? themeName;
   const sheetTitle = t.theme?.title ?? "Theme";
+
+  const selectTheme = useCallback(
+    (name: string) => {
+      setTheme(name);
+      close();
+    },
+    [close, setTheme],
+  );
 
   return (
     <div ref={wrapperRef} className="relative">
@@ -97,19 +111,68 @@ export function ThemeSwitcher({ collapsed = false, dropUp = false }: ThemeSwitch
           open={open}
           title={sheetTitle}
         >
-          <div aria-label={sheetTitle} role="listbox">
-            <ThemeSwitcherOptions
-              availableThemes={availableThemes}
-              close={close}
-              setTheme={setTheme}
-              themeName={themeName}
-            />
+          <div>
+            <div className="border-b border-current/20 px-3 py-2">
+              <Typography
+                mondwest
+                className="text-display text-xs tracking-[0.12em] text-text-tertiary"
+              >
+                {sheetTitle}
+              </Typography>
+            </div>
+            <div aria-label={sheetTitle} role="listbox">
+              {availableThemes.map((th) => {
+                const isActive = th.name === themeName;
+                const paletteTheme = BUILTIN_THEMES[th.name] ?? th.definition;
+                const optionClassName = cn(
+                  "w-full text-left px-3 py-2 flex items-center gap-3 cursor-pointer",
+                  "hover:bg-accent hover:text-accent-foreground transition-colors",
+                  isActive && "bg-accent/50",
+                );
+                const optionContent = (
+                  <ThemeOptionContent
+                    description={th.description}
+                    isActive={isActive}
+                    label={th.label}
+                    paletteTheme={paletteTheme}
+                  />
+                );
+
+                if (isActive) {
+                  return (
+                    <button
+                      aria-label={th.label}
+                      aria-selected="true"
+                      className={optionClassName}
+                      key={th.name}
+                      onClick={() => selectTheme(th.name)}
+                      role="option"
+                      type="button"
+                    >
+                      {optionContent}
+                    </button>
+                  );
+                }
+
+                return (
+                  <button
+                    aria-label={th.label}
+                    className={optionClassName}
+                    key={th.name}
+                    onClick={() => selectTheme(th.name)}
+                    role="option"
+                    type="button"
+                  >
+                    {optionContent}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </BottomSheet>
       )}
 
       {open && !useMobileSheet && (() => {
-        const rect = wrapperRef.current?.getBoundingClientRect();
         const dropdown = (
           <div
             ref={dropdownRef}
@@ -120,12 +183,6 @@ export function ThemeSwitcher({ collapsed = false, dropUp = false }: ThemeSwitch
               "shadow-[0_12px_32px_-8px_rgba(0,0,0,0.6)]",
               dropUp ? "fixed z-[100]" : "absolute z-50 right-0 top-full mt-1",
             )}
-            role="listbox"
-            style={
-              dropUp && rect
-                ? { bottom: window.innerHeight - rect.top + 4, left: rect.left }
-                : undefined
-            }
           >
             <div className="border-b border-current/20 px-3 py-2">
               <Typography
@@ -136,12 +193,54 @@ export function ThemeSwitcher({ collapsed = false, dropUp = false }: ThemeSwitch
               </Typography>
             </div>
 
-            <ThemeSwitcherOptions
-              availableThemes={availableThemes}
-              close={close}
-              setTheme={setTheme}
-              themeName={themeName}
-            />
+            <div aria-label={sheetTitle} role="listbox">
+              {availableThemes.map((th) => {
+                const isActive = th.name === themeName;
+                const paletteTheme = BUILTIN_THEMES[th.name] ?? th.definition;
+                const optionClassName = cn(
+                  "w-full text-left px-3 py-2 flex items-center gap-3 cursor-pointer",
+                  "hover:bg-accent hover:text-accent-foreground transition-colors",
+                  isActive && "bg-accent/50",
+                );
+                const optionContent = (
+                  <ThemeOptionContent
+                    description={th.description}
+                    isActive={isActive}
+                    label={th.label}
+                    paletteTheme={paletteTheme}
+                  />
+                );
+
+                if (isActive) {
+                  return (
+                    <button
+                      aria-label={th.label}
+                      aria-selected="true"
+                      className={optionClassName}
+                      key={th.name}
+                      onClick={() => selectTheme(th.name)}
+                      role="option"
+                      type="button"
+                    >
+                      {optionContent}
+                    </button>
+                  );
+                }
+
+                return (
+                  <button
+                    aria-label={th.label}
+                    className={optionClassName}
+                    key={th.name}
+                    onClick={() => selectTheme(th.name)}
+                    role="option"
+                    type="button"
+                  >
+                    {optionContent}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         );
         return dropUp ? createPortal(dropdown, document.body) : dropdown;
@@ -150,59 +249,45 @@ export function ThemeSwitcher({ collapsed = false, dropUp = false }: ThemeSwitch
   );
 }
 
-function ThemeSwitcherOptions({
-  availableThemes,
-  close,
-  setTheme,
-  themeName,
-}: ThemeSwitcherOptionsProps) {
+function ThemeOptionContent({
+  description,
+  isActive,
+  label,
+  paletteTheme,
+}: {
+  description?: string;
+  isActive: boolean;
+  label: string;
+  paletteTheme?: DashboardTheme;
+}) {
   return (
     <>
-      {availableThemes.map((th) => {
-        const isActive = th.name === themeName;
-        const paletteTheme = BUILTIN_THEMES[th.name] ?? th.definition;
+      {paletteTheme ? (
+        <ThemeSwatch theme={paletteTheme} />
+      ) : (
+        <PlaceholderSwatch />
+      )}
 
-        return (
-          <ListItem
-            active={isActive}
-            aria-selected={isActive}
-            className="gap-3"
-            key={th.name}
-            onClick={() => {
-              setTheme(th.name);
-              close();
-            }}
-            role="option"
-          >
-            {paletteTheme ? (
-              <ThemeSwatch theme={paletteTheme} />
-            ) : (
-              <PlaceholderSwatch />
-            )}
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <Typography
+          mondwest
+          className="truncate text-display text-xs tracking-wide"
+        >
+          {label}
+        </Typography>
+        {description && (
+          <Typography className="truncate text-xs tracking-normal text-text-tertiary">
+            {description}
+          </Typography>
+        )}
+      </div>
 
-            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <Typography
-                mondwest
-                className="truncate text-display text-xs tracking-wide"
-              >
-                {th.label}
-              </Typography>
-              {th.description && (
-                <Typography className="truncate text-xs tracking-normal text-text-tertiary">
-                  {th.description}
-                </Typography>
-              )}
-            </div>
-
-            <Check
-              className={cn(
-                "h-3 w-3 shrink-0 text-midground",
-                isActive ? "opacity-100" : "opacity-0",
-              )}
-            />
-          </ListItem>
-        );
-      })}
+      <Check
+        className={cn(
+          "h-3 w-3 shrink-0 text-midground",
+          isActive ? "opacity-100" : "opacity-0",
+        )}
+      />
     </>
   );
 }
@@ -219,14 +304,25 @@ function ThemeSwatch({ theme }: { theme: DashboardTheme }) {
     theme.palette.midground.hex,
     theme.palette.warmGlow,
   ];
+  const swatchRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const el = swatchRef.current;
+    if (!el) return;
+    el.style.setProperty("--theme-swatch-1", c1);
+    el.style.setProperty("--theme-swatch-2", c2);
+    el.style.setProperty("--theme-swatch-3", c3);
+  }, [c1, c2, c3]);
+
   return (
     <div
+      ref={swatchRef}
       aria-hidden
       className="flex h-4 w-9 shrink-0 overflow-hidden border border-current/20"
     >
-      <span className="flex-1" style={{ background: c1 }} />
-      <span className="flex-1" style={{ background: c2 }} />
-      <span className="flex-1" style={{ background: c3 }} />
+      <span className="theme-swatch-stop flex-1" />
+      <span className="theme-swatch-stop flex-1" />
+      <span className="theme-swatch-stop flex-1" />
     </div>
   );
 }
@@ -238,13 +334,6 @@ function PlaceholderSwatch() {
       className="h-4 w-9 shrink-0 border border-dashed border-current/20"
     />
   );
-}
-
-interface ThemeSwitcherOptionsProps {
-  availableThemes: ThemeListEntry[];
-  close: () => void;
-  setTheme: (name: string) => void;
-  themeName: string;
 }
 
 interface ThemeSwitcherProps {

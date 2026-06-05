@@ -1,8 +1,11 @@
 """Fork CLI status-bar integration (runtime patch; Tier A cli.py unchanged)."""
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from typing import Any, Dict, Optional
+
+logger = logging.getLogger(__name__)
 
 # Resolved from cli module at patch time (same symbols as upstream cli.py).
 format_duration_compact = None  # type: ignore
@@ -632,11 +635,14 @@ def apply_cli_fork_patch() -> None:
     if not getattr(cls, "_fork_stream_delta_wrapped", False):
         _orig_stream_delta = cls._stream_delta
 
-        def _stream_delta(self, text):  # type: ignore[no-untyped-def]
-            if text is None:
-                freeze_stream_tps_segment(self)
-            elif text:
-                record_stream_tps_delta(self, text)
+        def _stream_delta(self, text: Optional[str]) -> Any:
+            try:
+                if text is None:
+                    freeze_stream_tps_segment(self)
+                elif text:
+                    record_stream_tps_delta(self, text)
+            except Exception:
+                logger.debug("stream throughput hook failed", exc_info=True)
             return _orig_stream_delta(self, text)
 
         cls._stream_delta = _stream_delta  # type: ignore[method-assign]

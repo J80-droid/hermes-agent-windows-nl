@@ -7,6 +7,7 @@
    stack (Tabs, Segmented, Typography, Buttons, etc. all look unstyled). */
 @import '@nous-research/ui/styles/fonts.css';
 @import '@nous-research/ui/styles/globals.css';
+@import "./chart-fg-utilities.css";
 
 /* Scan the published design-system bundle so its utility classes survive
    Tailwind's JIT purge. */
@@ -265,5 +266,67 @@ code { font-size: 0.875rem; }
 }
 :root[style*="--theme-asset-bg:"] .theme-default-filler {
   display: none;
+}
+
+/* Data-series visualization utilities (Analytics + Models pages). */
+.series-swatch-input {
+  background-color: var(--series-input-token);
+}
+.series-swatch-output {
+  background-color: var(--series-output-token);
+}
+.text-series-input {
+  color: var(--series-input-token);
+}
+.text-series-output {
+  color: var(--series-output-token);
+}
+.analytics-bar-input {
+  width: 100%;
+  background: color-mix(in srgb, var(--series-input-token) 70%, transparent);
+}
+.analytics-bar-output {
+  width: 100%;
+  background: color-mix(in srgb, var(--series-output-token) 70%, transparent);
+}
+.models-bar-stripe {
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent 0 0.4rem,
+    currentColor 0.4rem calc(0.4rem + 1px)
+  );
+}
+.models-bar-segment-cache-read {
+  background-color: color-mix(in srgb, #60a5fa 70%, transparent);
+}
+.models-bar-segment-reasoning {
+  background-color: color-mix(in srgb, #c084fc 70%, transparent);
+}
+.models-bar-segment-input {
+  background-color: color-mix(in srgb, var(--series-input-token) 70%, transparent);
+}
+.models-bar-segment-output {
+  background-color: color-mix(in srgb, var(--series-output-token) 70%, transparent);
+}
+.models-legend-dot-cache-read {
+  background-color: #60a5fa;
+}
+.models-legend-dot-reasoning {
+  background-color: #c084fc;
+}
+.models-legend-dot-input {
+  background-color: var(--series-input-token);
+}
+.models-legend-dot-output {
+  background-color: var(--series-output-token);
+}
+.theme-swatch-stop:nth-child(1) {
+  background: var(--theme-swatch-1);
+}
+.theme-swatch-stop:nth-child(2) {
+  background: var(--theme-swatch-2);
+}
+.theme-swatch-stop:nth-child(3) {
+  background: var(--theme-swatch-3);
 }
 

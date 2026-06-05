@@ -31,7 +31,14 @@ const PERIODS = [
   { label: "90d", days: 90 },
 ] as const;
 
-const CHART_HEIGHT_PX = 160;
+function chartFlexGrow(tokenCount: number, maxTokens: number): number {
+  if (tokenCount <= 0) return 0;
+  return Math.max(1, Math.round((tokenCount / maxTokens) * 100));
+}
+
+function chartFgClass(n: number): string {
+  return `chart-fg-${Math.min(100, Math.max(0, n))}`;
+}
 
 function formatTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -147,39 +154,26 @@ function TokenBarChart({ daily }: { daily: AnalyticsDailyEntry[] }) {
         </div>
         <div className="flex items-center gap-4 font-mondwest normal-case text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <div
-              className="h-2.5 w-2.5"
-              style={{ backgroundColor: "var(--series-input-token)" }}
-            />
+            <div className="h-2.5 w-2.5 series-swatch-input" />
             {t.analytics.input}
           </div>
           <div className="flex items-center gap-1.5">
-            <div
-              className="h-2.5 w-2.5"
-              style={{ backgroundColor: "var(--series-output-token)" }}
-            />
+            <div className="h-2.5 w-2.5 series-swatch-output" />
             {t.analytics.output}
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div
-          className="flex items-end gap-[2px]"
-          style={{ height: CHART_HEIGHT_PX }}
-        >
+        <div className="flex h-40 items-end gap-[2px]">
           {daily.map((d) => {
             const total = d.input_tokens + d.output_tokens;
-            const inputH = Math.round(
-              (d.input_tokens / maxTokens) * CHART_HEIGHT_PX,
-            );
-            const outputH = Math.round(
-              (d.output_tokens / maxTokens) * CHART_HEIGHT_PX,
-            );
+            const inputGrow = chartFlexGrow(d.input_tokens, maxTokens);
+            const outputGrow = chartFlexGrow(d.output_tokens, maxTokens);
+            const spacerGrow = Math.max(0, 100 - inputGrow - outputGrow);
             return (
               <div
                 key={d.day}
-                className="flex-1 min-w-0 group relative flex flex-col justify-end"
-                style={{ height: CHART_HEIGHT_PX }}
+                className="group relative flex h-40 min-w-0 flex-1 flex-col"
               >
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10 pointer-events-none">
                   <div className="font-mondwest normal-case bg-card border border-border px-2.5 py-1.5 text-xs text-foreground shadow-lg whitespace-nowrap">
@@ -196,23 +190,22 @@ function TokenBarChart({ daily }: { daily: AnalyticsDailyEntry[] }) {
                   </div>
                 </div>
 
-                <div
-                  className="w-full"
-                  style={{
-                    backgroundColor:
-                      "color-mix(in srgb, var(--series-input-token) 70%, transparent)",
-                    height: Math.max(inputH, total > 0 ? 1 : 0),
-                  }}
-                />
-
-                <div
-                  className="w-full"
-                  style={{
-                    backgroundColor:
-                      "color-mix(in srgb, var(--series-output-token) 70%, transparent)",
-                    height: Math.max(outputH, d.output_tokens > 0 ? 1 : 0),
-                  }}
-                />
+                <div className="flex h-full min-h-0 w-full flex-col">
+                  <div
+                    aria-hidden
+                    className={chartFgClass(total > 0 ? spacerGrow : 100)}
+                  />
+                  {inputGrow > 0 && (
+                    <div
+                      className={`analytics-bar-input ${chartFgClass(inputGrow)}`}
+                    />
+                  )}
+                  {outputGrow > 0 && (
+                    <div
+                      className={`analytics-bar-output ${chartFgClass(outputGrow)}`}
+                    />
+                  )}
+                </div>
               </div>
             );
           })}
@@ -272,12 +265,12 @@ function DailyTable({ daily }: { daily: AnalyticsDailyEntry[] }) {
                       {d.sessions}
                     </td>
                   <td className="text-right py-2 px-4">
-                    <span style={{ color: "var(--series-input-token)" }}>
+                    <span className="text-series-input">
                         {formatTokens(d.input_tokens)}
                       </span>
                   </td>
                   <td className="text-right py-2 pl-4">
-                    <span style={{ color: "var(--series-output-token)" }}>
+                    <span className="text-series-output">
                         {formatTokens(d.output_tokens)}
                       </span>
                   </td>
@@ -330,11 +323,11 @@ function ModelTable({ models }: { models: AnalyticsModelEntry[] }) {
                     {m.sessions}
                   </td>
                   <td className="text-right py-2 pl-4">
-                    <span style={{ color: "var(--series-input-token)" }}>
+                    <span className="text-series-input">
                       {formatTokens(m.input_tokens)}
                     </span>
                     {" / "}
-                    <span style={{ color: "var(--series-output-token)" }}>
+                    <span className="text-series-output">
                       {formatTokens(m.output_tokens)}
                     </span>
                   </td>

@@ -410,13 +410,33 @@ Geïsoleerde E2E voor **Tier A drift (strict)** + **overlay bootstrap/runtime** 
 | 2 | Drift | `Test-NousTreeIdentical.ps1` PASS |
 | 3 | Harness | `NousOverlayInstitutionalE2E.harness.py` — artefacten, geen hooks in Tier A `cli.py`, patches idempotent |
 | 4–6 | Verify + smokes | `verify_usage_cost_bar.py --verify`, classic + live CLI smoke |
-| 7 | Pytest subset | `test_status_bar_cost`, `test_usage_snapshot` (gemini) |
+| 7 | Pytest subset | `tests/overlay/` (cost, usage_snapshot, fork patches) |
 | 8 | Windows chain | `verify_windows_script_chain.ps1` |
 
 ```bat
 audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat
 ```
 
-Preflight: `set HERMES_HOME=%LOCALAPPDATA%\hermes`. Unit (bootstrap): `pytest tests/overlay/test_bootstrap.py -q`.
+Preflight: `set HERMES_HOME=%LOCALAPPDATA%\hermes`. Unit (overlay): `pytest tests/overlay/ -q` (**112** tests).
 
 Gerelateerd: `windows\audits\RUN_SYNC_NOUS_E2E.bat`, `windows\audits\RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat`, `docs/NOUS_OVERLAY_ARCHITECTURE.md`.
+
+---
+
+# Nous overlay runtime E2E (P0–P5)
+
+Geïsoleerde E2E voor **overlay runtime wiring** na bootstrap: agent-throughput back-link, CLI `_stream_delta`-wrap, `/tps` + `/cost`, freeze-guard, tier-A `cli.py`-guard, overlay pytest-subset. Geen live API.
+
+| Stap | Scenario | Verwachting |
+|------|----------|-------------|
+| E1 | Artefacten | bootstrap, TPS/cost modules, `verify_institutional_guard.py`, `test_agent_throughput_fork_patch.py` |
+| E2 | Bootstrap | `install()` idempotent; CLI + agent + pricing + models patch-vlaggen |
+| E3–E5 | Agent TPS | compressor `_fork_throughput_agent`, `_fire_stream_delta` record, finalize via `update_from_response` |
+| E6 | CLI boundary | `_stream_delta(None)` roept freeze aan zonder crash |
+| E7–E8 | Slash commands | `/tps` + `/cost` dispatch via `cli_command_patches` |
+| E9–E10 | Guards | freeze guard + `verify_institutional_guard.py --check-tier-a-cli` |
+| E11 | Pytest subset | `test_agent_throughput_fork_patch.py` + `test_cli_fork_patch.py` |
+
+```bat
+audits\RUN_NOUS_OVERLAY_RUNTIME_E2E.bat
+```

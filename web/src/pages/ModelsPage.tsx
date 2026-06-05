@@ -67,6 +67,52 @@ function formatCost(n: number): string {
   return "$0";
 }
 
+type TokenBarSegmentKind = "cacheRead" | "reasoning" | "input" | "output";
+
+const TOKEN_BAR_SEGMENT_CLASS: Record<
+  TokenBarSegmentKind,
+  { bar: string; legend: string }
+> = {
+  cacheRead: {
+    bar: "models-bar-segment-cache-read",
+    legend: "models-legend-dot-cache-read",
+  },
+  reasoning: {
+    bar: "models-bar-segment-reasoning",
+    legend: "models-legend-dot-reasoning",
+  },
+  input: {
+    bar: "models-bar-segment-input",
+    legend: "models-legend-dot-input",
+  },
+  output: {
+    bar: "models-bar-segment-output",
+    legend: "models-legend-dot-output",
+  },
+};
+
+function segmentFlexGrows(values: number[]): number[] {
+  const total = values.reduce((sum, value) => sum + value, 0);
+  if (total === 0) return values.map(() => 0);
+
+  const grows = values.map((value) =>
+    value > 0 ? Math.max(1, Math.round((value / total) * 100)) : 0,
+  );
+  const sum = grows.reduce((acc, value) => acc + value, 0);
+  if (sum === 100) return grows;
+
+  const lastNonZero = grows.findLastIndex((value) => value > 0);
+  if (lastNonZero < 0) return grows;
+
+  const adjusted = [...grows];
+  adjusted[lastNonZero] = Math.max(1, adjusted[lastNonZero] + (100 - sum));
+  return adjusted;
+}
+
+function chartFgClass(n: number): string {
+  return `chart-fg-${Math.min(100, Math.max(0, n))}`;
+}
+
 /** Short model name: strip vendor prefix like "openrouter/" or "anthropic/". */
 function shortModelName(model: string): string {
   const slashIdx = model.indexOf("/");
@@ -95,18 +141,19 @@ function TokenBar({
   const total = input + output + cacheRead + reasoning;
   if (total === 0) return null;
 
-  // Segments carry a CSS color value (hex or `var(--token)`) rather than
-  // a Tailwind class so the input/output series can pick up the active
-  // theme's `--series-*-token` vars — see `themes/types.ts`
-  // `ThemeSeriesColors`. The /60–/70 fade on the bar is applied via
-  // color-mix on the same value so themes don't need to ship two
-  // separate hex literals.
-  const segments: Array<{ color: string; label: string; value: number }> = [
-    { value: cacheRead, color: "#60a5fa", label: "Cache Read" }, // tailwind blue-400
-    { value: reasoning, color: "#c084fc", label: "Reasoning" }, // tailwind purple-400
-    { value: input, color: "var(--series-input-token)", label: "Input" },
-    { value: output, color: "var(--series-output-token)", label: "Output" },
-  ].filter((s) => s.value > 0);
+  const segments = (
+    [
+      { value: cacheRead, kind: "cacheRead" as const, label: "Cache Read" },
+      { value: reasoning, kind: "reasoning" as const, label: "Reasoning" },
+      { value: input, kind: "input" as const, label: "Input" },
+      { value: output, kind: "output" as const, label: "Output" },
+    ] satisfies Array<{
+      kind: TokenBarSegmentKind;
+      label: string;
+      value: number;
+    }>
+  ).filter((s) => s.value > 0);
+  const flexGrows = segmentFlexGrows(segments.map((s) => s.value));
 
   return (
     <div className="space-y-1.5">
@@ -114,32 +161,28 @@ function TokenBar({
       <div className="relative flex min-h-[1.5rem] w-full items-stretch overflow-hidden">
         {segments.map((s, i) => (
           <div
-            key={i}
-            className="relative flex items-center transition-all duration-300"
-            style={{
-              backgroundColor: `color-mix(in srgb, ${s.color} 70%, transparent)`,
-              width: `${(s.value / total) * 100}%`,
-            }}
+            key={s.kind}
+            className={cn(
+              "relative flex items-center transition-all duration-300",
+              TOKEN_BAR_SEGMENT_CLASS[s.kind].bar,
+              chartFgClass(flexGrows[i]),
+            )}
           >
             {/* Stepped fill pattern overlay */}
-            <div
-              className="absolute inset-0 opacity-30"
-              style={{
-                backgroundImage:
-                  "repeating-linear-gradient(to right, transparent 0 0.4rem, currentColor 0.4rem calc(0.4rem + 1px))",
-              }}
-            />
+            <div className="models-bar-stripe absolute inset-0 opacity-30" />
           </div>
         ))}
       </div>
 
       {/* Legend */}
       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-text-secondary">
-        {segments.map((s, i) => (
-          <span key={i} className="flex items-center gap-1">
+        {segments.map((s) => (
+          <span key={s.kind} className="flex items-center gap-1">
             <span
-              className="inline-block h-1.5 w-1.5 rounded-full"
-              style={{ backgroundColor: s.color }}
+              className={cn(
+                "inline-block h-1.5 w-1.5 rounded-full",
+                TOKEN_BAR_SEGMENT_CLASS[s.kind].legend,
+              )}
             />
             {s.label} {formatTokens(s.value)}
           </span>
