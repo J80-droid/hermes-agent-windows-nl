@@ -192,12 +192,13 @@ def smoke_subprocess_isolated_import() -> None:
         timeout=120,
         check=False,
     )
+    combined = f"{result.stdout}\n{result.stderr}"
     if result.returncode != 0:
         raise AssertionError(
             "subprocess live smoke failed\n"
             f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
         )
-    assert "classic cli live status bar cost smoke ok" in result.stdout
+    assert "classic cli live status bar cost smoke ok" in combined, combined
 
 
 def run_in_process_smokes() -> None:
@@ -219,7 +220,7 @@ def main() -> None:
     run_in_process_smokes()
     if not args.in_process_only:
         smoke_subprocess_isolated_import()
-    print("classic cli live status bar cost smoke ok")
+    print("classic cli live status bar cost smoke ok", flush=True)
 
 
 if __name__ == "__main__":
