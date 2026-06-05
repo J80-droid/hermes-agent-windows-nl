@@ -2,7 +2,7 @@
 
 ## Focus
 
-**Nous overlay afwerking (2026-06-05):** Checkpoint-commits `d1fc74044` + `00af22092` + `b429111fa` — Tier A `web/`/`local.py`/`website/` upstream-identiek; fork in `overlay/` (CLI patches incl. `load_config` profiel-overerving, legal prompt builder, TUI `gatewayReadyNewChatNotice.ts`, web fork + `index-overlay-append.css`). `RUN_AUDITS -IncludeSyncNousE2E -IncludeNousOverlayInstitutionalE2E` **PASS**; volledige `-IncludeAllE2E` draait na runtime `sync_profile_memories` + classic live smoke stderr-fix. Zie `docs/NOUS_OVERLAY_ARCHITECTURE.md`.
+**Nous overlay afwerking (2026-06-05):** Commits `d1fc74044`…`a9d75ec9d` — Tier A upstream-identiek; overlay patches (auth/gateway, CLI profile/config/doctor/toolsets, legal prompt, TUI/web fork). Entrypoint `scripts/run_hermes_cli_with_overlay.py` + `SWITCH_PROFILE.bat` voor `--fix-hermes-home`. `RUN_AUDITS -IncludeSyncNousE2E -IncludeNousOverlayInstitutionalE2E` **PASS**; `RUN_PROFILE_SWITCH_E2E` **PASS** na overlay-entrypoint. Volledige `-IncludeAllE2E` (run vóór laatste fixes): 11 rood → her-run aanbevolen; runtime: `sync_profile_memories` + `Invoke-RepairProfileMemoryLimits -EnforceOnly` voor legal USER-limiet.
 
 **Profielwissel Windows structureel (2026-05-30, productie OK):** `/profile use` in WT — TUI-modal op achtergrondthread (`_schedule_profile_command_async`); sync/gateway/relaunch na TUI-exit; geen stderr-spinner tijdens `chat` relaunch (prompt `legal ❯`); audit `docs/PROFILE_SWITCH_WINDOWS_AUDIT.md`; E2E `RUN_PROFILE_SWITCH_E2E.bat` + pytest 29 passed.
 
