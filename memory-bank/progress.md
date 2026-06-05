@@ -2,6 +2,7 @@
 
 ## Nous overlay institutioneel (2026-06)
 
+- [x] Overlay afwerking (2026-06-05): `config get` argparse-registratie; provision `--profile`/bootstrap argv-fix; toolset `--check` + runtime skip `_user_customized`; legal USER seed replace + dedup `-HermesRoot`; `RUN_NOUS_OVERLAY_FORK_GATES_E2E` (8/8) + unit tests; E2E PowerShell stderr-hardening; subset RUN_AUDITS groen
 - [x] Runtime patches in `overlay/` (CLI cost/TPS, `/cost`, `/tps`, stream hooks, agent throughput, Gemini pricing, model-catalog guard); `bootstrap.py` idempotent + rollback
 - [x] E2E `audits/RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat` (8/8+); throughput **14/14** `RUN_STATUS_BAR_THROUGHPUT_E2E`; prompt-timer **10/10** `RUN_PROMPT_TIMER_DISPLAY_E2E`
 - [x] Unit `tests/overlay/` (bootstrap, cli_fork_patch, cli_command_patches, cost/tps commands, stream hooks, agent_throughput_fork_patch, pricing/models patch, usage_snapshot) — **112** tests

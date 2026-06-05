@@ -440,3 +440,26 @@ Geïsoleerde E2E voor **overlay runtime wiring** na bootstrap: agent-throughput 
 ```bat
 audits\RUN_NOUS_OVERLAY_RUNTIME_E2E.bat
 ```
+
+---
+
+# Nous overlay fork gates E2E
+
+Geïsoleerde E2E voor **recente Tier B fork-gates** (geen live API): sync-script argv-sanitizer, overlay `config get`, toolset `--check` skip `_user_customized`, legal USER stale-domain strip, runtime env-guard.
+
+| Stap | Scenario | Verwachting |
+|------|----------|-------------|
+| E1 | Artefacten | argparse/config fork, overlay CLI entry, sync scripts, tests |
+| E2 | argv sanitizer | `--profile`/`-p`/`--profile=` gestript vóór bootstrap |
+| E3 | Provision | `sync_profile_toolsets_from_manifest.py --profile X --create-missing` op temp home |
+| E4 | config get | `scripts/run_hermes_cli_with_overlay.py config get <key>` |
+| E5 | Toolset check | `_user_customized.cli` → check overgeslagen |
+| E6 | argparse pytest | `tests/overlay/test_argparse_fork_patch.py` |
+| E7 | Legal USER | `sync_profile_memories.ps1` vervangt stale NL-blokken |
+| E8 | Runtime guard | `toolset_domain_e2e_runtime.py` zonder env → exit 1 |
+
+```bat
+audits\RUN_NOUS_OVERLAY_FORK_GATES_E2E.bat
+```
+
+Unit (harness, gemockt): `pytest tests/audits/test_nous_overlay_fork_gates_e2e_harness.py -m "not e2e" -q`

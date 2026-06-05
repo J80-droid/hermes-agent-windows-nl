@@ -133,8 +133,15 @@ try {
 
 Write-Host '=== Toolset domain E2E (4/6 manifest drift --check) ===' -ForegroundColor Cyan
 $checkScript = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/sync_profile_toolsets_from_manifest.py'
-& $py $checkScript --repo-root $RepoRoot --hermes-root $hermes --check 2>&1 | Out-Host
-if (Test-NativeCommandFailed) {
+$prevEapCheck = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+try {
+    & $py $checkScript --repo-root $RepoRoot --hermes-root $hermes --check 2>&1 | Out-Host
+    $checkRc = $LASTEXITCODE
+} finally {
+    $ErrorActionPreference = $prevEapCheck
+}
+if ($checkRc -ne 0) {
     Step-Fail 'manifest-check' 'Draai windows\SYNC_DOMAIN_TOOLSETS.bat'
 } else {
     Step-Ok 'manifest-check' 'platform_toolsets.cli matcht manifest'

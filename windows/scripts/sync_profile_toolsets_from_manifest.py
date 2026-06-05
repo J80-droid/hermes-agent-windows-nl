@@ -19,9 +19,32 @@ _REPO = Path(__file__).resolve().parent.parent.parent
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from overlay.bootstrap import install
 
-install()
+def _argv_without_hermes_profile_flag(argv: list[str]) -> list[str]:
+    """Drop --profile/-p so overlay bootstrap (imports hermes_cli.main) does not resolve it."""
+    out: list[str] = []
+    skip_next = False
+    for arg in argv:
+        if skip_next:
+            skip_next = False
+            continue
+        if arg in ("--profile", "-p"):
+            skip_next = True
+            continue
+        if arg.startswith("--profile="):
+            continue
+        out.append(arg)
+    return out
+
+
+_argv_saved = list(sys.argv)
+sys.argv = _argv_without_hermes_profile_flag(sys.argv)
+try:
+    from overlay.bootstrap import install
+
+    install()
+finally:
+    sys.argv = _argv_saved
 
 from hermes_cli.profile_mcp_format import _read_yaml, _split_header, _write_yaml  # noqa: E402
 from hermes_cli.tools_config import _platform_toolsets_user_customized  # noqa: E402
@@ -154,7 +177,13 @@ def _sync_profile(
         print(f"[FAIL] {name}: config.yaml ontbreekt ({cfg_path})")
         return False
     raw = _read_yaml(cfg_path)
-    if not check and not force_manifest and _platform_toolsets_user_customized(raw, "cli"):
+    if not force_manifest and _platform_toolsets_user_customized(raw, "cli"):
+        if check:
+            print(
+                f"[OK] {name}: platform_toolsets.cli door gebruiker aangepast "
+                f"(hermes tools) — check overgeslagen"
+            )
+            return True
         print(
             f"[OK] {name}: platform_toolsets.cli door gebruiker aangepast "
             f"(hermes tools) — sync overgeslagen"

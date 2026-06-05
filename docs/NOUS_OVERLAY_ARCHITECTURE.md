@@ -52,7 +52,7 @@ E2E sync: `windows\audits\RUN_SYNC_NOUS_E2E.bat` of `RUN_AUDITS -IncludeSyncNous
 | `overlay/hermes_cli/models_fork_patch.py` | Startup model-catalog guard |
 | `overlay/hermes_cli/auth_fork_patch.py` | `read_auth_json` (BOM), `sync_root_active_provider`, `_read_shared_nous_state` (BOM) |
 | `overlay/tui_gateway/gateway_config_fork_patch.py` | Gateway `/cost`, `cost_bar_mode`, `/tps`, usage snapshot |
-| `overlay/hermes_cli/argparse_fork_patch.py` | `profile use` flags + `config get` subparser |
+| `overlay/hermes_cli/argparse_fork_patch.py` | `profile use` flags + registreert upstream-ontbrekende `config get` subparser (geen duplicate als upstream `get` al bestaat) |
 | `overlay/hermes_cli/cli_profile_fork_patch.py` | `execute_profile_switch`, `_parse_profile_switch_intent` |
 | `overlay/hermes_cli/config_fork_patch.py` | `get_config_value`, `config get` handler |
 | `overlay/hermes_cli/doctor_fork_patch.py` | `_check_windows_split_home_config` |
@@ -65,7 +65,13 @@ E2E sync: `windows\audits\RUN_SYNC_NOUS_E2E.bat` of `RUN_AUDITS -IncludeSyncNous
 - [`windows/scripts/Invoke-HermesOverlayBootstrap.ps1`](../windows/scripts/Invoke-HermesOverlayBootstrap.ps1) — zet `PYTHONSTARTUP`.
 - [`windows/scripts/launch_hermes.ps1`](../windows/scripts/launch_hermes.ps1) — bootstrap vóór chat.
 
-**Tests:** `pytest tests/overlay/` (**112** unit tests, gemockt); `tests/conftest.py` roept `install()` vóór collectie. Agent-throughput: `tests/overlay/test_agent_throughput_fork_patch.py` (helpers + `apply_agent_throughput_fork_patch` met geïsoleerde stubs).
+**Tests:** `pytest tests/overlay/` (overlay unit, gemockt); `tests/conftest.py` roept `install()` vóór collectie. Fork gates: `tests/audits/test_nous_overlay_fork_gates_e2e_harness.py`, `tests/overlay/test_argparse_fork_patch.py`, `tests/windows/test_toolset_domain_e2e_runtime.py`. Agent-throughput: `tests/overlay/test_agent_throughput_fork_patch.py`.
+
+**Tier B script guards:**
+
+- `windows/scripts/sync_profile_toolsets_from_manifest.py` — neutraliseert eigen `--profile`/`-p` in `sys.argv` vóór `overlay.bootstrap.install()` (voorkomt `hermes_cli.main._apply_profile_override` op script-flags).
+- `scripts/run_hermes_cli_with_overlay.py` — canonieke CLI-entry na bootstrap (o.a. `hermes config get`).
+- `windows/scripts/sync_profile_memories.ps1` — verwijdert stale legal-domain USER-secties vóór merge; dedup via `invoke_deduplicate_memories.ps1 -HermesRoot $root`.
 
 ## UI-build (Tier B, geen Tier A-src-leak)
 
@@ -94,6 +100,7 @@ Baseline: [NOUS_DRIFT_BASELINE.md](NOUS_DRIFT_BASELINE.md).
 | Sync + drift | `windows\audits\RUN_SYNC_NOUS_E2E.bat` |
 | Overlay runtime + cost + drift | `audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat` |
 | Overlay runtime wiring (P0–P5) | `audits\RUN_NOUS_OVERLAY_RUNTIME_E2E.bat` — bootstrap idempotentie, agent/CLI TPS hooks, `/tps`+`/cost`, tier-A guard, overlay pytest-subset |
+| Fork gates (Tier B scripts) | `audits\RUN_NOUS_OVERLAY_FORK_GATES_E2E.bat` — argv `--profile` sanitizer vóór bootstrap, `config get`, toolset `--check` skip `_user_customized`, legal USER stale-strip + dedup `-HermesRoot` |
 | Throughput tok/s (overlay) | `audits\RUN_STATUS_BAR_THROUGHPUT_E2E.bat` |
 | Prompt-timer (overlay) | `audits\RUN_PROMPT_TIMER_DISPLAY_E2E.bat` |
 | Klassieke CLI statusbalk | `windows\audits\RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` |

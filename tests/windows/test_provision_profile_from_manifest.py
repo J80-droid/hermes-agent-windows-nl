@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import importlib.util
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import yaml
@@ -158,6 +161,61 @@ def test_clone_from_fallback_soul(tmp_path):
     soul = hermes / "profiles" / "e2e_clone_test" / "SOUL.md"
     assert soul.is_file()
     assert "Legal SOUL" in soul.read_text(encoding="utf-8")
+
+
+def test_argv_without_hermes_profile_flag_strips_cli_profile():
+    mod = _load_sync_module()
+    argv = [
+        "sync_profile_toolsets_from_manifest.py",
+        "--repo-root",
+        "/repo",
+        "--profile",
+        "e2e_provision_test",
+        "--create-missing",
+    ]
+    stripped = mod._argv_without_hermes_profile_flag(argv)
+    assert stripped == [
+        "sync_profile_toolsets_from_manifest.py",
+        "--repo-root",
+        "/repo",
+        "--create-missing",
+    ]
+
+
+def test_argv_without_hermes_profile_flag_strips_p_and_equals_form():
+    mod = _load_sync_module()
+    assert mod._argv_without_hermes_profile_flag(
+        ["sync.py", "-p", "legal", "--check"]
+    ) == ["sync.py", "--check"]
+    assert mod._argv_without_hermes_profile_flag(
+        ["sync.py", "--profile=ict", "--dry-run"]
+    ) == ["sync.py", "--dry-run"]
+    # Trailing --profile without value: drop flag only
+    assert mod._argv_without_hermes_profile_flag(["sync.py", "--profile"]) == ["sync.py"]
+
+
+def test_main_with_profile_flag_does_not_require_runtime_profile(tmp_path):
+    """Regression: --profile for this script must not trigger hermes_cli.main override."""
+    hermes = _hermes_fixture(tmp_path)
+    py = os.environ.get("HERMES_PYTHON") or sys.executable
+    r = subprocess.run(
+        [
+            py,
+            str(SYNC_SCRIPT),
+            "--repo-root",
+            str(REPO),
+            "--hermes-root",
+            str(hermes),
+            "--profile",
+            "ict",
+            "--create-missing",
+        ],
+        cwd=str(REPO),
+        capture_output=True,
+        text=True,
+    )
+    assert r.returncode == 0, r.stderr or r.stdout
+    assert (hermes / "profiles" / "ict" / "config.yaml").is_file()
 
 
 def test_provision_only_skips_sync(tmp_path, monkeypatch):

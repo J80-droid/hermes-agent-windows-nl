@@ -2,7 +2,7 @@
 
 ## Focus
 
-**Nous overlay afwerking (2026-06-05):** Commits `d1fc74044`…`a9d75ec9d` — Tier A upstream-identiek; overlay patches (auth/gateway, CLI profile/config/doctor/toolsets, legal prompt, TUI/web fork). Entrypoint `scripts/run_hermes_cli_with_overlay.py` + `SWITCH_PROFILE.bat` voor `--fix-hermes-home`. `RUN_AUDITS -IncludeSyncNousE2E -IncludeNousOverlayInstitutionalE2E` **PASS**; `RUN_PROFILE_SWITCH_E2E` **PASS** na overlay-entrypoint. Volledige `-IncludeAllE2E` (run vóór laatste fixes): 11 rood → her-run aanbevolen; runtime: `sync_profile_memories` + `Invoke-RepairProfileMemoryLimits -EnforceOnly` voor legal USER-limiet.
+**Nous overlay afwerking (2026-06-05):** Fork gates: `argparse_fork_patch` (`config get`), argv-sanitizer in sync script, toolset `--check`/`runtime` skip `_user_customized`, legal USER stale-strip + dedup `-HermesRoot`; E2E `audits/RUN_NOUS_OVERLAY_FORK_GATES_E2E.bat` (8/8) + unit tests harness/runtime/argparse. Subset RUN_AUDITS groen (provision, toolset, HermesHome, pipeline E9, legal-proactive). Volledige `-IncludeAllE2E` her-run optioneel (~20 min).
 
 **Profielwissel Windows structureel (2026-05-30, productie OK):** `/profile use` in WT — TUI-modal op achtergrondthread (`_schedule_profile_command_async`); sync/gateway/relaunch na TUI-exit; geen stderr-spinner tijdens `chat` relaunch (prompt `legal ❯`); audit `docs/PROFILE_SWITCH_WINDOWS_AUDIT.md`; E2E `RUN_PROFILE_SWITCH_E2E.bat` + pytest 29 passed.
 

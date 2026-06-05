@@ -33,6 +33,28 @@ function Add-StepResult {
     }
 }
 
+function Get-OverlayCliConfigValue {
+    param(
+        [string]$Conda,
+        [string]$RepoRoot,
+        [string]$OverlayCli,
+        [string]$Key
+    )
+    $out = & $conda run -n hermes-env --cwd $RepoRoot --no-capture-output python $overlayCli config get $Key 2>&1
+    if ($LASTEXITCODE -ne 0) { return $null }
+    $lines = @($out | ForEach-Object {
+        $line = if ($_ -is [System.Management.Automation.ErrorRecord]) { $_.ToString() } else { "$_" }
+        $line.Trim()
+    } | Where-Object {
+        $_ -and
+        $_ -notmatch '^(usage:|error:|conda|python\.exe)' -and
+        $_ -notmatch 'NativeCommandError' -and
+        $_ -notmatch '^At\s'
+    })
+    if ($lines.Count -eq 0) { return $null }
+    return $lines[-1].ToLower()
+}
+
 Write-Host '=== HermesHome E2E ===' -ForegroundColor Cyan
 Write-Host "[INFO] Repo: $RepoRoot" -ForegroundColor Cyan
 
@@ -180,24 +202,32 @@ if (Test-Path -LiteralPath $runtimeCfg) {
     $conda = Join-Path $env:USERPROFILE 'miniconda3/Scripts/conda.exe'
     if (Test-Path -LiteralPath $conda) {
         $overlayCli = Join-Path $RepoRoot 'scripts/run_hermes_cli_with_overlay.py'
-        $visionOut = & $conda run -n hermes-env --cwd $RepoRoot --no-capture-output python $overlayCli config get auxiliary.vision.provider 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            $val = ($visionOut | Select-Object -Last 1).ToString().Trim().ToLower()
-            Add-StepResult 'auxiliary.vision.provider=gemini' ($val -eq 'gemini') $val
-            $coreProf = Join-Path (Get-HermesRuntimeRoot) 'profiles\core\config.yaml'
-            if (Test-Path -LiteralPath $coreProf) {
-                $prevHome = $env:HERMES_HOME
-                $env:HERMES_HOME = (Split-Path -Parent $coreProf)
-                $compOut = & $conda run -n hermes-env --cwd $RepoRoot --no-capture-output python $overlayCli config get auxiliary.compression.provider 2>&1
-                if ($LASTEXITCODE -eq 0) {
-                    $compVal = ($compOut | Select-Object -Last 1).ToString().Trim().ToLower()
-                    Add-StepResult 'profile core inherits auxiliary.compression=custom' ($compVal -eq 'custom') $compVal
+        $prevEapCli = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            Initialize-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
+            $val = Get-OverlayCliConfigValue -Conda $conda -RepoRoot $RepoRoot -OverlayCli $overlayCli -Key 'auxiliary.vision.provider'
+            if ($null -ne $val) {
+                Add-StepResult 'auxiliary.vision.provider=gemini' ($val -eq 'gemini') $val
+                $coreProf = Join-Path (Get-HermesRuntimeRoot) 'profiles\core\config.yaml'
+                if (Test-Path -LiteralPath $coreProf) {
+                    $rootComp = Get-OverlayCliConfigValue -Conda $conda -RepoRoot $RepoRoot -OverlayCli $overlayCli -Key 'auxiliary.compression.provider'
+                    $prevHome = $env:HERMES_HOME
+                    $env:HERMES_HOME = (Split-Path -Parent $coreProf)
+                    $compVal = Get-OverlayCliConfigValue -Conda $conda -RepoRoot $RepoRoot -OverlayCli $overlayCli -Key 'auxiliary.compression.provider'
+                    if ($null -ne $rootComp -and $null -ne $compVal) {
+                        Add-StepResult 'profile core inherits auxiliary.compression from root' ($compVal -eq $rootComp) "$compVal (root=$rootComp)"
+                    } else {
+                        Add-StepResult 'profile core inherits auxiliary.compression from root' $false 'config get mislukt'
+                    }
+                    if ($prevHome) { $env:HERMES_HOME = $prevHome } else { Remove-Item Env:HERMES_HOME -ErrorAction SilentlyContinue }
+                    Initialize-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
                 }
-                if ($prevHome) { $env:HERMES_HOME = $prevHome } else { Remove-Item Env:HERMES_HOME -ErrorAction SilentlyContinue }
-                Initialize-UserHermesHomeRoot -FixUserEnv -Quiet | Out-Null
+            } else {
+                Add-StepResult 'auxiliary.vision.provider=gemini' $false 'CLI exit non-zero'
             }
-        } else {
-            Add-StepResult 'auxiliary.vision.provider=gemini' $false 'CLI exit non-zero'
+        } finally {
+            $ErrorActionPreference = $prevEapCli
         }
     } else {
         Write-Host '[SKIP] auxiliary.vision.provider — conda niet gevonden' -ForegroundColor Yellow

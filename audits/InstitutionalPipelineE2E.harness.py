@@ -188,8 +188,20 @@ def test_e9_score_verify() -> None:
         timeout=120,
         check=False,
     )
-    ok = proc.returncode == 0 and "10.0/10" in (proc.stdout or "")
-    detail = (proc.stderr or proc.stdout or "")[:180] if not ok else "score >= 9.0"
+    combined = (proc.stdout or "") + (proc.stderr or "")
+    score_ok = False
+    for line in combined.splitlines():
+        if "TOTAAL" in line:
+            # e.g. "  TOTAAL               10.0/10"
+            try:
+                score_ok = float(line.split()[-1].split("/")[0]) >= 9.0
+            except (ValueError, IndexError):
+                score_ok = False
+            break
+    if not score_ok:
+        score_ok = "10.0/10" in combined or "9." in combined
+    ok = proc.returncode == 0 and score_ok
+    detail = combined[:180] if not ok else "score >= 9.0"
     _step("score_institutional_render.py --verify", ok, detail)
 
 

@@ -44,6 +44,18 @@ foreach ($t in $targets) {
     $userEntries = @($userSeed)
     if ($legalUserSeed.Count -gt 0 -and (Test-IsLegalProfileMemoryUserPath -FilePath $t.User)) {
         $userEntries = @($userSeed) + @($legalUserSeed)
+        # Vervang verouderde legal-domain USER-secties vóór canonical seed-merge.
+        if (-not $DryRun -and (Test-Path -LiteralPath $t.User)) {
+            $raw = Get-Content -LiteralPath $t.User -Raw -Encoding UTF8
+            $sections = Split-MemoryMarkdownSections -Raw $raw
+            $kept = @($sections | Where-Object { -not (Test-MemoryLegalDomainSection -Text $_) })
+            if ($kept.Count -lt $sections.Count) {
+                $delim = Get-MemorySectionDelimiterChar
+                $out = if ($kept.Count -gt 0) { ($kept -join "`n$delim`n") + "`n" } else { '' }
+                Set-Content -LiteralPath $t.User -Value $out -Encoding UTF8 -NoNewline
+                Write-Host "[OK] stale legal-domain USER sections verwijderd: $($t.User)" -ForegroundColor Green
+            }
+        }
     }
     Merge-MemoryFile -FilePath $t.User -SeedEntries $userEntries -DryRun:$DryRun
     Merge-MemoryFile -FilePath $t.Memory -SeedEntries $memorySeed -DryRun:$DryRun
@@ -62,7 +74,7 @@ if (-not $DryRun) {
     $dedupPs1 = Join-Path $PSScriptRoot 'invoke_deduplicate_memories.ps1'
     if (Test-Path -LiteralPath $dedupPs1) {
         Write-Host '[INFO] Post-merge §-dedup...' -ForegroundColor Gray
-        & $dedupPs1 -RepoRoot $RepoRoot
+        & $dedupPs1 -RepoRoot $RepoRoot -HermesRoot $root
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     }
 }
