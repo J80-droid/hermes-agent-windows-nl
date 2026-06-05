@@ -79,6 +79,37 @@ def test_deduplicate_keeps_distinct_tool_failure_variants():
     assert long in out
 
 
+def test_deduplicate_preserves_inline_section_sign_in_prose():
+    """Inline § in legal seed mag sectie niet splitsen — alleen regel-§."""
+    block_a = "Legal proactief (NL): SOUL § Parallelle invalshoeken. SOUL prevaleert."
+    block_b = "Legal triggers — voorbeeldvragen J. (NL): disciplinaire maatregel."
+    block_c = "Legal taallaag (NL): Deze § = NL triggers only."
+    raw = f"{block_a}\n§\n{block_b}\n§\n{block_c}\n"
+    out = deduplicate_content(raw)
+    assert "Legal proactief" in out
+    assert "Legal triggers" in out
+    assert "Legal taallaag" in out
+    assert out.count("§") == 4  # 2 inline in prose + 2 regel-delimiters
+
+
+def test_deduplicate_empty_input_returns_empty():
+    assert deduplicate_content("") == ""
+    assert deduplicate_content("   \n\n  ") == ""
+
+
+def test_deduplicate_file_missing_returns_false(tmp_path: Path):
+    assert deduplicate_file(tmp_path / "missing.md") is False
+
+
+def test_deduplicate_file_read_error_returns_false():
+    from unittest.mock import MagicMock
+
+    path = MagicMock(spec=Path)
+    path.is_file.return_value = True
+    path.read_text.side_effect = OSError("denied")
+    assert deduplicate_file(path) is False
+
+
 def test_main_deduplicates_legacy_root_memories(tmp_path: Path, monkeypatch):
     """main() must process hermes/memories/ as well as profiles/*/memories/."""
     import deduplicate_memories as dm

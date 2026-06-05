@@ -463,3 +463,22 @@ audits\RUN_NOUS_OVERLAY_FORK_GATES_E2E.bat
 ```
 
 Unit (harness, gemockt): `pytest tests/audits/test_nous_overlay_fork_gates_e2e_harness.py -m "not e2e" -q`
+
+### Nous overlay afwerking E2E
+
+| Stap | Onderwerp |
+|------|-----------|
+| E1 | `deduplicate_memories.py` — alleen `§` op eigen regel splitst secties |
+| E2 | pytest subset `tests/scripts/test_deduplicate_memories.py` |
+| E3 | `RUN_AUDITS.ps1` bevat trust preflight + fork-gate wiring |
+| E4 | `SYNC_TRUST_RUNTIME.bat` retry bij legal E2E-fail |
+| E5 | `collect_env_sync_keys.py` roept `overlay.bootstrap.install()` aan |
+| E6 | `bootstrap.py` exporteert sandbox/hardware/config modules |
+| E7 | `overlay/ui-tui/src/domain/usage.ts` cost helpers |
+| E8 | `enforce_profile_memory_char_limits.ps1` legal seed guard |
+
+```bat
+audits\RUN_NOUS_OVERLAY_AFWERKING_E2E.bat
+```
+
+Unit (harness, gemockt): `pytest tests/audits/test_nous_overlay_afwerking_e2e_harness.py -m "not e2e" -q`

@@ -136,11 +136,15 @@ Add-StepResult -Name '2/10 drift guards + keepOurs' -Ok $guardOk
 
 # --- 3 Vitest (formatter + event handler turn/tools) ---
 if (-not $SkipVitest) {
+    $copyPs1 = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/Invoke-CopyHermesOverlaySources.ps1'
+    if (Test-Path -LiteralPath $copyPs1) {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $copyPs1 -RepoRoot $RepoRoot -Target ui-tui -Force | Out-Null
+    }
     Push-Location (Join-Path $RepoRoot 'ui-tui')
     try {
         $prevEap = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
-        & npx vitest run statusBarCost usageCostBar createGatewayEventHandler 2>&1 | Out-Host
+        & npx vitest run src/__tests__/statusBarCost.test.ts src/__tests__/usageCostBar.test.ts src/__tests__/createGatewayEventHandler.test.ts 2>&1 | Out-Host
         $vitestOk = ($LASTEXITCODE -eq 0)
         $ErrorActionPreference = $prevEap
     } finally {

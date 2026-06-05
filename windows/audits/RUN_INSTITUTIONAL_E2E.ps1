@@ -449,7 +449,13 @@ Write-Host '[OK] sticky terug naar core' -ForegroundColor Green
 Write-Host '=== 11/11 CLI intent smoke (natuurlijke taal -> core) ===' -ForegroundColor Cyan
 Push-Location $repoRoot
 try {
-    $pyOne = "from cli import _parse_profile_switch_intent as p; assert p('schakel naar core')=='core'; assert p('verander profiel naar core')=='core'"
+    $pyOne = @"
+from overlay.bootstrap import install
+install()
+from cli import _parse_profile_switch_intent as p
+assert p('schakel naar core') == 'core'
+assert p('verander profiel naar core') == 'core'
+"@
     & $python -c $pyOne 2>&1 | Out-Null
     if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 } finally {

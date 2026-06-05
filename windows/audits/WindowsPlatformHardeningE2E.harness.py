@@ -15,6 +15,10 @@ if str(REPO_ROOT) not in sys.path:
 if str(RAG_DIR) not in sys.path:
     sys.path.insert(0, str(RAG_DIR))
 
+from overlay.bootstrap import install
+
+install()
+
 FAILURES = 0
 
 

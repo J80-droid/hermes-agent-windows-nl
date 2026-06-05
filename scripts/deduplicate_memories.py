@@ -10,7 +10,8 @@ import re
 import sys
 from pathlib import Path
 
-SECTION_RE = re.compile(r"\s*§\s*")
+# Alleen § op eigen regel (zoals HermesMemoryMergeCommon) — niet inline § in legal seed-proza.
+SECTION_SPLIT_RE = re.compile(r"(?m)^\s*§\s*$")
 _MOJIBAKE_LINE_RE = re.compile(r"^\s*Â\s*$", re.MULTILINE)
 
 
@@ -21,7 +22,7 @@ def _normalize_section(text: str) -> str:
 
 def deduplicate_content(content: str) -> str:
     """Return §-deduplicated body (strips mojibake lines, drops duplicate preamble/sections)."""
-    sections = SECTION_RE.split(content)
+    sections = SECTION_SPLIT_RE.split(content)
     seen_norms: set[str] = set()
     unique_sections: list[str] = []
 
@@ -34,6 +35,8 @@ def deduplicate_content(content: str) -> str:
             seen_norms.add(norm)
             unique_sections.append(sec_clean)
 
+    if not unique_sections:
+        return ""
     new_content = "\n§\n".join(unique_sections)
     return new_content.strip() + "\n"
 
@@ -41,7 +44,7 @@ def deduplicate_content(content: str) -> str:
 def _count_nonempty_sections(content: str) -> int:
     return sum(
         1
-        for sec in SECTION_RE.split(content)
+        for sec in SECTION_SPLIT_RE.split(content)
         if _MOJIBAKE_LINE_RE.sub("", sec).strip()
     )
 

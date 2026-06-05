@@ -2,7 +2,7 @@
 
 ## Focus
 
-**Nous overlay afwerking (2026-06-05):** Fork gates: `argparse_fork_patch` (`config get`), argv-sanitizer in sync script, toolset `--check`/`runtime` skip `_user_customized`, legal USER stale-strip + dedup `-HermesRoot`; E2E `audits/RUN_NOUS_OVERLAY_FORK_GATES_E2E.bat` (8/8) + unit tests harness/runtime/argparse. Subset RUN_AUDITS groen (provision, toolset, HermesHome, pipeline E9, legal-proactive). Volledige `-IncludeAllE2E` her-run optioneel (~20 min).
+**Nous overlay afwerking (2026-06-06):** Plan uitgevoerd. **`RUN_AUDITS -IncludeAllE2E` PASS** (`windows/audits/RUN_AUDITS_plan_final3.log`). Tier A restore; fork gates in audit; dedup regel-§; trust preflight in RUN_AUDITS; overlay `usage.ts` + vitest copy `-Force`; bootstrap laadt `filesystem_sandbox`/`hardware_backend`/`config_snapshot`. `SYNC_TRUST_RUNTIME.bat` groen met SOUL+memory retry. Optioneel: repo-hygiene 9/9; platform hardening E2E 10/10; production gate regression E2E nog Tier-A-drift (niet blokkerend). RAG F6 uitgesteld (geen bronmappen).
 
 **Profielwissel Windows structureel (2026-05-30, productie OK):** `/profile use` in WT — TUI-modal op achtergrondthread (`_schedule_profile_command_async`); sync/gateway/relaunch na TUI-exit; geen stderr-spinner tijdens `chat` relaunch (prompt `legal ❯`); audit `docs/PROFILE_SWITCH_WINDOWS_AUDIT.md`; E2E `RUN_PROFILE_SWITCH_E2E.bat` + pytest 29 passed.
 

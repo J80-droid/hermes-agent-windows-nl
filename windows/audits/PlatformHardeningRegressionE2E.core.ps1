@@ -76,8 +76,8 @@ $env:PYTHONPATH = $RepoRoot
 
 # --- 1 Repo artefacten ---
 $repoFiles = @(
-    'hermes_cli/filesystem_sandbox.py',
-    'hermes_cli/hardware_backend.py',
+    'overlay/hermes_cli/filesystem_sandbox.py',
+    'overlay/hermes_cli/hardware_backend.py',
     'scripts/rag_pipeline/lancedb_storage.py',
     'scripts/rag_pipeline/vector_store_paths.py',
     'scripts/rag_pipeline/vector_store_lifecycle.py',
@@ -128,8 +128,8 @@ $footOk = ($footgunsPy -match 'PS1: legacy Join-Path with -replace') -and
 Add-StepResult -Name '4/10 check-windows-footguns PS1 pad-regel' -Ok $footOk
 
 # --- 5 Code wiring (review fixes) ---
-$fsPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/filesystem_sandbox.py')
-$hwPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/hardware_backend.py')
+$fsPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/hermes_cli/filesystem_sandbox.py')
+$hwPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/hermes_cli/hardware_backend.py')
 $ldbLife = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/vector_store_lifecycle.py')
 $ldbPorts = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/vector_store_ports.py')
 $ldbBackend = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/lancedb_backend.py')
@@ -169,8 +169,8 @@ if ($SkipPytest) {
 $footguns = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/check-windows-footguns.py'
 $fgOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
     $footguns,
-    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/filesystem_sandbox.py'),
-    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/hardware_backend.py'),
+    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/hermes_cli/filesystem_sandbox.py'),
+    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/hermes_cli/hardware_backend.py'),
     (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tools/file_tools.py'),
     (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/lancedb_storage.py'),
     (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/rag_pipeline/knowledge_repository.py')

@@ -57,6 +57,8 @@ E2E sync: `windows\audits\RUN_SYNC_NOUS_E2E.bat` of `RUN_AUDITS -IncludeSyncNous
 | `overlay/hermes_cli/config_fork_patch.py` | `get_config_value`, `config get` handler |
 | `overlay/hermes_cli/doctor_fork_patch.py` | `_check_windows_split_home_config` |
 | `overlay/hermes_cli/tools_config_fork_patch.py` | Expliciet lege `platform_toolsets.cli: []` |
+| `overlay/hermes_cli/auth_fork_patch.py` | Auth/split-home runtime patches |
+| `overlay/tui_gateway/gateway_config_fork_patch.py` | Gateway config cache / split-home |
 | `overlay/agent/prompt_builder_fork_patch.py` | Legal runtime path block op `agent.prompt_builder` |
 
 **Start:**
@@ -101,11 +103,12 @@ Baseline: [NOUS_DRIFT_BASELINE.md](NOUS_DRIFT_BASELINE.md).
 | Overlay runtime + cost + drift | `audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat` |
 | Overlay runtime wiring (P0–P5) | `audits\RUN_NOUS_OVERLAY_RUNTIME_E2E.bat` — bootstrap idempotentie, agent/CLI TPS hooks, `/tps`+`/cost`, tier-A guard, overlay pytest-subset |
 | Fork gates (Tier B scripts) | `audits\RUN_NOUS_OVERLAY_FORK_GATES_E2E.bat` — argv `--profile` sanitizer vóór bootstrap, `config get`, toolset `--check` skip `_user_customized`, legal USER stale-strip + dedup `-HermesRoot` |
+| Afwerking (dedup/trust/bootstrap) | `audits\RUN_NOUS_OVERLAY_AFWERKING_E2E.bat` — regel-§ dedup, `RUN_AUDITS` trust preflight, `SYNC_TRUST_RUNTIME` retry, `collect_env_sync_keys` bootstrap |
 | Throughput tok/s (overlay) | `audits\RUN_STATUS_BAR_THROUGHPUT_E2E.bat` |
 | Prompt-timer (overlay) | `audits\RUN_PROMPT_TIMER_DISPLAY_E2E.bat` |
 | Klassieke CLI statusbalk | `windows\audits\RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` |
 | Gecombineerd | `windows\audits\RUN_AUDITS.bat -IncludeNousOverlayInstitutionalE2E -IncludeSyncNousE2E` |
-| Volledige poort | `windows\audits\RUN_AUDITS.bat -IncludeAllE2E` (incl. overlay + throughput E2E) |
+| Volledige poort | `windows\audits\RUN_AUDITS.bat -IncludeAllE2E` (incl. overlay + throughput + **fork gates** E2E) |
 
 **CI:** `.github/workflows/fork-windows-institutional.yml` — drift gate, `pytest tests/overlay/`, institutional E2E, TUI-build + drift.
 
@@ -149,3 +152,12 @@ python scripts\status_bar_cost_classic_cli_live_smoke.py
 | UI-build na Web/TUI-pull | na sync | `build_fork_ui_assets.ps1` + `Test-NousTreeIdentical.ps1` |
 
 Max. 1–2 weken achter op `upstream/main`. Zie [UPSTREAM_SYNC.md](../windows/UPSTREAM_SYNC.md) en [NOUS_DRIFT_BASELINE.md](NOUS_DRIFT_BASELINE.md).
+
+`UPDATE_HERMES.bat -StrictNousSync` breekt af bij Tier-A-drift (anders alleen WARN + hint `SYNC_NOUS.bat -Yes`).
+
+## Plugins / optionele overlay-modules
+
+- **`plugins/j80-windows-nl`:** in `overlay/manifest.yaml` maar **niet** geladen door `bootstrap.py`; slash-commands via overlay CLI-patches.
+- **Lazy overlay `hermes_cli`:** `hardware_backend`, `filesystem_sandbox`, `config_snapshot`, `model_catalog_guard` (via `models_fork_patch`), `model_list_ui`, `skills_hub_init`, `win32_console` — niet in `_OVERLAY_HERMES_CLI_MODULES`; E2E's lezen `overlay/hermes_cli/` waar Tier A upstream die modules niet heeft.
+
+`windows/scripts/collect_env_sync_keys.py` roept `overlay.bootstrap.install()` aan vóór `profile_model_inheritance.root_config_path()`.

@@ -3,7 +3,8 @@ param(
     [Parameter(Mandatory)]
     [string]$RepoRoot,
     [ValidateSet('web', 'ui-tui', 'all')]
-    [string]$Target = 'all'
+    [string]$Target = 'all',
+    [switch]$Force
 )
 
 $ErrorActionPreference = 'Stop'
@@ -12,7 +13,8 @@ $ErrorActionPreference = 'Stop'
 function Copy-OverlayTree {
     param(
         [string]$OverlaySrc,
-        [string]$DestRoot
+        [string]$DestRoot,
+        [switch]$ForceCopy
     )
     if (-not (Test-Path -LiteralPath $OverlaySrc)) {
         return 0
@@ -27,7 +29,9 @@ function Copy-OverlayTree {
         if (-not (Test-Path -LiteralPath $parent)) {
             New-Item -ItemType Directory -Path $parent -Force | Out-Null
         }
-        if (-not (Test-Path -LiteralPath $dest) -or $_.LastWriteTimeUtc -gt (Get-Item -LiteralPath $dest).LastWriteTimeUtc) {
+        $needsCopy = $ForceCopy -or -not (Test-Path -LiteralPath $dest) -or
+            $_.LastWriteTimeUtc -gt (Get-Item -LiteralPath $dest).LastWriteTimeUtc
+        if ($needsCopy) {
             Copy-Item -LiteralPath $_.FullName -Destination $dest -Force
             $script:n++
         }
@@ -42,7 +46,7 @@ if ($Target -eq 'all' -or $Target -eq 'web') {
     $from = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/web/src'
     $to = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'web/src'
     if (Test-Path -LiteralPath $from) {
-        $nWeb = Copy-OverlayTree -OverlaySrc $from -DestRoot $to
+        $nWeb = Copy-OverlayTree -OverlaySrc $from -DestRoot $to -ForceCopy:$Force
         $copied += $nWeb
         Write-Host "[OK] overlay/web/src -> web/src ($nWeb files)" -ForegroundColor Green
     }
@@ -52,7 +56,7 @@ if ($Target -eq 'all' -or $Target -eq 'ui-tui') {
     $from = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/ui-tui/src'
     $to = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'ui-tui/src'
     if (Test-Path -LiteralPath $from) {
-        $n = Copy-OverlayTree -OverlaySrc $from -DestRoot $to
+        $n = Copy-OverlayTree -OverlaySrc $from -DestRoot $to -ForceCopy:$Force
         $copied += $n
         Write-Host "[OK] overlay/ui-tui/src -> ui-tui/src ($n files)" -ForegroundColor Green
     }

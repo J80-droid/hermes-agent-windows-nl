@@ -139,6 +139,10 @@ Add-Step '8/8 verify_windows_script_chain' -Ok $chainOk
 # 9/9 optional ui-tui vitest (statusBarThroughput / usageCostBar)
 $vitestOk = $true
 $uiTui = Join-Path $RepoRoot 'ui-tui'
+$copyPs1 = Join-Path $RepoRoot 'windows/scripts/Invoke-CopyHermesOverlaySources.ps1'
+if ((Test-Path -LiteralPath $copyPs1)) {
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $copyPs1 -RepoRoot $RepoRoot -Target ui-tui -Force | Out-Null
+}
 if ((Get-Command npm -ErrorAction SilentlyContinue) -and (Test-Path -LiteralPath (Join-Path $uiTui 'package.json'))) {
     Push-Location $uiTui
     try {

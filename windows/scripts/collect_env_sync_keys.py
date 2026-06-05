@@ -28,7 +28,21 @@ def _collect_from_obj(obj, keys: set[str]) -> None:
             _collect_from_obj(item, keys)
 
 
+def _ensure_overlay() -> None:
+    repo = Path(__file__).resolve().parents[2]
+    repo_s = str(repo)
+    if repo_s not in sys.path:
+        sys.path.insert(0, repo_s)
+    try:
+        from overlay.bootstrap import install
+    except ImportError as exc:
+        print(f"[ERROR] overlay bootstrap unavailable: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+    install()
+
+
 def main() -> int:
+    _ensure_overlay()
     from hermes_cli.profile_model_inheritance import root_config_path
 
     cfg_path = root_config_path()

@@ -21,10 +21,13 @@ $root = Get-HermesMemoryHermesRoot -OverrideRoot $HermesRoot
 $trimSuffix = '[... ingekort door Hermes memory limit ...]'
 $memorySeed = Get-HermesMemorySeedEntries -RepoRoot $RepoRoot -SectionName 'MEMORY.md'
 $userSeed = Get-HermesMemorySeedEntries -RepoRoot $RepoRoot -SectionName 'USER.md'
+$legalUserSeed = Get-HermesMemorySeedEntries -RepoRoot $RepoRoot -SectionName 'legal USER.md' -Optional
 $seedNormsMem = @{}
 foreach ($e in $memorySeed) { $seedNormsMem[(ConvertTo-MemorySectionNormalized -Text $e)] = $true }
 $seedNormsUser = @{}
 foreach ($e in $userSeed) { $seedNormsUser[(ConvertTo-MemorySectionNormalized -Text $e)] = $true }
+$seedNormsLegalUser = @{}
+foreach ($e in $legalUserSeed) { $seedNormsLegalUser[(ConvertTo-MemorySectionNormalized -Text $e)] = $true }
 
 function Test-IsProtectedMemorySection {
     param(
@@ -39,6 +42,7 @@ function Test-IsProtectedMemorySection {
     if (Test-MemoryRuntimeSection -Text $Text) { return $true }
     if ($FileKind -eq 'MEMORY.md' -and (Test-MemoryHermesConfigSection -Text $Text)) { return $true }
     if ($FileKind -eq 'USER.md' -and (Test-MemoryUserPreferenceSection -Text $Text)) { return $true }
+    if ($FileKind -eq 'USER.md' -and (Test-MemoryLegalDomainSection -Text $Text)) { return $true }
     return $false
 }
 
@@ -185,6 +189,12 @@ foreach ($t in $targets) {
     }
 
     $seedNorms = if ($t.File -eq 'MEMORY.md') { $seedNormsMem } else { $seedNormsUser }
+    if ($t.File -eq 'USER.md' -and $t.Profile -eq 'legal' -and $seedNormsLegalUser.Count -gt 0) {
+        $merged = @{}
+        foreach ($k in $seedNorms.Keys) { $merged[$k] = $true }
+        foreach ($k in $seedNormsLegalUser.Keys) { $merged[$k] = $true }
+        $seedNorms = $merged
+    }
     $ok = Invoke-TrimMemoryFileToLimit -FilePath $t.Path -FileKind $t.File -SeedNorms $seedNorms -Cap $cap -DryRun:$DryRun
     if ($ok) {
         $anyChange = $true

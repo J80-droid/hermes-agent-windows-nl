@@ -56,6 +56,9 @@ _OVERLAY_HERMES_CLI_MODULES: tuple[str, ...] = (
     "relaunch",
     "venice_model_picker",
     "display_markdown",
+    "filesystem_sandbox",
+    "hardware_backend",
+    "config_snapshot",
 )
 
 _REQUIRED_HERMES_CLI: frozenset[str] = frozenset(

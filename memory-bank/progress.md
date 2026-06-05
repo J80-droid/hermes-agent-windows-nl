@@ -1,7 +1,19 @@
 # Progress
 
+## Optionele productie-poorten (Fase 3)
+
+- [x] `repo-hygiene.mdc` toegevoegd (`.cursor/rules/` vanuit `docs/templates/`)
+- [x] `RUN_REPO_HYGIENE_E2E` 9/9; platform hardening E2E overlay-paden; production gate pytest zonder `test_file_tools` (Tier A upstream wijkt af van overlay sandbox)
+- [x] `RUN_AUDITS -IncludeAllE2E` **PASS** (log `windows/audits/RUN_AUDITS_plan_final3.log`, 2026-06-06)
+
+## RAG operationeel (Fase 6 — gebruikersdata)
+
+- [ ] Bronmappen `%USERPROFILE%\data\raw_source_files\` (01–03, 05–08, 09–12) — **ontbreken op dev-machine**; ingest/MCP-test uitgesteld tot bronnen aanwezig
+- [ ] `windows\scripts\institutional_p0_p1.bat --ingest-remaining` + `update_knowledge.bat --mcp-test` na bronnen
+
 ## Nous overlay institutioneel (2026-06)
 
+- [x] Overlay afwerking (2026-06-06): fork gates in `RUN_AUDITS -IncludeAllE2E`; dedup regel-§ (legal seed inline §); `SYNC_TRUST_RUNTIME` SOUL+memory retry; `collect_env_sync_keys` bootstrap; Tier A restore; `windows/audits/RUN_AUDITS_*.log` gitignore; performance/platform E2E overlay-paden; `UPDATE_HERMES -StrictNousSync`; institutional E2E intent smoke via bootstrap
 - [x] Overlay afwerking (2026-06-05): `config get` argparse-registratie; provision `--profile`/bootstrap argv-fix; toolset `--check` + runtime skip `_user_customized`; legal USER seed replace + dedup `-HermesRoot`; `RUN_NOUS_OVERLAY_FORK_GATES_E2E` (8/8) + unit tests; E2E PowerShell stderr-hardening; subset RUN_AUDITS groen
 - [x] Runtime patches in `overlay/` (CLI cost/TPS, `/cost`, `/tps`, stream hooks, agent throughput, Gemini pricing, model-catalog guard); `bootstrap.py` idempotent + rollback
 - [x] E2E `audits/RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat` (8/8+); throughput **14/14** `RUN_STATUS_BAR_THROUGHPUT_E2E`; prompt-timer **10/10** `RUN_PROMPT_TIMER_DISPLAY_E2E`

@@ -93,6 +93,28 @@ function Invoke-Step {
     return (-not $stepFailed)
 }
 
+function Get-NativeExitCode {
+    if ($null -eq $LASTEXITCODE) { return 0 }
+    $raw = @($LASTEXITCODE)
+    if ($raw.Count -eq 0) { return 0 }
+    return [int]$raw[-1]
+}
+
+function Invoke-TrustMemorySyncPreflight {
+    param([string]$RepoRoot)
+    $anatomyPs1 = Join-Path $RepoRoot 'windows/scripts/sync_soul_anatomy_snippets.ps1'
+    $memSyncPs1 = Join-Path $RepoRoot 'windows/scripts/sync_profile_memories.ps1'
+    $enforcePs1 = Join-Path $RepoRoot 'windows/scripts/enforce_profile_memory_char_limits.ps1'
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $anatomyPs1 -Force -RepoRoot $RepoRoot | Out-Null
+    $code = Get-NativeExitCode
+    if ($code -ne 0) { return $code }
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $memSyncPs1 -RepoRoot $RepoRoot | Out-Null
+    $code = Get-NativeExitCode
+    if ($code -ne 0) { return $code }
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $enforcePs1 -RepoRoot $RepoRoot -Quiet | Out-Null
+    return (Get-NativeExitCode)
+}
+
 if ($IncludeAllE2E -and -not $SkipHermesPreflight) {
     Invoke-Step 'tier-a-restore-preflight' {
         if (-not (Test-Path -LiteralPath $restoreTierA)) {
@@ -274,6 +296,11 @@ if ($IncludeLegalDomainE2E -or $IncludeAllE2E) {
         & $legalE2e
         $global:LASTEXITCODE = $LASTEXITCODE
     }
+    if ($IncludeAllE2E) {
+        Invoke-Step 'trust-runtime-preflight' {
+            $global:LASTEXITCODE = Invoke-TrustMemorySyncPreflight -RepoRoot $repoRoot
+        }
+    }
     $proactivePs1 = Join-Path $repoRoot 'windows/scripts/Invoke-LegalProactiveSparringE2E.ps1'
     Invoke-Step 'legal-proactive-sparring-e2e' {
         & powershell -NoProfile -ExecutionPolicy Bypass -File $proactivePs1 -RepoRoot $repoRoot -Context Manual
@@ -290,6 +317,11 @@ if ($IncludeProfileE2E -or $IncludeAllE2E) {
 }
 
 if ($IncludeTrustForensicE2E -or $IncludeAllE2E) {
+    if ($IncludeAllE2E) {
+        Invoke-Step 'trust-runtime-preflight-forensic' {
+            $global:LASTEXITCODE = Invoke-TrustMemorySyncPreflight -RepoRoot $repoRoot
+        }
+    }
     $trustE2e = Join-Path $scriptRoot 'RUN_TRUST_FORENSIC_E2E.ps1'
     Invoke-Step 'trust-forensic-e2e' {
         & $trustE2e
@@ -330,6 +362,11 @@ if ($IncludePendingTrustStartE2E -or $IncludeAllE2E) {
 }
 
 if ($IncludeMemoryArchitectureE2E -or $IncludeAllE2E) {
+    if ($IncludeAllE2E) {
+        Invoke-Step 'trust-runtime-preflight-memory' {
+            $global:LASTEXITCODE = Invoke-TrustMemorySyncPreflight -RepoRoot $repoRoot
+        }
+    }
     $memE2e = Join-Path $scriptRoot 'RUN_MEMORY_ARCHITECTURE_E2E.ps1'
     Invoke-Step 'memory-architecture-e2e' {
         & $memE2e -RepoRoot $repoRoot
@@ -483,6 +520,11 @@ if ($IncludeAllE2E) {
     $nousRuntimeBat = Join-Path $repoRoot 'audits\RUN_NOUS_OVERLAY_RUNTIME_E2E.bat'
     Invoke-Step 'nous-overlay-runtime-e2e' {
         cmd /c "`"$nousRuntimeBat`""
+        $global:LASTEXITCODE = $LASTEXITCODE
+    }
+    $forkGatesBat = Join-Path $repoRoot 'audits\RUN_NOUS_OVERLAY_FORK_GATES_E2E.bat'
+    Invoke-Step 'nous-overlay-fork-gates-e2e' {
+        cmd /c "`"$forkGatesBat`""
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

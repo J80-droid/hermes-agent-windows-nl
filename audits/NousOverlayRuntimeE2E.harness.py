@@ -42,7 +42,11 @@ def test_e1_runtime_artefacts() -> None:
         "overlay/hermes_cli/cli_tps_command.py",
         "overlay/hermes_cli/cli_tps_stream_hooks.py",
         "overlay/hermes_cli/cli_cost_command.py",
+        "overlay/hermes_cli/auth_fork_patch.py",
+        "overlay/hermes_cli/argparse_fork_patch.py",
+        "overlay/tui_gateway/gateway_config_fork_patch.py",
         "overlay/scripts/verify_institutional_guard.py",
+        "audits/RUN_NOUS_OVERLAY_FORK_GATES_E2E.bat",
         "tests/overlay/test_agent_throughput_fork_patch.py",
     ]
     ok = all((REPO_ROOT / p).is_file() for p in required)

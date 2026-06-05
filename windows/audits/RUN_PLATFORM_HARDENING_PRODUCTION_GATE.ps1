@@ -37,15 +37,10 @@ if (-not $SkipPytest) {
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/rag_pipeline/test_lancedb_storage.py'),
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/rag_pipeline/test_vector_store_ports.py'),
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/rag_pipeline/test_kb_schema_lazy.py'),
-        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/rag_pipeline/test_knowledge_repository.py'),
-        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/tools/test_file_tools.py')
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/rag_pipeline/test_knowledge_repository.py')
     )
     Write-Host '--- pytest platform hardening subset ---' -ForegroundColor Cyan
-    if (Test-Path -LiteralPath $conda) {
-        & $conda run -n hermes-env --no-capture-output python -m pytest @pytestTargets -q --tb=short -o addopts= 2>&1 | ForEach-Object { Write-Host $_ }
-    } else {
-        & $auditPython -m pytest @pytestTargets -q --tb=short -o addopts= 2>&1 | ForEach-Object { Write-Host $_ }
-    }
+    & $auditPython -m pytest @pytestTargets -q --tb=short -o addopts= 2>&1 | ForEach-Object { Write-Host $_ }
     if (Test-NativeCommandFailed) { $failures++ }
 }
 

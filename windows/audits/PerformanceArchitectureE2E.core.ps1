@@ -82,7 +82,7 @@ $repoFiles = @(
     'scripts/rag_pipeline/schema_migrate.py',
     'scripts/rag_pipeline/source_formats.py',
     'scripts/rag_pipeline/orphan_cleanup.py',
-    'hermes_cli/config_snapshot.py',
+    'overlay/hermes_cli/config_snapshot.py',
     'agent/review_snapshot.py',
     'windows/audits/PerformanceArchitectureE2E.harness.py'
 )
@@ -136,9 +136,9 @@ $ingOptOk = ($statePy -match 'tuple\[bool, str \| None\]') -and
 Add-StepResult -Name '5/10 ingest fingerprint + shared MarkItDown' -Ok $ingOptOk
 
 # --- 6 Config snapshot + gateway cache ---
-$cfgSnap = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/config_snapshot.py')
+$cfgSnap = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/hermes_cli/config_snapshot.py')
 $gwCfg = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'gateway/config.py')
-$sandboxPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/filesystem_sandbox.py')
+$sandboxPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/hermes_cli/filesystem_sandbox.py')
 $cfgOk = ($cfgSnap -match 'class ConfigSnapshot') -and
     ($cfgSnap -match 'get_config_snapshot') -and
     ($gwCfg -match '_gw_config_cache') -and
@@ -150,7 +150,7 @@ Add-StepResult -Name '6/10 config snapshot + gateway/sandbox cache' -Ok $cfgOk
 # --- 7 Runtime hygiene ---
 $procPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tools/process_registry.py')
 $mcpTool = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tools/mcp_tool.py')
-$hwPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'hermes_cli/hardware_backend.py')
+$hwPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/hermes_cli/hardware_backend.py')
 $rtOk = ($procPy -match '_release_local_popen_io') -and
     ($procPy -match 'completion_queue.*maxsize=256') -and
     ($procPy -match '_enqueue_completion_event') -and
@@ -165,7 +165,7 @@ $compileList = @(
     'scripts/rag_pipeline/bootstrap_ingest_state.py',
     'scripts/rag_pipeline/schema_migrate.py',
     'scripts/rag_pipeline/mcp_server.py',
-    'hermes_cli/config_snapshot.py',
+    'overlay/hermes_cli/config_snapshot.py',
     'windows/audits/PerformanceArchitectureE2E.harness.py'
 )
 $compileOk = $true

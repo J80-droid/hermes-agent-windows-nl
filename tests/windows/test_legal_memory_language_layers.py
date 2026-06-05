@@ -51,3 +51,27 @@ def test_legal_seed_entries_under_char_budget():
         if not line.strip().startswith("```") and line.strip()
     )
     assert len(body) < 1200, f"legal seed body {len(body)} chars — te groot voor USER-budget"
+
+
+def test_deduplicate_preserves_inline_section_sign_in_legal_seed():
+    """§ in legal seed-proza mag niet splitsen (regel-§ alleen)."""
+    from scripts.deduplicate_memories import deduplicate_content
+
+    seed = _read("docs/templates/MEMORY_CANONICAL_SEED.md")
+    part = seed.split("## legal USER.md entries", 1)[1].split("## MEMORY.md entries", 1)[0]
+    blocks: list[str] = []
+    in_fence = False
+    for line in part.splitlines():
+        if line.strip() == "```":
+            in_fence = not in_fence
+            continue
+        if in_fence and line.strip():
+            blocks.append(line.strip())
+    assert len(blocks) == 3
+    merged = "\n§\n".join(blocks) + "\n"
+    out = deduplicate_content(merged)
+    assert "Legal proactief (NL):" in out
+    assert "Legal triggers" in out
+    assert "Legal taallaag (NL):" in out
+    assert "SOUL prevaleert" in out
+    assert out.count("§") >= 3  # inline § in proza + sectie-scheidingen

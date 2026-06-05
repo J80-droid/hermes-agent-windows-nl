@@ -49,9 +49,17 @@ echo.
 echo [INFO] Legal proactive sparring E2E (na trust; skip: HERMES_SKIP_LEGAL_PROACTIVE_E2E=1 of HERMES_LEGAL_PROACTIVE_E2E_ON_TRUST=0)...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Invoke-LegalProactiveSparringE2E.ps1" -Context TrustSync
 if errorlevel 1 (
-  echo [FAIL] Legal proactive sparring E2E mislukt.
-  if not "%HERMES_SKIP_PAUSE%"=="1" pause
-  exit /b 1
+  echo [WARN] Legal proactive E2E mislukt — eenmalige SOUL+memory retry...
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_soul_anatomy_snippets.ps1" -Force %*
+  if errorlevel 1 exit /b 1
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\sync_profile_memories.ps1" %*
+  if errorlevel 1 exit /b 1
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Invoke-LegalProactiveSparringE2E.ps1" -Context TrustSync
+  if errorlevel 1 (
+    echo [FAIL] Legal proactive sparring E2E mislukt na retry.
+    if not "%HERMES_SKIP_PAUSE%"=="1" pause
+    exit /b 1
+  )
 )
 
 echo.

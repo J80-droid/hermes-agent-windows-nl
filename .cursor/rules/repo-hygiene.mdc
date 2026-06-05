@@ -5,8 +5,12 @@ alwaysApply: true
 
 # Repo-root hygiene (Hermes fork NL)
 
+## Canonical workspace
+
 **Git-root:** `hermes-agent/` (map met `cli.py` en `pyproject.toml`).  
 **Parent IDE-workspace** (`Hermes_agent_WS`): schrijf nooit naar de parent-root — altijd onder `hermes-agent/`.
+
+## Regels
 
 ## Verboden
 

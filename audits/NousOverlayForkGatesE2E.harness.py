@@ -250,6 +250,8 @@ def test_e7_legal_user_stale_domain_replaced() -> None:
 
 def test_e8_toolset_runtime_env_guard() -> None:
     env = os.environ.copy()
+    env.pop("HERMES_TOOLSET_E2E_REPO", None)
+    env.pop("HERMES_TOOLSET_E2E_HOME", None)
     env["PYTHONPATH"] = str(REPO_ROOT)
     proc = subprocess.run(
         [sys.executable, str(REPO_ROOT / "windows" / "scripts" / "toolset_domain_e2e_runtime.py")],
