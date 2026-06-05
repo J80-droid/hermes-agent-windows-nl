@@ -59,6 +59,8 @@ if (-not $SkipPytest) {
     $conda = Join-Path $env:USERPROFILE 'miniconda3/Scripts/conda.exe'
     if (Test-Path -LiteralPath $conda) {
         Push-Location $RepoRoot
+        $savedHermesHome = $env:HERMES_HOME
+        Remove-Item Env:HERMES_HOME -ErrorAction SilentlyContinue
         try {
             & $conda run -n hermes-env --no-capture-output python -m pytest `
                 tests/hermes_cli/test_doctor.py::TestWindowsSplitHomeCheck `
@@ -69,6 +71,7 @@ if (-not $SkipPytest) {
                 tests/hermes_cli/test_apply_profile_override.py `
                 -q --tb=line
         } finally {
+            if ($savedHermesHome) { $env:HERMES_HOME = $savedHermesHome } else { Remove-Item Env:HERMES_HOME -ErrorAction SilentlyContinue }
             Pop-Location
         }
         Add-StepResult '2/16 pytest split-home subset' ($LASTEXITCODE -eq 0)
