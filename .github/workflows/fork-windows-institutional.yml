@@ -47,9 +47,23 @@ jobs:
           }
           echo "HERMES_HOME=$home" >> $env:GITHUB_ENV
 
+      - name: Configure upstream remote
+        run: |
+          git remote add upstream https://github.com/NousResearch/hermes-agent.git
+          git fetch upstream main --depth=1
+
       # Volledige RUN_LEGAL_DOMAIN_E2E vereist %LOCALAPPDATA%\hermes runtime — lokaal vóór release (zie docs/LEGAL_PRODUCTION_GATE.md).
       - name: Nous Tier A drift gate (strict)
         run: powershell -NoProfile -File windows/scripts/Test-NousTreeIdentical.ps1
+
+      - name: RUN_AUDITS 14-fixes E2E
+        run: audits\RUN_RUN_AUDITS_14_FIXES_E2E.bat
+
+      - name: Pytest audit-env E2E
+        run: audits\RUN_PYTEST_AUDIT_ENV_E2E.bat
+
+      - name: Institutional guard tier-a-cli
+        run: python scripts/verify_institutional_guard.py --check-tier-a-cli
 
       - name: Overlay unit tests
         run: python -m pytest tests/overlay/ -q -o addopts=

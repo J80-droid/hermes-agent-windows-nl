@@ -150,11 +150,11 @@ if (-not $SkipVitest) {
 if (-not $SkipPytest) {
     Push-Location $RepoRoot
     try {
-        & $python -m pytest `
+        Invoke-HermesAuditPytest -Python $python `
             tests/windows/test_upstream_merge_integration_e2e.py `
             tests/hermes_cli/test_profiles_s6_hooks.py `
             tests/hermes_cli/test_profile_model_inheritance.py::test_strip_model_block `
-            -q --tb=line -o addopts=
+            -q --tb=line
     } finally {
         Pop-Location
     }

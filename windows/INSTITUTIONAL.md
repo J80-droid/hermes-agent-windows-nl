@@ -124,7 +124,7 @@ Daarna RAG: `windows\scripts\install_rag_extras.ps1` (overlay extras + `constrai
 
 Profiel-persona: `%LOCALAPPDATA%\hermes\profiles\<naam>\SOUL.md` — zie `docs/PROFILE_SOUL.md`.
 
-**Tests (Windows):** `pyproject.toml` gebruikt `pytest --timeout-method=thread` (geen `SIGALRM`). Enkele test: `pytest tests/hermes_cli/test_profile_orphan_wrappers.py -q` met `PYTEST_ADDOPTS=-n0`.
+**Tests (Windows):** `pyproject.toml` blijft upstream (`--timeout-method=signal`). Audit/dev: `Invoke-HermesAuditPytest` / `windows\tests\RUN_PYTEST.ps1` (Tier B, `--timeout-method=thread`). Enkele test: `pytest tests/hermes_cli/test_profile_orphan_wrappers.py -q` met audit-helpers of `PYTEST_ADDOPTS=--timeout-method=thread`.
 
 **Periodieke rooktest (aanbevolen):** `windows\audits\RUN_AUDITS.bat -IncludeAllE2E`. Presentatie + SOUL: `RUN_INSTITUTIONAL_E2E.bat` of `APPLY_INSTITUTIONAL_RUNTIME.bat` (incl. stap **2h** pseudo-tabel E2E).
 

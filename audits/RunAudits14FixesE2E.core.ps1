@@ -61,7 +61,7 @@ Repo: $RepoRoot
 Python: $python
 Log: $logPath
 
-Root causes covered: config-drift strip, pytest timeout-method=thread, YOLO status-bar width.
+Root causes covered: config-drift strip, pytest Tier B thread override (pyproject signal), UI src clean, YOLO status-bar width, plugin handlers.
 "@ | Set-Content -LiteralPath $reportPath -Encoding UTF8
 
 Write-Host '=== RUN_AUDITS 14-FIXES E2E: PASS ===' -ForegroundColor Green

@@ -8,6 +8,7 @@ $windowsDir = Split-Path -Parent $testsDir
 $repoRoot = (Resolve-Path (Join-Path $windowsDir '..')).Path
 Set-Location -LiteralPath $repoRoot
 
+. (Join-Path $windowsDir 'HermesShellCommon.ps1')
 . (Join-Path $windowsDir 'HermesPythonPolicy.ps1')
 $py = Resolve-HermesPythonExe -RepoRoot $repoRoot -RequirePip
 if (-not $py) {
@@ -54,5 +55,5 @@ if ($LASTEXITCODE -eq 0) {
 $logPath = Join-Path $PSScriptRoot 'last_pytest_run.log'
 Write-Host "Log: $logPath" -ForegroundColor DarkGray
 
-& $py -m pytest @pytestArgs 2>&1 | Tee-Object -FilePath $logPath
+Invoke-HermesAuditPytest -Python $py @pytestArgs 2>&1 | Tee-Object -FilePath $logPath
 exit $LASTEXITCODE

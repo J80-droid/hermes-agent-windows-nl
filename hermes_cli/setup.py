@@ -795,32 +795,16 @@ def _install_neutts_deps() -> bool:
     print_info("Installing neutts Python package...")
     print_info("This will also download the TTS model (~300MB) on first use.")
     print()
-    repo_root = Path(__file__).resolve().parents[1]
-    constraints = repo_root / "overlay" / "constraints-rag-stack.txt"
-    neutts_req = repo_root / "overlay" / "requirements-neutts-onnx.txt"
-    pip_cmd = [sys.executable, "-m", "pip", "install", "-U", "--quiet"]
-    if constraints.is_file():
-        pip_cmd.extend(["-c", str(constraints)])
-    if neutts_req.is_file():
-        pip_cmd.extend(["-r", str(neutts_req)])
-    else:
-        pip_cmd.append("neutts[onnx]")
     try:
-        subprocess.run(pip_cmd, check=True, timeout=300)
-        if constraints.is_file():
-            subprocess.run(
-                [sys.executable, "-m", "pip", "install", "transformers>=5.0.0", "--quiet"],
-                check=True,
-                timeout=300,
-            )
-        print_success("neutts installed successfully (onnx; transformers>=5 behouden)")
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "-U", "neutts[all]", "--quiet"],
+            check=True, timeout=300,
+        )
+        print_success("neutts installed successfully")
         return True
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         print_error(f"Failed to install neutts: {e}")
-        print_info(
-            "Try manually: pip install -c overlay/constraints-rag-stack.txt "
-            "-r overlay/requirements-neutts-onnx.txt"
-        )
+        print_info("Try manually: python -m pip install -U neutts[all]")
         return False
 
 

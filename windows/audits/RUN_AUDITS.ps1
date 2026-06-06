@@ -40,7 +40,8 @@ param(
     [switch]$SkipFootguns,
     [switch]$SkipRuff,
     [switch]$SkipVerifyChain,
-    [switch]$SkipHermesPreflight
+    [switch]$SkipHermesPreflight,
+    [switch]$SkipTierAPostClean
 )
 
 $ErrorActionPreference = 'Stop'
@@ -110,12 +111,9 @@ function Invoke-TrustMemorySyncPreflight {
     return (Get-NativeExitCode)
 }
 
-if ($IncludeAllE2E -and -not $SkipHermesPreflight) {
+if ($IncludeAllE2E -and -not $SkipHermesPreflight -and -not $SkipTierAPostClean) {
     Invoke-Step 'tier-a-restore-preflight' {
-        if (-not (Test-Path -LiteralPath $restoreTierA)) {
-            throw "missing $restoreTierA"
-        }
-        & $restoreTierA
+        Invoke-HermesTierAPostAuditClean -RepoRoot $repoRoot -Phase Preflight
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }
@@ -244,7 +242,7 @@ if (-not $SkipPytest) {
     Invoke-Step 'pytest-overlay' {
         $py = Get-HermesAuditPythonExe
         $env:HERMES_HOME = $runtimeHermesHome
-        & $py -m pytest tests/overlay/ -q -o addopts= --tb=short
+        Invoke-HermesAuditPytest -Python $py tests/overlay/ -q --tb=short
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 
@@ -256,12 +254,12 @@ if (-not $SkipPytest) {
             return
         }
         $env:HERMES_HOME = $runtimeHermesHome
-        & $py -m pytest `
+        Invoke-HermesAuditPytest -Python $py `
             tests/hermes_cli/test_apply_profile_override.py `
             tests/hermes_cli/test_profile_switch.py `
             tests/hermes_cli/test_relaunch.py::TestRelaunchChatAfterProfileSwitch `
             tests/hermes_cli/test_relaunch.py::TestStripProfileFlags `
-            -q -o addopts= --tb=short
+            -q --tb=short
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }
@@ -489,11 +487,9 @@ if ($IncludeUpdateHermesIntegrationE2E) {
     }
 }
 
-if (($IncludeSyncNousE2E -or $IncludeAllE2E -or $IncludeNousOverlayInstitutionalE2E) -and -not $SkipHermesPreflight) {
+if (($IncludeSyncNousE2E -or $IncludeAllE2E -or $IncludeNousOverlayInstitutionalE2E) -and -not $SkipHermesPreflight -and -not $SkipTierAPostClean) {
     Invoke-Step 'tier-a-restore-pre-overlay' {
-        if (Test-Path -LiteralPath $restoreTierA) {
-            & $restoreTierA
-        }
+        Invoke-HermesTierAPostAuditClean -RepoRoot $repoRoot -Phase PreOverlay
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }
@@ -554,14 +550,9 @@ if ($IncludeInstitutionalProductionGate) {
     }
 }
 
-if ($IncludeAllE2E -and -not $SkipHermesPreflight) {
+if ($IncludeAllE2E -and -not $SkipHermesPreflight -and -not $SkipTierAPostClean) {
     Invoke-Step 'tier-a-drift-postflight' {
-        if (Test-Path -LiteralPath $restoreTierA) {
-            & $restoreTierA
-        }
-        if (Test-Path -LiteralPath $driftGate) {
-            & $driftGate
-        }
+        Invoke-HermesTierAPostAuditClean -RepoRoot $repoRoot -Phase Postflight
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

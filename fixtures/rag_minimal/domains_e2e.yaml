@@ -1,0 +1,11 @@
+version: '1.0'
+core_domain:
+  name: core
+  source_dir: 00_Core
+  lancedb_path: '{lancedb_root}/core'
+domains:
+  - name: academics
+    source_dir: 01_Academics_Beta
+    lancedb_path: '{lancedb_root}/academics'
+    mcp_name: lancedb-academics
+    profile_name: academics

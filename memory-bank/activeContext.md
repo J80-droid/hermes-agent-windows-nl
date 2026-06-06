@@ -2,7 +2,7 @@
 
 ## Focus
 
-**RUN_AUDITS 14-fixes (2026-06-06, P4 PASS):** Drie root causes opgelost: (1) `strip_profile_global_config_blocks.py` + overlay bootstrap + doctor `--fix` strip + RUN_AUDITS preflight; (2) `pyproject.toml` `--timeout-method=thread` + `Invoke-HermesAuditPytest`/`Invoke-HermesCondaAuditPytest` in audit-scripts; (3) YOLO uit in `TestStatusBarWidthSource._make_wide_cli`. Volledige `RUN_AUDITS -IncludeAllE2E` **PASS** (exit 0). Na tier-A postflight: `git reset --hard HEAD` (alleen fork-wijzigingen behouden).
+**Nous overlay scorecard 10/10 (2026-06-02):** Tier A zuiver (`pyproject.toml` = upstream `signal`); pytest Windows via `Invoke-HermesAuditPytest`/`RUN_PYTEST.ps1`; `Invoke-HermesTierAPostAuditClean` (preflight/pre-overlay/postflight); UI `git clean` na build; RAG `fixtures/rag_minimal` + seed/E2E; CI upstream-remote + 14-fixes/pytest-audit-env/tier-a-cli guard; nightly `fork-windows-audits-nightly.yml`. Postflight: **geen** `git reset --hard` — gebruik `Invoke-HermesTierAPostAuditClean`.
 
 **Chat rooktest 401 + auth BOM (2026-06-06, productie OK):** `runtime_provider` + overlay `load_config`-rebind; BOM-tolerante `_load_auth_store` + `repair_auth_json_bom.py`; rooktest via `run_hermes_cli_with_overlay.py` met MCP-server toolsets (`expand_cli_toolset_arg`); `doctor --fix` roept `repair_all_auth_json_bom()` + profile global-blocks strip aan. Commits `18fc71f22`–`38afeeb01` op `origin/main`. Verificatie: `institutional_p0_p1.bat` **PASS** (stap 4 search + Venice); `call hermes_legal_rooktest.bat "%HERMES_REPO%" "%PY%"` (setlocal-safe CLI-args). E2E: `RUN_INSTITUTIONAL_P0P1_WIRING_E2E` 15/15.
 

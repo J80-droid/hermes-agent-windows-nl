@@ -36,10 +36,20 @@ def _read(rel: str) -> str:
     return (REPO / rel).read_text(encoding="utf-8", errors="replace")
 
 
-def test_e1_pyproject_uses_thread_timeout() -> None:
+def test_e1a_pyproject_uses_signal_timeout() -> None:
     text = _read("pyproject.toml")
-    ok = "--timeout-method=thread" in text and "--timeout-method=signal" not in text
-    _step("pyproject.toml timeout-method=thread", ok)
+    ok = "--timeout-method=signal" in text and "--timeout-method=thread" not in text
+    _step("pyproject.toml timeout-method=signal (Tier A)", ok)
+
+
+def test_e1b_audit_helpers_use_thread_on_windows() -> None:
+    text = _read("windows/HermesShellCommon.ps1")
+    ok = (
+        "Get-HermesAuditPytestOverrideArgs" in text
+        and "--timeout-method=thread" in text
+        and "function Invoke-HermesAuditPytest" in text
+    )
+    _step("HermesShellCommon audit pytest thread override", ok)
 
 
 def test_e2_strip_script_bootstraps_overlay() -> None:
@@ -85,8 +95,8 @@ def test_e5_run_audits_preflight_strip() -> None:
 
 
 def test_e6_pytest_collect_no_sigalrm() -> None:
-    env = os.environ.copy()
-    env.pop("PYTEST_ADDOPTS", None)
+    env = {k: v for k, v in os.environ.items() if k != "PYTEST_ADDOPTS"}
+    env["PYTEST_ADDOPTS"] = "--timeout-method=thread"
     proc = subprocess.run(
         [
             str(PY),
@@ -138,7 +148,61 @@ def test_e9_strip_script_runs() -> None:
     _step("strip_profile_global_config_blocks.py runtime", ok, f"exit={proc.returncode}")
 
 
-def test_e10_doctor_fork_patch_unit_import() -> None:
+def test_e10_ui_src_restore_leaves_no_untracked() -> None:
+    marker = REPO / "ui-tui" / "src" / "_overlay_leak_marker.tmp"
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text("leak", encoding="utf-8")
+    repo_ps = str(REPO).replace("'", "''")
+    shell = REPO / "windows" / "HermesShellCommon.ps1"
+    proc = subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            (
+                f". '{shell}'; "
+                f"Set-Location '{repo_ps}'; "
+                "git checkout -- ui-tui/src 2>$null; "
+                f"Invoke-HermesTierASrcClean -RepoRoot '{repo_ps}'; "
+                f"if (Test-Path '{marker}') {{ exit 1 }} else {{ exit 0 }}"
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        cwd=str(REPO),
+    )
+    detail = ""
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "")[-120:].replace("\n", " ")
+    ok = proc.returncode == 0 and not marker.exists()
+    _step("ui-tui/src restore+clean removes untracked overlay leak", ok, detail)
+
+
+def test_e11_plugin_handlers_importable() -> None:
+    import importlib
+
+    handlers = [
+        "overlay.hermes_cli.cli_cost_command",
+        "overlay.hermes_cli.cli_tps_command",
+        "overlay.hermes_cli.cli_command_patches",
+        "overlay.bootstrap",
+    ]
+    ok = True
+    for mod in handlers:
+        try:
+            importlib.import_module(mod)
+        except Exception:
+            ok = False
+            break
+    plugin_yaml = REPO / "plugins" / "j80-windows-nl" / "plugin.yaml"
+    ok = ok and plugin_yaml.is_file()
+    _step("plugins/j80-windows-nl handlers importable", ok)
+
+
+def test_e12_doctor_fork_patch_unit_import() -> None:
     proc = subprocess.run(
         [
             str(PY),
@@ -169,7 +233,8 @@ def main() -> int:
     print("=" * 60)
     print()
 
-    test_e1_pyproject_uses_thread_timeout()
+    test_e1a_pyproject_uses_signal_timeout()
+    test_e1b_audit_helpers_use_thread_on_windows()
     test_e2_strip_script_bootstraps_overlay()
     test_e3_doctor_fork_patch_strip_on_fix()
     test_e4_shell_common_audit_pytest_helpers()
@@ -178,15 +243,18 @@ def main() -> int:
     test_e7_status_bar_width_test_disables_yolo()
     test_e8_audit_scripts_migrated_sample()
     test_e9_strip_script_runs()
-    test_e10_doctor_fork_patch_unit_import()
+    test_e10_ui_src_restore_leaves_no_untracked()
+    test_e11_plugin_handlers_importable()
+    test_e12_doctor_fork_patch_unit_import()
 
     print()
     print("=" * 60)
+    total = 12
     if FAILURES:
-        print(f"  FAILURES: {FAILURES}/10")
+        print(f"  FAILURES: {FAILURES}/{total}")
         print("=" * 60)
         return 1
-    print("  ALL PASS (10/10)")
+    print(f"  ALL PASS ({total}/{total})")
     print("=" * 60)
     return 0
 

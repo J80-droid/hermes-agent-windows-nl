@@ -84,6 +84,12 @@ try {
         }
     }
 
+    foreach ($srcPath in @('ui-tui/src', 'web/src')) {
+        if (Test-Path -LiteralPath $srcPath) {
+            git clean -fd -- $srcPath 2>$null
+        }
+    }
+
     Write-Host '[OK] Tier A trees restored from upstream (extras removed).' -ForegroundColor Green
 } finally {
     Pop-Location

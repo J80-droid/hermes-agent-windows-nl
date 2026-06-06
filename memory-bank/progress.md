@@ -8,7 +8,8 @@
 
 ## RAG operationeel (Fase 6 — gebruikersdata)
 
-- [ ] Bronmappen `%USERPROFILE%\data\raw_source_files\` (01–03, 05–08, 09–12) — **nog leeg op dev-machine** (lege LanceDB = verwachte WARN bij MCP-test)
+- [x] RAG CI fixtures: `fixtures/rag_minimal/` + `seed_rag_minimal_fixtures.ps1` + `RUN_RAG_MINIMAL_FIXTURE_E2E` (2026-06-02)
+- [ ] Bronmappen productie `%USERPROFILE%\data\raw_source_files\` (01–03, 05–08, 09–12) — **handmatig vullen** met echte bronnen (fixtures = dev/CI only)
 - [x] `institutional_p0_p1.bat --ingest-remaining` + MCP-test (2026-06-06): pipeline exit 0; preflight skip-empty; legal/core MCP OK; overlay bootstrap in `sync_profile_mcp_from_domains.py`; padfix `UPDATE_KNOWLEDGE_BAT`
 
 ## Chat rooktest + auth BOM (2026-06-06)
@@ -22,7 +23,8 @@
 - [x] `doctor --fix`: auth.json BOM-detectie + `repair_all_auth_json_bom()` (fork overlay)
 - [x] RAG dependency guard: `constraints-rag-stack.txt`, `neutts[onnx]`, `guard_forbidden_packages.py` (geen diskcache/llama-cpp); `expand_cli_toolset_arg` (`mcp` sentinel → MCP-servernamen)
 - [x] Institutional stap-4 CLI-args (2026-06-06): `call hermes_legal_rooktest.bat "%HERMES_REPO%" "%PY%"`; rooktest `%1`/`%2`; live `institutional_p0_p1.bat` exit 0
-- [x] P4 `RUN_AUDITS -IncludeAllE2E` **PASS** (2026-06-06, exit 0 ~24 min); fixes: config-drift strip+bootstrap, pytest `timeout-method=thread`, YOLO width-test; tier-A restore → `git reset --hard HEAD` na run
+- [x] P4 `RUN_AUDITS -IncludeAllE2E` **PASS** (2026-06-06, exit 0 ~24 min); fixes: config-drift strip+bootstrap, pytest audit-helpers, YOLO width-test
+- [x] Scorecard 10/10 (2026-06-02): pyproject revert signal; `Invoke-HermesTierAPostAuditClean`; RAG fixtures CI; CI/nightly uitbreiding; docs sync
 
 ## Technische schuld — afgerond (2026-06-06)
 
@@ -135,7 +137,7 @@
 - [x] Backup schema v3 (2026-05-23): `HermesBackupCommon.ps1`, `runtime_hermes/` + `legacy_hermes/` + persona-subset; safe-for-backup gate; restore `-RestoreRuntimeFull`; test `RUN_BACKUP_E2E.bat`
 - [x] IDE: `hermes-agent/.vscode/settings.json` + `docs/IDE_VSCODE_SETTINGS.example.json`
 - [x] Setup bat-templates (`scripts/windows/bat-templates/`); geen Copy-Item-spiegel meer; PSScriptAnalyzer 0 op `windows/**/*.ps1`
-- [x] pytest Windows: `timeout-method=thread`; `shutil.which` i.p.v. `which rg`; marker `ssh` in `pyproject.toml`; `tests/windows/test_critical_windows_scripts.py`
+- [x] pytest Windows: Tier B `Invoke-HermesAuditPytest` (`thread`); pyproject upstream `signal`; `tests/windows/test_pytest_windows_timeout_policy.py`; `shutil.which` i.p.v. `which rg`; marker `ssh` in `pyproject.toml`
 - [x] PSScriptAnalyzer `windows\`: 0 Warning/Error (2026-05-23) — unused params/vars, ShouldProcess, catch-blokken, merge `-LockTheirs` wiring
 - [x] Python-policy institutioneel: `HermesPythonPolicy.ps1`, `REPAIR_PYTHON.bat`, `ensure_hermes_python.ps1`; kapotte `.venv` → `.venv.disabled-*` (gitignore); conda `hermes-env` canoniek; verify-keten + setup-hook
 - [x] Python institutional review-fixes (2026-05-25): bootstrap stamp guard, `rag-deps.json` fast-path, non-interactive REPAIR, `HERMES_CONDA_ROOT`, invalid-exe catch in pip/RAG checks; regression E2E 9/9 harness; pytest `test_hermes_python_institutional.py`

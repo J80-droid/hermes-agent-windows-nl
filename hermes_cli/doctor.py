@@ -445,56 +445,6 @@ def _build_apikey_providers_list() -> list:
     return _static
 
 
-def _iter_auth_json_candidates() -> list[Path]:
-    """Root + profile ``auth.json`` paths for BOM/corrupt checks."""
-    from hermes_constants import get_default_hermes_root
-
-    root = get_default_hermes_root()
-    paths: list[Path] = []
-    root_auth = root / "auth.json"
-    if root_auth.is_file():
-        paths.append(root_auth)
-    profiles = root / "profiles"
-    if profiles.is_dir():
-        paths.extend(sorted(profiles.glob("*/auth.json")))
-    return paths
-
-
-def _auth_json_files_with_bom() -> list[Path]:
-    bom: list[Path] = []
-    for path in _iter_auth_json_candidates():
-        try:
-            if path.read_bytes().startswith(b"\xef\xbb\xbf"):
-                bom.append(path)
-        except OSError:
-            continue
-    return bom
-
-
-def _repair_auth_json_bom_all() -> list[str]:
-    """Strip UTF-8 BOM from root/profile auth stores (fork overlay when present)."""
-    try:
-        from overlay.bootstrap import install
-
-        install()
-    except Exception:
-        pass
-    repair_fn = None
-    try:
-        from hermes_cli.auth import repair_all_auth_json_bom as repair_fn  # type: ignore[attr-defined]
-    except (ImportError, AttributeError):
-        pass
-    if repair_fn is None:
-        try:
-            from overlay.hermes_cli.auth_fork_patch import repair_all_auth_json_bom as repair_fn
-        except ImportError:
-            return []
-    try:
-        return repair_fn()
-    except Exception:
-        return []
-
-
 def run_doctor(args):
     """Run diagnostic checks."""
     should_fix = getattr(args, 'fix', False)
@@ -590,47 +540,6 @@ def run_doctor(args):
         # Never let a bug in the advisory check block the rest of doctor.
         check_warn(f"Security advisory check failed: {e}")
     
-    _section("Python dependency guard (RAG / security)")
-    try:
-        if str(PROJECT_ROOT) not in sys.path:
-            sys.path.insert(0, str(PROJECT_ROOT))
-        from scripts.guard_forbidden_packages import run_guard
-
-        guard_report = run_guard(sys.executable, fix=should_fix)
-        forbidden = guard_report.get("forbidden_found") or []
-        if forbidden:
-            for pkg in forbidden:
-                check_warn(
-                    f"Forbidden package: {pkg}",
-                    "(llama-cpp/diskcache — CVE-2025-69872; gebruik neutts[onnx] of aparte venv)",
-                )
-            if should_fix and guard_report.get("forbidden_removed"):
-                for pkg in guard_report["forbidden_removed"]:
-                    check_ok(f"Removed {pkg}")
-                fixed_count += len(guard_report["forbidden_removed"])
-            elif not should_fix:
-                manual_issues.append(
-                    "Run 'hermes doctor --fix' or scripts/guard_forbidden_packages.py --fix "
-                    "to remove llama-cpp-python/diskcache"
-                )
-        else:
-            check_ok("No forbidden llama-cpp-python / diskcache")
-        tf_ver = str(guard_report.get("transformers_version") or "")
-        if guard_report.get("transformers_ok") is False:
-            check_warn(
-                "transformers below 5.x",
-                f"({tf_ver or 'missing'} — RAG vereist >=5; neutts[onnx] + constraints-rag-stack)",
-            )
-            if should_fix:
-                rerun = run_guard(sys.executable, fix=True)
-                if rerun.get("transformers_ok"):
-                    check_ok(f"Pinned transformers>={rerun.get('transformers_version', '5')}")
-                    fixed_count += 1
-        elif tf_ver:
-            check_ok(f"transformers {tf_ver} (RAG stack OK)")
-    except Exception as e:
-        check_warn("Python dependency guard skipped", str(e))
-
     _section("Python Environment")
     py_version = sys.version_info
     if py_version >= (3, 11):
@@ -1153,55 +1062,6 @@ def run_doctor(args):
     except Exception:
         pass
 
-    _section("Auth store integrity")
-    try:
-        from hermes_constants import get_default_hermes_root
-
-        bom_files = _auth_json_files_with_bom()
-        corrupt_backups = [
-            p.with_suffix(".json.corrupt")
-            for p in _iter_auth_json_candidates()
-            if p.with_suffix(".json.corrupt").is_file()
-        ]
-        root = get_default_hermes_root()
-        if bom_files:
-            for path in bom_files:
-                try:
-                    rel = path.relative_to(root)
-                    label = str(rel)
-                except ValueError:
-                    label = str(path)
-                check_warn(f"UTF-8 BOM in auth.json", f"({label})")
-            if should_fix:
-                repaired = _repair_auth_json_bom_all()
-                for path in repaired:
-                    check_ok(f"Removed UTF-8 BOM from {path}")
-                if repaired:
-                    fixed_count += len(repaired)
-                remaining_bom = _auth_json_files_with_bom()
-                if remaining_bom:
-                    manual_issues.append(
-                        f"auth.json UTF-8 BOM still present in {len(remaining_bom)} file(s) after repair"
-                    )
-                elif not repaired:
-                    manual_issues.append(
-                        "auth.json UTF-8 BOM detected but repair returned no paths"
-                    )
-            else:
-                manual_issues.append(
-                    f"Strip UTF-8 BOM from {len(bom_files)} auth.json file(s) — "
-                    "run 'hermes doctor --fix' or scripts/repair_auth_json_bom.py"
-                )
-        else:
-            check_ok("No UTF-8 BOM in auth.json files")
-        if corrupt_backups:
-            check_info(
-                f"{len(corrupt_backups)} auth.json.corrupt backup(s) on disk "
-                "(safe to archive when current login/chat works)"
-            )
-    except Exception as e:
-        check_warn("Auth store integrity check failed", str(e))
-
     _section("Directory Structure")
     hermes_home = HERMES_HOME
     if hermes_home.exists():
@@ -1596,9 +1456,6 @@ def run_doctor(args):
     if _npm_bin:
         npm_dirs = [
             (PROJECT_ROOT, "Browser tools (agent-browser)"),
-            (PROJECT_ROOT / "web", "Web UI"),
-            (PROJECT_ROOT / "apps" / "desktop", "Desktop app"),
-            (PROJECT_ROOT / "website", "Docs site"),
             (PROJECT_ROOT / "scripts" / "whatsapp-bridge", "WhatsApp bridge"),
         ]
         for npm_dir, label in npm_dirs:

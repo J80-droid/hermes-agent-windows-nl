@@ -76,10 +76,10 @@ Add-StepResult '1/10 Repo root-inheritance artefacten' ($missingRepo.Count -eq 0
 if (-not $SkipPytest) {
     Push-Location $RepoRoot
     try {
-        & $python -m pytest `
+        Invoke-HermesAuditPytest -Python $python `
             tests/hermes_cli/test_profile_model_inheritance.py `
             tests/hermes_cli/test_merge_legacy_providers_config.py `
-            -q --tb=line -o addopts=
+            -q --tb=line
     } finally {
         Pop-Location
     }

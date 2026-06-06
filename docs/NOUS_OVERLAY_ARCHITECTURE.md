@@ -110,9 +110,13 @@ Baseline: [NOUS_DRIFT_BASELINE.md](NOUS_DRIFT_BASELINE.md).
 | Gecombineerd | `windows\audits\RUN_AUDITS.bat -IncludeNousOverlayInstitutionalE2E -IncludeSyncNousE2E` |
 | Volledige poort | `windows\audits\RUN_AUDITS.bat -IncludeAllE2E` (incl. overlay + throughput + **fork gates** E2E) |
 
-**CI:** `.github/workflows/fork-windows-institutional.yml` — drift gate, `pytest tests/overlay/`, institutional E2E, TUI-build + drift.
+**CI:** `.github/workflows/fork-windows-institutional.yml` — upstream fetch, drift gate, 14-fixes E2E, pytest-audit-env, tier-a-cli guard, overlay E2E, TUI-build + drift. Wekelijks: `fork-windows-audits-nightly.yml` (`RUN_AUDITS -IncludeAllE2E`).
 
 **Tier A guard:** `python scripts/verify_institutional_guard.py --check-tier-a-cli`
+
+**pytest (Windows):** `pyproject.toml` = upstream `signal`; `windows/HermesShellCommon.ps1` zet `Invoke-HermesAuditPytest` / `PYTEST_ADDOPTS=--timeout-method=thread` voor audits en `RUN_PYTEST.ps1`.
+
+**doctor_fork_patch:** split-home **+** profile global-blocks strip (`strip_profile_global_config_blocks.py`, doctor `--fix`).
 
 Preflight: `HERMES_HOME=%LOCALAPPDATA%\hermes` (niet `profiles\legal`).
 
@@ -157,8 +161,12 @@ Max. 1–2 weken achter op `upstream/main`. Zie [UPSTREAM_SYNC.md](../windows/UP
 
 ## Plugins / optionele overlay-modules
 
-- **`plugins/j80-windows-nl`:** in `overlay/manifest.yaml` maar **niet** geladen door `bootstrap.py`; slash-commands via overlay CLI-patches.
+**ADR — waarom `plugin.yaml` i.p.v. bootstrap plugin-load:** `plugins/j80-windows-nl` is een manifest/registry voor slash-dispatch (`/cost`, `/tps`). Handlers leven in `overlay/hermes_cli/` en worden via `cli_command_patches` geïnjecteerd. Bootstrap laadt alleen runtime-patches uit `manifest.yaml`; extra plugin-load zou Tier A-imports of dubbele registratie riskeren.
+
+- **`plugins/j80-windows-nl`:** in `overlay/manifest.yaml` maar **niet** geladen door `bootstrap.py`; slash-commands via overlay CLI-patches. E2E: handlers importeerbaar (`RunAudits14FixesE2E` E11).
 - **Bootstrap `hermes_cli` (overlay):** `filesystem_sandbox`, `hardware_backend`, `config_snapshot` — geladen via `_OVERLAY_HERMES_CLI_MODULES`; file-tools wiring via `overlay/tools/file_tools_fork_patch.py`.
-- **Lazy overlay `hermes_cli`:** `model_catalog_guard` (via `models_fork_patch`), `model_list_ui`, `skills_hub_init`, `win32_console` — niet in `_OVERLAY_HERMES_CLI_MODULES`.
+- **Lazy overlay `hermes_cli`:** `model_catalog_guard` (via `models_fork_patch`), `model_list_ui`, `skills_hub_init`, `win32_console` — niet in `_OVERLAY_HERMES_CLI_MODULES`; unit smoke: `tests/overlay/test_lazy_overlay_imports.py`.
+
+**Overlay bron-sync:** `Invoke-CopyHermesOverlaySources.ps1` kopieert overlay → Tier A `src` alleen tijdens UI-build (met restore). `Copy-ForkAdditionToOverlay` (in `Invoke-RestoreNousTierA`) kopieert fork-only **toevoegingen** naar overlay alleen als het overlay-bestand nog ontbreekt — handmatige sync bij wijzigingen vereist.
 
 `windows/scripts/collect_env_sync_keys.py` roept `overlay.bootstrap.install()` aan vóór `profile_model_inheritance.root_config_path()`.

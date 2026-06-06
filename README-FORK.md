@@ -64,10 +64,11 @@ Zie [`docs/NOUS_OVERLAY_ARCHITECTURE.md`](docs/NOUS_OVERLAY_ARCHITECTURE.md) en 
 - `hermes_cli/status_bar_cost.py` (upstream-pad) — vervangen door overlay-shim met dezelfde module-naam na bootstrap
 - `web/src`, `ui-tui/src` — alleen tijdelijk tijdens `build_fork_ui_assets.ps1`; daarna `git checkout` Tier A
 
-### Beperkte Tier A-diffs (beleid, niet feature-dump)
+### Tier A vs overlay (beleid)
 
-- `hermes_cli/main.py` — sticky `active_profile` + `profile use` waar nodig
-- Overige fork-logica: **`overlay/`** + `windows/` + geladen shims (`profile_switch`, `usage_snapshot`, …)
+- **0 Tier A-diffs** t.o.v. `upstream/main` in HEAD (`Test-NousTreeIdentical` strict)
+- Alle fork-logica: **`overlay/`** + `windows/` + geladen shims (`profile_switch`, `usage_snapshot`, …)
+- `pyproject.toml` blijft upstream (`--timeout-method=signal`); Windows pytest via `windows/HermesShellCommon.ps1` (`Invoke-HermesAuditPytest`)
 
 ---
 

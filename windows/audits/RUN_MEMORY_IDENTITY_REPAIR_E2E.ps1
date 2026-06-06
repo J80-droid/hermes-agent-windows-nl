@@ -47,7 +47,7 @@ Write-Host '--- 4/4 pytest scrub_identity ---' -ForegroundColor Cyan
 $python = Join-Path $env:USERPROFILE 'miniconda3\envs\hermes-env\python.exe'
 if (Test-Path -LiteralPath $python) {
     $env:PYTHONPATH = $repoRoot
-    & $python -m pytest (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'tests/windows/test_scrub_identity.py') -q --tb=no
+    Invoke-HermesAuditPytest -Python $python (Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'tests/windows/test_scrub_identity.py') -q --tb=no
     if ($LASTEXITCODE -ne 0) {
         Write-Host '[FAIL] test_scrub_identity.py' -ForegroundColor Red
         $failures++

@@ -34,6 +34,7 @@ function Restore-TierASrc {
     try {
         if (Test-Path -LiteralPath $RelativePath) {
             git checkout -- $RelativePath 2>$null
+            git clean -fd -- $RelativePath 2>$null
         }
     } finally {
         Pop-Location

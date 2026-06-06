@@ -283,6 +283,9 @@ def _run_one_file(
     env = os.environ.copy()
     env.setdefault("PYTHONIOENCODING", "utf-8")
     env.setdefault("PYTHONUTF8", "1")
+    # pyproject.toml uses signal (Tier A); Windows needs thread for pytest-timeout.
+    if sys.platform == "win32" and not env.get("PYTEST_ADDOPTS"):
+        env["PYTEST_ADDOPTS"] = "--timeout-method=thread"
     proc = subprocess.Popen(
         cmd,
         cwd=repo_root,

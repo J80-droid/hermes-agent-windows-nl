@@ -40,18 +40,63 @@ function Invoke-HermesAuditPytest {
 
 function Invoke-HermesCondaAuditPytest {
     param(
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, Position = 0)]
         [string]$CondaExe,
-        [string]$EnvName = 'hermes-env',
-        [Parameter(ValueFromRemainingArguments = $true)]
-        [string[]]$PytestArgs
+        [Parameter(ValueFromRemainingArguments = $true, Position = 1)]
+        [string[]]$PytestArgs,
+        [string]$EnvName = 'hermes-env'
     )
     Clear-HermesPytestAddoptsForAudit
     $allArgs = @(
-        'run', '-n', $EnvName, '--no-capture-output', 'python', '-m', 'pytest'
+        'run', '-n', $EnvName, '--no-capture-output', '--', 'python', '-m', 'pytest'
     ) + @($PytestArgs) + (Get-HermesAuditPytestOverrideArgs)
     & $CondaExe @allArgs
     $global:LASTEXITCODE = $LASTEXITCODE
+}
+
+function Invoke-HermesTierASrcClean {
+    param([Parameter(Mandatory)][string]$RepoRoot)
+    Push-Location $RepoRoot
+    try {
+        foreach ($rel in @('ui-tui/src', 'web/src')) {
+            if (Test-Path -LiteralPath $rel) {
+                git clean -fd -- $rel 2>$null
+            }
+        }
+    } finally {
+        Pop-Location
+    }
+}
+
+function Invoke-HermesTierAPostAuditClean {
+    param(
+        [Parameter(Mandatory)]
+        [string]$RepoRoot,
+        [ValidateSet('Preflight', 'PreOverlay', 'Postflight')]
+        [string]$Phase = 'Postflight'
+    )
+    $restore = Join-Path $script:HermesWindowsRoot 'scripts\Invoke-RestoreNousTierA.ps1'
+    if (-not (Test-Path -LiteralPath $restore)) {
+        Write-HermesErr ('missing ' + $restore)
+        $global:LASTEXITCODE = 1
+        return
+    }
+    & $restore -RepoRoot $RepoRoot
+    if ($LASTEXITCODE -ne 0) {
+        $global:LASTEXITCODE = $LASTEXITCODE
+        return
+    }
+    Invoke-HermesTierASrcClean -RepoRoot $RepoRoot
+    if ($Phase -eq 'Postflight') {
+        $drift = Join-Path $script:HermesWindowsRoot 'scripts\Test-NousTreeIdentical.ps1'
+        if (-not (Test-Path -LiteralPath $drift)) {
+            Write-HermesErr ('missing ' + $drift)
+            $global:LASTEXITCODE = 1
+            return
+        }
+        & $drift -RepoRoot $RepoRoot
+    }
+    $global:LASTEXITCODE = if ($null -eq $LASTEXITCODE) { 0 } else { [int]$LASTEXITCODE }
 }
 
 function Test-NativeCommandFailed {

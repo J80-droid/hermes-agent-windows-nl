@@ -156,7 +156,9 @@ windows\VERIFY_WINDOWS_CHAIN.bat
 
 `-IncludeAllE2E` bevat hardening **14/14**, maar **niet** `RUN_INSTITUTIONAL_PRODUCTION_GATE` (gebruik `-IncludeInstitutionalProductionGate` of losse `.bat`, ~2+ min).
 
-**Aanbevolen release-keten (fork):** `RUN_REPO_HYGIENE_E2E` → `RUN_NOUS_OVERLAY_AFWERKING_E2E` → `RUN_PYTEST_AUDIT_ENV_E2E` → `RUN_INSTITUTIONAL_PRODUCTION_GATE` → `Test-NousTreeIdentical` → (optioneel) `RUN_AUDITS -IncludeInstitutionalProductionGate`.
+**Aanbevolen release-keten (fork):** `RUN_REPO_HYGIENE_E2E` → `RUN_NOUS_OVERLAY_AFWERKING_E2E` → `RUN_PYTEST_AUDIT_ENV_E2E` → `RUN_RUN_AUDITS_14_FIXES_E2E` → `RUN_INSTITUTIONAL_PRODUCTION_GATE` → `Test-NousTreeIdentical` → (optioneel) `RUN_AUDITS -IncludeInstitutionalProductionGate`.
+
+**CI vs lokaal:** PR-job (`fork-windows-institutional.yml`) = subset (~30 min). Wekelijks (`fork-windows-audits-nightly.yml`) = volledige `RUN_AUDITS -IncludeAllE2E` (~24 min).
 
 **Pytest audit-env (snel, ~20s):** `audits\RUN_PYTEST_AUDIT_ENV_E2E.bat` — valideert `Clear-HermesPytestAddoptsForAudit`, geen dubbele `pytest_timeout`, RAG MCP bootstrap.
 
@@ -166,10 +168,15 @@ Platform hardening productie-poort (sandbox/file_tools wiring): `windows\audits\
 
 ```cmd
 windows\scripts\update_knowledge.bat legal
+windows\scripts\seed_rag_minimal_fixtures.ps1
 windows\scripts\institutional_p0_p1.bat --ingest-remaining
 windows\SYNC_DOMAIN_TOOLSETS.bat
 windows\SYNC_DOMAIN_TOOLSETS.bat --create-missing
 ```
+
+**RAG fixtures (dev/CI):** `fixtures/rag_minimal/` + `seed_rag_minimal_fixtures.ps1` — smoke-inhoud, geen gevoelige data. E2E: `audits\RUN_RAG_MINIMAL_FIXTURE_E2E.bat`. **Productie:** handmatig vullen van `%USERPROFILE%\data\raw_source_files\` met echte bronnen; lege mappen = verwachte WARN buiten fixture-mode.
+
+**Git Tier A vs runtime:** `Test-NousTreeIdentical` = repo HEAD vs upstream. `verify_hermes_config_drift` = `%LOCALAPPDATA%\hermes` runtime (strip preflight in `RUN_AUDITS -IncludeAllE2E`).
 
 Legal E2E: `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat` · `RUN_AUDITS.bat -IncludeLegalDomainE2E`.
 

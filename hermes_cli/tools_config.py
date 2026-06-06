@@ -82,42 +82,6 @@ CONFIGURABLE_TOOLSETS = [
     ("computer_use",     "🖱️  Computer Use (macOS)",     "background desktop control via cua-driver"),
 ]
 
-# Platform manifest sentinels (``docs/domain_toolsets.yaml``) — not CONFIGURABLE_TOOLSETS.
-# ``mcp`` = alle ingeschakelde MCP-servers; ``no_mcp`` = geen MCP op CLI ``--toolsets``.
-PLATFORM_TOOLSET_SENTINELS = frozenset({"mcp", "no_mcp"})
-
-
-def expand_cli_toolset_arg(toolsets: list[str] | set[str], config: dict) -> list[str]:
-    """Expand ``mcp`` sentinel to MCP server names for ``hermes chat --toolsets``."""
-    raw = [str(t).strip() for t in toolsets if str(t).strip()]
-    if not raw or "all" in raw or "*" in raw:
-        return raw
-    mcp_servers = config.get("mcp_servers") if isinstance(config, dict) else None
-    enabled_mcp: list[str] = []
-    if isinstance(mcp_servers, dict):
-        for name, cfg in mcp_servers.items():
-            key = str(name).strip()
-            if not key:
-                continue
-            if isinstance(cfg, dict) and not _parse_enabled_flag(cfg.get("enabled", True), default=True):
-                continue
-            enabled_mcp.append(key)
-    expanded: list[str] = []
-    for entry in raw:
-        if entry == "mcp":
-            expanded.extend(enabled_mcp)
-        elif entry == "no_mcp":
-            continue
-        else:
-            expanded.append(entry)
-    seen: set[str] = set()
-    ordered: list[str] = []
-    for entry in expanded:
-        if entry not in seen:
-            seen.add(entry)
-            ordered.append(entry)
-    return ordered
-
 
 def gui_toolset_label(label: str) -> str:
     """Strip leading emoji/icons from toolset titles for GUI surfaces.

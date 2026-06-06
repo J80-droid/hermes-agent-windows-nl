@@ -1,0 +1,53 @@
+# Fork-only: wekelijkse volledige RUN_AUDITS poort (lokaal ~24 min).
+name: Fork Windows Audits Nightly
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-audits:
+    if: github.repository == 'J80-droid/hermes-agent-windows-nl'
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install package (dev)
+        run: python -m pip install --upgrade pip && pip install -e ".[dev]"
+
+      - name: Configure upstream remote
+        run: |
+          git remote add upstream https://github.com/NousResearch/hermes-agent.git
+          git fetch upstream main --depth=1
+
+      - name: RUN_AUDITS IncludeAllE2E
+        env:
+          HERMES_SKIP_PAUSE_AFTER_UPDATE: '1'
+          OPENROUTER_API_KEY: ''
+          OPENAI_API_KEY: ''
+          NOUS_API_KEY: ''
+          PYTEST_ADDOPTS: '--timeout-method=thread'
+        run: windows\audits\RUN_AUDITS.bat -IncludeAllE2E -SkipFootguns
+
+      - name: Upload audit logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: run-audits-logs
+          path: |
+            windows/audits/*REPORT*.md
+            windows/audits/*LOG*.txt
+            audits/*REPORT*.md
+            audits/*LOG*.txt
+          if-no-files-found: ignore
