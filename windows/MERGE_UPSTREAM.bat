@@ -26,12 +26,13 @@ if not "!ERR!"=="0" (
     echo [ERROR] Merge keten gestopt met code !ERR!
     echo [INFO] Zie windows\UPSTREAM_SYNC.md
   )
-  pause
+  if not "%HERMES_SKIP_PAUSE_AFTER_UPDATE%"=="1" if not "%HERMES_NONINTERACTIVE%"=="1" pause
   exit /b !ERR!
 )
 
 echo.
 echo [OK] Merge + update keten geslaagd.
 if "%HERMES_SKIP_PAUSE_AFTER_UPDATE%"=="1" goto :eof
+if "%HERMES_NONINTERACTIVE%"=="1" goto :eof
 pause
 exit /b 0

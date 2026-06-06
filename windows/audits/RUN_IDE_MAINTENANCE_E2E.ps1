@@ -196,6 +196,7 @@ if (-not $SkipMergePreview) {
     Write-StepHeader 'MERGE_UPSTREAM.bat -PromptOnly'
     $mergeBat = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/MERGE_UPSTREAM.bat'
     $env:HERMES_NONINTERACTIVE = '1'
+    $env:HERMES_SKIP_PAUSE_AFTER_UPDATE = '1'
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     $mergeOut = cmd /c "`"$mergeBat`" -PromptOnly -NoPrompt" 2>&1 | Out-String
