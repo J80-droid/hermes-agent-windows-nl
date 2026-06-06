@@ -39,6 +39,25 @@ def _prepare_profile(profile: str) -> Path:
     return home
 
 
+def _chat_toolsets_arg() -> str:
+    """MCP server names from profile config + file/memory (not pseudo ``mcp`` toolset)."""
+    from hermes_cli.config import load_config
+
+    cfg = load_config()
+    mcp_servers = cfg.get("mcp_servers")
+    names: list[str] = []
+    if isinstance(mcp_servers, dict):
+        names = [str(k).strip() for k in mcp_servers if str(k).strip()]
+    parts = names + ["file", "memory"]
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for part in parts:
+        if part and part not in seen:
+            seen.add(part)
+            ordered.append(part)
+    return ",".join(ordered) if ordered else "file,memory"
+
+
 def _model_provider_from_config() -> Tuple[str, str]:
     """Resolved model/provider (profile inherits model/providers from root config)."""
     from hermes_cli.config import load_config
@@ -116,7 +135,7 @@ def run_chat_rooktest(profile: str = "legal") -> int:
         "--max-turns",
         "8",
         "--toolsets",
-        "mcp,file,memory",
+        _chat_toolsets_arg(),
     ]
     if provider:
         cmd.extend(["--provider", provider])

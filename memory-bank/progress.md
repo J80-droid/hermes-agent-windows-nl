@@ -11,6 +11,16 @@
 - [ ] Bronmappen `%USERPROFILE%\data\raw_source_files\` (01–03, 05–08, 09–12) — **nog leeg op dev-machine** (lege LanceDB = verwachte WARN bij MCP-test)
 - [x] `institutional_p0_p1.bat --ingest-remaining` + MCP-test (2026-06-06): pipeline exit 0; preflight skip-empty; legal/core MCP OK; overlay bootstrap in `sync_profile_mcp_from_domains.py`; padfix `UPDATE_KNOWLEDGE_BAT`
 
+## Chat rooktest + auth BOM (2026-06-06)
+
+- [x] Overlay `load_config`-rebind (`config_fork_patch._rebind_load_config_references`); stale `runtime_provider` bindings
+- [x] BOM-tolerante auth (`auth_fork_patch`); `scripts/repair_auth_json_bom.py`; `windows/REPAIR_AUTH_JSON_BOM.bat`
+- [x] Rooktest overlay-entry; dynamische MCP toolsets in `_rooktest_chat.py`; security pins manifest
+- [x] E2E `RUN_CHAT_ROOKTEST_SECURITY_E2E.bat` 8/8; unit tests auth/config/rooktest/repair CLI
+- [x] Live rooktest: `hermes_legal_rooktest.bat` + `institutional_p0_p1.bat` PASS (chat + search_knowledge)
+- [x] Commit `18fc71f22` gepusht naar `origin/main`
+- [x] `doctor --fix`: auth.json BOM-detectie + `repair_all_auth_json_bom()` (fork overlay)
+
 ## Technische schuld — afgerond (2026-06-06)
 
 - [x] Sandbox productie-wiring: `overlay/tools/file_tools_fork_patch.py` + `tests/overlay/test_file_tools_fork_patch.py`

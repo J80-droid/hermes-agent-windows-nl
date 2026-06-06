@@ -445,6 +445,50 @@ def _build_apikey_providers_list() -> list:
     return _static
 
 
+def _iter_auth_json_candidates() -> list[Path]:
+    """Root + profile ``auth.json`` paths for BOM/corrupt checks."""
+    from hermes_constants import get_default_hermes_root
+
+    root = get_default_hermes_root()
+    paths: list[Path] = []
+    root_auth = root / "auth.json"
+    if root_auth.is_file():
+        paths.append(root_auth)
+    profiles = root / "profiles"
+    if profiles.is_dir():
+        paths.extend(sorted(profiles.glob("*/auth.json")))
+    return paths
+
+
+def _auth_json_files_with_bom() -> list[Path]:
+    bom: list[Path] = []
+    for path in _iter_auth_json_candidates():
+        try:
+            if path.read_bytes().startswith(b"\xef\xbb\xbf"):
+                bom.append(path)
+        except OSError:
+            continue
+    return bom
+
+
+def _repair_auth_json_bom_all() -> list[str]:
+    """Strip UTF-8 BOM from root/profile auth stores (fork overlay when present)."""
+    try:
+        from overlay.bootstrap import install
+
+        install()
+    except Exception:
+        pass
+    repair_fn = None
+    try:
+        from hermes_cli.auth import repair_all_auth_json_bom as repair_fn  # type: ignore[attr-defined]
+    except (ImportError, AttributeError):
+        pass
+    if repair_fn is None:
+        from overlay.hermes_cli.auth_fork_patch import repair_all_auth_json_bom as repair_fn
+    return repair_fn()
+
+
 def run_doctor(args):
     """Run diagnostic checks."""
     should_fix = getattr(args, 'fix', False)
@@ -1061,6 +1105,50 @@ def run_doctor(args):
                 check_info(xai_oauth_status["error"])
     except Exception:
         pass
+
+    _section("Auth store integrity")
+    try:
+        from hermes_constants import get_default_hermes_root
+
+        bom_files = _auth_json_files_with_bom()
+        corrupt_backups = [
+            p.with_suffix(".json.corrupt")
+            for p in _iter_auth_json_candidates()
+            if p.with_suffix(".json.corrupt").is_file()
+        ]
+        root = get_default_hermes_root()
+        if bom_files:
+            for path in bom_files:
+                try:
+                    rel = path.relative_to(root)
+                    label = str(rel)
+                except ValueError:
+                    label = str(path)
+                check_warn(f"UTF-8 BOM in auth.json", f"({label})")
+            if should_fix:
+                repaired = _repair_auth_json_bom_all()
+                for path in repaired:
+                    check_ok(f"Removed UTF-8 BOM from {path}")
+                if repaired:
+                    fixed_count += len(repaired)
+                else:
+                    manual_issues.append(
+                        "auth.json UTF-8 BOM detected but repair returned no paths"
+                    )
+            else:
+                manual_issues.append(
+                    f"Strip UTF-8 BOM from {len(bom_files)} auth.json file(s) — "
+                    "run 'hermes doctor --fix' or scripts/repair_auth_json_bom.py"
+                )
+        else:
+            check_ok("No UTF-8 BOM in auth.json files")
+        if corrupt_backups:
+            check_info(
+                f"{len(corrupt_backups)} auth.json.corrupt backup(s) on disk "
+                "(safe to archive when current login/chat works)"
+            )
+    except Exception as e:
+        check_warn("Auth store integrity check failed", str(e))
 
     _section("Directory Structure")
     hermes_home = HERMES_HOME

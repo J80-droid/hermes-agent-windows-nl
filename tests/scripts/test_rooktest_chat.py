@@ -39,6 +39,22 @@ def test_ensure_overlay_calls_install(monkeypatch):
     assert installed == [True]
 
 
+def test_chat_toolsets_uses_mcp_server_names(monkeypatch):
+    monkeypatch.setattr(
+        "hermes_cli.config.load_config",
+        lambda: {"mcp_servers": {"lancedb-legal": {"command": "python"}}},
+    )
+    arg = mod._chat_toolsets_arg()
+    assert "lancedb-legal" in arg
+    assert "mcp" not in arg.split(",")
+    assert "file" in arg and "memory" in arg
+
+
+def test_chat_toolsets_fallback_without_mcp(monkeypatch):
+    monkeypatch.setattr("hermes_cli.config.load_config", lambda: {})
+    assert mod._chat_toolsets_arg() == "file,memory"
+
+
 def test_run_chat_uses_overlay_entry(monkeypatch):
     monkeypatch.setattr(mod, "inference_available", lambda _p: True)
     monkeypatch.setattr(mod, "_model_provider_from_config", lambda: ("venice", "deepseek-v4-pro"))

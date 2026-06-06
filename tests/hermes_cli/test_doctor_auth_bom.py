@@ -1,0 +1,59 @@
+"""Doctor auth.json UTF-8 BOM detection and --fix repair."""
+
+from __future__ import annotations
+
+import json
+import sys
+from argparse import Namespace
+from pathlib import Path
+import pytest
+
+_repo = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(_repo))
+
+
+@pytest.fixture
+def hermes_tree_with_bom_auth(tmp_path, monkeypatch):
+    root = tmp_path / "hermes"
+    prof = root / "profiles" / "legal"
+    prof.mkdir(parents=True)
+    auth = prof / "auth.json"
+    auth.write_bytes(
+        b"\xef\xbb\xbf" + json.dumps({"active_provider": "venice"}).encode("utf-8")
+    )
+    monkeypatch.setenv("HERMES_HOME", str(prof))
+    monkeypatch.setenv("HERMES_WIN_PREFER_LOCALAPPDATA", "0")
+    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
+    return root, auth
+
+
+def test_auth_json_files_with_bom_detects_profile(hermes_tree_with_bom_auth):
+    root, auth = hermes_tree_with_bom_auth
+    from hermes_cli.doctor import _auth_json_files_with_bom
+
+    found = _auth_json_files_with_bom()
+    assert auth in found
+
+
+def test_repair_auth_json_bom_all_strips_bom(hermes_tree_with_bom_auth):
+    _root, auth = hermes_tree_with_bom_auth
+    from overlay.bootstrap import install
+    from hermes_cli.doctor import _repair_auth_json_bom_all
+
+    install()
+    repaired = _repair_auth_json_bom_all()
+    assert repaired
+    assert not auth.read_bytes().startswith(b"\xef\xbb\xbf")
+
+
+def test_doctor_reports_no_bom_when_clean(tmp_path, monkeypatch):
+    root = tmp_path / "hermes"
+    prof = root / "profiles" / "core"
+    prof.mkdir(parents=True)
+    (prof / "auth.json").write_text('{"active_provider": "nous"}', encoding="utf-8")
+    monkeypatch.setenv("HERMES_HOME", str(prof))
+    monkeypatch.setenv("HERMES_WIN_PREFER_LOCALAPPDATA", "0")
+    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
+    from hermes_cli.doctor import _auth_json_files_with_bom
+
+    assert _auth_json_files_with_bom() == []

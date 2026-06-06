@@ -107,7 +107,7 @@ SETUP_HERMES.bat
 
 Daarna RAG: `windows\scripts\install_rag_extras.ps1` (pip `[rag]` + MCP + security pins uit `overlay\requirements-security-pins.txt`), `windows\scripts\update_knowledge.bat` (index; rooktest: `scripts\rag_pipeline\ACTIVATION.md`).
 
-**Chat rooktest (geen 401 door stale config):** `_rooktest_chat.py` bootstrap overlay vóór profiel-load; root `model`/`providers` worden geërfd (lege profiel-`config.yaml` is normaal). Overlay-entry: `scripts\run_hermes_cli_with_overlay.py`. E2E zonder live API: `audits\RUN_CHAT_ROOKTEST_SECURITY_E2E.bat`. Corrupt/BOM `auth.json`: `python scripts\repair_auth_json_bom.py`.
+**Chat rooktest (geen 401 door stale config):** `_rooktest_chat.py` bootstrap overlay vóór profiel-load; root `model`/`providers` worden geërfd (lege profiel-`config.yaml` is normaal). Overlay-entry: `scripts\run_hermes_cli_with_overlay.py`. E2E zonder live API: `audits\RUN_CHAT_ROOKTEST_SECURITY_E2E.bat`. Corrupt/BOM `auth.json`: `windows\REPAIR_AUTH_JSON_BOM.bat` of `hermes doctor --fix`.
 
 **Eén checkout:** start altijd via `windows\launch_hermes.bat` in **deze** dev-repo. Diagnose: `windows\scripts\which_hermes_repo.ps1`. De map `%LOCALAPPDATA%\hermes\hermes-agent` (Nous `origin`) is een **andere** clone — niet mengen met fork/RAG zonder bewuste keuze.
 

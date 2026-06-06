@@ -504,7 +504,7 @@ audits\RUN_CHAT_ROOKTEST_SECURITY_E2E.bat
 
 Unit: `pytest tests/scripts/test_rooktest_chat.py tests/scripts/test_repair_auth_json_bom.py tests/overlay/test_auth_fork_patch.py tests/overlay/test_config_fork_patch.py -q`
 
-Handmatig: `python scripts/repair_auth_json_bom.py` of `windows\scripts\repair_auth_json_bom.ps1`; security pins: `windows\REPAIR_SECURITY_PINS.bat`.
+Handmatig: `windows\REPAIR_AUTH_JSON_BOM.bat` of `hermes doctor --fix`; security pins: `windows\REPAIR_SECURITY_PINS.bat`.
 
 ---
 
