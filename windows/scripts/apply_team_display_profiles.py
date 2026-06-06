@@ -152,7 +152,21 @@ def main() -> int:
             block = {}
         block.update(display)
         cfg["display"] = block
-        atomic_yaml_write(cfg_path, cfg, sort_keys=False)
+        try:
+            atomic_yaml_write(cfg_path, cfg, sort_keys=False)
+        except PermissionError:
+            import time
+
+            time.sleep(0.5)
+            try:
+                atomic_yaml_write(cfg_path, cfg, sort_keys=False)
+            except PermissionError as exc:
+                print(
+                    f"  [WARN] {prof_dir.name}: config.yaml locked ({exc}); "
+                    "sluit Hermes/gateway en draai opnieuw.",
+                    file=sys.stderr,
+                )
+                continue
         names.append(prof_dir.name)
         print(f"  [OK] {prof_dir.name} -> {cfg_path}")
 

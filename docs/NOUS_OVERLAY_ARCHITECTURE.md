@@ -58,6 +58,12 @@ E2E sync: `windows\audits\RUN_SYNC_NOUS_E2E.bat` of `RUN_AUDITS -IncludeSyncNous
 | `overlay/hermes_cli/doctor_fork_patch.py` | `_check_windows_split_home_config` |
 | `overlay/hermes_cli/tools_config_fork_patch.py` | `platform_toolsets.cli` guard, `valid_post_setup_keys()`, `run_post_setup_command()` |
 | `overlay/hermes_cli/web_server_fork_patch.py` | Dashboard `PUT /api/tools/toolsets/{name}/env`, `POST .../post-setup` (idempotent; skipt als Tier A routes bestaan) |
+| `overlay/hermes_cli/clipboard_fork_patch.py` | `get_clipboard_text` / `set_clipboard_text` (Windows plain-text clipboard) |
+| `overlay/hermes_cli/profiles_fork_patch.py` | `iter_orphan_profile_wrappers`, `remove_orphan_profile_wrappers` |
+| `overlay/hermes_cli/main_fork_patch.py` | `_wait_for_interpreter_venv_ready` (update/desktop venv guard) |
+| `overlay/tools/process_registry_fork_patch.py` | `_pty_spawn_argv` (Windows PTY spawn) |
+| `overlay/cli_fork_patch.py` | `cli._wrap_bron_citations_for_display` (RAG bron-citaties) |
+| `overlay/ui-tui/src/components/appChrome.tsx` | Status-rule cost/throughput layout (`resolveStatusRuleLayout`) |
 | `overlay/hermes_cli/auth_fork_patch.py` | Auth/split-home runtime patches |
 | `overlay/tui_gateway/gateway_config_fork_patch.py` | Gateway config cache / split-home |
 | `overlay/agent/prompt_builder_fork_patch.py` | Legal runtime path block op `agent.prompt_builder` |

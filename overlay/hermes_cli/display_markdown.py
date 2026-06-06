@@ -32,10 +32,7 @@ _WINDOWS_PATH_WITH_DOT_SEGMENT_RE = re.compile(
 
 def _wrap_bron_citations_for_display(text: str) -> str:
     try:
-        rag_dir = Path(__file__).resolve().parent.parent / "scripts" / "rag_pipeline"
-        if str(rag_dir) not in sys.path:
-            sys.path.insert(0, str(rag_dir))
-        from rag_display import wrap_bron_citations_for_markdown_display
+        from scripts.rag_pipeline.rag_display import wrap_bron_citations_for_markdown_display
 
         return wrap_bron_citations_for_markdown_display(text)
     except Exception:

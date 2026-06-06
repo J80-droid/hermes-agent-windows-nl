@@ -46,7 +46,7 @@ function Restore-TierASrc {
 if (-not $SkipTui) {
     $tuiMerged = $false
     try {
-        & $copyPs1 -RepoRoot $RepoRoot -Target 'ui-tui'
+        & $copyPs1 -RepoRoot $RepoRoot -Target 'ui-tui' -Force
         $tuiMerged = $true
         $rebuild = Join-Path $PSScriptRoot 'rebuild_tui.ps1'
         if (Test-Path -LiteralPath $rebuild) {
@@ -65,7 +65,7 @@ if (-not $SkipTui) {
 if (-not $SkipWeb) {
     $webMerged = $false
     try {
-        & $copyPs1 -RepoRoot $RepoRoot -Target 'web'
+        & $copyPs1 -RepoRoot $RepoRoot -Target 'web' -Force
         $webMerged = $true
         $webDir = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'web'
         $webPkg = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'web/package.json'

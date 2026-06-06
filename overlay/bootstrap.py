@@ -54,6 +54,8 @@ _OVERLAY_HERMES_CLI_MODULES: tuple[str, ...] = (
     "profile_switch",
     "profile_mcp_format",
     "relaunch",
+    "skills_hub_init",
+    "win32_console",
     "venice_model_picker",
     "display_markdown",
     "filesystem_sandbox",
@@ -145,20 +147,30 @@ def _apply_runtime_patches() -> None:
     from overlay.agent.agent_throughput_fork_patch import apply_agent_throughput_fork_patch
     from overlay.agent.pricing_fork_patch import apply_pricing_fork_patch
     from overlay.agent.prompt_builder_fork_patch import apply_prompt_builder_fork_patch
+    from overlay.cli_fork_patch import apply_cli_fork_patch as apply_cli_bron_fork_patch
     from overlay.hermes_cli.argparse_fork_patch import apply_argparse_fork_patch
     from overlay.hermes_cli.auth_fork_patch import apply_auth_fork_patch
+    from overlay.hermes_cli.clipboard_fork_patch import apply_clipboard_fork_patch
     from overlay.hermes_cli.cli_command_patches import apply_cli_command_patches
     from overlay.hermes_cli.cli_fork_patch import apply_cli_fork_patch
     from overlay.hermes_cli.cli_profile_fork_patch import apply_cli_profile_fork_patch
     from overlay.hermes_cli.config_fork_patch import apply_config_fork_patch
     from overlay.hermes_cli.doctor_fork_patch import apply_doctor_fork_patch
+    from overlay.hermes_cli.main_fork_patch import apply_main_fork_patch
     from overlay.hermes_cli.models_fork_patch import apply_models_fork_patch
+    from overlay.hermes_cli.profiles_fork_patch import apply_profiles_fork_patch
     from overlay.hermes_cli.tools_config_fork_patch import apply_tools_config_fork_patch
     from overlay.hermes_cli.web_server_fork_patch import apply_web_server_fork_patch
     from overlay.tools.file_tools_fork_patch import apply_file_tools_fork_patch
+    from overlay.tools.process_registry_fork_patch import apply_process_registry_fork_patch
     from overlay.tui_gateway.gateway_config_fork_patch import apply_gateway_config_fork_patch
 
     apply_argparse_fork_patch()
+    apply_cli_bron_fork_patch()
+    apply_clipboard_fork_patch()
+    apply_main_fork_patch()
+    apply_profiles_fork_patch()
+    apply_process_registry_fork_patch()
     apply_pricing_fork_patch()
     apply_models_fork_patch()
     apply_auth_fork_patch()

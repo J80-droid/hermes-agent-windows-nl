@@ -10,6 +10,10 @@ Deze map is **niet** de upstream pytest-collectie. De echte tests staan in de re
 - **Alleen PowerShell onder `windows\`**: **`RUN_PSScriptAnalyzer.ps1`** (zelfde helper als audits)
 - **Alleen Python-tests**: **`RUN_PYTEST.ps1`**
 
+## Pytest overlay shims (collection)
+
+`overlay.bootstrap.install()` registreert o.a. `skills_hub_init`, `win32_console`, `expand_cli_toolset_arg`, clipboard-text, profiles orphan wrappers, `process_registry._pty_spawn_argv` en `cli._wrap_bron_citations_for_display`. Op Windows: `test_curses_arrow_keys` wordt overgeslagen zonder `_curses`.
+
 ## Overlay toolset dashboard (subset)
 
 Snelle regressie voor Tier B toolset post-setup (gemockt, geen live dashboard):

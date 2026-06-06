@@ -1,9 +1,44 @@
 """Fork toolset resolution + dashboard post-setup CLI (Tier B; no Tier A edits)."""
 from __future__ import annotations
 
-from typing import Set
+from typing import List, Set
 
 _PLATFORM_TOOLSETS_USER_CUSTOMIZED_KEY = "_user_customized"
+PLATFORM_TOOLSET_SENTINELS = frozenset({"mcp", "no_mcp"})
+
+
+def expand_cli_toolset_arg(toolsets: list[str] | set[str], config: dict) -> List[str]:
+    """Expand ``mcp`` sentinel to MCP server names for ``hermes chat --toolsets``."""
+    import hermes_cli.tools_config as tc
+
+    raw = [str(t).strip() for t in toolsets if str(t).strip()]
+    if not raw or "all" in raw or "*" in raw:
+        return raw
+    mcp_servers = config.get("mcp_servers") if isinstance(config, dict) else None
+    enabled_mcp: list[str] = []
+    if isinstance(mcp_servers, dict):
+        for name, cfg in mcp_servers.items():
+            key = str(name).strip()
+            if not key:
+                continue
+            if isinstance(cfg, dict) and not tc._parse_enabled_flag(cfg.get("enabled", True), default=True):
+                continue
+            enabled_mcp.append(key)
+    expanded: list[str] = []
+    for entry in raw:
+        if entry == "mcp":
+            expanded.extend(enabled_mcp)
+        elif entry == "no_mcp":
+            continue
+        else:
+            expanded.append(entry)
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for entry in expanded:
+        if entry not in seen:
+            seen.add(entry)
+            ordered.append(entry)
+    return ordered
 
 
 def _platform_toolsets_user_customized(config: dict, platform: str) -> bool:
@@ -113,4 +148,8 @@ def apply_tools_config_fork_patch() -> None:
         tc.valid_post_setup_keys = valid_post_setup_keys  # type: ignore[attr-defined]
     if not hasattr(tc, "run_post_setup_command"):
         tc.run_post_setup_command = run_post_setup_command  # type: ignore[attr-defined]
+    if not hasattr(tc, "PLATFORM_TOOLSET_SENTINELS"):
+        tc.PLATFORM_TOOLSET_SENTINELS = PLATFORM_TOOLSET_SENTINELS  # type: ignore[attr-defined]
+    if not hasattr(tc, "expand_cli_toolset_arg"):
+        tc.expand_cli_toolset_arg = expand_cli_toolset_arg  # type: ignore[attr-defined]
     tc._fork_tools_config_patch_applied = True  # type: ignore[attr-defined]

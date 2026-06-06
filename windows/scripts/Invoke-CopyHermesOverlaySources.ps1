@@ -33,7 +33,7 @@ function Copy-OverlayTree {
             $_.LastWriteTimeUtc -gt (Get-Item -LiteralPath $dest).LastWriteTimeUtc
         if ($needsCopy) {
             Copy-Item -LiteralPath $_.FullName -Destination $dest -Force
-            $script:n++
+            $n++
         }
     }
     return $n

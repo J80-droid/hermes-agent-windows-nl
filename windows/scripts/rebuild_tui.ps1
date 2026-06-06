@@ -60,6 +60,13 @@ if ($npmRc -eq 2) {
     exit 1
 }
 
+$copyPs1 = Join-Path $PSScriptRoot 'Invoke-CopyHermesOverlaySources.ps1'
+$tuiMerged = $false
+if (Test-Path -LiteralPath $copyPs1) {
+    & $copyPs1 -RepoRoot $RepoRoot -Target 'ui-tui' -Force
+    $tuiMerged = $true
+}
+
 Push-Location $tuiDir
 try {
     & npm run build --silent
@@ -69,6 +76,15 @@ try {
     }
 } finally {
     Pop-Location
+    if ($tuiMerged) {
+        Push-Location $RepoRoot
+        try {
+            git checkout -- ui-tui/src 2>$null
+            git clean -fd -- ui-tui/src 2>$null
+        } finally {
+            Pop-Location
+        }
+    }
 }
 
 Write-Host '[OK] ui-tui/dist/entry.js herbouwd — Hermes volledig afsluiten en opnieuw starten.' -ForegroundColor Green
