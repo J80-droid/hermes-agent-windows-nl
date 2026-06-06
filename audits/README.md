@@ -512,6 +512,23 @@ Handmatig: `windows\REPAIR_AUTH_JSON_BOM.bat` of `hermes doctor --fix`; security
 
 ---
 
+# Institutional P0+P1 wiring E2E
+
+Geïsoleerde E2E voor `institutional_p0_p1.bat` → `hermes_legal_rooktest.bat` (pad/HERMES_REPO, geen live ingest/chat).
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| E1–E4 | Wiring checks | Bat-artefacten, `for /f` repo-pointer, pyproject-guard |
+| E5–E6 | Integratie | `guard_forbidden_packages`, `expand_cli_toolset_arg` |
+
+```bat
+audits\RUN_INSTITUTIONAL_P0P1_WIRING_E2E.bat
+```
+
+Unit: `pytest tests/scripts/test_institutional_p0_p1_wiring.py -q`
+
+---
+
 ## Pytest audit-env E2E (institutional gate wiring)
 
 Geïsoleerde poort voor `PYTEST_ADDOPTS`/pytest_timeout-fix, production gate en RAG MCP bootstrap. Zie `audits/PYTEST_AUDIT_ENV_E2E_README.md`.

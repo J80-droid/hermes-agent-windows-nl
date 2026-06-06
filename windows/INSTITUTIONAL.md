@@ -117,7 +117,7 @@ Daarna RAG: `windows\scripts\install_rag_extras.ps1` (overlay extras + `constrai
 
 | Script | Doel |
 | ------ | ---- |
-| `windows\scripts\institutional_p0_p1.bat` | Sync MCP → `doctor --fix` → MCP-test → legal rooktest |
+| `windows\scripts\institutional_p0_p1.bat` | Sync MCP → `doctor --fix` → MCP-test → legal rooktest (geeft `HERMES_REPO` door; wiring-E2E: `audits\RUN_INSTITUTIONAL_P0P1_WIRING_E2E.bat`) |
 | `... --ingest-remaining` | Bulk ingest 7 domeinen via `run_domains_ingest.py --ingest-remaining` (**lege bronmappen worden overgeslagen**) |
 | `... --kanban` | Kanban legal (niet parallel met legal-ingest) |
 | `windows\VERIFY_WINDOWS_CHAIN.bat` | Backup/script-keten |

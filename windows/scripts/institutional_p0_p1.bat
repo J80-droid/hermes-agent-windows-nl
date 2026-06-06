@@ -73,7 +73,15 @@ if errorlevel 1 exit /b 1
 
 echo.
 echo [STEP 4/5] Legal rooktest
-call "%~dp0user_data\hermes_legal_rooktest.bat"
+set "ROOKTEST_BAT=%INST_SCRIPT_DIR%user_data\hermes_legal_rooktest.bat"
+if not exist "%ROOKTEST_BAT%" (
+  echo [ERROR] Legal rooktest ontbreekt: %ROOKTEST_BAT%
+  exit /b 1
+)
+rem Doorgeven aan child (setlocal-safe; geen set /p CRLF in HERMES_REPO)
+set "HERMES_REPO=%HERMES_REPO%"
+set "PY=%PY%"
+call "%ROOKTEST_BAT%"
 set "ROOK_EXIT=%ERRORLEVEL%"
 if not defined ROOKTEST_CHAT set "ROOKTEST_CHAT=unknown"
 

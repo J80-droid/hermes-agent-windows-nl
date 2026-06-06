@@ -1,15 +1,24 @@
 @echo off
 rem Rooktest legal: search_knowledge + optioneel hermes chat (vereist API-login).
+rem Vereist HERMES_REPO (zet institutional_p0_p1 / launcher) of fallback hieronder.
 setlocal EnableExtensions
 if not defined HERMES_REPO (
   if exist "%USERPROFILE%\data\hermes_agent_repo.txt" (
-    set /p HERMES_REPO=<"%USERPROFILE%\data\hermes_agent_repo.txt"
+    for /f "usebackq delims=" %%I in ("%USERPROFILE%\data\hermes_agent_repo.txt") do set "HERMES_REPO=%%~I"
   ) else (
     set "HERMES_REPO=D:\A.I\APPS\Hermes_agent_WS\hermes-agent"
   )
 )
-set "PY=%USERPROFILE%\miniconda3\envs\hermes-env\python.exe"
+if not exist "%HERMES_REPO%\pyproject.toml" (
+  echo [ERROR] HERMES_REPO ongeldig: %HERMES_REPO%
+  endlocal & set "ROOKTEST_CHAT=failed" & exit /b 1
+)
+if not defined PY set "PY=%USERPROFILE%\miniconda3\envs\hermes-env\python.exe"
 if not exist "%PY%" set "PY=python"
+if not exist "%HERMES_REPO%\scripts\rag_pipeline\_rooktest_search.py" (
+  echo [ERROR] Rooktest-script ontbreekt: %HERMES_REPO%\scripts\rag_pipeline\_rooktest_search.py
+  endlocal & set "ROOKTEST_CHAT=failed" & exit /b 1
+)
 
 echo [INFO] 1/2 LanceDB search_knowledge (geen API nodig)
 "%PY%" "%HERMES_REPO%\scripts\rag_pipeline\_rooktest_search.py"
