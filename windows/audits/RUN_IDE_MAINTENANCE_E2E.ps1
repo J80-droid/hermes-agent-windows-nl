@@ -118,7 +118,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # --- 3 Setup wrapper pytest ---
 Write-StepHeader 'pytest setup single-source'
-& $python -m pytest tests/windows/test_setup_single_canonical_ps1.py -q --tb=short
+Invoke-HermesAuditPytest -Python $python tests/windows/test_setup_single_canonical_ps1.py -q --tb=short
 if ($LASTEXITCODE -ne 0) {
     Step-Fail 'test_setup_single_canonical_ps1'
 } else {
@@ -127,7 +127,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # --- 4 IDE maintenance pytest ---
 Write-StepHeader 'pytest IDE-onderhoud (merge, lancedb, display)'
-& $python -m pytest `
+Invoke-HermesAuditPytest -Python $python `
     tests/windows/test_merge_upstream_snippets.py `
     tests/windows/test_apply_team_display_root.py `
     tests/windows/test_status_bar_cost_e2e.py `
@@ -184,7 +184,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # --- 8 Merge git-diff snippet smoke (pytest) ---
 Write-StepHeader 'merge_upstream git-diff snippet'
-& $python -m pytest tests/windows/test_merge_upstream_snippets.py::test_git_diff_snippet_returns_content -q --tb=short
+Invoke-HermesAuditPytest -Python $python tests/windows/test_merge_upstream_snippets.py::test_git_diff_snippet_returns_content -q --tb=short
 if ($LASTEXITCODE -ne 0) {
     Step-Fail 'Get-ConflictSnippetFromGitDiff smoke'
 } else {
@@ -257,7 +257,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # --- 13 normalizer pariteit ---
 Write-StepHeader 'pytest normalizer TS pariteit'
-& $python -m pytest tests/hermes_cli/test_normalizer_ts_parity.py -q --tb=short
+Invoke-HermesAuditPytest -Python $python tests/hermes_cli/test_normalizer_ts_parity.py -q --tb=short
 if ($LASTEXITCODE -ne 0) {
     Step-Fail 'test_normalizer_ts_parity'
 } else {

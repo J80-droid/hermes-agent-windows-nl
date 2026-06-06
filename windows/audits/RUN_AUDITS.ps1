@@ -122,6 +122,17 @@ if ($IncludeAllE2E -and -not $SkipHermesPreflight) {
 
 if (-not $SkipHermesPreflight) {
     . (Join-Path $repoRoot 'windows/scripts/HermesHomeCommon.ps1')
+    if ($IncludeAllE2E) {
+        Invoke-Step 'preflight_strip_profile_global_blocks' {
+            $py = Get-HermesAuditPython -RepoRoot $repoRoot
+            $strip = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/strip_profile_global_config_blocks.py'
+            if (-not (Test-Path -LiteralPath $strip)) {
+                throw "missing $strip"
+            }
+            & $py $strip
+            $global:LASTEXITCODE = $LASTEXITCODE
+        }
+    }
     if ($env:HERMES_HOME -and (Test-HermesProfileSubdirPath $env:HERMES_HOME)) {
         Write-Host '[FAIL] HERMES_HOME wijst naar profiles\* — zet runtime-root (%LOCALAPPDATA%\hermes)' -ForegroundColor Red
         $failures++

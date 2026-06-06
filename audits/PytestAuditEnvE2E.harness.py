@@ -68,6 +68,8 @@ def test_e1_shell_common_helpers_documented() -> None:
     ok = (
         "function Clear-HermesPytestAddoptsForAudit" in text
         and "function Get-HermesAuditPytestOverrideArgs" in text
+        and "function Invoke-HermesAuditPytest" in text
+        and "function Invoke-HermesCondaAuditPytest" in text
     )
     if "if (-not $env:PYTEST_ADDOPTS)" in text:
         default_block = text.split("if (-not $env:PYTEST_ADDOPTS)", 1)[1].split("function ", 1)[0]

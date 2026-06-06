@@ -90,3 +90,23 @@ def test_doctor_fix_strips_global_blocks_via_inheritance(profile_with_global_blo
     assert re.search(r"(?m)^auxiliary:\s*", before)
     stripped = strip_all_profile_global_blocks()
     assert stripped == ["core"]
+
+
+def test_doctor_fix_strips_global_blocks_via_doctor_command(profile_with_global_blocks):
+    from argparse import Namespace
+
+    from overlay.bootstrap import install
+    from overlay.hermes_cli.doctor_fork_patch import _run_fork_doctor_checks
+
+    install()
+
+    _, prof = profile_with_global_blocks
+    before = (prof / "config.yaml").read_text(encoding="utf-8")
+    assert re.search(r"(?m)^auxiliary:\s*", before)
+
+    _run_fork_doctor_checks(Namespace(fix=True))
+
+    after = (prof / "config.yaml").read_text(encoding="utf-8")
+    assert not re.search(r"(?m)^auxiliary:\s*", after)
+    assert not re.search(r"(?m)^providers:\s*", after)
+    assert "agent:" in after

@@ -25,6 +25,35 @@ function Get-HermesAuditPytestOverrideArgs {
     return @('-o', 'addopts=--timeout=30 --timeout-method=thread')
 }
 
+function Invoke-HermesAuditPytest {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Python,
+        [Parameter(ValueFromRemainingArguments = $true)]
+        [string[]]$PytestArgs
+    )
+    Clear-HermesPytestAddoptsForAudit
+    $allArgs = @('-m', 'pytest') + @($PytestArgs) + (Get-HermesAuditPytestOverrideArgs)
+    & $Python @allArgs
+    $global:LASTEXITCODE = $LASTEXITCODE
+}
+
+function Invoke-HermesCondaAuditPytest {
+    param(
+        [Parameter(Mandatory)]
+        [string]$CondaExe,
+        [string]$EnvName = 'hermes-env',
+        [Parameter(ValueFromRemainingArguments = $true)]
+        [string[]]$PytestArgs
+    )
+    Clear-HermesPytestAddoptsForAudit
+    $allArgs = @(
+        'run', '-n', $EnvName, '--no-capture-output', 'python', '-m', 'pytest'
+    ) + @($PytestArgs) + (Get-HermesAuditPytestOverrideArgs)
+    & $CondaExe @allArgs
+    $global:LASTEXITCODE = $LASTEXITCODE
+}
+
 function Test-NativeCommandFailed {
     return ($null -ne $LASTEXITCODE -and [int]$LASTEXITCODE -ne 0)
 }

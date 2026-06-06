@@ -9,9 +9,17 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from overlay.bootstrap import install
+
+install()
+
 
 def main() -> int:
-    from hermes_cli.profile_model_inheritance import strip_all_profile_global_blocks
+    try:
+        from hermes_cli.profile_model_inheritance import strip_all_profile_global_blocks
+    except ImportError as exc:
+        print(f"[FAIL] profile_model_inheritance niet beschikbaar: {exc}", file=sys.stderr)
+        return 1
 
     stripped = strip_all_profile_global_blocks()
     if stripped:

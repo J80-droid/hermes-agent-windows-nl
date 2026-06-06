@@ -93,7 +93,7 @@ if (-not $SkipPytest) {
         $savedHermesHome = $env:HERMES_HOME
         Remove-Item Env:HERMES_HOME -ErrorAction SilentlyContinue
         try {
-            & $conda run -n hermes-env --no-capture-output python -m pytest `
+            Invoke-HermesCondaAuditPytest -CondaExe $conda `
                 tests/hermes_cli/test_doctor.py::TestWindowsSplitHomeCheck `
                 tests/hermes_cli/test_profile_model_inheritance.py `
                 tests/hermes_cli/test_merge_legacy_providers_config.py `

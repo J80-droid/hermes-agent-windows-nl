@@ -122,7 +122,7 @@ foreach ($rel in $requiredRepo) {
 Write-Host ('[OK] ' + $($requiredRepo.Count) + ' artefacten aanwezig') -ForegroundColor Green
 
 Write-Host '=== 2/11 pytest institutioneel subset ===' -ForegroundColor Cyan
-& $python -m pytest `
+Invoke-HermesAuditPytest -Python $python `
     tests/skills/test_landkaart_inventory.py `
     tests/windows/test_critical_windows_scripts.py::test_orchestrator_routing_doc_exists `
     tests/windows/test_critical_windows_scripts.py::test_landkaart_skill_exists `
@@ -130,7 +130,7 @@ Write-Host '=== 2/11 pytest institutioneel subset ===' -ForegroundColor Cyan
 if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 
 Write-Host '=== 2b/11 pytest presentatie (markdown + rich_output) ===' -ForegroundColor Cyan
-& $python -m pytest `
+Invoke-HermesAuditPytest -Python $python `
     tests/cli/test_skin_markdown_theme.py `
     tests/cli/test_cli_markdown_rendering.py `
     tests/hermes_cli/test_markdown_output_normalize.py `
@@ -142,12 +142,12 @@ if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 Write-Host '[OK] presentatie pytest subset' -ForegroundColor Green
 
 Write-Host '=== 2d/11 profiel-chat-UX (intent + prompt + SOUL-regel) ===' -ForegroundColor Cyan
-& $python -m pytest tests/cli/test_institutional_profile_chat_ux.py -q --tb=short
+Invoke-HermesAuditPytest -Python $python tests/cli/test_institutional_profile_chat_ux.py -q --tb=short
 if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 Write-Host '[OK] profiel-chat-UX pytest' -ForegroundColor Green
 
 Write-Host '=== 2e/11 pytest institutional Rich renderer ===' -ForegroundColor Cyan
-& $python -m pytest tests/cli/test_institutional_rich_render.py -q --tb=short
+Invoke-HermesAuditPytest -Python $python tests/cli/test_institutional_rich_render.py -q --tb=short
 if (Test-NativeCommandFailed) { exit $LASTEXITCODE }
 Write-Host '[OK] institutional Rich renderer pytest' -ForegroundColor Green
 
@@ -161,7 +161,7 @@ if (Test-NativeCommandFailed) {
 Write-Host '[OK] diagnose_renderer institutional_rich + demo geverifieerd' -ForegroundColor Green
 
 Write-Host '=== 2j/11 pytest normalizer TS parity (optioneel zonder npx) ===' -ForegroundColor Cyan
-& $python -m pytest tests/hermes_cli/test_normalizer_ts_parity.py -q --tb=short
+Invoke-HermesAuditPytest -Python $python tests/hermes_cli/test_normalizer_ts_parity.py -q --tb=short
 if (Test-NativeCommandFailed) {
     Write-Host '[WARN] normalizer TS parity overgeslagen of gefaald (npx tsx vereist voor volledige pariteit)' -ForegroundColor Yellow
 } else {
@@ -390,7 +390,7 @@ $profileCount = (Get-ChildItem -LiteralPath $profilesDir -Directory).Count
 Write-Host ('[OK] ' + 'display config institutioneel op ' + $profileCount + ' profiel(en)') -ForegroundColor Green
 
 Write-Host '=== 7/11 rich_output import smoke ===' -ForegroundColor Cyan
-& $python -m pytest tests/agent/test_rich_output.py::test_format_response_returns_ansi_for_markdown -q --tb=line 2>&1 | Out-Null
+Invoke-HermesAuditPytest -Python $python tests/agent/test_rich_output.py::test_format_response_returns_ansi_for_markdown -q --tb=line 2>&1 | Out-Null
 if (Test-NativeCommandFailed) {
     Write-Host '[FAIL] rich_output / display_markdown smoke' -ForegroundColor Red
     exit 1
@@ -412,7 +412,7 @@ if ($updateBat -notmatch 'HERMES_SKIP_PAUSE_AFTER_UPDATE') {
 Write-Host '[OK] restore/update regressie-checks' -ForegroundColor Green
 
 Write-Host '=== 9/11 pytest profielwissel (sticky + subprocess) ===' -ForegroundColor Cyan
-& $python -m pytest `
+Invoke-HermesAuditPytest -Python $python `
     tests/hermes_cli/test_apply_profile_override.py `
     tests/hermes_cli/test_profile_switch.py `
     tests/hermes_cli/test_relaunch.py::TestRelaunchChatAfterProfileSwitch `

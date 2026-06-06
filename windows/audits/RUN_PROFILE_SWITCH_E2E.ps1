@@ -26,7 +26,7 @@ Write-Host '=== 1/5 verify_hermes_home ===' -ForegroundColor Cyan
 if (Test-NativeCommandFailed) { exit 1 }
 
 Write-Host '=== 2/5 pytest profile switch subset ===' -ForegroundColor Cyan
-& $python -m pytest `
+Invoke-HermesAuditPytest -Python $python `
     tests/hermes_cli/test_apply_profile_override.py `
     tests/hermes_cli/test_profile_switch.py `
     tests/hermes_cli/test_relaunch.py::TestRelaunchChatAfterProfileSwitch `

@@ -825,6 +825,7 @@ class TestStatusBarWidthSource:
             context_length=200_000,
         )
         cli_obj._status_bar_visible = True
+        cli_obj._is_session_yolo_active = lambda: False
         return cli_obj
 
     def test_fragments_fit_within_announced_width(self):

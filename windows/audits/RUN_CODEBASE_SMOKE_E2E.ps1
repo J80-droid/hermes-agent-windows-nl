@@ -110,13 +110,14 @@ Add-StepResult -Name '2/5 CODEBASE_AUDIT_REPORT strict governance' -Ok $tplOk
 # --- 3 Pytest wiring ---
 $pytestOk = $true
 if (-not $SkipPytest) {
-    $pytestOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
+    Clear-HermesPytestAddoptsForAudit
+    $pytestArgs = @(
         '-m', 'pytest',
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/windows/test_codebase_smoke_audit.py'),
         '-q',
-        '--tb=short',
-        '-o', 'addopts='
-    )
+        '--tb=short'
+    ) + (Get-HermesAuditPytestOverrideArgs)
+    $pytestOk = Invoke-AuditCommand -Exe $python -ArgumentList $pytestArgs
 } else {
     Write-Host '[SKIP] pytest test_codebase_smoke_audit.py' -ForegroundColor Yellow
 }

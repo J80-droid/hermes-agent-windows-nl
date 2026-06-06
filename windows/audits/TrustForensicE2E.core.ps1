@@ -83,11 +83,11 @@ foreach ($pytestFile in $pytestFiles) {
         continue
     }
     if (Test-Path -LiteralPath $conda) {
-        & $conda run -n hermes-env --no-capture-output python -m pytest $pytestFile -q --tb=short | ForEach-Object { Write-Host $_ }
+        Invoke-HermesCondaAuditPytest -CondaExe $conda $pytestFile -q --tb=short | ForEach-Object { Write-Host $_ }
     } elseif ($env:HERMES_AUDIT_PYTHON) {
-        & $env:HERMES_AUDIT_PYTHON -m pytest $pytestFile -q --tb=short | ForEach-Object { Write-Host $_ }
+        Invoke-HermesAuditPytest -Python $env:HERMES_AUDIT_PYTHON $pytestFile -q --tb=short | ForEach-Object { Write-Host $_ }
     } else {
-        & python -m pytest $pytestFile -q --tb=short | ForEach-Object { Write-Host $_ }
+        Invoke-HermesAuditPytest -Python python $pytestFile -q --tb=short | ForEach-Object { Write-Host $_ }
     }
     if (Test-NativeCommandFailed) { $failures++ }
 }

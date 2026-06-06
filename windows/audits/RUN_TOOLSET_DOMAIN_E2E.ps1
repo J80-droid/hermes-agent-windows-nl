@@ -118,7 +118,7 @@ if ($failures -eq 0) { Step-Ok 'repo-artefacten' }
 Write-Host '=== Toolset domain E2E (3/6 pytest subset) ===' -ForegroundColor Cyan
 Push-Location $RepoRoot
 try {
-    & $py -m pytest `
+    Invoke-HermesAuditPytest -Python $py `
         tests/windows/test_domain_toolsets_manifest.py `
         tests/hermes_cli/test_platform_toolsets_empty_cli.py `
         -q --tb=short 2>&1 | Tee-Object -Variable pytestOut | Out-Host

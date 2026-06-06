@@ -45,10 +45,10 @@ $pytestTargets = @(
 )
 Write-Host '--- pytest memory/trust ---' -ForegroundColor Cyan
 if (Test-Path -LiteralPath $conda) {
-    & $conda run -n hermes-env --no-capture-output python -m pytest @pytestTargets -q --tb=short 2>&1 | ForEach-Object { Write-Host $_ }
+    Invoke-HermesCondaAuditPytest -CondaExe $conda @pytestTargets -q --tb=short 2>&1 | ForEach-Object { Write-Host $_ }
 } else {
     $python = if ($env:HERMES_AUDIT_PYTHON) { $env:HERMES_AUDIT_PYTHON } else { 'python' }
-    & $python -m pytest @pytestTargets -q --tb=short 2>&1 | ForEach-Object { Write-Host $_ }
+    Invoke-HermesAuditPytest -Python $python @pytestTargets -q --tb=short 2>&1 | ForEach-Object { Write-Host $_ }
 }
 if (Test-NativeCommandFailed) { $failures++ }
 

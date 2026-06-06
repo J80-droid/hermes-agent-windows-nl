@@ -135,8 +135,7 @@ Write-Host "Repo: $RepoRoot"
 Write-Host "Python: $py"
 
 Invoke-SmokeStep -Name 'pytest_windows_critical' -Tier 'E2' -Source 'tests/windows/test_critical_windows_scripts.py' {
-    & $py -m pytest tests/windows/test_critical_windows_scripts.py -q --tb=short
-    $global:LASTEXITCODE = $LASTEXITCODE
+    Invoke-HermesAuditPytest -Python $py tests/windows/test_critical_windows_scripts.py -q --tb=short
 }
 
 Invoke-SmokeStep -Name 'verify_windows_chain' -Tier 'E1' -Source 'windows/verify_windows_script_chain.ps1' -AllowSkip {
@@ -170,29 +169,24 @@ Invoke-SmokeStep -Name 'verify_pareto_router' -Tier 'E1' -Source 'scripts/verify
 }
 
 Invoke-SmokeStep -Name 'pytest_profile_inheritance' -Tier 'E2' -Source 'tests/hermes_cli/test_profile_model_inheritance.py' {
-    & $py -m pytest tests/hermes_cli/test_profile_model_inheritance.py -q --tb=short
-    $global:LASTEXITCODE = $LASTEXITCODE
+    Invoke-HermesAuditPytest -Python $py tests/hermes_cli/test_profile_model_inheritance.py -q --tb=short
 }
 
 Invoke-SmokeStep -Name 'pytest_sessiondb' -Tier 'E2' -Source 'tests/test_hermes_state.py' {
-    & $py -m pytest tests/test_hermes_state.py -q --tb=short
-    $global:LASTEXITCODE = $LASTEXITCODE
+    Invoke-HermesAuditPytest -Python $py tests/test_hermes_state.py -q --tb=short
 }
 
 Invoke-SmokeStep -Name 'pytest_sessiondb_wal' -Tier 'E2' -Source 'tests/test_hermes_state_wal_fallback.py' {
-    & $py -m pytest tests/test_hermes_state_wal_fallback.py -q --tb=short
-    $global:LASTEXITCODE = $LASTEXITCODE
+    Invoke-HermesAuditPytest -Python $py tests/test_hermes_state_wal_fallback.py -q --tb=short
 }
 
 if ($IncludeTuiGatewayPytest) {
     Invoke-SmokeStep -Name 'pytest_tui_gateway_full' -Tier 'E2' -Source 'tests/test_tui_gateway_server.py' {
-        & $py -m pytest tests/test_tui_gateway_server.py -q --tb=short
-        $global:LASTEXITCODE = $LASTEXITCODE
+        Invoke-HermesAuditPytest -Python $py tests/test_tui_gateway_server.py -q --tb=short
     }
 } else {
     Invoke-SmokeStep -Name 'tui_gateway_collect_only' -Tier 'E2' -Source 'tests/test_tui_gateway_server.py' {
-        $out = & $py -m pytest tests/test_tui_gateway_server.py --collect-only -q 2>&1
-        $global:LASTEXITCODE = $LASTEXITCODE
+        $out = Invoke-HermesAuditPytest -Python $py tests/test_tui_gateway_server.py --collect-only -q 2>&1
         $count = ($out | Where-Object { $_ -match '::test_' }).Count
         if ($count -eq 0 -and "$out" -match '(\d+)\s+test') {
             $count = [int]$Matches[1]

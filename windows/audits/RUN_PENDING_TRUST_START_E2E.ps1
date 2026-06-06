@@ -140,7 +140,7 @@ if ($SkipPytest) {
         Step-Fail 'pytest' "python niet gevonden: $python"
     } else {
         $env:PYTHONPATH = $RepoRoot
-        & $python -m pytest tests/windows/test_pending_trust_runtime.py -q --tb=no
+        Invoke-HermesAuditPytest -Python $python tests/windows/test_pending_trust_runtime.py -q --tb=no
         if ($LASTEXITCODE -ne 0) {
             Step-Fail 'test_pending_trust_runtime.py' "exit $LASTEXITCODE"
         } else {

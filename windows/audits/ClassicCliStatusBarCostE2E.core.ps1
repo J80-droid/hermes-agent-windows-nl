@@ -128,25 +128,26 @@ if ($SkipPytest) {
     Add-StepResult -Name '6/12 pytest cli status bar + cost' -Ok $true -Detail 'overgeslagen (-SkipPytest)'
     Add-StepResult -Name '7/12 pytest repo e2e module' -Ok $true -Detail 'overgeslagen (-SkipPytest)'
 } else {
+    Clear-HermesPytestAddoptsForAudit
     $fmtOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_status_bar_cost.py'),
-        '-q', '-o', 'addopts='
-    )
+        '-q'
+    ) + (Get-HermesAuditPytestOverrideArgs)
     Add-StepResult -Name '5/12 pytest status_bar_cost formatter' -Ok $fmtOk -Detail $python
 
     $cliBarOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/cli/test_cli_status_bar.py'),
-        '-q', '-o', 'addopts='
-    )
+        '-q'
+    ) + (Get-HermesAuditPytestOverrideArgs)
     Add-StepResult -Name '6/12 pytest cli status bar + cost' -Ok $cliBarOk
 
     $repoE2eOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/windows/test_status_bar_cost_e2e.py'),
-        '-q', '-o', 'addopts='
-    )
+        '-q'
+    ) + (Get-HermesAuditPytestOverrideArgs)
     Add-StepResult -Name '7/12 pytest repo e2e module' -Ok $repoE2eOk
 }
 

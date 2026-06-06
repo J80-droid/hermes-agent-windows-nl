@@ -56,7 +56,8 @@ Runtime/AST: vertrouw op `VALIDATE_AUDIT_PS1_SYNTAX.bat`.
 | **`RUN_AUDITS.bat -IncludeInstitutionalHardeningE2E`** | Geïntegreerde poort H1–H14 (~20s): QuickFix, legal pytest, preflight-log |
 | **`RUN_AUDITS.bat -IncludeUpdateHermesIntegrationE2E`** | UPDATE/QuickFix wiring (~7s): `audits\RUN_UPDATE_HERMES_INTEGRATION_E2E.bat` (12/12) |
 | **`RUN_AUDITS.bat -IncludeInstitutionalProductionGate`** | Zware poort (~2+ min): Python + platform + hardening 14/14 + wiring |
-| **`RUN_AUDITS.bat -IncludeAllE2E`** | Institutioneel + legal + profiel + toolset + SOUL + memory + statusbalk + split-home + **hardening 14/14** + `nous-overlay-fork-gates-e2e` (niet `-IncludeInstitutionalProductionGate`) |
+| **`RUN_AUDITS.bat -IncludeAllE2E`** | Institutioneel + legal + profiel + toolset + SOUL + memory + statusbalk + split-home + **hardening 14/14** + `nous-overlay-fork-gates-e2e` (niet `-IncludeInstitutionalProductionGate`). Preflight: `strip_profile_global_config_blocks.py` (overlay bootstrap). **Tier-A:** `Invoke-RestoreNousTierA.ps1` vóór en na de run; daarna `git reset --hard HEAD`. |
+| **`audits/RUN_RUN_AUDITS_14_FIXES_E2E.bat`** | Snelle regressie 14-fixes (10/10): thread-timeout, strip bootstrap, doctor `--fix`, audit pytest helpers, YOLO width (~2 min). |
 | **`RUN_SOUL_DEPLOY_START_E2E.bat`** | Stamp/startketen: launch_hermes, POST_GIT_PULL, upstream SkipSoul, anatomy subset |
 | **`RUN_MEMORY_IDENTITY_REPAIR_E2E.bat`** | Runtime identity scrub (pre-audit), post-sync integratie, skip-flag, unit + pytest (**PASS**) |
 | **`RUN_MEMORY_TRUST_INTEGRATION_E2E.bat`** | Geïntegreerde poort: post-sync, pending trust, workspace template/apply, PSES AST, unit tests (**10 stappen**) |

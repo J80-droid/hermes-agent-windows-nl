@@ -196,7 +196,7 @@ if (-not $skipPythonSteps) {
 
     if (-not $skipPytest) {
         Write-Host "=== 8/$totalSteps pytest legal docs ===" -ForegroundColor Cyan
-        & $python -m pytest tests/windows/test_legal_domain_docs.py tests/windows/test_legal_meta_contract.py -q --tb=short 2>$null
+        Invoke-HermesAuditPytest -Python $python tests/windows/test_legal_domain_docs.py tests/windows/test_legal_meta_contract.py -q --tb=short 2>$null
         if (Test-NativeCommandFailed) {
             Write-Host '[FAIL] legal pytest' -ForegroundColor Red
             $failures++
