@@ -499,6 +499,8 @@ Geïsoleerde E2E voor overlay chat-entry (`run_hermes_cli_with_overlay.py`), sta
 | E8 | Corrupt auth | `.json.corrupt` backup + lege store |
 | E9 | Doctor BOM | `_auth_json_files_with_bom` + `_repair_auth_json_bom_all` |
 | E10 | Chat toolsets | `lancedb-*` MCP-namen, geen pseudo `mcp` |
+| E11 | MCP sentinel | `expand_cli_toolset_arg` (`mcp` → servernamen) |
+| E12 | Package guard | `guard_forbidden_packages` importeerbaar |
 
 ```bat
 audits\RUN_CHAT_ROOKTEST_SECURITY_E2E.bat

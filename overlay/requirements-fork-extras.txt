@@ -1,4 +1,6 @@
 # Pip-install fragment for fork extras (see overlay/pyproject.extras.toml).
+# Altijd met constraints: pip install -r overlay/requirements-fork-extras.txt -c overlay/constraints-rag-stack.txt
+# NeuTTS: overlay/requirements-neutts-onnx.txt (nooit neutts[all] / llama-cpp-python in hermes-env).
 lancedb==0.30.2
 sentence-transformers==5.5.0
 transformers>=5.0.0rc3

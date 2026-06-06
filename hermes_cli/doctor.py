@@ -590,6 +590,47 @@ def run_doctor(args):
         # Never let a bug in the advisory check block the rest of doctor.
         check_warn(f"Security advisory check failed: {e}")
     
+    _section("Python dependency guard (RAG / security)")
+    try:
+        if str(PROJECT_ROOT) not in sys.path:
+            sys.path.insert(0, str(PROJECT_ROOT))
+        from scripts.guard_forbidden_packages import run_guard
+
+        guard_report = run_guard(sys.executable, fix=should_fix)
+        forbidden = guard_report.get("forbidden_found") or []
+        if forbidden:
+            for pkg in forbidden:
+                check_warn(
+                    f"Forbidden package: {pkg}",
+                    "(llama-cpp/diskcache — CVE-2025-69872; gebruik neutts[onnx] of aparte venv)",
+                )
+            if should_fix and guard_report.get("forbidden_removed"):
+                for pkg in guard_report["forbidden_removed"]:
+                    check_ok(f"Removed {pkg}")
+                fixed_count += len(guard_report["forbidden_removed"])
+            elif not should_fix:
+                manual_issues.append(
+                    "Run 'hermes doctor --fix' or scripts/guard_forbidden_packages.py --fix "
+                    "to remove llama-cpp-python/diskcache"
+                )
+        else:
+            check_ok("No forbidden llama-cpp-python / diskcache")
+        tf_ver = str(guard_report.get("transformers_version") or "")
+        if guard_report.get("transformers_ok") is False:
+            check_warn(
+                "transformers below 5.x",
+                f"({tf_ver or 'missing'} — RAG vereist >=5; neutts[onnx] + constraints-rag-stack)",
+            )
+            if should_fix:
+                rerun = run_guard(sys.executable, fix=True)
+                if rerun.get("transformers_ok"):
+                    check_ok(f"Pinned transformers>={rerun.get('transformers_version', '5')}")
+                    fixed_count += 1
+        elif tf_ver:
+            check_ok(f"transformers {tf_ver} (RAG stack OK)")
+    except Exception as e:
+        check_warn("Python dependency guard skipped", str(e))
+
     _section("Python Environment")
     py_version = sys.version_info
     if py_version >= (3, 11):

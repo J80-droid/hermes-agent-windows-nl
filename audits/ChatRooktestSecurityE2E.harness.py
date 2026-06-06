@@ -12,6 +12,8 @@ Scenario matrix:
   E8  corrupt auth.json → empty store + .json.corrupt backup
   E9  doctor BOM helpers detect + repair (isolated tree)
   E10 chat toolsets use MCP server names, not pseudo mcp
+  E11 expand_cli_toolset_arg expands mcp sentinel
+  E12 guard_forbidden_packages module importable
 """
 
 from __future__ import annotations
@@ -241,6 +243,23 @@ def test_e10_chat_toolsets_mcp_server_names() -> None:
     _step("chat_toolsets_mcp_names", ok)
 
 
+def test_e11_expand_mcp_sentinel() -> None:
+    from hermes_cli.tools_config import expand_cli_toolset_arg
+
+    cfg = {"mcp_servers": {"lancedb-legal": {"enabled": True}}}
+    out = expand_cli_toolset_arg(["mcp", "file"], cfg)
+    ok = "lancedb-legal" in out and "mcp" not in out and "file" in out
+    _step("expand_mcp_sentinel", ok)
+
+
+def test_e12_guard_module() -> None:
+    from scripts.guard_forbidden_packages import run_guard
+
+    report = run_guard(sys.executable, fix=False)
+    ok = isinstance(report, dict) and "forbidden_found" in report
+    _step("guard_forbidden_packages", ok)
+
+
 def main() -> int:
     test_e1_overlay_entry_subprocess()
     test_e2_runtime_provider_config_rebind()
@@ -252,6 +271,8 @@ def main() -> int:
     test_e8_corrupt_auth_backup()
     test_e9_doctor_bom_detect_and_repair()
     test_e10_chat_toolsets_mcp_server_names()
+    test_e11_expand_mcp_sentinel()
+    test_e12_guard_module()
     if FAILURES:
         print(f"\nChatRooktestSecurityE2E: {FAILURES} failure(s)", file=sys.stderr)
         return 1

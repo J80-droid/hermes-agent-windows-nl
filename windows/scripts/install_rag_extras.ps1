@@ -48,8 +48,13 @@ if (-not $SkipPip) {
         }
         Write-RagMsg ('[INFO] RAG-deps via: {0}' -f $py) 'Cyan'
         $overlayReq = Join-Path $RepoRoot 'overlay\requirements-fork-extras.txt'
+        $constraints = Join-Path $RepoRoot 'overlay\constraints-rag-stack.txt'
         if (Test-Path -LiteralPath $overlayReq) {
-            & $py -m pip install -r $overlayReq
+            if (Test-Path -LiteralPath $constraints) {
+                & $py -m pip install -r $overlayReq -c $constraints
+            } else {
+                & $py -m pip install -r $overlayReq
+            }
             if (Test-NativeCommandFailed) {
                 Write-Error ('pip install -r overlay requirements mislukt voor {0} (exit {1}).' -f $py, $LASTEXITCODE)
             }
@@ -77,12 +82,10 @@ if (-not $SkipPip) {
             if (Test-NativeCommandFailed) {
                 Write-RagMsg '[WARN] security pins mislukt - REPAIR_SECURITY_PINS.bat' 'Yellow'
             }
-            $llamaCheck = & $py -m pip show llama-cpp-python 2>$null
-            if ($LASTEXITCODE -eq 0) {
-                Write-RagMsg '[INFO] Verwijder llama-cpp-python (diskcache CVE; niet nodig voor RAG/Venice)' 'Cyan'
-                & $py -m pip uninstall -y llama-cpp-python 2>$null | Out-Null
-                & $py -m pip uninstall -y diskcache 2>$null | Out-Null
-            }
+        }
+        $guard = Join-Path $RepoRoot 'scripts\guard_forbidden_packages.py'
+        if (Test-Path -LiteralPath $guard) {
+            & $py $guard --fix 2>$null | Out-Null
         }
         $installed++
     }

@@ -47,25 +47,18 @@ def _prepare_profile(profile: str) -> Path:
 
 
 def _chat_toolsets_arg() -> str:
-    """MCP server names from profile config + file/memory (not pseudo ``mcp`` toolset)."""
+    """Expand platform ``mcp`` sentinel + file/memory (zelfde contract als ``hermes chat --toolsets``)."""
     from hermes_cli.config import load_config
+    from hermes_cli.tools_config import expand_cli_toolset_arg
 
     try:
         cfg = load_config()
     except Exception:
         return "file,memory"
-    mcp_servers = cfg.get("mcp_servers") if isinstance(cfg, dict) else None
-    names: list[str] = []
-    if isinstance(mcp_servers, dict):
-        names = [str(k).strip() for k in mcp_servers if str(k).strip()]
-    parts = names + ["file", "memory"]
-    seen: set[str] = set()
-    ordered: list[str] = []
-    for part in parts:
-        if part and part not in seen:
-            seen.add(part)
-            ordered.append(part)
-    return ",".join(ordered) if ordered else "file,memory"
+    if not isinstance(cfg, dict):
+        return "file,memory"
+    parts = expand_cli_toolset_arg(["mcp", "file", "memory"], cfg)
+    return ",".join(parts) if parts else "file,memory"
 
 
 def _model_provider_from_config() -> Tuple[str, str]:

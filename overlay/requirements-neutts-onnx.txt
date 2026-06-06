@@ -1,0 +1,4 @@
+# NeuTTS ONNX-only (geen llama-cpp-python / diskcache via neutts[all]).
+# Altijd met constraints installeren:
+#   pip install -c overlay/constraints-rag-stack.txt -r overlay/requirements-neutts-onnx.txt
+neutts[onnx]

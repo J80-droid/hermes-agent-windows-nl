@@ -1,0 +1,5 @@
+# Pip constraints for hermes-env RAG + NeuTTS (fork).
+# Gebruik: pip install -r overlay/requirements-fork-extras.txt -c overlay/constraints-rag-stack.txt
+# NeuTTS declareert transformers~=4.56 — RAG vereist transformers>=5 (CVE fixes).
+transformers>=5.0.0
+sentence-transformers>=5.0.0

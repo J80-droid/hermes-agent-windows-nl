@@ -3266,7 +3266,11 @@ class HermesCLI:
         else:
             self.max_turns = 90
         
-        # Parse and validate toolsets
+        # Parse and validate toolsets (expand platform ``mcp`` sentinel → server names)
+        from hermes_cli.tools_config import expand_cli_toolset_arg
+
+        if toolsets:
+            toolsets = expand_cli_toolset_arg(toolsets, CLI_CONFIG)
         self.enabled_toolsets = toolsets
         self.disabled_toolsets = CLI_CONFIG["agent"].get("disabled_toolsets") or []
 

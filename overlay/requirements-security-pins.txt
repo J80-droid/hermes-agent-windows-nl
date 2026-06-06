@@ -1,4 +1,5 @@
 # Fork security pins (install na RAG/messaging via repair_security_pins.ps1).
+# Verwijdert ook llama-cpp/diskcache via scripts/guard_forbidden_packages.py --fix.
 # PyNaCl 1.6.2: CVE-2025-69277 (libsodium)
 PyNaCl==1.6.2
 # torch 2.12+ metadata conflict bij setuptools>=82

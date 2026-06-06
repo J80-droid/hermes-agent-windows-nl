@@ -781,7 +781,7 @@ def validate_toolset(name: str) -> bool:
         bool: True if valid, False otherwise
     """
     # Accept special alias names for convenience
-    if name in {"all", "*"}:
+    if name in {"all", "*", "mcp", "no_mcp"}:
         return True
     if name in TOOLSETS:
         return True
