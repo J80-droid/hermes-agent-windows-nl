@@ -14,10 +14,15 @@ if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 }
 
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    Write-Host '[FAIL] git niet op PATH — clean_audit_reports vereist git check-ignore.' -ForegroundColor Red
+    exit 1
+}
+
 $patterns = @('*REPORT*.md', '*E2E_LOG*', 'RUN_AUDITS*.log')
 $scanRoots = @(
-    (Join-Path $RepoRoot 'audits'),
-    (Join-Path $RepoRoot 'windows\audits')
+    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'audits'),
+    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/audits')
 )
 
 $script:CleanAuditRemoved = 0

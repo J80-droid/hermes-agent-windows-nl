@@ -25,6 +25,7 @@ function Test-HermesNpmWorkspaceRoot {
         $json = Get-Content -LiteralPath $rootPkg -Raw -Encoding UTF8 | ConvertFrom-Json
         return ($null -ne $json.workspaces) -and @($json.workspaces).Count -gt 0
     } catch {
+        $null = $_
         return $false
     }
 }
@@ -42,6 +43,13 @@ function Invoke-HermesUiTuiNpmEnsure {
         [switch]$Force,
         [switch]$Quiet
     )
+
+    if (-not (Test-Path -LiteralPath $RepoRoot)) {
+        if (-not $Quiet) {
+            Write-HermesWarn "RepoRoot ontbreekt: $RepoRoot"
+        }
+        return 2
+    }
 
     $npm = Get-Command npm -ErrorAction SilentlyContinue
     if (-not $npm) {
@@ -122,6 +130,13 @@ function Initialize-HermesInkDist {
     $inkPkg = Join-Path $UiRoot 'packages/hermes-ink/package.json'
     if (-not (Test-Path -LiteralPath $inkPkg)) { return $false }
 
+    if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+        if (-not $Quiet) {
+            Write-HermesWarn 'npm niet op PATH — hermes-ink build overgeslagen.'
+        }
+        return $false
+    }
+
     if (-not $Quiet) {
         Write-HermesInfo 'hermes-ink dist ontbreekt — build...'
     }
@@ -157,6 +172,8 @@ function Invoke-HermesUiTuiVitest {
         $copyPs1 = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/Invoke-CopyHermesOverlaySources.ps1'
         if (Test-Path -LiteralPath $copyPs1) {
             & powershell -NoProfile -ExecutionPolicy Bypass -File $copyPs1 -RepoRoot $RepoRoot -Target ui-tui -Force | Out-Null
+        } elseif (-not $Quiet) {
+            Write-HermesWarn "Overlay copy script ontbreekt: $copyPs1"
         }
     }
 
@@ -173,12 +190,19 @@ function Invoke-HermesUiTuiVitest {
         return 0
     }
 
+    if (-not (Get-Command npx -ErrorAction SilentlyContinue)) {
+        if (-not $Quiet) {
+            Write-HermesWarn 'npx niet op PATH — vitest overgeslagen.'
+        }
+        return 2
+    }
+
     Push-Location $uiRoot
     try {
         $prevEap = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
-        $args = @('vitest', 'run') + $TestPaths + '--passWithNoTests'
-        & npx @args 2>&1 | ForEach-Object {
+        $vitestArgs = @('vitest', 'run') + $TestPaths + '--passWithNoTests'
+        & npx @vitestArgs 2>&1 | ForEach-Object {
             if (-not $Quiet -and "$_") { Write-Host $_ }
         }
         $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }

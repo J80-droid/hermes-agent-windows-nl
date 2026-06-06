@@ -30,9 +30,11 @@ python -m pytest tests/hermes_cli/test_apply_profile_override.py tests/hermes_cl
 | ------ | ---- |
 | `HermesShellCommon.Unit.Tests.ps1` | Launch UI helpers, git, repo paths |
 | `HermesWebDashboardLaunch.Unit.Tests.ps1` | Web-deps manifest, pygount-cache mismatch/clear |
+| `HermesUiTuiNpm.Unit.Tests.ps1` | ui-tui npm workspace, vitest-ready paths, edge cases (temp dirs) |
 
 ```powershell
 powershell -NoProfile -File windows\tests\HermesWebDashboardLaunch.Unit.Tests.ps1
+powershell -NoProfile -File windows\tests\HermesUiTuiNpm.Unit.Tests.ps1
 ```
 
 ## `RUN_PYTEST`

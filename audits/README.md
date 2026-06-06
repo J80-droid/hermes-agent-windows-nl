@@ -423,6 +423,18 @@ Gerelateerd: `windows\audits\RUN_SYNC_NOUS_E2E.bat`, `windows\audits\RUN_CLASSIC
 
 ---
 
+# UI/TUI npm + vitest E2E
+
+Wiring + live readiness voor `windows/HermesUiTuiNpm.ps1` (workspace `npm ci`, vitest hoisting, CI-volgorde).
+
+```bat
+audits\RUN_UI_TUI_NPM_E2E.bat
+```
+
+Unit: `windows\tests\HermesUiTuiNpm.Unit.Tests.ps1` · pytest harness: `tests/audits/test_ui_tui_npm_e2e_harness.py`
+
+---
+
 # Nous overlay runtime E2E (P0–P5)
 
 Geïsoleerde E2E voor **overlay runtime wiring** na bootstrap: agent-throughput back-link, CLI `_stream_delta`-wrap, `/tps` + `/cost`, freeze-guard, tier-A `cli.py`-guard, overlay pytest-subset. Geen live API.
