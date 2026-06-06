@@ -490,7 +490,7 @@ Geïsoleerde E2E voor overlay dashboard toolset-configuratie: env-vars, post-set
 audits\RUN_TOOLSET_DASHBOARD_E2E.bat
 ```
 
-Unit: `pytest tests/overlay/test_tools_config_post_setup_fork.py tests/overlay/test_web_server_toolset_fork_patch.py -q -o addopts=--timeout=60 --timeout-method=thread`
+Unit: `pytest tests/overlay/test_tools_config_fork_patch.py tests/hermes_cli/test_dashboard_admin_endpoints.py -q -k "toolset or post_setup or Toolset" -o addopts=`
 
 ### Nous overlay afwerking E2E
 

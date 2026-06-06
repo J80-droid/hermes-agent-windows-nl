@@ -14,12 +14,12 @@ Deze map is **niet** de upstream pytest-collectie. De echte tests staan in de re
 
 `overlay.bootstrap.install()` registreert o.a. `skills_hub_init`, `win32_console`, `expand_cli_toolset_arg`, clipboard-text, profiles orphan wrappers, `process_registry._pty_spawn_argv` en `cli._wrap_bron_citations_for_display`. Op Windows: `test_curses_arrow_keys` wordt overgeslagen zonder `_curses`.
 
-## Overlay toolset dashboard (subset)
+## Toolset dashboard (Tier A + fork MCP-sentinel)
 
-Snelle regressie voor Tier B toolset post-setup (gemockt, geen live dashboard):
+Snelle regressie (gemockt, geen live dashboard):
 
 ```powershell
-python -m pytest tests/overlay/test_tools_config_post_setup_fork.py tests/overlay/test_web_server_toolset_fork_patch.py -q -o addopts=--timeout=60 --timeout-method=thread
+python -m pytest tests/overlay/test_tools_config_fork_patch.py tests/hermes_cli/test_dashboard_admin_endpoints.py -q -k "toolset or post_setup or expand_cli or Toolset" -o addopts=--timeout=60 --timeout-method=thread
 ```
 
 E2E harness: `audits\RUN_TOOLSET_DASHBOARD_E2E.bat` (9/9).

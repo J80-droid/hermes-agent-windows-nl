@@ -52,12 +52,11 @@ E2E sync: `windows\audits\RUN_SYNC_NOUS_E2E.bat` of `RUN_AUDITS -IncludeSyncNous
 | `overlay/hermes_cli/models_fork_patch.py` | Startup model-catalog guard |
 | `overlay/hermes_cli/auth_fork_patch.py` | `read_auth_json` (BOM), `sync_root_active_provider`, `_read_shared_nous_state` (BOM) |
 | `overlay/tui_gateway/gateway_config_fork_patch.py` | Gateway `/cost`, `cost_bar_mode`, `/tps`, usage snapshot |
-| `overlay/hermes_cli/argparse_fork_patch.py` | `profile use` flags + `config get` + `hermes tools post-setup` (late inject via `set_defaults`; geen duplicate met upstream Tier A) |
+| `overlay/hermes_cli/argparse_fork_patch.py` | `profile use` flags + `config get` |
 | `overlay/hermes_cli/cli_profile_fork_patch.py` | `execute_profile_switch`, `_parse_profile_switch_intent` |
 | `overlay/hermes_cli/config_fork_patch.py` | `get_config_value`, `config get` handler |
 | `overlay/hermes_cli/doctor_fork_patch.py` | `_check_windows_split_home_config` |
-| `overlay/hermes_cli/tools_config_fork_patch.py` | `platform_toolsets.cli` guard, `valid_post_setup_keys()`, `run_post_setup_command()` |
-| `overlay/hermes_cli/web_server_fork_patch.py` | Dashboard `PUT /api/tools/toolsets/{name}/env`, `POST .../post-setup` (idempotent; skipt als Tier A routes bestaan) |
+| `overlay/hermes_cli/tools_config_fork_patch.py` | `platform_toolsets.cli` lege-lijst guard, `_user_customized`, `expand_cli_toolset_arg` (MCP-sentinel) |
 | `overlay/hermes_cli/clipboard_fork_patch.py` | `get_clipboard_text` / `set_clipboard_text` (Windows plain-text clipboard) |
 | `overlay/hermes_cli/profiles_fork_patch.py` | `iter_orphan_profile_wrappers`, `remove_orphan_profile_wrappers` |
 | `overlay/hermes_cli/main_fork_patch.py` | `_wait_for_interpreter_venv_ready` (update/desktop venv guard) |
@@ -74,9 +73,9 @@ E2E sync: `windows\audits\RUN_SYNC_NOUS_E2E.bat` of `RUN_AUDITS -IncludeSyncNous
 - [`windows/scripts/Invoke-HermesOverlayBootstrap.ps1`](../windows/scripts/Invoke-HermesOverlayBootstrap.ps1) — zet `PYTHONSTARTUP`.
 - [`windows/scripts/launch_hermes.ps1`](../windows/scripts/launch_hermes.ps1) — bootstrap vóór chat.
 
-**Tests:** `pytest tests/overlay/` (overlay unit, gemockt); `tests/conftest.py` roept `install()` vóór collectie. Fork gates: `tests/audits/test_nous_overlay_fork_gates_e2e_harness.py`, `tests/overlay/test_argparse_fork_patch.py`, `tests/windows/test_toolset_domain_e2e_runtime.py`. Toolset dashboard: `tests/overlay/test_tools_config_post_setup_fork.py`, `tests/overlay/test_web_server_toolset_fork_patch.py`, E2E `audits/RUN_TOOLSET_DASHBOARD_E2E.bat`. Agent-throughput: `tests/overlay/test_agent_throughput_fork_patch.py`.
+**Tests:** `pytest tests/overlay/` (overlay unit, gemockt); `tests/conftest.py` roept `install()` vóór collectie. Fork gates: `tests/audits/test_nous_overlay_fork_gates_e2e_harness.py`, `tests/overlay/test_argparse_fork_patch.py`, `tests/windows/test_toolset_domain_e2e_runtime.py`. Toolset dashboard (Tier A upstream): `tests/hermes_cli/test_dashboard_admin_endpoints.py`, fork MCP-sentinel `tests/overlay/test_tools_config_fork_patch.py`, E2E `audits/RUN_TOOLSET_DASHBOARD_E2E.bat`. Agent-throughput: `tests/overlay/test_agent_throughput_fork_patch.py`.
 
-**Overlay web (toolset dashboard):** `overlay/web/src/components/ToolsetConfigDrawer.tsx`, `overlay/web/src/lib/toolsetDashboardApi.ts`, `overlay/web/src/pages/SkillsPage.tsx` — gekopieerd naar Tier A bij `build_fork_ui_assets.ps1` / `Invoke-CopyHermesOverlaySources.ps1`.
+**Toolset dashboard UI/API/routes:** upstream Tier A (`web/src/components/ToolsetConfigDrawer.tsx`, `web/src/lib/api.ts`, `hermes_cli/web_server.py`, `hermes_cli/main.py`). Overlay web bevat alleen institutioneel fork-specifiek (themes, analytics, enz.).
 
 **Tier B script guards:**
 
@@ -112,7 +111,7 @@ Baseline: [NOUS_DRIFT_BASELINE.md](NOUS_DRIFT_BASELINE.md).
 | Overlay runtime + cost + drift | `audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat` |
 | Overlay runtime wiring (P0–P5) | `audits\RUN_NOUS_OVERLAY_RUNTIME_E2E.bat` — bootstrap idempotentie, agent/CLI TPS hooks, `/tps`+`/cost`, tier-A guard, overlay pytest-subset |
 | Fork gates (Tier B scripts) | `audits\RUN_NOUS_OVERLAY_FORK_GATES_E2E.bat` — argv `--profile` sanitizer vóór bootstrap, `config get`, toolset `--check` skip `_user_customized`, legal USER stale-strip + dedup `-HermesRoot` |
-| Toolset dashboard post-setup | `audits\RUN_TOOLSET_DASHBOARD_E2E.bat` — overlay routes, CLI post-setup, argparse late inject, web wiring, pytest subset (9/9) |
+| Toolset dashboard (Tier A) | `audits\RUN_TOOLSET_DASHBOARD_E2E.bat` — Tier A routes/CLI/UI + fork MCP-sentinel overlay, pytest subset (9/9) |
 | Afwerking (dedup/trust/bootstrap) | `audits\RUN_NOUS_OVERLAY_AFWERKING_E2E.bat` — regel-§ dedup, `RUN_AUDITS` trust preflight, `SYNC_TRUST_RUNTIME` retry, `collect_env_sync_keys` bootstrap |
 | Throughput tok/s (overlay) | `audits\RUN_STATUS_BAR_THROUGHPUT_E2E.bat` |
 | Prompt-timer (overlay) | `audits\RUN_PROMPT_TIMER_DISPLAY_E2E.bat` |
