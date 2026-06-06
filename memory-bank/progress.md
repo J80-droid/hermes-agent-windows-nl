@@ -7,7 +7,9 @@
 - [x] E2E: `RUN_TOOLSET_DASHBOARD_E2E` 9/9; institutional + fork gates PASS
 - [x] P4: `build_fork_ui_assets.ps1` + `REBUILD_TUI` → `web_dist` + `ui-tui/dist`
 - [ ] P3: bronmappen `raw_source_files` (01–03, 05–08, 09–12) — gebruikersdata
-- [ ] P1 volledig: `RUN_AUDITS -IncludeAllE2E` + `RUN_PYTEST.ps1` (draait)
+- [x] P1 kern: institutional E2E, toolset dashboard 9/9, fork gates 8/8
+- [ ] P1 volledig: `RUN_PYTEST.ps1` (~31k tests, `--ignore=tests/docker`; draait)
+- [ ] P1 volledig: `RUN_AUDITS -IncludeAllE2E` — 1 fail: `pseudo-table-normalizer-e2e` (TS parity pytest op Windows; buiten Pad 1 toolset-scope)
 
 ## Optionele productie-poorten (Fase 3)
 
