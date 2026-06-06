@@ -33,16 +33,6 @@ jobs:
       - name: Install package (dev + RAG for platform gate)
         run: python -m pip install --upgrade pip && pip install -e ".[dev]" && pip install pyarrow lancedb
 
-      - name: Set up Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: npm ci workspace (ui-tui vitest E2E)
-        run: npm ci --no-audit --no-fund
-
       - name: Seed minimal HERMES_HOME for overlay E2E
         shell: pwsh
         run: |
@@ -65,6 +55,17 @@ jobs:
       # Volledige RUN_LEGAL_DOMAIN_E2E vereist %LOCALAPPDATA%\hermes runtime — lokaal vóór release (zie docs/LEGAL_PRODUCTION_GATE.md).
       - name: Nous Tier A drift gate (strict)
         run: powershell -NoProfile -File windows/scripts/Test-NousTreeIdentical.ps1
+
+      # Na drift gate: npm mag node_modules/lockfile raken zonder Tier A-vergelijking te vervuilen.
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: npm ci workspace (ui-tui vitest E2E)
+        run: npm ci --no-audit --no-fund
 
       - name: RUN_AUDITS 14-fixes E2E
         run: audits\RUN_RUN_AUDITS_14_FIXES_E2E.bat
