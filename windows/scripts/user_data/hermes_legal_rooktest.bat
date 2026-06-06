@@ -20,14 +20,12 @@ if errorlevel 1 (
 echo [OK] search_knowledge rooktest geslaagd
 echo.
 echo [INFO] 2/2 Hermes chat (vereist inference-login: hermes login)
-set "HERMES_YOLO_MODE=1"
-set "HERMES_NONINTERACTIVE=1"
-cd /d "%HERMES_REPO%"
-"%PY%" -m hermes_cli.main -p legal chat -q "Voer search_knowledge uit op actieve zorgplicht P-Direkt en citeer met [Bron: bestandsnaam]." -Q --yolo --max-turns 8
+"%PY%" "%HERMES_REPO%\scripts\rag_pipeline\_rooktest_chat.py"
 set "CHAT_EXIT=%ERRORLEVEL%"
 if "%CHAT_EXIT%"=="0" (
-  echo [OK] Hermes chat rooktest geslaagd
-) else (
-  echo [WARN] Hermes chat exit %CHAT_EXIT% — vaak 401 zonder API-key. LanceDB-deel is wel OK.
+  endlocal & set "ROOKTEST_CHAT=ok" & exit /b 0
 )
-exit /b 0
+if "%CHAT_EXIT%"=="2" (
+  endlocal & set "ROOKTEST_CHAT=skipped" & exit /b 0
+)
+endlocal & set "ROOKTEST_CHAT=failed" & exit /b 0

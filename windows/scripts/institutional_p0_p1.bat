@@ -75,10 +75,11 @@ echo.
 echo [STEP 4/5] Legal rooktest
 call "%~dp0user_data\hermes_legal_rooktest.bat"
 set "ROOK_EXIT=%ERRORLEVEL%"
+if not defined ROOKTEST_CHAT set "ROOKTEST_CHAT=unknown"
 
 if "%DO_KANBAN%"=="1" (
-  if not "%ROOK_EXIT%"=="0" (
-    echo [SKIP] Kanban: rooktest niet volledig geslaagd
+  if not "%ROOKTEST_CHAT%"=="ok" (
+    echo [SKIP] Kanban: chat-rooktest niet geslaagd ^(ROOKTEST_CHAT=%ROOKTEST_CHAT%^)
   ) else (
     echo.
     echo [STEP 5a] Kanban legal
@@ -110,9 +111,17 @@ if "%DO_INGEST%"=="1" (
 )
 
 echo.
-if "%ROOK_EXIT%"=="0" (
-  echo [OK] Institutional P0+P1 afgerond
+if not "%ROOK_EXIT%"=="0" (
+  echo [ERROR] Institutional P0+P1 afgebroken ^(rooktest search^)
+  exit /b 1
+)
+if "%ROOKTEST_CHAT%"=="failed" (
+  echo [WARN] Institutional P0+P1 afgerond; chat-rooktest mislukt ^(login/API-key^)
   exit /b 0
 )
-echo [WARN] Pipeline klaar; legal chat-rooktest had waarschuwingen ^(zie boven^)
+if "%ROOKTEST_CHAT%"=="skipped" (
+  echo [OK] Institutional P0+P1 afgerond ^(chat overgeslagen — geen inference-login^)
+  exit /b 0
+)
+echo [OK] Institutional P0+P1 afgerond
 exit /b 0
