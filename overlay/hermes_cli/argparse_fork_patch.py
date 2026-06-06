@@ -20,6 +20,9 @@ _PROFILE_USE_FLAGS = (
 
 
 def _wrap_cmd_tools_handler(func):
+    if getattr(func, "_fork_cmd_tools_wrapped", False):
+        return func
+
     def cmd_tools(args):
         action = getattr(args, "tools_action", None)
         if action == "post-setup":
@@ -29,6 +32,7 @@ def _wrap_cmd_tools_handler(func):
         return func(args)
 
     cmd_tools.__name__ = getattr(func, "__name__", "cmd_tools")
+    cmd_tools._fork_cmd_tools_wrapped = True  # type: ignore[attr-defined]
     return cmd_tools
 
 

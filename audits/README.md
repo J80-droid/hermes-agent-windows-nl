@@ -476,6 +476,22 @@ audits\RUN_NOUS_OVERLAY_FORK_GATES_E2E.bat
 
 Unit (harness, gemockt): `pytest tests/audits/test_nous_overlay_fork_gates_e2e_harness.py -m "not e2e" -q`
 
+---
+
+# Toolset dashboard post-setup E2E
+
+Geïsoleerde E2E voor overlay dashboard toolset-configuratie: env-vars, post-setup spawn, argparse late inject, overlay web (Drawer + API). Geen live browser.
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| T1–T9 | Zie `audits/TOOLSET_DASHBOARD_E2E_README.md` | Artefacten, bootstrap, routes, idempotentie, pytest subset |
+
+```bat
+audits\RUN_TOOLSET_DASHBOARD_E2E.bat
+```
+
+Unit: `pytest tests/overlay/test_tools_config_post_setup_fork.py tests/overlay/test_web_server_toolset_fork_patch.py -q -o addopts=--timeout=60 --timeout-method=thread`
+
 ### Nous overlay afwerking E2E
 
 | Stap | Onderwerp |

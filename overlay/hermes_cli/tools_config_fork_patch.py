@@ -56,7 +56,8 @@ def run_post_setup_command(args) -> int:
     """``hermes tools post-setup <key>`` — non-interactive install hook runner."""
     import hermes_cli.tools_config as tc
 
-    key = getattr(args, "post_setup_key", None)
+    raw = getattr(args, "post_setup_key", None)
+    key = (raw or "").strip() if isinstance(raw, str) else ""
     if not key:
         tc._print_error("Usage: hermes tools post-setup <key>")
         return 2

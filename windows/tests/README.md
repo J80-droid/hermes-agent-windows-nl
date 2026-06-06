@@ -10,6 +10,16 @@ Deze map is **niet** de upstream pytest-collectie. De echte tests staan in de re
 - **Alleen PowerShell onder `windows\`**: **`RUN_PSScriptAnalyzer.ps1`** (zelfde helper als audits)
 - **Alleen Python-tests**: **`RUN_PYTEST.ps1`**
 
+## Overlay toolset dashboard (subset)
+
+Snelle regressie voor Tier B toolset post-setup (gemockt, geen live dashboard):
+
+```powershell
+python -m pytest tests/overlay/test_tools_config_post_setup_fork.py tests/overlay/test_web_server_toolset_fork_patch.py -q -o addopts=--timeout=60 --timeout-method=thread
+```
+
+E2E harness: `audits\RUN_TOOLSET_DASHBOARD_E2E.bat` (9/9).
+
 ## Profielwissel (subset)
 
 Snelle regressie zonder volledige suite:

@@ -10,6 +10,8 @@ def apply_web_server_fork_patch() -> None:
     if getattr(ws, "_fork_web_server_toolset_routes_applied", False):
         return
 
+    ws._ACTION_LOG_FILES.setdefault("tools-post-setup", "action-tools-post-setup.log")
+
     existing_paths = {getattr(r, "path", "") for r in ws.app.routes}
     if "/api/tools/toolsets/{name}/env" in existing_paths:
         ws._fork_web_server_toolset_routes_applied = True  # type: ignore[attr-defined]
@@ -17,8 +19,6 @@ def apply_web_server_fork_patch() -> None:
 
     from fastapi import HTTPException
     from pydantic import BaseModel
-
-    ws._ACTION_LOG_FILES.setdefault("tools-post-setup", "action-tools-post-setup.log")
 
     class ToolsetEnvUpdate(BaseModel):
         env: Dict[str, str]
@@ -44,7 +44,9 @@ def apply_web_server_fork_patch() -> None:
         if cat:
             for prov in _visible_providers(cat, config, force_fresh=True):
                 for e in prov.get("env_vars", []):
-                    allowed.add(e["key"])
+                    env_key = e.get("key") if isinstance(e, dict) else None
+                    if env_key:
+                        allowed.add(env_key)
 
         unknown = [k for k in body.env if k not in allowed]
         if unknown:
@@ -84,14 +86,17 @@ def apply_web_server_fork_patch() -> None:
         if name not in valid_ts:
             raise HTTPException(status_code=400, detail=f"Unknown toolset: {name}")
 
-        if body.key not in valid_post_setup_keys():
+        setup_key = (body.key or "").strip()
+        if not setup_key:
+            raise HTTPException(status_code=400, detail="Post-setup key is required")
+        if setup_key not in valid_post_setup_keys():
             raise HTTPException(
-                status_code=400, detail=f"Unknown post-setup key: {body.key}"
+                status_code=400, detail=f"Unknown post-setup key: {setup_key}"
             )
 
         try:
             proc = ws._spawn_hermes_action(
-                ["tools", "post-setup", body.key], "tools-post-setup"
+                ["tools", "post-setup", setup_key], "tools-post-setup"
             )
         except Exception as exc:
             ws._log.exception("Failed to spawn tools post-setup")
@@ -102,7 +107,7 @@ def apply_web_server_fork_patch() -> None:
             "ok": True,
             "pid": proc.pid,
             "name": "tools-post-setup",
-            "key": body.key,
+            "key": setup_key,
         }
 
     ws.app.add_api_route(
