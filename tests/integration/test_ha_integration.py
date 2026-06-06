@@ -16,7 +16,7 @@ pytestmark = pytest.mark.integration
 from unittest.mock import AsyncMock
 
 from gateway.config import Platform, PlatformConfig
-from gateway.platforms.homeassistant import HomeAssistantAdapter
+from plugins.platforms.homeassistant.adapter import HomeAssistantAdapter
 from tests.fakes.fake_ha_server import FakeHAServer, ENTITY_STATES
 from tools.homeassistant_tool import (
     _async_call_service,
@@ -71,8 +71,7 @@ class TestGatewayWebSocket:
     async def test_event_received_and_forwarded(self):
         """Server pushes event -> adapter calls handle_message with correct MessageEvent."""
         async with FakeHAServer() as server:
-            # Adapter drops events unless watch_all or explicit watch_* filters are set.
-            adapter = _adapter_for(server, watch_all=True)
+            adapter = _adapter_for(server)
             adapter.handle_message = AsyncMock()
 
             await adapter.connect()
