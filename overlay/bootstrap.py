@@ -72,10 +72,25 @@ _REQUIRED_HERMES_CLI: frozenset[str] = frozenset(
 _installed = False
 
 
+def _attach_overlay_parent(fq_name: str, mod: ModuleType) -> None:
+    """Expose overlay shims on parent packages (pytest monkeypatch, tab-completion)."""
+    if "." not in fq_name:
+        return
+    parent_name, _, stem = fq_name.partition(".")
+    if not stem or "." in stem:
+        return
+    parent = sys.modules.get(parent_name)
+    if parent is None:
+        return
+    setattr(parent, stem, mod)
+
+
 def _load_module(fq_name: str, path: Path) -> ModuleType:
     """Load overlay source from disk; return cached ``sys.modules`` entry if present."""
     if fq_name in sys.modules:
-        return sys.modules[fq_name]
+        mod = sys.modules[fq_name]
+        _attach_overlay_parent(fq_name, mod)
+        return mod
     if not path.is_file():
         raise FileNotFoundError(f"overlay module missing: {path}")
     spec = importlib.util.spec_from_file_location(fq_name, path)
@@ -88,6 +103,7 @@ def _load_module(fq_name: str, path: Path) -> ModuleType:
     except Exception:
         del sys.modules[fq_name]
         raise
+    _attach_overlay_parent(fq_name, mod)
     return mod
 
 
@@ -169,6 +185,13 @@ def install() -> None:
 
     _load_overlay_modules()
     _apply_runtime_patches()
+    try:
+        from overlay.hermes_cli.config_fork_patch import _rebind_load_config_references
+        import hermes_cli.config as _config_mod
+
+        _rebind_load_config_references(_config_mod)
+    except Exception:
+        logger.debug("load_config rebind after patches failed", exc_info=True)
     _installed = True
 
 

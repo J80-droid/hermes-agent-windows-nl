@@ -2,8 +2,12 @@
 from __future__ import annotations
 
 import json
+import logging
+import os
 from pathlib import Path
 from typing import Any, Dict, Optional
+
+logger = logging.getLogger(__name__)
 
 
 def sync_root_active_provider(provider_id: str) -> Path:
@@ -34,9 +38,6 @@ def sync_root_active_provider(provider_id: str) -> Path:
 
 def read_shared_nous_state_bom_tolerant():
     """Load shared Nous OAuth store with UTF-8 BOM tolerance."""
-    import json
-    from typing import Any, Dict, Optional
-
     import hermes_cli.auth as auth
 
     try:
@@ -74,6 +75,161 @@ def read_auth_json(auth_file: Optional[Path] = None) -> Dict[str, Any]:
     return raw if isinstance(raw, dict) else {}
 
 
+def repair_auth_json_bom(auth_file: Optional[Path] = None) -> bool:
+    """Rewrite ``auth.json`` without UTF-8 BOM when JSON is valid."""
+    from hermes_cli.auth import _auth_file_path
+
+    path = auth_file or _auth_file_path()
+    if not path.is_file():
+        return False
+    raw_bytes = path.read_bytes()
+    if not raw_bytes.startswith(b"\xef\xbb\xbf"):
+        return False
+    try:
+        data = json.loads(raw_bytes.decode("utf-8-sig"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return False
+    if not isinstance(data, dict):
+        return False
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    logger.info("auth: removed UTF-8 BOM from %s", path)
+    return True
+
+
+def repair_all_auth_json_bom() -> list[str]:
+    """Repair root + profile ``auth.json`` files that carry a UTF-8 BOM."""
+    from hermes_constants import get_default_hermes_root
+
+    repaired: list[str] = []
+    root = get_default_hermes_root()
+    candidates = [root / "auth.json"]
+    profiles_root = root / "profiles"
+    if profiles_root.is_dir():
+        candidates.extend(profiles_root.glob("*/auth.json"))
+    for path in candidates:
+        if repair_auth_json_bom(path):
+            repaired.append(str(path))
+    return repaired
+
+
+def _attempt_corrupt_auth_coherence_repair() -> None:
+    """Try model/provider repair after corrupt auth.json (guarded against re-entry)."""
+    import os
+
+    import hermes_cli.auth as auth
+
+    if getattr(auth, "_AUTH_CORRUPT_REPAIR_IN_PROGRESS", False):
+        return
+    try:
+        from hermes_cli.model_runtime_config import (
+            detect_model_provider_incoherence,
+            repair_model_provider_coherence,
+        )
+
+        issues = detect_model_provider_incoherence()
+        error_issues = [
+            issue
+            for issue in issues
+            if getattr(issue, "severity", None) == "error"
+        ]
+        if not error_issues:
+            return
+        auth._AUTH_CORRUPT_REPAIR_IN_PROGRESS = True  # type: ignore[attr-defined]
+        try:
+            repair_model_provider_coherence(
+                prefer="auth_from_config",
+                issues=error_issues,
+            )
+        finally:
+            auth._AUTH_CORRUPT_REPAIR_IN_PROGRESS = False  # type: ignore[attr-defined]
+    except Exception:
+        auth._AUTH_CORRUPT_REPAIR_IN_PROGRESS = False  # type: ignore[attr-defined]
+        if not os.environ.get("HERMES_SUPPRESS_AUTH_CORRUPT_LOG"):
+            logger.debug("auth: corrupt-auth coherence repair failed", exc_info=True)
+
+
+def _normalize_auth_store_raw(raw: Any) -> Dict[str, Any]:
+    from hermes_cli.auth import AUTH_STORE_VERSION
+
+    if isinstance(raw, dict) and (
+        isinstance(raw.get("providers"), dict)
+        or isinstance(raw.get("credential_pool"), dict)
+    ):
+        raw.setdefault("providers", {})
+        return raw
+
+    if isinstance(raw, dict) and raw.get("active_provider") is not None:
+        return {
+            "version": AUTH_STORE_VERSION,
+            "active_provider": raw.get("active_provider"),
+            "providers": {},
+        }
+
+    if isinstance(raw, dict) and isinstance(raw.get("systems"), dict):
+        systems = raw["systems"]
+        providers = {}
+        if "nous_portal" in systems:
+            providers["nous"] = systems["nous_portal"]
+        return {
+            "version": AUTH_STORE_VERSION,
+            "providers": providers,
+            "active_provider": "nous" if providers else None,
+        }
+
+    return {"version": AUTH_STORE_VERSION, "providers": {}}
+
+
+def _load_auth_store_bom_safe(auth_file: Optional[Path] = None) -> Dict[str, Any]:
+    """BOM-tolerant ``_load_auth_store`` for root and all profile auth files."""
+    import shutil
+
+    import hermes_cli.auth as auth
+
+    auth_file = auth_file or auth._auth_file_path()
+    if not auth_file.exists():
+        return {"version": auth.AUTH_STORE_VERSION, "providers": {}}
+
+    try:
+        had_bom = auth_file.read_bytes().startswith(b"\xef\xbb\xbf")
+        raw = read_auth_json(auth_file)
+        if had_bom:
+            repair_auth_json_bom(auth_file)
+    except json.JSONDecodeError as exc:
+        corrupt_path = auth_file.with_suffix(".json.corrupt")
+        try:
+            shutil.copy2(auth_file, corrupt_path)
+        except Exception:
+            pass
+        if not os.environ.get("HERMES_SUPPRESS_AUTH_CORRUPT_LOG"):
+            logger.warning(
+                "auth: failed to parse %s (%s) — starting with empty store. "
+                "Corrupt file preserved at %s",
+                auth_file,
+                exc,
+                corrupt_path,
+            )
+        _attempt_corrupt_auth_coherence_repair()
+        return {"version": auth.AUTH_STORE_VERSION, "providers": {}}
+    except Exception as exc:
+        corrupt_path = auth_file.with_suffix(".json.corrupt")
+        try:
+            shutil.copy2(auth_file, corrupt_path)
+        except Exception:
+            pass
+        if not os.environ.get("HERMES_SUPPRESS_AUTH_CORRUPT_LOG"):
+            logger.warning(
+                "auth: failed to parse %s (%s) — starting with empty store. "
+                "Corrupt file preserved at %s",
+                auth_file,
+                exc,
+                corrupt_path,
+            )
+        _attempt_corrupt_auth_coherence_repair()
+        return {"version": auth.AUTH_STORE_VERSION, "providers": {}}
+
+    return _normalize_auth_store_raw(raw)
+
+
 def apply_auth_fork_patch() -> None:
     import hermes_cli.auth as auth
 
@@ -81,7 +237,10 @@ def apply_auth_fork_patch() -> None:
         return
     auth.read_auth_json = read_auth_json  # type: ignore[attr-defined]
     auth.sync_root_active_provider = sync_root_active_provider  # type: ignore[attr-defined]
+    auth.repair_auth_json_bom = repair_auth_json_bom  # type: ignore[attr-defined]
+    auth.repair_all_auth_json_bom = repair_all_auth_json_bom  # type: ignore[attr-defined]
     auth._read_shared_nous_state = read_shared_nous_state_bom_tolerant  # type: ignore[assignment]
+    auth._load_auth_store = _load_auth_store_bom_safe  # type: ignore[assignment]
     if not hasattr(auth, "_AUTH_CORRUPT_REPAIR_IN_PROGRESS"):
         auth._AUTH_CORRUPT_REPAIR_IN_PROGRESS = False  # type: ignore[attr-defined]
     auth._fork_read_auth_json_patch_applied = True  # type: ignore[attr-defined]

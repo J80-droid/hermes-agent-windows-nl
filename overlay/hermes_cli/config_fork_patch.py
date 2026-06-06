@@ -64,6 +64,32 @@ def _apply_profile_inheritance(cfg: dict[str, Any]) -> dict[str, Any]:
     return apply_profile_root_config_inheritance(cfg, profile_user)
 
 
+def _rebind_load_config_references(config_mod: Any) -> None:
+    """Refresh stale ``from hermes_cli.config import load_config`` bindings.
+
+    Early overlay modules (e.g. ``agent.venice_usage``) import
+    ``hermes_cli.runtime_provider`` before this patch runs, so those modules
+    keep the pre-inheritance ``load_config`` unless we rebind here.
+    """
+    import sys
+
+    patched_load = config_mod.load_config
+    patched_ro = config_mod.load_config_readonly
+    for mod in list(sys.modules.values()):
+        if mod is None:
+            continue
+        if hasattr(mod, "load_config") and mod.load_config is not patched_load:
+            try:
+                mod.load_config = patched_load  # type: ignore[attr-defined]
+            except (AttributeError, TypeError):
+                pass
+        if hasattr(mod, "load_config_readonly") and mod.load_config_readonly is not patched_ro:
+            try:
+                mod.load_config_readonly = patched_ro  # type: ignore[attr-defined]
+            except (AttributeError, TypeError):
+                pass
+
+
 def apply_config_fork_patch() -> None:
     import hermes_cli.config as config_mod
 
@@ -103,4 +129,5 @@ def apply_config_fork_patch() -> None:
         return _orig_config_command(args)
 
     config_mod.config_command = config_command  # type: ignore[assignment]
+    _rebind_load_config_references(config_mod)
     config_mod._fork_config_patch_applied = True  # type: ignore[attr-defined]

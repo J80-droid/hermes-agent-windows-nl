@@ -483,6 +483,31 @@ audits\RUN_NOUS_OVERLAY_AFWERKING_E2E.bat
 
 Unit (harness, gemockt): `pytest tests/audits/test_nous_overlay_afwerking_e2e_harness.py -m "not e2e" -q`
 
+# Chat rooktest + security E2E
+
+Geïsoleerde E2E voor overlay chat-entry (`run_hermes_cli_with_overlay.py`), stale `load_config`-rebind, profiel-overerving `providers.venice`, auth BOM-repair en security-pins manifest. Geen live API/chat.
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| E1 | Overlay subprocess | `--help` zonder `No module named 'overlay'` |
+| E2 | Config rebind | `runtime_provider.load_config is config.load_config` |
+| E3 | Profiel-overerving | Legal profiel erft root `venice` |
+| E4 | Auth BOM | `_load_auth_store_bom_safe` strippt BOM |
+| E5 | repair_all | Profile `auth.json` met BOM gerepareerd |
+| E6 | Inference precheck | `inference_available` met geïsoleerde key |
+| E7 | Security pins | `overlay/requirements-security-pins.txt` |
+| E8 | Corrupt auth | `.json.corrupt` backup + lege store |
+
+```bat
+audits\RUN_CHAT_ROOKTEST_SECURITY_E2E.bat
+```
+
+Unit: `pytest tests/scripts/test_rooktest_chat.py tests/scripts/test_repair_auth_json_bom.py tests/overlay/test_auth_fork_patch.py tests/overlay/test_config_fork_patch.py -q`
+
+Handmatig: `python scripts/repair_auth_json_bom.py` of `windows\scripts\repair_auth_json_bom.ps1`; security pins: `windows\REPAIR_SECURITY_PINS.bat`.
+
+---
+
 ## Pytest audit-env E2E (institutional gate wiring)
 
 Geïsoleerde poort voor `PYTEST_ADDOPTS`/pytest_timeout-fix, production gate en RAG MCP bootstrap. Zie `audits/PYTEST_AUDIT_ENV_E2E_README.md`.

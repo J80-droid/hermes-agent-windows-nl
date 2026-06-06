@@ -71,6 +71,19 @@ if (-not $SkipPip) {
         if (Test-NativeCommandFailed) {
             Write-RagMsg '[WARN] colorama/tqdm mislukt - RAG-terminal kan zonder kleuren/balk.' 'Yellow'
         }
+        $secPins = Join-Path $RepoRoot 'overlay\requirements-security-pins.txt'
+        if (Test-Path -LiteralPath $secPins) {
+            & $py -m pip install -r $secPins
+            if (Test-NativeCommandFailed) {
+                Write-RagMsg '[WARN] security pins mislukt - REPAIR_SECURITY_PINS.bat' 'Yellow'
+            }
+            $llamaCheck = & $py -m pip show llama-cpp-python 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                Write-RagMsg '[INFO] Verwijder llama-cpp-python (diskcache CVE; niet nodig voor RAG/Venice)' 'Cyan'
+                & $py -m pip uninstall -y llama-cpp-python 2>$null | Out-Null
+                & $py -m pip uninstall -y diskcache 2>$null | Out-Null
+            }
+        }
         $installed++
     }
     if ($installed -gt 0) {

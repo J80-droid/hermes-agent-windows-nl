@@ -797,14 +797,14 @@ def _install_neutts_deps() -> bool:
     print()
     try:
         subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-U", "neutts[all]", "--quiet"],
+            [sys.executable, "-m", "pip", "install", "-U", "neutts[onnx]", "--quiet"],
             check=True, timeout=300,
         )
         print_success("neutts installed successfully")
         return True
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         print_error(f"Failed to install neutts: {e}")
-        print_info("Try manually: python -m pip install -U neutts[all]")
+        print_info("Try manually: python -m pip install -U neutts[onnx]")
         return False
 
 

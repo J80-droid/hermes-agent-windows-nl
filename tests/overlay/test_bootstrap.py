@@ -337,6 +337,14 @@ class TestInstall:
         assert bootstrap._installed is True
 
 
+class TestLoadConfigRebind:
+    def test_runtime_provider_shares_patched_load_config(self):
+        bootstrap.install()
+        from hermes_cli import config, runtime_provider
+
+        assert config.load_config is runtime_provider.load_config
+
+
 class TestInstallStartup:
     def test_delegates_to_install(self):
         with patch.object(bootstrap, "install") as install_mock:
