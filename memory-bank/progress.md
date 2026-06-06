@@ -8,7 +8,8 @@
 - [x] P4: `build_fork_ui_assets.ps1` + `REBUILD_TUI` → `web_dist` + `ui-tui/dist`
 - [ ] P3: bronmappen `raw_source_files` (01–03, 05–08, 09–12) — gebruikersdata
 - [x] P1 kern: institutional E2E, toolset dashboard 9/9, fork gates 8/8
-- [ ] P1 volledig: `RUN_PYTEST.ps1` (~31k tests, `--ignore=tests/docker`; draait)
+- [ ] P1 volledig: `RUN_PYTEST.ps1` (homeassistant collection gefixt; `--ignore` path_at_filter + `not e2e`; herstart open)
+- [x] Gateway Windows login-autostart: `GATEWAY_*` scripts + `RUN_GATEWAY_WINDOWS_INSTALL_E2E` 6/6 PASS
 - [ ] P1 volledig: `RUN_AUDITS -IncludeAllE2E` — 1 fail: `pseudo-table-normalizer-e2e` (TS parity pytest op Windows; buiten Pad 1 toolset-scope)
 - [x] Tier A drift hersteld na gateway cleanup (homeassistant niet in upstream/main)
 

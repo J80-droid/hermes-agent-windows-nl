@@ -9,6 +9,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+pytest.importorskip(
+    "gateway.platforms.homeassistant",
+    reason="homeassistant gateway adapter is optional (not in upstream Tier A tree)",
+)
+
 from gateway.config import (
     GatewayConfig,
     Platform,

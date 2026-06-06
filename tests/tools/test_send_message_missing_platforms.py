@@ -5,11 +5,17 @@ import os
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
 from tools.send_message_tool import (
     _send_dingtalk,
-    _send_homeassistant,
     _send_matrix,
 )
+
+try:
+    from tools.send_message_tool import _send_homeassistant
+except ImportError:
+    _send_homeassistant = None
 
 # ``_send_mattermost`` moved into the mattermost plugin
 # (``plugins/platforms/mattermost/adapter.py::_standalone_send``).  Keep a
@@ -216,6 +222,10 @@ class TestSendMatrix:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skipif(
+    _send_homeassistant is None,
+    reason="homeassistant send helper removed from send_message_tool (optional extra)",
+)
 class TestSendHomeAssistant:
     def test_success(self):
         resp = _make_aiohttp_resp(200)

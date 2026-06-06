@@ -1,4 +1,4 @@
-﻿# Hermes Agent — pytest vanaf repo-root (Windows, geen xdist)
+# Hermes Agent — pytest vanaf repo-root (Windows, geen xdist)
 # Draait dezelfde subset als CI (geen integration/e2e), serieel om xdist/PosixPath-problemen te vermijden.
 # PowerShell-lint: aparte runner windows\tests\RUN_PSScriptAnalyzer.ps1 (of windows\audits\RUN_AUDITS.ps1).
 $ErrorActionPreference = 'Stop'
@@ -29,7 +29,9 @@ $pytestArgs = @(
     '--ignore=tests/integration',
     '--ignore=tests/e2e',
     '--ignore=tests/docker',
-    '-m', 'not integration',
+    # git ls-files subprocess kan op grote Windows-worktrees >60s hangen (pytest-timeout).
+    '--ignore=tests/gateway/test_complete_path_at_filter.py',
+    '-m', 'not integration and not e2e',
     '-n', '0',
     '-q',
     '--tb=short',

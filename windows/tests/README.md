@@ -128,6 +128,18 @@ Dubbelklik: RUN_PSScriptAnalyzer.bat
 3. **`PYTEST_TIMEOUT`** (pytest-timeout): seconden per test voor de hele sessie. Niet gezet → deze runner gebruikt **60**. Zet bijv. **`120`** op een trage machine, of **`0`** om timeouts uit te zetten (alleen voor debug). Zie [pytest-timeout](https://github.com/pytest-dev/pytest-timeout).
 4. Bij een timeout-failure: open **`windows\tests\last_pytest_run.log`** — de laatste regels tonen welke test vastliep.
 
+## Gateway login-autostart (Windows)
+
+| Script | Doel |
+|--------|------|
+| `windows\GATEWAY_INSTALL_LOGIN.bat` | Eerste install: Scheduled Task + UAC (autostart bij login) |
+| `windows\GATEWAY_ENSURE_RUNNING.bat` | Geen UAC: `.cmd` vernieuwen + task/start + status |
+| `windows\GATEWAY_STATUS.bat` | Alleen `hermes gateway status` |
+
+E2E-wiring (geen live UAC): `audits\RUN_GATEWAY_WINDOWS_INSTALL_E2E.bat` (6 stappen).
+
+`Last Run Result: 1` bij Scheduled Task is op Windows vaak normaal: `pythonw` start op de achtergrond en de wrapper `.cmd` eindigt direct.
+
 ## Verwachting
 
 CI draait op **Linux**. Op Windows kunnen er nog steeds **falende tests** zijn (paden, shell, signalen). Gebruik deze runners om **lokaal** te itereren; definitieve groen = **GitHub Actions** of WSL2.

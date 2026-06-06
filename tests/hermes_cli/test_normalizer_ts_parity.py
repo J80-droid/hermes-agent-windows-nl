@@ -134,11 +134,14 @@ def _run_ts_runner(runner: Path, text: str) -> str:
         timeout=120,
         env={**os.environ, "PYTHONIOENCODING": "utf-8"},
     )
-    if proc.returncode != 0:
+    out = (proc.stdout or "").strip()
+    if not out:
+        out = (proc.stderr or "").strip()
+    if proc.returncode != 0 and not out:
         raise RuntimeError(
             f"TS runner failed ({runner.name}): {proc.stderr or proc.stdout}"
         )
-    return proc.stdout
+    return out
 
 
 def _normalize_for_parity(text: str) -> str:

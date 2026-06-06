@@ -360,7 +360,8 @@ def _build_gateway_cmd_script(
     lines.append('set "HERMES_GATEWAY_DETACHED=1"')
     # VIRTUAL_ENV lets the gateway's own python detection find the venv
     # if someone imports hermes_constants-based logic during startup.
-    venv_dir = str(Path(python_path).resolve().parent.parent)
+    # python.exe lives in <venv>/python.exe — VIRTUAL_ENV is <venv>, not its parent.
+    venv_dir = str(Path(python_path).resolve().parent)
     lines.append(f'set "VIRTUAL_ENV={venv_dir}"')
 
     pythonw_path = _derive_venv_pythonw(python_path)

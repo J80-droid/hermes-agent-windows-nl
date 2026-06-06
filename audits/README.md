@@ -90,6 +90,16 @@ Geïsoleerde poort voor `web/`: `npm run lint` + `npm run build`, PTY-channel-co
 audits\RUN_WEB_UI_CLEAN_E2E.bat
 ```
 
+### Gateway Windows login-autostart (fork)
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| T1–T6 | `audits/GatewayWindowsInstallE2E.harness.py` | Artefacten, VIRTUAL_ENV, PID-probe, PS1-wiring, pytest subset |
+
+```bat
+audits\RUN_GATEWAY_WINDOWS_INSTALL_E2E.bat
+```
+
 ---
 
 # Creative domain E2E
