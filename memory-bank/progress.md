@@ -21,6 +21,8 @@
 - [x] Commit `18fc71f22` gepusht naar `origin/main`
 - [x] `doctor --fix`: auth.json BOM-detectie + `repair_all_auth_json_bom()` (fork overlay)
 - [x] RAG dependency guard: `constraints-rag-stack.txt`, `neutts[onnx]`, `guard_forbidden_packages.py` (geen diskcache/llama-cpp); `expand_cli_toolset_arg` (`mcp` sentinel → MCP-servernamen)
+- [x] Institutional stap-4 CLI-args (2026-06-06): `call hermes_legal_rooktest.bat "%HERMES_REPO%" "%PY%"`; rooktest `%1`/`%2`; live `institutional_p0_p1.bat` exit 0
+- [ ] P4 `RUN_AUDITS -IncludeAllE2E` — periodiek (~15 min); tier-A restore mag niet per ongeluk gecommit worden
 
 ## Technische schuld — afgerond (2026-06-06)
 

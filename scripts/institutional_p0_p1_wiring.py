@@ -51,9 +51,9 @@ def check_institutional_p0_p1_wiring(repo_root: Path | None = None) -> dict[str,
         "ROOKTEST_BAT via INST_SCRIPT_DIR",
     )
     _add(
-        "institutional_passes_hermes_repo",
-        'set "HERMES_REPO=%HERMES_REPO%"' in inst_text,
-        "explicit HERMES_REPO forward",
+        "institutional_passes_hermes_repo_args",
+        'call "%ROOKTEST_BAT%" "%HERMES_REPO%" "%PY%"' in inst_text,
+        "HERMES_REPO+PY als CLI-args naar rooktest",
     )
 
     resolve_text = RESOLVE_BAT.read_text(encoding="utf-8") if RESOLVE_BAT.is_file() else ""
@@ -65,6 +65,11 @@ def check_institutional_p0_p1_wiring(repo_root: Path | None = None) -> dict[str,
 
     rook_text = ROOK_BAT.read_text(encoding="utf-8") if ROOK_BAT.is_file() else ""
     _add("rooktest_validates_pyproject", "pyproject.toml" in rook_text, "HERMES_REPO guard")
+    _add(
+        "rooktest_accepts_cli_repo_arg",
+        'if not "%~1"=="" set "HERMES_REPO=%~1"' in rook_text,
+        "%1=HERMES_REPO van parent",
+    )
     _add(
         "rooktest_search_script",
         (root / "scripts" / "rag_pipeline" / "_rooktest_search.py").is_file(),

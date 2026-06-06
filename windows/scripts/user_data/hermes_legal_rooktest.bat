@@ -1,7 +1,10 @@
 @echo off
 rem Rooktest legal: search_knowledge + optioneel hermes chat (vereist API-login).
-rem Vereist HERMES_REPO (zet institutional_p0_p1 / launcher) of fallback hieronder.
+rem Args (setlocal-safe): %1=HERMES_REPO, %2=PY — van institutional_p0_p1 / launcher.
+rem Fallback: env HERMES_REPO, daarna hermes_agent_repo.txt, dan hardcoded dev-pad.
 setlocal EnableExtensions
+if not "%~1"=="" set "HERMES_REPO=%~1"
+if not "%~2"=="" set "PY=%~2"
 if not defined HERMES_REPO (
   if exist "%USERPROFILE%\data\hermes_agent_repo.txt" (
     for /f "usebackq delims=" %%I in ("%USERPROFILE%\data\hermes_agent_repo.txt") do set "HERMES_REPO=%%~I"

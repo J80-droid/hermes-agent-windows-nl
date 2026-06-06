@@ -2,7 +2,7 @@
 
 ## Focus
 
-**Chat rooktest 401 + auth BOM (2026-06-06, productie OK):** `runtime_provider` + overlay `load_config`-rebind; BOM-tolerante `_load_auth_store` + `repair_auth_json_bom.py`; rooktest via `run_hermes_cli_with_overlay.py` met MCP-server toolsets (`lancedb-legal`, niet pseudo `mcp`); `doctor --fix` roept `repair_all_auth_json_bom()` aan. Commit `18fc71f22` op `origin/main`. Verificatie: `--check-all` 14/14; live `hermes_legal_rooktest.bat` + `institutional_p0_p1.bat` **PASS** (Venice + `search_knowledge` + `[Bron: …]`). E2E `audits/RUN_CHAT_ROOKTEST_SECURITY_E2E.bat` 8/8; unit 37+ tests rooktest/auth/config.
+**Chat rooktest 401 + auth BOM (2026-06-06, productie OK):** `runtime_provider` + overlay `load_config`-rebind; BOM-tolerante `_load_auth_store` + `repair_auth_json_bom.py`; rooktest via `run_hermes_cli_with_overlay.py` met MCP-server toolsets (`expand_cli_toolset_arg`); `doctor --fix` roept `repair_all_auth_json_bom()` aan. Commits `18fc71f22`–`38afeeb01` op `origin/main`. Verificatie: `institutional_p0_p1.bat` **PASS** (stap 4 search + Venice); `call hermes_legal_rooktest.bat "%HERMES_REPO%" "%PY%"` (setlocal-safe CLI-args). E2E: `RUN_INSTITUTIONAL_P0P1_WIRING_E2E` 15/15; P4 `RUN_AUDITS -IncludeAllE2E` periodiek (let op: tier-A restore wijzigt werkmap — niet committen).
 
 **Technische schuld + open poorten (2026-06-06):** `RUN_INSTITUTIONAL_PRODUCTION_GATE` **PASS** (pytest `PYTEST_ADDOPTS`/timeout-fix in `HermesShellCommon` + audit-scripts); `RUN_PLATFORM_HARDENING_PRODUCTION_GATE` PASS; RAG P0+P1 `--ingest-remaining` exit 0 (lege bronmappen = WARN, geen FAIL); CI platform gate + pre-commit `-Strict` + `python -m ruff` in `RUN_AUDITS`.
 

@@ -514,7 +514,7 @@ Handmatig: `windows\REPAIR_AUTH_JSON_BOM.bat` of `hermes doctor --fix`; security
 
 # Institutional P0+P1 wiring E2E
 
-Geïsoleerde E2E voor `institutional_p0_p1.bat` → `hermes_legal_rooktest.bat` (pad/HERMES_REPO, geen live ingest/chat).
+Geïsoleerde E2E voor `institutional_p0_p1.bat` → `hermes_legal_rooktest.bat` (`call … "%HERMES_REPO%" "%PY%"` — setlocal-safe; geen live ingest/chat).
 
 | ID | Scenario | Verwachting |
 |----|----------|-------------|

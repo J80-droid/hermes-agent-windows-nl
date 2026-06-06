@@ -78,10 +78,8 @@ if not exist "%ROOKTEST_BAT%" (
   echo [ERROR] Legal rooktest ontbreekt: %ROOKTEST_BAT%
   exit /b 1
 )
-rem Doorgeven aan child (setlocal-safe; geen set /p CRLF in HERMES_REPO)
-set "HERMES_REPO=%HERMES_REPO%"
-set "PY=%PY%"
-call "%ROOKTEST_BAT%"
+rem Doorgeven als CLI-args (setlocal/endlocal-safe; betrouwbaarder dan alleen env)
+call "%ROOKTEST_BAT%" "%HERMES_REPO%" "%PY%"
 set "ROOK_EXIT=%ERRORLEVEL%"
 if not defined ROOKTEST_CHAT set "ROOKTEST_CHAT=unknown"
 

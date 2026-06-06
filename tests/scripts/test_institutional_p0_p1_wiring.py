@@ -60,8 +60,15 @@ def test_resolve_hermes_repo_strips_pointer_line(monkeypatch, tmp_path):
 def test_institutional_bat_passes_hermes_repo():
     inst = REPO_ROOT / "windows" / "scripts" / "institutional_p0_p1.bat"
     text = inst.read_text(encoding="utf-8")
-    assert 'set "HERMES_REPO=%HERMES_REPO%"' in text
+    assert 'call "%ROOKTEST_BAT%" "%HERMES_REPO%" "%PY%"' in text
     assert "ROOKTEST_BAT=%INST_SCRIPT_DIR%user_data" in text
+
+
+def test_rooktest_bat_accepts_cli_repo_arg():
+    rook = REPO_ROOT / "windows" / "scripts" / "user_data" / "hermes_legal_rooktest.bat"
+    text = rook.read_text(encoding="utf-8")
+    assert 'if not "%~1"=="" set "HERMES_REPO=%~1"' in text
+    assert 'if not "%~2"=="" set "PY=%~2"' in text
 
 
 def test_resolve_bat_uses_for_f_not_set_p():
