@@ -497,12 +497,14 @@ Geïsoleerde E2E voor overlay chat-entry (`run_hermes_cli_with_overlay.py`), sta
 | E6 | Inference precheck | `inference_available` met geïsoleerde key |
 | E7 | Security pins | `overlay/requirements-security-pins.txt` |
 | E8 | Corrupt auth | `.json.corrupt` backup + lege store |
+| E9 | Doctor BOM | `_auth_json_files_with_bom` + `_repair_auth_json_bom_all` |
+| E10 | Chat toolsets | `lancedb-*` MCP-namen, geen pseudo `mcp` |
 
 ```bat
 audits\RUN_CHAT_ROOKTEST_SECURITY_E2E.bat
 ```
 
-Unit: `pytest tests/scripts/test_rooktest_chat.py tests/scripts/test_repair_auth_json_bom.py tests/overlay/test_auth_fork_patch.py tests/overlay/test_config_fork_patch.py -q`
+Unit: `pytest tests/scripts/test_rooktest_chat.py tests/scripts/test_repair_auth_json_bom.py tests/hermes_cli/test_doctor_auth_bom.py tests/overlay/test_auth_fork_patch.py tests/overlay/test_config_fork_patch.py -q`
 
 Handmatig: `windows\REPAIR_AUTH_JSON_BOM.bat` of `hermes doctor --fix`; security pins: `windows\REPAIR_SECURITY_PINS.bat`.
 

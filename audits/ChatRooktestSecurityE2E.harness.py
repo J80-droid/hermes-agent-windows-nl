@@ -10,6 +10,8 @@ Scenario matrix:
   E6  inference_available with isolated VENICE_API_KEY (no chat subprocess)
   E7  overlay/requirements-security-pins.txt declares PyNaCl + setuptools<82
   E8  corrupt auth.json → empty store + .json.corrupt backup
+  E9  doctor BOM helpers detect + repair (isolated tree)
+  E10 chat toolsets use MCP server names, not pseudo mcp
 """
 
 from __future__ import annotations
@@ -186,6 +188,59 @@ def test_e8_corrupt_auth_backup() -> None:
     _step("corrupt_auth_backup", ok)
 
 
+def test_e9_doctor_bom_detect_and_repair() -> None:
+    from hermes_cli.doctor import (
+        _auth_json_files_with_bom,
+        _repair_auth_json_bom_all,
+    )
+    from overlay.bootstrap import install
+
+    install()
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp) / "hermes"
+        prof = root / "profiles" / "legal"
+        prof.mkdir(parents=True)
+        auth = prof / "auth.json"
+        auth.write_bytes(b"\xef\xbb\xbf" + b'{"active_provider": "venice"}')
+        os.environ["HERMES_HOME"] = str(prof)
+        os.environ["HERMES_WIN_PREFER_LOCALAPPDATA"] = "0"
+        ok_detect = auth in _auth_json_files_with_bom()
+        repaired = _repair_auth_json_bom_all()
+        ok_repair = bool(repaired) and not _auth_json_files_with_bom()
+    _step("doctor_bom_detect_repair", ok_detect and ok_repair)
+
+
+def test_e10_chat_toolsets_mcp_server_names() -> None:
+    from overlay.bootstrap import install
+    from scripts.rag_pipeline import _rooktest_chat as rook
+
+    install()
+    with _isolated_profile_tree() as legal_home:
+        (legal_home / "config.yaml").write_text(
+            yaml.safe_dump(
+                {
+                    "mcp_servers": {
+                        "lancedb-legal": {
+                            "command": "python",
+                            "args": ["-m", "mcp"],
+                        }
+                    }
+                },
+                sort_keys=False,
+            ),
+            encoding="utf-8",
+        )
+        import hermes_cli.profile_model_inheritance as pmi
+        from hermes_cli import config as config_mod
+
+        pmi.bust_config_caches(legal_home.parent.parent)
+        config_mod._LOAD_CONFIG_CACHE.clear()
+        arg = rook._chat_toolsets_arg()
+        parts = [p.strip() for p in arg.split(",") if p.strip()]
+        ok = "lancedb-legal" in parts and "mcp" not in parts and "file" in parts
+    _step("chat_toolsets_mcp_names", ok)
+
+
 def main() -> int:
     test_e1_overlay_entry_subprocess()
     test_e2_runtime_provider_config_rebind()
@@ -195,6 +250,8 @@ def main() -> int:
     test_e6_inference_available_isolated()
     test_e7_security_pins_file()
     test_e8_corrupt_auth_backup()
+    test_e9_doctor_bom_detect_and_repair()
+    test_e10_chat_toolsets_mcp_server_names()
     if FAILURES:
         print(f"\nChatRooktestSecurityE2E: {FAILURES} failure(s)", file=sys.stderr)
         return 1

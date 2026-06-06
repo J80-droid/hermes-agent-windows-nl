@@ -7,7 +7,14 @@ import sys
 from pathlib import Path
 from typing import Optional, Tuple
 
-_CHAT_TIMEOUT_SEC = int(os.environ.get("HERMES_ROOKTEST_CHAT_TIMEOUT", "600"))
+def _chat_timeout_sec() -> int:
+    """Parse ``HERMES_ROOKTEST_CHAT_TIMEOUT``; invalid/non-positive → 600s."""
+    raw = os.environ.get("HERMES_ROOKTEST_CHAT_TIMEOUT", "600")
+    try:
+        sec = int(str(raw).strip())
+        return sec if sec > 0 else 600
+    except (TypeError, ValueError):
+        return 600
 
 _REPO = Path(__file__).resolve().parents[2]
 if str(_REPO) not in sys.path:
@@ -43,8 +50,11 @@ def _chat_toolsets_arg() -> str:
     """MCP server names from profile config + file/memory (not pseudo ``mcp`` toolset)."""
     from hermes_cli.config import load_config
 
-    cfg = load_config()
-    mcp_servers = cfg.get("mcp_servers")
+    try:
+        cfg = load_config()
+    except Exception:
+        return "file,memory"
+    mcp_servers = cfg.get("mcp_servers") if isinstance(cfg, dict) else None
     names: list[str] = []
     if isinstance(mcp_servers, dict):
         names = [str(k).strip() for k in mcp_servers if str(k).strip()]
@@ -121,7 +131,9 @@ def run_chat_rooktest(profile: str = "legal") -> int:
         )
         return 2
 
+    _prepare_profile(profile)
     provider, model = _model_provider_from_config()
+    toolsets = _chat_toolsets_arg()
     cmd = [
         sys.executable,
         str(_OVERLAY_ENTRY),
@@ -135,7 +147,7 @@ def run_chat_rooktest(profile: str = "legal") -> int:
         "--max-turns",
         "8",
         "--toolsets",
-        _chat_toolsets_arg(),
+        toolsets,
     ]
     if provider:
         cmd.extend(["--provider", provider])
@@ -149,10 +161,10 @@ def run_chat_rooktest(profile: str = "legal") -> int:
             cmd,
             cwd=str(_REPO),
             env=os.environ.copy(),
-            timeout=_CHAT_TIMEOUT_SEC,
+            timeout=_chat_timeout_sec(),
         )
     except subprocess.TimeoutExpired:
-        print(f"[WARN] Hermes chat timeout na {_CHAT_TIMEOUT_SEC}s")
+        print(f"[WARN] Hermes chat timeout na {_chat_timeout_sec()}s")
         return 1
     if proc.returncode == 0:
         print("[OK] Hermes chat rooktest geslaagd")

@@ -55,8 +55,64 @@ def test_chat_toolsets_fallback_without_mcp(monkeypatch):
     assert mod._chat_toolsets_arg() == "file,memory"
 
 
+def test_chat_toolsets_on_load_config_failure(monkeypatch):
+    def _boom():
+        raise RuntimeError("config unavailable")
+
+    monkeypatch.setattr("hermes_cli.config.load_config", _boom)
+    assert mod._chat_toolsets_arg() == "file,memory"
+
+
+def test_chat_toolsets_ignores_non_dict_mcp_servers(monkeypatch):
+    monkeypatch.setattr("hermes_cli.config.load_config", lambda: {"mcp_servers": []})
+    assert mod._chat_toolsets_arg() == "file,memory"
+
+
+def test_chat_toolsets_dedupes_names(monkeypatch):
+    monkeypatch.setattr(
+        "hermes_cli.config.load_config",
+        lambda: {
+            "mcp_servers": {"lancedb-legal": {}, "lancedb-core": {}},
+        },
+    )
+    arg = mod._chat_toolsets_arg()
+    assert arg.count("file") == 1 and arg.count("memory") == 1
+
+
+def test_chat_timeout_invalid_env_falls_back(monkeypatch):
+    monkeypatch.setenv("HERMES_ROOKTEST_CHAT_TIMEOUT", "not-a-number")
+    assert mod._chat_timeout_sec() == 600
+
+
+def test_chat_timeout_non_positive_falls_back(monkeypatch):
+    monkeypatch.setenv("HERMES_ROOKTEST_CHAT_TIMEOUT", "0")
+    assert mod._chat_timeout_sec() == 600
+
+
+def test_run_chat_passes_mcp_toolsets_in_cmd(monkeypatch):
+    monkeypatch.setattr(mod, "inference_available", lambda _p: True)
+    monkeypatch.setattr(mod, "_prepare_profile", lambda _p: None)
+    monkeypatch.setattr(mod, "_model_provider_from_config", lambda: ("venice", "m"))
+    monkeypatch.setattr(mod, "_chat_toolsets_arg", lambda: "lancedb-legal,file,memory")
+    captured: list[list[str]] = []
+
+    class _Proc:
+        returncode = 0
+
+    monkeypatch.setattr(
+        mod.subprocess,
+        "run",
+        lambda cmd, **kw: captured.append(cmd) or _Proc(),
+    )
+    mod.run_chat_rooktest("legal")
+    assert captured
+    ts_idx = captured[0].index("--toolsets")
+    assert captured[0][ts_idx + 1] == "lancedb-legal,file,memory"
+
+
 def test_run_chat_uses_overlay_entry(monkeypatch):
     monkeypatch.setattr(mod, "inference_available", lambda _p: True)
+    monkeypatch.setattr(mod, "_prepare_profile", lambda _p: None)
     monkeypatch.setattr(mod, "_model_provider_from_config", lambda: ("venice", "deepseek-v4-pro"))
     captured: list[list[str]] = []
 
@@ -111,6 +167,7 @@ def test_inference_falls_back_to_auth_status(monkeypatch):
 
 def test_run_chat_timeout_returns_1(monkeypatch):
     monkeypatch.setattr(mod, "inference_available", lambda _p: True)
+    monkeypatch.setattr(mod, "_prepare_profile", lambda _p: None)
     monkeypatch.setattr(mod, "_model_provider_from_config", lambda: ("venice", "m"))
 
     def _timeout(*_a, **_kw):
@@ -122,6 +179,7 @@ def test_run_chat_timeout_returns_1(monkeypatch):
 
 def test_run_chat_nonzero_exit_returns_1(monkeypatch):
     monkeypatch.setattr(mod, "inference_available", lambda _p: True)
+    monkeypatch.setattr(mod, "_prepare_profile", lambda _p: None)
     monkeypatch.setattr(mod, "_model_provider_from_config", lambda: ("venice", "m"))
 
     class _Proc:

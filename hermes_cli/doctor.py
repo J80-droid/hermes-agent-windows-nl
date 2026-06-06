@@ -485,8 +485,14 @@ def _repair_auth_json_bom_all() -> list[str]:
     except (ImportError, AttributeError):
         pass
     if repair_fn is None:
-        from overlay.hermes_cli.auth_fork_patch import repair_all_auth_json_bom as repair_fn
-    return repair_fn()
+        try:
+            from overlay.hermes_cli.auth_fork_patch import repair_all_auth_json_bom as repair_fn
+        except ImportError:
+            return []
+    try:
+        return repair_fn()
+    except Exception:
+        return []
 
 
 def run_doctor(args):
@@ -1131,7 +1137,12 @@ def run_doctor(args):
                     check_ok(f"Removed UTF-8 BOM from {path}")
                 if repaired:
                     fixed_count += len(repaired)
-                else:
+                remaining_bom = _auth_json_files_with_bom()
+                if remaining_bom:
+                    manual_issues.append(
+                        f"auth.json UTF-8 BOM still present in {len(remaining_bom)} file(s) after repair"
+                    )
+                elif not repaired:
                     manual_issues.append(
                         "auth.json UTF-8 BOM detected but repair returned no paths"
                     )
