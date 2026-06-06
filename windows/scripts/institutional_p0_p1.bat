@@ -13,6 +13,11 @@ title Hermes institutional P0+P1
 call "%~dp0rag\_resolve_hermes_repo.bat"
 if errorlevel 1 exit /b 1
 call "%~dp0rag\_rag_apply_institutional_env.bat"
+set "UPDATE_KNOWLEDGE_BAT=%HERMES_REPO%\windows\scripts\update_knowledge.bat"
+if not exist "%UPDATE_KNOWLEDGE_BAT%" (
+  echo [ERROR] update_knowledge.bat ontbreekt: %UPDATE_KNOWLEDGE_BAT%
+  exit /b 1
+)
 
 set "PY=%USERPROFILE%\miniconda3\envs\hermes-env\python.exe"
 if not exist "%PY%" set "PY=python"
@@ -49,7 +54,7 @@ if errorlevel 1 (
 
 echo.
 echo [STEP 3/5] MCP-probe alle domeinen
-call "%~dp0update_knowledge.bat" --mcp-test
+call "%UPDATE_KNOWLEDGE_BAT%" --mcp-test
 if errorlevel 1 exit /b 1
 
 echo.
@@ -85,7 +90,7 @@ if "%DO_INGEST%"=="1" (
   if errorlevel 1 exit /b 1
   echo.
   echo [INFO] Herhaal MCP-probe na bulk ingest...
-  call "%~dp0update_knowledge.bat" --mcp-test
+  call "%UPDATE_KNOWLEDGE_BAT%" --mcp-test
 ) else (
   echo [INFO] Bulk ingest overgeslagen ^(gebruik --ingest-remaining^)
 )

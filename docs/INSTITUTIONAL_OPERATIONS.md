@@ -156,7 +156,11 @@ windows\VERIFY_WINDOWS_CHAIN.bat
 
 `-IncludeAllE2E` bevat hardening **14/14**, maar **niet** `RUN_INSTITUTIONAL_PRODUCTION_GATE` (gebruik `-IncludeInstitutionalProductionGate` of losse `.bat`, ~2+ min).
 
-Platform hardening productie-poort (sandbox/file_tools wiring): `windows\audits\RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat`.
+**Aanbevolen release-keten (fork):** `RUN_REPO_HYGIENE_E2E` → `RUN_NOUS_OVERLAY_AFWERKING_E2E` → `RUN_PYTEST_AUDIT_ENV_E2E` → `RUN_INSTITUTIONAL_PRODUCTION_GATE` → `Test-NousTreeIdentical` → (optioneel) `RUN_AUDITS -IncludeInstitutionalProductionGate`.
+
+**Pytest audit-env (snel, ~20s):** `audits\RUN_PYTEST_AUDIT_ENV_E2E.bat` — valideert `Clear-HermesPytestAddoptsForAudit`, geen dubbele `pytest_timeout`, RAG MCP bootstrap.
+
+Platform hardening productie-poort (sandbox/file_tools wiring): `windows\audits\RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat` (ook in CI `fork-windows-institutional.yml`).
 
 ### RAG, legal & domeinen
 

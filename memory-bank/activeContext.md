@@ -2,7 +2,7 @@
 
 ## Focus
 
-**Technische schuld codebase-schoonmaak (2026-06-06):** `overlay/tools/file_tools_fork_patch.py` wired sandbox → `_resolve_path_for_task` + `_check_sensitive_path`; `RUN_PLATFORM_HARDENING_PRODUCTION_GATE` **PASS** (incl. `test_file_tools_fork_patch`, `test_file_tools`); `audits/RUN_NOUS_OVERLAY_AFWERKING_E2E` 8/8; `Test-NousTreeIdentical` groen na `Invoke-RestoreNousTierA`; drift-baseline + cadans in `INSTITUTIONAL_OPERATIONS.md`. **Let op:** `RUN_INSTITUTIONAL_PRODUCTION_GATE` ≠ `RUN_AUDITS -IncludeAllE2E` — platform-poort groen; volledige institutional gate vereist `hermes-env` (o.a. pyarrow voor KnowledgeRepository pytest).
+**Technische schuld + open poorten (2026-06-06):** `RUN_INSTITUTIONAL_PRODUCTION_GATE` **PASS** (pytest `PYTEST_ADDOPTS`/timeout-fix in `HermesShellCommon` + audit-scripts); `RUN_PLATFORM_HARDENING_PRODUCTION_GATE` PASS; RAG P0+P1 `--ingest-remaining` exit 0 (lege bronmappen = WARN, geen FAIL); CI platform gate + pre-commit `-Strict` + `python -m ruff` in `RUN_AUDITS`.
 
 **Nous overlay afwerking (2026-06-06):** Plan uitgevoerd. **`RUN_AUDITS -IncludeAllE2E` PASS** (`windows/audits/RUN_AUDITS_plan_final3.log`). Tier A restore; fork gates in audit; dedup regel-§; trust preflight in RUN_AUDITS; overlay `usage.ts` + vitest copy `-Force`; bootstrap laadt `filesystem_sandbox`/`hardware_backend`/`config_snapshot`. `SYNC_TRUST_RUNTIME.bat` groen met SOUL+memory retry. RAG F6 uitgesteld (geen bronmappen).
 

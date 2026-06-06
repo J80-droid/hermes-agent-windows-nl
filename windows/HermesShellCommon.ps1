@@ -11,8 +11,18 @@ if (Test-Path -LiteralPath $nousTierPaths) {
     . $nousTierPaths
 }
 
+# Override pyproject signal timeouts on Windows (geen -p pytest_timeout: dubbele plugin-registratie).
 if (-not $env:PYTEST_ADDOPTS) {
-    $env:PYTEST_ADDOPTS = '-p pytest_timeout --timeout=30 --timeout-method=thread'
+    $env:PYTEST_ADDOPTS = '--timeout-method=thread'
+}
+
+# Audit-subprocessen: wis PYTEST_ADDOPTS (voorkomt dubbele pytest_timeout) en zet expliciete addopts.
+function Clear-HermesPytestAddoptsForAudit {
+    Remove-Item Env:PYTEST_ADDOPTS -ErrorAction SilentlyContinue
+}
+
+function Get-HermesAuditPytestOverrideArgs {
+    return @('-o', 'addopts=--timeout=30 --timeout-method=thread')
 }
 
 function Test-NativeCommandFailed {

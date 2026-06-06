@@ -8,8 +8,8 @@
 
 ## RAG operationeel (Fase 6 — gebruikersdata)
 
-- [ ] Bronmappen `%USERPROFILE%\data\raw_source_files\` (01–03, 05–08, 09–12) — **ontbreken op dev-machine**; ingest/MCP-test uitgesteld tot bronnen aanwezig
-- [ ] `windows\scripts\institutional_p0_p1.bat --ingest-remaining` + `update_knowledge.bat --mcp-test` na bronnen
+- [ ] Bronmappen `%USERPROFILE%\data\raw_source_files\` (01–03, 05–08, 09–12) — **nog leeg op dev-machine** (lege LanceDB = verwachte WARN bij MCP-test)
+- [x] `institutional_p0_p1.bat --ingest-remaining` + MCP-test (2026-06-06): pipeline exit 0; preflight skip-empty; legal/core MCP OK; overlay bootstrap in `sync_profile_mcp_from_domains.py`; padfix `UPDATE_KNOWLEDGE_BAT`
 
 ## Technische schuld — afgerond (2026-06-06)
 
@@ -17,6 +17,7 @@
 - [x] Platform production gate: `RUN_PLATFORM_HARDENING_PRODUCTION_GATE.bat` PASS; regression harness `install()` + wiring-checks
 - [x] Drift: `Test-NousTreeIdentical` + `Export-NousDriftBaseline`; cadans `INSTITUTIONAL_OPERATIONS.md`
 - [x] `audits/RUN_NOUS_OVERLAY_AFWERKING_E2E.bat` 8/8; memory-bank/docs sync
+- [x] `RUN_INSTITUTIONAL_PRODUCTION_GATE` PASS (2026-06-06): centrale pytest-env fix; CI platform gate; pre-commit strict; ruff via `python -m ruff`
 
 ## Nous overlay institutioneel (2026-06)
 

@@ -7,6 +7,7 @@ Geen live netwerk. Draai: audits/RUN_INSTITUTIONAL_HARDENING_E2E.bat
 from __future__ import annotations
 
 import importlib.util
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -183,10 +184,25 @@ def test_h9_legal_pytest() -> None:
         "tests/skills/test_uitspraak_parseren_skill.py",
         "tests/skills/test_web_research_legal_skill.py",
     ]
-    cmd = [str(PY), "-m", "pytest", *tests, "-q", "--tb=line"]
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=180, cwd=str(REPO))
+    env = os.environ.copy()
+    env.pop("PYTEST_ADDOPTS", None)
+    cmd = [
+        str(PY),
+        "-m",
+        "pytest",
+        *tests,
+        "-q",
+        "--tb=line",
+        "-o",
+        "addopts=--timeout=30 --timeout-method=thread",
+    ]
+    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=180, cwd=str(REPO), env=env)
     ok = proc.returncode == 0 and "passed" in proc.stdout
-    _step("legal skills pytest", ok, f"exit={proc.returncode}")
+    detail = f"exit={proc.returncode}"
+    if not ok:
+        tail = (proc.stderr or proc.stdout or "")[-300:].replace("\n", " ")
+        detail = f"{detail} {tail}"
+    _step("legal skills pytest", ok, detail)
 
 
 def test_h10_ecli_validation() -> None:

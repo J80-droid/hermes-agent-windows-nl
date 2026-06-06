@@ -482,3 +482,14 @@ audits\RUN_NOUS_OVERLAY_AFWERKING_E2E.bat
 ```
 
 Unit (harness, gemockt): `pytest tests/audits/test_nous_overlay_afwerking_e2e_harness.py -m "not e2e" -q`
+
+## Pytest audit-env E2E (institutional gate wiring)
+
+Geïsoleerde poort voor `PYTEST_ADDOPTS`/pytest_timeout-fix, production gate en RAG MCP bootstrap. Zie `audits/PYTEST_AUDIT_ENV_E2E_README.md`.
+
+```cmd
+audits\RUN_PYTEST_AUDIT_ENV_E2E.bat
+```
+
+| E1–E8 | Wiring + regressie + `sync_profile_mcp` + `institutional_p0_p1` pad |
+| Unit | `pytest tests/audits/test_pytest_audit_env_e2e_harness.py tests/scripts/test_sync_profile_mcp_bootstrap.py -q` |

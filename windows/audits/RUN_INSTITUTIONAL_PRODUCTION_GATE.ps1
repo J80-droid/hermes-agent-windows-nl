@@ -15,6 +15,7 @@ if (-not $RepoRoot) {
 }
 
 . (Join-Path $scriptRoot '..\HermesShellCommon.ps1')
+Clear-HermesPytestAddoptsForAudit
 
 $failures = 0
 $reportStamp = Get-Date -Format 'yyyy-MM-dd_HHmmss'

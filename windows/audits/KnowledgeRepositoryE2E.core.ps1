@@ -124,11 +124,13 @@ Add-StepResult -Name '5/8 isolated harness (8 scenario''s)' -Ok $harnessOk
 if ($SkipPytest) {
     Add-StepResult -Name '6/8 pytest test_knowledge_repository' -Ok $true -Detail 'overgeslagen (-SkipPytest)'
 } else {
-    $pytestOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
+    Clear-HermesPytestAddoptsForAudit
+    $pytestArgs = @(
         '-m', 'pytest',
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/rag_pipeline/test_knowledge_repository.py'),
-        '-q', '--tb=short', '-o', 'addopts='
-    )
+        '-q', '--tb=short'
+    ) + (Get-HermesAuditPytestOverrideArgs)
+    $pytestOk = Invoke-AuditCommand -Exe $python -ArgumentList $pytestArgs
     Add-StepResult -Name '6/8 pytest test_knowledge_repository' -Ok $pytestOk -Detail $python
 }
 

@@ -49,11 +49,6 @@ $scriptRoot = $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $scriptRoot '..\..')).Path
 Set-Location $repoRoot
 
-# Tier A restore resets pyproject.toml; force thread timeouts on Windows audits.
-if (-not $env:PYTEST_ADDOPTS) {
-    $env:PYTEST_ADDOPTS = '-p pytest_timeout --timeout=30 --timeout-method=thread'
-}
-
 $failures = 0
 $skipped = 0
 $restoreTierA = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/Invoke-RestoreNousTierA.ps1'
@@ -175,14 +170,9 @@ if (-not $SkipFootguns) {
 }
 
 if (-not $SkipRuff) {
-    Invoke-Step 'ruff' -AllowSkip {
-        $ruff = Get-Command ruff -ErrorAction SilentlyContinue
-        if (-not $ruff) {
-            Write-Host 'SKIP: ruff niet op PATH' -ForegroundColor Yellow
-            $global:LASTEXITCODE = 2
-            return
-        }
-        & ruff check `
+    Invoke-Step 'ruff' {
+        $py = Get-HermesAuditPython -RepoRoot $repoRoot
+        & $py -m ruff check `
             overlay/hermes_cli/profile_switch.py `
             overlay/hermes_cli/relaunch.py `
             hermes_cli/main.py `

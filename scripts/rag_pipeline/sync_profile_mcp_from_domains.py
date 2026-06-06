@@ -22,6 +22,14 @@ _REPO = Path(__file__).resolve().parent.parent.parent
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
+from overlay.bootstrap import install  # noqa: E402
+
+try:
+    install()
+except Exception as exc:  # pragma: no cover - bootstrap failure is fatal for MCP sync
+    print(f"[ERROR] overlay bootstrap failed: {exc}", file=sys.stderr)
+    raise SystemExit(1) from exc
+
 from domains_config import DomainSpec, default_domains_yaml, load_domains, resolve_domain_paths  # noqa: E402
 from hermes_cli.profile_mcp_format import (  # noqa: E402
     _read_yaml,
