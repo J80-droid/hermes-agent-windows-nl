@@ -53,6 +53,17 @@ $script:HermesNousTierBRoots = @(
 # Transitional: empty when Tier A restore complete (Invoke-RestoreNousTierA.ps1).
 $script:HermesNousTierATransitional = @()
 
+# Permanent fork deltas in Tier A paths (documented; prefer overlay patch long-term).
+$script:HermesNousTierAForkIntentional = @(
+    'hermes_cli/gateway_windows.py'  # conda VIRTUAL_ENV in _build_gateway_cmd_script (#fork)
+)
+
+function Test-HermesPathTierAForkIntentional {
+    param([Parameter(Mandatory)][string]$Path)
+    $norm = ($Path -replace '\\', '/').TrimStart('./')
+    return $script:HermesNousTierAForkIntentional -contains $norm
+}
+
 function Test-HermesPathUnderTierARoot {
     param([Parameter(Mandatory)][string]$Path)
     $norm = ($Path -replace '\\', '/').TrimStart('./')

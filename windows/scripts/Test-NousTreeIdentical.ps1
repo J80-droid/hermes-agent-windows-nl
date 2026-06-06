@@ -48,6 +48,10 @@ try {
     $diffNames = @(git diff --name-only $UpstreamRef -- @specs 2>$null | Where-Object { $_.Trim() })
     foreach ($p in $diffNames) {
         if (Test-HermesPathTierAExcluded -Path $p) { continue }
+        if (Test-HermesPathTierAForkIntentional -Path $p) {
+            $warnings.Add("changed (fork-intentional): $p")
+            continue
+        }
         $isTrans = $false
         foreach ($t in $script:HermesNousTierATransitional) {
             if ($p -eq $t -or $p.StartsWith("$t/")) { $isTrans = $true; break }
@@ -63,6 +67,10 @@ try {
     $added = @(git diff --name-only --diff-filter=A $UpstreamRef -- @specs 2>$null | Where-Object { $_.Trim() })
     foreach ($h in $added) {
         if (Test-HermesPathTierAExcluded -Path $h) { continue }
+        if (Test-HermesPathTierAForkIntentional -Path $h) {
+            $warnings.Add("added (fork-intentional): $h")
+            continue
+        }
         if (-not (Test-HermesPathUnderTierARoot -Path $h)) { continue }
         $isTrans = $false
         foreach ($t in $script:HermesNousTierATransitional) {
