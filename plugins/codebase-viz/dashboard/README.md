@@ -49,7 +49,7 @@ pip install pygount watchdog radon psutil
 
 | Situatie | Verwachting |
 |----------|-------------|
-| **Eerste install (geen cache)** | `launch_dashboard_on_start.ps1` → `Ensure-CodebaseVizPygountCache` → `scripts/warm_codebase_viz_pygount_cache.py` (~**4–10 min** afhankelijk van repo; `backups/` wordt overgeslagen) |
+| **Eerste install (geen cache)** | `launch_dashboard_on_start.ps1` → `Initialize-CodebaseVizPygountCache` → `scripts/warm_codebase_viz_pygount_cache.py` (~**4–10 min** afhankelijk van repo; `backups/` wordt overgeslagen) |
 | **Eerste load in UI** (Sunburst) | **< 1 s** als pre-warm geslaagd is — anders fallback: volledige pygount-run in dashboard |
 | **Na succes + herstart** | **< 1 s** — disk-cache hydrate (`codebase_viz_pygount_cache.json`; validatie via git HEAD of bestands-handtekening) |
 | **Herladen binnen TTL** | **< 1 s** — geheugen-cache (`CODEBASE_VIZ_PYGOUNT_TTL`, default **3600 s**) |

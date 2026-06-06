@@ -5,6 +5,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $scriptRoot = $PSScriptRoot
+$windowsRoot = (Resolve-Path (Join-Path $scriptRoot '..\windows')).Path
+. (Join-Path $windowsRoot 'HermesShellCommon.ps1')
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $scriptRoot '..')).Path
 } else {
@@ -136,28 +138,15 @@ if (Test-Path -LiteralPath $chainPs1) {
 }
 Add-Step '8/8 verify_windows_script_chain' -Ok $chainOk
 
-# 9/9 optional ui-tui vitest (statusBarThroughput / usageCostBar)
-$vitestOk = $true
-$uiTui = Join-Path $RepoRoot 'ui-tui'
-$copyPs1 = Join-Path $RepoRoot 'windows/scripts/Invoke-CopyHermesOverlaySources.ps1'
-if ((Test-Path -LiteralPath $copyPs1)) {
-    & powershell -NoProfile -ExecutionPolicy Bypass -File $copyPs1 -RepoRoot $RepoRoot -Target ui-tui -Force | Out-Null
-}
-if ((Get-Command npm -ErrorAction SilentlyContinue) -and (Test-Path -LiteralPath (Join-Path $uiTui 'package.json'))) {
-    Push-Location $uiTui
-    try {
-        $vitestOk = Invoke-AuditExe -Exe 'npx' -ArgumentList @(
-            'vitest', 'run',
-            'src/domain/statusBarThroughput.test.ts',
-            'src/domain/usageCostBar.test.ts',
-            '--passWithNoTests'
-        )
-    } finally {
-        Pop-Location
-    }
-    Add-Step '9/9 ui-tui vitest (optional)' -Ok $vitestOk -Detail 'statusBarThroughput + usageCostBar'
-} else {
+# 9/9 ui-tui vitest (statusBarThroughput / usageCostBar) — skip zonder npm; anders npm ci + vitest
+$vitestRc = Invoke-HermesUiTuiVitest -RepoRoot $RepoRoot -CopyOverlay -TestPaths @(
+    'src/domain/statusBarThroughput.test.ts',
+    'src/domain/usageCostBar.test.ts'
+)
+if ($vitestRc -eq 2) {
     Write-Host '[SKIP] 9/9 ui-tui vitest — npm of ui-tui ontbreekt' -ForegroundColor Yellow
+} else {
+    Add-Step '9/9 ui-tui vitest' -Ok ($vitestRc -eq 0) -Detail 'statusBarThroughput + usageCostBar'
 }
 
 $reportPath = Join-Path $scriptRoot ("NOUS_OVERLAY_INSTITUTIONAL_E2E_REPORT_" + $reportStamp + '.md')

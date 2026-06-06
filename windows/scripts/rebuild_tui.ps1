@@ -50,6 +50,16 @@ if (-not $npm) {
     exit 1
 }
 
+$npmRc = Invoke-HermesUiTuiNpmEnsure -RepoRoot $RepoRoot
+if ($npmRc -eq 1) {
+    Write-Host '[ERROR] ui-tui npm install mislukt' -ForegroundColor Red
+    exit 1
+}
+if ($npmRc -eq 2) {
+    Write-Host '[ERROR] npm niet op PATH — installeer Node.js of start Hermes opnieuw (herbouwt TUI automatisch).' -ForegroundColor Red
+    exit 1
+}
+
 Push-Location $tuiDir
 try {
     & npm run build --silent

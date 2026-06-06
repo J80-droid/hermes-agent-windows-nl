@@ -25,6 +25,7 @@
 - [x] Institutional stap-4 CLI-args (2026-06-06): `call hermes_legal_rooktest.bat "%HERMES_REPO%" "%PY%"`; rooktest `%1`/`%2`; live `institutional_p0_p1.bat` exit 0
 - [x] P4 `RUN_AUDITS -IncludeAllE2E` **PASS** (2026-06-06, exit 0 ~24 min); fixes: config-drift strip+bootstrap, pytest audit-helpers, YOLO width-test
 - [x] Scorecard 10/10 (2026-06-02): pyproject revert signal; `Invoke-HermesTierAPostAuditClean`; RAG fixtures CI; CI/nightly uitbreiding; docs sync
+- [x] PSSA 0 + lean audits (2026-06-06): 103→0 warnings; `-FailOnWarning`; 9 baseline REPORT uit Git; 841 lokale rapporten opgeruimd; `clean_audit_reports.ps1`; `Initialize-CodebaseVizPygountCache`; CI `$hermesHome`; `HermesUiTuiNpm.ps1` vitest/npm ensure
 
 ## Technische schuld — afgerond (2026-06-06)
 

@@ -19,7 +19,7 @@ jobs:
   hardening:
     if: github.repository == 'J80-droid/hermes-agent-windows-nl'
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -32,6 +32,16 @@ jobs:
 
       - name: Install package (dev + RAG for platform gate)
         run: python -m pip install --upgrade pip && pip install -e ".[dev]" && pip install pyarrow lancedb
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: npm ci workspace (ui-tui vitest E2E)
+        run: npm ci --no-audit --no-fund
 
       - name: Seed minimal HERMES_HOME for overlay E2E
         shell: pwsh

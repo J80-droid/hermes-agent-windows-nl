@@ -136,21 +136,16 @@ Add-StepResult -Name '2/10 drift guards + keepOurs' -Ok $guardOk
 
 # --- 3 Vitest (formatter + event handler turn/tools) ---
 if (-not $SkipVitest) {
-    $copyPs1 = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/Invoke-CopyHermesOverlaySources.ps1'
-    if (Test-Path -LiteralPath $copyPs1) {
-        & powershell -NoProfile -ExecutionPolicy Bypass -File $copyPs1 -RepoRoot $RepoRoot -Target ui-tui -Force | Out-Null
+    $vitestRc = Invoke-HermesUiTuiVitest -RepoRoot $RepoRoot -CopyOverlay -TestPaths @(
+        'src/__tests__/statusBarCost.test.ts',
+        'src/__tests__/usageCostBar.test.ts',
+        'src/__tests__/createGatewayEventHandler.test.ts'
+    )
+    if ($vitestRc -eq 2) {
+        Add-StepResult -Name '3/10 vitest cost bar + turn delta' -Ok $true -Detail 'overgeslagen (geen npm)'
+    } else {
+        Add-StepResult -Name '3/10 vitest cost bar + turn delta' -Ok ($vitestRc -eq 0)
     }
-    Push-Location (Join-Path $RepoRoot 'ui-tui')
-    try {
-        $prevEap = $ErrorActionPreference
-        $ErrorActionPreference = 'Continue'
-        & npx vitest run src/__tests__/statusBarCost.test.ts src/__tests__/usageCostBar.test.ts src/__tests__/createGatewayEventHandler.test.ts 2>&1 | Out-Host
-        $vitestOk = ($LASTEXITCODE -eq 0)
-        $ErrorActionPreference = $prevEap
-    } finally {
-        Pop-Location
-    }
-    Add-StepResult -Name '3/10 vitest cost bar + turn delta' -Ok $vitestOk
 } else {
     Add-StepResult -Name '3/10 vitest cost bar + turn delta' -Ok $true -Detail 'overgeslagen (-SkipVitest)'
 }

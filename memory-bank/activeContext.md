@@ -2,6 +2,8 @@
 
 ## Focus
 
+**PSSA 0 + CI vitest hardening (2026-06-06):** PSScriptAnalyzer 0 Warning/Error + `-FailOnWarning` in `RUN_AUDITS`/`RUN_PSScriptAnalyzer`; 9 gecommitte baseline-rapporten verwijderd; `windows/scripts/clean_audit_reports.ps1` voor lokale `*REPORT*`/`E2E_LOG`; gedeelde `HermesUiTuiNpm.ps1` (`Invoke-HermesUiTuiNpmEnsure`, `Invoke-HermesUiTuiVitest`) voor E2E + `rebuild_tui.ps1`; CI `fork-windows-institutional.yml`: Node 20 + `ui-tui npm ci`. Commits `26e107b56`, `20167641a` + follow-up vitest-fix.
+
 **Nous overlay scorecard 10/10 (2026-06-02):** Tier A zuiver (`pyproject.toml` = upstream `signal`); pytest Windows via `Invoke-HermesAuditPytest`/`RUN_PYTEST.ps1`; `Invoke-HermesTierAPostAuditClean` (preflight/pre-overlay/postflight); UI `git clean` na build; RAG `fixtures/rag_minimal` + seed/E2E; CI upstream-remote + 14-fixes/pytest-audit-env/tier-a-cli guard; nightly `fork-windows-audits-nightly.yml`. Postflight: **geen** `git reset --hard` — gebruik `Invoke-HermesTierAPostAuditClean`.
 
 **Chat rooktest 401 + auth BOM (2026-06-06, productie OK):** `runtime_provider` + overlay `load_config`-rebind; BOM-tolerante `_load_auth_store` + `repair_auth_json_bom.py`; rooktest via `run_hermes_cli_with_overlay.py` met MCP-server toolsets (`expand_cli_toolset_arg`); `doctor --fix` roept `repair_all_auth_json_bom()` + profile global-blocks strip aan. Commits `18fc71f22`–`38afeeb01` op `origin/main`. Verificatie: `institutional_p0_p1.bat` **PASS** (stap 4 search + Venice); `call hermes_legal_rooktest.bat "%HERMES_REPO%" "%PY%"` (setlocal-safe CLI-args). E2E: `RUN_INSTITUTIONAL_P0P1_WIRING_E2E` 15/15.
@@ -24,7 +26,7 @@
 
 **RUN_AUDITS E2E-keten (2026-05-29, `74ae0f4e6`+):** Gateway cost/tps; CLI `config get` + profile switch; SOUL repair; Memory Repair Trust `Initialize-*`; `soul-runtime-prep` vóór E2E. Zie ook `windows/audits/RUN_AUDITS_LAST_RUN.log`.
 
-**Codebase Viz pygount pre-warm + disk-cache (2026-05-29):** `scripts/warm_codebase_viz_pygount_cache.py` + `Ensure-CodebaseVizPygountCache` vóór dashboard; skip `backups/` + `.venv.disabled*`; disk-cache met git-HEAD-validatie + atomic write; E2E **`RUN_CODEBASE_VIZ_PYGOUNT_CACHE_E2E.bat` (8/8)**; defaults 600s/3600s/300s; skip: `HERMES_CODEBASE_VIZ_PREGOUNT_CACHE=skip`.
+**Codebase Viz pygount pre-warm + disk-cache (2026-05-29):** `scripts/warm_codebase_viz_pygount_cache.py` + `Initialize-CodebaseVizPygountCache` vóór dashboard; skip `backups/` + `.venv.disabled*`; disk-cache met git-HEAD-validatie + atomic write; E2E **`RUN_CODEBASE_VIZ_PYGOUNT_CACHE_E2E.bat` (8/8)**; defaults 600s/3600s/300s; skip: `HERMES_CODEBASE_VIZ_PREGOUNT_CACHE=skip`.
 
 **Codebase Viz memory_pressure-fix (2026-05-30):** background refresh gebruikt git HEAD i.p.v. bestands-handtekening (geen valse cache-wipe); hydrate + memory guard serveert stale schijfcache bij revisie-mismatch; `/health` → `disk_cache`; docs `docs/CODEBASE_VIZ_TROUBLESHOOTING.md`; repair `windows\FIX_CODEBASE_VIZ_CACHE.bat` (cmd echo-fix); pytest codebase-viz plugin **87** passed.
 
@@ -154,7 +156,7 @@
 | E2E root inheritance | `windows/audits/RUN_ROOT_CONFIG_INHERITANCE_E2E.bat` |
 | Windows | `windows/README.md` |
 | Terminal / display / API-home | `windows/TERMINAL_WINDOWS.md` |
-| Nous upstream | `windows/UPSTREAM_SYNC.md`; merge: `MERGE_UPSTREAM.bat`; audit: `windows/audits/UPSTREAM_UPDATE_E2E_REPORT_2026-05-23.md` |
+| Nous upstream | `windows/UPSTREAM_SYNC.md`; merge: `MERGE_UPSTREAM.bat`; audit-rapport: `UPSTREAM_UPDATE_E2E_REPORT_*_*.md` (lokaal) |
 | Voortgang | `memory-bank/progress.md` |
 
 ## Periodiek IDE-onderhoud (handmatig)

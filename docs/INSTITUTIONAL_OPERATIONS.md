@@ -92,6 +92,7 @@ Rooktest-checklist: [`docs/checklists/codebase-viz-sprint4-full-gate.md`](checkl
 ```cmd
 windows\UPDATE_HERMES.bat -QuickFix
 windows\scripts\health_check_repo.ps1
+powershell -NoProfile -File windows\scripts\clean_audit_reports.ps1
 powershell -NoProfile -File windows\scripts\guard_git_clean.ps1 -Strict
 
 windows\audits\RUN_AUDITS.bat -IncludeInstitutionalHardeningE2E

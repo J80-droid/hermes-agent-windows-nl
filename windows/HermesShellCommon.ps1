@@ -416,6 +416,7 @@ function Format-HermesStepLabel {
 }
 
 . (Join-Path $PSScriptRoot 'HermesLaunchUi.ps1')
+. (Join-Path $PSScriptRoot 'HermesUiTuiNpm.ps1')
 
 function Invoke-GitCommand {
     param(

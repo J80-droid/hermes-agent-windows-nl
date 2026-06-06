@@ -66,20 +66,6 @@ function Invoke-AuditCommand {
     return $ok
 }
 
-function Initialize-HermesInkDist {
-    param([string]$UiRoot)
-    $inkDist = Join-Path $UiRoot 'packages/hermes-ink/dist/entry-exports.js'
-    if (Test-Path -LiteralPath $inkDist) { return $true }
-    Write-HermesInfo 'hermes-ink dist ontbreekt - build...'
-    Push-Location (Join-Path $UiRoot 'packages/hermes-ink')
-    try {
-        & npm run build | Out-Host
-        return ($LASTEXITCODE -eq 0) -and (Test-Path -LiteralPath $inkDist)
-    } finally {
-        Pop-Location
-    }
-}
-
 Write-Host '=== Upstream Merge Integration E2E ===' -ForegroundColor Cyan
 Write-HermesInfo ('Repo: ' + $RepoRoot)
 $python = Get-HermesAuditPython
@@ -126,22 +112,11 @@ $docsOk = ($mergePs1 -match 'usageCostBar.ts') -and ($mergePs1 -match 'status_ba
 Add-StepResult '3/10 merge/docs guardrails' $docsOk
 
 if (-not $SkipVitest) {
-    $uiRoot = Join-Path $RepoRoot 'ui-tui'
-    $inkOk = Initialize-HermesInkDist -UiRoot $uiRoot
-    if (-not $inkOk) {
-        Add-StepResult '4/10 vitest statusRule + usageCostBar' $false 'hermes-ink build mislukt'
+    $vitestRc = Invoke-HermesUiTuiVitest -RepoRoot $RepoRoot -TestPaths @('statusRule', 'usageCostBar')
+    if ($vitestRc -eq 2) {
+        Add-StepResult '4/10 vitest statusRule + usageCostBar' $true 'overgeslagen (geen npm)'
     } else {
-        Push-Location $uiRoot
-        try {
-            $prevEap = $ErrorActionPreference
-            $ErrorActionPreference = 'Continue'
-            & npx vitest run statusRule usageCostBar | Out-Host
-            $vitestOk = ($LASTEXITCODE -eq 0)
-            $ErrorActionPreference = $prevEap
-        } finally {
-            Pop-Location
-        }
-        Add-StepResult '4/10 vitest statusRule + usageCostBar' $vitestOk
+        Add-StepResult '4/10 vitest statusRule + usageCostBar' ($vitestRc -eq 0)
     }
 } else {
     Add-StepResult '4/10 vitest statusRule + usageCostBar' $true 'overgeslagen (-SkipVitest)'
