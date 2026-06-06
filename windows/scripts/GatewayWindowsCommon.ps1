@@ -12,9 +12,15 @@ function Resolve-HermesGatewayScheduledTaskName {
 }
 
 function Set-HermesGatewayProfileFromScheduledTask {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+
     $tn = Resolve-HermesGatewayScheduledTaskName
     if ($tn -ne 'Hermes_Gateway') {
-        $env:HERMES_PROFILE = $tn -replace '^Hermes_Gateway_', ''
+        $profile = $tn -replace '^Hermes_Gateway_', ''
+        if ($PSCmdlet.ShouldProcess('HERMES_PROFILE', "Set to '$profile' from scheduled task $tn")) {
+            $env:HERMES_PROFILE = $profile
+        }
     }
     return $tn
 }
