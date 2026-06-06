@@ -123,8 +123,8 @@ def test_e4_sync_mcp_check_imports_overlay() -> None:
 def test_e5_institutional_p0_p1_update_knowledge_path() -> None:
     bat = _read("windows/scripts/institutional_p0_p1.bat")
     ok = (
-        "UPDATE_KNOWLEDGE_BAT=%HERMES_REPO%\\windows\\scripts\\update_knowledge.bat" in bat
-        or 'UPDATE_KNOWLEDGE_BAT=%HERMES_REPO%\\windows\\scripts\\update_knowledge.bat' in bat.replace("/", "\\")
+        "INST_SCRIPT_DIR=%~dp0" in bat
+        and "UPDATE_KNOWLEDGE_BAT=%INST_SCRIPT_DIR%update_knowledge.bat" in bat
     )
     target = REPO / "windows" / "scripts" / "update_knowledge.bat"
     _step(

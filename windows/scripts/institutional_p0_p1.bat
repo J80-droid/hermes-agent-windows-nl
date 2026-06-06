@@ -10,10 +10,17 @@ setlocal EnableExtensions
 chcp 65001 >nul
 title Hermes institutional P0+P1
 
-call "%~dp0rag\_resolve_hermes_repo.bat"
+rem Vast script-pad vóór doctor (cwd kan wijzigen na hermes doctor --fix).
+set "INST_SCRIPT_DIR=%~dp0"
+
+call "%INST_SCRIPT_DIR%rag\_resolve_hermes_repo.bat"
 if errorlevel 1 exit /b 1
-call "%~dp0rag\_rag_apply_institutional_env.bat"
-set "UPDATE_KNOWLEDGE_BAT=%HERMES_REPO%\windows\scripts\update_knowledge.bat"
+call "%INST_SCRIPT_DIR%rag\_rag_apply_institutional_env.bat"
+
+set "UPDATE_KNOWLEDGE_BAT=%INST_SCRIPT_DIR%update_knowledge.bat"
+if not exist "%UPDATE_KNOWLEDGE_BAT%" (
+  set "UPDATE_KNOWLEDGE_BAT=%HERMES_REPO%\windows\scripts\update_knowledge.bat"
+)
 if not exist "%UPDATE_KNOWLEDGE_BAT%" (
   echo [ERROR] update_knowledge.bat ontbreekt: %UPDATE_KNOWLEDGE_BAT%
   exit /b 1
@@ -51,9 +58,16 @@ echo [STEP 2/5] hermes doctor --fix
 if errorlevel 1 (
   echo [WARN] doctor --fix exit %ERRORLEVEL% — controleer handmatig
 )
+echo [INFO] Doctor npm-waarschuwingen ^(agent-browser^) zijn niet blokkerend — optioneel: windows\REPAIR_BROWSER_NPM.bat
 
 echo.
 echo [STEP 3/5] MCP-probe alle domeinen
+set "UPDATE_KNOWLEDGE_BAT=%INST_SCRIPT_DIR%update_knowledge.bat"
+if not exist "%UPDATE_KNOWLEDGE_BAT%" set "UPDATE_KNOWLEDGE_BAT=%HERMES_REPO%\windows\scripts\update_knowledge.bat"
+if not exist "%UPDATE_KNOWLEDGE_BAT%" (
+  echo [ERROR] update_knowledge.bat ontbreekt: %UPDATE_KNOWLEDGE_BAT%
+  exit /b 1
+)
 call "%UPDATE_KNOWLEDGE_BAT%" --mcp-test
 if errorlevel 1 exit /b 1
 

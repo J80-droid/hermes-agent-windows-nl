@@ -128,7 +128,7 @@ def test_e5_fails_when_bat_missing_path(harness, monkeypatch):
     monkeypatch.setattr(
         harness,
         "_read",
-        lambda _rel: "call UPDATE_KNOWLEDGE_BAT",
+        lambda _rel: "call update_knowledge without INST_SCRIPT_DIR",
     )
     harness.test_e5_institutional_p0_p1_update_knowledge_path()
     assert harness.FAILURES == 1
