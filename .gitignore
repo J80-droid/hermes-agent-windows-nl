@@ -150,6 +150,7 @@ windows/audits/LANCEDB_SCHEMA_AUDIT_*.md
 audits/PSSA_WARNINGS_LAST.txt
 tests/test_data/checkpoint_*.jsonl
 windows/tests/last_pytest_run.log
+windows/tests/RUN_PYTEST_last.log
 windows/_backup_last_run.log
 windows/scripts/rag_ingest_run.log
 config.yaml
