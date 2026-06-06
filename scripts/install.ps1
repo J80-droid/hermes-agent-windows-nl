@@ -1,5 +1,16 @@
-﻿# Hermes Agent Installer for Windows (fork: J80-droid/hermes-agent-windows-nl)
-# Uses uv for Python provisioning. Run: powershell -ExecutionPolicy Bypass -File install.ps1
+# ============================================================================
+# Hermes Agent Installer for Windows
+# ============================================================================
+# Installation script for Windows (PowerShell).
+# Uses uv for fast Python provisioning and package management.
+#
+# Usage:
+#   iex (irm https://hermes-agent.nousresearch.com/install.ps1)
+#
+# Or download and run with options:
+#   .\install.ps1 -NoVenv -SkipSetup
+#
+# ============================================================================
 
 param(
     [switch]$NoVenv,
@@ -8,24 +19,25 @@ param(
     # -Commit and -Tag are higher-precedence variants of -Branch for users
     # who need reproducible installs (desktop installer pinning, CI, release
     # bundles).  When set, the repository stage clones $Branch (faster than
-    # cloning the full default-branch history) and then git checkout on the
-    # exact ref.  Precedence: Commit, then Tag, then Branch.
+    # cloning the full default-branch history) and then `git checkout`s the
+    # exact ref.  Precedence: Commit > Tag > Branch.
     [string]$Commit = "",
     [string]$Tag = "",
     [string]$HermesHome = $(if ($env:HERMES_HOME) { $env:HERMES_HOME } else { "$env:LOCALAPPDATA\hermes" }),
     [string]$InstallDir = $(if ($env:HERMES_HOME) { "$env:HERMES_HOME\hermes-agent" } else { "$env:LOCALAPPDATA\hermes\hermes-agent" }),
 
-    # === Stage protocol (additive; default invocation behaves as before)
-    # See the Stage protocol section near the bottom of the file for the
-    # full contract for programmatic drivers (desktop GUI, CI, etc.). CLI users
-    # running the canonical remote one-liner install never touch these flags.
+    # --- Stage protocol (additive; default invocation behaves as before) ----
+    # See the "Stage protocol" section near the bottom of the file for the
+    # full contract.  Intended for programmatic drivers (the desktop GUI's
+    # onboarding wizard, CI, future install.sh parity, etc.).  CLI users
+    # running the canonical `irm | iex` one-liner never touch these flags.
     [switch]$Manifest,
     [string]$Stage,
     [switch]$ProtocolVersion,
     [switch]$NonInteractive,
     [switch]$Json,
 
-    # === Ensure mode (dep_ensure.py entry point) ; -
+    # --- Ensure mode (dep_ensure.py entry point) ---
     [string]$Ensure = "",
     [switch]$PostInstall,
 
@@ -49,8 +61,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Suppress Invoke-WebRequest per-chunk progress bar.  Windows PowerShell
-# 5.1 progress UI repaints synchronously on every received byte, which
+# Suppress Invoke-WebRequest's per-chunk progress bar.  Windows PowerShell
+# 5.1's progress UI repaints synchronously on every received byte, which
 # pegs CPU on a single core and throttles downloads by 10-100x (a 57MB
 # PortableGit grab can take 5 minutes with progress on vs 20 seconds
 # with progress off, on the same network).  Every IWR call in this
@@ -59,16 +71,16 @@ $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
 # Force the console to UTF-8 so non-ASCII output from native commands
-# (e.g. playwright box-drawing progress bars and download banners,
-# git is bullet glyphs, npm check marks) renders correctly instead of
+# (e.g. playwright's box-drawing progress bars and download banners,
+# git's bullet glyphs, npm's check marks) renders correctly instead of
 # as IBM437/Windows-1252 mojibake (sequences like 0xE2 0x95 0x94 box-
 # drawing chars decoded under the legacy DOS codepage).  This is a
 # DISPLAY-only fix; the underlying bytes are already correct.  We do
-# NOT change the file own encoding (it remains pure ASCII for PS 5.1
+# NOT change the file's own encoding (it remains pure ASCII for PS 5.1
 # parser compatibility; see comments at the top of the entry-point
 # dispatch).  This affects only what the user sees in their terminal
 # during this install run, and reverts automatically when the script
-# exits and the host console encoding is restored.
+# exits and the host's console encoding is restored.
 try {
     [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
 } catch {
@@ -87,7 +99,7 @@ $NodeVersion = "22"
 
 # Stage-protocol version.  Bumped only for genuinely breaking changes to the
 # manifest schema, stage-name set semantics, or stdout JSON shape.  Adding a
-# new stage does NOT bump this; drivers iterate the manifest dynamically.
+# new stage does NOT bump this -- drivers iterate the manifest dynamically.
 $InstallStageProtocolVersion = 1
 
 # ============================================================================
@@ -173,7 +185,36 @@ function Write-Err {
     Write-Host "[X] $Message" -ForegroundColor Red
 }
 
-# === Ensure-mode helpers ; -
+# Inspect npm output for a TLS-trust failure and, if found, print actionable
+# remediation. npm/Node surface corporate MITM proxies and missing root CAs as
+# "unable to get local issuer certificate" / "self-signed certificate in
+# certificate chain" / UNABLE_TO_GET_ISSUER_CERT_LOCALLY -- most commonly while
+# Electron's install.js postinstall downloads the Electron binary. The reporter
+# usually misreads this as an admin-rights or generic install failure (see
+# issue #38016), so detect it once here and route every npm stage through this
+# hint. Returns $true when a cert error was detected (caller may adjust its own
+# messaging), $false otherwise.
+function Show-NpmCertHint {
+    param([string]$NpmOutput)
+    if (-not $NpmOutput) { return $false }
+    $isCertError = $NpmOutput -match "unable to get local issuer certificate" `
+        -or $NpmOutput -match "self.signed certificate" `
+        -or $NpmOutput -match "UNABLE_TO_GET_ISSUER_CERT_LOCALLY" `
+        -or $NpmOutput -match "SELF_SIGNED_CERT_IN_CHAIN" `
+        -or $NpmOutput -match "CERT_HAS_EXPIRED"
+    if (-not $isCertError) { return $false }
+    Write-Warn "This looks like a TLS certificate-trust failure, not a permissions problem."
+    Write-Info "  A corporate proxy or antivirus is likely intercepting HTTPS and presenting a"
+    Write-Info "  certificate Node.js doesn't trust. To fix, point Node at your org's root CA:"
+    Write-Info "    1. Get the corporate root CA as a .pem/.crt from your IT team."
+    Write-Info "    2. setx NODE_EXTRA_CA_CERTS `"C:\path\to\corp-ca.pem`""
+    Write-Info "    3. Open a NEW terminal (so the env var takes effect) and re-run the installer."
+    Write-Info "  Quick (less secure) alternative -- disable TLS verification just for the install:"
+    Write-Info "    npm config set strict-ssl false   (re-enable afterwards: npm config set strict-ssl true)"
+    return $true
+}
+
+# --- Ensure-mode helpers ---
 
 function Resolve-NpmCmd {
     $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
@@ -221,7 +262,7 @@ function Install-AgentBrowser {
     param([switch]$SkipChromium)
     $npm = Resolve-NpmCmd
     if (-not $npm) {
-        Write-Err "npm not found; install Node.js first"
+        Write-Err "npm not found -- install Node.js first"
         throw "npm not found"
     }
 
@@ -240,6 +281,7 @@ function Install-AgentBrowser {
         $npmDetail = Get-Content $npmLog -Raw -ErrorAction SilentlyContinue
         Remove-Item $npmLog -Force -ErrorAction SilentlyContinue
         Write-Err "npm install -g failed (exit $npmExit): $npmDetail"
+        Show-NpmCertHint $npmDetail | Out-Null
         throw "npm install failed"
     }
     Remove-Item $npmLog -Force -ErrorAction SilentlyContinue
@@ -248,7 +290,7 @@ function Install-AgentBrowser {
         $sysBrowser = Find-SystemBrowser
         if ($sysBrowser) {
             Write-BrowserEnv -BrowserPath $sysBrowser
-            Write-Info "System browser detected; skipping Chromium download"
+            Write-Info "System browser detected -- skipping Chromium download"
         } else {
             $abExe = Join-Path $prefixDir "agent-browser.cmd"
             if (Test-Path $abExe) {
@@ -289,19 +331,6 @@ function Install-Uv {
         Write-Success "Managed uv found ($version)"
         return $true
     }
-    # Check common install locations before managed install
-    $uvPaths = @(
-        "$env:USERPROFILE\.local\bin\uv.exe",
-        "$env:USERPROFILE\.cargo\bin\uv.exe"
-    )
-    foreach ($uvPath in $uvPaths) {
-        if (Test-Path $uvPath) {
-            $script:UvCmd = $uvPath
-            $version = & $uvPath --version
-            Write-Success "uv found at $uvPath ($version)"
-            return $true
-        }
-    }
 
     Write-Info "Installing managed uv into $HermesHome\bin ..."
     New-Item -ItemType Directory -Path (Join-Path $HermesHome "bin") -Force | Out-Null
@@ -337,7 +366,7 @@ function Install-Uv {
 # invoke each stage in a fresh powershell process, but those processes
 # inherit env from the parent driver shell, NOT from the registry.  When
 # an earlier stage (Stage-Git, Stage-Node, ...) installs a binary and
-# pushes its directory into User PATH, the next child process $env:Path
+# pushes its directory into User PATH, the next child process's $env:Path
 # is stale and the binary appears missing.  This helper re-reads PATH
 # from the registry so every Invoke-Stage starts from a fresh, up-to-date
 # PATH view.  Cheap (registry reads, no I/O elsewhere) and idempotent.
@@ -346,18 +375,19 @@ function Sync-EnvPath {
 }
 
 # Re-discover uv without re-installing it.  Cross-process stage drivers
-# (the desktop GUI onboarding wizard, CI step-runners) invoke each stage
+# (the desktop GUI's onboarding wizard, CI step-runners) invoke each stage
 # in a fresh powershell process, so $script:UvCmd set by Install-Uv in a
 # prior process is not visible here.  Later stages (Test-Python,
 # Install-Venv, Install-Dependencies, Install-PlatformSdks) call this
-# at the top to populate $script:UvCmd from managed location, PATH, or known paths.
-# Throws if uv is not findable — the caller's stage then surfaces a clean error.
+# at the top to populate $script:UvCmd from the managed location.
+# Throws if uv is not findable — the caller's stage then surfaces a
+# clean error via the stage-driver's try/catch.
 function Resolve-UvCmd {
     # Already resolved (default invocation path: Install-Uv ran earlier
     # in the same process and set $script:UvCmd).
     if ($script:UvCmd) {
         if ($script:UvCmd -eq "uv") {
-            # uv on PATH; verify it is still resolvable (PATH could have
+            # "uv" on PATH -- verify it's still resolvable (PATH could have
             # changed mid-session; cheap to recheck).
             if (Get-Command uv -ErrorAction SilentlyContinue) { return }
         } elseif (Test-Path $script:UvCmd) {
@@ -373,7 +403,8 @@ function Resolve-UvCmd {
         return
     }
 
-    # Fall back to PATH (winget, manual installs, %USERPROFILE%\.local\bin).
+    # Fall back to PATH (covers edge cases where the installer ran in a
+    # sibling process and HERMES_HOME wasn't propagated).
     if (Get-Command uv -ErrorAction SilentlyContinue) {
         $script:UvCmd = "uv"
         return
@@ -403,19 +434,19 @@ function Test-Python {
         }
     } catch { }
     
-    # Python not found; use uv to install it (no admin needed!)
+    # Python not found -- use uv to install it (no admin needed!)
     Write-Info "Python $PythonVersion not found, installing via uv..."
-    # Capture EAP outside the try block so the catch restore call always
+    # Capture EAP outside the try block so the catch's restore call always
     # has a meaningful value (see Install-Uv for the full rationale).
     $prevEAP = $ErrorActionPreference
     try {
         # Temporarily relax ErrorActionPreference: uv writes download progress
-        # (Downloading cpython-3.11.15-windows-x86_64-none (24.5MiB)) to
-        # stderr.  With $ErrorActionPreference = Stop (set at the top of this
+        # ("Downloading cpython-3.11.15-windows-x86_64-none (24.5MiB)") to
+        # stderr.  With $ErrorActionPreference = "Stop" (set at the top of this
         # script) PowerShell wraps stderr lines from native commands as
-        # ErrorRecord objects when stderr is captured, then throws a terminating
-        # exception on the first one; even though uv exits 0 and Python was
-        # installed successfully.  Verify success via uv python find
+        # ErrorRecord objects when captured via 2>&1, then throws a terminating
+        # exception on the first one -- even though uv exits 0 and Python was
+        # installed successfully.  Verify success via `uv python find`
         # afterwards, which is the reliable signal regardless of exit-code
         # semantics or stderr noise.  This fix was previously landed as
         # commit ec1714e71 and then lost in a release squash; reapplied here.
@@ -425,7 +456,7 @@ function Test-Python {
         $ErrorActionPreference = $prevEAP
 
         # Check if Python is now available (more reliable than exit code
-        # since uv may return non-zero due to already installed etc.)
+        # since uv may return non-zero due to "already installed" etc.)
         $pythonPath = & $UvCmd python find $PythonVersion 2>$null
         if ($pythonPath) {
             $ver = & $pythonPath --version 2>$null
@@ -433,7 +464,7 @@ function Test-Python {
             return $true
         }
 
-        # uv ran but Python still not findable; show what happened
+        # uv ran but Python still not findable -- show what happened
         if ($uvExitCode -ne 0) {
             Write-Warn "uv python install output:"
             Write-Host $uvOutput -ForegroundColor DarkGray
@@ -458,10 +489,10 @@ function Test-Python {
         } catch { }
     }
 
-    # Fallback: try system python; but skip the Microsoft Store stub.
+    # Fallback: try system python -- but skip the Microsoft Store stub.
     # On Windows, %LOCALAPPDATA%\Microsoft\WindowsApps\python.exe is a 0-byte
-    # reparse-point stub that prints Python was not found; run without
-    # arguments to install from the Microsoft Store... to stdout and exits
+    # reparse-point stub that prints "Python was not found; run without
+    # arguments to install from the Microsoft Store..." to stdout and exits
     # non-zero.  Get-Command finds it; invoking it produces a confusing error
     # that the user sees as our installer crashing.
     $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
@@ -502,7 +533,37 @@ function Test-Python {
 }
 
 function Install-Git {
-    # Ensure Git + Git Bash; fallback: PortableGit into %LOCALAPPDATA%\hermes\git.
+    <#
+    .SYNOPSIS
+    Ensure Git (and Git Bash) are installed.  Git for Windows bundles bash.exe
+    which Hermes uses to run shell commands.
+
+    Priority order (deliberately simple -- no winget, no registry, no system
+    package manager):
+      1. Existing ``git`` on PATH -- use it as-is (the common fast path).
+      2. Download **PortableGit** from the official git-for-windows GitHub
+         release (self-extracting 7z.exe) and unpack it to
+         ``%LOCALAPPDATA%\hermes\git`` -- never touches system Git, never
+         requires admin, works even on locked-down machines and machines
+         with a broken system Git install.
+
+    **Why PortableGit, not MinGit:**  MinGit is the minimal-automation
+    distribution and ships ONLY ``git.exe`` -- no bash, no POSIX utilities.
+    Hermes needs ``bash.exe`` to run shell commands.  PortableGit is the
+    full Git for Windows distribution without the installer UI; it ships
+    ``git.exe`` + ``bash.exe`` + ``sh``, ``awk``, ``sed``, ``grep``, ``curl``,
+    ``ssh``, etc. in ``usr\bin\``.
+
+    We deliberately skip winget because it fails badly when the system Git
+    install is in a half-installed state (partially registered, or uninstall-
+    blocked).  Owning the Hermes copy of Git ourselves is predictable and
+    recoverable: if it ever breaks, ``Remove-Item %LOCALAPPDATA%\hermes\git``
+    and re-running this installer fully recovers.
+
+    After install we locate ``bash.exe`` and persist the path in
+    ``HERMES_GIT_BASH_PATH`` (User scope) so Hermes can find it in a fresh
+    shell without a second PATH refresh.
+    #>
     Write-Info "Checking Git..."
 
     if (Get-Command git -ErrorAction SilentlyContinue) {
@@ -512,8 +573,10 @@ function Install-Git {
         return $true
     }
 
-    # Download PortableGit into $HermesHome\git (no admin; isolated from system Git).
-    Write-Info "Git not found; downloading PortableGit to $HermesHome\git\ ..."
+    # Download PortableGit into $HermesHome\git.  Always works as long as
+    # we can reach github.com -- no admin, no winget, no reliance on the
+    # user's possibly-broken system Git install.
+    Write-Info "Git not found -- downloading PortableGit to $HermesHome\git\ ..."
     Write-Info "(no admin rights required; isolated from any system Git install)"
 
     try {
@@ -543,7 +606,7 @@ function Install-Git {
         $gitVerTag = "$gitVer.windows.1"
 
         if ($arch -eq "32-bit-mingit") {
-            Write-Warn "32-bit Windows detected; PortableGit is 64-bit only. Installing MinGit 32-bit as last resort; bash-dependent Hermes features (terminal tool, agent-browser) will not work on this machine."
+            Write-Warn "32-bit Windows detected -- PortableGit is 64-bit only.  Installing MinGit 32-bit as a last resort; bash-dependent Hermes features (terminal tool, agent-browser) will not work on this machine."
             $assetName    = "MinGit-$gitVer-32-bit.zip"
             $downloadIsZip = $true
         } elseif ($arch -eq "arm64") {
@@ -555,6 +618,7 @@ function Install-Git {
         }
 
         $downloadUrl = "https://github.com/git-for-windows/git/releases/download/$gitTag/$assetName"
+        $downloadExt = if ($downloadIsZip) { "zip" } else { "7z.exe" }
         $tmpFile = "$env:TEMP\$assetName"
         $gitDir = "$HermesHome\git"
 
@@ -571,12 +635,11 @@ function Install-Git {
             Expand-Archive -Path $tmpFile -DestinationPath $gitDir -Force
         } else {
             # PortableGit is a self-extracting 7z archive.  Invoke it with
-            # 7z silent extract to gitDir. No separate 7z install
-            # required; it is fully self-contained.
+            # `-o<target> -y` (silent) to extract to $gitDir.  No 7z install
+            # required; it's fully self-contained.
             Write-Info "Extracting PortableGit to $gitDir ..."
-            $extractArgs = @("-o$gitDir", "-y")
             $extractProc = Start-Process -FilePath $tmpFile `
-                -ArgumentList $extractArgs `
+                -ArgumentList "-o`"$gitDir`"", "-y" `
                 -NoNewWindow -Wait -PassThru
             if ($extractProc.ExitCode -ne 0) {
                 throw "PortableGit extraction failed (exit code $($extractProc.ExitCode))"
@@ -630,12 +693,17 @@ function Install-Git {
 }
 
 function Set-GitBashEnvVar {
-    # Persist bash.exe path in HERMES_GIT_BASH_PATH (User scope).
+    <#
+    .SYNOPSIS
+    Locate ``bash.exe`` from an already-installed Git and persist the path in
+    ``HERMES_GIT_BASH_PATH`` (User env scope) so Hermes can find it even before
+    PATH propagation completes in a newly-spawned shell.
+    #>
     $candidates = @()
 
     # Our own portable Git install is ALWAYS checked first, so a broken
-    # system Git does not hijack us.  If the user had a working system Git
-    # we would have returned early from Install-Git is fast path and never called
+    # system Git doesn't hijack us.  If the user had a working system Git
+    # we'd have returned early from Install-Git's fast path and never called
     # this with a system-Git-only installation anyway.
     #
     # Layouts:
@@ -648,16 +716,16 @@ function Set-GitBashEnvVar {
     $gitCmd = Get-Command git -ErrorAction SilentlyContinue
     if ($gitCmd) {
         $gitExe = $gitCmd.Source
-        # Git for Windows (full installer): ROOT\cmd\git.exe + ROOT\bin\bash.exe
-        # MinGit:                           ROOT\cmd\git.exe + ROOT\usr\bin\bash.exe
+        # Git for Windows (full installer): <root>\cmd\git.exe + <root>\bin\bash.exe
+        # MinGit:                           <root>\cmd\git.exe + <root>\usr\bin\bash.exe
         $gitRoot = Split-Path (Split-Path $gitExe -Parent) -Parent
         $candidates += "$gitRoot\bin\bash.exe"
         $candidates += "$gitRoot\usr\bin\bash.exe"
     }
 
     # Standard system install locations as a final fallback.  Note:
-    # ProgramFiles(x86) cannot be referenced via ${env:...} string interpolation
-    # because of the parens; use [Environment]::GetEnvironmentVariable().
+    # ProgramFiles(x86) can't be referenced via ${env:...} string interpolation
+    # because of the parens -- use [Environment]::GetEnvironmentVariable().
     $candidates += "${env:ProgramFiles}\Git\bin\bash.exe"
     $pf86 = [Environment]::GetEnvironmentVariable("ProgramFiles(x86)")
     if ($pf86) { $candidates += "$pf86\Git\bin\bash.exe" }
@@ -672,7 +740,7 @@ function Set-GitBashEnvVar {
         }
     }
 
-    Write-Warn "Could not locate bash.exe; Hermes may not find Git Bash."
+    Write-Warn "Could not locate bash.exe -- Hermes may not find Git Bash."
     Write-Info "If needed, set HERMES_GIT_BASH_PATH manually to your bash.exe path."
 }
 
@@ -718,7 +786,7 @@ function Test-Node {
 
     Write-Info "Installing Hermes-managed Node.js $NodeVersion LTS..."
 
-    # Try the portable-zip path FIRST; no UAC, no admin, no winget MSI.
+    # Try the portable-zip path FIRST -- no UAC, no admin, no winget MSI.
     # winget install OpenJS.NodeJS.LTS triggers a system-wide MSI install
     # which prompts UAC (the dialog often appears minimized in the taskbar
     # and the install silently waits for consent, looking like a hang).
@@ -777,17 +845,17 @@ function Test-Node {
 
     # Fallback: try winget (used to be primary, demoted because the MSI
     # install triggers a UAC prompt that frequently appears minimized in
-    # the taskbar; looks like a hang to users on stock Windows).
+    # the taskbar -- looks like a hang to users on stock Windows).
     # Kept for environments where the portable download fails (proxy,
     # locked firewall, etc.) but the user is willing to consent to UAC.
     if (Get-Command winget -ErrorAction SilentlyContinue) {
-        Write-Info "Falling back to winget (may prompt UAC; check your taskbar for a flashing icon)..."
-        # Capture EAP outside the try block so the catch restore call always
+        Write-Info "Falling back to winget (may prompt UAC -- check your taskbar for a flashing icon)..."
+        # Capture EAP outside the try block so the catch's restore call always
         # has a meaningful value (see Install-Uv for the full rationale).
         $prevEAP = $ErrorActionPreference
         try {
-            # Relax EAP=Stop so stderr lines from winget do not get wrapped
-            # as ErrorRecords and short-circuit the stderr pipe before we can
+            # Relax EAP=Stop so stderr lines from winget don't get wrapped
+            # as ErrorRecords and short-circuit the 2>&1 pipe before we can
             # check the post-condition.  See the long comment in Install-Uv
             # for the same pattern.
             $ErrorActionPreference = "Continue"
@@ -824,60 +892,7 @@ function Test-Node {
     return $true
 }
 
-function Install-WindowsTerminal {
-    $script:HasWindowsTerminal = $false
-
-    if (Get-Command wt.exe -ErrorAction SilentlyContinue) {
-        Write-Success "Windows Terminal (wt.exe) found"
-        $script:HasWindowsTerminal = $true
-        return
-    }
-    if (Test-Path -LiteralPath "$env:LOCALAPPDATA\Microsoft\WindowsApps\wt.exe") {
-        Write-Success "Windows Terminal found (WindowsApps alias)"
-        $script:HasWindowsTerminal = $true
-        return
-    }
-
-    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-        Write-Warn "Windows Terminal not found (required for TrueColor TUI on Windows)"
-        Write-Info "  Install App Installer / winget, then: winget install Microsoft.WindowsTerminal"
-        Write-Info "  Or run: windows\INSTALL_WINDOWS_TERMINAL.bat from the Hermes repo"
-        return
-    }
-
-    Write-Info "Installing Windows Terminal (wt.exe) via winget..."
-    try {
-        $prevEAP = $ErrorActionPreference
-        $ErrorActionPreference = "Continue"
-        winget install Microsoft.WindowsTerminal `
-            --accept-package-agreements `
-            --accept-source-agreements `
-            --disable-interactivity 2>&1 | Out-Null
-        $ErrorActionPreference = $prevEAP
-    } catch {
-        if ($prevEAP) { $ErrorActionPreference = $prevEAP }
-    }
-
-    $env:Path = [Environment]::GetEnvironmentVariable("Path", "User") + ";" + [Environment]::GetEnvironmentVariable("Path", "Machine")
-    if (Get-Command wt.exe -ErrorAction SilentlyContinue) {
-        Write-Success "Windows Terminal installed"
-        $script:HasWindowsTerminal = $true
-        return
-    }
-    if (Test-Path -LiteralPath "$env:LOCALAPPDATA\Microsoft\WindowsApps\wt.exe") {
-        Write-Success "Windows Terminal installed (open a new terminal for wt on PATH)"
-        $script:HasWindowsTerminal = $true
-        return
-    }
-
-    Write-Warn "Windows Terminal install finished but wt.exe not on PATH yet"
-    Write-Info "  Open a new terminal tab, then: wt -h"
-    Write-Info "  See windows\WINDOWS_REQUIREMENTS.md"
-}
-
 function Install-SystemPackages {
-    Install-WindowsTerminal
-
     $script:HasRipgrep = $false
     $script:HasFfmpeg = $false
     $needRipgrep = $false
@@ -1041,10 +1056,10 @@ function Install-Repository {
     $didUpdate = $false
 
     if (Test-Path $InstallDir) {
-        # Test-Path $InstallDir\.git returns True when .git is a file OR a
-        # directory OR a symlink OR a submodule-style gitfile; and also when
-        # it is a broken stub left over from a failed previous install (e.g.
-        # a partial Remove-Item that could not delete a locked index.lock).
+        # Test-Path "$InstallDir\.git" returns True when .git is a file OR a
+        # directory OR a symlink OR a submodule-style gitfile -- and also when
+        # it's a broken stub left over from a failed previous install (e.g.
+        # a partial Remove-Item that couldn't delete a locked index.lock).
         # Validate the repo properly by asking git itself.  Two checks
         # belt-and-braces: rev-parse AND git status.  If either fails the
         # repo is broken and we fall through to a fresh clone.
@@ -1052,7 +1067,7 @@ function Install-Repository {
         if (Test-Path "$InstallDir\.git") {
             Push-Location $InstallDir
             try {
-                # Reset $LASTEXITCODE before the probe so we do not pick up
+                # Reset $LASTEXITCODE before the probe so we don't pick up
                 # a stale 0 from an earlier git call in this session.
                 $global:LASTEXITCODE = 0
                 $revParseOut = & git -c windows.appendAtomically=false rev-parse --is-inside-work-tree 2>&1
@@ -1072,12 +1087,13 @@ function Install-Repository {
         if ($repoValid) {
             Write-Info "Existing installation found, updating..."
             Push-Location $InstallDir
-            # Wrap the entire fetch+checkout block in EAP=Continue so git is
-            # routine stderr output (e.g. git fetch info lines emitted by
-            # git fetch does not terminate the script under the global
+            # Wrap the entire fetch+checkout block in EAP=Continue so git's
+            # routine stderr output (e.g. 'From <url>' info lines emitted by
+            # `git fetch`) doesn't terminate the script under the global
             # EAP=Stop.  We rely on $LASTEXITCODE for actual failures.
             $prevEAP = $ErrorActionPreference
             $ErrorActionPreference = "Continue"
+            $autostashRef = ""
             try {
                 # This is a MANAGED checkout, not a repo the user edits. Git for
                 # Windows defaults to core.autocrlf=true, which renormalizes the
@@ -1086,20 +1102,31 @@ function Install-Repository {
                 # show as locally modified even though nobody touched them. A
                 # bare `git checkout` then aborts with "Your local changes would
                 # be overwritten by checkout", which is exactly the failure GUI
-                # users hit on update. Two-part fix: (1) stop creating the dirt
-                # by pinning autocrlf=false on this clone, (2) discard any
-                # pre-existing dirt with a hard reset before the checkout. Safe
-                # because nothing here is user-authored.
+                # users hit on update. Pin autocrlf=false so the dirt is never
+                # created in the first place.
                 git -c windows.appendAtomically=false config core.autocrlf false 2>$null
-                git -c windows.appendAtomically=false reset --hard HEAD 2>$null
+                # Preserve any real local changes before the checkout instead of
+                # discarding them with `reset --hard HEAD`. The old hard reset
+                # silently destroyed agent-edited source on managed clones (the
+                # #38542 data-loss class). Stash + restore mirrors install.sh:
+                # nothing is lost, and a failed restore leaves the work in a
+                # git stash for manual recovery. Untracked files are included so
+                # agent-created dirs (e.g. tinker-atropos/) survive too.
+                $statusOut = git -c windows.appendAtomically=false status --porcelain 2>$null
+                if (-not [string]::IsNullOrWhiteSpace(($statusOut -join "`n"))) {
+                    $stashName = "hermes-install-autostash-" + (Get-Date -Format "yyyyMMdd-HHmmss")
+                    Write-Info "Local changes detected, stashing before update..."
+                    git -c windows.appendAtomically=false stash push --include-untracked -m "$stashName"
+                    if ($LASTEXITCODE -eq 0) { $autostashRef = "stash@{0}" }
+                }
                 git -c windows.appendAtomically=false fetch origin
                 if ($LASTEXITCODE -ne 0) { throw "git fetch failed (exit $LASTEXITCODE)" }
-                # Precedence: Commit, then Tag, then Branch.  Commit and Tag check
-                # out as detached HEAD intentionally; they are meant to be
+                # Precedence: Commit > Tag > Branch.  Commit and Tag check
+                # out as detached HEAD intentionally -- they're meant to be
                 # reproducible pins, not branches the user pulls into.
                 if ($Commit) {
                     # Make sure we have the commit locally (a tag-less commit
-                    # SHA is not always reachable from any one branch fetch).
+                    # SHA isn't always reachable from any one branch fetch).
                     git -c windows.appendAtomically=false fetch origin $Commit
                     git -c windows.appendAtomically=false checkout --detach $Commit
                     if ($LASTEXITCODE -ne 0) { throw "git checkout $Commit failed (exit $LASTEXITCODE)" }
@@ -1110,21 +1137,73 @@ function Install-Repository {
                 } else {
                     git -c windows.appendAtomically=false checkout $Branch
                     if ($LASTEXITCODE -ne 0) { throw "git checkout $Branch failed (exit $LASTEXITCODE)" }
-                    git -c windows.appendAtomically=false pull origin $Branch
+                    git -c windows.appendAtomically=false pull --ff-only origin $Branch
                     if ($LASTEXITCODE -ne 0) { throw "git pull failed (exit $LASTEXITCODE)" }
                 }
+
+                if ($autostashRef) {
+                    # Default to restoring so work is never silently dropped.
+                    # Only prompt when we're certain a human can answer: an
+                    # interactive session AND a real, non-redirected console on
+                    # both stdin and stdout. The desktop "Update" button and
+                    # bootstrap run the installer without a usable console -- in
+                    # those cases Read-Host would hang or return empty, so we
+                    # skip the prompt and just restore (the safe default).
+                    $restoreNow = $true
+                    $hasConsole = $false
+                    try {
+                        $hasConsole = (
+                            [Environment]::UserInteractive `
+                            -and (-not [Console]::IsInputRedirected) `
+                            -and (-not [Console]::IsOutputRedirected) `
+                            -and ($Host.Name -eq "ConsoleHost")
+                        )
+                    } catch { $hasConsole = $false }
+                    if ($hasConsole) {
+                        Write-Warn "Local changes were stashed before updating."
+                        Write-Warn "Restoring them may reapply local customizations onto the updated codebase."
+                        $restoreAnswer = Read-Host "Restore local changes now? [Y/n]"
+                        if ($restoreAnswer -match '^(n|no)$') { $restoreNow = $false }
+                    }
+
+                    if ($restoreNow) {
+                        Write-Info "Restoring local changes..."
+                        git -c windows.appendAtomically=false stash apply $autostashRef
+                        if ($LASTEXITCODE -eq 0) {
+                            git -c windows.appendAtomically=false stash drop $autostashRef 2>$null
+                            Write-Warn "Local changes were restored on top of the updated codebase."
+                            Write-Warn "Review git diff / git status if Hermes behaves unexpectedly."
+                        } else {
+                            Write-Err "Update succeeded, but restoring local changes failed. Your changes are still preserved in git stash."
+                            Write-Info "Resolve manually with: git stash apply $autostashRef"
+                            throw "git stash apply failed after update"
+                        }
+                    } else {
+                        Write-Info "Skipped restoring local changes."
+                        Write-Info "Your changes are still preserved in git stash."
+                        Write-Info "Restore manually with: git stash apply $autostashRef"
+                    }
+                    $autostashRef = ""
+                }
             } finally {
+                if ($autostashRef) {
+                    # We stashed but never reached the restore block (a fetch/
+                    # checkout/pull failure threw). Leave the stash in place and
+                    # tell the user how to recover it -- never silently drop it.
+                    Write-Warn "Update did not complete. Your local changes are preserved in git stash."
+                    Write-Info "Restore manually with: git stash apply $autostashRef"
+                }
                 $ErrorActionPreference = $prevEAP
                 Pop-Location
             }
             $didUpdate = $true
         } else {
-            # Directory exists but is not a usable git repo.  Wipe it and
-            # fall through to a fresh clone.  A leftover .git stub from
+            # Directory exists but isn't a usable git repo.  Wipe it and
+            # fall through to a fresh clone.  A leftover ``.git`` stub from
             # a partial uninstall used to lock the installer into the
-            # update branch forever, emitting three fatal: not a git
-            # repository errors and failing with not in a git directory.
-            Write-Warn "Existing directory at $InstallDir is not a valid git repo; replacing it."
+            # "update" branch forever, emitting three ``fatal: not a git
+            # repository`` errors and failing with "not in a git directory".
+            Write-Warn "Existing directory at $InstallDir is not a valid git repo -- replacing it."
             try {
                 Remove-Item -Recurse -Force $InstallDir -ErrorAction Stop
             } catch {
@@ -1139,7 +1218,7 @@ function Install-Repository {
     if (-not $didUpdate) {
         $cloneSuccess = $false
 
-        # Fix Windows git copy-fd: write returned: Invalid argument error.
+        # Fix Windows git "copy-fd: write returned: Invalid argument" error.
         # Git for Windows can fail on atomic file operations (hook templates,
         # config lock files) due to antivirus, OneDrive, or NTFS filter drivers.
         # The -c flag injects config before any file I/O occurs.
@@ -1153,7 +1232,7 @@ function Install-Repository {
         Write-Info "Trying SSH clone..."
         $env:GIT_SSH_COMMAND = "ssh -o BatchMode=yes -o ConnectTimeout=5"
         try {
-            git -c windows.appendAtomically=false clone --branch $Branch $RepoUrlSsh $InstallDir
+            git -c windows.appendAtomically=false clone --depth 1 --branch $Branch $RepoUrlSsh $InstallDir
             if ($LASTEXITCODE -eq 0) { $cloneSuccess = $true }
         } catch { }
         $env:GIT_SSH_COMMAND = $null
@@ -1162,7 +1241,7 @@ function Install-Repository {
             if (Test-Path $InstallDir) { Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue }
             Write-Info "SSH failed, trying HTTPS..."
             try {
-                git -c windows.appendAtomically=false clone --branch $Branch $RepoUrlHttps $InstallDir
+                git -c windows.appendAtomically=false clone --depth 1 --branch $Branch $RepoUrlHttps $InstallDir
                 if ($LASTEXITCODE -eq 0) { $cloneSuccess = $true }
             } catch { }
         }
@@ -1170,20 +1249,19 @@ function Install-Repository {
         # Fallback: download ZIP archive (bypasses git file I/O issues entirely)
         if (-not $cloneSuccess) {
             if (Test-Path $InstallDir) { Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue }
-            Write-Warn "Git clone failed; downloading ZIP archive instead..."
+            Write-Warn "Git clone failed -- downloading ZIP archive instead..."
             try {
                 # Pick the ZIP URL for the most-specific ref the caller asked
                 # for.  GitHub supports archive URLs for commits, tags, and
-                # branches; we honour Commit, then Tag, then Branch.
-                $forkRepo = "J80-droid/hermes-agent-windows-nl"
+                # branches; we honour Commit > Tag > Branch.
                 if ($Commit) {
-                    $zipUrl = "https://github.com/$forkRepo/archive/$Commit.zip"
+                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/$Commit.zip"
                     $zipLabel = $Commit
                 } elseif ($Tag) {
-                    $zipUrl = "https://github.com/$forkRepo/archive/refs/tags/$Tag.zip"
+                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/$Tag.zip"
                     $zipLabel = $Tag
                 } else {
-                    $zipUrl = "https://github.com/$forkRepo/archive/refs/heads/$Branch.zip"
+                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/refs/heads/$Branch.zip"
                     $zipLabel = $Branch
                 }
                 $zipPath = "$env:TEMP\hermes-agent-$zipLabel.zip"
@@ -1234,11 +1312,11 @@ function Install-Repository {
     git -c windows.appendAtomically=false config core.autocrlf false 2>$null
 
     # Post-clone pin: when a clone (or ZIP-fallback init) just landed us on
-    # $Branch tip, honour the higher-precedence $Commit / $Tag by checking
+    # $Branch's tip, honour the higher-precedence $Commit / $Tag by checking
     # the exact ref out as a detached HEAD.  Skipped for the in-place update
     # path (above) since that already routed via the same precedence.
     if (-not $didUpdate) {
-        # Same EAP=Continue wrap as the update path; git fetch info lines
+        # Same EAP=Continue wrap as the update path -- git fetch's 'From <url>'
         # info line goes to stderr and would terminate the script under the
         # global EAP=Stop otherwise.  We check $LASTEXITCODE for real errors.
         $prevEAP = $ErrorActionPreference
@@ -1312,7 +1390,13 @@ function Install-Dependencies {
         $env:VIRTUAL_ENV = "$InstallDir\venv"
     }
 
-    # Re-pin UV_PYTHON to the venv interpreter (cross-process bootstrap stages).
+    # Re-pin UV_PYTHON to the venv interpreter. Install-Venv already does this,
+    # but the bootstrap runs install stages (venv, python-deps) as separate
+    # processes, so the env var set in Install-Venv does NOT survive into a
+    # separate python-deps invocation. Re-deriving it here covers that path.
+    # Without it, an inherited $env:UV_PYTHON = "3.14" makes the uv sync/pip
+    # tiers below recreate the venv at 3.14 and fail the maturin source build
+    # (no cp314 wheels yet).
     if (-not $NoVenv) {
         $venvPythonExe = Join-Path $InstallDir "venv\Scripts\python.exe"
         if (Test-Path $venvPythonExe) {
@@ -1320,30 +1404,30 @@ function Install-Dependencies {
         }
     }
 
-    # Hash-verified install (Tier 0) — when uv.lock is present, prefer
+    # Hash-verified install (Tier 0) -- when uv.lock is present, prefer
     # `uv sync --locked`. The lockfile records SHA256 hashes for every
     # transitive dependency, so a compromised transitive (different hash
     # than what we shipped) is REJECTED by the resolver. This is the
-    # *only* path that protects against the direct dep is fine, but the
-    # dep dep got worm-poisoned overnight failure mode. The
-    # uv pip install tiers below re-resolve transitives fresh from PyPI
-    # without any hash verification; they exist to keep installs working
+    # *only* path that protects against the "direct dep is fine, but the
+    # dep's dep got worm-poisoned overnight" failure mode. The
+    # `uv pip install` tiers below re-resolve transitives fresh from PyPI
+    # without any hash verification -- they exist to keep installs working
     # when the lockfile is stale, missing, or out-of-sync with the
-    # current extras spec, NOT because they are equivalent in posture.
+    # current extras spec, NOT because they're equivalent in posture.
     if (Test-Path "uv.lock") {
         Write-Info "Trying tier: hash-verified (uv.lock) ..."
-        # Critical flag choice: ; extra all, NOT ; all-extras.
-        #   ; all-extras = every [project.optional-dependencies] key,
+        # Critical flag choice: `--extra all`, NOT `--all-extras`.
+        #   --all-extras = every [project.optional-dependencies] key,
         #                  bypassing the curated [all] extra. On Windows
-        #                  that means matrix extra pulls python-olm (no wheel,
-        #                  needs make to build from sdist) and the
+        #                  that means [matrix] -> python-olm (no wheel,
+        #                  needs `make` to build from sdist) and the
         #                  install fails.
-        #   ; extra all  = just the [all] extra contents (curated).
+        #   --extra all  = just the [all] extra's contents (curated).
         #
         # UV_PROJECT_ENVIRONMENT pins the sync target to our venv\.
-        # Without it, modern uv 0.5+ ignores VIRTUAL_ENV for sync
-        # and creates a sibling .venv\ inside the repo; leaving venv\
-        # empty and producing the broken state where hermes.exe exists
+        # Without it, modern uv (>=0.5) ignores VIRTUAL_ENV for `sync`
+        # and creates a sibling .venv\ inside the repo -- leaving venv\
+        # empty and producing the broken state where `hermes.exe` exists
         # in the wrong directory and imports fail with ModuleNotFoundError.
         # (Mirrors the same flag in scripts/install.sh::install_deps.)
         $env:UV_PROJECT_ENVIRONMENT = "$InstallDir\venv"
@@ -1351,7 +1435,7 @@ function Install-Dependencies {
         if ($LASTEXITCODE -eq 0) {
             Write-Success "Main package installed (hash-verified via uv.lock)"
             $script:InstalledTier = "hash-verified (uv.lock)"
-            # Skip the rest of the tiered cascade; we already have a
+            # Skip the rest of the tiered cascade -- we already have a
             # complete, hash-verified install.
             $skipPipFallback = $true
         } else {
@@ -1359,22 +1443,22 @@ function Install-Dependencies {
             $skipPipFallback = $false
         }
     } else {
-        Write-Info "uv.lock not found; falling back to PyPI resolve (no hash verification)"
+        Write-Info "uv.lock not found -- falling back to PyPI resolve (no hash verification)"
         $skipPipFallback = $false
     }
 
     # Install main package.  Tiered fallback so a single flaky transitive
-    # does not silently drop everything.  Each tier stdout/stderr is
-    # preserved; no Out-Null swallowing; so the user can see what failed.
+    # doesn't silently drop everything.  Each tier's stdout/stderr is
+    # preserved -- no Out-Null swallowing -- so the user can see what failed.
     #
-    # Tier 1: [all]; the curated extra in pyproject.toml.
+    # Tier 1: [all] -- the curated extra in pyproject.toml.
     # Tier 2: [all] minus the currently-broken extras list ($brokenExtras).
     #         Edit $brokenExtras below when something on PyPI breaks; this
     #         lets users keep the rest of [all] when one transitive is
-    #         unavailable. The list of [all]s contents is parsed from
-    #         pyproject.toml at runtime; there is NO hand-mirrored copy
+    #         unavailable. The list of [all]'s contents is parsed from
+    #         pyproject.toml at runtime -- there is NO hand-mirrored copy
     #         to drift out of sync.
-    # Tier 3: bare .; last-resort so at least the core CLI launches.
+    # Tier 3: bare `.` -- last-resort so at least the core CLI launches.
 
     # Currently-broken extras. Edit this list when an upstream package
     # gets quarantined / yanked / breaks resolution. Empty means everything
@@ -1390,14 +1474,14 @@ function Install-Dependencies {
         $parsed = & $pythonExeForParse -c @"
 import re, sys, tomllib
 try:
-    with open("pyproject.toml", "rb") as fh:
+    with open('pyproject.toml', 'rb') as fh:
         data = tomllib.load(fh)
-    specs = data["project"]["optional-dependencies"]["all"]
+    specs = data['project']['optional-dependencies']['all']
     out = []
     for s in specs:
-        m = re.search(r"hermes-agent\[([\w-]+)\]", s)
+        m = re.search(r'hermes-agent\[([\w-]+)\]', s)
         if m: out.append(m.group(1))
-    print(",".join(out))
+    print(','.join(out))
 except Exception:
     sys.exit(1)
 "@ 2>$null
@@ -1429,7 +1513,7 @@ except Exception:
             $installed = $true
             break
         }
-        Write-Warn "Tier $($tier.Name) failed (exit $LASTEXITCODE). Trying next tier..."
+        Write-Warn "Tier '$($tier.Name)' failed (exit $LASTEXITCODE). Trying next tier..."
         }
     }
     if (-not $installed) {
@@ -1439,20 +1523,20 @@ except Exception:
     # Baseline-import gate. Even if a tier reported success above, the
     # actual deps may have landed somewhere other than $InstallDir\venv\
     # (e.g. uv 0.5+ syncing into a sibling .venv\ when UV_PROJECT_ENVIRONMENT
-    # is not set, leaving venv\ empty and hermes.exe broken with
-    # ModuleNotFoundError: No module named dotenv on first run).
-    # We probe via the venv own python so a misdirected sync is caught
-    # here, not 30 seconds later when the user runs hermes.
+    # isn't set, leaving venv\ empty and hermes.exe broken with
+    # `ModuleNotFoundError: No module named 'dotenv'` on first run).
+    # We probe via the venv's own python so a misdirected sync is caught
+    # here, not 30 seconds later when the user runs `hermes`.
     if (-not $NoVenv) {
         $venvPython = "$InstallDir\venv\Scripts\python.exe"
         if (-not (Test-Path $venvPython)) {
-            throw "Install reported success but $venvPython does not exist. The dependency sync likely landed in a sibling .venv\ directory. Re-run the installer; if it persists, manually: cd $InstallDir; Remove-Item -Recurse -Force venv,.venv; uv venv venv --python $PythonVersion; `$env:UV_PROJECT_ENVIRONMENT=$InstallDir\venv; uv sync --extra all --locked"
+            throw "Install reported success but $venvPython does not exist. The dependency sync likely landed in a sibling .venv\ directory. Re-run the installer; if it persists, manually: cd '$InstallDir'; Remove-Item -Recurse -Force venv,.venv; uv venv venv --python $PythonVersion; `$env:UV_PROJECT_ENVIRONMENT='$InstallDir\venv'; uv sync --extra all --locked"
         }
         # Relax EAP=Stop while running the import probe.  Python writes
         # deprecation warnings and import-system info to stderr; under
-        # EAP=Stop stderr merge wraps those as ErrorRecord objects and
+        # EAP=Stop the 2>&1 merge wraps those as ErrorRecord objects and
         # throws even when the imports succeed.  $LASTEXITCODE is the
-        # reliable signal (it is 0 iff the python invocation exited 0,
+        # reliable signal (it's 0 iff the python invocation exited 0,
         # regardless of what was written to stderr).
         $prevEAP = $ErrorActionPreference
         $ErrorActionPreference = "Continue"
@@ -1462,17 +1546,17 @@ except Exception:
         if ($importExitCode -ne 0) {
             $sibling = "$InstallDir\.venv"
             $hint = if (Test-Path $sibling) {
-                "Detected sibling .venv\ at $sibling; uv synced there instead of venv\. Recover with: cd $InstallDir; Remove-Item -Recurse -Force venv; Move-Item .venv venv"
+                "Detected sibling .venv\ at $sibling -- uv synced there instead of venv\. Recover with: cd '$InstallDir'; Remove-Item -Recurse -Force venv; Move-Item .venv venv"
             } else {
-                "Recover with: cd $InstallDir; `$env:UV_PROJECT_ENVIRONMENT=$InstallDir\venv; uv sync --extra all --locked"
+                "Recover with: cd '$InstallDir'; `$env:UV_PROJECT_ENVIRONMENT='$InstallDir\venv'; uv sync --extra all --locked"
             }
             throw "Baseline imports failed in $InstallDir\venv (dotenv/openai/rich/prompt_toolkit). The install completed but dependencies are not in the venv. $hint"
         }
         Write-Success "Baseline imports verified in venv"
     }
 
-    # Verify the dashboard deps specifically; they are the most common thing
-    # users hit and lazy-import errors from hermes dashboard are confusing.
+    # Verify the dashboard deps specifically -- they're the most common thing
+    # users hit and lazy-import errors from `hermes dashboard` are confusing.
     # If tier 1 failed (the common case), [web] was still picked up by tiers
     # 2-3; only tier 4 leaves you without it.
     $pythonExe = if (-not $NoVenv) { "$InstallDir\venv\Scripts\python.exe" } else { (& $UvCmd python find $PythonVersion) }
@@ -1480,8 +1564,8 @@ except Exception:
         $webOk = $false
         # Relax EAP=Stop while running the import probe; see the matching
         # comment on the baseline-imports check above.  Python writes
-        # deprecation warnings to stderr and we do not want those wrapped
-        # as ErrorRecords that silently force the not importable path
+        # deprecation warnings to stderr and we don't want those wrapped
+        # as ErrorRecords that silently force the "not importable" path
         # even when fastapi/uvicorn are actually installed.
         $prevEAP = $ErrorActionPreference
         $ErrorActionPreference = "Continue"
@@ -1491,11 +1575,11 @@ except Exception:
         } catch { }
         $ErrorActionPreference = $prevEAP
         if (-not $webOk) {
-            Write-Warn "fastapi/uvicorn not importable; hermes dashboard will not work."
+            Write-Warn "fastapi/uvicorn not importable -- `hermes dashboard` will not work."
             Write-Info "Attempting targeted install of [web] extra as last resort..."
             & $UvCmd pip install -e ".[web]"
             if ($LASTEXITCODE -eq 0) {
-                Write-Success "[web] extra installed; hermes dashboard should now work."
+                Write-Success "[web] extra installed; `hermes dashboard` should now work."
             } else {
                 Write-Warn "Could not install [web] extra. Run manually: uv pip install --python `"$pythonExe`" `"fastapi>=0.104,<1`" `"uvicorn[standard]>=0.24,<1`""
             }
@@ -1533,12 +1617,8 @@ function Set-PathVariable {
     
     # Set HERMES_HOME so the Python code finds config/data in the right place.
     # Only needed on Windows where we install to %LOCALAPPDATA%\hermes instead
-    # of the Unix default ~/.hermes.  Must be the root — never profiles\<name>.
+    # of the Unix default ~/.hermes
     $currentHermesHome = [Environment]::GetEnvironmentVariable("HERMES_HOME", "User")
-    if ($currentHermesHome -match '\\profiles\\[a-z0-9][a-z0-9_-]{0,63}$') {
-        Write-Warn "User HERMES_HOME pointed at a profile dir ($currentHermesHome); resetting to root $HermesHome"
-        $currentHermesHome = $null
-    }
     if (-not $currentHermesHome -or $currentHermesHome -ne $HermesHome) {
         [Environment]::SetEnvironmentVariable("HERMES_HOME", $HermesHome, "User")
         Write-Success "Set HERMES_HOME=$HermesHome"
@@ -1670,14 +1750,14 @@ function Copy-ConfigTemplates {
         Write-Info "~/.hermes/config.yaml already exists, keeping it"
     }
     
-    # Create SOUL.md if it does not exist (global persona file).
-    # IMPORTANT: write without a BOM.  Windows PowerShell 5.1
-    # Set-Content -Encoding UTF8 writes UTF-8 WITH a byte-order-mark
-    # (the default PS5 behaviour), and Hermes prompt-injection scanner
+    # Create SOUL.md if it doesn't exist (global persona file).
+    # IMPORTANT: write without a BOM.  Windows PowerShell 5.1's
+    # ``Set-Content -Encoding UTF8`` writes UTF-8 WITH a byte-order-mark
+    # (the default PS5 behaviour), and Hermes's prompt-injection scanner
     # flags the BOM as an invisible unicode character and refuses to
-    # load the file.  PS7 -Encoding utf8NoBOM fixes that but we
-    # do not control which PowerShell version the user has.  Go direct
-    # to .NET with an explicit UTF8Encoding($false); BOM-free on every
+    # load the file.  PS7's ``-Encoding utf8NoBOM`` fixes that but we
+    # don't control which PowerShell version the user has.  Go direct
+    # to .NET with an explicit UTF8Encoding($false) -- BOM-free on every
     # PowerShell version.
     $soulPath = "$HermesHome\SOUL.md"
     if (-not (Test-Path $soulPath)) {
@@ -1685,7 +1765,7 @@ function Copy-ConfigTemplates {
 # Hermes Agent Persona
 
 <!--
-This file defines the agent personality and tone.
+This file defines the agent's personality and tone.
 The agent will embody whatever you write here.
 Edit this to customize how Hermes communicates with you.
 
@@ -1694,7 +1774,7 @@ Examples:
   - "You are a concise technical expert. No fluff, just facts."
   - "You speak like a friendly coworker who happens to know everything."
 
-This file is loaded fresh each message; no restart needed.
+This file is loaded fresh each message -- no restart needed.
 Delete the contents (or this file) to use the default personality.
 -->
 "@
@@ -1716,7 +1796,7 @@ Delete the contents (or this file) to use the default personality.
             # Fallback: simple directory copy
             $bundledSkills = "$InstallDir\skills"
             $userSkills = "$HermesHome\skills"
-            if ((Test-Path $bundledSkills) -and -not (Get-ChildItem $userSkills -Exclude ".bundled_manifest" -ErrorAction SilentlyContinue)) {
+            if ((Test-Path $bundledSkills) -and -not (Get-ChildItem $userSkills -Exclude '.bundled_manifest' -ErrorAction SilentlyContinue)) {
                 Copy-Item -Path "$bundledSkills\*" -Destination $userSkills -Recurse -Force -ErrorAction SilentlyContinue
                 Write-Success "Skills copied to ~/.hermes/skills/"
             }
@@ -1739,19 +1819,19 @@ function Install-NodeDeps {
 
     # Resolve npm explicitly to npm.cmd, NOT npm.ps1.  Node.js on Windows
     # ships BOTH npm.cmd (a batch shim) and npm.ps1 (a PowerShell shim).
-    # Get-Command default ordering picks whichever comes first in PATHEXT,
-    # and on many systems that is .ps1; but .ps1 requires scripts to be
-    # enabled in PowerShell execution policy, which most Windows users
-    # do not have (the Restricted / RemoteSigned default blocks unsigned
+    # Get-Command's default ordering picks whichever comes first in PATHEXT,
+    # and on many systems that's .ps1 -- but .ps1 requires scripts to be
+    # enabled in PowerShell's execution policy, which most Windows users
+    # don't have (the Restricted / RemoteSigned default blocks unsigned
     # .ps1 files).  .cmd has no such restriction and works on every box.
     #
     # Strategy: look next to the npm shim we found and prefer npm.cmd if
     # it exists in the same directory.  Fall back to whatever Get-Command
-    # returned if we cannot find a .cmd sibling.
+    # returned if we can't find a .cmd sibling.
     $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
     if (-not $npmCmd) {
-        Write-Warn "npm not found on PATH; skipping Node.js dependencies."
-        Write-Info "Open a new PowerShell window and re-run hermes setup tools later."
+        Write-Warn "npm not found on PATH -- skipping Node.js dependencies."
+        Write-Info "Open a new PowerShell window and re-run 'hermes setup tools' later."
         return
     }
     $npmExe = $npmCmd.Source
@@ -1761,47 +1841,48 @@ function Install-NodeDeps {
             Write-Info "Using npm.cmd (PowerShell execution policy blocks npm.ps1)"
             $npmExe = $npmCmdSibling
         } else {
-            Write-Warn "Only npm.ps1 available; install may fail if script execution is disabled."
+            Write-Warn "Only npm.ps1 available -- install may fail if script execution is disabled."
             Write-Info "  If it fails, either enable PS script execution or install Node via winget."
         }
     }
 
-    # Helper: run npm install in a given directory and surface the real
+    # Helper: run "npm install" in a given directory and surface the real
     # error when it fails.  Returns $true on success.
     #
-    # Implementation note: Start-Process -FilePath npm.cmd fails with
-    # %1 is not a valid Win32 application on some PowerShell versions
+    # Implementation note: ``Start-Process -FilePath npm.cmd`` fails with
+    # ``%1 is not a valid Win32 application`` on some PowerShell versions
     # because Start-Process bypasses cmd.exe / PATHEXT and expects a real
-    # PE file.  The invocation-operator & $npmExe routes through the
+    # PE file.  The invocation-operator ``& $npmExe`` routes through the
     # PowerShell command pipeline which DOES honour .cmd batch shims, so
     # it works uniformly for npm.cmd, npx.cmd, and bare .exe files.
-    function Invoke-NpmInstall([string]$label, [string]$installDir, [string]$logPath, [string]$npmPath) {
+    function _Run-NpmInstall([string]$label, [string]$installDir, [string]$logPath, [string]$npmPath) {
         Push-Location $installDir
-        # Capture EAP outside the try block so the catch restore call always
+        # Capture EAP outside the try block so the catch's restore call always
         # has a meaningful value (see Install-Uv for the full rationale).
         $prevEAP = $ErrorActionPreference
         try {
-            # Stream npm output to BOTH the console and the log file via
-            # Tee-Object.  Previously npm install redirected every stream to disk and left
-            # the user staring at a frozen Installing... line for the
-            # duration of the install.  On a fresh VM that is 1-3 minutes
+            # Stream npm's output to BOTH the console and the log file via
+            # Tee-Object.  Previously this called ``& npm install --silent
+            # *> $logPath`` which redirected every stream to disk and left
+            # the user staring at a frozen "Installing..." line for the
+            # duration of the install.  On a fresh VM that's 1-3 minutes
             # of total silence, indistinguishable from a hang.
             #
             # Tee writes the live output to stdout AND $logPath; we still
             # capture the exit code afterwards and surface diagnostics
-            # on failure.  Note: stderr merge puts npm output into the success
+            # on failure.  Note: 2>&1 merges npm's stderr into the success
             # stream first because Tee-Object only sees the success
-            # stream of the pipeline.  ForEach-Object { $_ } coerces
-            # each item to a string so PowerShell NativeCommandError
-            # formatter does not wrap stderr lines as alarming red blocks
+            # stream of the pipeline.  ForEach-Object { "$_" } coerces
+            # each item to a string so PowerShell's NativeCommandError
+            # formatter doesn't wrap stderr lines as alarming red blocks
             # (cosmetic polish; the underlying text is unchanged).
             #
             # Relax EAP around the npm invocation: with EAP=Stop (set at
             # the top of this script), PowerShell wraps stderr lines from
-            # native commands captured via stderr merge as ErrorRecord objects and
-            # throws on the first one; even though npm exited 0.  This
+            # native commands captured via 2>&1 as ErrorRecord objects and
+            # throws on the first one -- even though npm exited 0.  This
             # is the same issue Test-Python and Install-Uv work around
-            # for uv stderr-emitting installer.  Check success via
+            # for uv's stderr-emitting installer.  Check success via
             # $LASTEXITCODE, which is reliable regardless of stderr noise.
             $ErrorActionPreference = "Continue"
             & $npmPath install --silent 2>&1 | ForEach-Object { "$_" } | Tee-Object -FilePath $logPath
@@ -1812,7 +1893,7 @@ function Install-NodeDeps {
                 Remove-Item -Force $logPath -ErrorAction SilentlyContinue
                 return $true
             }
-            Write-Warn "$label npm install failed; exit code $code"
+            Write-Warn "$label npm install failed -- exit code $code"
             if (Test-Path $logPath) {
                 $errText = (Get-Content $logPath -Raw -ErrorAction SilentlyContinue)
                 if ($errText) {
@@ -1822,6 +1903,7 @@ function Install-NodeDeps {
                         Write-Host "    $line" -ForegroundColor DarkGray
                     }
                     Write-Info "  Full log: $logPath"
+                    Show-NpmCertHint $errText | Out-Null
                 }
             }
             Write-Info "Run manually later: cd `"$installDir`"; npm install"
@@ -1839,14 +1921,14 @@ function Install-NodeDeps {
     if (Test-Path "$InstallDir\package.json") {
         Write-Info "Installing Node.js dependencies (browser tools)..."
         $browserLog = "$env:TEMP\hermes-npm-browser-$(Get-Random).log"
-        $browserNpmOk = Invoke-NpmInstall "Browser tools" $InstallDir $browserLog $npmExe
+        $browserNpmOk = _Run-NpmInstall "Browser tools" $InstallDir $browserLog $npmExe
 
         # Install Playwright Chromium (mirrors scripts/install.sh behaviour for
         # Linux).  Without this, tools/browser_tool.py::check_browser_requirements
         # returns False (no Chromium under %LOCALAPPDATA%\ms-playwright), and the
-        # browser_* tools are silently filtered out of the agent tool schema.
-        # System Chrome at C:\Program Files\Google\Chrome\... is NOT used by
-        # agent-browser; it expects a Playwright-managed Chromium.
+        # browser_* tools are silently filtered out of the agent's tool schema.
+        # System Chrome at "C:\Program Files\Google\Chrome\..." is NOT used by
+        # agent-browser -- it expects a Playwright-managed Chromium.
         if ($browserNpmOk) {
             Write-Info "Installing browser engine (Playwright Chromium)..."
             # npx lives next to npm in the same bin dir.  Prefer .cmd to dodge
@@ -1862,12 +1944,12 @@ function Install-NodeDeps {
                 if ($npxCmd) { $npxExe = $npxCmd.Source }
             }
             if (-not $npxExe) {
-                Write-Warn "npx not found; cannot install Playwright Chromium."
+                Write-Warn "npx not found -- cannot install Playwright Chromium."
                 Write-Info "Run manually later: cd `"$InstallDir`"; npx playwright install chromium"
             } else {
                 $pwLog = "$env:TEMP\hermes-playwright-install-$(Get-Random).log"
                 Push-Location $InstallDir
-                # Capture EAP outside the try block so the catch restore call
+                # Capture EAP outside the try block so the catch's restore call
                 # always has a meaningful value (see Install-Uv for the full
                 # rationale).
                 $prevEAP = $ErrorActionPreference
@@ -1877,30 +1959,30 @@ function Install-NodeDeps {
                     # VM.  Tee the output to console + log so the user
                     # sees download progress in real time instead of
                     # staring at a silent prompt that looks hung.  See
-                    # Invoke-NpmInstall above for the same pattern and
-                    # the rationale behind stderr capture before the pipe.
-                    Write-Info "(this can take several minutes; streaming progress below)"
-                    # ; yes auto-accepts npx Need to install playwright@X.Y.Z
+                    # _Run-NpmInstall above for the same pattern and
+                    # the rationale behind 2>&1 before the pipe.
+                    Write-Info "(this can take several minutes -- streaming progress below)"
+                    # --yes auto-accepts npx's "Need to install playwright@X.Y.Z"
                     # confirmation prompt.  Without it, npx 7+ blocks on stdin
                     # waiting for a y/N answer that never comes when this is
                     # invoked through a pipeline (Tee-Object disconnects stdin
-                    # from the user TTY), and the install hangs indefinitely
-                    # after printing Need to install the following packages:
-                    # playwright@X.Y.Z.
+                    # from the user's TTY), and the install hangs indefinitely
+                    # after printing "Need to install the following packages:
+                    # playwright@X.Y.Z".
                     #
                     # Relax EAP around the playwright invocation: playwright
-                    # emits a Chromium downloaded to ... success banner to
+                    # emits a "Chromium downloaded to ..." success banner to
                     # stderr after a successful install.  Under EAP=Stop, the
-                    # stderr merge wraps those lines as ErrorRecord
-                    # objects and throws; causing this catch block to fire
+                    # 2>&1 merge wraps those stderr lines as ErrorRecord
+                    # objects and throws -- causing this catch block to fire
                     # with a mangled banner as the error message even though
                     # the install actually succeeded.  Check $LASTEXITCODE
                     # instead, which is the reliable signal.
                     #
-                    # The ForEach-Object { $_ } coercion BEFORE Tee-Object
-                    # is a cosmetic polish: with bare stderr capture, PowerShell still
+                    # The ForEach-Object { "$_" } coercion BEFORE Tee-Object
+                    # is a cosmetic polish: with bare 2>&1, PowerShell still
                     # renders stderr lines through its NativeCommandError
-                    # formatter (the red npx.cmd : ... block).  Coercing
+                    # formatter (the red "npx.cmd : ..." block).  Coercing
                     # each pipeline item to a string strips that wrapper so
                     # the user sees clean playwright output instead of the
                     # alarming-looking error formatting.
@@ -1912,7 +1994,7 @@ function Install-NodeDeps {
                         Write-Success "Playwright Chromium installed (browser tools ready)"
                         Remove-Item -Force $pwLog -ErrorAction SilentlyContinue
                     } else {
-                        Write-Warn "Playwright Chromium install failed; exit code $pwCode"
+                        Write-Warn "Playwright Chromium install failed -- exit code $pwCode"
                         Write-Warn "Browser tools will not work until Chromium is installed."
                         if (Test-Path $pwLog) {
                             $pwErr = Get-Content $pwLog -Raw -ErrorAction SilentlyContinue
@@ -1943,8 +2025,57 @@ function Install-NodeDeps {
     if (Test-Path "$tuiDir\package.json") {
         Write-Info "Installing TUI dependencies..."
         $tuiLog = "$env:TEMP\hermes-npm-tui-$(Get-Random).log"
-        [void](Invoke-NpmInstall "TUI" $tuiDir $tuiLog $npmExe)
+        [void](_Run-NpmInstall "TUI" $tuiDir $tuiLog $npmExe)
     }
+}
+
+# Clear the cached Electron download + any half-written unpacked output so the
+# next `npm run pack` re-downloads and re-stages from scratch. A corrupt zip in
+# the per-user Electron download cache - most often a partial download resumed
+# into the same file, leaving concatenated junk - makes electron-builder's
+# `app-builder unpack-electron` extract a tree MISSING the electron binary, so
+# the final `electron` -> `Hermes` rename dies with ENOENT and every re-run
+# repeats the broken extraction forever.
+#
+# We deliberately do not validate the zip ourselves: the common
+# prepended/concatenated-junk corruption slips past naive checks, so a
+# self-rolled gate would skip the real-world case. We unconditionally drop the
+# cached electron-*.zip (loose copy and any @electron/get hash-subdir copy) plus
+# the stale unpacked dir, then let the caller retry once - @electron/get
+# re-downloads with its own SHASUM verification, the real source of truth.
+#
+# Returns the removed paths. Best-effort: never throws.
+function Clear-ElectronBuildCache {
+    param([string]$DesktopDir)
+    $removed = @()
+
+    # Per-user Electron download cache dirs, honoring the overrides @electron/get
+    # respects, then the Windows default (%LOCALAPPDATA%\electron\Cache).
+    $cacheDirs = @()
+    if ($env:electron_config_cache) { $cacheDirs += $env:electron_config_cache }
+    if ($env:ELECTRON_CACHE)        { $cacheDirs += $env:ELECTRON_CACHE }
+    if ($env:LOCALAPPDATA)          { $cacheDirs += (Join-Path $env:LOCALAPPDATA 'electron\Cache') }
+    $cacheDirs += (Join-Path $HOME 'AppData\Local\electron\Cache')
+
+    foreach ($dir in $cacheDirs) {
+        if (-not (Test-Path -LiteralPath $dir)) { continue }
+        # Recurse: the bad copy may be the top-level zip OR a copy inside an
+        # @electron/get hash subdir.
+        $removed += @(Get-ChildItem -LiteralPath $dir -Recurse -Filter 'electron-*.zip' -File -ErrorAction SilentlyContinue | ForEach-Object {
+            try { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction Stop; $_.FullName } catch { }
+        })
+    }
+
+    # A half-written unpacked dir from an interrupted prior pack poisons the
+    # rename even after the zip is fixed (win-unpacked / win-arm64-unpacked).
+    $releaseDir = Join-Path $DesktopDir 'release'
+    if (Test-Path -LiteralPath $releaseDir) {
+        $removed += @(Get-ChildItem -LiteralPath $releaseDir -Directory -Filter '*-unpacked' -ErrorAction SilentlyContinue | ForEach-Object {
+            try { Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction Stop; $_.FullName } catch { }
+        })
+    }
+
+    return $removed
 }
 
 function Install-Desktop {
@@ -2027,15 +2158,22 @@ function Install-Desktop {
         # tsc/typescript unresolved so `npm run pack`'s `tsc -b` dies with
         # no obvious cause. Fall back to `npm install` only if `npm ci`
         # fails (lockfile out of sync / very old npm without ci).
-        & $npmExe ci 2>&1 | ForEach-Object { "$_" }
+        #
+        # Tee the merged output into $npmOut while still emitting every line
+        # live. We don't need a side log file (the bootstrap streaming sink
+        # is the artifact), but on failure we scan $npmOut for the TLS-trust
+        # signature so corporate-proxy users get the NODE_EXTRA_CA_CERTS hint
+        # instead of an opaque "exit 1" (issue #38016).
+        & $npmExe ci 2>&1 | ForEach-Object { "$_" } | Tee-Object -Variable npmOut
         $code = $LASTEXITCODE
         if ($code -ne 0) {
             Write-Info "  npm ci failed (exit $code) -- retrying with npm install..."
-            & $npmExe install 2>&1 | ForEach-Object { "$_" }
+            & $npmExe install 2>&1 | ForEach-Object { "$_" } | Tee-Object -Variable npmOut
             $code = $LASTEXITCODE
         }
         $ErrorActionPreference = $prevEAP
         if ($code -ne 0) {
+            Show-NpmCertHint ($npmOut -join "`n") | Out-Null
             throw "desktop workspace npm install failed (exit $code) -- see lines above for cause"
         }
         Write-Success "Desktop workspace dependencies installed"
@@ -2080,6 +2218,22 @@ function Install-Desktop {
         $env:WIN_CSC_KEY_PASSWORD = ""
         & $npmExe run pack 2>&1 | ForEach-Object { "$_" } | Tee-Object -FilePath $buildLog
         $code = $LASTEXITCODE
+        if ($code -ne 0) {
+            # A corrupt cached Electron zip makes `pack` fail with an opaque
+            # ENOENT on the final `electron` -> `Hermes` rename: app-builder's
+            # unpack-electron extracted a partial tree (missing the binary) from
+            # the bad zip, and re-running reuses the poisoned cache forever.
+            # Purge the cached download + any stale unpacked output and retry
+            # once; @electron/get re-downloads with its own SHASUM check. Without
+            # this a corrupt download hard-fails the whole installer.
+            $purged = @(Clear-ElectronBuildCache -DesktopDir $desktopDir)
+            if ($purged.Count -gt 0) {
+                Write-Warn "Desktop build failed - cleared cached Electron download, retrying once:"
+                foreach ($p in $purged) { Write-Info "  - $p" }
+                & $npmExe run pack 2>&1 | ForEach-Object { "$_" } | Tee-Object -FilePath $buildLog
+                $code = $LASTEXITCODE
+            }
+        }
         $ErrorActionPreference = $prevEAP
         if ($code -ne 0) {
             $errText = Get-Content $buildLog -Raw -ErrorAction SilentlyContinue
@@ -2209,17 +2363,17 @@ function Install-PlatformSdks {
     # Ensure messaging-platform SDKs matching tokens the user added to
     # ~/.hermes/.env are importable.  Two problems this solves:
     #
-    # 1. The tiered uv pip install cascade above can fall through to a
+    # 1. The tiered `uv pip install` cascade above can fall through to a
     #    lower tier when the first fails (common when RL git deps choke),
     #    which silently skips some messaging SDKs from [messaging].
-    # 2. uv creates the venv without pip.  If a messaging SDK ends up
-    #    missing, the user cannot pip install python-telegram-bot to
-    #    recover; pip simply is not in their venv.
+    # 2. `uv` creates the venv without pip.  If a messaging SDK ends up
+    #    missing, the user can't `pip install python-telegram-bot` to
+    #    recover -- pip simply isn't in their venv.
     #
-    # Strategy: bootstrap pip via python -m ensurepip (idempotent), then
+    # Strategy: bootstrap pip via `python -m ensurepip` (idempotent), then
     # for each token set in .env, verify the matching SDK imports.  If not,
-    # run one targeted pip install as last-chance recovery.  Keeps fresh
-    # Windows installs from hitting silent python-telegram-bot not installed
+    # run one targeted `pip install` as last-chance recovery.  Keeps fresh
+    # Windows installs from hitting silent "python-telegram-bot not installed"
     # at runtime.
     if ($NoVenv) {
         Write-Info "Skipping platform-SDK verification (-NoVenv: no venv to bootstrap)"
@@ -2236,7 +2390,7 @@ function Install-PlatformSdks {
     if (-not (Test-Path $envPath)) { return }
     $envLines = Get-Content $envPath -ErrorAction SilentlyContinue
 
-    # Map: env var set in .env  to  (import name, pip spec matching [messaging] extra).
+    # Map: env var set in .env -> (import name, pip spec matching [messaging] extra).
     # Specs mirror pyproject.toml to avoid version drift.
     $sdkMap = @(
         @{ Var = "TELEGRAM_BOT_TOKEN"; Import = "telegram";  Spec = "python-telegram-bot[webhooks]>=22.6,<23" },
@@ -2261,9 +2415,9 @@ function Install-PlatformSdks {
     Write-Host ""
     Write-Info "Verifying platform SDKs for tokens found in $envPath ..."
 
-    # Verify each SDK import without triggering side-effect imports.
+    # Verify each SDK's import without triggering side-effect imports.
     # Quirk: PowerShell wraps non-zero-exit native stderr as a
-    # NativeCommandError that prints even with stderr redirected to null
+    # NativeCommandError that prints even with `2>$null` / `*> $null`
     # unless we set $ErrorActionPreference to SilentlyContinue for the
     # span.  Save + restore rather than nuking globally.
     $prevEAP = $ErrorActionPreference
@@ -2284,17 +2438,17 @@ function Install-PlatformSdks {
     }
     if ($missing.Count -eq 0) { return }
 
-    # Bootstrap pip into the venv if it is not there.  uv creates venvs
+    # Bootstrap pip into the venv if it isn't there.  `uv` creates venvs
     # without pip; ensurepip is the stdlib-blessed way to add it.
     $prevEAP = $ErrorActionPreference
     $ErrorActionPreference = "SilentlyContinue"
     try {
         & $pythonExe -m pip --version 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) {
-            Write-Info "Bootstrapping pip into venv (uv does not ship pip)..."
+            Write-Info "Bootstrapping pip into venv (uv doesn't ship pip)..."
             & $pythonExe -m ensurepip --upgrade 2>&1 | Out-Null
             if ($LASTEXITCODE -ne 0) {
-                Write-Warn "ensurepip failed; cannot auto-install missing SDKs."
+                Write-Warn "ensurepip failed -- can't auto-install missing SDKs."
                 Write-Info "Manual recovery: $UvCmd pip install `"$($missing[0].Spec)`""
                 return
             }
@@ -2324,7 +2478,7 @@ function Invoke-SetupWizard {
         # The setup wizard prompts for API keys, model choice, persona, etc.
         # Non-interactive callers (GUI installer) own that UX themselves; let
         # them drive it after install.ps1 returns.
-        Write-Info "Skipping setup wizard (non-interactive). Configure via the GUI or hermes setup."
+        Write-Info "Skipping setup wizard (non-interactive). Configure via the GUI or 'hermes setup'."
         return
     }
 
@@ -2368,7 +2522,7 @@ function Start-GatewayIfConfigured {
     if ($whatsappEnabled -and -not (Test-Path $whatsappSession)) {
         Write-Host ""
         Write-Info "WhatsApp is enabled but not yet paired."
-        Write-Info "Running hermes whatsapp to pair via QR code..."
+        Write-Info "Running 'hermes whatsapp' to pair via QR code..."
         Write-Host ""
         # Non-interactive callers (GUI installer, CI) skip the QR-pair prompt;
         # WhatsApp pairing requires a human looking at a phone camera, so the
@@ -2392,8 +2546,8 @@ function Start-GatewayIfConfigured {
     Write-Info "The gateway handles messaging platforms and cron job execution."
     Write-Host ""
 
-    # In non-interactive mode the gateway lifecycle is the caller problem
-    # (the GUI manages its own gateway process, CI does not want background
+    # In non-interactive mode the gateway lifecycle is the caller's problem
+    # (the GUI manages its own gateway process, CI doesn't want background
     # services on the build agent, etc.).  Treat it like the user declined.
     if ($NonInteractive) {
         Write-Info "Skipping gateway autostart prompt (non-interactive)."
@@ -2483,17 +2637,18 @@ function Write-Completion {
 # Stage protocol
 # ============================================================================
 #
-# install.ps1 supports a small, stable stage protocol that lets programmatic
-# callers (the desktop GUI onboarding wizard, CI, future install.sh, etc.)
+# install.ps1 supports a small, stable "stage protocol" that lets programmatic
+# callers (the desktop GUI's onboarding wizard, CI, future install.sh, etc.)
 # drive the install one step at a time and surface progress/errors with their
-# encounter this; default invocation behaves exactly as before.
+# own UI.  CLI users running the canonical `irm | iex` one-liner never
+# encounter this -- default invocation behaves exactly as before.
 #
 # Entry points:
 #
-#   install.ps1                       Interactive install (today behavior).
+#   install.ps1                       Interactive install (today's behavior).
 #   install.ps1 -ProtocolVersion      Emit the protocol version integer.
 #   install.ps1 -Manifest             Emit the stage manifest as JSON.
-#   install.ps1 -Stage STAGE_NAME     Run one stage and emit its result.
+#   install.ps1 -Stage <name>         Run one stage and emit its result.
 #   install.ps1 -NonInteractive       Disable all Read-Host prompts (also
 #                                     skips the setup wizard and the gateway
 #                                     autostart prompt).  Can be combined
@@ -2506,51 +2661,51 @@ function Write-Completion {
 # Manifest schema (the JSON returned by -Manifest):
 #
 #   {
-#     protocol_version: 1,
-#     stages: [
+#     "protocol_version": 1,
+#     "stages": [
 #       {
-#         name: uv,
-#         title: Installing uv package manager,
-#         category: prereqs,
-#         needs_user_input: false
+#         "name": "uv",
+#         "title": "Installing uv package manager",
+#         "category": "prereqs",
+#         "needs_user_input": false
 #       },
 #       ...
 #     ]
 #   }
 #
-# Stage result (the JSON written by -Stage STAGE_NAME):
+# Stage result (the JSON written by -Stage <name>):
 #
 #   {
-#     stage: uv,
-#     ok: true,
-#     skipped: false,
-#     reason: null,
-#     duration_ms: 1234
+#     "stage": "uv",
+#     "ok": true,
+#     "skipped": false,
+#     "reason": null,
+#     "duration_ms": 1234
 #   }
 #
 # Exit codes:
 #
-#   0; success (stage ran, or stage was deliberately skipped).
-#   1; generic failure; the stage threw.
-#   2; unknown stage name passed to -Stage.
+#   0 -- success (stage ran, or stage was deliberately skipped).
+#   1 -- generic failure; the stage threw.
+#   2 -- unknown stage name passed to -Stage.
 #
 # Adding a stage:
 #
 #   1. Append an entry to $InstallStages below.
 #   2. Make sure the worker function it points at is idempotent and respects
-#      $NonInteractive when it has prompts.  Add it before configure
-#      (the wizard) or gateway (autostart) if it should run unconditionally;
-#      after those if it is optional post-install glue.
-#   3. Do NOT bump $InstallStageProtocolVersion; adding stages is additive.
+#      $NonInteractive when it has prompts.  Add it before "configure"
+#      (the wizard) or "gateway" (autostart) if it should run unconditionally;
+#      after those if it's optional post-install glue.
+#   3. Do NOT bump $InstallStageProtocolVersion -- adding stages is additive.
 #      Drivers iterate the manifest dynamically.
 #
 # ============================================================================
 
-# Stage definitions; the single source of truth.  Each entry maps a stable
+# Stage definitions -- the single source of truth.  Each entry maps a stable
 # stage name (the API contract drivers depend on) to the worker function that
-# implements it.  Title is what UIs show; Category lets UIs group
-# stages; NeedsUserInput tells UIs this stage prompts; either skip it
-# or arrange to provide answers another way.
+# implements it.  ``Title`` is what UIs show; ``Category`` lets UIs group
+# stages; ``NeedsUserInput`` tells UIs "this stage prompts -- either skip it
+# or arrange to provide answers another way."
 $InstallStages = @(
     @{ Name = "uv";               Title = "Installing uv package manager";        Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-Uv" }
     @{ Name = "python";           Title = "Verifying Python $PythonVersion";      Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-Python" }
@@ -2579,35 +2734,31 @@ $InstallStages += @(
     @{ Name = "gateway";          Title = "Starting messaging gateway";           Category = "post-install"; NeedsUserInput = $true;  Worker = "Stage-Gateway" }
 )
 
-# Stage workers; thin wrappers that delegate to the existing Install-* /
+# Stage workers -- thin wrappers that delegate to the existing Install-* /
 # Test-* / Invoke-* functions while preserving their error semantics.  Kept
 # as a separate layer so the existing functions remain callable directly
-# (helpful for one-off recovery: . install.ps1; Install-Venv).
+# (helpful for one-off recovery: ``. install.ps1; Install-Venv``).
 #
 # Stages that depend on uv (anything after Stage-Uv) call Resolve-UvCmd
 # first so they work in cross-process driver mode where $script:UvCmd
 # set by Stage-Uv in a sibling powershell process is not visible here.
 # Resolve-UvCmd is a fast no-op when $script:UvCmd is already populated
 # (the default-invocation case where Main runs everything in one
-# process), and throws cleanly if uv truly is not installed yet.
-function Invoke-InstallStageUv               { if (-not (Install-Uv))     { throw "uv installation failed" } }
-function Invoke-InstallStagePython           { Resolve-UvCmd; if (-not (Test-Python))    { throw "Python $PythonVersion not available" } }
-function Invoke-InstallStageGit              { if (-not (Install-Git))    { throw "Git not available and auto-install failed; install from https://git-scm.com/download/win then re-run" } }
+# process), and throws cleanly if uv truly isn't installed yet.
+function Stage-Uv               { if (-not (Install-Uv))     { throw "uv installation failed" } }
+function Stage-Python           { Resolve-UvCmd; if (-not (Test-Python))    { throw "Python $PythonVersion not available" } }
+function Stage-Git              { if (-not (Install-Git))    { throw "Git not available and auto-install failed -- install from https://git-scm.com/download/win then re-run" } }
 # Node is optional (browser tools degrade gracefully without it).  Surface
 # failure to the JSON contract as skipped=true / reason rather than ok=true,
-# so a GUI driver consuming the manifest can distinguish node ready from
-# node missing.  Install flow continues either way; matches the
-# existing Write-Completion behavior that prints a Note: Node.js could
-# not be installed hint instead of aborting.
-function Invoke-InstallStageNode             {
+# so a GUI driver consuming the manifest can distinguish "node ready" from
+# "node missing".  Install flow continues either way -- matches the
+# existing Write-Completion behavior that prints a "Note: Node.js could
+# not be installed" hint instead of aborting.
+function Stage-Node             {
     if (-not (Test-Node)) {
         $script:_StageSkippedReason = "Node.js not available; browser tools will be unavailable until node is installed manually from https://nodejs.org/en/download/"
     }
 }
-function Stage-Uv               { Invoke-InstallStageUv }
-function Stage-Python           { Invoke-InstallStagePython }
-function Stage-Git              { Invoke-InstallStageGit }
-function Stage-Node             { Invoke-InstallStageNode }
 function Stage-SystemPackages   { Install-SystemPackages }
 function Stage-Repository       { Install-Repository }
 function Stage-Venv             { Resolve-UvCmd; Install-Venv }
@@ -2630,9 +2781,9 @@ function Get-InstallStage {
 }
 
 function Step-OutOfInstallDir {
-    # Windows refuses to delete a directory any shell is currently cdd
-    # inside; and silently leaves orphan files behind, which then wedge
-    # is this a valid git repo probes on re-install.  Harmless when the
+    # Windows refuses to delete a directory any shell is currently cd'd
+    # inside -- and silently leaves orphan files behind, which then wedge
+    # "is this a valid git repo" probes on re-install.  Harmless when the
     # caller ran the installer from somewhere else.
     try {
         $currentResolved = (Get-Location).ProviderPath
@@ -2659,12 +2810,12 @@ function Invoke-Stage {
     Sync-EnvPath
 
     # Per-stage soft-skip channel.  A worker can populate
-    # $script:_StageSkippedReason to surface ran, but the thing it was
-    # supposed to set up is not available as skipped=true in the JSON
+    # $script:_StageSkippedReason to surface "ran, but the thing it was
+    # supposed to set up is not available" as skipped=true in the JSON
     # frame, without throwing.  Used by Stage-Node so the install flow
-    # does not abort when an optional capability is missing while still
+    # doesn't abort when an optional capability is missing while still
     # being honest in the protocol contract.  Reset before each stage so
-    # a prior stage reason can never leak into a later stage frame.
+    # a prior stage's reason can never leak into a later stage's frame.
     $script:_StageSkippedReason = $null
 
     $start = [DateTime]::UtcNow
@@ -2694,9 +2845,9 @@ function Invoke-Stage {
             # caller can stream progress.  In default interactive mode we
             # stay silent here (the worker already wrote human output).
             $result | ConvertTo-Json -Compress | Write-Output
-            # Tell the entry-point catch that weve already emitted a
+            # Tell the entry-point catch that we've already emitted a
             # frame for this failure (when $result.ok = $false), so it
-            # does not double-emit a second JSON object and break the
+            # doesn't double-emit a second JSON object and break the
             # one-line-per-stage contract the driver protocol promises.
             if (-not $result.ok) {
                 $script:_StageEmittedErrorFrame = $true
@@ -2768,9 +2919,12 @@ function Main {
     }
 }
 
-# === Entry-point dispatch ===
-# All branches funnel through one try/catch so errors do not kill the caller
-# PowerShell session, and so failures in stage-driver mode produce a
+# ----------------------------------------------------------------------------
+# Entry-point dispatch
+# ----------------------------------------------------------------------------
+#
+# All branches funnel through one try/catch so errors don't kill an `irm |
+# iex` PowerShell session, and so failures in stage-driver mode produce a
 # structured JSON error frame instead of a bare exception.
 
 try {
@@ -2809,7 +2963,7 @@ try {
     }
 
     # Use PSBoundParameters rather than $Stage truthiness so that an
-    # explicit empty -Stage from a misbehaving driver does not fall through
+    # explicit `-Stage ""` from a misbehaving driver doesn't fall through
     # to the full-install Main path and silently kick off a destructive
     # operation.  Empty string is a contract violation; surface it as
     # unknown-stage exit 2 with a structured JSON frame.
@@ -2829,14 +2983,14 @@ try {
         exit 0
     }
 
-    # Default: full install (current behavior, plus optional -NonInteractive
+    # Default: full install (today's behavior, plus optional -NonInteractive
     # and -Json layered on by the params above).
     Main
 } catch {
     if ($Json -or $Stage) {
         # Stage-driver mode: caller wants JSON they can parse.  Emit a
-        # structured error frame and exit non-zero; BUT only if
-        # Invoke-Stage did not already emit one for this same failure.
+        # structured error frame and exit non-zero -- BUT only if
+        # Invoke-Stage didn't already emit one for this same failure.
         # The inner finally emits the authoritative per-stage frame
         # (with duration_ms + skipped fields); a second emit here
         # would produce two concatenated JSON objects on stdout and
@@ -2852,13 +3006,12 @@ try {
         exit 1
     }
 
-    # Interactive mode: friendly recovery hint.
+    # Interactive mode: keep today's friendly recovery hint.
     Write-Host ""
     Write-Err "Installation failed: $_"
     Write-Host ""
     Write-Info "If the error is unclear, try downloading and running the script directly:"
-    $installScriptUrl = "https://raw.githubusercontent.com/J80-droid/hermes-agent-windows-nl/main/scripts/install.ps1"
-    Write-Host "  Invoke-WebRequest -Uri $installScriptUrl -OutFile install.ps1" -ForegroundColor Yellow
+    Write-Host "  Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/J80-droid/hermes-agent-windows-nl/main/scripts/install.ps1' -OutFile install.ps1" -ForegroundColor Yellow
     Write-Host "  .\install.ps1" -ForegroundColor Yellow
     Write-Host ""
 }
