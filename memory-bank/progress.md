@@ -10,7 +10,7 @@
 - [x] P1 kern: institutional E2E, toolset dashboard 9/9, fork gates 8/8
 - [ ] P1 volledig: `RUN_PYTEST.ps1` (~31k tests, `--ignore=tests/docker`; draait)
 - [ ] P1 volledig: `RUN_AUDITS -IncludeAllE2E` — 1 fail: `pseudo-table-normalizer-e2e` (TS parity pytest op Windows; buiten Pad 1 toolset-scope)
-- [x] Tier A drift hersteld na gateway cleanup (homeassistant niet in upstream)
+- [x] Tier A drift hersteld na gateway cleanup (homeassistant niet in upstream/main)
 
 ## Optionele productie-poorten (Fase 3)
 
