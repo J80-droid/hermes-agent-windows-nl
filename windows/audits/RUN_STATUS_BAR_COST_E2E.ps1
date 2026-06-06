@@ -131,7 +131,7 @@ $instE2e = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -R
 $diagPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/scripts/diagnose_renderer.py')
 $mergePs1 = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/merge_upstream_fork.ps1')
 $bootstrapPy = Read-HermesRepoText -Path (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'overlay/bootstrap.py')
-$guardOk = ($instE2e -match 'cost_bar_mode=rich') -and ($diagPy -match 'cost_bar_mode') -and ($bootstrapPy -match 'gateway_config_fork_patch') -and ($bootstrapPy -match 'usage_snapshot')
+$guardOk = ($instE2e -match 'cost_bar_mode=rich') -and ($diagPy -match 'cost_bar_mode') -and ($mergePs1 -match 'keepOurs|KeepOurs') -and ($bootstrapPy -match 'gateway_config_fork_patch') -and ($bootstrapPy -match 'usage_snapshot')
 Add-StepResult -Name '2/10 drift guards + keepOurs' -Ok $guardOk
 
 # --- 3 Vitest (formatter + event handler turn/tools) ---

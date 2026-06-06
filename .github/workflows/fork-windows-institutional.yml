@@ -36,16 +36,16 @@ jobs:
       - name: Seed minimal HERMES_HOME for overlay E2E
         shell: pwsh
         run: |
-          $home = Join-Path $env:LOCALAPPDATA 'hermes'
-          New-Item -ItemType Directory -Force -Path $home | Out-Null
-          if (-not (Test-Path (Join-Path $home 'config.yaml'))) {
+          $hermesHome = Join-Path $env:LOCALAPPDATA 'hermes'
+          New-Item -ItemType Directory -Force -Path $hermesHome | Out-Null
+          if (-not (Test-Path (Join-Path $hermesHome 'config.yaml'))) {
             @'
           display:
             show_cost: true
             show_status_bar_tps: true
-          '@ | Set-Content -Encoding UTF8 (Join-Path $home 'config.yaml')
+          '@ | Set-Content -Encoding UTF8 (Join-Path $hermesHome 'config.yaml')
           }
-          echo "HERMES_HOME=$home" >> $env:GITHUB_ENV
+          echo "HERMES_HOME=$hermesHome" >> $env:GITHUB_ENV
 
       - name: Configure upstream remote
         run: |

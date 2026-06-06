@@ -313,7 +313,6 @@ function Write-HermesRagDepsManifest {
         return $null
     }
 
-    $policyDir = Get-HermesLocalAppDataPolicyDir
     $manifestPath = Get-HermesRagDepsManifestPath
     $version = ''
     $prevEap = $ErrorActionPreference
@@ -874,7 +873,6 @@ function Write-HermesWebDashboardDepsManifest {
     if (-not (Test-HermesWebDashboardExtrasInstalled -PythonExe $PythonExe -RequirePygount:$RequirePygount)) {
         return $null
     }
-    $dir = Get-HermesLocalAppDataPolicyDir
     $version = ''
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'SilentlyContinue'

@@ -21,7 +21,7 @@ if ($ForceFull) {
 }
 
 $pyproject = Join-Path $RepoRoot 'pyproject.toml'
-$stampFile = Sync-HermesLaunchBootstrapStamp
+[void](Sync-HermesLaunchBootstrapStamp)
 
 function Invoke-HermesBootstrapChildScript {
     param(

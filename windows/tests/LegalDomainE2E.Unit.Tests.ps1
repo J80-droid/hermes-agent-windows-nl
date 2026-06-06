@@ -62,6 +62,7 @@ function Initialize-LegalE2EUnitLayout {
         [string]$Repo,
         [switch]$IncludeSourceTree
     )
+    [void]$Repo
     $userHome = Join-Path $Root 'userhome'
     $localApp = Join-Path $Root 'localappdata'
     $dataRoot = Join-Path $userHome 'data'

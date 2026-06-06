@@ -28,11 +28,11 @@ try {
     if ($env:WT_SESSION) {
         [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
     }
-} catch { }
+} catch { $null = $_ }
 # bat heeft console al uitgevouwen (launch_hermes.bat) — dubbele expand veroorzaakt ghost-overlay
 # Geen tweede Clear-Host in rich-modus: gele startbanner blijft zichtbaar tot orchestrator klaar is.
 if ((Get-HermesLaunchUiMode) -ne 'rich') {
-    try { Clear-Host } catch { }
+    try { Clear-Host } catch { $null = $_ }
 }
 Reset-HermesConsoleInputModes
 
@@ -64,7 +64,7 @@ try {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal($identity)
     $isAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-} catch { }
+} catch { $null = $_ }
 
 if ($isAdmin) {
     $envMsg = 'Environment: Administrator'

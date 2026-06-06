@@ -52,7 +52,7 @@ function Get-HermesLaunchUiMode {
     $raw = "$($env:HERMES_LAUNCH_UI)".Trim().ToLowerInvariant()
     if ($raw -in @('quiet', 'normal', 'rich', 'verbose')) { return $raw }
     $redirected = $false
-    try { $redirected = [Console]::IsOutputRedirected } catch { }
+    try { $redirected = [Console]::IsOutputRedirected } catch { $null = $_ }
     if ($redirected) { return 'quiet' }
     if ($env:WT_SESSION) { return 'rich' }
     return 'normal'
@@ -65,7 +65,7 @@ function Test-HermesLaunchUseUnicodeGlyphs {
 function Test-HermesLaunchSupportsInlineRefresh {
     if (-not $env:WT_SESSION) { return $false }
     $redirected = $false
-    try { $redirected = [Console]::IsOutputRedirected } catch { }
+    try { $redirected = [Console]::IsOutputRedirected } catch { $null = $_ }
     return (-not $redirected)
 }
 
@@ -227,7 +227,7 @@ function Write-HermesLaunchPinnedHeader {
         $restoreRow = [math]::Max(3, $row + 1)
         [Console]::Out.Write($esc + '[' + $restoreRow + ';' + ($col + 1) + 'H')
         [Console]::Out.Flush()
-    } catch { }
+    } catch { $null = $_ }
 }
 
 function Write-HermesLaunchBanner {
@@ -265,11 +265,14 @@ function Initialize-HermesLaunchVisual {
 }
 
 function Stop-HermesLaunchActivity {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param()
+    if (-not $PSCmdlet.ShouldProcess('Hermes launch activity', 'Stop')) { return }
     if ($global:HermesLaunchVisualState.SpinnerTimer) {
         try {
             $global:HermesLaunchVisualState.SpinnerTimer.Stop()
             $global:HermesLaunchVisualState.SpinnerTimer.Dispose()
-        } catch { }
+        } catch { $null = $_ }
         $global:HermesLaunchVisualState.SpinnerTimer = $null
     }
     if ($global:HermesLaunchVisualState.SpinnerEventSub) {
@@ -278,13 +281,13 @@ function Stop-HermesLaunchActivity {
             Remove-Event -SourceIdentifier $global:HermesLaunchVisualState.SpinnerEventSub -ErrorAction SilentlyContinue
             Get-EventSubscriber | Where-Object { $_.SourceIdentifier -eq $global:HermesLaunchVisualState.SpinnerEventSub } |
                 ForEach-Object { Unregister-Event -SubscriptionId $_.SubscriptionId -ErrorAction SilentlyContinue }
-        } catch { }
+        } catch { $null = $_ }
         $global:HermesLaunchVisualState.SpinnerEventSub = $null
     }
     $global:HermesLaunchVisualState.SpinnerActive = $false
     $global:HermesLaunchVisualState.SpinnerStarted = $null
     if ($global:HermesLaunchVisualState.SpinnerStopwatch) {
-        try { $global:HermesLaunchVisualState.SpinnerStopwatch.Stop() } catch { }
+        try { $global:HermesLaunchVisualState.SpinnerStopwatch.Stop() } catch { $null = $_ }
         $global:HermesLaunchVisualState.SpinnerStopwatch = $null
     }
     Remove-Item Env:HERMES_LAUNCH_ACTIVITY_REASON -ErrorAction SilentlyContinue
@@ -293,7 +296,7 @@ function Stop-HermesLaunchActivity {
     try {
         [Console]::Out.Write($esc + '[2K')
         [Console]::Out.Flush()
-    } catch { }
+    } catch { $null = $_ }
 }
 
 function Write-HermesLaunchActivityTick {
@@ -334,15 +337,17 @@ function Write-HermesLaunchActivityTick {
         Write-HermesLaunchPinnedHeader
         [Console]::Out.Write("`r" + $esc + '[2K' + $line)
         [Console]::Out.Flush()
-    } catch { }
+    } catch { $null = $_ }
 }
 
 function Update-HermesLaunchActivity {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [string]$Reason = '',
         [int]$ProgressCurrent = 0,
         [int]$ProgressTotal = 0
     )
+    if (-not $PSCmdlet.ShouldProcess('Hermes launch activity', 'Update')) { return }
     if ($Reason) { $env:HERMES_LAUNCH_ACTIVITY_REASON = $Reason }
     if ($ProgressTotal -gt 0) {
         $env:HERMES_LAUNCH_ACTIVITY_PROGRESS = "$ProgressCurrent/$ProgressTotal"
@@ -350,12 +355,14 @@ function Update-HermesLaunchActivity {
 }
 
 function Start-HermesLaunchActivity {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory)][int]$Step,
         [Parameter(Mandatory)][int]$Total,
         [Parameter(Mandatory)][string]$Label,
         [string]$Reason = ''
     )
+    if (-not $PSCmdlet.ShouldProcess('Hermes launch activity', 'Start')) { return }
     if (-not (Test-HermesLaunchVisualEnabled)) { return }
     Stop-HermesLaunchActivity
     $global:HermesLaunchVisualState.SpinnerActive = $true
@@ -395,7 +402,7 @@ function Clear-HermesLaunchSpinnerLine {
     try {
         [Console]::Out.Write("`r" + $esc + '[2K')
         [Console]::Out.Flush()
-    } catch { }
+    } catch { $null = $_ }
 }
 
 function Clear-HermesLaunchStaleSpinnerLines {
@@ -409,7 +416,7 @@ function Clear-HermesLaunchStaleSpinnerLines {
             [Console]::Out.Write($esc + '[1A' + $esc + '[2K')
         }
         [Console]::Out.Flush()
-    } catch { }
+    } catch { $null = $_ }
 }
 
 function Write-HermesLaunchStepDone {
@@ -429,7 +436,7 @@ function Write-HermesLaunchStepDone {
     $line = '  [' + $mark + '] ' + $Step + '/' + $Total + '  ' + $Label + (''.PadLeft($padLen)) + $secText + 's'
     try {
         Write-Host $line -ForegroundColor Green
-    } catch { }
+    } catch { $null = $_ }
 }
 
 function Write-HermesLaunchStepFailed {
@@ -446,7 +453,7 @@ function Write-HermesLaunchStepFailed {
     $line = '  [!] ' + $Step + '/' + $Total + '  ' + $Label + $rsn
     try {
         Write-Host $line -ForegroundColor Yellow
-    } catch { }
+    } catch { $null = $_ }
 }
 
 function Write-HermesLaunchStepPending {

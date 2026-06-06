@@ -30,7 +30,6 @@ if (Test-NativeCommandFailed) { $failures++ }
 
 if (-not $SkipPytest) {
     $auditPython = Get-HermesAuditPython -RepoRoot $RepoRoot
-    $conda = Join-Path $env:USERPROFILE 'miniconda3\Scripts\conda.exe'
     $pytestTargets = @(
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_file_tools_fork_patch.py'),
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/tools/test_file_tools.py'),

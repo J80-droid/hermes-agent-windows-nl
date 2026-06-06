@@ -455,8 +455,14 @@ function Set-HermesTaskbarPinShortcut {
 
     $wsh = New-Object -ComObject WScript.Shell
     $sc = $wsh.CreateShortcut($ShortcutPath)
-    $sc.TargetPath = $batFull
-    $sc.Arguments = ''
+    if ($KeepCmdWindowOpen) {
+        $cmdExe = Join-Path $env:SystemRoot 'System32\cmd.exe'
+        $sc.TargetPath = $cmdExe
+        $sc.Arguments = Get-HermesCmdShortcutArgumentLine -BatchPath $batFull -KeepWindowOpen:$true
+    } else {
+        $sc.TargetPath = $batFull
+        $sc.Arguments = ''
+    }
     $sc.WorkingDirectory = $workFull
     $sc.WindowStyle = 1
     $sc.IconLocation = $iconLoc

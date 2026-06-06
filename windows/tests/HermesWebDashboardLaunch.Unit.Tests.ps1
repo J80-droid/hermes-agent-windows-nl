@@ -29,6 +29,9 @@ function Assert-Equal {
 }
 
 function New-TempHermesDir {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param()
+    if (-not $PSCmdlet.ShouldProcess('temp Hermes dir', 'Create')) { return $null }
     $d = Join-Path $env:TEMP ('hermes_unit_' + [guid]::NewGuid().ToString('n'))
     New-Item -ItemType Directory -Path $d -Force | Out-Null
     return $d
@@ -72,10 +75,12 @@ try {
     Remove-Item Function:Test-HermesWebDashboardExtrasInstalled -ErrorAction SilentlyContinue
     function Resolve-HermesPythonExe {
         param([string]$RepoRoot, [switch]$RequirePip)
+        [void]$RepoRoot, $RequirePip
         return $bootstrapPy
     }
     function Test-HermesWebDashboardExtrasInstalled {
         param([string]$PythonExe, [switch]$RequirePygount)
+        [void]$PythonExe, $RequirePygount
         return $true
     }
     Assert-False (Test-HermesNeedsWebDashboardPipInstall -RepoRoot $repoRoot) 'extras OK without manifest => stamp manifest, skip pip'
@@ -101,10 +106,12 @@ try {
     Remove-Item Function:Test-HermesWebDashboardExtrasInstalled -ErrorAction SilentlyContinue
     function Resolve-HermesPythonExe {
         param([string]$RepoRoot, [switch]$RequirePip)
+        [void]$RepoRoot, $RequirePip
         return $fakePy
     }
     function Test-HermesWebDashboardExtrasInstalled {
         param([string]$PythonExe, [switch]$RequirePygount)
+        [void]$PythonExe, $RequirePygount
         return $true
     }
     @{

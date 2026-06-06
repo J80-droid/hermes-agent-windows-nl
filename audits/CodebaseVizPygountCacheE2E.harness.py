@@ -2,7 +2,7 @@
 """E2E: Codebase Viz pygount disk-cache + pre-warm (geen volledige repo-scan).
 
 Scenario's:
-  - Wiring: warm script, launch PS1 Ensure-CodebaseVizPygountCache, skip-lijst, timeout 600
+  - Wiring: warm script, launch PS1 Initialize-CodebaseVizPygountCache, skip-lijst, timeout 600
   - Disk-cache: atomic write, repo_revision, backups skip
   - Functioneel: tiny-repo warm roundtrip + --check-only exit codes
   - Unit gate: pytest subset pygount cache
@@ -105,7 +105,7 @@ def test_w2_plugin_skip_and_revision() -> None:
 def test_w3_launch_ps1_prewarm_wiring() -> None:
     ps1 = PS1.read_text(encoding="utf-8")
     checks = [
-        "Ensure-CodebaseVizPygountCache" in ps1,
+        "Initialize-CodebaseVizPygountCache" in ps1,
         "warm_codebase_viz_pygount_cache.py" in ps1,
         "'600'" in ps1 or '"600"' in ps1,
         "CODEBASE_VIZ_REPO" in ps1,

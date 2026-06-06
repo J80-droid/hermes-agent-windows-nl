@@ -238,4 +238,4 @@ rem of alleen audit na handmatige sync:
 windows\audits\RUN_INSTITUTIONAL_E2E.bat -ApplyRuntime
 ```
 
-Rapport (na audit): `windows/audits/INSTITUTIONAL_E2E_REPORT_2026-05-22.md` (log: `INSTITUTIONAL_E2E_LAST_RUN.log`, gitignored).
+Rapport (na audit): `windows/audits/INSTITUTIONAL_E2E_REPORT_*_*.md` (lokaal/gitignored; log: `INSTITUTIONAL_E2E_LAST_RUN.log`).

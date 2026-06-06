@@ -1460,7 +1460,9 @@ function Start-HermesDashboardAfterChatDetached {
     .SYNOPSIS
         Start deferred dashboard zonder extra cmd/WT-venster (CreateNoWindow, geen start "" / start /B).
     #>
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param([string]$RepoRoot = '')
+    if (-not $PSCmdlet.ShouldProcess($RepoRoot, 'Start deferred dashboard')) { return $null }
     if ($env:HERMES_SKIP_DASHBOARD_ON_START -eq '1') { return $null }
     if ($env:HERMES_DASHBOARD_ON_START -eq '0') { return $null }
     if ($env:HERMES_DASHBOARD_AFTER_CHAT -eq '0') { return $null }

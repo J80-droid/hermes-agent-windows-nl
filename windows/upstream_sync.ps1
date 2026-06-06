@@ -227,7 +227,7 @@ function Invoke-UpstreamPreflight {
     Write-Host "  Nous commits (behind):      $behind"
     $behindWarn = 10
     if ($env:HERMES_UPSTREAM_BEHIND_WARN) {
-        try { $behindWarn = [int]$env:HERMES_UPSTREAM_BEHIND_WARN } catch { }
+        try { $behindWarn = [int]$env:HERMES_UPSTREAM_BEHIND_WARN } catch { $null = $_ }
     }
     if ($behind -gt $behindWarn) {
         Write-Host ''

@@ -349,7 +349,7 @@ function Test-CodebaseVizHealth {
     }
 }
 
-function Ensure-CodebaseVizPygountCache {
+function Initialize-CodebaseVizPygountCache {
     param(
         [string]$RepoRoot,
         [string]$PythonExe
@@ -575,10 +575,10 @@ if ($workspacePlugins -and (Get-Command Update-HermesLaunchActivity -ErrorAction
     }
 }
 
-$pipChanged = Install-HermesWebDashboardPackage -RepoRoot $RepoRoot
+[void](Install-HermesWebDashboardPackage -RepoRoot $RepoRoot)
 
 $dashPy = if ($dashPyEarly) { $dashPyEarly } else { Get-DashboardPythonExe -RepoRoot $RepoRoot }
-[void](Ensure-CodebaseVizPygountCache -RepoRoot $RepoRoot -PythonExe $dashPy)
+[void](Initialize-CodebaseVizPygountCache -RepoRoot $RepoRoot -PythonExe $dashPy)
 
 $logDir = Join-Path $RepoRoot 'output\research\logs'
 if (-not (Test-Path -LiteralPath $logDir)) {

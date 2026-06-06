@@ -13,6 +13,14 @@ param(
     [switch]$Yes
 )
 
+$script:SyncNousForce = [bool]$Force
+$script:SyncNousAllowDirty = [bool]$AllowDirty
+$script:SyncNousAllowTransitionalDrift = [bool]$AllowTransitionalDrift
+$script:SyncNousSkipMerge = [bool]$SkipMerge
+$script:SyncNousSkipPush = [bool]$SkipPush
+$script:SyncNousPush = [bool]$Push
+$script:SyncNousYes = [bool]$Yes
+
 $ErrorActionPreference = 'Stop'
 . (Join-Path (Split-Path $PSScriptRoot -Parent) 'HermesShellCommon.ps1')
 . (Join-Path $PSScriptRoot 'HermesNousTierPaths.ps1')
@@ -36,7 +44,7 @@ $upstreamRef = 'upstream/main'
 
 function Invoke-SyncNousPreflight {
     $guard = Join-HermesRepoPath -RepoRoot $repo -RelativePath 'windows/scripts/guard_git_clean.ps1'
-    if ((Test-Path -LiteralPath $guard) -and -not $AllowDirty) {
+    if ((Test-Path -LiteralPath $guard) -and -not $script:SyncNousAllowDirty) {
         & $guard -Quiet
         if ($LASTEXITCODE -eq 2) { exit 2 }
     }
@@ -44,13 +52,13 @@ function Invoke-SyncNousPreflight {
 }
 
 function Invoke-SyncNousMerge {
-    if ($SkipMerge) { return }
+    if ($script:SyncNousSkipMerge) { return }
     $syncPs1 = Join-HermesRepoPath -RepoRoot $repo -RelativePath 'windows/upstream_sync.ps1'
     if (-not (Test-Path -LiteralPath $syncPs1)) { throw "Missing $syncPs1" }
     $mergeArgs = @('-Phase', 'Update', '-RepoRoot', $repo)
-    if ($Force) { $mergeArgs += '-Force' }
-    if ($AllowDirty) { $mergeArgs += '-AllowDirty' }
-    if ($Yes) { $env:HERMES_UPSTREAM_AUTO_CONFIRM = '1' }
+    if ($script:SyncNousForce) { $mergeArgs += '-Force' }
+    if ($script:SyncNousAllowDirty) { $mergeArgs += '-AllowDirty' }
+    if ($script:SyncNousYes) { $env:HERMES_UPSTREAM_AUTO_CONFIRM = '1' }
     & $syncPs1 @mergeArgs
     $rc = $LASTEXITCODE
     if ($rc -ne 0) { exit $rc }
@@ -64,7 +72,7 @@ function Invoke-SyncNousApply {
 function Invoke-SyncNousVerify {
     $test = Join-HermesRepoPath -RepoRoot $repo -RelativePath 'windows/scripts/Test-NousTreeIdentical.ps1'
     $testArgs = @{ RepoRoot = $repo; UpstreamRef = $upstreamRef }
-    if ($AllowTransitionalDrift) { $testArgs['AllowTransitional'] = $true }
+    if ($script:SyncNousAllowTransitionalDrift) { $testArgs['AllowTransitional'] = $true }
     & $test @testArgs
     return $LASTEXITCODE
 }
@@ -78,8 +86,8 @@ function Invoke-SyncNousPostMerge {
 }
 
 function Invoke-SyncNousPushOrigin {
-    if ($SkipPush -and -not $Push) { return }
-    if (-not $Push -and -not $Yes) { return }
+    if ($script:SyncNousSkipPush -and -not $script:SyncNousPush) { return }
+    if (-not $script:SyncNousPush -and -not $script:SyncNousYes) { return }
     git -C $repo push origin HEAD 2>&1
     if ($LASTEXITCODE -ne 0) { Write-Warning 'git push origin failed' }
 }

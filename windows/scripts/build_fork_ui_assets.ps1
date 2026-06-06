@@ -15,6 +15,8 @@ if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 }
 
+$script:BuildForkKeepMergedSrc = [bool]$KeepMergedSrc
+
 $copyPs1 = Join-Path $PSScriptRoot 'Invoke-CopyHermesOverlaySources.ps1'
 if (-not (Test-Path -LiteralPath $copyPs1)) {
     Write-Host '[FAIL] Invoke-CopyHermesOverlaySources.ps1 ontbreekt' -ForegroundColor Red
@@ -29,7 +31,7 @@ if (-not $npm) {
 
 function Restore-TierASrc {
     param([string]$RelativePath)
-    if ($KeepMergedSrc) { return }
+    if ($script:BuildForkKeepMergedSrc) { return }
     Push-Location $RepoRoot
     try {
         if (Test-Path -LiteralPath $RelativePath) {

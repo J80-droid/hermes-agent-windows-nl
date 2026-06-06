@@ -17,7 +17,7 @@ $bootstrap = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'overlay/boot
 if (-not (Test-Path -LiteralPath $bootstrap)) { Step-Fail 'bootstrap' 'overlay/bootstrap.py' } else { Step-Ok 'overlay/bootstrap.py' }
 
 $py = $null
-try { $py = Get-HermesPythonExe -RepoRoot $repoRoot } catch { }
+try { $py = Get-HermesPythonExe -RepoRoot $repoRoot } catch { $null = $_ }
 if (-not $py) { $py = (Get-Command python -ErrorAction SilentlyContinue).Source }
 if ($py) {
     $code = 'from overlay.bootstrap import install; install(); import hermes_cli.institutional_render'

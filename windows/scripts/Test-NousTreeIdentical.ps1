@@ -6,6 +6,8 @@ param(
     [switch]$Quiet
 )
 
+$script:NousDriftQuiet = [bool]$Quiet
+
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'HermesNousTierPaths.ps1')
 
@@ -25,7 +27,7 @@ function Get-HermesRepoRootLocal {
 
 function Write-DriftLine {
     param([string]$Msg, [string]$Level = 'Info')
-    if ($Quiet) { return }
+    if ($script:NousDriftQuiet) { return }
     switch ($Level) {
         'Error' { Write-Host $Msg -ForegroundColor Red }
         'Warn' { Write-Host $Msg -ForegroundColor Yellow }

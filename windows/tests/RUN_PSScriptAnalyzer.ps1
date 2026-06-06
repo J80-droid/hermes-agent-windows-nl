@@ -9,4 +9,4 @@ Set-Location -LiteralPath $repoRoot
 
 $pssaHelper = Join-Path $windowsDir 'Invoke-HermesPSScriptAnalyzer.ps1'
 . $pssaHelper
-exit (Invoke-HermesPSScriptAnalyzer -RepoRoot $repoRoot -IfMissing Fail)
+exit (Invoke-HermesPSScriptAnalyzer -RepoRoot $repoRoot -IfMissing Fail -FailOnWarning)

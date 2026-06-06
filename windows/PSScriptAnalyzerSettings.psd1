@@ -8,6 +8,8 @@
         'PSAvoidUsingAliases',
         'PSUseBOMForUnicodeEncodedFile',
         'PSAvoidAssignmentToAutomaticVariable',
-        'PSProvideCommentHelp'
+        'PSProvideCommentHelp',
+        # HermesLaunchVisualState: intentional cross-script launch UI state (dot-sourced + .psm1).
+        'PSAvoidGlobalVars'
     )
 }

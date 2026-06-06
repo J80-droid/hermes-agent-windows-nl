@@ -52,8 +52,6 @@ Set-Location $repoRoot
 
 $failures = 0
 $skipped = 0
-$restoreTierA = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/Invoke-RestoreNousTierA.ps1'
-$driftGate = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/Test-NousTreeIdentical.ps1'
 
 function Invoke-Step {
     param(
@@ -162,7 +160,7 @@ if (Test-Path -LiteralPath $invokePsa) {
     Invoke-Step 'PSScriptAnalyzer' {
         $ifMissing = if ($requirePsa) { 'Fail' } else { 'Skip' }
         . $invokePsa
-        $code = Invoke-HermesPSScriptAnalyzer -RepoRoot $repoRoot -IfMissing $ifMissing
+        $code = Invoke-HermesPSScriptAnalyzer -RepoRoot $repoRoot -IfMissing $ifMissing -FailOnWarning
         $global:LASTEXITCODE = $code
     }
 }

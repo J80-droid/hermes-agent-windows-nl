@@ -16,6 +16,8 @@ param(
     [switch]$Quiet
 )
 
+$script:LegalVerifyQuiet = [bool]$Quiet
+
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 
@@ -31,7 +33,7 @@ if (-not $RepoRoot) {
 
 function Write-Verify {
     param([string]$Message, [string]$Level = 'Info')
-    if ($Quiet -and $Level -eq 'Detail') { return }
+    if ($script:LegalVerifyQuiet -and $Level -eq 'Detail') { return }
     switch ($Level) {
         'Ok' { Write-HermesOk $Message }
         'Warn' { Write-HermesWarn $Message }

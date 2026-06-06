@@ -33,7 +33,7 @@ foreach ($name in @(
                 $j = Get-Content -LiteralPath $p -Raw -Encoding UTF8 | ConvertFrom-Json
                 if ($j.indexed) { Write-Host "     indexed: $($j.indexed)" }
                 if ($j.scanned) { Write-Host "     scanned: $($j.scanned)" }
-            } catch { }
+            } catch { $null = $_ }
         }
     } else {
         Write-Host "[--] $name (ontbreekt)" -ForegroundColor DarkGray
