@@ -30,10 +30,12 @@ def main() -> int:
     marker.parent.mkdir(parents=True, exist_ok=True)
     marker.write_text("tier-a-leak", encoding="utf-8")
 
+    repo_ps = str(REPO).replace("'", "''")
+    shell_ps = str(REPO / "windows" / "HermesShellCommon.ps1").replace("'", "''")
     ps = (
-        f"Set-Location '{REPO}'; "
-        ". .\\windows\\HermesShellCommon.ps1; "
-        "Invoke-HermesTierAPostAuditClean -RepoRoot . -Phase Postflight; "
+        f"Set-Location '{repo_ps}'; "
+        f". '{shell_ps}'; "
+        f"Invoke-HermesTierAPostAuditClean -RepoRoot '{repo_ps}' -Phase Postflight; "
         "exit $LASTEXITCODE"
     )
     proc = subprocess.run(

@@ -38,7 +38,11 @@ def _read(rel: str) -> str:
 
 def test_e1a_pyproject_uses_signal_timeout() -> None:
     text = _read("pyproject.toml")
-    ok = "--timeout-method=signal" in text and "--timeout-method=thread" not in text
+    addopts_line = next(
+        (ln for ln in text.splitlines() if "addopts" in ln and "timeout-method" in ln),
+        "",
+    )
+    ok = "--timeout-method=signal" in addopts_line and "--timeout-method=thread" not in addopts_line
     _step("pyproject.toml timeout-method=signal (Tier A)", ok)
 
 

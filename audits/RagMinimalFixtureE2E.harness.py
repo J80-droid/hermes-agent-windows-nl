@@ -34,8 +34,9 @@ def main() -> int:
     print("=" * 60)
 
     fixtures = REPO / "fixtures" / "rag_minimal"
-    if not fixtures.is_dir():
-        _step("fixtures/rag_minimal exists", False)
+    domains_yaml = fixtures / "domains_e2e.yaml"
+    if not fixtures.is_dir() or not domains_yaml.is_file():
+        _step("fixtures/rag_minimal + domains_e2e.yaml", False)
         return 1
 
     with tempfile.TemporaryDirectory(prefix="hermes_rag_e2e_") as tmp:
@@ -50,7 +51,7 @@ def main() -> int:
                 dest = raw_root / sub.name
                 shutil.copytree(sub, dest)
 
-        yaml_tpl = (fixtures / "domains_e2e.yaml").read_text(encoding="utf-8")
+        yaml_tpl = domains_yaml.read_text(encoding="utf-8")
         yaml_path = tmp_path / "domains.yaml"
         yaml_path.write_text(
             yaml_tpl.replace("{lancedb_root}", str(ldb_root).replace("\\", "/")),
@@ -80,10 +81,11 @@ def main() -> int:
             cwd=str(REPO),
             env=env,
         )
+        preflight_tail = (preflight.stderr or preflight.stdout or "")[-200:].replace("\n", " ")
         _step(
             "ingest_preflight academics --skip-empty",
             preflight.returncode == 0,
-            f"exit={preflight.returncode}",
+            f"exit={preflight.returncode} {preflight_tail}".strip(),
         )
 
         ingest = subprocess.run(
@@ -102,10 +104,11 @@ def main() -> int:
             cwd=str(REPO),
             env=env,
         )
+        ingest_tail = (ingest.stderr or ingest.stdout or "")[-200:].replace("\n", " ")
         _step(
             "run_domains_ingest --domain academics",
             ingest.returncode == 0,
-            f"exit={ingest.returncode}",
+            f"exit={ingest.returncode} {ingest_tail}".strip(),
         )
 
         seed_ps = REPO / "windows/scripts/seed_rag_minimal_fixtures.ps1"

@@ -529,6 +529,21 @@ Unit: `pytest tests/scripts/test_institutional_p0_p1_wiring.py -q`
 
 ---
 
+## Scorecard 10/10 E2E (Tier A + pytest + RAG seed)
+
+Snelle regressie (~1 min) na scorecard-werk: pyproject `signal`, `Invoke-HermesTierAPostAuditClean`, conda pytest-binding, seed `-WhatIf`, `run_tests_parallel` Windows override.
+
+```cmd
+audits\RUN_SCORECARD_10_10_E2E.bat
+```
+
+| E1–E9 | Tier A helpers, RUN_AUDITS flags, src clean, conda collect, seed script, parallel runner |
+| Unit | `pytest tests/windows/test_hermes_tier_a_post_audit_clean.py tests/audits/test_scorecard_10_10_e2e_harness.py tests/windows/test_pytest_windows_timeout_policy.py -q` |
+
+Gerelateerd: `RUN_TIER_A_WORKING_TREE_E2E.bat`, `RUN_RAG_MINIMAL_FIXTURE_E2E.bat`, `RUN_RUN_AUDITS_14_FIXES_E2E.bat`.
+
+---
+
 ## Pytest audit-env E2E (institutional gate wiring)
 
 Geïsoleerde poort voor `PYTEST_ADDOPTS`/pytest_timeout-fix, production gate en RAG MCP bootstrap. Zie `audits/PYTEST_AUDIT_ENV_E2E_README.md`.

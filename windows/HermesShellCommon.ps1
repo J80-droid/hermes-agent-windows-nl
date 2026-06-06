@@ -32,6 +32,11 @@ function Invoke-HermesAuditPytest {
         [Parameter(ValueFromRemainingArguments = $true)]
         [string[]]$PytestArgs
     )
+    if (-not (Test-Path -LiteralPath $Python)) {
+        Write-HermesErr ('python niet gevonden: ' + $Python)
+        $global:LASTEXITCODE = 1
+        return
+    }
     Clear-HermesPytestAddoptsForAudit
     $allArgs = @('-m', 'pytest') + @($PytestArgs) + (Get-HermesAuditPytestOverrideArgs)
     & $Python @allArgs
@@ -46,6 +51,11 @@ function Invoke-HermesCondaAuditPytest {
         [string[]]$PytestArgs,
         [string]$EnvName = 'hermes-env'
     )
+    if (-not (Test-Path -LiteralPath $CondaExe)) {
+        Write-HermesErr ('conda niet gevonden: ' + $CondaExe)
+        $global:LASTEXITCODE = 1
+        return
+    }
     Clear-HermesPytestAddoptsForAudit
     $allArgs = @(
         'run', '-n', $EnvName, '--no-capture-output', '--', 'python', '-m', 'pytest'

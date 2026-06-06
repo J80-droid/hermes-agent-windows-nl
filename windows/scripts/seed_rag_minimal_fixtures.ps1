@@ -24,23 +24,39 @@ if (-not (Test-Path -LiteralPath $srcRoot)) {
     exit 1
 }
 
+$domainDirs = @(Get-ChildItem -LiteralPath $srcRoot -Directory)
+if ($domainDirs.Count -eq 0) {
+    Write-HermesErr "geen domein-mappen onder fixtures/rag_minimal: $srcRoot"
+    exit 1
+}
+
 $count = 0
-Get-ChildItem -LiteralPath $srcRoot -Directory | ForEach-Object {
-    $dest = Join-Path $DestRoot $_.Name
+foreach ($dir in $domainDirs) {
+    $dest = Join-Path $DestRoot $dir.Name
     if ($WhatIf) {
-        Write-HermesInfo "Would copy: $($_.FullName) -> $dest"
-        return
+        Write-HermesInfo "Would copy: $($dir.FullName) -> $dest"
+        continue
     }
     if (-not (Test-Path -LiteralPath $dest)) {
         New-Item -ItemType Directory -Path $dest -Force | Out-Null
     }
-    Copy-Item -Path (Join-Path $_.FullName '*') -Destination $dest -Recurse -Force
+    $files = @(Get-ChildItem -LiteralPath $dir.FullName -File)
+    if ($files.Count -eq 0) {
+        Write-HermesWarn "overslaan lege fixture-map: $($dir.Name)"
+        continue
+    }
+    Copy-Item -Path (Join-Path $dir.FullName '*') -Destination $dest -Recurse -Force
     $count++
 }
 
 if ($WhatIf) {
     Write-HermesInfo 'WhatIf: geen bestanden gekopieerd.'
     exit 0
+}
+
+if ($count -eq 0) {
+    Write-HermesErr 'geen fixture-bestanden gekopieerd (alle mappen leeg?)'
+    exit 1
 }
 
 Write-HermesOk "Seeded $count domein-map(pen) naar $DestRoot"
