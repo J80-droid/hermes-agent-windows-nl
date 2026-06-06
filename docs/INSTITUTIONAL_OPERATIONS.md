@@ -150,17 +150,20 @@ Zie [`docs/NOUS_OVERLAY_ARCHITECTURE.md`](NOUS_OVERLAY_ARCHITECTURE.md) en [`doc
 ### Release & zware poorten
 
 ```cmd
+windows\audits\RUN_PRODUCTION_GATE.bat
 windows\audits\RUN_INSTITUTIONAL_PRODUCTION_GATE.bat
 windows\audits\RUN_AUDITS.bat -IncludeInstitutionalProductionGate
 windows\audits\RUN_AUDITS.bat -IncludeAllE2E
 windows\VERIFY_WINDOWS_CHAIN.bat
 ```
 
+**Praktische productie-poort (fork):** `RUN_PRODUCTION_GATE.bat` = REBUILD_TUI + fork pytest gate + `-IncludeAllE2E -SkipPytest`. Zie [`windows/tests/PYTEST_POLICY.md`](../windows/tests/PYTEST_POLICY.md).
+
 `-IncludeAllE2E` bevat hardening **14/14**, maar **niet** `RUN_INSTITUTIONAL_PRODUCTION_GATE` (gebruik `-IncludeInstitutionalProductionGate` of losse `.bat`, ~2+ min).
 
 **Aanbevolen release-keten (fork):** `RUN_REPO_HYGIENE_E2E` → `RUN_NOUS_OVERLAY_AFWERKING_E2E` → `RUN_PYTEST_AUDIT_ENV_E2E` → `RUN_RUN_AUDITS_14_FIXES_E2E` → `RUN_SCORECARD_10_10_E2E` → `RUN_INSTITUTIONAL_PRODUCTION_GATE` → `Test-NousTreeIdentical` → (optioneel) `RUN_AUDITS -IncludeInstitutionalProductionGate`.
 
-**CI vs lokaal:** PR-job (`fork-windows-institutional.yml`) = subset (~30 min). Wekelijks (`fork-windows-audits-nightly.yml`) = volledige `RUN_AUDITS -IncludeAllE2E` (~24 min).
+**CI vs lokaal:** PR-job (`fork-windows-institutional.yml`) = subset (~30 min) incl. **`RUN_PYTEST_FORK_GATE`**. Wekelijks (`fork-windows-audits-nightly.yml`) = REBUILD_TUI + fork gate + volledige `RUN_AUDITS -IncludeAllE2E -SkipPytest` (~24 min).
 
 **Pytest audit-env (snel, ~20s):** `audits\RUN_PYTEST_AUDIT_ENV_E2E.bat` — valideert `Clear-HermesPytestAddoptsForAudit`, geen dubbele `pytest_timeout`, RAG MCP bootstrap.
 

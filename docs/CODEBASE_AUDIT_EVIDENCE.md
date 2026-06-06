@@ -16,7 +16,9 @@ Om systematische kwaliteitsclaims te stroomlijnen, hanteert Hermes Agent een mod
 | E0 | Documentatie | Architectuur en intentie, geen runtime gedrag | `AGENTS.md`, `docs/PROFILE_MODEL_INHERITANCE.md` |
 | E1 | Statisch / wiring | Bestaan van bestanden, syntactische configuratie, geen live gedrag | `diagnose_renderer.py --verify`, `verify_pareto_router.py`, `audit_skill_drift.py`, `verify_windows_script_chain.ps1`, pygount |
 | E2 | Module pytest | Functioneel gedrag van een specifieke module of een contract-laag | `test_hermes_state.py`, `test_tui_gateway_server.py`, `test_critical_windows_scripts.py` |
-| E3 | CI-pariteit | Volledige testpoort, complete integratie en brede testdekking | `scripts/run_tests.sh`, `windows/tests/RUN_PYTEST.ps1`, `RUN_AUDITS.bat -IncludeAllE2E` |
+| E3 fork gate | Manifest-gedreven fork pytest (hard poort) | `windows/tests/RUN_PYTEST_FORK_GATE.bat`, RUN_AUDITS preflight |
+| E3 upstream parity | Volledige upstream suite (diagnostiek op Windows) | `RUN_PYTEST_UPSTREAM -ReportOnly`, `scripts/run_tests.sh` (Linux CI = waarheid) |
+| E3 productie-poort | TUI + fork gate + AllE2E | `RUN_PRODUCTION_GATE.bat`, `RUN_AUDITS -IncludeAllE2E -SkipPytest` |
 
 ## Rapportage-regels
 
@@ -55,8 +57,10 @@ Bij strategische of heuristische keuzes (SOUL) moet de zekerheid expliciet worde
 | Smoke E2E (aanbevolen poort) | `windows/audits/RUN_CODEBASE_SMOKE_E2E.bat` | E2E-rapport `CODEBASE_SMOKE_E2E_REPORT_*.md` + institutioneel rapport |
 | Gecombineerd | `RUN_AUDITS.bat -IncludeCodebaseSmokeE2E` of `-IncludeAllE2E` | E2E in kwaliteitspoort |
 | Snel (zonder E2E guardrails) | `RUN_AUDITS.bat -IncludeCodebaseSmoke` | Alleen smoke-runner |
-| Release (E3) | `windows/tests/RUN_PYTEST.ps1` of `scripts/run_tests.sh` | Volledige suite (~17k tests) |
-| Release (E3+E2E) | `RUN_AUDITS.bat -IncludeAllE2E` | Institutioneel + domein E2E's |
+| Release (E3 fork gate) | `windows/tests/RUN_PYTEST_FORK_GATE.bat` | Manifest SSOT (~fork core); zie `PYTEST_POLICY.md` |
+| Release (E3 upstream parity) | `RUN_PYTEST_UPSTREAM.bat -ReportOnly` | Diagnostiek (~29k tests); Linux CI = waarheid |
+| Release (E3 productie-poort) | `RUN_PRODUCTION_GATE.bat` | REBUILD_TUI + fork gate + `-IncludeAllE2E -SkipPytest` |
+| Release (E3+E2E) | `RUN_AUDITS.bat -IncludeAllE2E -SkipPytest` | Institutioneel + domein E2E's (pytest via fork gate apart) |
 
 **Optioneel geautomatiseerd** (standaard uit, ~45s extra):
 

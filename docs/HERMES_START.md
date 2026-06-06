@@ -9,7 +9,7 @@
 | IDE interpreter | Cursor/VS Code leest `hermes-agent/.vscode/settings.json` (portable `${env:USERPROFILE}/miniconda3/...`) |
 | Parent workspace PSES | `windows\APPLY_WORKSPACE_IDE_SETTINGS.bat` → `Hermes_agent_WS\.vscode\settings.json`; daarna Reload Window + Restart PowerShell Session — zie `docs/WORKSPACE_IDE_SETUP.md` |
 | Na clone / andere conda-locatie | `windows\REPAIR_PYTHON.bat` → sync IDE + quarantaine kapotte `.venv` |
-| Pytest / audits | `windows\tests\RUN_PYTEST.ps1` of audit-`.bat` — nooit bare `python` als conda ontbreekt |
+| Pytest / audits | `windows\tests\RUN_PYTEST_FORK_GATE.bat` of audit-`.bat` — nooit bare `python` als conda ontbreekt |
 | Python-beleid E2E | `windows\audits\RUN_HERMES_PYTHON_INSTITUTIONAL_E2E.bat` (8/8: policy, IDE sync, pytest) |
 | Python review-fixes E2E | `windows\audits\RUN_HERMES_PYTHON_INSTITUTIONAL_REGRESSION_E2E.bat` (8/8: stamp guard, manifest fast-path, non-interactive REPAIR) |
 | `.venv`-warn bij start | Normaal: negeren als conda OK; opruimen via `REPAIR_PYTHON.bat` (Hermes/Cursor eerst sluiten) |

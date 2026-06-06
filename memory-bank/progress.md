@@ -1,5 +1,16 @@
 # Progress
 
+## Pytest fork gate + RUN_PRODUCTION_GATE (2026-06-02)
+
+- [x] `pytest_fork_gate.yaml` + `load_pytest_fork_gate.py` + manifest unit test
+- [x] `Invoke-HermesPytestFromManifest.ps1` (thread via audit helper; geen `--timeout 60` prefix)
+- [x] `RUN_PYTEST_FORK_GATE` / `RUN_PYTEST_UPSTREAM` + `summarize_pytest_junit.py`
+- [x] `RUN_PYTEST.ps1` shim (default fork gate)
+- [x] `RUN_AUDITS` preflight → `pytest-fork-gate`
+- [x] `RUN_PRODUCTION_GATE` (REBUILD_TUI + gate + IncludeAllE2E -SkipPytest)
+- [x] CI institutional fork gate; nightly Node/npm/HERMES_HOME/REBUILD_TUI
+- [x] `PYTEST_POLICY.md` + E3-terminologie + asset manifest
+
 ## Pad 1 — SYNC_NOUS + lean overlay (2026-06-06)
 
 - [x] P0: upstream merge + drift-gate 0 + baseline export (`docs/NOUS_DRIFT_BASELINE.md`)
@@ -8,7 +19,8 @@
 - [x] P4: `build_fork_ui_assets.ps1` + `REBUILD_TUI` → `web_dist` + `ui-tui/dist`
 - [ ] P3: bronmappen `raw_source_files` (01–03, 05–08, 09–12) — gebruikersdata
 - [x] P1 kern: institutional E2E, toolset dashboard 9/9, fork gates 8/8
-- [ ] P1 volledig: `RUN_PYTEST.ps1` — **herstart 2026-06-07** (achtergrond; log `windows/tests/last_pytest_run.log`)
+- [x] P1 fork pytest: `RUN_PYTEST_FORK_GATE.bat` (manifest gate; vervangt volledige `RUN_PYTEST.ps1` als poort)
+- [ ] P1 upstream parity: `RUN_PYTEST_UPSTREAM.bat -ReportOnly` (diagnostiek; optioneel na merge)
 - [x] Gateway Windows login-autostart: `GATEWAY_*` scripts + `RUN_GATEWAY_WINDOWS_INSTALL_E2E` 6/6 PASS
 - [ ] P1 volledig: `RUN_AUDITS -IncludeAllE2E` — **herstart 2026-06-07** (achtergrond; log `windows/audits/RUN_AUDITS_open_points.log`); pseudo-table subset lokaal 4/4 PASS
 - [ ] P3 bronmappen + dashboard toolset rooktest — **handmatig gebruiker**

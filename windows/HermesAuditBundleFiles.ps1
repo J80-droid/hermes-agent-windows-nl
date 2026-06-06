@@ -4,6 +4,8 @@ function Get-HermesAuditBundleFileList {
         'README.md',
         'RUN_AUDITS.ps1',
         'RUN_AUDITS.bat',
+        'RUN_PRODUCTION_GATE.ps1',
+        'RUN_PRODUCTION_GATE.bat',
         'RUN_PROFILE_SWITCH_E2E.ps1',
         'RUN_PROFILE_SWITCH_E2E.bat',
         'RUN_INSTITUTIONAL_E2E.ps1',

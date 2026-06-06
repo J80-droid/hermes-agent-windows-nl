@@ -76,8 +76,10 @@ jobs:
       - name: Institutional guard tier-a-cli
         run: python scripts/verify_institutional_guard.py --check-tier-a-cli
 
-      - name: Overlay unit tests
-        run: python -m pytest tests/overlay/ -q -o addopts=
+      - name: Fork pytest gate (manifest)
+        env:
+          PYTEST_ADDOPTS: '--timeout-method=thread'
+        run: windows\tests\RUN_PYTEST_FORK_GATE.bat
 
       - name: SYNC_NOUS overlay E2E
         run: windows\audits\RUN_SYNC_NOUS_E2E.bat

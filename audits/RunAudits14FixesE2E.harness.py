@@ -94,8 +94,31 @@ def test_e5_run_audits_preflight_strip() -> None:
         "preflight_strip_profile_global_blocks" in text
         and "strip_profile_global_config_blocks.py" in text
         and "$IncludeAllE2E" in text
+        and "pytest-fork-gate" in text
+        and "RUN_PYTEST_FORK_GATE" in text
     )
-    _step("RUN_AUDITS IncludeAllE2E preflight strip", ok)
+    _step("RUN_AUDITS IncludeAllE2E preflight strip + fork gate", ok)
+
+
+def test_e13_pytest_fork_gate_manifest() -> None:
+    manifest = REPO / "windows/tests/pytest_fork_gate.yaml"
+    loader = REPO / "windows/scripts/load_pytest_fork_gate.py"
+    manifest_ok = manifest.is_file() and loader.is_file()
+    _step("pytest_fork_gate.yaml + loader exist", manifest_ok)
+    if not manifest_ok:
+        return
+    proc = subprocess.run(
+        [str(PY), str(loader), "--mode", "gate", "--repo-root", str(REPO)],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        cwd=str(REPO),
+    )
+    loader_ok = proc.returncode == 0
+    _step("load_pytest_fork_gate --mode gate exit 0", loader_ok, f"exit={proc.returncode}")
+    text = _read("windows/HermesShellCommon.ps1")
+    thread_ok = "Get-HermesAuditPytestOverrideArgs" in text and "--timeout-method=thread" in text
+    _step("Get-HermesAuditPytestOverrideArgs thread", thread_ok)
 
 
 def test_e6_pytest_collect_no_sigalrm() -> None:
@@ -188,6 +211,13 @@ def test_e10_ui_src_restore_leaves_no_untracked() -> None:
 def test_e11_plugin_handlers_importable() -> None:
     import importlib
 
+    try:
+        import overlay.bootstrap as bootstrap
+
+        bootstrap.install()
+    except Exception:
+        pass
+
     handlers = [
         "overlay.hermes_cli.cli_cost_command",
         "overlay.hermes_cli.cli_tps_command",
@@ -250,10 +280,11 @@ def main() -> int:
     test_e10_ui_src_restore_leaves_no_untracked()
     test_e11_plugin_handlers_importable()
     test_e12_doctor_fork_patch_unit_import()
+    test_e13_pytest_fork_gate_manifest()
 
     print()
     print("=" * 60)
-    total = 12
+    total = 15
     if FAILURES:
         print(f"  FAILURES: {FAILURES}/{total}")
         print("=" * 60)

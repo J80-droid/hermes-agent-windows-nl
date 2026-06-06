@@ -183,7 +183,7 @@ foreach ($s in $steps) {
 if ($failures -gt 0) {
     [void]$sb.AppendLine("**$failures** stap(pen) gefaald. Geen release-ready classificatie.")
 } else {
-    [void]$sb.AppendLine('Smoke E2E geslaagd. Voor release: `RUN_PYTEST.ps1` of `RUN_AUDITS.bat -IncludeAllE2E`.')
+    [void]$sb.AppendLine('Smoke E2E geslaagd. Voor release: `RUN_PRODUCTION_GATE.bat` of `RUN_PYTEST_FORK_GATE.bat` + `RUN_AUDITS.bat -IncludeAllE2E -SkipPytest`.')
 }
 if (Test-Path -LiteralPath $instReportPath) {
     [void]$sb.AppendLine('')

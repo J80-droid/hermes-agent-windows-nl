@@ -1,0 +1,28 @@
+# Fork pytest gate manifest (Windows). SSOT for RUN_PYTEST_FORK_GATE, RUN_AUDITS preflight, CI.
+# markers "not e2e" skips @pytest.mark.e2e tests only; unit tests in harness files still run.
+# NOT in gate (full @pytest.mark.e2e): test_repo_hygiene_institutional_e2e.py -> RUN_INSTITUTIONAL_HARDENING_E2E
+# NOT in gate: test_nous_overlay_fork_gates_e2e_harness_runs -> RUN_NOUS_OVERLAY_FORK_GATES_E2E.bat
+version: 1
+markers: "not integration and not e2e"
+paths:
+  - tests/overlay/
+  - tests/hermes_cli/test_apply_profile_override.py
+  - tests/hermes_cli/test_profile_switch.py
+  - tests/hermes_cli/test_relaunch.py::TestRelaunchChatAfterProfileSwitch
+  - tests/hermes_cli/test_relaunch.py::TestStripProfileFlags
+  - tests/hermes_cli/test_gateway_windows.py
+  - tests/windows/test_gateway_windows_fork_scripts.py
+  - tests/windows/test_codebase_smoke_audit.py
+  - tests/audits/test_nous_overlay_fork_gates_e2e_harness.py
+  - tests/audits/test_pytest_audit_env_e2e_harness.py
+ignores:
+  - tests/integration
+  - tests/e2e
+  - tests/docker
+  - tests/gateway/test_complete_path_at_filter.py
+upstream:
+  paths:
+    - tests/
+  ignores: []
+  maxfail_default: 50
+  junit: windows/tests/pytest_upstream_junit.xml

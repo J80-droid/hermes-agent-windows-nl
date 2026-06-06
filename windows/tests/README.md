@@ -8,7 +8,9 @@ Deze map is **niet** de upstream pytest-collectie. De echte tests staan in de re
 
 - **Volledige kwaliteitspoort** (PSSA + ruff + footguns + npm + ty): **`windows\audits\RUN_AUDITS.ps1`** — PSSA alleen als de module **al** geïnstalleerd is; anders **SKIP** (geen hang op PSGallery). Streng: **`RUN_AUDITS.ps1 -RequirePSScriptAnalyzer`**.
 - **Alleen PowerShell onder `windows\`**: **`RUN_PSScriptAnalyzer.ps1`** (zelfde helper als audits)
-- **Alleen Python-tests**: **`RUN_PYTEST.ps1`**
+- **Alleen Python-tests (fork gate)**: **`RUN_PYTEST_FORK_GATE.ps1`** — manifest SSOT; zie **[`PYTEST_POLICY.md`](PYTEST_POLICY.md)**
+- **Upstream parity (diagnostiek)**: **`RUN_PYTEST_UPSTREAM.ps1 -ReportOnly`**
+- **Backward compat shim**: **`RUN_PYTEST.ps1`** (default → fork gate; `-Upstream` → volledige suite)
 
 ## Pytest overlay shims (collection)
 
@@ -51,33 +53,46 @@ powershell -NoProfile -File windows\tests\HermesWebDashboardLaunch.Unit.Tests.ps
 powershell -NoProfile -File windows\tests\HermesUiTuiNpm.Unit.Tests.ps1
 ```
 
-## `RUN_PYTEST`
+## `RUN_PYTEST` (shim → fork gate)
+
+Zie **[`PYTEST_POLICY.md`](PYTEST_POLICY.md)** voor gate vs upstream vs productie-poort.
+
+- **`RUN_PYTEST_FORK_GATE.bat`** — harde poort (manifest); ~3–5 min
+- **`RUN_PYTEST_UPSTREAM.bat -ReportOnly`** — volledige `tests/`, exit 0 altijd; rapport `pytest_upstream_summary.json`
+- **`RUN_PYTEST.ps1`** — default fork gate; `-Upstream` voor volledige suite
+
+### Gedrag fork gate
 
 - Zet de werkmap op de **repo-root** (`hermes-agent`).
-- Gebruikt **`miniconda3\envs\hermes-env\python.exe`** (pas aan als nodig).
+- Gebruikt **`Get-HermesAuditPython`** / conda `hermes-env`.
 - Zet test-API-keys leeg (zoals CI).
-- Draait **`pytest -n 0`** (serieel) — op Windows voorkomt dit xdist/PosixPath-internal errors.
-- Sluit **integration** en **e2e** uit; markeer **`not integration`** (zoals `pyproject`).
-- Voegt **`pytest-timeout`** toe (als geïnstalleerd in die Python): op Linux beperkt `tests/conftest.py` hangende tests met **SIGALRM (~30s)**; op Windows bestaat dat niet — zonder timeout kan de run uren blijven hangen tot een taak of gebruiker het proces afbreekt (**EXIT -1**). Standaard: **60s per test** via `--timeout`, tenzij je zelf **`PYTEST_TIMEOUT`** zet (officiële variabele van pytest-timeout; dan wordt geen `--timeout` geïnjecteerd).
-- Schrijft **`last_pytest_run.log`** in deze map (naast `RUN_PYTEST.ps1`) en zet **`PYTHONUNBUFFERED=1`** zodat voortgang direct zichtbaar is (handig bij Taakplanner).
+- Draait **`pytest -n 0`** (serieel) via **`Invoke-HermesAuditPytest`** (`--timeout-method=thread`, 30s).
+- Paden/markers uit **`pytest_fork_gate.yaml`** (geen hardcoded overlay/profile subset).
+- Log: **`RUN_PYTEST_fork_gate.log`** (gitignored).
 
-### Gebruik pytest
+### Gebruik
 
 ```text
-Dubbelklik: RUN_PYTEST.bat
+Dubbelklik: RUN_PYTEST_FORK_GATE.bat
+```
+
+Productie-poort (TUI + gate + AllE2E):
+
+```text
+windows\audits\RUN_PRODUCTION_GATE.bat
 ```
 
 Of vanuit PowerShell:
 
 ```powershell
 cd d:\pad\naar\hermes-agent
-powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\tests\RUN_PYTEST.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\windows\tests\RUN_PYTEST_FORK_GATE.ps1
 ```
 
-Extra pytest-argumenten worden doorgegeven (bijv. een enkele test):
+Extra pytest-argumenten (upstream only via `-Upstream`):
 
 ```powershell
-.\windows\tests\RUN_PYTEST.ps1 tests\tools\test_search_hidden_dirs.py -q
+.\windows\tests\RUN_PYTEST.ps1 -Upstream tests\tools\test_search_hidden_dirs.py -q
 ```
 
 ## `Test-PsesTokenizer.ps1`, `HermesShellCommon` en `MemoryAuditCommon` unit tests
@@ -125,8 +140,8 @@ Dubbelklik: RUN_PSScriptAnalyzer.bat
 
 1. **Installeer dev-deps** (bevat `pytest-timeout`): vanuit repo-root `pip install -e ".[dev]"` in `hermes-env`, of minstens `pip install pytest-timeout`.
 2. **Taakplanner / Cursor / CI**: zet *geen* agressieve **“stop na X minuten”** op het pytest-proces tenzij X ruim boven de verwachte suitesduur ligt (duizenden tests). Een halve run + **4294967295 (-1)** wijst meestal op **extern beëindigen**, niet op pytest-fouten.
-3. **`PYTEST_TIMEOUT`** (pytest-timeout): seconden per test voor de hele sessie. Niet gezet → deze runner gebruikt **60**. Zet bijv. **`120`** op een trage machine, of **`0`** om timeouts uit te zetten (alleen voor debug). Zie [pytest-timeout](https://github.com/pytest-dev/pytest-timeout).
-4. Bij een timeout-failure: open **`windows\tests\last_pytest_run.log`** — de laatste regels tonen welke test vastliep.
+3. **`PYTEST_TIMEOUT`** (pytest-timeout): optioneel per sessie. Fork gate/upstream gebruiken **`Invoke-HermesAuditPytest`** (standaard **30s**, `--timeout-method=thread`).
+4. Bij een timeout-failure: open **`windows\tests\RUN_PYTEST_fork_gate.log`** (gate) of **`RUN_PYTEST_upstream.log`** (upstream).
 
 ## Gateway login-autostart (Windows)
 
@@ -136,7 +151,9 @@ Dubbelklik: RUN_PSScriptAnalyzer.bat
 | `windows\GATEWAY_ENSURE_RUNNING.bat` | Geen UAC: `.cmd` vernieuwen + task/start + status |
 | `windows\GATEWAY_STATUS.bat` | Alleen `hermes gateway status` |
 
-E2E-wiring (geen live UAC): `audits\RUN_GATEWAY_WINDOWS_INSTALL_E2E.bat` (6 stappen).
+E2E-wiring fork gate (manifest + loaders, geen volledige suite): `audits\RUN_PYTEST_FORK_GATE_E2E.bat` (11/11).
+
+E2E-wiring gateway (geen live UAC): `audits\RUN_GATEWAY_WINDOWS_INSTALL_E2E.bat` (6 stappen).
 
 `Last Run Result: 1` bij Scheduled Task is op Windows vaak normaal: `pythonw` start op de achtergrond en de wrapper `.cmd` eindigt direct.
 

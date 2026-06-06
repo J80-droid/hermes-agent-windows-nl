@@ -152,6 +152,9 @@ tests/test_data/checkpoint_*.jsonl
 windows/tests/last_pytest_run.log
 windows/tests/RUN_PYTEST_last.log
 windows/tests/RUN_PYTEST_*.log
+windows/tests/pytest_upstream_junit.xml
+windows/tests/pytest_upstream_summary.json
+windows/audits/RUN_PRODUCTION_GATE_*.log
 windows/_backup_last_run.log
 windows/scripts/rag_ingest_run.log
 config.yaml

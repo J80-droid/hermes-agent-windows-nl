@@ -123,7 +123,7 @@ Baseline: [NOUS_DRIFT_BASELINE.md](NOUS_DRIFT_BASELINE.md).
 
 **Tier A guard:** `python scripts/verify_institutional_guard.py --check-tier-a-cli`
 
-**pytest (Windows):** `pyproject.toml` = upstream `signal`; `windows/HermesShellCommon.ps1` zet `Invoke-HermesAuditPytest` / `PYTEST_ADDOPTS=--timeout-method=thread` voor audits en `RUN_PYTEST.ps1`.
+**pytest (Windows):** `pyproject.toml` = upstream `signal`; fork gate/upstream runners via `Invoke-HermesAuditPytest` / manifest (`windows/tests/PYTEST_POLICY.md`).
 
 **doctor_fork_patch:** split-home **+** profile global-blocks strip (`strip_profile_global_config_blocks.py`, doctor `--fix`).
 

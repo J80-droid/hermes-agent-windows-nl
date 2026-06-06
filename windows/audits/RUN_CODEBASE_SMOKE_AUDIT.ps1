@@ -225,7 +225,7 @@ if ($IncludePygount) {
 }
 
 if ($IncludeReleaseGate) {
-    $stepLog.warnings.Add('Release-gate gevraagd maar niet automatisch uitgevoerd in smoke — gebruik RUN_AUDITS -IncludeAllE2E of RUN_PYTEST.ps1')
+    $stepLog.warnings.Add('Release-gate gevraagd maar niet automatisch uitgevoerd in smoke — gebruik RUN_PRODUCTION_GATE.bat of RUN_PYTEST_FORK_GATE + RUN_AUDITS -IncludeAllE2E -SkipPytest')
 }
 
 if ($ReportStamp) {

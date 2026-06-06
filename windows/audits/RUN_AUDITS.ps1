@@ -237,27 +237,9 @@ function Get-HermesAuditPythonExe {
 }
 
 if (-not $SkipPytest) {
-    Invoke-Step 'pytest-overlay' {
-        $py = Get-HermesAuditPythonExe
-        $env:HERMES_HOME = $runtimeHermesHome
-        Invoke-HermesAuditPytest -Python $py tests/overlay/ -q --tb=short
-        $global:LASTEXITCODE = $LASTEXITCODE
-    }
-
-    Invoke-Step 'pytest-profile-subset' {
-        $py = Get-HermesAuditPythonExe
-        if ($py -eq 'python' -and -not (Get-Command python -ErrorAction SilentlyContinue)) {
-            Write-Host 'SKIP: python niet gevonden' -ForegroundColor Yellow
-            $global:LASTEXITCODE = 2
-            return
-        }
-        $env:HERMES_HOME = $runtimeHermesHome
-        Invoke-HermesAuditPytest -Python $py `
-            tests/hermes_cli/test_apply_profile_override.py `
-            tests/hermes_cli/test_profile_switch.py `
-            tests/hermes_cli/test_relaunch.py::TestRelaunchChatAfterProfileSwitch `
-            tests/hermes_cli/test_relaunch.py::TestStripProfileFlags `
-            -q --tb=short
+    Invoke-Step 'pytest-fork-gate' {
+        $forkGate = Join-Path $repoRoot 'windows/tests/RUN_PYTEST_FORK_GATE.ps1'
+        & $forkGate
         $global:LASTEXITCODE = $LASTEXITCODE
     }
 }

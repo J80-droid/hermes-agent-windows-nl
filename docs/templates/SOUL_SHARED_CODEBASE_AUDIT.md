@@ -8,7 +8,7 @@ Van toepassing wanneer J. een **codebase-status**, kwaliteits-smoke of architect
 
 **Smoke vs release:**
 - **Smoke:** `windows/audits/RUN_CODEBASE_SMOKE_AUDIT.bat` (E1/E2 subset) — **niet** release-ready.
-- **Release-gate:** `windows/audits/RUN_AUDITS.bat -IncludeAllE2E` of `windows/tests/RUN_PYTEST.ps1` / `scripts/run_tests.sh` (E3).
+- **Release-gate:** `windows/tests/RUN_PYTEST_FORK_GATE.bat` (E3 fork gate) + `RUN_PRODUCTION_GATE.bat` of `RUN_AUDITS.bat -IncludeAllE2E -SkipPytest`.
 
 **Denylist (nooit zonder juiste tier/bron):**
 - "100% codebase getest" na alleen smoke

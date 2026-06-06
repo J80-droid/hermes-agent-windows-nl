@@ -24,7 +24,7 @@
 | Trust volledig | `windows\APPLY_TRUST_PROTOCOL.bat` | Bovenstaande + scrub + `RUN_TRUST_FORENSIC_E2E` — zie `docs/TRUST_FORENSIC_PROTOCOL.md` |
 | Domein-toolsets | `windows\SYNC_DOMAIN_TOOLSETS.bat` | `docs/domain_toolsets.yaml` → `platform_toolsets.cli` per profiel; audit: `docs/DOMAIN_TOOLSET_AUDIT.md` |
 | Presentatie | `docs/INSTITUTIONAL_PRESENTATION.md`, `docs/INSTITUTIONAL_PORTING_GUIDE.md` | Rich render + globale typografie; legacy `windows/scripts/institutional/` |
-| Codebase-audit | `docs/CODEBASE_AUDIT_EVIDENCE.md` | Smoke E1/E2: `RUN_CODEBASE_SMOKE_E2E.bat`; optioneel na pull/update: `-IncludeCodebaseSmoke` / `-IncludeCodebaseSmokeE2E`; release E3: `RUN_PYTEST.bat` / `RUN_AUDITS -IncludeAllE2E` |
+| Codebase-audit | `docs/CODEBASE_AUDIT_EVIDENCE.md` | Smoke E1/E2: `RUN_CODEBASE_SMOKE_E2E.bat`; E3 fork gate: `RUN_PYTEST_FORK_GATE.bat`; E3 upstream parity: `RUN_PYTEST_UPSTREAM.bat -ReportOnly`; productie-poort: `RUN_PRODUCTION_GATE.bat` |
 | Codebase Viz (dashboard) | `docs/INSTITUTIONAL_OPERATIONS.md` (sectie Codebase Viz) | `audits\verify_codebase_viz_health.py`, `audits\RESTART_CODEBASE_VIZ_DASHBOARD.bat`; pygount timeout 240s |
 | Core SOUL template | `docs/templates/SOUL_CORE_ORCHESTRATOR.md` | Routing/clarification/landkaart; niet overschreven door sync |
 | Restore | `windows\restore_from_backup.ps1` | **Moet in git** — `RESTORE_FROM_BACKUP.bat`; `-RestoreRuntimeFull`, `-RestoreRuntimePersonas`, `-RestoreLegacyProfile` |
@@ -124,7 +124,7 @@ Daarna RAG: `windows\scripts\install_rag_extras.ps1` (overlay extras + `constrai
 
 Profiel-persona: `%LOCALAPPDATA%\hermes\profiles\<naam>\SOUL.md` — zie `docs/PROFILE_SOUL.md`.
 
-**Tests (Windows):** `pyproject.toml` blijft upstream (`--timeout-method=signal`). Audit/dev: `Invoke-HermesAuditPytest` / `windows\tests\RUN_PYTEST.ps1` (Tier B, `--timeout-method=thread`). Enkele test: `pytest tests/hermes_cli/test_profile_orphan_wrappers.py -q` met audit-helpers of `PYTEST_ADDOPTS=--timeout-method=thread`.
+**Tests (Windows):** `pyproject.toml` blijft upstream (`--timeout-method=signal`). Fork gate: `RUN_PYTEST_FORK_GATE.bat` via `Invoke-HermesAuditPytest` (Tier B, `--timeout-method=thread`). Zie `windows/tests/PYTEST_POLICY.md`.
 
 **Periodieke rooktest (aanbevolen):** `windows\audits\RUN_AUDITS.bat -IncludeAllE2E`. Presentatie + SOUL: `RUN_INSTITUTIONAL_E2E.bat` of `APPLY_INSTITUTIONAL_RUNTIME.bat` (incl. stap **2h** pseudo-tabel E2E).
 

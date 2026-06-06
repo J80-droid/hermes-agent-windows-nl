@@ -16,7 +16,8 @@
 | E0 (Documentatie) | Ja | Ja | Statische controle van AGENTS.md en PROFILE_SOUL.md |
 | E1 (Statisch / wiring) | Ja | Ja | diagnose_renderer.py, verify_pareto_router.py, verify_windows_script_chain.ps1 |
 | E2 (Module pytest) | Ja (Subset) | Ja | pytest tests/windows/test_critical_windows_scripts.py, test_hermes_state.py |
-| E3 (CI-pariteit) | Nee | Ja | windows/tests/RUN_PYTEST.ps1 of scripts/run_tests.sh |
+| E3 fork gate | Nee | Ja | windows/tests/RUN_PYTEST_FORK_GATE.bat |
+| E3 upstream parity | Nee | Nee (diagnostiek) | RUN_PYTEST_UPSTREAM -ReportOnly / scripts/run_tests.sh |
 
 ### Feitelijke chronologie
 
@@ -56,7 +57,7 @@ Concept audit-rapport.
 - SessionDB en SessionDB WAL modus fallback [Bron: tests/test_hermes_state.py] [E2].
 
 **Niet in scope (Buiten deze smoke-run):**
-- Volledige E3 testsuite pariteit (vereist run_tests.sh of RUN_PYTEST.ps1) [E3].
+- E3 fork gate: `RUN_PYTEST_FORK_GATE` (verplicht groen). E3 upstream parity: `RUN_PYTEST_UPSTREAM -ReportOnly` [E3].
 - Volledige TUI-gateway contracten (sample-checking uitgevoerd via pytest-collect) [E2].
 - Gateway-platformen integraties (Telegram, Slack, Discord) [E2].
 

@@ -118,6 +118,9 @@ function Get-HermesWindowsLocalAssetsManifest {
     $auditBundleFiles = Get-HermesAuditBundleFileList
 
     $scriptsFiles = @(
+        'load_pytest_fork_gate.py',
+        'Invoke-HermesPytestFromManifest.ps1',
+        'summarize_pytest_junit.py',
         'update_knowledge.bat',
         'update_knowledge.ps1',
         'rag_ingest_perf_defaults.ps1',
@@ -154,7 +157,14 @@ function Get-HermesWindowsLocalAssetsManifest {
     }
     $testsBundle = @{
         Sub     = 'tests'
-        Files   = @('RUN_PYTEST.ps1', 'RUN_PSScriptAnalyzer.ps1', 'README.md', 'RUN_PYTEST.bat', 'RUN_PSScriptAnalyzer.bat')
+        Files   = @(
+            'RUN_PYTEST.ps1', 'RUN_PYTEST.bat',
+            'RUN_PYTEST_FORK_GATE.ps1', 'RUN_PYTEST_FORK_GATE.bat',
+            'RUN_PYTEST_UPSTREAM.ps1', 'RUN_PYTEST_UPSTREAM.bat',
+            'pytest_fork_gate.yaml', 'PYTEST_POLICY.md',
+            'pytest_upstream_known_fails.txt',
+            'RUN_PSScriptAnalyzer.ps1', 'README.md', 'RUN_PSScriptAnalyzer.bat'
+        )
         RepoSub = 'tests'
     }
     $auditsBundle = @{
