@@ -1456,6 +1456,9 @@ def run_doctor(args):
     if _npm_bin:
         npm_dirs = [
             (PROJECT_ROOT, "Browser tools (agent-browser)"),
+            (PROJECT_ROOT / "web", "Web UI"),
+            (PROJECT_ROOT / "apps" / "desktop", "Desktop app"),
+            (PROJECT_ROOT / "website", "Docs site"),
             (PROJECT_ROOT / "scripts" / "whatsapp-bridge", "WhatsApp bridge"),
         ]
         for npm_dir, label in npm_dirs:

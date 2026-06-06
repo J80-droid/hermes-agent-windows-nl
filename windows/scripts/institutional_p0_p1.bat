@@ -58,7 +58,7 @@ echo [STEP 2/5] hermes doctor --fix
 if errorlevel 1 (
   echo [WARN] doctor --fix exit %ERRORLEVEL% — controleer handmatig
 )
-echo [INFO] Doctor npm-waarschuwingen ^(agent-browser^) zijn niet blokkerend — optioneel: windows\REPAIR_BROWSER_NPM.bat
+echo [INFO] Doctor npm-waarschuwingen zijn niet blokkerend — optioneel: windows\REPAIR_ALL_NPM.bat
 
 echo.
 echo [STEP 3/5] MCP-probe alle domeinen
