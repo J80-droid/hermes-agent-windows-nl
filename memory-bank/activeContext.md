@@ -2,6 +2,8 @@
 
 ## Focus
 
+**Pad 1 SYNC_NOUS + lean overlay (2026-06-06):** Upstream merge ~199 commits (`d4f196072`); Tier A drift **0** (`Test-NousTreeIdentical` PASS). Toolset dashboard volledig upstream Tier A (`ToolsetConfigDrawer`, `web_server` env/post-setup routes, `main.py post-setup`). Overlay opgeschoond: verwijderd `web_server_fork_patch`, overlay web toolset-duplicaten; `tools_config_fork_patch` alleen MCP-sentinel + `_user_customized`; `argparse_fork_patch` alleen `config get` + profile flags. E2E: `RUN_TOOLSET_DASHBOARD_E2E` 9/9, `RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E` PASS, fork gates 8/8. Open P3: bronmappen `raw_source_files` handmatig vullen.
+
 **PSSA 0 + CI vitest hardening (2026-06-06):** PSScriptAnalyzer 0 Warning/Error + `-FailOnWarning` in `RUN_AUDITS`/`RUN_PSScriptAnalyzer`; 9 gecommitte baseline-rapporten verwijderd; `windows/scripts/clean_audit_reports.ps1` voor lokale `*REPORT*`/`E2E_LOG`; gedeelde `HermesUiTuiNpm.ps1` (`Invoke-HermesUiTuiNpmEnsure`, `Invoke-HermesUiTuiVitest`) voor E2E + `rebuild_tui.ps1`; CI `fork-windows-institutional.yml`: Node 20 + `ui-tui npm ci`. Commits `26e107b56`, `20167641a` + follow-up vitest-fix.
 
 **Nous overlay scorecard 10/10 (2026-06-02):** Tier A zuiver (`pyproject.toml` = upstream `signal`); pytest Windows via `Invoke-HermesAuditPytest`/`RUN_PYTEST.ps1`; `Invoke-HermesTierAPostAuditClean` (preflight/pre-overlay/postflight); UI `git clean` na build; RAG `fixtures/rag_minimal` + seed/E2E; CI upstream-remote + 14-fixes/pytest-audit-env/tier-a-cli guard; nightly `fork-windows-audits-nightly.yml`. Postflight: **geen** `git reset --hard` — gebruik `Invoke-HermesTierAPostAuditClean`.

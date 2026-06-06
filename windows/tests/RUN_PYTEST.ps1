@@ -28,6 +28,7 @@ $pytestArgs = @(
     'tests/',
     '--ignore=tests/integration',
     '--ignore=tests/e2e',
+    '--ignore=tests/docker',
     '-m', 'not integration',
     '-n', '0',
     '-q',

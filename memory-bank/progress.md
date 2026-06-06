@@ -1,5 +1,14 @@
 # Progress
 
+## Pad 1 — SYNC_NOUS + lean overlay (2026-06-06)
+
+- [x] P0: upstream merge + drift-gate 0 + baseline export (`docs/NOUS_DRIFT_BASELINE.md`)
+- [x] Lean: overlay toolset-duplicaten verwijderd; Tier A canoniek voor dashboard toolset
+- [x] E2E: `RUN_TOOLSET_DASHBOARD_E2E` 9/9; institutional + fork gates PASS
+- [x] P4: `build_fork_ui_assets.ps1` + `REBUILD_TUI` → `web_dist` + `ui-tui/dist`
+- [ ] P3: bronmappen `raw_source_files` (01–03, 05–08, 09–12) — gebruikersdata
+- [ ] P1 volledig: `RUN_AUDITS -IncludeAllE2E` + `RUN_PYTEST.ps1` (draait)
+
 ## Optionele productie-poorten (Fase 3)
 
 - [x] `repo-hygiene.mdc` toegevoegd (`.cursor/rules/` vanuit `docs/templates/`)

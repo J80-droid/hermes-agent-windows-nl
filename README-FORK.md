@@ -32,7 +32,7 @@ Deze fork is de **enige goedgekeurde bron** voor Hermes-installaties binnen dit 
 Upstream Python/UI in Tier A blijft **ongewijzigd** na `SYNC_NOUS`. Fork-features:
 
 - **Bootstrap:** `overlay/bootstrap.py` laadt `overlay/hermes_cli/*` + `overlay/agent/*` en patchet statusbalk-kosten, `/cost`, `/tps`, stream tok/s, agent-throughput, Gemini-pricing, model-catalog guard.
-- **Sync:** `windows\SYNC_NOUS.bat` — merge + overlay + strict drift-gate.
+- **Sync:** `windows\SYNC_NOUS.bat` — merge + overlay + strict drift-gate (Pad 1: toolset-dashboard = upstream Tier A; overlay alleen MCP-sentinel + institutioneel web).
 - **Herstel Tier A:** `windows\scripts\Invoke-RestoreNousTierA.ps1` vóór drift-test.
 - **E2E institutional:** `audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat` (drift, harness, verify, smokes, pytest).
 - **E2E runtime (P0–P5):** `audits\RUN_NOUS_OVERLAY_RUNTIME_E2E.bat` (bootstrap, TPS hooks, `/tps`+`/cost`, tier-A guard).
