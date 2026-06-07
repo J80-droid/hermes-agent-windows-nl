@@ -8,11 +8,13 @@ Zie ook [`NOUS_DRIFT_MAINTENANCE.md`](NOUS_DRIFT_MAINTENANCE.md) (tier-A drift) 
 
 | Frequentie | Actie |
 |------------|--------|
-| **Wekelijks** (of bij >10 commits achter) | `windows\UPDATE_HERMES.bat` |
-| **Na elke geslaagde merge** | `RUN_PYTEST_UPSTREAM.bat -ReportOnly` → `new_failures_count: 0` |
-| **Vóór release** | `RUN_PRODUCTION_GATE.bat` |
+| **Wekelijks** (of bij >10 commits achter) | `windows\UPDATE_HERMES.bat` (of `-Yes` bij grote achterstand) |
+| **Upstream parity** | Zit in UPDATE finalize — `ReportOnly` + `new_failures_count` |
+| **Vóór release** | `windows\UPDATE_HERMES.bat -Release` of los `RUN_PRODUCTION_GATE.bat` |
 
 Grote achterstand (>20 commits) vergroot de kans op conflicten — niet weken uitstellen.
+
+**Eén commando dekt:** preflight, merge, RAG/trust, drift catch-up + fork gate, upstream rapport, push naar `origin/main`. Handmatig alleen bij merge-conflict of `-SkipPush`.
 
 ## Waar nieuwe fork-tests horen
 

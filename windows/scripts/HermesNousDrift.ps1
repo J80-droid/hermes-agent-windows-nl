@@ -268,6 +268,16 @@ function Invoke-HermesNousDriftGateWithCatchUp {
 
     if ($report.MustUpstreamDrift.Count -eq 0) {
         Write-Host '[OK] Tier A identical to upstream (within policy).' -ForegroundColor Green
+        if (-not $SkipForkGate) {
+            Write-Host '=== pytest fork gate (drift 0) ===' -ForegroundColor Cyan
+            $forkGate = Join-Path $RepoRoot 'windows/tests/RUN_PYTEST_FORK_GATE.bat'
+            cmd /c "`"$forkGate`""
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "[FAIL] fork gate (exit $LASTEXITCODE)" -ForegroundColor Red
+                return [int]$LASTEXITCODE
+            }
+            Write-Host '[OK] fork gate' -ForegroundColor Green
+        }
         return 0
     }
 

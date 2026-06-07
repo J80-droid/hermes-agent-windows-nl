@@ -29,9 +29,11 @@ echo %ESC%[92m====================================================
 echo  Hermes Agent: UPDATE ^(Nous + fork^)
 echo ====================================================%ESC%[0m
 echo.
-echo [INFO] Eén commando — 3 fasen: preflight ^(git^) - merge + deps - post-merge ^(trust/RAG^)
+echo [INFO] Eén commando — preflight, merge+deps, post-merge, drift, pytest+push
 echo [INFO] Optioneel: -IncludeCodebaseSmokeE2E -IncludeCodebaseSmoke ^(door naar upstream_sync / POST_GIT_PULL^)
 echo [INFO] Grote achterstand: typ j in PowerShell, of gebruik -Yes / UPDATE_HERMES_YES.bat
+echo [INFO] Na succes: upstream ReportOnly + git push origin main ^(uit: -SkipPush^)
+echo [INFO] Release-poort: -Release  ^|  strict parity: -StrictUpstreamParity
 echo [INFO] Uitleg: windows\UPSTREAM_SYNC.md
 echo.
 
@@ -64,6 +66,10 @@ if "%HERMES_UPSTREAM_AUTO_CONFIRM%"=="1" set "FORCE_FLAG=-Force"
 set "STRICT_NOUS=0"
 set "SKIP_DRIFT_CATCHUP=0"
 set "SKIP_DRIFT_COMMIT=0"
+set "SKIP_POST_PUSH=0"
+set "SKIP_POST_PYTEST=0"
+set "POST_RELEASE_GATE=0"
+set "STRICT_UPSTREAM=0"
 :parse_args
 if "%~1"=="" goto :parse_done
 if /I "%~1"=="-Yes" set "FORCE_FLAG=-Force" & shift & goto :parse_args
@@ -71,6 +77,10 @@ if /I "%~1"=="-y" set "FORCE_FLAG=-Force" & shift & goto :parse_args
 if /I "%~1"=="-StrictNousSync" set "STRICT_NOUS=1" & shift & goto :parse_args
 if /I "%~1"=="-SkipNousDriftCatchUp" set "SKIP_DRIFT_CATCHUP=1" & shift & goto :parse_args
 if /I "%~1"=="-SkipNousDriftCommit" set "SKIP_DRIFT_COMMIT=1" & shift & goto :parse_args
+if /I "%~1"=="-SkipPush" set "SKIP_POST_PUSH=1" & shift & goto :parse_args
+if /I "%~1"=="-SkipPostUpdatePytest" set "SKIP_POST_PYTEST=1" & shift & goto :parse_args
+if /I "%~1"=="-Release" set "POST_RELEASE_GATE=1" & shift & goto :parse_args
+if /I "%~1"=="-StrictUpstreamParity" set "STRICT_UPSTREAM=1" & shift & goto :parse_args
 set "PS_ARGS=!PS_ARGS! %~1"
 shift
 goto :parse_args
@@ -117,6 +127,25 @@ if exist "!DRIFT_GATE_PS1!" (
   echo [ERROR] Ontbreekt: scripts\Invoke-HermesNousDriftGateWithCatchUp.ps1
   pause
   exit /b 1
+)
+echo [INFO] Post-update finalize ^(upstream ReportOnly + push origin^)...
+set "FINALIZE_PS1=%~dp0scripts\Invoke-HermesPostUpdateFinalize.ps1"
+set "FINALIZE_EXTRA="
+if "%SKIP_POST_PUSH%"=="1" set "FINALIZE_EXTRA=!FINALIZE_EXTRA! -SkipPush"
+if "%SKIP_POST_PYTEST%"=="1" set "FINALIZE_EXTRA=!FINALIZE_EXTRA! -SkipUpstreamReport"
+set "FINALIZE_EXTRA=!FINALIZE_EXTRA! -SkipForkGate"
+if "%POST_RELEASE_GATE%"=="1" set "FINALIZE_EXTRA=!FINALIZE_EXTRA! -IncludeProductionGate"
+if "%STRICT_UPSTREAM%"=="1" set "FINALIZE_EXTRA=!FINALIZE_EXTRA! -StrictUpstreamNewFailures"
+if exist "!FINALIZE_PS1!" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "!FINALIZE_PS1!" -RepoRoot "%CD%" !FINALIZE_EXTRA!
+  if errorlevel 1 (
+    echo [ERROR] Post-update finalize mislukt — zie log hierboven
+    pause
+    exit /b 1
+  )
+  echo [OK] Post-update finalize OK
+) else (
+  echo [WARN] Ontbreekt: scripts\Invoke-HermesPostUpdateFinalize.ps1 — push/pytest handmatig
 )
 echo [INFO] Hermes opnieuw: windows\start_hermes.bat  —  in chat: /new
 echo [INFO] Taakbalk-snelkoppelingen bijwerken (windows\ + taakbalk-kopieen)...

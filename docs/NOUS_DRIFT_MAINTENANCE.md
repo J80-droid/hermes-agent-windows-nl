@@ -18,16 +18,21 @@ start_hermes.bat
 
 Optioneel zonder pauze: `windows\UPDATE_HERMES_YES.bat` (zelfde keten).
 
-### Wat UPDATE_HERMES automatisch doet (drift)
+### Wat UPDATE_HERMES automatisch doet (volledige keten)
 
-Na een geslaagde upstream-update:
+Na een geslaagde upstream-update (één commando):
 
-1. `git fetch upstream` + drift-check t.o.v. `upstream/main`
-2. Bij drift → tier-A sync (fork-intentional `gateway_windows.py` behouden)
-3. Fork pytest gate + baseline-export
-4. **Commit** van drift-fix (tenzij `-SkipNousDriftCommit`)
+| Fase | Automatisch |
+|------|-------------|
+| Preflight | `git fetch`, schone tree-check, fork-test hygiene-waarschuwing |
+| Merge + deps | `hermes update`, RAG/trust/post-merge |
+| Drift | tier-A catch-up, **fork pytest gate**, drift-commit (`-SkipNousDriftCommit` om commit uit te zetten) |
+| Finalize | **upstream `ReportOnly`** + `new_failures_count`, **`git push origin main`** |
+| Optioneel | `-Release` → `RUN_PRODUCTION_GATE` (~35–45 min) |
 
-Mislukt iets → update stopt met foutcode (geen stille waarschuwing).
+Flags: `-SkipPush`, `-SkipPostUpdatePytest`, `-StrictUpstreamParity` (hard fail bij nieuwe upstream-failures), `HERMES_SKIP_UPDATE_PUSH=1`.
+
+Mislukt iets → update stopt met foutcode (geen stille waarschuwing). **Merge-conflicten** blijven handmatig (`MERGE_UPSTREAM.bat` → UPDATE opnieuw).
 
 ### Start vs update
 
