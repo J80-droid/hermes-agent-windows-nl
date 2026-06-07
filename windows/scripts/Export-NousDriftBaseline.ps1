@@ -134,7 +134,7 @@ try {
     [void]$sb.AppendLine('powershell -NoProfile -File windows/scripts/Export-NousDriftBaseline.ps1')
     [void]$sb.AppendLine('```')
     [void]$sb.AppendLine('')
-    [void]$sb.AppendLine('**Onderhoud (stabiel):** [NOUS_DRIFT_MAINTENANCE.md](NOUS_DRIFT_MAINTENANCE.md) — routine, scripts, taboe `SYNC_NOUS -Yes`.')
+    [void]$sb.AppendLine('**Onderhoud (stabiel):** [NOUS_DRIFT_MAINTENANCE.md](NOUS_DRIFT_MAINTENANCE.md) - routine, scripts, taboe `SYNC_NOUS -Yes`.')
     [void]$sb.AppendLine('')
     [void]$sb.AppendLine('**Catch-up:** `windows/SYNC_NOUS_DRIFT_CATCHUP.bat`')
     [void]$sb.AppendLine('')
