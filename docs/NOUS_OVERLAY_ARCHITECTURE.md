@@ -167,7 +167,7 @@ python scripts\status_bar_cost_classic_cli_live_smoke.py
 
 Max. 1–2 weken achter op `upstream/main`. Zie [NOUS_DRIFT_MAINTENANCE.md](NOUS_DRIFT_MAINTENANCE.md) · [UPSTREAM_SYNC.md](../windows/UPSTREAM_SYNC.md).
 
-`UPDATE_HERMES.bat -StrictNousSync` breekt af bij Tier-A-drift (anders WARN + `SYNC_NOUS_DRIFT_CATCHUP.bat`).
+`UPDATE_HERMES.bat` voert standaard drift gate + auto catch-up uit; `-StrictNousSync` = hard fail bij resterende drift.
 
 ## Plugins / optionele overlay-modules
 
