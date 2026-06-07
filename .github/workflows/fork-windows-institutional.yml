@@ -59,16 +59,18 @@ jobs:
       - name: Fork tests/hermes_cli/ hygiene (strict)
         run: python windows/scripts/check_fork_hermes_cli_tests.py --pre-merge --strict
 
-      - name: Upstream pytest ReportOnly + parity check
+      # ReportOnly + summary JSON (geen hard fail op new_failures_count — Linux upstream CI = waarheid; zie PYTEST_POLICY.md).
+      - name: Upstream pytest ReportOnly (Windows parity diagnostic)
         env:
           PYTEST_ADDOPTS: '--timeout-method=thread'
           HERMES_AUDIT_PYTHON: ${{ env.pythonLocation }}\python.exe
         run: |
           windows\tests\RUN_PYTEST_UPSTREAM.bat -ReportOnly
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -c "import json,sys,pathlib; p=pathlib.Path('windows/tests/pytest_upstream_summary.json');
+          python -c "import json,pathlib,sys; p=pathlib.Path('windows/tests/pytest_upstream_summary.json');
           assert p.is_file(), 'pytest_upstream_summary.json ontbreekt (upstream pytest niet uitgevoerd)';
-          n=json.loads(p.read_text(encoding='utf-8'))['new_failures_count']; print('new_failures_count=', n); sys.exit(1 if n else 0)"
+          s=json.loads(p.read_text(encoding='utf-8')); n=s.get('new_failures_count', -1);
+          print('new_failures_count=', n, '(diagnostic only on Windows fork CI)'); sys.exit(0)"
 
       # Na drift gate: npm mag node_modules/lockfile raken zonder Tier A-vergelijking te vervuilen.
       - name: Set up Node.js 20
