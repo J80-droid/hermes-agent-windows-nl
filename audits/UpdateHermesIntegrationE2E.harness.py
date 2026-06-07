@@ -44,6 +44,10 @@ def main() -> int:
     )
     _step("UPDATE_HERMES.bat -SkipNousDriftCatchUp", "-SkipNousDriftCatchUp" in update_bat)
     _step(
+        "UPDATE_HERMES.bat default drift commit",
+        "-Commit" in update_bat and "-SkipNousDriftCommit" in update_bat,
+    )
+    _step(
         "Invoke-HermesNousDriftGateWithCatchUp.ps1 bestaat",
         (REPO / "windows/scripts/Invoke-HermesNousDriftGateWithCatchUp.ps1").is_file(),
     )

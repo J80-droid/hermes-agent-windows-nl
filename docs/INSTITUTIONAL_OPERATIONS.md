@@ -136,18 +136,7 @@ powershell -NoProfile -File windows\upstream_sync.ps1 -Phase Preflight
 
 Grote achterstand zonder j/N-vraag: `UPDATE_HERMES.bat -Yes` of `UPDATE_HERMES_YES.bat`. Automation: `set HERMES_SKIP_PAUSE_AFTER_UPDATE=1`. Alleen `-QuickFix` als enig argument: stopt na opruimen. Zie [`windows/UPSTREAM_SYNC.md`](../windows/UPSTREAM_SYNC.md).
 
-**Tier A drift (cadans):** SSOT [`docs/NOUS_DRIFT_MAINTENANCE.md`](NOUS_DRIFT_MAINTENANCE.md) · snapshot [`NOUS_DRIFT_BASELINE.md`](NOUS_DRIFT_BASELINE.md).
-
-| Wanneer | Commando |
-|---------|----------|
-| Na `UPDATE_HERMES` / upstream-push | **Auto** drift gate + catch-up (standaard) |
-| Handmatig / na pull zonder update | `windows\SYNC_NOUS_DRIFT_CATCHUP.bat` (`.ps1 -Commit`) |
-| Alleen detectie (opt-out) | `UPDATE_HERMES.bat -SkipNousDriftCatchUp` |
-| Na productie-poort | `Invoke-HermesPostGateWorktreeReset.ps1` (auto in `RUN_PRODUCTION_GATE`) |
-| Bij update (hard stop) | `UPDATE_HERMES.bat -StrictNousSync` |
-| Gecontroleerde Nous-merge | `SYNC_NOUS.bat` (zonder `-Yes` voor routine drift) |
-
-**Taboe:** `SYNC_NOUS.bat -Yes` voor drift-herstel op deze fork.
+**Tier A drift:** ingebouwd in `windows\UPDATE_HERMES.bat` (auto catch-up + commit). Gebruikersworkflow: alleen `start_hermes.bat` + `UPDATE_HERMES.bat`. SSOT [`NOUS_DRIFT_MAINTENANCE.md`](NOUS_DRIFT_MAINTENANCE.md).
 
 Zie [`NOUS_OVERLAY_ARCHITECTURE.md`](NOUS_OVERLAY_ARCHITECTURE.md).
 

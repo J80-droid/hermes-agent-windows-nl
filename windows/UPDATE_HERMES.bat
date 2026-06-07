@@ -1,10 +1,10 @@
 @echo off
-REM UPDATE_HERMES.bat — Eén keten: Nous upstream + deps + trust/RAG/verify (conda hermes-env).
-REM   Normaal:       windows\UPDATE_HERMES.bat
-REM   Grote merge:   windows\UPDATE_HERMES.bat -Yes  (geen j/N bij >20 commits achter)
+REM UPDATE_HERMES.bat — Jouw update-script: Nous upstream + deps + trust/RAG + tier-A drift (auto).
+REM   Normaal:       windows\UPDATE_HERMES.bat   (daarna: start_hermes.bat)
+REM   Grote merge:   windows\UPDATE_HERMES.bat -Yes
 REM   Alleen rommel: windows\UPDATE_HERMES.bat -QuickFix
-REM   Drift:       auto catch-up na update (tier-A) — -SkipNousDriftCatchUp om uit te zetten
-REM   Zie: docs\NOUS_DRIFT_MAINTENANCE.md  |  Snel zonder vraag: windows\UPDATE_HERMES_YES.bat
+REM   Geen extra drift-scripts nodig — catch-up + commit zit in deze keten.
+REM   Snel zonder pauze: windows\UPDATE_HERMES_YES.bat
 setlocal EnableExtensions EnableDelayedExpansion
 
 set "UPSTREAM_SYNC_PS1="
@@ -63,14 +63,14 @@ if "%HERMES_UPSTREAM_AUTO_CONFIRM%"=="1" set "FORCE_FLAG=-Force"
 
 set "STRICT_NOUS=0"
 set "SKIP_DRIFT_CATCHUP=0"
-set "COMMIT_DRIFT=0"
+set "SKIP_DRIFT_COMMIT=0"
 :parse_args
 if "%~1"=="" goto :parse_done
 if /I "%~1"=="-Yes" set "FORCE_FLAG=-Force" & shift & goto :parse_args
 if /I "%~1"=="-y" set "FORCE_FLAG=-Force" & shift & goto :parse_args
 if /I "%~1"=="-StrictNousSync" set "STRICT_NOUS=1" & shift & goto :parse_args
 if /I "%~1"=="-SkipNousDriftCatchUp" set "SKIP_DRIFT_CATCHUP=1" & shift & goto :parse_args
-if /I "%~1"=="-CommitNousDrift" set "COMMIT_DRIFT=1" & shift & goto :parse_args
+if /I "%~1"=="-SkipNousDriftCommit" set "SKIP_DRIFT_COMMIT=1" & shift & goto :parse_args
 set "PS_ARGS=!PS_ARGS! %~1"
 shift
 goto :parse_args
@@ -103,7 +103,7 @@ echo [INFO] Nous tier-A drift gate (+ auto catch-up)...
 set "DRIFT_GATE_PS1=%~dp0scripts\Invoke-HermesNousDriftGateWithCatchUp.ps1"
 set "DRIFT_EXTRA="
 if "%SKIP_DRIFT_CATCHUP%"=="1" set "DRIFT_EXTRA=!DRIFT_EXTRA! -SkipCatchUp"
-if "%COMMIT_DRIFT%"=="1" set "DRIFT_EXTRA=!DRIFT_EXTRA! -Commit"
+if "%SKIP_DRIFT_COMMIT%"=="0" set "DRIFT_EXTRA=!DRIFT_EXTRA! -Commit"
 if "%STRICT_NOUS%"=="1" set "DRIFT_EXTRA=!DRIFT_EXTRA! -Strict"
 if exist "!DRIFT_GATE_PS1!" (
   powershell -NoProfile -ExecutionPolicy Bypass -File "!DRIFT_GATE_PS1!" -RepoRoot "%CD%" !DRIFT_EXTRA!

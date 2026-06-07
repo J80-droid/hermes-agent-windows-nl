@@ -6,6 +6,8 @@
 start_hermes.bat
 ```
 
+**Nous/upstream bijwerken** (niet elke dag): `windows\UPDATE_HERMES.bat` — drift-fix zit erin; daarna opnieuw `start_hermes.bat`. Geen aparte drift-scripts.
+
 Gedrag:
 
 1. **Achter `origin` (tracking branch)?** → `git pull` + `POST_GIT_PULL` + Hermes-relaunch in WT.

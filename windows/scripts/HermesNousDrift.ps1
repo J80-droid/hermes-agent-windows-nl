@@ -276,7 +276,7 @@ function Invoke-HermesNousDriftGateWithCatchUp {
 
     if ($SkipCatchUp) {
         Write-Host '[WARN] Auto catch-up overgeslagen (-SkipCatchUp).' -ForegroundColor Yellow
-        Write-Host '[INFO] Handmatig: windows\SYNC_NOUS_DRIFT_CATCHUP.bat' -ForegroundColor DarkGray
+        Write-Host '[INFO] Draai: windows\UPDATE_HERMES.bat (auto catch-up)' -ForegroundColor DarkGray
         if ($Strict) { return 1 }
         return 0
     }

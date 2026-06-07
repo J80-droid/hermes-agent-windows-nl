@@ -40,5 +40,5 @@ if ($report.Failures.Count -eq 0) {
 
 Write-DriftLine -Msg "[FAIL] Tier A drift: $($report.Failures.Count) issue(s)" -Level 'Error'
 foreach ($f in $report.Failures) { Write-DriftLine -Msg "  changed: $f" -Level 'Error' }
-Write-DriftLine -Msg 'Fix: windows\SYNC_NOUS_DRIFT_CATCHUP.bat — zie docs/NOUS_DRIFT_MAINTENANCE.md' -Level 'Warn'
+Write-DriftLine -Msg 'Fix: windows\UPDATE_HERMES.bat (auto catch-up) — zie docs/NOUS_DRIFT_MAINTENANCE.md' -Level 'Warn'
 exit 1

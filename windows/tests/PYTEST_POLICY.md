@@ -62,14 +62,7 @@ Tests marked `@pytest.mark.e2e` only — covered by E2E bats:
 
 ## Drift & postflight (tier-A)
 
-**SSOT:** [`docs/NOUS_DRIFT_MAINTENANCE.md`](../../docs/NOUS_DRIFT_MAINTENANCE.md).
-
-| Situatie | Commando |
-|----------|----------|
-| Na `UPDATE_HERMES` / upstream-push | **Auto** catch-up in `UPDATE_HERMES.bat` (of `SYNC_NOUS_DRIFT_CATCHUP.bat`) |
-| Staged tier-A na productie-poort | `Invoke-HermesPostGateWorktreeReset.ps1` (auto in `RUN_PRODUCTION_GATE`) |
-| CI drift gate | `Test-NousTreeIdentical.ps1` |
-| Baseline-snapshot | `Export-NousDriftBaseline.ps1` (in catch-up keten) |
+Gebruikers: `UPDATE_HERMES.bat` (auto). Maintainer/CI: [`NOUS_DRIFT_MAINTENANCE.md`](../../docs/NOUS_DRIFT_MAINTENANCE.md). Post-gate reset: auto in `RUN_PRODUCTION_GATE`.
 
 ## Related
 
