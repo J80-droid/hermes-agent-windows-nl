@@ -11,6 +11,23 @@ from collections import Counter
 from pathlib import Path
 
 
+def _canonical_nodeid(nodeid: str) -> str:
+    """Normalize path-style vs dot-style pytest nodeids for comparison."""
+    nodeid = nodeid.strip().replace("\\", "/")
+    if "::" in nodeid:
+        file_part, rest = nodeid.split("::", 1)
+    else:
+        file_part, rest = nodeid, ""
+    file_part = file_part.strip()
+    if file_part.endswith(".py"):
+        module = file_part[:-3].replace("/", ".")
+    elif "/" in file_part:
+        module = file_part.replace("/", ".")
+    else:
+        module = file_part
+    return f"{module}::{rest}" if rest else module
+
+
 def _load_known_fails(path: Path | None) -> set[str]:
     if not path or not path.is_file():
         return set()
@@ -19,7 +36,7 @@ def _load_known_fails(path: Path | None) -> set[str]:
         line = line.strip()
         if not line or line.startswith("#"):
             continue
-        known.add(line)
+        known.add(_canonical_nodeid(line))
     return known
 
 
@@ -41,6 +58,8 @@ def _nodeid_from_case(case: ET.Element) -> str:
 def summarize(junit_path: Path, known_fails: set[str] | None = None) -> dict:
     if known_fails is None:
         known_fails = set()
+    else:
+        known_fails = {_canonical_nodeid(k) for k in known_fails}
     try:
         tree = ET.parse(junit_path)
     except ET.ParseError as exc:
@@ -68,8 +87,8 @@ def summarize(junit_path: Path, known_fails: set[str] | None = None) -> dict:
             continue
         passed += 1
 
-    new_fails = [n for n in failed_nodeids if n not in known_fails]
-    known_only = [n for n in failed_nodeids if n in known_fails]
+    new_fails = [n for n in failed_nodeids if _canonical_nodeid(n) not in known_fails]
+    known_only = [n for n in failed_nodeids if _canonical_nodeid(n) in known_fails]
 
     top_modules = [
         {"module": mod, "failures": count}

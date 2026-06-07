@@ -59,6 +59,24 @@ def test_summarize_happy_path_counts(summarizer, tmp_path: Path) -> None:
     assert payload["failed_nodeids_count"] == 2
 
 
+def test_canonical_nodeid_path_vs_dot(summarizer) -> None:
+    path_style = "tests/agent/lsp/test_workspace.py::test_normalize_path_expands_tilde"
+    dot_style = "tests.agent.lsp.test_workspace::test_normalize_path_expands_tilde"
+    assert summarizer._canonical_nodeid(path_style) == summarizer._canonical_nodeid(dot_style)
+
+
+def test_summarize_known_dot_matches_junit_path(summarizer, tmp_path: Path) -> None:
+    junit = tmp_path / "out.xml"
+    _write_junit(
+        junit,
+        [("tests/agent/lsp/test_workspace.py", "test_normalize_path_expands_tilde", "failure")],
+    )
+    known = {"tests.agent.lsp.test_workspace::test_normalize_path_expands_tilde"}
+    payload = summarizer.summarize(junit, known)
+    assert payload["new_failures_count"] == 0
+    assert payload["known_failures_count"] == 1
+
+
 def test_summarize_known_vs_new(summarizer, tmp_path: Path) -> None:
     junit = tmp_path / "out.xml"
     _write_junit(
@@ -97,7 +115,7 @@ def test_load_known_fails_skips_comments_and_blanks(summarizer, tmp_path: Path) 
         encoding="utf-8",
     )
     known = summarizer._load_known_fails(known_file)
-    assert known == {"tests/a.py::test_one"}
+    assert known == {"tests.a::test_one"}
 
 
 def test_load_known_fails_missing_path_returns_empty(summarizer) -> None:
