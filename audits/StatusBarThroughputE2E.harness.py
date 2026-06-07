@@ -49,14 +49,14 @@ def test_e1_repo_artefacts() -> None:
         "cli.py",
         "run_agent.py",
         "agent/conversation_loop.py",
-        "tests/hermes_cli/test_status_bar_throughput.py",
+        "tests/overlay/test_status_bar_throughput.py",
         "scripts/status_bar_throughput_classic_cli_smoke.py",
         "audits/StatusBarThroughputE2E.harness.py",
         "audits/StatusBarThroughputE2E.core.ps1",
         "audits/RUN_STATUS_BAR_THROUGHPUT_E2E.bat",
         "overlay/hermes_cli/status_bar_prompt_elapsed.py",
         "scripts/verify_fork_status_bar_display.py",
-        "tests/hermes_cli/test_status_bar_prompt_elapsed.py",
+        "tests/overlay/test_status_bar_prompt_elapsed.py",
     ]
     ok = all((REPO_ROOT / p).is_file() for p in required)
     _step("repo-artefacten aanwezig", ok)
@@ -216,7 +216,7 @@ def _run_pytest(paths: list[str], extra: list[str] | None = None) -> tuple[bool,
 
 
 def test_e8_pytest_throughput_module() -> None:
-    ok, tail = _run_pytest(["tests/hermes_cli/test_status_bar_throughput.py"])
+    ok, tail = _run_pytest(["tests/overlay/test_status_bar_throughput.py"])
     _step("pytest test_status_bar_throughput.py", ok, tail)
 
 
@@ -329,7 +329,7 @@ def test_e13_verify_fork_status_bar_display() -> None:
 
 
 def test_e14_pytest_prompt_timer() -> None:
-    ok, tail = _run_pytest(["tests/hermes_cli/test_status_bar_prompt_elapsed.py"])
+    ok, tail = _run_pytest(["tests/overlay/test_status_bar_prompt_elapsed.py"])
     _step("pytest test_status_bar_prompt_elapsed.py", ok, tail)
 
 

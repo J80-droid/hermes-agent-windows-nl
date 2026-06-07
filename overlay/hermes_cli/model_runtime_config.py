@@ -18,7 +18,7 @@ wizard post-checks, gateway startup WARN, ``verify_hermes_config_drift.ps1``.
 Windows repair: ``windows/REPAIR_MODEL_PROVIDER.bat``. Drift: ``verify_hermes_config_drift.ps1``
 (error-severity only). E2E: ``audits/RUN_MODEL_PROVIDER_COHERENCE_E2E.bat`` (10),
 ``audits/RUN_MODEL_PROVIDER_HARDENING_E2E.bat`` (8). Unit tests:
-``tests/hermes_cli/test_model_runtime_config.py``, ``test_auth_json_store.py``.
+``tests/overlay/test_model_runtime_config.py``, ``test_auth_json_store.py``.
 """
 
 from __future__ import annotations

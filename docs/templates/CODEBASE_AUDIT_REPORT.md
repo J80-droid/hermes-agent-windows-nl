@@ -53,7 +53,7 @@ Concept audit-rapport.
 - Skill/docs drift en inline doc synchronisatie status [Bron: scripts/audit_skill_drift.py] [E1].
 - TUI statusbalk wiring en kosten weergave [Bron: scripts/verify_usage_cost_bar.py] [E1].
 - Pareto router configuratie en wiring [Bron: scripts/verify_pareto_router.py] [E1].
-- Profiel-overerving en configuration inheritance [Bron: tests/hermes_cli/test_profile_model_inheritance.py] [E2].
+- Profiel-overerving en configuration inheritance [Bron: tests/overlay/test_profile_model_inheritance.py] [E2].
 - SessionDB en SessionDB WAL modus fallback [Bron: tests/test_hermes_state.py] [E2].
 
 **Niet in scope (Buiten deze smoke-run):**

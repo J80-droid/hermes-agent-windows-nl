@@ -68,7 +68,7 @@ def main() -> int:
 
     cost_tests = repo / "tests" / "hermes_cli" / "test_status_bar_cost.py"
     if not cost_tests.is_file():
-        errors.append("tests/hermes_cli/test_status_bar_cost.py ontbreekt")
+        errors.append("tests/overlay/test_status_bar_cost.py ontbreekt")
 
     classic_smoke = repo / "scripts" / "status_bar_cost_classic_cli_smoke.py"
     if not classic_smoke.is_file():

@@ -13,7 +13,7 @@ Geïsoleerde E2E voor de institutionele markdown-pipeline (2026-05-27 hardening)
 | E7 | Valse positief | Prose `Controle en verificatie` ≠ compacte checklist |
 | E8 | Streaming | `StreamingRenderer.feed` geen ANSI; `finish` 1× render |
 | E9 | Score verify | `score_institutional_render.py --verify` ≥ 9.0 |
-| E10 | Pytest contract | `tests/hermes_cli/test_render_pipeline_contract.py` PASS |
+| E10 | Pytest contract | `tests/overlay/test_render_pipeline_contract.py` PASS |
 | E11 | TS parity | Python = Web runner op checklist-fixture (SKIP zonder `npx`) |
 
 ```bat

@@ -29,9 +29,15 @@ Bij honderden upstream-commits/dag: niet weken wachten. Drempel aanpassen: `HERM
 
 ## Legacy-uitzonderingen
 
-Bestaande afwijkingen staan in [`windows/tests/fork_hermes_cli_test_exceptions.txt`](../windows/tests/fork_hermes_cli_test_exceptions.txt). Die lijst krimpt niet automatisch; **geen nieuwe paden** toevoegen zonder migratie naar `tests/overlay/`.
+Lijst: [`windows/tests/fork_hermes_cli_test_exceptions.txt`](../windows/tests/fork_hermes_cli_test_exceptions.txt).
 
-Voorbeeld migratie: `test_get_assistant_display_settings` → `tests/overlay/test_web_server_assistant_display.py` (fork API `/api/display/assistant`).
+**Status (2026-06):** leeg — alle 35 fork-only `tests/hermes_cli/`-bestanden zijn gemigreerd naar `tests/overlay/` of `tests/windows/`. `tests/hermes_cli/` is upstream-pariteit (`git diff upstream/main -- tests/hermes_cli/` → leeg).
+
+**Geen nieuwe paden** toevoegen aan de exceptions-lijst; nieuwe fork-tests horen in `tests/overlay/` of `tests/windows/`.
+
+Voorbeeld migratie: `test_get_assistant_display_settings` → `tests/overlay/test_web_server_assistant_display.py` (fork API `/api/display/assistant`). Volledige backlog: [`FORK_TEST_MIGRATION_BACKLOG.md`](FORK_TEST_MIGRATION_BACKLOG.md).
+
+E2E-verificatie na migratie: `audits\RUN_FORK_HERMES_CLI_TEST_MIGRATION_E2E.bat`.
 
 ## Automatische check
 

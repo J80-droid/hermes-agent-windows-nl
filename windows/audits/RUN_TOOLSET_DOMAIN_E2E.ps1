@@ -120,7 +120,7 @@ Push-Location $RepoRoot
 try {
     Invoke-HermesAuditPytest -Python $py `
         tests/windows/test_domain_toolsets_manifest.py `
-        tests/hermes_cli/test_platform_toolsets_empty_cli.py `
+        tests/overlay/test_platform_toolsets_empty_cli.py `
         -q --tb=short 2>&1 | Tee-Object -Variable pytestOut | Out-Host
     if (Test-NativeCommandFailed) {
         Step-Fail 'pytest' "exit $LASTEXITCODE"

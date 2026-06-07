@@ -198,10 +198,10 @@ if ($SkipPytest) {
         'tests/rag_pipeline/test_document_converter.py',
         'tests/rag_pipeline/test_ingest_state_needs_processing.py',
         'tests/rag_pipeline/test_mcp_server.py',
-        'tests/hermes_cli/test_config_snapshot.py',
+        'tests/overlay/test_config_snapshot.py',
         'tests/agent/test_review_snapshot.py',
-        'tests/hermes_cli/test_filesystem_sandbox.py',
-        'tests/hermes_cli/test_hardware_backend.py',
+        'tests/overlay/test_filesystem_sandbox.py',
+        'tests/overlay/test_hardware_backend.py',
         'tests/tools/test_process_registry.py'
     )
     $pytestOk = $true

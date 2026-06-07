@@ -87,8 +87,8 @@ $repoFiles = @(
     'scripts/verify_institutional_guard.py',
     'scripts/verify_pseudo_table_normalizer.py',
     'docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md',
-    'tests/hermes_cli/test_markdown_output_normalize.py',
-    'tests/hermes_cli/test_normalizer_ts_parity.py',
+    'tests/overlay/test_markdown_output_normalize.py',
+    'tests/overlay/test_normalizer_ts_parity.py',
     'tests/cli/test_institutional_rich_render.py',
     'windows/audits/PseudoTableNormalizerE2E.core.ps1',
     'windows/audits/RUN_PSEUDO_TABLE_NORMALIZER_E2E.ps1'
@@ -138,7 +138,7 @@ if ($SkipPytest) {
 } else {
     $normOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_markdown_output_normalize.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_markdown_output_normalize.py'),
         '-q',
         '--tb=short',
         '-o', 'addopts='
@@ -153,7 +153,7 @@ if ($SkipPytest -or $SkipTsParity) {
 } else {
     $parityOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_normalizer_ts_parity.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_normalizer_ts_parity.py'),
         '-k', 'ollama_vs_lm_studio_underscore or auxiliary_tasks_pseudo or pipe_rows_missing_divider',
         '-q',
         '--tb=short',

@@ -213,7 +213,7 @@ def test_e10_pytest_pipeline_contract() -> None:
             sys.executable,
             "-m",
             "pytest",
-            "tests/hermes_cli/test_render_pipeline_contract.py",
+            "tests/overlay/test_render_pipeline_contract.py",
             "-q",
             "--tb=short",
             "-o",

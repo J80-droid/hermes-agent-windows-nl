@@ -42,7 +42,7 @@ def test_e1_repo_artefacts() -> None:
         "overlay/hermes_cli/status_bar_prompt_elapsed.py",
         "overlay/hermes_cli/cli_fork_patch.py",
         "scripts/verify_fork_status_bar_display.py",
-        "tests/hermes_cli/test_status_bar_prompt_elapsed.py",
+        "tests/overlay/test_status_bar_prompt_elapsed.py",
         "tests/cli/test_cli_status_bar.py",
         "hermes_cli/config.py",
         "hermes_cli/commands.py",
@@ -225,7 +225,7 @@ def _run_pytest(paths: list[str], extra: list[str] | None = None) -> tuple[bool,
 def _run_inline_module_tests() -> tuple[bool, str]:
     spec = importlib.util.spec_from_file_location(
         "test_status_bar_prompt_elapsed",
-        REPO_ROOT / "tests/hermes_cli/test_status_bar_prompt_elapsed.py",
+        REPO_ROOT / "tests/overlay/test_status_bar_prompt_elapsed.py",
     )
     if spec is None or spec.loader is None:
         return False, "could not load test module"
@@ -246,7 +246,7 @@ def _run_inline_module_tests() -> tuple[bool, str]:
 
 
 def test_e9_pytest_prompt_elapsed_module() -> None:
-    ok, tail = _run_pytest(["tests/hermes_cli/test_status_bar_prompt_elapsed.py"])
+    ok, tail = _run_pytest(["tests/overlay/test_status_bar_prompt_elapsed.py"])
     if not ok and ("No module named pytest" in tail or "No module named 'pytest'" in tail):
         ok, tail = _run_inline_module_tests()
         _step("unit tests test_status_bar_prompt_elapsed (inline fallback)", ok, tail)

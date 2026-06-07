@@ -87,7 +87,7 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 ## Institutionele presentatie (drie lagen)
 
 1. **SOUL** — typografie/structuur (`docs/templates/SOUL_SHARED_*.md` → `SyncSoulSnippet.psm1` → alle profielen). Gebruikt centrale PowerShell-module met `--force` (altijd overschrijven) en `--verify` (check-only).
-2. **Assistant** — `display.assistant_render_style=institutional_rich`; pipeline: `prepare_assistant_markdown_plain()` (één normalize, incl. `compact_institutional_check`) → `render_institutional_from_prepared()` (`TightHeadingBody`, `SectionSpacer`, `InstitutionalTableElement` met `contextvars` tabelpalet). **Finalize-only streaming:** geen volledige Rich per token; ANSI/eindpaneel via `format_response_ansi` / `message.complete`. Contract-tests: `tests/hermes_cli/test_render_pipeline_contract.py`. Theme via `get_assistant_console_theme()` (CLI `ChatConsole`, gateway `rich_output.py`). Config **live** via `load_config_readonly`.
+2. **Assistant** — `display.assistant_render_style=institutional_rich`; pipeline: `prepare_assistant_markdown_plain()` (één normalize, incl. `compact_institutional_check`) → `render_institutional_from_prepared()` (`TightHeadingBody`, `SectionSpacer`, `InstitutionalTableElement` met `contextvars` tabelpalet). **Finalize-only streaming:** geen volledige Rich per token; ANSI/eindpaneel via `format_response_ansi` / `message.complete`. Contract-tests: `tests/overlay/test_render_pipeline_contract.py`. Theme via `get_assistant_console_theme()` (CLI `ChatConsole`, gateway `rich_output.py`). Config **live** via `load_config_readonly`.
 3. **UI** — `display.skin=default` (goud); banners/prompt, niet LLM-antwoordtekst.
 
 ### SOUL Sync (centraal, niet per profiel)
@@ -109,11 +109,11 @@ Implementatie: `hermes_cli/profile_model_inheritance.py` + `load_config()` / `lo
 
 ### Normalizer + pariteit
 
-- **Python (canonical):** `hermes_cli/markdown_output_normalize.py` — outline, institutional_check, tighten kop–tabel, NFR prose→tabel, **pseudo-tabel** (`_needs_pseudo_table_normalize` pre-gate, `normalize_pseudo_tables_to_markdown`; `_discover_repeated_field_keys` LRU-cache); **collapsed records**; pipeline eindigt met `compact_institutional_check` (pariteit TS). Bench (lokaal): `scripts/bench_normalize_markdown.py`. TS-pariteit: `institutionalMarkdown.ts` + `pytest tests/hermes_cli/test_normalizer_ts_parity.py` (vereist `npx tsx`).
+- **Python (canonical):** `hermes_cli/markdown_output_normalize.py` — outline, institutional_check, tighten kop–tabel, NFR prose→tabel, **pseudo-tabel** (`_needs_pseudo_table_normalize` pre-gate, `normalize_pseudo_tables_to_markdown`; `_discover_repeated_field_keys` LRU-cache); **collapsed records**; pipeline eindigt met `compact_institutional_check` (pariteit TS). Bench (lokaal): `scripts/bench_normalize_markdown.py`. TS-pariteit: `institutionalMarkdown.ts` + `pytest tests/overlay/test_normalizer_ts_parity.py` (vereist `npx tsx`).
 - **Web:** `web/src/lib/institutionalMarkdown.ts` + `Markdown.tsx` (`toRenderUnits` = TightHeadingBody-equivalent)
 - **Ink:** re-export Web normalizer (`ui-tui/src/lib/institutionalMarkdownNormalize.ts`) + compacte Controle-regel in `markdown.tsx`
 
-Defaults: `windows/team_display.defaults`; toepassen: `APPLY_INSTITUTIONAL_RUNTIME.bat`. Audit: `RUN_INSTITUTIONAL_E2E.ps1` (11 stappen + 2f + 2g + **2h pseudo-tabel**); dedicated overview: `RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat` (10 stappen); collapsed record: `audits/RUN_COLLAPSED_RECORD_PSEUDO_TABLE_E2E.bat` (10/10); unit `tests/hermes_cli/test_collapsed_record_pseudo_table.py`.
+Defaults: `windows/team_display.defaults`; toepassen: `APPLY_INSTITUTIONAL_RUNTIME.bat`. Audit: `RUN_INSTITUTIONAL_E2E.ps1` (11 stappen + 2f + 2g + **2h pseudo-tabel**); dedicated overview: `RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat` (10 stappen); collapsed record: `audits/RUN_COLLAPSED_RECORD_PSEUDO_TABLE_E2E.bat` (10/10); unit `tests/overlay/test_collapsed_record_pseudo_table.py`.
 
 ## Windows split-home (config single-source)
 

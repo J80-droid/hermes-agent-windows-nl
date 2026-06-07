@@ -16,7 +16,7 @@ Public API:
   - ``queue_status_fragment``, ``enqueue_ack_message``
   - ``hint_panel_height``, ``hint_panel_fragments``, ``format_removed_preview``
 
-Tests: ``tests/hermes_cli/test_cli_pending_queue.py`` (88+ cases).
+Tests: ``tests/overlay/test_cli_pending_queue.py`` (88+ cases).
 E2E: ``audits/RUN_CLI_PENDING_QUEUE_E2E.bat`` (17 scenarios, no live API).
 """
 

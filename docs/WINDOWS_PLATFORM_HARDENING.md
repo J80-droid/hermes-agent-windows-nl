@@ -28,7 +28,7 @@ Lokale STT/TTS kiest automatisch de beste beschikbare accelerator.
 
 **Startup-logging:** bij `hermes chat` toont de banner de gekozen backends wanneer `hardware.log_backends_at_startup: true` (default).
 
-Module: `hermes_cli/hardware_backend.py` · tests: `tests/hermes_cli/test_hardware_backend.py` · cache reset: `reset_hardware_backend_cache()`
+Module: `hermes_cli/hardware_backend.py` · tests: `tests/overlay/test_hardware_backend.py` · cache reset: `reset_hardware_backend_cache()`
 
 ## Filesystem sandbox (agent file-tools)
 
@@ -51,7 +51,7 @@ Alle agent file-tools (`read_file`, `write_file`, `patch`, `search_files`) blijv
 
 **Beperking:** defense-in-depth alleen — de terminal-tool draait als dezelfde OS-gebruiker en kan de grens omzeilen. Zie ook `agent/file_safety.py` (credentials, cross-profile).
 
-Module: `overlay/hermes_cli/filesystem_sandbox.py` · wiring: `overlay/tools/file_tools_fork_patch.py` → `tools/file_tools._resolve_path_for_task` (via `bootstrap.install()`) · tests: `tests/overlay/test_file_tools_fork_patch.py`, `tests/hermes_cli/test_filesystem_sandbox.py`, `tests/tools/test_file_tools.py` (sandbox uit in unit-fixture)
+Module: `overlay/hermes_cli/filesystem_sandbox.py` · wiring: `overlay/tools/file_tools_fork_patch.py` → `tools/file_tools._resolve_path_for_task` (via `bootstrap.install()`) · tests: `tests/overlay/test_file_tools_fork_patch.py`, `tests/overlay/test_filesystem_sandbox.py`, `tests/tools/test_file_tools.py` (sandbox uit in unit-fixture)
 
 ## LanceDB storage (VectorStore + lifecycle)
 

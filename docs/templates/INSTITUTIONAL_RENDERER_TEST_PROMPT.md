@@ -108,6 +108,6 @@ Bij afwijking: `python scripts/diagnose_renderer.py` en `python scripts/score_in
 
 **Pipeline E2E:** `audits/RUN_INSTITUTIONAL_PIPELINE_E2E.bat` (11/11) — normalize-contract, compact `Controle  ·`, streaming finalize-only, pytest contract.
 
-**Pariteit normalizer:** `pytest tests/hermes_cli/test_normalizer_ts_parity.py` (vereist Node/npx).
+**Pariteit normalizer:** `pytest tests/overlay/test_normalizer_ts_parity.py` (vereist Node/npx).
 
 **Opmerking:** als het model `**Dossierstatus:** waarde` op één regel stuurt, corrigeren normalizer + renderer dat automatisch — geen extra SOUL nodig.

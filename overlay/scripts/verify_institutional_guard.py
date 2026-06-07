@@ -46,8 +46,8 @@ GUARD_GLOBS = (
     "docs/INSTITUTIONAL_PORTING_GUIDE.md",
     ".cursor/rules/institutional-presentatie.mdc",
     "tests/cli/test_institutional_rich_render.py",
-    "tests/hermes_cli/test_normalizer_ts_parity.py",
-    "tests/hermes_cli/test_markdown_output_normalize.py",
+    "tests/overlay/test_normalizer_ts_parity.py",
+    "tests/overlay/test_markdown_output_normalize.py",
 )
 
 
@@ -142,8 +142,8 @@ def _run_guard_tests(repo: Path) -> int:
                 "-m",
                 "pytest",
                 "tests/cli/test_institutional_rich_render.py",
-                "tests/hermes_cli/test_markdown_output_normalize.py",
-                "tests/hermes_cli/test_normalizer_ts_parity.py",
+                "tests/overlay/test_markdown_output_normalize.py",
+                "tests/overlay/test_normalizer_ts_parity.py",
                 "-q",
             ],
         ),

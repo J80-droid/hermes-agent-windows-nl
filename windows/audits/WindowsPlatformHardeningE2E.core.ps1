@@ -90,8 +90,8 @@ $repoFiles = @(
     'scripts/rag_pipeline/mcp_server.py',
     'scripts/rag_pipeline/ingest.py',
     'tools/file_tools.py',
-    'tests/hermes_cli/test_filesystem_sandbox.py',
-    'tests/hermes_cli/test_hardware_backend.py',
+    'tests/overlay/test_filesystem_sandbox.py',
+    'tests/overlay/test_hardware_backend.py',
     'tests/rag_pipeline/test_lancedb_storage.py',
     'windows/audits/WindowsPlatformHardeningE2E.harness.py',
     'windows/audits/WindowsPlatformHardeningE2E.core.ps1',
@@ -163,7 +163,7 @@ if ($SkipPytest) {
     $fsTestOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_file_tools_fork_patch.py'),
-        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_filesystem_sandbox.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_filesystem_sandbox.py'),
         '-q', '--tb=short', '-o', 'addopts='
     )
     Add-StepResult -Name '7/10 pytest filesystem sandbox' -Ok $fsTestOk -Detail $python
@@ -175,7 +175,7 @@ if ($SkipPytest) {
 } else {
     $hwTestOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_hardware_backend.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_hardware_backend.py'),
         '-q', '--tb=short', '-o', 'addopts='
     )
     Add-StepResult -Name '8/10 pytest hardware backend' -Ok $hwTestOk -Detail $python

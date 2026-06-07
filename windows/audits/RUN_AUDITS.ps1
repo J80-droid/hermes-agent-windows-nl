@@ -184,7 +184,7 @@ if (-not $SkipRuff) {
             overlay/hermes_cli/relaunch.py `
             hermes_cli/main.py `
             cli.py `
-            tests/hermes_cli/test_profile_switch.py `
+            tests/overlay/test_profile_switch.py `
             tests/hermes_cli/test_apply_profile_override.py `
             tests/hermes_cli/test_relaunch.py
         $global:LASTEXITCODE = $LASTEXITCODE

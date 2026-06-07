@@ -153,7 +153,7 @@ if (-not $SkipVitest) {
 # --- 4 Pytest keten ---
 $pytestArgs = @(
     '-m', 'pytest',
-    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_usage_snapshot.py'),
+    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_usage_snapshot.py'),
     (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/windows/test_status_bar_cost_e2e.py'),
     (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/windows/test_team_display_defaults.py'),
     (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/windows/test_apply_team_display_root.py'),

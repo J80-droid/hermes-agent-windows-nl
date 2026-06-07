@@ -92,7 +92,7 @@ Symptoom: `auth.json` heeft `active_provider: nous` maar chat gebruikt nog **Gem
 
 **Oorzaak (opgelost):** oude flows schreven alleen `model.default` vóór `model.provider`, naar profiel-yaml i.p.v. root, of wisten `active_provider` na persist via `deactivate_provider()`. Gebruik `hermes model` / setup; intern via `_commit_provider_model()`.
 
-**Validatie:** `audits\RUN_MODEL_PROVIDER_COHERENCE_E2E.bat` (10) · `audits\RUN_MODEL_PROVIDER_HARDENING_E2E.bat` (8: BOM, corrupt auth, global blocks, drift error-gate) · `RUN_AUDITS.bat -IncludeModelProviderCoherenceE2E` / `-IncludeModelProviderHardeningE2E` · `verify_hermes_config_drift.ps1` (coherence, error-severity) · pytest `tests/hermes_cli/test_model_runtime_config.py`, `test_auth_json_store.py`, `test_profile_model_inheritance.py`
+**Validatie:** `audits\RUN_MODEL_PROVIDER_COHERENCE_E2E.bat` (10) · `audits\RUN_MODEL_PROVIDER_HARDENING_E2E.bat` (8: BOM, corrupt auth, global blocks, drift error-gate) · `RUN_AUDITS.bat -IncludeModelProviderCoherenceE2E` / `-IncludeModelProviderHardeningE2E` · `verify_hermes_config_drift.ps1` (coherence, error-severity) · pytest `tests/overlay/test_model_runtime_config.py`, `test_auth_json_store.py`, `test_profile_model_inheritance.py`
 
 **POST_GIT_PULL opt-in:** `POST_GIT_PULL.bat -AutoRepairModelProvider` — bij drift-check éénmalig `repair_model_provider_coherence.ps1` vóór fail (standaard uit).
 

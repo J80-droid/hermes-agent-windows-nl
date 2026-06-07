@@ -174,8 +174,8 @@ Gebruiker ziet geen “Stap 1/3” als de thread al geblokkeerd is vóór de eer
 
 | Test | Dekking | Gap |
 |------|---------|-----|
-| `tests/hermes_cli/test_profile_switch.py` | `execute_profile_switch`, HERMES_HOME fix, sync hook | Geen echte PowerShell |
-| `tests/hermes_cli/test_profile_switch_e2e.py` | Subprocess `profile use` (env `HERMES_PROFILE_E2E=1`) | **Geen TUI**, geen `input()` |
+| `tests/overlay/test_profile_switch.py` | `execute_profile_switch`, HERMES_HOME fix, sync hook | Geen echte PowerShell |
+| `tests/overlay/test_profile_switch_e2e.py` | Subprocess `profile use` (env `HERMES_PROFILE_E2E=1`) | **Geen TUI**, geen `input()` |
 | `tests/cli/test_institutional_profile_chat_ux.py` | Intent parser, prompt prefix, SOUL-tekst | Geen modal/win32 |
 | `windows/audits/RUN_PROFILE_SWITCH_E2E.bat` | Batch + pytest | Geen “typ niets zichtbaar” scenario |
 

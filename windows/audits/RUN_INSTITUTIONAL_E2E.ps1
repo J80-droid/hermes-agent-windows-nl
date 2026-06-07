@@ -1,4 +1,4 @@
-﻿# E2E audit: institutioneel pakket (landkaart, SOUL, presentatie/markdown, templates)
+# E2E audit: institutioneel pakket (landkaart, SOUL, presentatie/markdown, templates)
 #
 # Dekking profielwissel (geen live LLM):
 #   WEL  — CLI-intent (2d, 11), sticky prompt (2d), SOUL-tekst op schijf (5c), SWITCH legal->core (10), pytest subset (9)
@@ -133,8 +133,8 @@ Write-Host '=== 2b/11 pytest presentatie (markdown + rich_output) ===' -Foregrou
 Invoke-HermesAuditPytest -Python $python `
     tests/cli/test_skin_markdown_theme.py `
     tests/cli/test_cli_markdown_rendering.py `
-    tests/hermes_cli/test_markdown_output_normalize.py `
-    tests/hermes_cli/test_render_pipeline_contract.py `
+    tests/overlay/test_markdown_output_normalize.py `
+    tests/overlay/test_render_pipeline_contract.py `
     tests/agent/test_rich_output.py `
     tests/windows/test_team_display_defaults.py `
     -q --tb=short
@@ -161,7 +161,7 @@ if (Test-NativeCommandFailed) {
 Write-Host '[OK] diagnose_renderer institutional_rich + demo geverifieerd' -ForegroundColor Green
 
 Write-Host '=== 2j/11 pytest normalizer TS parity (optioneel zonder npx) ===' -ForegroundColor Cyan
-Invoke-HermesAuditPytest -Python $python tests/hermes_cli/test_normalizer_ts_parity.py -q --tb=short
+Invoke-HermesAuditPytest -Python $python tests/overlay/test_normalizer_ts_parity.py -q --tb=short
 if (Test-NativeCommandFailed) {
     Write-Host '[WARN] normalizer TS parity overgeslagen of gefaald (npx tsx vereist voor volledige pariteit)' -ForegroundColor Yellow
 } else {
@@ -414,7 +414,7 @@ Write-Host '[OK] restore/update regressie-checks' -ForegroundColor Green
 Write-Host '=== 9/11 pytest profielwissel (sticky + subprocess) ===' -ForegroundColor Cyan
 Invoke-HermesAuditPytest -Python $python `
     tests/hermes_cli/test_apply_profile_override.py `
-    tests/hermes_cli/test_profile_switch.py `
+    tests/overlay/test_profile_switch.py `
     tests/hermes_cli/test_relaunch.py::TestRelaunchChatAfterProfileSwitch `
     -q --tb=short
 if (Test-NativeCommandFailed) { exit $LASTEXITCODE }

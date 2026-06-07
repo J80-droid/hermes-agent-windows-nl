@@ -258,7 +258,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # --- 13 normalizer pariteit ---
 Write-StepHeader 'pytest normalizer TS pariteit'
-Invoke-HermesAuditPytest -Python $python tests/hermes_cli/test_normalizer_ts_parity.py -q --tb=short
+Invoke-HermesAuditPytest -Python $python tests/overlay/test_normalizer_ts_parity.py -q --tb=short
 if ($LASTEXITCODE -ne 0) {
     Step-Fail 'test_normalizer_ts_parity'
 } else {

@@ -80,7 +80,7 @@ $repoFiles = @(
     'overlay/hermes_cli/cli_fork_patch.py',
     'overlay/bootstrap.py',
     'cli.py',
-    'tests/hermes_cli/test_status_bar_cost.py',
+    'tests/overlay/test_status_bar_cost.py',
     'tests/cli/test_cli_status_bar.py',
     'scripts/status_bar_cost_classic_cli_smoke.py',
     'scripts/status_bar_cost_classic_cli_live_smoke.py',
@@ -131,7 +131,7 @@ if ($SkipPytest) {
     Clear-HermesPytestAddoptsForAudit
     $fmtArgs = @(
         '-m', 'pytest',
-        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_status_bar_cost.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_status_bar_cost.py'),
         '-q'
     ) + (Get-HermesAuditPytestOverrideArgs)
     $fmtOk = Invoke-AuditCommand -Exe $python -ArgumentList $fmtArgs
@@ -198,7 +198,7 @@ if ($SkipPytest) {
     )
     $geminiSnapshotOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_usage_snapshot.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_usage_snapshot.py'),
         '-q', '-o', 'addopts=',
         '-k', 'gemini_35'
     )

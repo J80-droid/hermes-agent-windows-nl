@@ -41,7 +41,7 @@ $pytestTargets = @(
     (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/windows/test_trust_forensic_docs.py'),
     (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/tools/test_memory_tool.py'),
     (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/scripts/test_deduplicate_memories.py'),
-    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_institutional_new_chat_notice.py')
+    (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_institutional_new_chat_notice.py')
 )
 Write-Host '--- pytest memory/trust ---' -ForegroundColor Cyan
 if (Test-Path -LiteralPath $conda) {

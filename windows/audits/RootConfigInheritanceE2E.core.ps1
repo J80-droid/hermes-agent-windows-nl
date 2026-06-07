@@ -77,8 +77,8 @@ if (-not $SkipPytest) {
     Push-Location $RepoRoot
     try {
         Invoke-HermesAuditPytest -Python $python `
-            tests/hermes_cli/test_profile_model_inheritance.py `
-            tests/hermes_cli/test_merge_legacy_providers_config.py `
+            tests/overlay/test_profile_model_inheritance.py `
+            tests/overlay/test_merge_legacy_providers_config.py `
             -q --tb=line
     } finally {
         Pop-Location

@@ -46,7 +46,7 @@
 
 **Split-home & root inheritance (2026-05-25, productie-niveau — AF):** `model` + `auxiliary` + `providers` overerving; Venice merge + env sync; save-guard + cache-bust; keten `APPLY_HERMES_HOME_MIGRATION.bat` (7 stappen); E2E **16/16** (`RUN_HERMES_HOME_E2E`, incl. Jatevo) + **10/10** (`RUN_ROOT_CONFIG_INHERITANCE_E2E`, harness + `py_compile` guard). Runbook: `docs/HERMES_HOME_WINDOWS.md`.
 
-**Venice quota + modelkeuze (2026-06):** `agent/venice_usage.py` — `/vquota`, `/usage`, statusbalk `VN …` (scope `none`); `/usage` account (`include_extended=account`: usage + usage-analytics); `/vquota` full (+ rate_limits/log, traits, compatibility_mapping). **Picker:** `hermes_cli/venice_model_picker.py` — trait-filter + OpenAI-mapping in `hermes model` (setup) en Telegram `/model` (`vf:` callbacks vóór modellenlijst); typed `/model gpt-4o --provider venice` via `resolve_venice_model_for_switch` in `model_switch.py`. **Setup:** optionele `extra_body.venice_parameters` (web_search, character_slug) na modelkeuze. Tests: `tests/agent/test_venice_usage.py`, `tests/hermes_cli/test_venice_model_picker.py`.
+**Venice quota + modelkeuze (2026-06):** `agent/venice_usage.py` — `/vquota`, `/usage`, statusbalk `VN …` (scope `none`); `/usage` account (`include_extended=account`: usage + usage-analytics); `/vquota` full (+ rate_limits/log, traits, compatibility_mapping). **Picker:** `hermes_cli/venice_model_picker.py` — trait-filter + OpenAI-mapping in `hermes model` (setup) en Telegram `/model` (`vf:` callbacks vóór modellenlijst); typed `/model gpt-4o --provider venice` via `resolve_venice_model_for_switch` in `model_switch.py`. **Setup:** optionele `extra_body.venice_parameters` (web_search, character_slug) na modelkeuze. Tests: `tests/agent/test_venice_usage.py`, `tests/overlay/test_venice_model_picker.py`.
 
 **Jatevo custom provider (2026-06-01):** named provider onder `providers.jatevo`; `hermes model` → key-stap; live `/v1/models`; base URL **`https://jatevo.ai/v1`**; **`/jquota`** + **`/usage`**: dagrequests `0/N`, **tokens today**, **cost today** (562 = requests/dag, geen $); statusbalk **`JV used/max`**; 429 → `/jquota`. **Model/auth coherence (2026-06):** `doctor --fix` → `auth_from_config`; root `auth.json` sync via `sync_root_active_provider`; profiel-doctor vergelijkt root auth i.p.v. profiel-`nous` stale.
 
@@ -148,13 +148,13 @@
 | E2E memory-architectuur | `windows/audits/RUN_MEMORY_ARCHITECTURE_E2E.bat` |
 | E2E statusbalk-kosten (TUI) | `windows/audits/RUN_STATUS_BAR_COST_E2E.bat` · `-ApplyDisplayFix` · `RUN_AUDITS.bat -IncludeStatusBarCostE2E` |
 | E2E statusbalk-kosten (klassieke CLI) | `windows/audits/RUN_CLASSIC_CLI_STATUS_BAR_COST_E2E.bat` · `RUN_AUDITS.bat -IncludeClassicCliStatusBarCostE2E` |
-| E2E statusbalk throughput (tok/s) | `audits/RUN_STATUS_BAR_THROUGHPUT_E2E.bat` (11/11); unit `tests/hermes_cli/test_status_bar_throughput.py` |
+| E2E statusbalk throughput (tok/s) | `audits/RUN_STATUS_BAR_THROUGHPUT_E2E.bat` (11/11); unit `tests/overlay/test_status_bar_throughput.py` |
 | Score renderer unit tests | `pytest tests/scripts/test_score_institutional_render.py` (rooktest-checklist) |
 | Codebase-audit smoke (E1/E2) | `RUN_CODEBASE_SMOKE_E2E.bat` (E2E) · `RUN_CODEBASE_SMOKE_AUDIT.bat` (snel) · `RUN_AUDITS -IncludeCodebaseSmokeE2E` / `-IncludeAllE2E` · [CODEBASE_AUDIT_EVIDENCE.md](docs/CODEBASE_AUDIT_EVIDENCE.md) |
 | E2E institutioneel | `windows/audits/RUN_INSTITUTIONAL_E2E.bat` |
 | E2E context-aware pseudo-tabel | `windows/audits/RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat` |
-| E2E collapsed record pseudo-tabel | `audits/RUN_COLLAPSED_RECORD_PSEUDO_TABLE_E2E.bat` (10/10); unit `tests/hermes_cli/test_collapsed_record_pseudo_table.py` |
-| E2E klassieke CLI prompt-wachtrij | `audits/RUN_CLI_PENDING_QUEUE_E2E.bat` (17/17); unit `tests/hermes_cli/test_cli_pending_queue.py` (88) |
+| E2E collapsed record pseudo-tabel | `audits/RUN_COLLAPSED_RECORD_PSEUDO_TABLE_E2E.bat` (10/10); unit `tests/overlay/test_collapsed_record_pseudo_table.py` |
+| E2E klassieke CLI prompt-wachtrij | `audits/RUN_CLI_PENDING_QUEUE_E2E.bat` (17/17); unit `tests/overlay/test_cli_pending_queue.py` (88) |
 | Hermes start (bat) | `../../HERMES_START.md` |
 | E2E Hermes split-home | `windows/audits/RUN_HERMES_HOME_E2E.bat` |
 | E2E root inheritance | `windows/audits/RUN_ROOT_CONFIG_INHERITANCE_E2E.bat` |

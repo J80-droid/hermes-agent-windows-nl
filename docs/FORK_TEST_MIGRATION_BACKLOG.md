@@ -25,6 +25,18 @@ SSOT: [`FORK_MERGE_POLICY.md`](FORK_MERGE_POLICY.md)
 
 Verificatie: `git diff --name-only --diff-filter=M upstream/main -- tests/hermes_cli/` → leeg.
 
-## Fork-only bestanden (35) — deferred
+## Fork-only bestanden (35) — done
 
-Alleen migreren bij merge-conflict. Lijst: `windows/tests/fork_hermes_cli_test_exceptions.txt`.
+Alle 35 fork-only bestanden verplaatst naar `tests/overlay/` (34) en `tests/windows/test_win32_console.py` (1).
+`tests/hermes_cli/` heeft geen diff meer t.o.v. upstream (geen modified, geen added).
+
+Verificatie:
+
+```bash
+git diff --name-only upstream/main -- tests/hermes_cli/
+# → leeg
+```
+
+Exceptions-lijst `windows/tests/fork_hermes_cli_test_exceptions.txt` is leeg (geen uitzonderingen meer).
+
+E2E: `audits\RUN_FORK_HERMES_CLI_TEST_MIGRATION_E2E.bat` · unit: `pytest tests/windows/test_check_fork_hermes_cli_tests.py -q`

@@ -180,7 +180,7 @@
 - [x] Assistant Rich-renderer: `institutional_render.py` (`TightHeadingBody`, `SectionSpacer`, per-kolom tabellen, labels verticaal — peel uit heading-body)
 - [x] Markdown pipeline: `display_markdown.py` + `agent/rich_output.py` + `ChatConsole(get_assistant_console_theme())` in `cli.py`
 - [x] Pariteit Ink/Web: `institutionalMarkdown.ts`, `institutionalMarkdownNormalize.ts`, `institutionalColors.ts` (cyaan-first tabelpalet)
-- [x] Normalizer-pariteit pytest: `tests/hermes_cli/test_normalizer_ts_parity.py` + `scripts/normalize_assistant_markdown_*_runner.ts` (Python ↔ Web/Ink via `npx tsx`)
+- [x] Normalizer-pariteit pytest: `tests/overlay/test_normalizer_ts_parity.py` + `scripts/normalize_assistant_markdown_*_runner.ts` (Python ↔ Web/Ink via `npx tsx`)
 - [x] Globaal outputformaat: `SOUL_SHARED_OUTPUT_FORMAT.md` + `SyncSoulSnippet.psm1` (NFR-tabel verplicht)
 - [x] Normalizer: outline, institutional_check, NFR prose→tabel, **pseudo-tabel/underscore vs→markdown** (`ensure_markdown_table_dividers`, `normalize_pseudo_tables_to_markdown`; max 6 kolommen contextafhankelijk); **overview 2–6 kolommen** (auxiliary grouped/collapsed, intent routing, generic fallback)
 - [x] CLI streaming: `_prepare_stream_table_block` normaliseert pseudo-tabellen vóór realign bij `institutional_rich` + `final_response_markdown=render`

@@ -33,8 +33,8 @@ if (-not $SkipPytest) {
     $pytestTargets = @(
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_file_tools_fork_patch.py'),
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/tools/test_file_tools.py'),
-        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_filesystem_sandbox.py'),
-        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_hardware_backend.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_filesystem_sandbox.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_hardware_backend.py'),
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/rag_pipeline/test_lancedb_storage.py'),
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/rag_pipeline/test_vector_store_ports.py'),
         (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/rag_pipeline/test_kb_schema_lazy.py'),

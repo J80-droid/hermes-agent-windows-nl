@@ -93,8 +93,8 @@ Port `get_assistant_render_settings()` uit [`hermes_cli/display_markdown.py`](..
 | `windows/audits/RUN_PSEUDO_TABLE_NORMALIZER_E2E.bat` | 10-stappen E2E pseudo-tabel normalizer |
 | `windows/audits/RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.bat` | Context-aware overview 2–6 kolommen (10 stappen) |
 | `audits/RUN_COLLAPSED_RECORD_PSEUDO_TABLE_E2E.bat` | Collapsed record Component/Keuze/Status (10 stappen) |
-| `tests/hermes_cli/test_normalizer_ts_parity.py` | Python ↔ TS drift |
-| `tests/hermes_cli/test_collapsed_record_pseudo_table.py` | Collapsed record parser (unit, 48 tests) |
+| `tests/overlay/test_normalizer_ts_parity.py` | Python ↔ TS drift |
+| `tests/overlay/test_collapsed_record_pseudo_table.py` | Collapsed record parser (unit, 48 tests) |
 | `tests/cli/test_institutional_rich_render.py` | Renderer unit tests |
 
 ---

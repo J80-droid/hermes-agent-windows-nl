@@ -103,7 +103,7 @@ def test_p1_repo_artifacts() -> None:
         "windows/scripts/Invoke-UpstreamPostMerge.ps1",
         "cli.py",
         "tests/windows/test_post_git_pull_args.py",
-        "tests/hermes_cli/test_cli_post_sync_new_chat.py",
+        "tests/overlay/test_cli_post_sync_new_chat.py",
         "audits/PostGitPullAutomationE2E.harness.py",
         "audits/RUN_POST_GIT_PULL_AUTOMATION_E2E.bat",
     ]
@@ -293,7 +293,7 @@ def test_p13_pytest_subset() -> None:
             "pytest",
             "tests/windows/test_post_git_pull_args.py",
             "tests/windows/test_stop_hermes_cli_processes.py",
-            "tests/hermes_cli/test_cli_post_sync_new_chat.py",
+            "tests/overlay/test_cli_post_sync_new_chat.py",
             "-q",
             "--tb=line",
         ],

@@ -76,7 +76,7 @@ providers:
 - [ ] `JATEVO_API_KEY` (of equivalent) in `windows\sync_hermes_api_env.ps1` statische lijst
 - [ ] Doctor: sync-waarschuwing + ontbrekende provider (spiegel Venice/Jatevo in `hermes_cli/doctor.py`)
 - [ ] E2E: `Test-Hermes*ProviderConfigured` in `windows/scripts/HermesHomeCommon.ps1` + stap in `HermesHomeE2E.core.ps1` (alleen als provider verplicht is voor jouw omgeving)
-- [ ] Unit test: `tests/hermes_cli/test_merge_legacy_providers_config.py` (merge legacy → runtime)
+- [ ] Unit test: `tests/overlay/test_merge_legacy_providers_config.py` (merge legacy → runtime)
 
 ### 7. Documentatie & index
 

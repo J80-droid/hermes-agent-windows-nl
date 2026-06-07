@@ -243,7 +243,7 @@ E2E voor `display.show_status_bar_tps`, classic CLI statusbalk en ui-tui parity.
 audits\RUN_STATUS_BAR_THROUGHPUT_E2E.bat
 ```
 
-Unit tests: `pytest tests/hermes_cli/test_status_bar_throughput.py tests/cli/test_cli_status_bar.py -k "throughput or tok"`; classic smoke: `python scripts/status_bar_throughput_classic_cli_smoke.py`.
+Unit tests: `pytest tests/overlay/test_status_bar_throughput.py tests/cli/test_cli_status_bar.py -k "throughput or tok"`; classic smoke: `python scripts/status_bar_throughput_classic_cli_smoke.py`.
 
 | E12–E14 | Prompt-timer zonder emoji | `status_bar_prompt_elapsed.py`, config default, `verify_fork_status_bar_display.py`, pytest |
 
@@ -326,7 +326,7 @@ Dedicated audit voor ingeklapte `Component`/`Keuze`/`Status`-regels met em-dash 
 audits\RUN_COLLAPSED_RECORD_PSEUDO_TABLE_E2E.bat
 ```
 
-Unit tests (geen live API): `pytest tests/hermes_cli/test_collapsed_record_pseudo_table.py` — happy path, edge cases (pipe in cel, dedupe, eligibility), negatieve input; mocks op interne helpers waar nodig.
+Unit tests (geen live API): `pytest tests/overlay/test_collapsed_record_pseudo_table.py` — happy path, edge cases (pipe in cel, dedupe, eligibility), negatieve input; mocks op interne helpers waar nodig.
 
 Uitvoeren vanuit repo-root `hermes-agent\` (zelfde patroon als andere `audits\RUN_*` runners).
 
@@ -360,7 +360,7 @@ Geïsoleerde E2E voor `_pending_input` wachtrij: `/queue` list/pop/clear, compac
 audits\RUN_CLI_PENDING_QUEUE_E2E.bat
 ```
 
-Unit tests: `pytest tests/hermes_cli/test_cli_pending_queue.py tests/cli/test_cli_init.py -k "queue or pending"`.
+Unit tests: `pytest tests/overlay/test_cli_pending_queue.py tests/cli/test_cli_init.py -k "queue or pending"`.
 
 ---
 
@@ -376,7 +376,7 @@ Geïsoleerde E2E voor legal P0–P3 (slash, SOUL-meta, parity, pytest-contract, 
 audits\RUN_LEGAL_PRODUCTION_E2E.bat
 ```
 
-Unit tests (gemockt): `pytest tests/audits/test_legal_production_e2e_harness.py tests/scripts/test_verify_legal_lens_parity.py tests/hermes_cli/test_legal_architecture_brief.py tests/scripts/test_legal_lens_from_path.py -q`.
+Unit tests (gemockt): `pytest tests/audits/test_legal_production_e2e_harness.py tests/scripts/test_verify_legal_lens_parity.py tests/overlay/test_legal_architecture_brief.py tests/scripts/test_legal_lens_from_path.py -q`.
 
 Zwaardere runtime-poort: `windows\audits\RUN_LEGAL_DOMAIN_E2E.bat`.
 
@@ -465,6 +465,29 @@ audits\RUN_NOUS_OVERLAY_RUNTIME_E2E.bat
 
 ---
 
+# Fork tests/hermes_cli/ migratie E2E
+
+Geïsoleerde E2E na volledige migratie van 35 fork-only tests naar `tests/overlay/` / `tests/windows/`. Geen live netwerk.
+
+| Stap | Scenario | Verwachting |
+|------|----------|-------------|
+| E1 | Artefacten | guard-script, lege exceptions, gate manifest, gemigreerde samples |
+| E2 | Exceptions | `fork_hermes_cli_test_exceptions.txt` zonder actieve paden |
+| E3 | Upstream-pariteit | `git diff upstream/main -- tests/hermes_cli/` leeg |
+| E4–E5 | Pre-merge | `--strict` exit 0; JSON `upstream_parity_clean: true` |
+| E6 | Gate manifest | `pytest_fork_gate.yaml` zonder `tests/hermes_cli/` paden |
+| E7 | Geen duplicaten | samples niet meer onder `tests/hermes_cli/` |
+| E8 | Staged guard | mini-repo: nieuwe `tests/hermes_cli/` → exit 1 |
+| E9 | PS wrapper | `Test-ForkHermesCliTestHygiene.ps1` roept checker aan |
+
+```bat
+audits\RUN_FORK_HERMES_CLI_TEST_MIGRATION_E2E.bat
+```
+
+Unit: `pytest tests/windows/test_check_fork_hermes_cli_tests.py -q`
+
+---
+
 # Nous overlay fork gates E2E
 
 Geïsoleerde E2E voor **recente Tier B fork-gates** (geen live API): sync-script argv-sanitizer, overlay `config get`, toolset `--check` skip `_user_customized`, legal USER stale-domain strip, runtime env-guard.
@@ -544,7 +567,7 @@ Geïsoleerde E2E voor overlay chat-entry (`run_hermes_cli_with_overlay.py`), sta
 audits\RUN_CHAT_ROOKTEST_SECURITY_E2E.bat
 ```
 
-Unit: `pytest tests/scripts/test_rooktest_chat.py tests/scripts/test_repair_auth_json_bom.py tests/hermes_cli/test_doctor_auth_bom.py tests/overlay/test_auth_fork_patch.py tests/overlay/test_config_fork_patch.py -q`
+Unit: `pytest tests/scripts/test_rooktest_chat.py tests/scripts/test_repair_auth_json_bom.py tests/overlay/test_doctor_auth_bom.py tests/overlay/test_auth_fork_patch.py tests/overlay/test_config_fork_patch.py -q`
 
 Handmatig: `windows\REPAIR_AUTH_JSON_BOM.bat` of `hermes doctor --fix`; security pins: `windows\REPAIR_SECURITY_PINS.bat`.
 

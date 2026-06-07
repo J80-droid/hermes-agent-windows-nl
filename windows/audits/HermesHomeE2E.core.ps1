@@ -95,8 +95,8 @@ if (-not $SkipPytest) {
         try {
             Invoke-HermesCondaAuditPytest -CondaExe $conda `
                 tests/hermes_cli/test_doctor.py::TestWindowsSplitHomeCheck `
-                tests/hermes_cli/test_profile_model_inheritance.py `
-                tests/hermes_cli/test_merge_legacy_providers_config.py `
+                tests/overlay/test_profile_model_inheritance.py `
+                tests/overlay/test_merge_legacy_providers_config.py `
                 tests/test_hermes_constants.py `
                 tests/hermes_cli/test_config.py::TestGetConfigValue `
                 tests/hermes_cli/test_apply_profile_override.py `

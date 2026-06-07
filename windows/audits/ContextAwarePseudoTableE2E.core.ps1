@@ -84,8 +84,8 @@ $repoFiles = @(
     'scripts/diagnose_renderer.py',
     'docs/templates/SOUL_SHARED_OUTPUT_FORMAT.md',
     'docs/INSTITUTIONAL_PRESENTATION.md',
-    'tests/hermes_cli/test_markdown_output_normalize.py',
-    'tests/hermes_cli/test_normalizer_ts_parity.py',
+    'tests/overlay/test_markdown_output_normalize.py',
+    'tests/overlay/test_normalizer_ts_parity.py',
     'windows/audits/ContextAwarePseudoTableE2E.harness.py',
     'windows/audits/ContextAwarePseudoTableE2E.core.ps1',
     'windows/audits/RUN_CONTEXT_AWARE_PSEUDO_TABLE_E2E.ps1'
@@ -135,7 +135,7 @@ if ($SkipPytest) {
 } else {
     $overviewOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_markdown_output_normalize.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_markdown_output_normalize.py'),
         '-k', 'overview or auxiliary_overview or separator_between_groups',
         '-q',
         '--tb=short',
@@ -151,7 +151,7 @@ if ($SkipPytest -or $SkipTsParity) {
 } else {
     $parityOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_normalizer_ts_parity.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_normalizer_ts_parity.py'),
         '-k', 'auxiliary_overview_4col or auxiliary_overview_2col',
         '-q',
         '--tb=short',
@@ -204,7 +204,7 @@ if ($SkipPytest) {
 } else {
     $regOk = Invoke-AuditCommand -Exe $python -ArgumentList @(
         '-m', 'pytest',
-        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/hermes_cli/test_markdown_output_normalize.py'),
+        (Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'tests/overlay/test_markdown_output_normalize.py'),
         '-k', 'ollama_vs or auxiliary_tasks or pseudo_idempotent_on_valid_comparison',
         '-q',
         '--tb=short',

@@ -110,11 +110,11 @@ function Get-MergeConflictResolution {
         'tests/overlay/**',
         'tests/cli/test_institutional_rich_render.py',
         'tests/cli/test_institutional_profile_chat_ux.py',
-        'tests/hermes_cli/test_normalizer_ts_parity.py',
-        'tests/hermes_cli/test_usage_snapshot.py',
-        'tests/hermes_cli/test_status_bar_cost.py',
-        'tests/hermes_cli/test_status_bar_throughput.py',
-        'tests/hermes_cli/test_status_bar_prompt_elapsed.py',
+        'tests/overlay/test_normalizer_ts_parity.py',
+        'tests/overlay/test_usage_snapshot.py',
+        'tests/overlay/test_status_bar_cost.py',
+        'tests/overlay/test_status_bar_throughput.py',
+        'tests/overlay/test_status_bar_prompt_elapsed.py',
         'tests/windows/test_status_bar_cost_e2e.py',
         '.github/workflows/fork-windows-institutional.yml'
     )
@@ -166,7 +166,7 @@ function Get-MergeConflictResolution {
             }
         }
     }
-    if ($Path -match '^tests/' -and -not (Test-PathMatchesGlob -Path $Path -Globs @('tests/rag_pipeline/**', 'tests/cli/test_institutional*', 'tests/hermes_cli/test_normalizer*'))) {
+    if ($Path -match '^tests/' -and -not (Test-PathMatchesGlob -Path $Path -Globs @('tests/rag_pipeline/**', 'tests/cli/test_institutional*', 'tests/overlay/**'))) {
         return @{
             Strategy = 'theirs'
             Reason   = 'upstream tests (niet RAG/institutional)'

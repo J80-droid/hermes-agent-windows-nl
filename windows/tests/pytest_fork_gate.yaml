@@ -6,7 +6,6 @@ version: 1
 markers: "not integration and not e2e"
 paths:
   - tests/overlay/
-  - tests/hermes_cli/test_profile_switch.py
   - tests/windows/test_gateway_windows_fork_scripts.py
   - tests/windows/test_gateway_windows_virtual_env.py
   - tests/windows/test_codebase_smoke_audit.py

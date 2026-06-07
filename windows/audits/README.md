@@ -192,7 +192,7 @@ Dedicated audit voor ingeklapte `Component`/`Keuze`/`Status`-regels (em-dash op 
 | 7–8 | `verify_pseudo_table_normalizer.py` architectuur-probe; pytest `test_collapsed_record_pseudo_table.py` |
 | 9–10 | Volledige pipeline + TS parity via `scripts/normalize_assistant_markdown_ts_runner.ts` |
 
-Unit tests (los): `pytest tests/hermes_cli/test_collapsed_record_pseudo_table.py` (48 scenario's, happy path + edge/negatief).
+Unit tests (los): `pytest tests/overlay/test_collapsed_record_pseudo_table.py` (48 scenario's, happy path + edge/negatief).
 
 ## Windows platform hardening E2E
 
@@ -577,7 +577,7 @@ Of `windows\audits\RUN_MODEL_PROVIDER_HARDENING_E2E.bat`. Optioneel: `RUN_AUDITS
 | E7 | Nous shared store BOM |
 | E8 | Azure Foundry persist + auth sync |
 
-Harness: `audits/ModelProviderHardeningE2E.harness.py`. Unit tests: `tests/hermes_cli/test_auth_json_store.py`, `test_profile_model_inheritance.py`. Zie `audits/README.md`.
+Harness: `audits/ModelProviderHardeningE2E.harness.py`. Unit tests: `tests/overlay/test_auth_json_store.py`, `test_profile_model_inheritance.py`. Zie `audits/README.md`.
 
 ## Root config inheritance E2E
 

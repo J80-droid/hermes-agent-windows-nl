@@ -26,6 +26,19 @@ python -m pytest tests/overlay/test_tools_config_fork_patch.py tests/hermes_cli/
 
 E2E harness: `audits\RUN_TOOLSET_DASHBOARD_E2E.bat` (9/9).
 
+## Fork tests/hermes_cli/ migratie (upstream-pariteit)
+
+Alle fork-only tests staan in `tests/overlay/` of `tests/windows/`; `tests/hermes_cli/` wijkt niet af van upstream.
+
+| Check | Commando |
+| ----- | -------- |
+| Pre-merge hygiene | `python windows/scripts/check_fork_hermes_cli_tests.py --pre-merge --strict` |
+| Staged guard (pre-commit) | `python windows/scripts/check_fork_hermes_cli_tests.py --staged` |
+| E2E migratie | `audits\RUN_FORK_HERMES_CLI_TEST_MIGRATION_E2E.bat` |
+| Unit guard | `pytest tests/windows/test_check_fork_hermes_cli_tests.py -q` |
+
+Zie [`docs/FORK_MERGE_POLICY.md`](../../docs/FORK_MERGE_POLICY.md).
+
 ## Profielwissel (subset)
 
 Snelle regressie zonder volledige suite:
@@ -37,7 +50,7 @@ Snelle regressie zonder volledige suite:
 Of alleen pytest:
 
 ```powershell
-python -m pytest tests/hermes_cli/test_apply_profile_override.py tests/hermes_cli/test_profile_switch.py tests/hermes_cli/test_relaunch.py::TestRelaunchChatAfterProfileSwitch -q
+python -m pytest tests/hermes_cli/test_apply_profile_override.py tests/overlay/test_profile_switch.py tests/hermes_cli/test_relaunch.py::TestRelaunchChatAfterProfileSwitch -q
 ```
 
 ## PowerShell unit tests (launch / dashboard)

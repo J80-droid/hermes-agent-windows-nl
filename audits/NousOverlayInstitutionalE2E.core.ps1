@@ -119,8 +119,8 @@ Add-Step '6/8 classic CLI live smoke' -Ok $liveOk
 # 7/8 pytest subset (overlay paths)
 $pytestOk = Invoke-AuditExe -Exe $python -ArgumentList @(
     '-m', 'pytest',
-    (Join-Path $RepoRoot 'tests/hermes_cli/test_status_bar_cost.py'),
-    (Join-Path $RepoRoot 'tests/hermes_cli/test_usage_snapshot.py'),
+    (Join-Path $RepoRoot 'tests/overlay/test_status_bar_cost.py'),
+    (Join-Path $RepoRoot 'tests/overlay/test_usage_snapshot.py'),
     '-q', '-o', 'addopts=',
     '-k', 'gemini_35 or format_status_bar or resolve_status_bar'
 )

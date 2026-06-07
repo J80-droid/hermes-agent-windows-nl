@@ -39,6 +39,15 @@ def _load_exceptions(repo: Path) -> set[str]:
     return out
 
 
+def _invalid_exception_paths(exceptions: set[str]) -> list[str]:
+    """Exceptions must live under tests/hermes_cli/ (legacy debt only)."""
+    bad: list[str] = []
+    for path in exceptions:
+        if not _under_hermes_cli(path):
+            bad.append(path)
+    return sorted(bad)
+
+
 def _git_lines(repo: Path, *args: str) -> list[str]:
     proc = subprocess.run(
         ["git", *args],
@@ -70,18 +79,22 @@ def _classify(paths: list[str], exceptions: set[str]) -> dict[str, list[str]]:
 
 def run_pre_merge(repo: Path, upstream: str) -> dict:
     exceptions = _load_exceptions(repo)
+    invalid_exceptions = _invalid_exception_paths(exceptions)
     modified = _git_lines(repo, "diff", "--name-only", "--diff-filter=M", upstream, "--", "tests/hermes_cli/")
     added = _git_lines(repo, "diff", "--name-only", "--diff-filter=A", upstream, "--", "tests/hermes_cli/")
     merged = sorted(set(modified) | set(added))
     buckets = _classify(merged, exceptions)
+    total = len(merged)
     return {
         "mode": "pre-merge",
         "upstream": upstream,
-        "conflict_risk_total": len(merged),
+        "conflict_risk_total": total,
         "conflict_risk_modified": len(modified),
         "conflict_risk_added": len(added),
+        "upstream_parity_clean": total == 0,
         "legacy_exception_paths": len(buckets["legacy"]),
         "unknown_paths": buckets["unknown"],
+        "invalid_exceptions": invalid_exceptions,
         "modified": sorted(modified),
         "added": sorted(added),
     }
@@ -134,6 +147,15 @@ def main() -> int:
     if args.pre_merge:
         pm = run_pre_merge(repo, args.upstream)
         report.update(pm)
+        if pm.get("invalid_exceptions"):
+            print(
+                f"[WARN] {len(pm['invalid_exceptions'])} exceptions-pad(en) staan niet onder tests/hermes_cli/:",
+                file=sys.stderr,
+            )
+            for p in pm["invalid_exceptions"]:
+                print(f"  {p}", file=sys.stderr)
+            if args.strict:
+                exit_code = 1
         if pm["conflict_risk_total"]:
             print(
                 f"[WARN] {pm['conflict_risk_total']} tests/hermes_cli/ pad(en) wijken af van {args.upstream} "

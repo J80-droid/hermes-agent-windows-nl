@@ -35,7 +35,7 @@ python audits\LegalProductionE2E.harness.py
 | Harness | `pytest tests/audits/test_legal_production_e2e_harness.py -q` |
 | Parity CLI | `pytest tests/scripts/test_verify_legal_lens_parity.py -q` |
 | Lens uit pad | `pytest tests/scripts/test_legal_lens_from_path.py -q` |
-| Slash-brief | `pytest tests/hermes_cli/test_legal_architecture_brief.py -q` |
+| Slash-brief | `pytest tests/overlay/test_legal_architecture_brief.py -q` |
 
 Gecombineerd (zoals in CI/hardening-subset): zie stap S12 in de harness.
 

@@ -168,8 +168,8 @@ Invoke-SmokeStep -Name 'verify_pareto_router' -Tier 'E1' -Source 'scripts/verify
     $global:LASTEXITCODE = $LASTEXITCODE
 }
 
-Invoke-SmokeStep -Name 'pytest_profile_inheritance' -Tier 'E2' -Source 'tests/hermes_cli/test_profile_model_inheritance.py' {
-    Invoke-HermesAuditPytest -Python $py tests/hermes_cli/test_profile_model_inheritance.py -q --tb=short
+Invoke-SmokeStep -Name 'pytest_profile_inheritance' -Tier 'E2' -Source 'tests/overlay/test_profile_model_inheritance.py' {
+    Invoke-HermesAuditPytest -Python $py tests/overlay/test_profile_model_inheritance.py -q --tb=short
 }
 
 Invoke-SmokeStep -Name 'pytest_sessiondb' -Tier 'E2' -Source 'tests/test_hermes_state.py' {
