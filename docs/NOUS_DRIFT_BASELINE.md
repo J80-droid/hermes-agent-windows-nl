@@ -1,17 +1,17 @@
 # NOUS drift baseline
 
-Generated: **2026-06-07 14:55:02**
+Generated: **2026-06-07 14:55:26**
 Compare: `HEAD` vs `upstream/main`
 
 ## Summary
 
 | Metric | Count |
 |--------|------:|
-| All changed paths | 1300 |
+| All changed paths | 1304 |
 | Tier A changed (must -> upstream) | 0 |
 | Tier A changed (fork-intentional allowlist) | 1 |
 | Tier A extra files (fork-only in Nous dirs) | 0 |
-| Tier B / excluded | 1299 |
+| Tier B / excluded | 1303 |
 | Transitional (planned migration) | 0 |
 
 ## Tier A changed files (must -> upstream)
@@ -32,7 +32,7 @@ _None._
 powershell -NoProfile -File windows/scripts/Export-NousDriftBaseline.ps1
 ```
 
-**Onderhoud (stabiel):** [NOUS_DRIFT_MAINTENANCE.md](NOUS_DRIFT_MAINTENANCE.md) â€” routine, scripts, taboe `SYNC_NOUS -Yes`.
+**Onderhoud (stabiel):** [NOUS_DRIFT_MAINTENANCE.md](NOUS_DRIFT_MAINTENANCE.md) - routine, scripts, taboe `SYNC_NOUS -Yes`.
 
 **Catch-up:** `windows/SYNC_NOUS_DRIFT_CATCHUP.bat`
 
