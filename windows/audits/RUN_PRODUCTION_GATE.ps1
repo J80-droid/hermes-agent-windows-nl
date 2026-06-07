@@ -61,7 +61,10 @@ try {
 
     Write-Host ""
     Write-Host "Productie-poort geslaagd. Log: $logPath" -ForegroundColor Green
-    Write-Host 'Tip: na IncludeAllE2E tier-A postflight kan git restore . nodig zijn.' -ForegroundColor DarkGray
 } finally {
+    $postReset = Join-Path $windowsDir 'scripts\Invoke-HermesPostGateWorktreeReset.ps1'
+    if (Test-Path -LiteralPath $postReset) {
+        & $postReset -RepoRoot $repoRoot
+    }
     Stop-Transcript | Out-Null
 }

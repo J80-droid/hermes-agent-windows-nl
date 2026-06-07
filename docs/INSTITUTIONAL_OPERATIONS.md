@@ -140,10 +140,13 @@ Grote achterstand zonder j/N-vraag: `UPDATE_HERMES.bat -Yes` of `UPDATE_HERMES_Y
 
 | Wanneer | Commando |
 |---------|----------|
-| Wekelijks / vóór release | `windows\SYNC_NOUS.bat -Yes` → `powershell -File windows\scripts\Test-NousTreeIdentical.ps1` |
-| Na sync/merge | `powershell -File windows\scripts\Export-NousDriftBaseline.ps1` |
+| Wekelijks / vóór release | `git fetch upstream` → `powershell -File windows\scripts\Test-NousTreeIdentical.ps1` — bij FAIL: targeted `git checkout upstream/main -- <paden>` of `Invoke-RestoreNousTierA.ps1` (zie [`NOUS_DRIFT_BASELINE.md`](NOUS_DRIFT_BASELINE.md#onderhoud-fork-windows)) |
+| Na drift-fix / merge | `powershell -File windows\scripts\Export-NousDriftBaseline.ps1` → commit baseline |
+| Na productie-poort | `powershell -File windows\scripts\Invoke-HermesPostGateWorktreeReset.ps1` (staged tier-A postflight) |
 | Bij update (optioneel hard stop) | `windows\UPDATE_HERMES.bat -StrictNousSync` — breekt af bij Tier-A-drift |
-| Herstel Tier A | `powershell -File windows\scripts\Invoke-RestoreNousTierA.ps1` |
+| Volledige tier-A → upstream (commit) | `Invoke-RestoreNousTierA.ps1` — **niet** `SYNC_NOUS.bat -Yes` (conda `gateway_windows` fix) |
+
+`SYNC_NOUS.bat` blijft beschikbaar voor gecontroleerde Nous-merge workflows; op deze fork is **`-Yes` geen standaard** voor drift-herstel.
 
 Zie [`docs/NOUS_OVERLAY_ARCHITECTURE.md`](NOUS_OVERLAY_ARCHITECTURE.md) en [`docs/NOUS_DRIFT_BASELINE.md`](NOUS_DRIFT_BASELINE.md).
 
