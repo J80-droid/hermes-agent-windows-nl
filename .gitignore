@@ -23,6 +23,7 @@ __pycache__/
 .uv-cache/
 compose.hermes.local.yml
 export*
+!windows/scripts/Export-NousDriftBaseline.ps1
 __pycache__/model_tools.cpython-310.pyc
 __pycache__/web_tools.cpython-310.pyc
 logs/

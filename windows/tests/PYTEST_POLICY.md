@@ -40,6 +40,8 @@ Manifest path: [`pytest_fork_gate.yaml`](pytest_fork_gate.yaml). Loader: [`../sc
 
 Na de eerste `RUN_PYTEST_UPSTREAM.bat -ReportOnly`, kopieer verwachte Windows-parity nodeids naar `pytest_upstream_known_fails.txt` (comments `#` toegestaan). Volgende runs tonen dan alleen **nieuwe** failures in `new_failures`.
 
+**Let op maxfail=50:** upstream stopt alfabetisch vroeg (vaak in `tests/agent/`). Tests in `tests/tools/` (bijv. `test_credential_files.py` pad-separators op Windows) kunnen **buiten** het rapport vallen — los draaien via `Invoke-HermesAuditPytest` indien nodig. Geen fork-gate manifest-uitbreiding voor Linux-parity.
+
 ## E3 terminology (codebase audit)
 
 - **E3 fork gate** = `RUN_PYTEST_FORK_GATE` (must be green).

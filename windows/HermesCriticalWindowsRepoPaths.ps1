@@ -170,6 +170,7 @@ function Get-HermesCriticalWindowsRepoPathList {
     'windows/scripts/load_pytest_fork_gate.py',
     'windows/scripts/Invoke-HermesPytestFromManifest.ps1',
     'windows/scripts/summarize_pytest_junit.py',
+    'windows/scripts/Export-NousDriftBaseline.ps1',
     'audits/PytestForkGateE2E.harness.py',
     'audits/PytestForkGateE2E.core.ps1',
     'audits/RUN_PYTEST_FORK_GATE_E2E.bat',
