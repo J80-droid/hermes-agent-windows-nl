@@ -1,17 +1,17 @@
 # NOUS drift baseline
 
-Generated: **2026-06-07 14:55:26**
+Generated: **2026-06-08 01:41:05**
 Compare: `HEAD` vs `upstream/main`
 
 ## Summary
 
 | Metric | Count |
 |--------|------:|
-| All changed paths | 1304 |
+| All changed paths | 1256 |
 | Tier A changed (must -> upstream) | 0 |
 | Tier A changed (fork-intentional allowlist) | 1 |
 | Tier A extra files (fork-only in Nous dirs) | 0 |
-| Tier B / excluded | 1303 |
+| Tier B / excluded | 1255 |
 | Transitional (planned migration) | 0 |
 
 ## Tier A changed files (must -> upstream)
