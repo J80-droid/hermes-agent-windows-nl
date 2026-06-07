@@ -65,7 +65,8 @@ function Get-HermesPytestArgsFromConfig {
     param(
         [Parameter(Mandatory)]
         [psobject]$Config,
-        [string[]]$ExtraArgs = @()
+        [string[]]$ExtraArgs = @(),
+        [string]$Python = ''
     )
     $pytestArgList = [System.Collections.Generic.List[string]]::new()
     foreach ($p in @($Config.paths)) {
@@ -78,8 +79,17 @@ function Get-HermesPytestArgsFromConfig {
         [void]$pytestArgList.Add('-m')
         [void]$pytestArgList.Add([string]$Config.markers)
     }
-    foreach ($fixed in @('-n', '0', '-q', '--tb=short', '--durations', '20')) {
-        [void]$pytestArgList.Add($fixed)
+    $fixed = @('-q', '--tb=short', '--durations', '20')
+    # -n 0 schakelt xdist uit (Windows-stabiliteit); alleen als pytest-xdist geïnstalleerd is.
+    if ($Python) {
+        if (Test-HermesPytestXdistInstalled -Python $Python) {
+            $fixed = @('-n', '0') + $fixed
+        }
+    } else {
+        $fixed = @('-n', '0') + $fixed
+    }
+    foreach ($fixedArg in $fixed) {
+        [void]$pytestArgList.Add($fixedArg)
     }
     foreach ($ea in @($ExtraArgs)) {
         if ($null -eq $ea) { continue }
@@ -109,7 +119,7 @@ function Invoke-HermesPytestGate {
         $resolved = Resolve-HermesPythonOnPath
         if ($resolved) { $py = $resolved }
     }
-    $argSplat = @{ Config = $config; ExtraArgs = $ExtraArgs }
+    $argSplat = @{ Config = $config; ExtraArgs = $ExtraArgs; Python = $py }
     $pytestArgs = Get-HermesPytestArgsFromConfig @argSplat
     Invoke-HermesAuditPytest -Python $py @pytestArgs
     $global:LASTEXITCODE = $global:LASTEXITCODE
@@ -148,7 +158,7 @@ function Invoke-HermesPytestUpstream {
         "--junitxml=$junitPath"
     )
     $mergedExtra = @($upstreamExtra) + @($ExtraArgs)
-    $argSplat = @{ Config = $config; ExtraArgs = $mergedExtra }
+    $argSplat = @{ Config = $config; ExtraArgs = $mergedExtra; Python = $py }
     $pytestArgs = Get-HermesPytestArgsFromConfig @argSplat
     Invoke-HermesAuditPytest -Python $py @pytestArgs
     $pytestExit = $global:LASTEXITCODE

@@ -499,6 +499,18 @@ function Test-HermesAuditPythonAvailable {
     return $null -ne (Get-Command $Py -ErrorAction SilentlyContinue)
 }
 
+function Test-HermesPytestXdistInstalled {
+    param([Parameter(Mandatory)][string]$Python)
+    if (-not (Test-HermesAuditPythonAvailable -Py $Python)) { return $false }
+    $exe = $Python
+    if (-not (Test-Path -LiteralPath $exe)) {
+        $cmd = Get-Command $Python -ErrorAction SilentlyContinue
+        if ($cmd -and $cmd.Source) { $exe = $cmd.Source }
+    }
+    & $exe -c "import xdist" 2>$null | Out-Null
+    return $LASTEXITCODE -eq 0
+}
+
 function Resolve-HermesPythonOnPath {
     <#
     .SYNOPSIS
