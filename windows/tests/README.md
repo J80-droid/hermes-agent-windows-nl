@@ -68,6 +68,9 @@ Zie **[`PYTEST_POLICY.md`](PYTEST_POLICY.md)** voor gate vs upstream vs producti
 - Zet test-API-keys leeg (zoals CI).
 - Draait **`pytest -n 0`** (serieel) via **`Invoke-HermesAuditPytest`** (`--timeout-method=thread`, 30s).
 - Paden/markers uit **`pytest_fork_gate.yaml`** (geen hardcoded overlay/profile subset).
+- **`Get-HermesPytestArgsFromConfig`** bouwt argv; upstream `--maxfail` / `--junitxml` blijven **gescheiden** (PS 5.1 `@()`-valkuil).
+- **`Invoke-HermesAuditPytest`** negeert pytest teardown-warnings op stderr (`ErrorAction Continue`).
+- Runners lezen **`$global:LASTEXITCODE`** na `Tee-Object` (pipeline clobber-fix).
 - Log: **`RUN_PYTEST_fork_gate.log`** (gitignored).
 
 ### Gebruik

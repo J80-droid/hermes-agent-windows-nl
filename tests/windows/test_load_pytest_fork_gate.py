@@ -190,6 +190,53 @@ def test_main_cli_invalid_repo_exit_one(loader, monkeypatch, capsys) -> None:
     assert "manifest missing" in capsys.readouterr().err
 
 
+def test_build_config_invalid_upstream_type(loader, tmp_path: Path) -> None:
+    _write_manifest(
+        tmp_path,
+        """
+        version: 1
+        paths: [tests/sample.py]
+        ignores: []
+        upstream: not-a-dict
+        """,
+    )
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "sample.py").write_text("x", encoding="utf-8")
+    with pytest.raises(ValueError, match="upstream"):
+        loader.build_config(tmp_path, "upstream")
+
+
+def test_build_config_unsupported_mode(loader, tmp_path: Path) -> None:
+    _write_manifest(
+        tmp_path,
+        """
+        version: 1
+        paths: [tests/sample.py]
+        ignores: []
+        """,
+    )
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "sample.py").write_text("x", encoding="utf-8")
+    with pytest.raises(ValueError, match="unsupported mode"):
+        loader.build_config(tmp_path, "invalid-mode")
+
+
+def test_build_config_gate_directory_path(loader, tmp_path: Path) -> None:
+    overlay = tmp_path / "tests" / "overlay"
+    overlay.mkdir(parents=True)
+    _write_manifest(
+        tmp_path,
+        """
+        version: 1
+        paths:
+          - tests/overlay/
+        ignores: []
+        """,
+    )
+    cfg = loader.build_config(tmp_path, "gate")
+    assert cfg["paths"] == ["tests/overlay/"]
+
+
 def test_real_repo_manifest_parses(loader) -> None:
     cfg = loader.build_config(REPO, "gate")
     assert cfg["mode"] == "gate"

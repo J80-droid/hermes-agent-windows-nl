@@ -9,7 +9,6 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $testsDir = $PSScriptRoot
-$windowsDir = Split-Path -Parent $testsDir
 
 if ($Upstream -or $ReportOnly) {
     $upstreamScript = Join-Path $testsDir 'RUN_PYTEST_UPSTREAM.ps1'

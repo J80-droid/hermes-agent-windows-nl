@@ -29,6 +29,9 @@ function Get-HermesPytestForkGateConfig {
         throw "manifest loader ontbreekt: $loader"
     }
     $py = Get-HermesAuditPython -RepoRoot $RepoRoot
+    if (-not $py -or -not (Test-Path -LiteralPath $py)) {
+        throw "python niet gevonden (Get-HermesAuditPython): $py"
+    }
     $stderrFile = Join-Path ([System.IO.Path]::GetTempPath()) ("hermes_pytest_gate_loader_{0}.err" -f [Guid]::NewGuid().ToString('N'))
     try {
         $jsonRaw = & $py $loader --mode $Mode --repo-root $RepoRoot 2>$stderrFile
@@ -54,28 +57,34 @@ function Get-HermesPytestForkGateConfig {
     }
 }
 
-function Build-HermesPytestArgsFromConfig {
+function Get-HermesPytestArgsFromConfig {
     param(
         [Parameter(Mandatory)]
         [psobject]$Config,
         [string[]]$ExtraArgs = @()
     )
-    $pytestArgList = @()
+    $pytestArgList = [System.Collections.Generic.List[string]]::new()
     foreach ($p in @($Config.paths)) {
-        $pytestArgList += $p
+        if ($p) { [void]$pytestArgList.Add([string]$p) }
     }
     foreach ($ig in @($Config.ignores)) {
-        $pytestArgList += '--ignore=' + $ig
+        if ($ig) { [void]$pytestArgList.Add('--ignore=' + $ig) }
     }
     if ($Config.markers) {
-        $pytestArgList += '-m'
-        $pytestArgList += [string]$Config.markers
+        [void]$pytestArgList.Add('-m')
+        [void]$pytestArgList.Add([string]$Config.markers)
     }
-    $pytestArgList += @('-n', '0', '-q', '--tb=short', '--durations', '20')
-    if ($ExtraArgs) {
-        $pytestArgList += $ExtraArgs
+    foreach ($fixed in @('-n', '0', '-q', '--tb=short', '--durations', '20')) {
+        [void]$pytestArgList.Add($fixed)
     }
-    return $pytestArgList
+    foreach ($ea in @($ExtraArgs)) {
+        if ($null -eq $ea) { continue }
+        $s = [string]$ea
+        if ($s.Trim()) {
+            [void]$pytestArgList.Add($s)
+        }
+    }
+    return @($pytestArgList.ToArray())
 }
 
 function Invoke-HermesPytestGate {
@@ -92,9 +101,10 @@ function Invoke-HermesPytestGate {
         $global:LASTEXITCODE = 1
         return
     }
-    $pytestArgs = Build-HermesPytestArgsFromConfig -Config $config -ExtraArgs $ExtraArgs
+    $argSplat = @{ Config = $config; ExtraArgs = $ExtraArgs }
+    $pytestArgs = Get-HermesPytestArgsFromConfig @argSplat
     Invoke-HermesAuditPytest -Python $py @pytestArgs
-    $global:LASTEXITCODE = $LASTEXITCODE
+    $global:LASTEXITCODE = $global:LASTEXITCODE
 }
 
 function Invoke-HermesPytestUpstream {
@@ -120,27 +130,37 @@ function Invoke-HermesPytestUpstream {
         New-Item -ItemType Directory -Force -Path $junitDir | Out-Null
     }
     $maxfail = if ($MaxFail -gt 0) { $MaxFail } else { [int]$config.maxfail }
-    # Gebruik interpolatie i.p.v. '+' in @() — anders plakt PS soms beide elementen aan elkaar.
+    # String-interpolatie in @() — '+' in subexpressions plakt soms elementen op Windows PS 5.1.
     $upstreamExtra = @(
         "--maxfail=$maxfail"
         "--junitxml=$junitPath"
     )
-    $pytestArgs = Build-HermesPytestArgsFromConfig -Config $config -ExtraArgs ($upstreamExtra + $ExtraArgs)
+    $mergedExtra = @($upstreamExtra) + @($ExtraArgs)
+    $argSplat = @{ Config = $config; ExtraArgs = $mergedExtra }
+    $pytestArgs = Get-HermesPytestArgsFromConfig @argSplat
     Invoke-HermesAuditPytest -Python $py @pytestArgs
-    $pytestExit = $LASTEXITCODE
+    $pytestExit = $global:LASTEXITCODE
 
     $summarizer = Join-Path $RepoRoot 'windows/scripts/summarize_pytest_junit.py'
-    if (Test-Path -LiteralPath $summarizer) {
+    if ((Test-Path -LiteralPath $summarizer) -and (Test-Path -LiteralPath $junitPath)) {
         $knownFails = Join-Path $RepoRoot 'windows/tests/pytest_upstream_known_fails.txt'
         $summaryOut = Join-Path $RepoRoot 'windows/tests/pytest_upstream_summary.json'
         $sumArgs = @($summarizer, '--junit', $junitPath, '--output', $summaryOut)
         if (Test-Path -LiteralPath $knownFails) {
             $sumArgs += @('--known-fails', $knownFails)
         }
-        & $py @sumArgs 2>&1 | Out-Host
-        if ($LASTEXITCODE -ne 0 -and -not $ReportOnly) {
+        $prevEap = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            & $py @sumArgs 2>&1 | Out-Host
+        } finally {
+            $ErrorActionPreference = $prevEap
+        }
+        if ($global:LASTEXITCODE -ne 0 -and -not $ReportOnly) {
             Write-HermesErr 'summarize_pytest_junit faalde; pytest exitcode blijft leidend.'
         }
+    } elseif ($ReportOnly -and -not (Test-Path -LiteralPath $junitPath)) {
+        Write-HermesErr "upstream junit ontbreekt: $junitPath"
     }
 
     if ($ReportOnly) {

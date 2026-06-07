@@ -28,10 +28,17 @@ Manifest path: [`pytest_fork_gate.yaml`](pytest_fork_gate.yaml). Loader: [`../sc
 | Before release | `windows\audits\RUN_PRODUCTION_GATE.bat` |
 | After upstream merge | `RUN_PYTEST_UPSTREAM.bat -ReportOnly` → check `pytest_upstream_summary.json` |
 | Wiring / regressie (snel, ~30s) | `audits\RUN_PYTEST_FORK_GATE_E2E.bat` |
+| Runner hardening (arg split, stderr exit) | `audits\RUN_PYTEST_RUNNER_HARDENING_E2E.bat` |
 
 ## E2E audit (wiring, geen volledige gate-run)
 
 `audits\RUN_PYTEST_FORK_GATE_E2E.bat` valideert manifest, loader JSON, PowerShell runners, RUN_AUDITS preflight, production gate `-SkipPytest`, junit summary en overlay collect-only (11 stappen).
+
+`audits\RUN_PYTEST_RUNNER_HARDENING_E2E.bat` valideert runner-hardening: `Get-HermesPytestArgsFromConfig`, gescheiden `--maxfail`/`--junitxml`, `Invoke-HermesAuditPytest` stderr-`Continue`, `$global:LASTEXITCODE` na `Tee-Object`, drift-baseline fork-intentional sectie (10 stappen).
+
+## Upstream known failures
+
+Na de eerste `RUN_PYTEST_UPSTREAM.bat -ReportOnly`, kopieer verwachte Windows-parity nodeids naar `pytest_upstream_known_fails.txt` (comments `#` toegestaan). Volgende runs tonen dan alleen **nieuwe** failures in `new_failures`.
 
 ## E3 terminology (codebase audit)
 

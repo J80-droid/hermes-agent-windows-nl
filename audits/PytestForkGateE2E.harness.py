@@ -145,6 +145,7 @@ def test_e5_shared_runner_functions_present() -> None:
             "function Invoke-HermesPytestGate",
             "function Invoke-HermesPytestUpstream",
             "function Get-HermesPytestForkGateConfig",
+            "function Get-HermesPytestArgsFromConfig",
             "Get-HermesAuditPython",
             "Invoke-HermesAuditPytest",
         )

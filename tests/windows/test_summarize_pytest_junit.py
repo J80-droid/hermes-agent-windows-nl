@@ -121,6 +121,23 @@ def test_main_missing_junit_exit_one(summarizer, tmp_path: Path, monkeypatch, ca
     assert "junit missing" in capsys.readouterr().err
 
 
+def test_nodeid_from_case_classname_fallback(summarizer) -> None:
+    suite = ET.Element("testsuite")
+    case = ET.SubElement(suite, "testcase", {"classname": "tests.mod", "name": "test_x"})
+    ET.SubElement(case, "failure")
+    nodeid = summarizer._nodeid_from_case(case)
+    assert nodeid == "tests.mod::test_x"
+
+
+def test_summarize_new_failures_capped_at_fifty(summarizer, tmp_path: Path) -> None:
+    junit = tmp_path / "out.xml"
+    cases = [(f"tests/m{i}.py", "test_fail", "failure") for i in range(60)]
+    _write_junit(junit, cases)
+    payload = summarizer.summarize(junit)
+    assert len(payload["new_failures"]) == 50
+    assert payload["new_failures_count"] == 60
+
+
 def test_main_writes_summary_json(summarizer, tmp_path: Path, monkeypatch, capsys) -> None:
     junit = tmp_path / "out.xml"
     _write_junit(junit, [("tests/a.py", "test_ok", None)])

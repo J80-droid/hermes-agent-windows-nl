@@ -13,6 +13,9 @@ Set-Location -LiteralPath $repoRoot
 
 . (Join-Path $windowsDir 'HermesShellCommon.ps1')
 
+# PSScriptAnalyzer: param in scriptblock telt niet als gebruik — vlag buiten scriptblock vastleggen.
+$skipRebuildTui = [bool]$SkipRebuildTui
+
 function Invoke-ProdStep {
     param(
         [string]$Name,
@@ -34,7 +37,7 @@ Write-Host "Log: $logPath" -ForegroundColor DarkGray
 Start-Transcript -Path $logPath -Force | Out-Null
 try {
     Invoke-ProdStep 'rebuild-tui' {
-        if ($SkipRebuildTui) {
+        if ($skipRebuildTui) {
             Write-Host 'SKIP: -SkipRebuildTui' -ForegroundColor Yellow
             $global:LASTEXITCODE = 0
             return

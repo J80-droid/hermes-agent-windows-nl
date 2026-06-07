@@ -2,7 +2,7 @@
 
 ## Focus
 
-**Pytest fork gate + productie-poort (2026-06-02):** Manifest SSOT `windows/tests/pytest_fork_gate.yaml`; harde poort `RUN_PYTEST_FORK_GATE`; upstream parity `RUN_PYTEST_UPSTREAM -ReportOnly`; `RUN_PRODUCTION_GATE` = REBUILD_TUI + fork gate + `-IncludeAllE2E -SkipPytest`. RUN_AUDITS preflight: één `pytest-fork-gate` stap. CI: institutional fork gate; nightly Node 20 + npm ci + HERMES_HOME + REBUILD_TUI. Zie `windows/tests/PYTEST_POLICY.md`.
+**Pytest fork gate + productie-poort (2026-06-07):** Runner-hardening: `Get-HermesPytestArgsFromConfig`, hashtable-splat `ExtraArgs`, stderr-`Continue`, `$global:LASTEXITCODE` na Tee; E2E `RUN_PYTEST_RUNNER_HARDENING_E2E.bat` (10/10). Drift-export split fork-intentional vs must-upstream. PSSA 0.
 
 **Pad 1 SYNC_NOUS + lean overlay (2026-06-06):** Upstream merge ~199 commits (`d4f196072`); Tier A drift **0** (`Test-NousTreeIdentical` PASS). Toolset dashboard volledig upstream Tier A (`ToolsetConfigDrawer`, `web_server` env/post-setup routes, `main.py post-setup`). Overlay opgeschoond: verwijderd `web_server_fork_patch`, overlay web toolset-duplicaten; `tools_config_fork_patch` alleen MCP-sentinel + `_user_customized`; `argparse_fork_patch` alleen `config get` + profile flags. E2E: `RUN_TOOLSET_DASHBOARD_E2E` 9/9, `RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E` PASS, fork gates 8/8. Open P3: bronmappen `raw_source_files` handmatig vullen.
 
