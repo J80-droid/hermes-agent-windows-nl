@@ -15,8 +15,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 
+from overlay.bootstrap import install
+
 _repo = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_repo))
+
+
+@pytest.fixture(autouse=True)
+def _bootstrap():
+    install()
 
 
 @pytest.fixture

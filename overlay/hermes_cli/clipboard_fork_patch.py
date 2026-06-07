@@ -77,7 +77,10 @@ def get_clipboard_text() -> str | None:
     import sys
 
     if sys.platform == "win32":
-        return _windows_get_text()
+        import hermes_cli.clipboard as cb
+
+        reader = getattr(cb, "_windows_get_text", _windows_get_text)
+        return reader()
     return None
 
 
@@ -94,12 +97,8 @@ def apply_clipboard_fork_patch() -> None:
 
     if getattr(cb, "_fork_clipboard_text_patch_applied", False):
         return
-    if not hasattr(cb, "get_clipboard_text"):
-        cb.get_clipboard_text = get_clipboard_text  # type: ignore[attr-defined]
-    if not hasattr(cb, "set_clipboard_text"):
-        cb.set_clipboard_text = set_clipboard_text  # type: ignore[attr-defined]
-    if not hasattr(cb, "_windows_get_text"):
-        cb._windows_get_text = _windows_get_text  # type: ignore[attr-defined]
-    if not hasattr(cb, "_windows_set_text"):
-        cb._windows_set_text = _windows_set_text  # type: ignore[attr-defined]
+    cb.get_clipboard_text = get_clipboard_text  # type: ignore[attr-defined]
+    cb.set_clipboard_text = set_clipboard_text  # type: ignore[attr-defined]
+    cb._windows_get_text = _windows_get_text  # type: ignore[attr-defined]
+    cb._windows_set_text = _windows_set_text  # type: ignore[attr-defined]
     cb._fork_clipboard_text_patch_applied = True  # type: ignore[attr-defined]

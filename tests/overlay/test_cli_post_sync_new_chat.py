@@ -8,6 +8,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from overlay.bootstrap import install
+
+
+@pytest.fixture(autouse=True)
+def _bootstrap():
+    install()
+
 
 @pytest.fixture
 def notice_file(tmp_path, monkeypatch):

@@ -7,6 +7,13 @@ from unittest.mock import patch
 import pytest
 import yaml
 
+from overlay.bootstrap import install
+
+
+@pytest.fixture(autouse=True)
+def _bootstrap():
+    install()
+
 
 @pytest.fixture
 def profile_env(tmp_path, monkeypatch):

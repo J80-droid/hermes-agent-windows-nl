@@ -9,8 +9,15 @@ from unittest.mock import patch
 
 import pytest
 
+from overlay.bootstrap import install
+
 _repo = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_repo))
+
+
+@pytest.fixture(autouse=True)
+def _bootstrap():
+    install()
 
 
 @pytest.fixture

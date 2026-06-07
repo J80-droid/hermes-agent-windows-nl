@@ -230,6 +230,34 @@ def _load_auth_store_bom_safe(auth_file: Optional[Path] = None) -> Dict[str, Any
     return _normalize_auth_store_raw(raw)
 
 
+def _reset_config_provider_root() -> Path:
+    """Reset root ``config.yaml`` provider to auto after logout (profile-aware)."""
+    from hermes_cli.profile_model_inheritance import root_config_path
+    from hermes_constants import OPENROUTER_BASE_URL
+    from utils import atomic_yaml_write
+    import yaml
+
+    config_path = root_config_path()
+    if not config_path.exists():
+        return config_path
+
+    try:
+        config = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+    except OSError:
+        return config_path
+    if not isinstance(config, dict):
+        return config_path
+
+    model = config.get("model")
+    if isinstance(model, dict):
+        model["provider"] = "auto"
+        if "base_url" in model:
+            model["base_url"] = OPENROUTER_BASE_URL
+        config["model"] = model
+        atomic_yaml_write(config_path, config, sort_keys=False)
+    return config_path
+
+
 def apply_auth_fork_patch() -> None:
     import hermes_cli.auth as auth
 
@@ -241,6 +269,7 @@ def apply_auth_fork_patch() -> None:
     auth.repair_all_auth_json_bom = repair_all_auth_json_bom  # type: ignore[attr-defined]
     auth._read_shared_nous_state = read_shared_nous_state_bom_tolerant  # type: ignore[assignment]
     auth._load_auth_store = _load_auth_store_bom_safe  # type: ignore[assignment]
+    auth._reset_config_provider = _reset_config_provider_root  # type: ignore[assignment]
     if not hasattr(auth, "_AUTH_CORRUPT_REPAIR_IN_PROGRESS"):
         auth._AUTH_CORRUPT_REPAIR_IN_PROGRESS = False  # type: ignore[attr-defined]
     auth._fork_read_auth_json_patch_applied = True  # type: ignore[attr-defined]

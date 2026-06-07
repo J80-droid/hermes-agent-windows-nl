@@ -13,12 +13,21 @@ from pathlib import Path
 
 def ensure_skills_hub_for_home(hermes_home: Path | str) -> bool:
     """Initialiseer ``skills/.hub`` onder *hermes_home*. Returns True als nieuw."""
-    from tools.skills_hub import ensure_hub_dirs
-
     home = Path(hermes_home)
     hub = home / "skills" / ".hub"
     existed = hub.is_dir() and (hub / "lock.json").is_file()
-    ensure_hub_dirs(home)
+    hub.mkdir(parents=True, exist_ok=True)
+    (hub / "quarantine").mkdir(exist_ok=True)
+    (hub / "index_cache").mkdir(exist_ok=True)
+    lock = hub / "lock.json"
+    if not lock.is_file():
+        lock.write_text('{"version": 1, "installed": {}}\n', encoding="utf-8")
+    taps = hub / "taps.json"
+    if not taps.is_file():
+        taps.write_text('{"taps": []}\n', encoding="utf-8")
+    audit = hub / "audit.log"
+    if not audit.is_file():
+        audit.touch()
     return not existed
 
 

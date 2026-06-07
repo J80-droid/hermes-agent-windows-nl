@@ -3,11 +3,8 @@ from __future__ import annotations
 
 from typing import Iterable, Optional
 
-from hermes_cli.models import (
-    normalize_provider,
-    provider_model_ids,
-    validate_requested_model,
-)
+import hermes_cli.models as models_mod
+from hermes_cli.models import normalize_provider
 
 _MODEL_VARIANT_SUFFIXES: tuple[str, ...] = (":free", ":extended", ":fast")
 
@@ -55,7 +52,9 @@ def model_default_passes_startup_catalog_guard(
 
     catalog: list[str] = []
     try:
-        catalog = list(provider_model_ids(normalized, force_refresh=force_refresh) or [])
+        catalog = list(
+            models_mod.provider_model_ids(normalized, force_refresh=force_refresh) or []
+        )
     except Exception:
         catalog = []
 
@@ -80,7 +79,7 @@ def model_default_passes_startup_catalog_guard(
                         base_url = str(creds.get("base_url") or "").strip() or None
             except Exception:
                 pass
-        validation = validate_requested_model(
+        validation = models_mod.validate_requested_model(
             requested,
             normalized,
             api_key=api_key,

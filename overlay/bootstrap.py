@@ -150,6 +150,7 @@ def _apply_runtime_patches() -> None:
     from overlay.cli_fork_patch import apply_cli_fork_patch as apply_cli_bron_fork_patch
     from overlay.hermes_cli.argparse_fork_patch import apply_argparse_fork_patch
     from overlay.hermes_cli.auth_fork_patch import apply_auth_fork_patch
+    from overlay.hermes_cli.banner_fork_patch import apply_banner_fork_patch
     from overlay.hermes_cli.clipboard_fork_patch import apply_clipboard_fork_patch
     from overlay.hermes_cli.cli_command_patches import apply_cli_command_patches
     from overlay.hermes_cli.cli_fork_patch import apply_cli_fork_patch
@@ -159,13 +160,18 @@ def _apply_runtime_patches() -> None:
     from overlay.hermes_cli.main_fork_patch import apply_main_fork_patch
     from overlay.hermes_cli.models_fork_patch import apply_models_fork_patch
     from overlay.hermes_cli.profiles_fork_patch import apply_profiles_fork_patch
+    from overlay.hermes_cli.runtime_provider_fork_patch import apply_runtime_provider_fork_patch
+    from overlay.hermes_cli.setup_fork_patch import apply_setup_fork_patch
+    from overlay.hermes_cli.skin_engine_fork_patch import apply_skin_engine_fork_patch
     from overlay.hermes_cli.tools_config_fork_patch import apply_tools_config_fork_patch
+    from overlay.hermes_cli.web_server_fork_patch import apply_web_server_fork_patch
     from overlay.tools.file_tools_fork_patch import apply_file_tools_fork_patch
     from overlay.tools.process_registry_fork_patch import apply_process_registry_fork_patch
     from overlay.tui_gateway.gateway_config_fork_patch import apply_gateway_config_fork_patch
 
     apply_argparse_fork_patch()
     apply_cli_bron_fork_patch()
+    apply_banner_fork_patch()
     apply_clipboard_fork_patch()
     apply_main_fork_patch()
     apply_profiles_fork_patch()
@@ -183,6 +189,10 @@ def _apply_runtime_patches() -> None:
     apply_cli_command_patches()
     apply_gateway_config_fork_patch()
     apply_file_tools_fork_patch()
+    apply_runtime_provider_fork_patch()
+    apply_setup_fork_patch()
+    apply_skin_engine_fork_patch()
+    apply_web_server_fork_patch()
 
 
 def install() -> None:

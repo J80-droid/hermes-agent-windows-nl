@@ -112,6 +112,56 @@ def check_profile_global_config_blocks(issues: list, *, should_fix: bool = False
         logger.warning("profile global-blocks check failed", exc_info=True)
 
 
+def _iter_auth_json_candidates() -> list[Path]:
+    """Root + profile ``auth.json`` paths for BOM/corrupt checks."""
+    from hermes_constants import get_default_hermes_root
+
+    root = get_default_hermes_root()
+    paths: list[Path] = []
+    root_auth = root / "auth.json"
+    if root_auth.is_file():
+        paths.append(root_auth)
+    profiles = root / "profiles"
+    if profiles.is_dir():
+        paths.extend(sorted(profiles.glob("*/auth.json")))
+    return paths
+
+
+def _auth_json_files_with_bom() -> list[Path]:
+    bom: list[Path] = []
+    for path in _iter_auth_json_candidates():
+        try:
+            if path.read_bytes().startswith(b"\xef\xbb\xbf"):
+                bom.append(path)
+        except OSError:
+            continue
+    return bom
+
+
+def _repair_auth_json_bom_all() -> list[str]:
+    """Strip UTF-8 BOM from root/profile auth stores (fork overlay when present)."""
+    try:
+        from overlay.bootstrap import install
+
+        install()
+    except Exception:
+        pass
+    repair_fn = None
+    try:
+        from hermes_cli.auth import repair_all_auth_json_bom as repair_fn  # type: ignore[attr-defined]
+    except (ImportError, AttributeError):
+        pass
+    if repair_fn is None:
+        try:
+            from overlay.hermes_cli.auth_fork_patch import repair_all_auth_json_bom as repair_fn
+        except ImportError:
+            return []
+    try:
+        return repair_fn()
+    except Exception:
+        return []
+
+
 def _run_fork_doctor_checks(args: Any) -> None:
     should_fix = bool(getattr(args, "fix", False))
     fork_issues: list = []
@@ -127,6 +177,9 @@ def apply_doctor_fork_patch() -> None:
 
     doctor_mod._check_windows_split_home_config = check_windows_split_home_config  # type: ignore[attr-defined]
     doctor_mod._check_profile_global_config_blocks = check_profile_global_config_blocks  # type: ignore[attr-defined]
+    doctor_mod._iter_auth_json_candidates = _iter_auth_json_candidates  # type: ignore[attr-defined]
+    doctor_mod._auth_json_files_with_bom = _auth_json_files_with_bom  # type: ignore[attr-defined]
+    doctor_mod._repair_auth_json_bom_all = _repair_auth_json_bom_all  # type: ignore[attr-defined]
 
     _orig_run_doctor = doctor_mod.run_doctor
 

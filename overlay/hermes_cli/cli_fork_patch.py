@@ -658,4 +658,32 @@ def apply_cli_fork_patch() -> None:
         cls.__init__ = __init__  # type: ignore[method-assign]
         cls._fork_display_init_wrapped = True
 
+    if not hasattr(cls, "_apply_post_sync_new_chat_notice"):
+
+        def _apply_post_sync_new_chat_notice(self):
+            """Honor institutional_new_chat_required.json after sync/relaunch."""
+            import os
+
+            if os.environ.get("HERMES_SKIP_AUTO_NEW_AFTER_SYNC") == "1":
+                return
+            try:
+                from hermes_cli.institutional_new_chat_notice import (
+                    acknowledge_new_chat_notice,
+                    read_new_chat_notice,
+                )
+            except Exception:
+                return
+            if not read_new_chat_notice():
+                return
+            history = getattr(self, "conversation_history", None) or []
+            if not history:
+                acknowledge_new_chat_notice()
+                return
+            try:
+                self.new_session(silent=True)
+            except Exception:
+                pass
+
+        cls._apply_post_sync_new_chat_notice = _apply_post_sync_new_chat_notice  # type: ignore[attr-defined]
+
     cls._fork_status_bar_patch_applied = True

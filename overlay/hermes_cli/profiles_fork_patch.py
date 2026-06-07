@@ -56,4 +56,24 @@ def apply_profiles_fork_patch() -> None:
         profiles.iter_orphan_profile_wrappers = iter_orphan_profile_wrappers  # type: ignore[attr-defined]
     if not hasattr(profiles, "remove_orphan_profile_wrappers"):
         profiles.remove_orphan_profile_wrappers = remove_orphan_profile_wrappers  # type: ignore[attr-defined]
+
+    if not getattr(profiles, "_fork_create_profile_strip_applied", False):
+        _orig_create = profiles.create_profile
+
+        def create_profile(*args, **kwargs):
+            profile_dir = _orig_create(*args, **kwargs)
+            if kwargs.get("clone_config") or kwargs.get("clone_all"):
+                try:
+                    from hermes_cli.profile_model_inheritance import (
+                        strip_model_block_from_profile_config,
+                    )
+
+                    strip_model_block_from_profile_config(profile_dir)
+                except ImportError:
+                    pass
+            return profile_dir
+
+        profiles.create_profile = create_profile  # type: ignore[assignment]
+        profiles._fork_create_profile_strip_applied = True  # type: ignore[attr-defined]
+
     profiles._fork_profiles_orphan_patch_applied = True  # type: ignore[attr-defined]

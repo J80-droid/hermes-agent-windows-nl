@@ -1,10 +1,15 @@
-"""Fork platform_toolsets guards + MCP sentinel expansion (Tier B)."""
+"""Fork platform_toolsets guards + MCP/kanban checklist + sentinel expansion (Tier B)."""
 from __future__ import annotations
 
 from typing import List, Set
 
 _PLATFORM_TOOLSETS_USER_CUSTOMIZED_KEY = "_user_customized"
 PLATFORM_TOOLSET_SENTINELS = frozenset({"mcp", "no_mcp"})
+
+_FORK_TOOLSET_EXTRAS: tuple[tuple[str, str, str], ...] = (
+    ("mcp", "🔌 MCP Servers", "search_knowledge, … (per mcp_servers config)"),
+    ("kanban", "📌 Kanban Board", "kanban_show, kanban_list, kanban_create, …"),
+)
 
 
 def expand_cli_toolset_arg(toolsets: list[str] | set[str], config: dict) -> List[str]:
@@ -61,13 +66,30 @@ def _mark_platform_toolsets_user_customized(config: dict, platform: str) -> None
     meta[platform] = True
 
 
+def _effective_configurable_keys(tc) -> set[str]:
+    return {ts_key for ts_key, _, _ in tc.CONFIGURABLE_TOOLSETS}
+
+
+def _extend_configurable_toolsets(tc) -> None:
+    existing = {ts_key for ts_key, _, _ in tc.CONFIGURABLE_TOOLSETS}
+    extras = [entry for entry in _FORK_TOOLSET_EXTRAS if entry[0] not in existing]
+    if extras:
+        skills_idx = next(
+            (i for i, (k, _, _) in enumerate(tc.CONFIGURABLE_TOOLSETS) if k == "skills"),
+            len(tc.CONFIGURABLE_TOOLSETS),
+        )
+        tc.CONFIGURABLE_TOOLSETS[skills_idx + 1 : skills_idx + 1] = extras  # type: ignore[index]
+
+
 def apply_tools_config_fork_patch() -> None:
     import hermes_cli.tools_config as tc
 
     if getattr(tc, "_fork_tools_config_patch_applied", False):
         return
 
-    _orig = tc._get_platform_tools
+    _extend_configurable_toolsets(tc)
+    _orig_get = tc._get_platform_tools
+    _orig_save = tc._save_platform_tools
 
     def _get_platform_tools(
         config: dict,
@@ -82,13 +104,41 @@ def apply_tools_config_fork_patch() -> None:
             and not platform_toolsets.get(platform)
         ):
             return set()
-        return _orig(
+
+        names = platform_toolsets.get(platform)
+        if isinstance(names, list):
+            sanitized = [
+                str(ts)
+                for ts in names
+                if str(ts) not in {_PLATFORM_TOOLSETS_USER_CUSTOMIZED_KEY}
+            ]
+            if sanitized != names:
+                config = dict(config)
+                config["platform_toolsets"] = dict(platform_toolsets)
+                config["platform_toolsets"][platform] = sanitized
+                names = sanitized
+
+        user_customized = _platform_toolsets_user_customized(config, platform)
+        if user_customized and isinstance(names, list):
+            configurable_keys = _effective_configurable_keys(tc)
+            return {
+                ts
+                for ts in names
+                if ts in configurable_keys and tc._toolset_allowed_for_platform(ts, platform)
+            }
+
+        return _orig_get(
             config,
             platform,
             include_default_mcp_servers=include_default_mcp_servers,
         )
 
+    def _save_platform_tools(config: dict, platform: str, enabled_toolset_keys: Set[str]):
+        _orig_save(config, platform, enabled_toolset_keys)
+        _mark_platform_toolsets_user_customized(config, platform)
+
     tc._get_platform_tools = _get_platform_tools  # type: ignore[assignment]
+    tc._save_platform_tools = _save_platform_tools  # type: ignore[assignment]
     tc._platform_toolsets_user_customized = _platform_toolsets_user_customized  # type: ignore[attr-defined]
     tc._mark_platform_toolsets_user_customized = _mark_platform_toolsets_user_customized  # type: ignore[attr-defined]
     tc._PLATFORM_TOOLSETS_USER_CUSTOMIZED_KEY = _PLATFORM_TOOLSETS_USER_CUSTOMIZED_KEY  # type: ignore[attr-defined]
