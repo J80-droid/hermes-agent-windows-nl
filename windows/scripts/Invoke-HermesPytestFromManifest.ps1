@@ -60,22 +60,22 @@ function Build-HermesPytestArgsFromConfig {
         [psobject]$Config,
         [string[]]$ExtraArgs = @()
     )
-    $args = @()
+    $pytestArgList = @()
     foreach ($p in @($Config.paths)) {
-        $args += $p
+        $pytestArgList += $p
     }
     foreach ($ig in @($Config.ignores)) {
-        $args += '--ignore=' + $ig
+        $pytestArgList += '--ignore=' + $ig
     }
     if ($Config.markers) {
-        $args += '-m'
-        $args += [string]$Config.markers
+        $pytestArgList += '-m'
+        $pytestArgList += [string]$Config.markers
     }
-    $args += @('-n', '0', '-q', '--tb=short', '--durations', '20')
+    $pytestArgList += @('-n', '0', '-q', '--tb=short', '--durations', '20')
     if ($ExtraArgs) {
-        $args += $ExtraArgs
+        $pytestArgList += $ExtraArgs
     }
-    return $args
+    return $pytestArgList
 }
 
 function Invoke-HermesPytestGate {
@@ -120,9 +120,10 @@ function Invoke-HermesPytestUpstream {
         New-Item -ItemType Directory -Force -Path $junitDir | Out-Null
     }
     $maxfail = if ($MaxFail -gt 0) { $MaxFail } else { [int]$config.maxfail }
+    # Gebruik interpolatie i.p.v. '+' in @() — anders plakt PS soms beide elementen aan elkaar.
     $upstreamExtra = @(
-        '--maxfail=' + $maxfail,
-        '--junitxml=' + $junitPath
+        "--maxfail=$maxfail"
+        "--junitxml=$junitPath"
     )
     $pytestArgs = Build-HermesPytestArgsFromConfig -Config $config -ExtraArgs ($upstreamExtra + $ExtraArgs)
     Invoke-HermesAuditPytest -Python $py @pytestArgs
