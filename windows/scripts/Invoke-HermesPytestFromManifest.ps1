@@ -29,8 +29,12 @@ function Get-HermesPytestForkGateConfig {
         throw "manifest loader ontbreekt: $loader"
     }
     $py = Get-HermesAuditPython -RepoRoot $RepoRoot
-    if (-not $py -or -not (Test-Path -LiteralPath $py)) {
+    if (-not (Test-HermesAuditPythonAvailable -Py $py)) {
         throw "python niet gevonden (Get-HermesAuditPython): $py"
+    }
+    if (-not (Test-Path -LiteralPath $py)) {
+        $resolved = Resolve-HermesPythonOnPath
+        if ($resolved) { $py = $resolved }
     }
     $stderrFile = Join-Path ([System.IO.Path]::GetTempPath()) ("hermes_pytest_gate_loader_{0}.err" -f [Guid]::NewGuid().ToString('N'))
     try {
@@ -96,10 +100,14 @@ function Invoke-HermesPytestGate {
     Initialize-HermesPytestRunEnv
     $config = Get-HermesPytestForkGateConfig -RepoRoot $RepoRoot -Mode 'gate'
     $py = Get-HermesAuditPython -RepoRoot $RepoRoot
-    if (-not $py -or -not (Test-Path -LiteralPath $py)) {
+    if (-not (Test-HermesAuditPythonAvailable -Py $py)) {
         Write-HermesErr 'python niet gevonden (Get-HermesAuditPython). Draai windows\REPAIR_PYTHON.bat.'
         $global:LASTEXITCODE = 1
         return
+    }
+    if (-not (Test-Path -LiteralPath $py)) {
+        $resolved = Resolve-HermesPythonOnPath
+        if ($resolved) { $py = $resolved }
     }
     $argSplat = @{ Config = $config; ExtraArgs = $ExtraArgs }
     $pytestArgs = Get-HermesPytestArgsFromConfig @argSplat
@@ -118,10 +126,14 @@ function Invoke-HermesPytestUpstream {
     Initialize-HermesPytestRunEnv
     $config = Get-HermesPytestForkGateConfig -RepoRoot $RepoRoot -Mode 'upstream'
     $py = Get-HermesAuditPython -RepoRoot $RepoRoot
-    if (-not $py -or -not (Test-Path -LiteralPath $py)) {
+    if (-not (Test-HermesAuditPythonAvailable -Py $py)) {
         Write-HermesErr 'python niet gevonden (Get-HermesAuditPython). Draai windows\REPAIR_PYTHON.bat.'
         $global:LASTEXITCODE = 1
         return
+    }
+    if (-not (Test-Path -LiteralPath $py)) {
+        $resolved = Resolve-HermesPythonOnPath
+        if ($resolved) { $py = $resolved }
     }
     $junitRel = [string]$config.junit
     $junitPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath ($junitRel -replace '\\', '/')

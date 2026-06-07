@@ -492,6 +492,31 @@ function Import-HermesPythonPolicy {
     return [bool](Get-Command Resolve-HermesPythonExe -ErrorAction SilentlyContinue)
 }
 
+function Test-HermesAuditPythonAvailable {
+    param([string]$Py)
+    if (-not $Py) { return $false }
+    if (Test-Path -LiteralPath $Py) { return $true }
+    return $null -ne (Get-Command $Py -ErrorAction SilentlyContinue)
+}
+
+function Resolve-HermesPythonOnPath {
+    <#
+    .SYNOPSIS
+        Volledig pad naar python.exe op PATH of GitHub Actions pythonLocation.
+    #>
+    if ($env:pythonLocation) {
+        $ghaPy = Join-Path $env:pythonLocation 'python.exe'
+        if (Test-Path -LiteralPath $ghaPy) { return $ghaPy }
+    }
+    foreach ($cmdName in @('python', 'python3', 'py')) {
+        $cmd = Get-Command $cmdName -ErrorAction SilentlyContinue
+        if ($cmd -and $cmd.Source -and (Test-Path -LiteralPath $cmd.Source)) {
+            return $cmd.Source
+        }
+    }
+    return $null
+}
+
 function Get-HermesAuditPython {
     param([string]$RepoRoot = '')
 
@@ -502,6 +527,8 @@ function Get-HermesAuditPython {
         if ($env:HERMES_AUDIT_PYTHON -and (Test-Path -LiteralPath $env:HERMES_AUDIT_PYTHON)) {
             return $env:HERMES_AUDIT_PYTHON
         }
+        $onPath = Resolve-HermesPythonOnPath
+        if ($onPath) { return $onPath }
         return 'python'
     }
 
@@ -518,6 +545,8 @@ function Get-HermesAuditPython {
     if ($env:HERMES_PYTHON -and (Test-Path -LiteralPath $env:HERMES_PYTHON)) {
         return $env:HERMES_PYTHON
     }
+    $onPath = Resolve-HermesPythonOnPath
+    if ($onPath) { return $onPath }
     return 'python'
 }
 

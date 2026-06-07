@@ -249,6 +249,23 @@ function Resolve-HermesPythonExe {
         }
     }
 
+    # GitHub Actions setup-python + andere CI: geen conda/manifest, wel python op PATH.
+    if ($env:pythonLocation) {
+        $ghaPy = Join-Path $env:pythonLocation 'python.exe'
+        if ((Test-Path -LiteralPath $ghaPy) -and -not $candidates.Contains($ghaPy)) {
+            [void]$candidates.Add($ghaPy)
+        }
+    }
+    foreach ($cmdName in @('python', 'python3')) {
+        $cmd = Get-Command $cmdName -ErrorAction SilentlyContinue
+        if ($cmd -and $cmd.Source -and (Test-Path -LiteralPath $cmd.Source)) {
+            $src = $cmd.Source
+            if (-not $candidates.Contains($src)) {
+                [void]$candidates.Add($src)
+            }
+        }
+    }
+
     foreach ($py in $candidates) {
         if ($RequirePip -and -not (Test-HermesPythonHasPip -PythonExe $py)) { continue }
         return $py
