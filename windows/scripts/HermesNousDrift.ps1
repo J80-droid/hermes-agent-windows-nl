@@ -162,3 +162,143 @@ function Invoke-HermesNousTierATargetedCheckout {
         Pop-Location
     }
 }
+
+function Invoke-HermesNousTierADriftCatchUp {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [string]$UpstreamRef = 'upstream/main',
+        [int]$TargetedMaxPaths = 15,
+        [switch]$AllowTransitional,
+        [switch]$SkipForkGate,
+        [switch]$SkipBaseline,
+        [switch]$Commit,
+        [string]$CommitMessage = '',
+        [switch]$QuietHeader
+    )
+    if (-not $QuietHeader) {
+        Write-Host '=== Nous drift catch-up ===' -ForegroundColor Cyan
+        Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray
+        Write-Host 'Policy: docs/NOUS_DRIFT_MAINTENANCE.md' -ForegroundColor DarkGray
+    }
+
+    $report = Get-HermesNousTierADriftReport -RepoRoot $RepoRoot -UpstreamRef $UpstreamRef -AllowTransitional:$AllowTransitional
+    foreach ($w in $report.ForkIntentional) {
+        Write-Host "[WARN] fork-intentional (allowed): $w" -ForegroundColor Yellow
+    }
+
+    if ($report.MustUpstreamDrift.Count -eq 0) {
+        Write-Host '[OK] Drift 0 - geen sync nodig.' -ForegroundColor Green
+    } else {
+        Write-Host ("[INFO] {0} tier-A pad(en) wijken af - sync starten" -f $report.MustUpstreamDrift.Count) -ForegroundColor Yellow
+        if ($report.MustUpstreamDrift.Count -le $TargetedMaxPaths) {
+            Invoke-HermesNousTierATargetedCheckout -RepoRoot $RepoRoot -Paths $report.MustUpstreamDrift -UpstreamRef $UpstreamRef
+        } else {
+            $restore = Join-Path $PSScriptRoot 'Invoke-RestoreNousTierA.ps1'
+            & $restore -RepoRoot $RepoRoot -UpstreamRef $UpstreamRef
+            if ($LASTEXITCODE -ne 0) { return $LASTEXITCODE }
+        }
+
+        $recheck = Get-HermesNousTierADriftReport -RepoRoot $RepoRoot -UpstreamRef $UpstreamRef -AllowTransitional:$AllowTransitional -SkipFetch
+        if ($recheck.MustUpstreamDrift.Count -gt 0) {
+            Write-Host "[FAIL] Drift na sync: $($recheck.MustUpstreamDrift.Count) pad(en)" -ForegroundColor Red
+            foreach ($p in $recheck.MustUpstreamDrift) { Write-Host "  $p" -ForegroundColor Red }
+            return 1
+        }
+        Write-Host '[OK] Drift 0 na sync.' -ForegroundColor Green
+    }
+
+    if (-not $SkipForkGate) {
+        Write-Host '=== pytest fork gate ===' -ForegroundColor Cyan
+        $forkGate = Join-Path $RepoRoot 'windows/tests/RUN_PYTEST_FORK_GATE.bat'
+        cmd /c "`"$forkGate`""
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "[FAIL] fork gate (exit $LASTEXITCODE)" -ForegroundColor Red
+            return [int]$LASTEXITCODE
+        }
+        Write-Host '[OK] fork gate' -ForegroundColor Green
+    }
+
+    if (-not $SkipBaseline) {
+        $export = Join-Path $PSScriptRoot 'Export-NousDriftBaseline.ps1'
+        & $export -RepoRoot $RepoRoot -UpstreamRef $UpstreamRef
+        if ($LASTEXITCODE -ne 0) { return [int]$LASTEXITCODE }
+    }
+
+    if ($Commit) {
+        $status = @(git -C $RepoRoot status --porcelain 2>$null | Where-Object { $_.Trim() })
+        if ($status.Count -eq 0) {
+            Write-Host '[OK] Geen wijzigingen om te committen.' -ForegroundColor Green
+        } else {
+            git -C $RepoRoot add -A
+            $msg = if ($CommitMessage) { $CommitMessage } else { 'chore(nous): sync tier-A to upstream/main (drift catch-up)' }
+            git -C $RepoRoot commit -m $msg
+            if ($LASTEXITCODE -ne 0) { return [int]$LASTEXITCODE }
+            Write-Host "[OK] Commit: $msg" -ForegroundColor Green
+        }
+    }
+
+    if (-not $QuietHeader) {
+        Write-Host '=== Drift catch-up geslaagd ===' -ForegroundColor Green
+    }
+    return 0
+}
+
+function Invoke-HermesNousDriftGateWithCatchUp {
+    <#
+    .SYNOPSIS
+      Detect tier-A drift vs upstream; optionally auto-run full catch-up chain.
+    #>
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [string]$UpstreamRef = 'upstream/main',
+        [switch]$AllowTransitional,
+        [switch]$SkipCatchUp,
+        [switch]$Commit,
+        [string]$CommitMessage = '',
+        [switch]$Strict,
+        [int]$TargetedMaxPaths = 15,
+        [switch]$SkipForkGate,
+        [switch]$SkipBaseline
+    )
+
+    $report = Get-HermesNousTierADriftReport -RepoRoot $RepoRoot -UpstreamRef $UpstreamRef -AllowTransitional:$AllowTransitional
+    foreach ($w in $report.ForkIntentional) {
+        Write-Host "[WARN] fork-intentional (allowed): $w" -ForegroundColor Yellow
+    }
+
+    if ($report.MustUpstreamDrift.Count -eq 0) {
+        Write-Host '[OK] Tier A identical to upstream (within policy).' -ForegroundColor Green
+        return 0
+    }
+
+    Write-Host ("[FAIL] Tier A drift: {0} pad(en) vs {1}" -f $report.MustUpstreamDrift.Count, $UpstreamRef) -ForegroundColor Red
+    foreach ($p in $report.MustUpstreamDrift) { Write-Host "  $p" -ForegroundColor Red }
+
+    if ($SkipCatchUp) {
+        Write-Host '[WARN] Auto catch-up overgeslagen (-SkipCatchUp).' -ForegroundColor Yellow
+        Write-Host '[INFO] Handmatig: windows\SYNC_NOUS_DRIFT_CATCHUP.bat' -ForegroundColor DarkGray
+        if ($Strict) { return 1 }
+        return 0
+    }
+
+    Write-Host '[INFO] Auto catch-up starten (Invoke-HermesNousTierADriftCatchUp)...' -ForegroundColor Cyan
+    $rc = Invoke-HermesNousTierADriftCatchUp `
+        -RepoRoot $RepoRoot `
+        -UpstreamRef $UpstreamRef `
+        -TargetedMaxPaths $TargetedMaxPaths `
+        -AllowTransitional:$AllowTransitional `
+        -SkipForkGate:$SkipForkGate `
+        -SkipBaseline:$SkipBaseline `
+        -Commit:$Commit `
+        -CommitMessage $CommitMessage `
+        -QuietHeader
+    if ($rc -ne 0) { return $rc }
+
+    $final = Get-HermesNousTierADriftReport -RepoRoot $RepoRoot -UpstreamRef $UpstreamRef -AllowTransitional:$AllowTransitional -SkipFetch
+    if ($final.MustUpstreamDrift.Count -gt 0) {
+        Write-Host '[FAIL] Drift na auto catch-up.' -ForegroundColor Red
+        return 1
+    }
+    Write-Host '[OK] Tier A drift gate + catch-up geslaagd.' -ForegroundColor Green
+    return 0
+}

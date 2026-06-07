@@ -37,6 +37,23 @@ def main() -> int:
         and "upstream_sync.ps1" in update_bat,
     )
     _step("UPDATE_HERMES.bat QuickFix-only exit", 'if "%~2"==""' in update_bat and "Alleen QuickFix" in update_bat)
+    _step(
+        "UPDATE_HERMES.bat auto drift catch-up",
+        "Invoke-HermesNousDriftGateWithCatchUp.ps1" in update_bat
+        and "auto catch-up" in update_bat.lower(),
+    )
+    _step("UPDATE_HERMES.bat -SkipNousDriftCatchUp", "-SkipNousDriftCatchUp" in update_bat)
+    _step(
+        "Invoke-HermesNousDriftGateWithCatchUp.ps1 bestaat",
+        (REPO / "windows/scripts/Invoke-HermesNousDriftGateWithCatchUp.ps1").is_file(),
+    )
+    sync_nous = _read("windows/scripts/sync_nous.ps1")
+    _step(
+        "sync_nous Verify gebruikt drift gate+catch-up",
+        "Invoke-HermesNousDriftGateWithCatchUp.ps1" in sync_nous,
+    )
+    maint = _read("docs/NOUS_DRIFT_MAINTENANCE.md")
+    _step("NOUS_DRIFT_MAINTENANCE SSOT", "UPDATE_HERMES.bat" in maint and "auto catch-up" in maint.lower())
     _step("quick_fix_repo_hygiene.ps1 bestaat", (REPO / "windows/scripts/quick_fix_repo_hygiene.ps1").is_file())
     _step("health_check_repo.ps1 bestaat", (REPO / "windows/scripts/health_check_repo.ps1").is_file())
 

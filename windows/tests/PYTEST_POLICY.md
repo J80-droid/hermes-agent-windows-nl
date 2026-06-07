@@ -62,14 +62,14 @@ Tests marked `@pytest.mark.e2e` only — covered by E2E bats:
 
 ## Drift & postflight (tier-A)
 
-**SSOT:** [`docs/NOUS_DRIFT_MAINTENANCE.md`](../../docs/NOUS_DRIFT_MAINTENANCE.md) — upstream-push routine, scripts, taboe `SYNC_NOUS -Yes`.
+**SSOT:** [`docs/NOUS_DRIFT_MAINTENANCE.md`](../../docs/NOUS_DRIFT_MAINTENANCE.md).
 
 | Situatie | Commando |
 |----------|----------|
-| Drift na upstream-push | `windows\SYNC_NOUS_DRIFT_CATCHUP.bat` |
+| Na `UPDATE_HERMES` / upstream-push | **Auto** catch-up in `UPDATE_HERMES.bat` (of `SYNC_NOUS_DRIFT_CATCHUP.bat`) |
 | Staged tier-A na productie-poort | `Invoke-HermesPostGateWorktreeReset.ps1` (auto in `RUN_PRODUCTION_GATE`) |
-| Alleen drift-check | `Test-NousTreeIdentical.ps1` |
-| Baseline-snapshot | `Export-NousDriftBaseline.ps1` → [`NOUS_DRIFT_BASELINE.md`](../../docs/NOUS_DRIFT_BASELINE.md) |
+| CI drift gate | `Test-NousTreeIdentical.ps1` |
+| Baseline-snapshot | `Export-NousDriftBaseline.ps1` (in catch-up keten) |
 
 ## Related
 

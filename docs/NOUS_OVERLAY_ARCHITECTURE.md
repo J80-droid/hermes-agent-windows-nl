@@ -11,10 +11,10 @@ Fork-specifiek gedrag (statusbalk-kosten, `/cost`, Gemini-pricing, model-catalog
 
 ```cmd
 windows\SYNC_NOUS.bat
-windows\SYNC_NOUS.bat -Yes
+windows\SYNC_NOUS_DRIFT_CATCHUP.bat
 ```
 
-Fasen: preflight → merge (`upstream_sync.ps1`) → `Invoke-ApplyHermesOverlay` → post-merge → `Test-NousTreeIdentical.ps1` (strict).
+Fasen: preflight → merge (`upstream_sync.ps1`) → `Invoke-ApplyHermesOverlay` → post-merge → drift gate + **auto catch-up** (`Invoke-HermesNousDriftGateWithCatchUp.ps1`). Geen `SYNC_NOUS -Yes` voor routine drift.
 
 | Entry | Rol |
 |-------|-----|

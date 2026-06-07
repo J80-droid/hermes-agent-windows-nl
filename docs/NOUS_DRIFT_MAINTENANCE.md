@@ -11,19 +11,22 @@ Zie ook: [`NOUS_OVERLAY_ARCHITECTURE.md`](NOUS_OVERLAY_ARCHITECTURE.md) · [`win
 | **A** | `HEAD` ≈ `upstream/main` (0× must-upstream) | Alleen allowlist in `HermesNousTierPaths.ps1` |
 | **B** | Geen upstream-vergelijking | `overlay/`, `windows/`, tests, … |
 
-## Eén commando (aanbevolen)
+## Geautomatiseerde keten (standaard)
+
+| Entry | Wanneer | Gedrag |
+|-------|---------|--------|
+| **`UPDATE_HERMES.bat`** | Na elke update | Drift gate + **auto catch-up** (mislukt = exit 1) |
+| **`SYNC_NOUS.bat` (Full)** | Nous-merge | Zelfde gate + catch-up; `-Yes` commit catch-up |
+| **`SYNC_NOUS_DRIFT_CATCHUP.bat`** | Handmatig / CI-lokaal | Volledige catch-up keten |
+| **`RUN_PRODUCTION_GATE.bat`** | Na productie-poort | `Invoke-HermesPostGateWorktreeReset.ps1` |
+
+Flags `UPDATE_HERMES.bat`: `-SkipNousDriftCatchUp` (alleen detectie), `-CommitNousDrift`, `-StrictNousSync`.
 
 ```cmd
 windows\SYNC_NOUS_DRIFT_CATCHUP.bat
 ```
 
-Of met commit:
-
-```powershell
-powershell -NoProfile -File windows/scripts/Invoke-SyncNousDriftCatchUp.ps1 -Commit
-```
-
-Keten: `git fetch upstream` → `Test-NousTreeIdentical` → bij FAIL: targeted checkout (≤15 paden) of `Invoke-RestoreNousTierA` → fork-intentional behouden → `RUN_PYTEST_FORK_GATE` → `Export-NousDriftBaseline` → optioneel commit.
+Keten: `git fetch upstream` → drift-report → targeted checkout (≤15 paden) of `Invoke-RestoreNousTierA` → **fork-intentional auto** → `RUN_PYTEST_FORK_GATE` → `Export-NousDriftBaseline` → optioneel `-Commit`.
 
 ## Handmatige stappen (zelfde policy)
 
@@ -57,24 +60,21 @@ powershell -NoProfile -File windows/scripts/Invoke-HermesPostGateWorktreeReset.p
 
 Automatisch aan het einde van `RUN_PRODUCTION_GATE.bat`.
 
-## Detectie zonder fix
+## Alleen detectie (opt-out)
 
-| Entry | Gedrag |
-|-------|--------|
-| `UPDATE_HERMES.bat` | Drift-check na update; WARN of `-StrictNousSync` → exit 1 |
-| `UPDATE_HERMES.bat -StrictNousSync` | Hard stop bij drift |
-| `Export-NousDriftBaseline.ps1` | Snapshot naar `NOUS_DRIFT_BASELINE.md` |
+`UPDATE_HERMES.bat -SkipNousDriftCatchUp` — drift-check zonder auto-fix (niet aanbevolen).
 
-Bij WARN na update: `windows\SYNC_NOUS_DRIFT_CATCHUP.bat`.
+`Test-NousTreeIdentical.ps1` — strict gate voor CI (`fork-windows-institutional.yml`).
 
 ## Scripts (windows/scripts/)
 
 | Script | Rol |
 |--------|-----|
-| `HermesNousDrift.ps1` | Gedeelde drift-logica (dot-source) |
-| `Test-NousTreeIdentical.ps1` | Strict gate (exit 0/1) |
-| `Invoke-RestoreNousTierA.ps1` | Volledige tier-A → upstream + fork-intentional behoud |
-| `Invoke-SyncNousDriftCatchUp.ps1` | Geautomatiseerde routine (boven) |
+| `HermesNousDrift.ps1` | Gedeelde drift-logica + `Invoke-HermesNousTierADriftCatchUp` |
+| `Invoke-HermesNousDriftGateWithCatchUp.ps1` | Detect + auto catch-up (UPDATE_HERMES, SYNC_NOUS) |
+| `Invoke-SyncNousDriftCatchUp.ps1` | Catch-up alleen (CLI) |
+| `Test-NousTreeIdentical.ps1` | Strict gate (CI) |
+| `Invoke-RestoreNousTierA.ps1` | Volledige tier-A → upstream + fork-intentional auto |
 | `Invoke-HermesPostGateWorktreeReset.ps1` | `git reset --hard HEAD` na staged postflight |
 | `Export-NousDriftBaseline.ps1` | Baseline-snapshot |
 

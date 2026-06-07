@@ -3,7 +3,8 @@ REM UPDATE_HERMES.bat — Eén keten: Nous upstream + deps + trust/RAG/verify (c
 REM   Normaal:       windows\UPDATE_HERMES.bat
 REM   Grote merge:   windows\UPDATE_HERMES.bat -Yes  (geen j/N bij >20 commits achter)
 REM   Alleen rommel: windows\UPDATE_HERMES.bat -QuickFix
-REM   Zie: windows\UPSTREAM_SYNC.md  |  Snel zonder vraag: windows\UPDATE_HERMES_YES.bat
+REM   Drift:       auto catch-up na update (tier-A) — -SkipNousDriftCatchUp om uit te zetten
+REM   Zie: docs\NOUS_DRIFT_MAINTENANCE.md  |  Snel zonder vraag: windows\UPDATE_HERMES_YES.bat
 setlocal EnableExtensions EnableDelayedExpansion
 
 set "UPSTREAM_SYNC_PS1="
@@ -61,11 +62,15 @@ set "FORCE_FLAG="
 if "%HERMES_UPSTREAM_AUTO_CONFIRM%"=="1" set "FORCE_FLAG=-Force"
 
 set "STRICT_NOUS=0"
+set "SKIP_DRIFT_CATCHUP=0"
+set "COMMIT_DRIFT=0"
 :parse_args
 if "%~1"=="" goto :parse_done
 if /I "%~1"=="-Yes" set "FORCE_FLAG=-Force" & shift & goto :parse_args
 if /I "%~1"=="-y" set "FORCE_FLAG=-Force" & shift & goto :parse_args
 if /I "%~1"=="-StrictNousSync" set "STRICT_NOUS=1" & shift & goto :parse_args
+if /I "%~1"=="-SkipNousDriftCatchUp" set "SKIP_DRIFT_CATCHUP=1" & shift & goto :parse_args
+if /I "%~1"=="-CommitNousDrift" set "COMMIT_DRIFT=1" & shift & goto :parse_args
 set "PS_ARGS=!PS_ARGS! %~1"
 shift
 goto :parse_args
@@ -94,20 +99,24 @@ if not "!ERR!"=="0" (
 
 echo.
 echo [OK] Update-keten geslaagd.
-echo [INFO] Nous+overlay drift-check (Tier A intact)...
-if exist "%~dp0scripts\Test-NousTreeIdentical.ps1" (
-  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Test-NousTreeIdentical.ps1" -RepoRoot "%CD%"
+echo [INFO] Nous tier-A drift gate (+ auto catch-up)...
+set "DRIFT_GATE_PS1=%~dp0scripts\Invoke-HermesNousDriftGateWithCatchUp.ps1"
+set "DRIFT_EXTRA="
+if "%SKIP_DRIFT_CATCHUP%"=="1" set "DRIFT_EXTRA=!DRIFT_EXTRA! -SkipCatchUp"
+if "%COMMIT_DRIFT%"=="1" set "DRIFT_EXTRA=!DRIFT_EXTRA! -Commit"
+if "%STRICT_NOUS%"=="1" set "DRIFT_EXTRA=!DRIFT_EXTRA! -Strict"
+if exist "!DRIFT_GATE_PS1!" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "!DRIFT_GATE_PS1!" -RepoRoot "%CD%" !DRIFT_EXTRA!
   if errorlevel 1 (
-    echo [WARN] Nous drift-check FAIL — draai windows\SYNC_NOUS_DRIFT_CATCHUP.bat
-    echo [INFO] Zie docs\NOUS_DRIFT_MAINTENANCE.md
-    if "%STRICT_NOUS%"=="1" (
-      echo [ERROR] -StrictNousSync: Tier A drift — update afgebroken.
-      pause
-      exit /b 1
-    )
-  ) else (
-    echo [OK] Nous drift-check PASS
+    echo [ERROR] Nous drift gate / catch-up mislukt — zie docs\NOUS_DRIFT_MAINTENANCE.md
+    pause
+    exit /b 1
   )
+  echo [OK] Nous drift gate OK
+) else (
+  echo [ERROR] Ontbreekt: scripts\Invoke-HermesNousDriftGateWithCatchUp.ps1
+  pause
+  exit /b 1
 )
 echo [INFO] Hermes opnieuw: windows\start_hermes.bat  —  in chat: /new
 echo [INFO] Taakbalk-snelkoppelingen bijwerken (windows\ + taakbalk-kopieen)...

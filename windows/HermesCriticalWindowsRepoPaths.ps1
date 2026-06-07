@@ -76,6 +76,7 @@ function Get-HermesCriticalWindowsRepoPathList {
     'windows/scripts/sync_nous.ps1',
     'windows/scripts/HermesNousDrift.ps1',
     'windows/scripts/Invoke-SyncNousDriftCatchUp.ps1',
+    'windows/scripts/Invoke-HermesNousDriftGateWithCatchUp.ps1',
     'windows/scripts/Invoke-HermesPostGateWorktreeReset.ps1',
     'windows/scripts/Test-NousTreeIdentical.ps1',
     'windows/scripts/Invoke-HermesOverlayBootstrap.ps1',

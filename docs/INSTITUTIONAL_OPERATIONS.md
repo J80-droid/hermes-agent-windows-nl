@@ -140,8 +140,9 @@ Grote achterstand zonder j/N-vraag: `UPDATE_HERMES.bat -Yes` of `UPDATE_HERMES_Y
 
 | Wanneer | Commando |
 |---------|----------|
-| Na upstream-push / wekelijks / vóór release | `windows\SYNC_NOUS_DRIFT_CATCHUP.bat` (of `.ps1 -Commit`) |
-| Alleen detectie | `Test-NousTreeIdentical.ps1` |
+| Na `UPDATE_HERMES` / upstream-push | **Auto** drift gate + catch-up (standaard) |
+| Handmatig / na pull zonder update | `windows\SYNC_NOUS_DRIFT_CATCHUP.bat` (`.ps1 -Commit`) |
+| Alleen detectie (opt-out) | `UPDATE_HERMES.bat -SkipNousDriftCatchUp` |
 | Na productie-poort | `Invoke-HermesPostGateWorktreeReset.ps1` (auto in `RUN_PRODUCTION_GATE`) |
 | Bij update (hard stop) | `UPDATE_HERMES.bat -StrictNousSync` |
 | Gecontroleerde Nous-merge | `SYNC_NOUS.bat` (zonder `-Yes` voor routine drift) |

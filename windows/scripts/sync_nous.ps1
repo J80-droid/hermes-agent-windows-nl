@@ -70,10 +70,19 @@ function Invoke-SyncNousApply {
 }
 
 function Invoke-SyncNousVerify {
-    $test = Join-HermesRepoPath -RepoRoot $repo -RelativePath 'windows/scripts/Test-NousTreeIdentical.ps1'
-    $testArgs = @{ RepoRoot = $repo; UpstreamRef = $upstreamRef }
-    if ($script:SyncNousAllowTransitionalDrift) { $testArgs['AllowTransitional'] = $true }
-    & $test @testArgs
+    $gate = Join-HermesRepoPath -RepoRoot $repo -RelativePath 'windows/scripts/Invoke-HermesNousDriftGateWithCatchUp.ps1'
+    if (-not (Test-Path -LiteralPath $gate)) {
+        Write-Error "Missing $gate"
+        return 1
+    }
+    $gateArgs = @{
+        RepoRoot     = $repo
+        UpstreamRef  = $upstreamRef
+        Strict       = $true
+    }
+    if ($script:SyncNousAllowTransitionalDrift) { $gateArgs['AllowTransitional'] = $true }
+    if ($script:SyncNousYes) { $gateArgs['Commit'] = $true }
+    & $gate @gateArgs
     return $LASTEXITCODE
 }
 
