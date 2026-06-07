@@ -6,12 +6,9 @@ version: 1
 markers: "not integration and not e2e"
 paths:
   - tests/overlay/
-  - tests/hermes_cli/test_apply_profile_override.py
   - tests/hermes_cli/test_profile_switch.py
-  - tests/hermes_cli/test_relaunch.py::TestRelaunchChatAfterProfileSwitch
-  - tests/hermes_cli/test_relaunch.py::TestStripProfileFlags
-  - tests/hermes_cli/test_gateway_windows.py
   - tests/windows/test_gateway_windows_fork_scripts.py
+  - tests/windows/test_gateway_windows_virtual_env.py
   - tests/windows/test_codebase_smoke_audit.py
   - tests/audits/test_nous_overlay_fork_gates_e2e_harness.py
   - tests/audits/test_pytest_audit_env_e2e_harness.py

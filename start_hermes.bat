@@ -117,6 +117,9 @@ echo [INFO] Sync klaar zonder relaunch — start Hermes opnieuw met start_hermes
 exit /b 1
 
 :apply_launch_profile
+if not "%HERMES_SKIP_UPSTREAM_BEHIND_WARN%"=="1" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0windows\scripts\Test-HermesUpstreamBehindThreshold.ps1" -RepoRoot "%CD%" -WarnOnly 2>nul
+)
 set "HERMES_PROFILE_CMD=%TEMP%\hermes_launch_profile.cmd"
 if defined HERMES_LAUNCH_PROFILE (
   powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0windows\scripts\Invoke-HermesLaunchProfileEnv.ps1" -RepoRoot "%CD%" -Profile "!HERMES_LAUNCH_PROFILE!" -OutCmdPath "!HERMES_PROFILE_CMD!" -Quiet >nul

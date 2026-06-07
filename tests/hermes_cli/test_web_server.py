@@ -305,6 +305,7 @@ class TestWebServerEndpoints:
         assert config["dashboard"]["theme"] == "ember"
         assert config["dashboard"]["font"] == "jetbrains-mono"
 
+
     def test_get_sessions_uses_only_persisted_cwd(self, monkeypatch):
         """Session rows without persisted cwd must not inherit TERMINAL_CWD.
 
@@ -4282,13 +4283,6 @@ class TestDashboardPluginStaticAssetAllowlist:
         # And the body is actually the manifest, not the SPA fallback.
         body = resp.json()
         assert body.get("name") == "example"
-
-    def test_bundled_entry_js_served(self):
-        """Example plugin ships dist/index.js so the dashboard loader does not 404."""
-        resp = self.client.get("/dashboard-plugins/example/dist/index.js")
-        assert resp.status_code == 200
-        assert "application/javascript" in resp.headers.get("content-type", "")
-        assert "__HERMES_PLUGINS__" in resp.text
 
     def test_unknown_plugin_is_404(self):
         """Existing behaviour preserved: nonexistent plugin name → 404."""

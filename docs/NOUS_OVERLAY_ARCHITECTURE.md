@@ -121,7 +121,7 @@ Handmatig: `Test-NousTreeIdentical.ps1` → `Invoke-RestoreNousTierA.ps1` of tar
 
 **CI:** `.github/workflows/fork-windows-institutional.yml` — upstream fetch, drift gate, 14-fixes E2E, pytest-audit-env, tier-a-cli guard, overlay E2E, TUI-build + drift. Wekelijks: `fork-windows-audits-nightly.yml` (`RUN_AUDITS -IncludeAllE2E`).
 
-**Tier A guard:** `python scripts/verify_institutional_guard.py --check-tier-a-cli`
+**Tier A guard:** `python scripts/verify_institutional_guard.py --check-tier-a-cli` · staged tier-A edits: `windows/scripts/check_fork_tier_a_edits.py --staged --warn` (pre-commit) — nieuw fork-gedrag via `overlay/hermes_cli/*_fork_patch.py`, niet direct `hermes_cli/*.py` wijzigen.
 
 **pytest (Windows):** `pyproject.toml` = upstream `signal`; fork gate/upstream runners via `Invoke-HermesAuditPytest` / manifest (`windows/tests/PYTEST_POLICY.md`).
 

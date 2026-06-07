@@ -229,14 +229,15 @@ function Invoke-UpstreamPreflight {
     $behind = [int]$lr[1]
     Write-Host "  Fork-only commits (ahead):  $ahead"
     Write-Host "  Nous commits (behind):      $behind"
-    $behindWarn = 10
+    $behindWarn = 5
     if ($env:HERMES_UPSTREAM_BEHIND_WARN) {
         try { $behindWarn = [int]$env:HERMES_UPSTREAM_BEHIND_WARN } catch { $null = $_ }
     }
-    if ($behind -gt $behindWarn) {
+    if ($behind -ge $behindWarn) {
         Write-Host ''
         Write-Host ('  [REMINDER] Fork is ' + $behind + ' commits achter upstream (drempel ' + $behindWarn + ').') -ForegroundColor Yellow
-        Write-Host '             Zie windows\UPSTREAM_SYNC.md — NOOIT: git reset --hard upstream/main' -ForegroundColor Yellow
+        Write-Host '             Zie docs\FORK_MERGE_POLICY.md + windows\UPDATE_HERMES.bat -Yes' -ForegroundColor Yellow
+        Write-Host '             NOOIT: git reset --hard upstream/main' -ForegroundColor Yellow
         Write-Host ''
     }
 

@@ -156,12 +156,22 @@ function Invoke-HermesModelConfigMaintenance {
     return 1
 }
 
+function Invoke-HermesUpstreamBehindWarn {
+    if ($env:HERMES_SKIP_UPSTREAM_BEHIND_WARN -eq '1') { return 0 }
+    if ($env:HERMES_MINIMAL_LAUNCH -eq '1') { return 0 }
+    $check = Join-Path $scriptDir 'Test-HermesUpstreamBehindThreshold.ps1'
+    if (-not (Test-Path -LiteralPath $check)) { return 0 }
+    & $check -RepoRoot $RepoRoot -WarnOnly -Quiet:$false
+    return 0
+}
+
 function Invoke-HermesStartMaintenance {
     param([switch]$AllowFailure)
     if (-not $PSBoundParameters.ContainsKey('AllowFailure')) {
         $AllowFailure = [bool]$script:DotAllowFailure
     }
     $err = 0
+    Invoke-HermesUpstreamBehindWarn | Out-Null
     if ((Invoke-HermesShortcutMaintenance) -ne 0) {
         if (-not $AllowFailure) { $err = 1 }
     }

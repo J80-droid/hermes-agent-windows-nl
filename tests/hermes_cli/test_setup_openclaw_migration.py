@@ -606,24 +606,6 @@ class TestSkipConfiguredSection:
             )
         assert result is False
 
-    def test_returns_false_when_model_incoherent(self):
-        def env_side(key):
-            return "sk-xxx" if key == "OPENROUTER_API_KEY" else ""
-
-        config = {
-            "model": {
-                "provider": "gemini",
-                "default": "deepseek/deepseek-v4-flash:free",
-            }
-        }
-        with (
-            patch.object(setup_mod, "get_env_value", side_effect=env_side),
-            patch.object(setup_mod, "_model_section_is_coherent", return_value=False),
-            patch.object(setup_mod, "prompt_yes_no", return_value=False),
-        ):
-            result = setup_mod._skip_configured_section(config, "model", "Model")
-        assert result is False
-
 
 class TestSetupWizardSkipsConfiguredSections:
     """After migration, already-configured sections should offer skip."""

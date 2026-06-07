@@ -583,6 +583,15 @@ try {
     }
 
     if ($FinalizeOnly) {
+        $uvAssist = Join-Path $PSScriptRoot 'scripts\Invoke-HermesUvLockMergeAssist.ps1'
+        if (Test-Path -LiteralPath $uvAssist) {
+            $unmergedPre = @(Get-UnmergedPaths)
+            if ($unmergedPre -contains 'uv.lock') {
+                Write-Step 'uv.lock conflict — merge-assist...'
+                & $uvAssist -RepoRoot $repo
+                if ($LASTEXITCODE -ne 0) { exit [int]$LASTEXITCODE }
+            }
+        }
         Write-Step 'Afronden: merge-commit + UPDATE...'
         $code = Invoke-MergeCommitIfReady
         if ($code -ne 0) {

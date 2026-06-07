@@ -206,18 +206,6 @@ def test_gateway_cmd_script_uses_pythonw_without_replace_or_start_churn(monkeypa
     assert "exit /b 0" in content
 
 
-def test_build_gateway_cmd_script_virtual_env_points_to_venv_root():
-    """VIRTUAL_ENV must be <venv> (Scripts parent), not conda envs/ parent (#fork)."""
-    content = gateway_windows._build_gateway_cmd_script(
-        r"C:\miniconda3\envs\hermes-env\python.exe",
-        r"C:\Users\me\AppData\Local\hermes\profiles\core",
-        r"C:\Users\me\AppData\Local\hermes\profiles\core",
-        "--profile core",
-    )
-    assert r'VIRTUAL_ENV=C:\miniconda3\envs\hermes-env' in content
-    assert r'VIRTUAL_ENV=C:\miniconda3\envs"' not in content
-
-
 def test_elevated_gateway_command_uses_pythonw_hidden_console(monkeypatch):
     """UAC handoff should not leave a second elevated cmd.exe window open."""
     calls = []

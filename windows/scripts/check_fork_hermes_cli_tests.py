@@ -87,17 +87,28 @@ def run_pre_merge(repo: Path, upstream: str) -> dict:
     }
 
 
-def run_staged(repo: Path) -> dict:
+def run_staged(repo: Path, *, suggest: bool = False) -> dict:
     exceptions = _load_exceptions(repo)
-    staged = [p for p in _git_lines(repo, "diff", "--cached", "--name-only", "--diff-filter=ACMR") if _under_hermes_cli(p)]
+    staged_all = [
+        p
+        for p in _git_lines(repo, "diff", "--cached", "--name-only", "--diff-filter=ACMR")
+        if _under_hermes_cli(p)
+    ]
+    staged_added = [
+        p
+        for p in _git_lines(repo, "diff", "--cached", "--name-only", "--diff-filter=A")
+        if _under_hermes_cli(p)
+    ]
     violations: list[str] = []
-    for p in staged:
+    for p in staged_added:
         if p not in exceptions:
             violations.append(p)
     return {
         "mode": "staged",
-        "staged_hermes_cli": sorted(staged),
+        "staged_hermes_cli": sorted(staged_all),
+        "staged_added": sorted(staged_added),
         "violations": sorted(violations),
+        "suggest": suggest,
     }
 
 
@@ -109,6 +120,7 @@ def main() -> int:
     parser.add_argument("--staged", action="store_true", help="Fail on staged tests/hermes_cli/ outside exceptions")
     parser.add_argument("--json", action="store_true", dest="as_json")
     parser.add_argument("--strict", action="store_true", help="With --pre-merge: fail if unknown_paths non-empty")
+    parser.add_argument("--suggest", action="store_true", help="With --staged: print git restore hints for violations")
     args = parser.parse_args()
 
     if not args.pre_merge and not args.staged:
@@ -144,16 +156,19 @@ def main() -> int:
                 exit_code = 1
 
     if args.staged:
-        st = run_staged(repo)
+        st = run_staged(repo, suggest=args.suggest)
         report.update(st)
         if st["violations"]:
             print(
-                "[FAIL] Staged wijzigingen in tests/hermes_cli/ buiten exceptions - "
+                "[FAIL] Nieuwe staged bestanden in tests/hermes_cli/ buiten exceptions - "
                 "verplaats naar tests/overlay/ of tests/windows/.",
                 file=sys.stderr,
             )
             for p in st["violations"]:
                 print(f"  {p}", file=sys.stderr)
+                if args.suggest:
+                    print(f"  hint: git restore --staged {p}", file=sys.stderr)
+            print("  Zie docs/FORK_MERGE_POLICY.md", file=sys.stderr)
             exit_code = 1
 
     if args.as_json:

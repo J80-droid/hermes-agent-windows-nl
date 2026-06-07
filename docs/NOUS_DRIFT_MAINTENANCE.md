@@ -40,7 +40,9 @@ Mislukt iets → update stopt met foutcode (geen stille waarschuwing). **Merge-c
 |--|-------------------|---------------------|
 | **Bron** | `git pull` van **origin** (jouw fork) | Merge **upstream** (Nous) |
 | **Tier-A drift** | Niet nodig (origin is al gesynced) | Auto catch-up |
-| **Wanneer** | Elke sessie | Periodiek / bij grote Nous-achterstand |
+| **Wanneer** | Elke sessie (+ upstream-waarschuwing bij behind ≥ 5) | Zodra drempel bereikt — `UPDATE_HERMES.bat -Yes` |
+
+**Geen Taakplanner:** update onderbreekt actieve agent-sessies niet automatisch. Alleen banner bij start; merge start jij bewust.
 
 ---
 

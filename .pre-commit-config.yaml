@@ -7,3 +7,13 @@ repos:
         entry: powershell -NoProfile -ExecutionPolicy Bypass -File windows/scripts/guard_git_clean.ps1 -RepoRoot . -Strict
         language: system
         pass_filenames: false
+      - id: fork-hermes-cli-test-staged
+        name: Block new tests/hermes_cli/ outside exceptions
+        entry: python windows/scripts/check_fork_hermes_cli_tests.py --staged --suggest
+        language: system
+        pass_filenames: false
+      - id: fork-tier-a-staged-warn
+        name: Warn tier-A staged edits (use overlay)
+        entry: python windows/scripts/check_fork_tier_a_edits.py --staged --warn
+        language: system
+        pass_filenames: false

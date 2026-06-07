@@ -7,7 +7,18 @@ used to treat the leading ``27`` as ESC/cancel, which dumped the setup wizard's
 provider/model picker into its numbered "Select [1-N]" fallback the instant a
 user pressed up or down.
 """
-import curses
+import pytest
+
+from overlay.bootstrap import install
+
+pytest.importorskip("curses")
+
+
+@pytest.fixture(autouse=True)
+def _bootstrap():
+    install()
+
+import curses  # noqa: E402
 
 from hermes_cli.curses_ui import (
     NAV_CANCEL,

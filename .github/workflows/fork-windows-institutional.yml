@@ -56,6 +56,16 @@ jobs:
       - name: Nous Tier A drift gate (strict)
         run: powershell -NoProfile -File windows/scripts/Test-NousTreeIdentical.ps1
 
+      - name: Fork tests/hermes_cli/ hygiene (strict)
+        run: python windows/scripts/check_fork_hermes_cli_tests.py --pre-merge --strict
+
+      - name: Upstream pytest ReportOnly + parity check
+        env:
+          PYTEST_ADDOPTS: '--timeout-method=thread'
+        run: |
+          windows\tests\RUN_PYTEST_UPSTREAM.bat -ReportOnly
+          python -c "import json,sys; n=json.load(open('windows/tests/pytest_upstream_summary.json'))['new_failures_count']; print('new_failures_count=', n); sys.exit(1 if n else 0)"
+
       # Na drift gate: npm mag node_modules/lockfile raken zonder Tier A-vergelijking te vervuilen.
       - name: Set up Node.js 20
         uses: actions/setup-node@v4

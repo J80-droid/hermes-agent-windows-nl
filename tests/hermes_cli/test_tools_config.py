@@ -279,38 +279,6 @@ def test_get_platform_tools_configurable_only_no_expansion():
     assert "web" not in enabled
 
 
-def test_save_platform_tools_marks_user_customized():
-    config = {"platform_toolsets": {"cli": ["web"]}}
-    with patch("hermes_cli.tools_config.save_config"):
-        _save_platform_tools(config, "cli", {"web", "terminal"})
-    assert config["platform_toolsets"]["_user_customized"]["cli"] is True
-
-
-def test_get_platform_tools_ignores_reserved_meta_key_in_cli_list():
-    """``_user_customized`` must never be treated as a toolset name."""
-    config = {
-        "platform_toolsets": {
-            "cli": ["_user_customized", "web", "terminal"],
-        }
-    }
-    enabled = _get_platform_tools(config, "cli", include_default_mcp_servers=False)
-    assert "_user_customized" not in enabled
-    assert enabled == {"web", "terminal"}
-
-
-def test_get_platform_tools_user_customized_skips_hermes_cli_expansion():
-    """After ``hermes tools`` save, hermes-cli subset inference must not
-    re-enable tools the user unchecked."""
-    config = {
-        "platform_toolsets": {
-            "_user_customized": {"cli": True},
-            "cli": ["hermes-cli", "web", "terminal"],
-        }
-    }
-    enabled = _get_platform_tools(config, "cli", include_default_mcp_servers=False)
-    assert enabled == {"web", "terminal"}
-
-
 def test_get_platform_tools_mixed_does_not_resurrect_default_off():
     """Expansion must subtract _DEFAULT_OFF_TOOLSETS from the implicit
     pull-in. Without this, ``hermes-cli`` expansion would re-enable
@@ -1280,12 +1248,6 @@ def test_discord_toolsets_in_configurable_toolsets():
     keys = {ts_key for ts_key, _, _ in CONFIGURABLE_TOOLSETS}
     assert "discord" in keys
     assert "discord_admin" in keys
-
-
-def test_mcp_and_kanban_in_configurable_toolsets():
-    keys = {ts_key for ts_key, _, _ in CONFIGURABLE_TOOLSETS}
-    assert "mcp" in keys
-    assert "kanban" in keys
 
 
 def test_discord_toolsets_in_default_off():

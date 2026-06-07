@@ -1,32 +1,24 @@
-# Legacy fork tests under tests/hermes_cli/ (diff vs upstream/main).
-# Do NOT add new paths — put new fork tests in tests/overlay/ or tests/windows/.
-# SSOT policy: docs/FORK_MERGE_POLICY.md
-tests/hermes_cli/test_apply_profile_override.py
+﻿# Legacy fork-only tests under tests/hermes_cli/ (added on fork, not on upstream).
+# Modified upstream files migrated to tests/overlay/ or tests/windows/.
+# SSOT: docs/FORK_MERGE_POLICY.md
 tests/hermes_cli/test_auth_json_store.py
 tests/hermes_cli/test_cli_pending_queue.py
 tests/hermes_cli/test_cli_post_sync_new_chat.py
 tests/hermes_cli/test_clipboard_text.py
 tests/hermes_cli/test_collapsed_record_pseudo_table.py
-tests/hermes_cli/test_config.py
 tests/hermes_cli/test_config_snapshot.py
-tests/hermes_cli/test_curses_arrow_keys.py
-tests/hermes_cli/test_curses_color_compat.py
-tests/hermes_cli/test_doctor.py
 tests/hermes_cli/test_doctor_auth_bom.py
 tests/hermes_cli/test_doctor_model_coherence.py
 tests/hermes_cli/test_doctor_profile_global_blocks_fix.py
 tests/hermes_cli/test_expand_cli_toolset_arg.py
 tests/hermes_cli/test_filesystem_sandbox.py
-tests/hermes_cli/test_gateway_windows.py
 tests/hermes_cli/test_hardware_backend.py
 tests/hermes_cli/test_institutional_new_chat_notice.py
 tests/hermes_cli/test_institutional_render_helpers.py
 tests/hermes_cli/test_legal_architecture_brief.py
 tests/hermes_cli/test_markdown_output_normalize.py
 tests/hermes_cli/test_merge_legacy_providers_config.py
-tests/hermes_cli/test_model_provider_persistence.py
 tests/hermes_cli/test_model_runtime_config.py
-tests/hermes_cli/test_model_validation.py
 tests/hermes_cli/test_normalizer_ts_parity.py
 tests/hermes_cli/test_platform_toolsets_empty_cli.py
 tests/hermes_cli/test_profile_mcp_format.py
@@ -35,20 +27,12 @@ tests/hermes_cli/test_profile_orphan_wrappers.py
 tests/hermes_cli/test_profile_switch.py
 tests/hermes_cli/test_profile_switch_e2e.py
 tests/hermes_cli/test_profiles_create_model_strip.py
-tests/hermes_cli/test_relaunch.py
 tests/hermes_cli/test_render_pipeline_contract.py
-tests/hermes_cli/test_runtime_provider_resolution.py
-tests/hermes_cli/test_setup_openclaw_migration.py
 tests/hermes_cli/test_skills_hub_init.py
-tests/hermes_cli/test_skin_engine.py
 tests/hermes_cli/test_status_bar_cost.py
 tests/hermes_cli/test_status_bar_layout.py
 tests/hermes_cli/test_status_bar_prompt_elapsed.py
 tests/hermes_cli/test_status_bar_throughput.py
-tests/hermes_cli/test_tools_config.py
-tests/hermes_cli/test_update_check.py
-tests/hermes_cli/test_update_concurrent_quarantine.py
 tests/hermes_cli/test_usage_snapshot.py
 tests/hermes_cli/test_venice_model_picker.py
-tests/hermes_cli/test_web_server.py
 tests/hermes_cli/test_win32_console.py

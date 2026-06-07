@@ -498,17 +498,17 @@ git rev-list --left-right --count HEAD...upstream/main
 
 Bij `UPDATE_HERMES.bat` / `-Phase Update`: vaste **banner** tegen `reset --hard` (geen detectie achteraf). Overslaan: `HERMES_SKIP_RESET_WARNING=1` of `windows\SKIP_HARD_RESET_WARNING`.
 
-### 6. Optioneel: merge-driver voor lockfile (gevorderd)
+### 6. uv.lock na merge-conflict (semi-auto)
 
-Bij herhaaldelijk `uv.lock`-conflict na merge:
+**Canonical:** `windows\scripts\Invoke-HermesUvLockMergeAssist.ps1` — wordt automatisch aangeroepen door `MERGE_UPSTREAM.bat -FinalizeOnly` bij unmerged `uv.lock`.
+
+Handmatig:
 
 ```cmd
-git checkout --theirs uv.lock
-uv lock
-git add uv.lock
+powershell -NoProfile -File windows\scripts\Invoke-HermesUvLockMergeAssist.ps1 -RepoRoot .
 ```
 
-Daarna RAG-deps opnieuw: `pip install -e ".[rag]"`.
+Stappen: `git checkout --theirs uv.lock` → `uv lock` → `install_rag_extras.ps1` → `guard_forbidden_packages.py`.
 
 ---
 
