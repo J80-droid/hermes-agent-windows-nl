@@ -60,19 +60,16 @@ Tests marked `@pytest.mark.e2e` only — covered by E2E bats:
 - `test_repo_hygiene_institutional_e2e.py` → `RUN_INSTITUTIONAL_HARDENING_E2E`
 - `test_nous_overlay_fork_gates_e2e_harness_runs` → `RUN_NOUS_OVERLAY_FORK_GATES_E2E.bat`
 
-## Postflight & worktree (tier-A)
+## Drift & postflight (tier-A)
 
-`RUN_PRODUCTION_GATE` / `-IncludeAllE2E` run **tier-A postflight** (`Invoke-HermesTierAPostAuditClean -Phase Postflight`): upstream tier-A files are restored for the drift gate, then **`git checkout upstream/main -- …` stages those paths**. That is expected; it does **not** change `HEAD`.
+**SSOT:** [`docs/NOUS_DRIFT_MAINTENANCE.md`](../../docs/NOUS_DRIFT_MAINTENANCE.md) — upstream-push routine, scripts, taboe `SYNC_NOUS -Yes`.
 
-| Symptoom | Oplossing |
-|----------|-----------|
-| `git status` toont **staged** tier-A na gate | `powershell -File windows\scripts\Invoke-HermesPostGateWorktreeReset.ps1` (of `git reset --hard HEAD`) |
-| Alleen unstaged wijzigingen | `git restore .` |
-| Volledige tier-A terug naar upstream op disk **en** committen | `Invoke-RestoreNousTierA.ps1` → fork `gateway_windows.py` behouden → commit |
-
-`RUN_PRODUCTION_GATE.ps1` roept na afloop automatisch `Invoke-HermesPostGateWorktreeReset.ps1` aan als er staged tier-A staat.
-
-**Niet gebruiken voor routine drift:** `SYNC_NOUS.bat -Yes` overschrijft fork-intentional wijzigingen (o.a. conda `VIRTUAL_ENV` in `gateway_windows.py`). Zie [NOUS_DRIFT_BASELINE.md](../../docs/NOUS_DRIFT_BASELINE.md#onderhoud-fork-windows).
+| Situatie | Commando |
+|----------|----------|
+| Drift na upstream-push | `windows\SYNC_NOUS_DRIFT_CATCHUP.bat` |
+| Staged tier-A na productie-poort | `Invoke-HermesPostGateWorktreeReset.ps1` (auto in `RUN_PRODUCTION_GATE`) |
+| Alleen drift-check | `Test-NousTreeIdentical.ps1` |
+| Baseline-snapshot | `Export-NousDriftBaseline.ps1` → [`NOUS_DRIFT_BASELINE.md`](../../docs/NOUS_DRIFT_BASELINE.md) |
 
 ## Related
 

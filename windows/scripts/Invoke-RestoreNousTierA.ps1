@@ -5,7 +5,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot 'HermesNousTierPaths.ps1')
+. (Join-Path $PSScriptRoot 'HermesNousDrift.ps1')
 
 function Get-RepoRoot {
     param([string]$Start)
@@ -41,6 +41,7 @@ function Copy-ForkAdditionToOverlay {
 $repo = if ($RepoRoot) { (Resolve-Path -LiteralPath $RepoRoot).Path } else { Get-RepoRoot -Start $PSScriptRoot }
 Push-Location $repo
 try {
+    $savedFork = Save-HermesNousTierAForkIntentionalFromHead -RepoRoot $repo
     $ErrorActionPreference = 'Continue'
     git fetch upstream 2>&1 | Out-Null
     $ErrorActionPreference = 'Stop'
@@ -90,6 +91,7 @@ try {
         }
     }
 
+    Restore-HermesNousTierAForkIntentional -RepoRoot $repo -SavedFromHead $savedFork
     Write-Host '[OK] Tier A trees restored from upstream (extras removed).' -ForegroundColor Green
 } finally {
     Pop-Location

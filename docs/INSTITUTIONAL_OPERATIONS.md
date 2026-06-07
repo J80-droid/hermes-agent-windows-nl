@@ -136,19 +136,19 @@ powershell -NoProfile -File windows\upstream_sync.ps1 -Phase Preflight
 
 Grote achterstand zonder j/N-vraag: `UPDATE_HERMES.bat -Yes` of `UPDATE_HERMES_YES.bat`. Automation: `set HERMES_SKIP_PAUSE_AFTER_UPDATE=1`. Alleen `-QuickFix` als enig argument: stopt na opruimen. Zie [`windows/UPSTREAM_SYNC.md`](../windows/UPSTREAM_SYNC.md).
 
-**Tier A drift (cadans):**
+**Tier A drift (cadans):** SSOT [`docs/NOUS_DRIFT_MAINTENANCE.md`](NOUS_DRIFT_MAINTENANCE.md) · snapshot [`NOUS_DRIFT_BASELINE.md`](NOUS_DRIFT_BASELINE.md).
 
 | Wanneer | Commando |
 |---------|----------|
-| Wekelijks / vóór release | `git fetch upstream` → `powershell -File windows\scripts\Test-NousTreeIdentical.ps1` — bij FAIL: targeted `git checkout upstream/main -- <paden>` of `Invoke-RestoreNousTierA.ps1` (zie [`NOUS_DRIFT_BASELINE.md`](NOUS_DRIFT_BASELINE.md#onderhoud-fork-windows)) |
-| Na drift-fix / merge | `powershell -File windows\scripts\Export-NousDriftBaseline.ps1` → commit baseline |
-| Na productie-poort | `powershell -File windows\scripts\Invoke-HermesPostGateWorktreeReset.ps1` (staged tier-A postflight) |
-| Bij update (optioneel hard stop) | `windows\UPDATE_HERMES.bat -StrictNousSync` — breekt af bij Tier-A-drift |
-| Volledige tier-A → upstream (commit) | `Invoke-RestoreNousTierA.ps1` — **niet** `SYNC_NOUS.bat -Yes` (conda `gateway_windows` fix) |
+| Na upstream-push / wekelijks / vóór release | `windows\SYNC_NOUS_DRIFT_CATCHUP.bat` (of `.ps1 -Commit`) |
+| Alleen detectie | `Test-NousTreeIdentical.ps1` |
+| Na productie-poort | `Invoke-HermesPostGateWorktreeReset.ps1` (auto in `RUN_PRODUCTION_GATE`) |
+| Bij update (hard stop) | `UPDATE_HERMES.bat -StrictNousSync` |
+| Gecontroleerde Nous-merge | `SYNC_NOUS.bat` (zonder `-Yes` voor routine drift) |
 
-`SYNC_NOUS.bat` blijft beschikbaar voor gecontroleerde Nous-merge workflows; op deze fork is **`-Yes` geen standaard** voor drift-herstel.
+**Taboe:** `SYNC_NOUS.bat -Yes` voor drift-herstel op deze fork.
 
-Zie [`docs/NOUS_OVERLAY_ARCHITECTURE.md`](NOUS_OVERLAY_ARCHITECTURE.md) en [`docs/NOUS_DRIFT_BASELINE.md`](NOUS_DRIFT_BASELINE.md).
+Zie [`NOUS_OVERLAY_ARCHITECTURE.md`](NOUS_OVERLAY_ARCHITECTURE.md).
 
 ### Release & zware poorten
 

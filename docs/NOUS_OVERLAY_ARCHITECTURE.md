@@ -95,13 +95,13 @@ Bron-sync: [`Invoke-CopyHermesOverlaySources.ps1`](../windows/scripts/Invoke-Cop
 
 ## Drift (strict)
 
-```powershell
-powershell -File windows/scripts/Invoke-RestoreNousTierA.ps1
-powershell -File windows/scripts/Test-NousTreeIdentical.ps1
-powershell -File windows/scripts/Export-NousDriftBaseline.ps1
+**SSOT onderhoud:** [NOUS_DRIFT_MAINTENANCE.md](NOUS_DRIFT_MAINTENANCE.md) · snapshot: [NOUS_DRIFT_BASELINE.md](NOUS_DRIFT_BASELINE.md).
+
+```cmd
+windows\SYNC_NOUS_DRIFT_CATCHUP.bat
 ```
 
-Baseline: [NOUS_DRIFT_BASELINE.md](NOUS_DRIFT_BASELINE.md).
+Handmatig: `Test-NousTreeIdentical.ps1` → `Invoke-RestoreNousTierA.ps1` of targeted checkout → `Export-NousDriftBaseline.ps1`. Geen `SYNC_NOUS -Yes` voor routine drift op deze fork.
 
 ## E2E (institutioneel)
 
@@ -159,14 +159,15 @@ python scripts\status_bar_cost_classic_cli_live_smoke.py
 
 | Ritueel | Frequentie | Commando |
 |---------|------------|----------|
-| Nous sync | max. 1–2 weken | `windows\SYNC_NOUS.bat` |
-| Drift baseline | na elke sync/merge | `windows\scripts\Export-NousDriftBaseline.ps1` |
-| Merge-beleid | bij conflicts | Tier A `theirs`, Tier B `keepOurs` — `windows\merge_upstream_fork.ps1` |
-| UI-build na Web/TUI-pull | na sync | `build_fork_ui_assets.ps1` + `Test-NousTreeIdentical.ps1` |
+| Drift catch-up | na upstream-push / wekelijks | `windows\SYNC_NOUS_DRIFT_CATCHUP.bat` |
+| Nous merge (gecontroleerd) | max. 1–2 weken | `windows\SYNC_NOUS.bat` (niet `-Yes` voor routine drift) |
+| Drift baseline | na catch-up | `Export-NousDriftBaseline.ps1` (in catch-up) |
+| Merge-beleid | bij conflicts | Tier A `theirs`, Tier B `keepOurs` — `merge_upstream_fork.ps1` |
+| UI-build na Web/TUI-pull | na sync | `build_fork_ui_assets.ps1` + drift-check |
 
-Max. 1–2 weken achter op `upstream/main`. Zie [UPSTREAM_SYNC.md](../windows/UPSTREAM_SYNC.md) en [NOUS_DRIFT_BASELINE.md](NOUS_DRIFT_BASELINE.md).
+Max. 1–2 weken achter op `upstream/main`. Zie [NOUS_DRIFT_MAINTENANCE.md](NOUS_DRIFT_MAINTENANCE.md) · [UPSTREAM_SYNC.md](../windows/UPSTREAM_SYNC.md).
 
-`UPDATE_HERMES.bat -StrictNousSync` breekt af bij Tier-A-drift (anders alleen WARN + hint `SYNC_NOUS.bat -Yes`).
+`UPDATE_HERMES.bat -StrictNousSync` breekt af bij Tier-A-drift (anders WARN + `SYNC_NOUS_DRIFT_CATCHUP.bat`).
 
 ## Plugins / optionele overlay-modules
 

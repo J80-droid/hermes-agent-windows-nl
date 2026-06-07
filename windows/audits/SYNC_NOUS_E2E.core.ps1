@@ -29,7 +29,7 @@ if ($py) {
 
 $drift = Join-HermesRepoPath -RepoRoot $repoRoot -RelativePath 'windows/scripts/Test-NousTreeIdentical.ps1'
 & $drift -RepoRoot $repoRoot
-if ($LASTEXITCODE -eq 0) { Step-Ok 'Test-NousTreeIdentical (strict green)' } else { Step-Fail 'Test-NousTreeIdentical' 'Tier A drift — zie docs/NOUS_DRIFT_BASELINE.md' }
+if ($LASTEXITCODE -eq 0) { Step-Ok 'Test-NousTreeIdentical (strict green)' } else { Step-Fail 'Test-NousTreeIdentical' 'Tier A drift — zie docs/NOUS_DRIFT_MAINTENANCE.md' }
 
 if ($fail -gt 0) { exit 1 }
 Write-Host '[OK] SYNC_NOUS E2E harness' -ForegroundColor Green

@@ -98,7 +98,8 @@ echo [INFO] Nous+overlay drift-check (Tier A intact)...
 if exist "%~dp0scripts\Test-NousTreeIdentical.ps1" (
   powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Test-NousTreeIdentical.ps1" -RepoRoot "%CD%"
   if errorlevel 1 (
-    echo [WARN] Nous drift-check FAIL — draai windows\SYNC_NOUS.bat -Yes
+    echo [WARN] Nous drift-check FAIL — draai windows\SYNC_NOUS_DRIFT_CATCHUP.bat
+    echo [INFO] Zie docs\NOUS_DRIFT_MAINTENANCE.md
     if "%STRICT_NOUS%"=="1" (
       echo [ERROR] -StrictNousSync: Tier A drift — update afgebroken.
       pause

@@ -39,12 +39,13 @@ Nederlandstalige setup-, backup- en RAG-workflow voor deze fork. Scripts gaan ui
 
 | Doel | Script |
 | ---- | ------ |
-| Sync + drift-gate | `SYNC_NOUS.bat` |
+| **Drift catch-up (SSOT)** | `SYNC_NOUS_DRIFT_CATCHUP.bat` |
+| Gecontroleerde Nous-merge | `SYNC_NOUS.bat` |
 | Dagelijkse update | `UPDATE_HERMES.bat` (drift-check na merge) |
-| Tier A herstellen | `scripts\Invoke-RestoreNousTierA.ps1` |
+| Post-gate worktree | `scripts\Invoke-HermesPostGateWorktreeReset.ps1` |
 | E2E overlay | `..\audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat` |
 
-Architectuur: [`docs/NOUS_OVERLAY_ARCHITECTURE.md`](../docs/NOUS_OVERLAY_ARCHITECTURE.md). Bootstrap: `overlay/bootstrap.py` via `launch_hermes.ps1` / `PYTHONSTARTUP`.
+Onderhoud: [`docs/NOUS_DRIFT_MAINTENANCE.md`](../docs/NOUS_DRIFT_MAINTENANCE.md). Architectuur: [`docs/NOUS_OVERLAY_ARCHITECTURE.md`](../docs/NOUS_OVERLAY_ARCHITECTURE.md).
 
 ### Klassieke CLI — prompt-wachtrij (`/queue`)
 

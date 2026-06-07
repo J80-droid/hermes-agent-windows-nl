@@ -32,14 +32,14 @@ Deze fork is de **enige goedgekeurde bron** voor Hermes-installaties binnen dit 
 Upstream Python/UI in Tier A blijft **ongewijzigd** na `SYNC_NOUS`. Fork-features:
 
 - **Bootstrap:** `overlay/bootstrap.py` laadt `overlay/hermes_cli/*` + `overlay/agent/*` en patchet statusbalk-kosten, `/cost`, `/tps`, stream tok/s, agent-throughput, Gemini-pricing, model-catalog guard.
-- **Sync:** `windows\SYNC_NOUS.bat` — merge + overlay + strict drift-gate (Pad 1: toolset-dashboard = upstream Tier A; overlay alleen MCP-sentinel + institutioneel web).
-- **Herstel Tier A:** `windows\scripts\Invoke-RestoreNousTierA.ps1` vóór drift-test.
+- **Drift catch-up:** `windows\SYNC_NOUS_DRIFT_CATCHUP.bat` — SSOT [`docs/NOUS_DRIFT_MAINTENANCE.md`](docs/NOUS_DRIFT_MAINTENANCE.md).
+- **Nous-merge:** `windows\SYNC_NOUS.bat` (geen `-Yes` voor routine drift).
 - **E2E institutional:** `audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat` (drift, harness, verify, smokes, pytest).
 - **E2E runtime (P0–P5):** `audits\RUN_NOUS_OVERLAY_RUNTIME_E2E.bat` (bootstrap, TPS hooks, `/tps`+`/cost`, tier-A guard).
 - **E2E throughput / prompt-timer:** `audits\RUN_STATUS_BAR_THROUGHPUT_E2E.bat`, `audits\RUN_PROMPT_TIMER_DISPLAY_E2E.bat`.
 - **Unit:** `pytest tests/overlay/` (**112** tests; o.a. `test_agent_throughput_fork_patch.py`, `test_cli_fork_patch.py`).
 
-Zie [`docs/NOUS_OVERLAY_ARCHITECTURE.md`](docs/NOUS_OVERLAY_ARCHITECTURE.md) en [`docs/NOUS_DRIFT_BASELINE.md`](docs/NOUS_DRIFT_BASELINE.md).
+Zie [`docs/NOUS_OVERLAY_ARCHITECTURE.md`](docs/NOUS_OVERLAY_ARCHITECTURE.md), [`docs/NOUS_DRIFT_MAINTENANCE.md`](docs/NOUS_DRIFT_MAINTENANCE.md), [`docs/NOUS_DRIFT_BASELINE.md`](docs/NOUS_DRIFT_BASELINE.md).
 
 ### Windows Terminal — titelbalk-muis (2026-05-30)
 
