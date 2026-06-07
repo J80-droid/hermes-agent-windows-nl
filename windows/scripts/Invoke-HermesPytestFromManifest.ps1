@@ -124,7 +124,7 @@ function Invoke-HermesPytestUpstream {
         return
     }
     $junitRel = [string]$config.junit
-    $junitPath = Join-Path $RepoRoot ($junitRel -replace '/', [IO.Path]::DirectorySeparatorChar)
+    $junitPath = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath ($junitRel -replace '\\', '/')
     $junitDir = Split-Path -Parent $junitPath
     if ($junitDir -and -not (Test-Path -LiteralPath $junitDir)) {
         New-Item -ItemType Directory -Force -Path $junitDir | Out-Null

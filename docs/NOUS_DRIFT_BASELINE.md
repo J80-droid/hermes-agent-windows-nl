@@ -1,21 +1,26 @@
 # NOUS drift baseline
 
-Generated: **2026-06-07 01:47:50**
+Generated: **2026-06-07 03:40:15**
 Compare: `HEAD` vs `upstream/main`
 
 ## Summary
 
 | Metric | Count |
 |--------|------:|
-| All changed paths | 1198 |
-| Tier A changed (must â†’ upstream) | 1 |
+| All changed paths | 1233 |
+| Tier A changed (must -> upstream) | 0 |
+| Tier A changed (fork-intentional allowlist) | 0 |
 | Tier A extra files (fork-only in Nous dirs) | 0 |
-| Tier B / excluded | 1197 |
+| Tier B / excluded | 1233 |
 | Transitional (planned migration) | 0 |
 
-## Tier A changed files
+## Tier A changed files (must -> upstream)
 
-- `hermes_cli/gateway_windows.py`
+_None._
+
+## Tier A changed files (fork-intentional allowlist)
+
+_None._
 
 ## Tier A extra files (not in upstream)
 
