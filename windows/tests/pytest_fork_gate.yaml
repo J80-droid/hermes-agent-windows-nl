@@ -19,6 +19,14 @@ ignores:
 upstream:
   paths:
     - tests/
-  ignores: []
+  # Windows CI: collectiefouten zonder volledige gateway/acp stack of Unix-paden (2026-06-07).
+  ignores:
+    - tests/acp
+    - tests/acp_adapter
+    - tests/gateway
+    - tests/hermes_cli/test_curses_arrow_keys.py
+    - tests/hermes_cli/test_curses_color_compat.py
+    - tests/rag_pipeline/test_document_converter.py
+    - tests/test_run_tests_parallel.py
   maxfail_default: 50
   junit: windows/tests/pytest_upstream_junit.xml
