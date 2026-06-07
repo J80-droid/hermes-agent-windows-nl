@@ -124,11 +124,7 @@ if !RC! neq 0 (
   )
   if defined HERMES_PYTHON (
     echo [INFO] Config-cache legen zodat chat direct OPEN_SETUP-model ziet...
-    "!HERMES_PYTHON!" -c "from hermes_cli.profile_model_inheritance import bust_config_caches, root_config_path; bust_config_caches(root_config_path())"
-  )
-  if defined HERMES_PYTHON (
-    echo [INFO] Config-cache legen zodat chat OPEN_SETUP direct ziet...
-    "!HERMES_PYTHON!" -c "import sys; sys.path.insert(0, r'%CD%'); from hermes_cli.profile_model_inheritance import bust_config_caches, root_config_path; bust_config_caches(root_config_path())"
+    "!HERMES_PYTHON!" -c "import sys; sys.path.insert(0, r'%CD%'); from overlay.bootstrap import install; install(); from hermes_cli.profile_model_inheritance import bust_config_caches, root_config_path; bust_config_caches(root_config_path())"
   )
   if exist "windows\scripts\HermesHomeCommon.ps1" (
     powershell -NoProfile -ExecutionPolicy Bypass -Command ". 'windows\scripts\HermesHomeCommon.ps1'; Write-HermesRuntimeModelBanner"

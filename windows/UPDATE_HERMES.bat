@@ -156,6 +156,11 @@ if "%~1"=="4" (
   echo [HELP] Geannuleerd — repo ongewijzigd. Zonder vraag: UPDATE_HERMES.bat -Yes
   exit /b 0
 )
+if "%~1"=="5" (
+  echo [HELP] Fork-test hygiene: geen nieuwe wijzigingen in tests\hermes_cli\ — gebruik tests\overlay\
+  echo [HELP] Zie docs\FORK_MERGE_POLICY.md
+  exit /b 0
+)
 if "%~1"=="6" (
   echo [HELP] Merge-conflict: windows\MERGE_UPSTREAM.bat  —  daarna UPDATE opnieuw
   echo [HELP] NOOIT: git reset --hard upstream main

@@ -243,15 +243,6 @@ class TestWebServerEndpoints:
         assert "hermes_home" in data
         assert "active_sessions" in data
 
-    def test_get_assistant_display_settings(self):
-        resp = self.client.get("/api/display/assistant")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "assistant_render_style" in data
-        assert "assistant_palette" in data
-        assert "assistant_label_columns" in data
-        assert isinstance(data["assistant_label_columns"], bool)
-
     # ── Dashboard font override ─────────────────────────────────────────
 
     def test_get_dashboard_font_defaults_to_theme(self):

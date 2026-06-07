@@ -1,0 +1,55 @@
+# Fork merge-beleid (Windows NL)
+
+Voorkomt terugkerende merge-conflicten in upstream-owned testbestanden (zoals `tests/hermes_cli/test_web_server.py`).
+
+Zie ook [`NOUS_DRIFT_MAINTENANCE.md`](NOUS_DRIFT_MAINTENANCE.md) (tier-A drift) en [`../windows/tests/PYTEST_POLICY.md`](../windows/tests/PYTEST_POLICY.md).
+
+## Cadans
+
+| Frequentie | Actie |
+|------------|--------|
+| **Wekelijks** (of bij >10 commits achter) | `windows\UPDATE_HERMES.bat` |
+| **Na elke geslaagde merge** | `RUN_PYTEST_UPSTREAM.bat -ReportOnly` → `new_failures_count: 0` |
+| **Vóór release** | `RUN_PRODUCTION_GATE.bat` |
+
+Grote achterstand (>20 commits) vergroot de kans op conflicten — niet weken uitstellen.
+
+## Waar nieuwe fork-tests horen
+
+| Locatie | Gebruik |
+|---------|---------|
+| `tests/overlay/` | Gedrag via overlay-patches (voorkeur) |
+| `tests/windows/` | Windows-scripts, gateway, smoke |
+| `windows/tests/` | Gate-manifesten, harness |
+
+**Niet** nieuwe bestanden of fork-only asserts toevoegen onder `tests/hermes_cli/` — dat is upstream-owned en leidt bij merge tot conflicten.
+
+## Legacy-uitzonderingen
+
+Bestaande afwijkingen staan in [`windows/tests/fork_hermes_cli_test_exceptions.txt`](../windows/tests/fork_hermes_cli_test_exceptions.txt). Die lijst krimpt niet automatisch; **geen nieuwe paden** toevoegen zonder migratie naar `tests/overlay/`.
+
+Voorbeeld migratie: `test_get_assistant_display_settings` → `tests/overlay/test_web_server_assistant_display.py` (fork API `/api/display/assistant`).
+
+## Automatische check
+
+Script: `windows/scripts/check_fork_hermes_cli_tests.py`
+
+| Modus | Wanneer | Gedrag |
+|-------|---------|--------|
+| `--pre-merge` | Preflight in `UPDATE_HERMES` (na fetch, als achter op upstream) | **Waarschuwing**: bestanden die t.o.v. `upstream/main` wijzigen = conflict-risico |
+| `--staged` | Optioneel strict / pre-commit | **Blokkeert** staged toevoegingen in `tests/hermes_cli/` buiten de exceptions-lijst |
+
+PowerShell-wrapper: `windows/scripts/Test-ForkHermesCliTestHygiene.ps1`
+
+Om staged-violations hard te blokkeren vóór merge: `HERMES_FORK_CLI_TEST_STRICT=1` of `-StrictForkCliTests` op de hygiene-test.
+
+## Bij merge-conflict in tests
+
+1. **Upstream-test behouden** waar het upstream-gedrag dekt.
+2. **Fork-gedrag** verplaatsen naar `tests/overlay/` of bestaand overlay-testbestand uitbreiden.
+3. **Niet** beide testblokken permanent in hetzelfde upstream-bestand laten staan tenzij het letterlijk dezelfde upstream-regels zijn.
+4. Na fix: `UPDATE_HERMES.bat` opnieuw (fase 2/3).
+
+## Conflictzones (historisch)
+
+`pyproject.toml`, `uv.lock`, `tests/hermes_cli/test_web_server.py`, `scripts/run_tests.sh` — bij grote merges eerst deze controleren.

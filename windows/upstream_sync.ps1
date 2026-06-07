@@ -78,6 +78,10 @@ function Write-HermesUpdateRecoveryGuide {
             Write-Host '  3. Opnieuw: windows\UPDATE_HERMES.bat' -ForegroundColor Yellow
             Write-Host '  NOOIT: git reset --hard upstream main  (wist NL-fork/RAG)' -ForegroundColor Red
         }
+        5 {
+            Write-Host '  Fork-test hygiene: geen nieuwe tests/hermes_cli/ — gebruik tests/overlay/' -ForegroundColor Yellow
+            Write-Host '  Zie: docs\FORK_MERGE_POLICY.md' -ForegroundColor Yellow
+        }
         7 {
             Write-Host '  Merge was al bezig. Los conflicten op of: git merge --abort' -ForegroundColor Yellow
             Write-Host '  Daarna: windows\MERGE_UPSTREAM.bat -FinalizeOnly' -ForegroundColor Yellow
@@ -234,6 +238,28 @@ function Invoke-UpstreamPreflight {
         Write-Host ('  [REMINDER] Fork is ' + $behind + ' commits achter upstream (drempel ' + $behindWarn + ').') -ForegroundColor Yellow
         Write-Host '             Zie windows\UPSTREAM_SYNC.md — NOOIT: git reset --hard upstream/main' -ForegroundColor Yellow
         Write-Host ''
+    }
+
+    if ($behind -gt 0) {
+        $forkCliHygiene = Join-Path $PSScriptRoot 'scripts\Test-ForkHermesCliTestHygiene.ps1'
+        if (Test-Path -LiteralPath $forkCliHygiene) {
+            $hygieneStrict = ($env:HERMES_FORK_CLI_TEST_STRICT -eq '1')
+            $hygieneParams = @{ RepoRoot = $Repo; PreMerge = $true; UpstreamRef = $upstreamRef }
+            if ($hygieneStrict) { $hygieneParams['Strict'] = $true }
+            & $forkCliHygiene @hygieneParams 2>&1 | ForEach-Object { Write-Host $_ }
+            if ($null -ne $LASTEXITCODE -and [int]$LASTEXITCODE -ne 0) {
+                Write-HermesErr 'Fork tests/hermes_cli/ hygiene (strict) — zie docs/FORK_MERGE_POLICY.md'
+                return 5
+            }
+        }
+        $forkCliStaged = Join-Path $PSScriptRoot 'scripts\check_fork_hermes_cli_tests.py'
+        if (Test-Path -LiteralPath $forkCliStaged) {
+            & python $forkCliStaged --repo $Repo --staged 2>&1 | ForEach-Object { Write-Host $_ }
+            if ($null -ne $LASTEXITCODE -and [int]$LASTEXITCODE -ne 0) {
+                Write-HermesErr 'Staged fork-tests in tests/hermes_cli/ — verplaats naar tests/overlay/'
+                return 5
+            }
+        }
     }
     Write-Uitleg @(
         'ahead = commits alleen op jouw fork (NL/RAG/windows) - blijven behouden.'

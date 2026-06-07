@@ -85,6 +85,8 @@ try {
     $bust = @"
 import sys
 sys.path.insert(0, r'$repoRoot')
+from overlay.bootstrap import install
+install()
 from hermes_cli.profile_model_inheritance import bust_config_caches, root_config_path
 bust_config_caches(root_config_path())
 "@

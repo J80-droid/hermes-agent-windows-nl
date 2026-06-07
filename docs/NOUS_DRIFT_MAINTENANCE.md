@@ -57,4 +57,4 @@ Mislukt iets → update stopt met foutcode (geen stille waarschuwing).
 
 **Taboe:** `SYNC_NOUS.bat -Yes` voor routine drift op deze fork.
 
-Zie [`NOUS_OVERLAY_ARCHITECTURE.md`](NOUS_OVERLAY_ARCHITECTURE.md) · [`PYTEST_POLICY.md`](../windows/tests/PYTEST_POLICY.md).
+Zie [`NOUS_OVERLAY_ARCHITECTURE.md`](NOUS_OVERLAY_ARCHITECTURE.md) · [`PYTEST_POLICY.md`](../windows/tests/PYTEST_POLICY.md) · [`FORK_MERGE_POLICY.md`](FORK_MERGE_POLICY.md) (merge-conflicten in upstream-tests voorkomen).
