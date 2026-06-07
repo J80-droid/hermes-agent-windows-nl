@@ -39,8 +39,15 @@ function Invoke-HermesAuditPytest {
     }
     Clear-HermesPytestAddoptsForAudit
     $allArgs = @('-m', 'pytest') + @($PytestArgs) + (Get-HermesAuditPytestOverrideArgs)
-    & $Python @allArgs
-    $global:LASTEXITCODE = $LASTEXITCODE
+    # Pytest schrijft teardown-warnings naar stderr; met Stop wordt dat een NativeCommandError.
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $Python @allArgs
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+    $global:LASTEXITCODE = if ($null -eq $LASTEXITCODE) { 0 } else { [int]$LASTEXITCODE }
 }
 
 function Invoke-HermesCondaAuditPytest {
@@ -60,8 +67,14 @@ function Invoke-HermesCondaAuditPytest {
     $allArgs = @(
         'run', '-n', $EnvName, '--no-capture-output', '--', 'python', '-m', 'pytest'
     ) + @($PytestArgs) + (Get-HermesAuditPytestOverrideArgs)
-    & $CondaExe @allArgs
-    $global:LASTEXITCODE = $LASTEXITCODE
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $CondaExe @allArgs
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+    $global:LASTEXITCODE = if ($null -eq $LASTEXITCODE) { 0 } else { [int]$LASTEXITCODE }
 }
 
 function Invoke-HermesTierASrcClean {

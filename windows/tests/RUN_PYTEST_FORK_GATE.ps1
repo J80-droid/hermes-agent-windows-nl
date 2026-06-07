@@ -14,4 +14,6 @@ $logPath = Join-Path $PSScriptRoot 'RUN_PYTEST_fork_gate.log'
 Write-Host "Log: $logPath" -ForegroundColor DarkGray
 
 Invoke-HermesPytestGate -RepoRoot $repoRoot @args 2>&1 | Tee-Object -FilePath $logPath
-exit $LASTEXITCODE
+$gateExit = $global:LASTEXITCODE
+if ($null -eq $gateExit) { $gateExit = 0 }
+exit $gateExit

@@ -26,4 +26,6 @@ if ($ReportOnly) { $upstreamArgs['ReportOnly'] = $true }
 if ($MaxFail -gt 0) { $upstreamArgs['MaxFail'] = $MaxFail }
 
 Invoke-HermesPytestUpstream -RepoRoot $repoRoot @upstreamArgs @args 2>&1 | Tee-Object -FilePath $logPath
-exit $LASTEXITCODE
+$upstreamExit = $global:LASTEXITCODE
+if ($null -eq $upstreamExit) { $upstreamExit = 0 }
+exit $upstreamExit
