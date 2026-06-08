@@ -156,6 +156,25 @@ function Initialize-HermesInkDist {
     }
 }
 
+function Restore-HermesUiTuiTierASrc {
+    <#
+    .SYNOPSIS
+        Herstel Tier A ui-tui bronnen na tijdelijke overlay-merge (build/vitest).
+    #>
+    param([Parameter(Mandatory)][string]$RepoRoot)
+
+    Push-Location $RepoRoot
+    try {
+        foreach ($rel in @('ui-tui/src', 'ui-tui/packages/hermes-ink/src')) {
+            if (-not (Test-Path -LiteralPath $rel)) { continue }
+            git checkout -- $rel 2>$null
+            git clean -fd -- $rel 2>$null
+        }
+    } finally {
+        Pop-Location
+    }
+}
+
 function Invoke-HermesUiTuiVitest {
     <#
     .SYNOPSIS
@@ -168,47 +187,55 @@ function Invoke-HermesUiTuiVitest {
         [switch]$Quiet
     )
 
+    $overlayMerged = $false
     if ($CopyOverlay) {
         $copyPs1 = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'windows/scripts/Invoke-CopyHermesOverlaySources.ps1'
         if (Test-Path -LiteralPath $copyPs1) {
             & powershell -NoProfile -ExecutionPolicy Bypass -File $copyPs1 -RepoRoot $RepoRoot -Target ui-tui -Force | Out-Null
+            $overlayMerged = $true
         } elseif (-not $Quiet) {
             Write-HermesWarn "Overlay copy script ontbreekt: $copyPs1"
         }
     }
 
-    $npmRc = Invoke-HermesUiTuiNpmEnsure -RepoRoot $RepoRoot -Quiet:$Quiet
-    if ($npmRc -eq 2) { return 2 }
-    if ($npmRc -ne 0) { return 1 }
-
-    $uiRoot = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'ui-tui'
-    if (-not (Initialize-HermesInkDist -UiRoot $uiRoot -Quiet:$Quiet)) {
-        return 1
-    }
-
-    if (-not $TestPaths -or $TestPaths.Count -eq 0) {
-        return 0
-    }
-
-    if (-not (Get-Command npx -ErrorAction SilentlyContinue)) {
-        if (-not $Quiet) {
-            Write-HermesWarn 'npx niet op PATH — vitest overgeslagen.'
-        }
-        return 2
-    }
-
-    Push-Location $uiRoot
     try {
-        $prevEap = $ErrorActionPreference
-        $ErrorActionPreference = 'Continue'
-        $vitestArgs = @('vitest', 'run') + $TestPaths + '--passWithNoTests'
-        & npx @vitestArgs 2>&1 | ForEach-Object {
-            if (-not $Quiet -and "$_") { Write-Host $_ }
+        $npmRc = Invoke-HermesUiTuiNpmEnsure -RepoRoot $RepoRoot -Quiet:$Quiet
+        if ($npmRc -eq 2) { return 2 }
+        if ($npmRc -ne 0) { return 1 }
+
+        $uiRoot = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'ui-tui'
+        if (-not (Initialize-HermesInkDist -UiRoot $uiRoot -Quiet:$Quiet)) {
+            return 1
         }
-        $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
-        $ErrorActionPreference = $prevEap
-        return $(if ($code -eq 0) { 0 } else { 1 })
+
+        if (-not $TestPaths -or $TestPaths.Count -eq 0) {
+            return 0
+        }
+
+        if (-not (Get-Command npx -ErrorAction SilentlyContinue)) {
+            if (-not $Quiet) {
+                Write-HermesWarn 'npx niet op PATH — vitest overgeslagen.'
+            }
+            return 2
+        }
+
+        Push-Location $uiRoot
+        try {
+            $prevEap = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            $vitestArgs = @('vitest', 'run') + $TestPaths + '--passWithNoTests'
+            & npx @vitestArgs 2>&1 | ForEach-Object {
+                if (-not $Quiet -and "$_") { Write-Host $_ }
+            }
+            $code = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
+            $ErrorActionPreference = $prevEap
+            return $(if ($code -eq 0) { 0 } else { 1 })
+        } finally {
+            Pop-Location
+        }
     } finally {
-        Pop-Location
+        if ($overlayMerged) {
+            Restore-HermesUiTuiTierASrc -RepoRoot $RepoRoot
+        }
     }
 }

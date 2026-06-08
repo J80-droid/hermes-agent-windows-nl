@@ -32,6 +32,11 @@ if (-not $npm) {
 function Restore-TierASrc {
     param([string]$RelativePath)
     if ($script:BuildForkKeepMergedSrc) { return }
+    if ($RelativePath -eq 'ui-tui/src') {
+        . (Join-Path $PSScriptRoot '..\HermesUiTuiNpm.ps1')
+        Restore-HermesUiTuiTierASrc -RepoRoot $RepoRoot
+        return
+    }
     Push-Location $RepoRoot
     try {
         if (Test-Path -LiteralPath $RelativePath) {

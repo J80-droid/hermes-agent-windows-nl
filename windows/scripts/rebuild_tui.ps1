@@ -77,13 +77,8 @@ try {
 } finally {
     Pop-Location
     if ($tuiMerged) {
-        Push-Location $RepoRoot
-        try {
-            git checkout -- ui-tui/src 2>$null
-            git clean -fd -- ui-tui/src 2>$null
-        } finally {
-            Pop-Location
-        }
+        . (Join-Path $PSScriptRoot '..\HermesUiTuiNpm.ps1')
+        Restore-HermesUiTuiTierASrc -RepoRoot $RepoRoot
     }
 }
 
