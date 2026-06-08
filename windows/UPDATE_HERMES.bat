@@ -128,7 +128,8 @@ if exist "!DRIFT_GATE_PS1!" (
   pause
   exit /b 1
 )
-echo [INFO] Post-update finalize ^(upstream ReportOnly + push origin^)...
+echo [INFO] Post-update finalize ^(upstream ReportOnly 15-40 min + push origin^)...
+echo [INFO] ReportOnly overslaan: UPDATE_HERMES.bat -SkipPostUpdatePytest
 set "FINALIZE_PS1=%~dp0scripts\Invoke-HermesPostUpdateFinalize.ps1"
 set "FINALIZE_EXTRA="
 if "%SKIP_POST_PUSH%"=="1" set "FINALIZE_EXTRA=!FINALIZE_EXTRA! -SkipPush"

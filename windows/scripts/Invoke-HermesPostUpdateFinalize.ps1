@@ -45,12 +45,22 @@ function Invoke-HermesPostUpdateUpstreamReport {
         [switch]$StrictNewFailures
     )
     Write-Host '=== Post-update: upstream pytest ReportOnly ===' -ForegroundColor Cyan
-    $upstreamBat = Join-Path $Root 'windows/tests/RUN_PYTEST_UPSTREAM.bat'
-    if (-not (Test-Path -LiteralPath $upstreamBat)) {
-        Write-HermesWarn "Ontbreekt: $upstreamBat - overgeslagen."
+    $upstreamPs1 = Join-Path $Root 'windows/tests/RUN_PYTEST_UPSTREAM.ps1'
+    if (-not (Test-Path -LiteralPath $upstreamPs1)) {
+        Write-HermesWarn "Ontbreekt: $upstreamPs1 - overgeslagen."
         return 0
     }
-    cmd /c "`"$upstreamBat`" -ReportOnly"
+    $logRel = 'windows/tests/RUN_PYTEST_upstream.log'
+    Write-HermesInfo 'Volledige tests/ (maxfail=50) - typisch 15-40 min; dit is geen hang.'
+    Write-HermesInfo ("Voortgang: $logRel")
+    Write-Host '  (parallel volgen: Get-Content -LiteralPath windows\tests\RUN_PYTEST_upstream.log -Tail 5 -Wait)' -ForegroundColor DarkGray
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $upstreamPs1 -ReportOnly 2>&1 | ForEach-Object { if ("$_") { Write-Host $_ } }
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
     if ($null -eq $LASTEXITCODE -or [int]$LASTEXITCODE -ne 0) {
         Write-HermesErr "Upstream ReportOnly runner mislukt (exit $LASTEXITCODE)"
         return [int]$LASTEXITCODE
