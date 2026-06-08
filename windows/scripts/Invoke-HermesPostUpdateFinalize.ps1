@@ -148,7 +148,9 @@ if (-not $SkipForkGate) {
     if ($rc -ne 0) { exit $rc }
 }
 
-if (-not $SkipUpstreamReport) {
+if ($SkipUpstreamReport) {
+    Write-HermesInfo 'Upstream ReportOnly overgeslagen (standaard UPDATE_HERMES; CI = parity). Opt-in: -IncludeUpstreamReport'
+} else {
     $rc = Invoke-HermesPostUpdateUpstreamReport -Root $RepoRoot -StrictNewFailures:$StrictUpstreamNewFailures
     if ($rc -ne 0) { exit $rc }
 }

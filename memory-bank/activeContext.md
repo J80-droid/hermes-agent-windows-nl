@@ -2,7 +2,7 @@
 
 ## Focus
 
-**Tier A drift + CI groen (2026-06-08):** Fork Windows Institutional **PASS** ([run 27112119896](https://github.com/J80-droid/hermes-agent-windows-nl/actions/runs/27112119896), `8ea65a712`). Memory-only pushes faalden op ongecommitte catch-up (`gateway/hooks.py`, `run.py`) — fix `e0e3e3841`. Upstream-situatie (merge-base `a317e549`): **37** commits op Nous-main niet in fork; **507** fork-commits sinds gemeenschappelijke voorouder (institutioneel werk, niet “487 achter”). Drift-routine: `SYNC_NOUS_DRIFT_CATCHUP.bat`; grote merge: `UPDATE_HERMES.bat -Yes` wanneer je tijd hebt voor conflict-resolve (~37 upstream commits, niet volledige fork-rewrite).
+**Tier A drift + CI groen (2026-06-08):** Fork Windows Institutional **PASS** ([run 27112119896](https://github.com/J80-droid/hermes-agent-windows-nl/actions/runs/27112119896), `8ea65a712`). Memory-only pushes faalden op ongecommitte catch-up (`gateway/hooks.py`, `run.py`) — fix `e0e3e3841`. Upstream-situatie (merge-base `a317e549`): **37** commits op Nous-main niet in fork; **507** fork-commits sinds gemeenschappelijke voorouder (institutioneel werk, niet “487 achter”). Drift-routine: `SYNC_NOUS_DRIFT_CATCHUP.bat`; `UPDATE_HERMES.bat` standaard **zonder** upstream ReportOnly (CI = parity); opt-in `-IncludeUpstreamReport`; grote merge: `-Yes`.
 
 **Ty fork gate + setuptools cap (2026-06-08):** `pyproject.toml` `[tool.ty.src]` = overlay + fork scripts/tests (geen volledige upstream ~10k diagnostics/panics); `windows/tests/RUN_TY_FORK_GATE.bat` exit 0; `setuptools>=77,<82` in `[dev]` + `guard_forbidden_packages.py` (torch 2.12+ metadata); docs `RAG_INSTITUTIONAL_ENV.md` § setuptools.
 

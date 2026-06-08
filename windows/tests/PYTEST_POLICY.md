@@ -26,7 +26,8 @@ Manifest path: [`pytest_fork_gate.yaml`](pytest_fork_gate.yaml). Loader: [`../sc
 | Daily / after Python changes | `windows\tests\RUN_PYTEST_FORK_GATE.bat` |
 | Preflight (in RUN_AUDITS) | Same fork gate (one step, replaces old overlay + profile subset) |
 | Before release | `windows\audits\RUN_PRODUCTION_GATE.bat` |
-| After upstream merge | `RUN_PYTEST_UPSTREAM.bat -ReportOnly` → check `pytest_upstream_summary.json` |
+| After upstream merge (lokaal, opt-in) | `UPDATE_HERMES.bat -IncludeUpstreamReport` of `RUN_PYTEST_UPSTREAM.bat -ReportOnly` |
+| Dagelijkse `UPDATE_HERMES.bat` | Alleen drift + fork gate + push; **geen** ReportOnly (GitHub CI draait parity) |
 | Wiring / regressie (snel, ~30s) | `audits\RUN_PYTEST_FORK_GATE_E2E.bat` |
 | Runner hardening (arg split, stderr exit) | `audits\RUN_PYTEST_RUNNER_HARDENING_E2E.bat` |
 

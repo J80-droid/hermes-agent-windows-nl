@@ -32,8 +32,9 @@ echo.
 echo [INFO] Eén commando — preflight, merge+deps, post-merge, drift, pytest+push
 echo [INFO] Optioneel: -IncludeCodebaseSmokeE2E -IncludeCodebaseSmoke ^(door naar upstream_sync / POST_GIT_PULL^)
 echo [INFO] Grote achterstand: typ j in PowerShell, of gebruik -Yes / UPDATE_HERMES_YES.bat
-echo [INFO] Na succes: upstream ReportOnly + git push origin main ^(uit: -SkipPush^)
-echo [INFO] Release-poort: -Release  ^|  strict parity: -StrictUpstreamParity
+echo [INFO] Na succes: drift + fork gate + git push ^(geen upstream ReportOnly; CI = parity^)
+echo [INFO] Upstream ReportOnly opt-in: -IncludeUpstreamReport  ^|  push uit: -SkipPush
+echo [INFO] Release-poort: -Release  ^|  strict parity: -StrictUpstreamParity ^(incl. ReportOnly^)
 echo [INFO] Uitleg: windows\UPSTREAM_SYNC.md
 echo.
 
@@ -67,7 +68,7 @@ set "STRICT_NOUS=0"
 set "SKIP_DRIFT_CATCHUP=0"
 set "SKIP_DRIFT_COMMIT=0"
 set "SKIP_POST_PUSH=0"
-set "SKIP_POST_PYTEST=0"
+set "INCLUDE_UPSTREAM_REPORT=0"
 set "POST_RELEASE_GATE=0"
 set "STRICT_UPSTREAM=0"
 :parse_args
@@ -78,9 +79,11 @@ if /I "%~1"=="-StrictNousSync" set "STRICT_NOUS=1" & shift & goto :parse_args
 if /I "%~1"=="-SkipNousDriftCatchUp" set "SKIP_DRIFT_CATCHUP=1" & shift & goto :parse_args
 if /I "%~1"=="-SkipNousDriftCommit" set "SKIP_DRIFT_COMMIT=1" & shift & goto :parse_args
 if /I "%~1"=="-SkipPush" set "SKIP_POST_PUSH=1" & shift & goto :parse_args
-if /I "%~1"=="-SkipPostUpdatePytest" set "SKIP_POST_PYTEST=1" & shift & goto :parse_args
+if /I "%~1"=="-IncludeUpstreamReport" set "INCLUDE_UPSTREAM_REPORT=1" & shift & goto :parse_args
+if /I "%~1"=="-IncludePostUpdatePytest" set "INCLUDE_UPSTREAM_REPORT=1" & shift & goto :parse_args
+if /I "%~1"=="-SkipPostUpdatePytest" shift & goto :parse_args
 if /I "%~1"=="-Release" set "POST_RELEASE_GATE=1" & shift & goto :parse_args
-if /I "%~1"=="-StrictUpstreamParity" set "STRICT_UPSTREAM=1" & shift & goto :parse_args
+if /I "%~1"=="-StrictUpstreamParity" set "STRICT_UPSTREAM=1" & set "INCLUDE_UPSTREAM_REPORT=1" & shift & goto :parse_args
 set "PS_ARGS=!PS_ARGS! %~1"
 shift
 goto :parse_args
@@ -128,13 +131,11 @@ if exist "!DRIFT_GATE_PS1!" (
   pause
   exit /b 1
 )
-echo [INFO] Post-update finalize ^(upstream ReportOnly 15-40 min + push origin^)...
-echo [INFO] ReportOnly overslaan: UPDATE_HERMES.bat -SkipPostUpdatePytest
+echo [INFO] Post-update finalize ^(push origin; upstream ReportOnly alleen met -IncludeUpstreamReport^)...
 set "FINALIZE_PS1=%~dp0scripts\Invoke-HermesPostUpdateFinalize.ps1"
-set "FINALIZE_EXTRA="
+set "FINALIZE_EXTRA=-SkipForkGate"
 if "%SKIP_POST_PUSH%"=="1" set "FINALIZE_EXTRA=!FINALIZE_EXTRA! -SkipPush"
-if "%SKIP_POST_PYTEST%"=="1" set "FINALIZE_EXTRA=!FINALIZE_EXTRA! -SkipUpstreamReport"
-set "FINALIZE_EXTRA=!FINALIZE_EXTRA! -SkipForkGate"
+if "%INCLUDE_UPSTREAM_REPORT%"=="0" set "FINALIZE_EXTRA=!FINALIZE_EXTRA! -SkipUpstreamReport"
 if "%POST_RELEASE_GATE%"=="1" set "FINALIZE_EXTRA=!FINALIZE_EXTRA! -IncludeProductionGate"
 if "%STRICT_UPSTREAM%"=="1" set "FINALIZE_EXTRA=!FINALIZE_EXTRA! -StrictUpstreamNewFailures"
 if exist "!FINALIZE_PS1!" (
