@@ -15,8 +15,8 @@
 - [x] `Invoke-HermesUiTuiVitest -CopyOverlay`: `Restore-HermesUiTuiTierASrc` na vitest (fix post-build drift appChrome/usage op CI)
 - [x] CI drift gates: `HERMES_NOUS_UPSTREAM_SHA` + `-SkipFetch` (geen mid-job upstream race)
 - [x] `Invoke-HermesTestNousTreeIdentical` — E2E harnesses respecteren pinned SHA
-- [x] Volledige CI **Fork Windows Institutional** groen (run [27112119896](https://github.com/J80-droid/hermes-agent-windows-nl/actions/runs/27112119896), commit `8ea65a712`, 2026-06-08)
-- [ ] Upstream merge groot (~496 commits) — `UPDATE_HERMES.bat -Yes` (targeted catch-up volstaat voor drift-gate; volledige merge periodiek)
+- [x] Volledige CI **Fork Windows Institutional** groen (runs [27112119896](https://github.com/J80-droid/hermes-agent-windows-nl/actions/runs/27112119896), [27112535051](https://github.com/J80-droid/hermes-agent-windows-nl/actions/runs/27112535051) na `e0e3e3841`, 2026-06-08)
+- [ ] Upstream **git merge** Nous main (~**37** commits sinds merge-base `a317e549`; fork +507 sinds zelfde basis) — `UPDATE_HERMES.bat -Yes` wanneer conflict-resolve tijd; tot die tijd `SYNC_NOUS_DRIFT_CATCHUP.bat` (drift-gate + CI)
 
 ## Pytest fork gate + RUN_PRODUCTION_GATE (2026-06-02)
 
