@@ -6,7 +6,8 @@
 #>
 param(
     [switch]$SkipDrift,
-    [switch]$StrictDrift
+    [switch]$StrictDrift,
+    [switch]$AutoRepairModelProvider
 )
 
 $ErrorActionPreference = 'Stop'
@@ -79,7 +80,7 @@ if (-not $auth.Ok) {
 }
 
 if (-not $SkipDrift) {
-    $driftOk = Test-HermesConfigDrift -Strict:$StrictDrift
+    $driftOk = Test-HermesConfigDrift -Strict:$StrictDrift -AutoRepairModelProvider:$AutoRepairModelProvider
     if (-not $driftOk) { $failed = $true }
 }
 

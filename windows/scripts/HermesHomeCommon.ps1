@@ -480,6 +480,53 @@ function Test-HermesProfileGlobalConfigBlocks {
     return @($issues)
 }
 
+function Invoke-HermesStripProfileGlobalBlocks {
+    param(
+        [string]$RepoRoot = '',
+        [switch]$Quiet
+    )
+    if (-not $RepoRoot) {
+        $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+    }
+    $strip = Join-Path $PSScriptRoot 'strip_profile_global_config_blocks.py'
+    if (-not (Test-Path -LiteralPath $strip)) {
+        if (-not $Quiet) {
+            Write-HermesWarn "strip_profile_global_config_blocks.py ontbreekt: $strip"
+        }
+        return $false
+    }
+    if (-not (Get-Command Get-HermesAuditPython -ErrorAction SilentlyContinue)) {
+        $shellCommon = Join-Path (Split-Path -Parent $PSScriptRoot) 'HermesShellCommon.ps1'
+        if (Test-Path -LiteralPath $shellCommon) {
+            . $shellCommon
+        }
+    }
+    $py = Get-HermesAuditPython -RepoRoot $RepoRoot
+    if (-not (Test-Path -LiteralPath $py)) {
+        $pyCmd = Get-Command $py -ErrorAction SilentlyContinue
+        if ($pyCmd -and $pyCmd.Source -and (Test-Path -LiteralPath $pyCmd.Source)) {
+            $py = $pyCmd.Source
+        }
+    }
+    if (-not $py -or -not (Test-Path -LiteralPath $py)) {
+        if (-not $Quiet) {
+            Write-HermesFail 'hermes-env python niet gevonden voor strip_profile_global_config_blocks.py'
+        }
+        return $false
+    }
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $py $strip 2>&1 | ForEach-Object {
+            if (-not $Quiet) { Write-Host $_ }
+        }
+        $code = if ($null -eq $LASTEXITCODE) { 1 } else { [int]$LASTEXITCODE }
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+    return ($code -eq 0)
+}
+
 function Test-HermesVeniceProviderConfigured {
     param([switch]$Quiet)
     $runtimeCfg = Get-HermesCanonicalConfigPath
