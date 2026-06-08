@@ -11,7 +11,6 @@ param(
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 . (Join-Path $PSScriptRoot '..\HermesNativeInvoke.ps1')
-. (Join-Path $PSScriptRoot '..\HermesPythonPolicy.ps1')
 
 if (-not $RepoRoot) {
     . (Join-Path $PSScriptRoot 'HermesNousDrift.ps1')
@@ -24,13 +23,16 @@ if (-not (Test-Path -LiteralPath $py)) {
     exit 1
 }
 
-$pythonExe = Resolve-HermesPythonExe -RepoRoot $RepoRoot
-if (-not $pythonExe) {
-    if ($env:HERMES_AUDIT_PYTHON -and (Test-Path -LiteralPath $env:HERMES_AUDIT_PYTHON)) {
-        $pythonExe = $env:HERMES_AUDIT_PYTHON
-    } else {
-        $pythonExe = 'python'
+$pythonExe = Get-HermesAuditPython -RepoRoot $RepoRoot
+if (-not (Test-Path -LiteralPath $pythonExe)) {
+    $pyCmd = Get-Command $pythonExe -ErrorAction SilentlyContinue
+    if ($pyCmd -and $pyCmd.Source -and (Test-Path -LiteralPath $pyCmd.Source)) {
+        $pythonExe = $pyCmd.Source
     }
+}
+if (-not $pythonExe -or -not (Test-Path -LiteralPath $pythonExe)) {
+    Write-HermesErr 'hermes-env python niet gevonden. Draai windows\REPAIR_PYTHON.bat'
+    exit 1
 }
 
 $doPre = $PreMerge -or (-not $PreMerge -and -not $Staged)

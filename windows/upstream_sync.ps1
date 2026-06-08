@@ -263,10 +263,16 @@ function Invoke-UpstreamPreflight {
         }
         $forkCliStaged = Join-Path $PSScriptRoot 'scripts\check_fork_hermes_cli_tests.py'
         if (Test-Path -LiteralPath $forkCliStaged) {
-            $stagedPy = if ($env:HERMES_AUDIT_PYTHON -and (Test-Path -LiteralPath $env:HERMES_AUDIT_PYTHON)) {
-                $env:HERMES_AUDIT_PYTHON
-            } else {
-                'python'
+            $stagedPy = Get-HermesAuditPython -RepoRoot $Repo
+            if (-not (Test-Path -LiteralPath $stagedPy)) {
+                $pyCmd = Get-Command $stagedPy -ErrorAction SilentlyContinue
+                if ($pyCmd -and $pyCmd.Source -and (Test-Path -LiteralPath $pyCmd.Source)) {
+                    $stagedPy = $pyCmd.Source
+                }
+            }
+            if (-not $stagedPy -or -not (Test-Path -LiteralPath $stagedPy)) {
+                Write-HermesErr 'hermes-env python niet gevonden voor fork-test staged-check. Draai windows\REPAIR_PYTHON.bat'
+                return 3
             }
             $stagedCode = Invoke-HermesNativeCommand -FilePath $stagedPy -ArgumentList @(
                 $forkCliStaged, '--repo', $Repo, '--staged'
