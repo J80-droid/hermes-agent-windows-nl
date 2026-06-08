@@ -1,9 +1,8 @@
 # Shared tier-A drift helpers — dot-source from Test-NousTreeIdentical, catch-up, restore.
 # SSOT policy: docs/NOUS_DRIFT_MAINTENANCE.md
 
-if (-not (Get-Command Test-HermesPathUnderTierARoot -ErrorAction SilentlyContinue)) {
-    . (Join-Path $PSScriptRoot 'HermesNousTierPaths.ps1')
-}
+# Always load in this script scope (parent may have functions without tier-path script vars).
+. (Join-Path $PSScriptRoot 'HermesNousTierPaths.ps1')
 
 function Get-HermesRepoRootFromNousScripts {
     param([string]$Start)
@@ -47,6 +46,8 @@ function Get-HermesNousTierADriftReport {
     $specs = Get-HermesTierAPathSpec
 
     Push-Location $RepoRoot
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
     try {
         $diffNames = @(git diff --name-only $UpstreamRef -- @specs 2>$null | Where-Object { $_.Trim() })
         foreach ($p in $diffNames) {
@@ -85,6 +86,7 @@ function Get-HermesNousTierADriftReport {
             }
         }
     } finally {
+        $ErrorActionPreference = $prevEap
         Pop-Location
     }
 
