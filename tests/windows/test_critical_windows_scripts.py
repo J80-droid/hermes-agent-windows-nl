@@ -36,7 +36,18 @@ CRITICAL = [
     "windows/HermesSetupScriptPolicy.ps1",
     "windows/scripts/rag_ingest_perf_defaults.ps1",
     "pyproject.toml",
+    "hermes_cli_entry.py",
+    "windows/REPAIR_CONSOLE_ENTRY.bat",
+    "windows/scripts/repair_console_entry.ps1",
+    "windows/scripts/repair_terminal_cwd.ps1",
+    "scripts/repair_terminal_cwd.py",
 ]
+
+
+def test_pyproject_hermes_console_script_uses_cli_entry():
+    text = (REPO / "pyproject.toml").read_text(encoding="utf-8")
+    assert 'hermes = "hermes_cli_entry:main"' in text
+    assert '"overlay"' in text or "'overlay'" in text
 
 
 def test_hermes_logo_ico_readable_by_pillow():
@@ -163,10 +174,10 @@ def test_critical_windows_files_exist():
 def test_open_setup_is_single_canonical_implementation():
     canonical = (REPO / "scripts/windows/OPEN_SETUP.bat").read_text(encoding="utf-8")
     wrapper = (REPO / "windows/OPEN_SETUP.bat").read_text(encoding="utf-8")
-    assert "python -m hermes_cli.main setup" in canonical
+    assert "python -m hermes_cli_entry setup" in canonical
     assert "Wrapper-only" in wrapper
     assert "..\\scripts\\windows\\OPEN_SETUP.bat" in wrapper
-    assert "python -m hermes_cli.main setup" not in wrapper
+    assert "python -m hermes_cli_entry setup" not in wrapper
 
 
 def test_setup_launchers_reference_canonical_open_setup():
@@ -320,8 +331,11 @@ def test_run_hermes_uses_direct_python_not_conda_run():
     assert "function Clear-HermesUnixTerminalEnv" in common_ps1
     assert "function Set-HermesWin32ChatEnv" in common_ps1
     assert "function Invoke-HermesCliInCmdConsole" in common_ps1
+    assert "function Get-HermesCliModuleName" in common_ps1
+    assert "hermes_cli_entry" in common_ps1
     assert "function Test-HermesWin32Console" in common_ps1
     chat_text = (REPO / "windows/hermes_chat.cmd").read_text(encoding="utf-8")
+    assert "hermes_cli_entry" in chat_text
     assert 'set "TERM="' in chat_text or "set TERM=" in chat_text
     assert "HERMES_PYTHON" in chat_text
     assert "powershell -noprofile" not in chat_text.lower()

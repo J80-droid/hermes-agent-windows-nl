@@ -1312,10 +1312,43 @@ function Format-HermesCmdArg {
     return $Value
 }
 
+function Get-HermesCliModuleName {
+    <#
+    .SYNOPSIS
+        Canonieke CLI-module (overlay bootstrap + hermes_cli.main).
+    #>
+    return 'hermes_cli_entry'
+}
+
+function Get-HermesCliInvokeArgs {
+    param([string[]]$CliArgs = @())
+    $invoke = @('-m', (Get-HermesCliModuleName))
+    if ($CliArgs -and $CliArgs.Count -gt 0) {
+        $invoke += $CliArgs
+    }
+    return $invoke
+}
+
+function Get-HermesOverlayCliPath {
+    <#
+    .SYNOPSIS
+        Backward-compat: pad naar scripts/run_hermes_cli_with_overlay.py (delegates naar hermes_cli_entry).
+    #>
+    param(
+        [Parameter(Mandatory)]
+        [string]$RepoRoot
+    )
+    $overlayCli = Join-HermesRepoPath -RepoRoot $RepoRoot -RelativePath 'scripts/run_hermes_cli_with_overlay.py'
+    if (-not (Test-Path -LiteralPath $overlayCli)) {
+        throw ('Overlay CLI ontbreekt: ' + $overlayCli)
+    }
+    return $overlayCli
+}
+
 function Invoke-HermesCliInCmdConsole {
     <#
     .SYNOPSIS
-        Start hermes_cli.main via een tijdelijke .bat in dezelfde cmd-console (prompt_toolkit-safe).
+        Start Hermes CLI via overlay-entrypoint in dezelfde cmd-console (prompt_toolkit-safe).
     #>
     param(
         [Parameter(Mandatory)]
@@ -1329,9 +1362,11 @@ function Invoke-HermesCliInCmdConsole {
         throw ('Python niet gevonden: ' + $PythonExe)
     }
 
+    $invokeArgs = @(Get-HermesCliInvokeArgs -CliArgs $CliArgs)
+
     $argTail = ''
-    if ($CliArgs -and $CliArgs.Count -gt 0) {
-        $parts = foreach ($a in $CliArgs) { Format-HermesCmdArg -Value $a }
+    if ($invokeArgs -and $invokeArgs.Count -gt 0) {
+        $parts = foreach ($a in $invokeArgs) { Format-HermesCmdArg -Value $a }
         $argTail = ' ' + ($parts -join ' ')
     }
 
@@ -1343,7 +1378,7 @@ function Invoke-HermesCliInCmdConsole {
         'set TERM=',
         'set COLORTERM=',
         ('cd /d "' + $RepoRoot + '"'),
-        ('"' + $PythonExe + '" -m hermes_cli.main' + $argTail),
+        ('"' + $PythonExe + '"' + $argTail),
         'exit /b %ERRORLEVEL%'
     )
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
@@ -1353,11 +1388,7 @@ function Invoke-HermesCliInCmdConsole {
         $ErrorActionPreference = 'Continue'
         try {
             Push-Location -LiteralPath $RepoRoot
-            if ($CliArgs -and $CliArgs.Count -gt 0) {
-                & $PythonExe -m hermes_cli.main @CliArgs
-            } else {
-                & $PythonExe -m hermes_cli.main
-            }
+            & $PythonExe @invokeArgs
             $code = $LASTEXITCODE
             if ($null -eq $code) { $code = if ($?) { 0 } else { 1 } }
             return [int]$code
@@ -1578,7 +1609,7 @@ function Stop-HermesGhostInputBlockers {
         try { $py = Get-HermesAuditPython -RepoRoot $RepoRoot } catch { $py = $null }
         if ($py -and (Test-Path -LiteralPath $py)) {
             try {
-                $null = & $py -m hermes_cli.main dashboard --stop 2>&1
+                $null = & $py -m hermes_cli_entry dashboard --stop 2>&1
             } catch {
                 $null = $_.Exception.Message
             }

@@ -155,7 +155,7 @@ def _run_check() -> None:
 
 
 def _run_setup() -> None:
-    from hermes_cli.main import main as hermes_main
+    from hermes_cli_entry import main as hermes_main
 
     old_argv = sys.argv[:]
     try:

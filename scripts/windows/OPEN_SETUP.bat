@@ -39,7 +39,7 @@ if not defined HERMES_PYTHON if exist "%LOCALAPPDATA%\anaconda3\envs\!HERMES_CON
 if not defined HERMES_PYTHON if exist "C:\ProgramData\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe" set "HERMES_PYTHON=C:\ProgramData\miniconda3\envs\!HERMES_CONDA_ENV!\python.exe"
 if not defined HERMES_PYTHON if exist "C:\ProgramData\anaconda3\envs\!HERMES_CONDA_ENV!\python.exe" set "HERMES_PYTHON=C:\ProgramData\anaconda3\envs\!HERMES_CONDA_ENV!\python.exe"
 
-echo %A%  python -m hermes_cli.main setup%R%  ^|  repo: %CD%
+echo %A%  python -m hermes_cli_entry setup%R%  ^|  repo: %CD%
 echo.
 
 rem Zelfde HERMES_HOME als launch_hermes (split-home: %%LOCALAPPDATA%%\hermes).
@@ -52,19 +52,21 @@ if exist "windows\scripts\ensure_hermes_launch_env.ps1" (
 set "RC=1"
 if defined HERMES_PYTHON (
   echo [INFO] Gebruik Conda-python: !HERMES_PYTHON!
-  call "!HERMES_PYTHON!" -m hermes_cli.main setup
+  echo [INFO] Console-script hermes aligneren ^(pip install -e^)...
+  call "!HERMES_PYTHON!" -m pip install -e "%CD%" -q
+  call "!HERMES_PYTHON!" -m hermes_cli_entry setup
   set "RC=!ERRORLEVEL!"
   goto :wiz_done
 )
 if exist ".venv\Scripts\python.exe" (
   echo [INFO] Gebruik: .venv\Scripts\python.exe
-  call ".venv\Scripts\python.exe" -m hermes_cli.main setup
+  call ".venv\Scripts\python.exe" -m hermes_cli_entry setup
   set "RC=!ERRORLEVEL!"
   goto :wiz_done
 )
 if exist ".venv\Scripts\hermes.exe" (
-  echo [INFO] Gebruik: .venv\Scripts\hermes.exe
-  call ".venv\Scripts\hermes.exe" setup
+  echo [INFO] Gebruik: .venv\Scripts\python.exe ^(overlay, naast hermes.exe^)
+  call ".venv\Scripts\python.exe" -m hermes_cli_entry setup
   set "RC=!ERRORLEVEL!"
   goto :wiz_done
 )
@@ -72,17 +74,21 @@ where uv >nul 2>&1
 if !errorlevel! equ 0 (
   if exist "pyproject.toml" (
     echo [INFO] Gebruik: uv run python ^(repo^)
-    call uv run python -m hermes_cli.main setup
+    call uv run python -m hermes_cli_entry setup
     set "RC=!ERRORLEVEL!"
     goto :wiz_done
   )
 )
 where hermes >nul 2>&1
 if !errorlevel! equ 0 (
-  echo [INFO] Gebruik: hermes op PATH
-  call hermes setup
-  set "RC=!ERRORLEVEL!"
-  goto :wiz_done
+  for /f "delims=" %%H in ('where hermes 2^>nul') do (
+    if exist "%%~dpHpython.exe" (
+      echo [INFO] Gebruik: %%~dpHpython.exe ^(hermes-shim sibling, overlay^)
+      call "%%~dpHpython.exe" -m hermes_cli_entry setup
+      set "RC=!ERRORLEVEL!"
+      goto :wiz_done
+    )
+  )
 )
 where python >nul 2>&1
 if !errorlevel! equ 0 (
@@ -93,13 +99,13 @@ if !errorlevel! equ 0 (
     echo   Vaak oorzaak: PYTHONHOME of PYTHONPATH in Windows-gebruikersomgeving.
     echo   Fix: Verwijder PYTHONHOME ^& heropen cmd, of gebruik conda:
     echo     conda activate %HERMES_CONDA_ENV%
-    echo     python -m hermes_cli.main setup
+    echo     python -m hermes_cli_entry setup
     echo   Of installeer de env: windows\setup_hermes_windows.bat
     set "RC=1"
     goto :wiz_done
   )
   echo [INFO] Gebruik: python op PATH
-  call python -m hermes_cli.main setup
+  call python -m hermes_cli_entry setup
   set "RC=!ERRORLEVEL!"
   goto :wiz_done
 )

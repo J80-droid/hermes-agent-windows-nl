@@ -14,7 +14,7 @@ if not exist "%CONDA%" (
   exit /b 1
 )
 pushd "%~dp0\.."
-"%CONDA%" run -n hermes-env --no-capture-output python scripts/run_hermes_cli_with_overlay.py profile use %~1 --fix-hermes-home
+"%CONDA%" run -n hermes-env --no-capture-output python -m hermes_cli_entry profile use %~1 --fix-hermes-home
 set "RC=%ERRORLEVEL%"
 popd
 exit /b %RC%

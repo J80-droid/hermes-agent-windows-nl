@@ -31,6 +31,6 @@ set "HERMES_PYTHON=%PY%"
 set "PATH=%USERPROFILE%\miniconda3\envs\hermes-env;%USERPROFILE%\miniconda3\envs\hermes-env\Scripts;%USERPROFILE%\miniconda3\condabin;%PATH%"
 
 cd /d "%HERMES_REPO%"
-"%PY%" -m hermes_cli.main %*
+"%PY%" -m hermes_cli_entry %*
 set "EXIT_CODE=%ERRORLEVEL%"
 endlocal & exit /b %EXIT_CODE%

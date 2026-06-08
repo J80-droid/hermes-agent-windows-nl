@@ -33,7 +33,7 @@ if ($taskName -eq 'Hermes_Gateway') {
 Write-Host ''
 
 $running = $false
-$statusOut = (& $py -m hermes_cli.main gateway status 2>&1 | Out-String)
+$statusOut = (& $py -m hermes_cli_entry gateway status 2>&1 | Out-String)
 $taskInstalled = ($statusOut -match 'Scheduled Task registered')
 
 if ($taskInstalled) {
@@ -62,7 +62,7 @@ if (-not $taskInstalled) {
     } else {
         Write-Host ''
         Write-Host 'Fallback: gateway install in dit venster (beantwoord y op UAC-vraag)...' -ForegroundColor Yellow
-        'y' | & $py -m hermes_cli.main gateway install --start-on-login --start-now
+        'y' | & $py -m hermes_cli_entry gateway install --start-on-login --start-now
     }
 }
 
@@ -73,14 +73,14 @@ if (-not $running) {
     Start-Sleep -Seconds 6
     if (-not (Test-HermesGatewayRunning -Python $py -ProbeScript $probe)) {
         Write-Host 'Fallback: hermes gateway start...' -ForegroundColor Yellow
-        'y' | & $py -m hermes_cli.main gateway start
+        'y' | & $py -m hermes_cli_entry gateway start
         Start-Sleep -Seconds 6
     }
 }
 
 Write-Host ''
 Write-Host '=== Gateway status ===' -ForegroundColor Cyan
-& $py -m hermes_cli.main gateway status
+& $py -m hermes_cli_entry gateway status
 
 if (Test-HermesGatewayRunning -Python $py -ProbeScript $probe) {
     Write-Host ''

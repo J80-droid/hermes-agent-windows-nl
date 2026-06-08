@@ -21,6 +21,7 @@ if not exist "!HERMES_PYTHON!" (
     echo [ERROR] Python niet gevonden: !HERMES_PYTHON!
     exit /b 1
 )
+if not defined HERMES_REPO_ROOT set "HERMES_REPO_ROOT=%REPO_ROOT%"
 
 set "TERM="
 set "COLORTERM="
@@ -60,11 +61,11 @@ goto :done
 
 :run_python
 if "%~1"=="" goto :run_main
-"!HERMES_PYTHON!" -m hermes_cli.main %~1 !HERMES_CLI_ARG_TAIL!
+"!HERMES_PYTHON!" -m hermes_cli_entry %~1 !HERMES_CLI_ARG_TAIL!
 exit /b %ERRORLEVEL%
 
 :run_main
-"!HERMES_PYTHON!" -m hermes_cli.main !HERMES_CLI_ARG_TAIL!
+"!HERMES_PYTHON!" -m hermes_cli_entry !HERMES_CLI_ARG_TAIL!
 exit /b %ERRORLEVEL%
 
 :done

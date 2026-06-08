@@ -54,7 +54,7 @@ if errorlevel 1 exit /b 1
 
 echo.
 echo [STEP 2/5] hermes doctor --fix
-"%PY%" -m hermes_cli.main doctor --fix
+"%PY%" -m hermes_cli_entry doctor --fix
 if errorlevel 1 (
   echo [WARN] doctor --fix exit %ERRORLEVEL% — controleer handmatig
 )

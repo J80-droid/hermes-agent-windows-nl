@@ -2010,7 +2010,7 @@ function createPythonBackend(root, label, dashboardArgs, options = {}) {
     kind: 'python',
     label,
     command: python,
-    args: ['-m', 'hermes_cli.main', ...dashboardArgs],
+    args: ['-m', 'hermes_cli_entry', ...dashboardArgs],
     env: {
       PYTHONPATH: [root, process.env.PYTHONPATH].filter(Boolean).join(path.delimiter)
     },
@@ -2031,7 +2031,7 @@ function createActiveBackend(dashboardArgs) {
     kind: 'python',
     label: `Hermes at ${ACTIVE_HERMES_ROOT}`,
     command: fileExists(venvPython) ? venvPython : findSystemPython(),
-    args: ['-m', 'hermes_cli.main', ...dashboardArgs],
+    args: ['-m', 'hermes_cli_entry', ...dashboardArgs],
     env: {
       PYTHONPATH: [ACTIVE_HERMES_ROOT, process.env.PYTHONPATH].filter(Boolean).join(path.delimiter)
     },
@@ -2142,7 +2142,7 @@ function resolveHermesBackend(dashboardArgs) {
         kind: 'python',
         label: `installed hermes_cli module via ${python}`,
         command: python,
-        args: ['-m', 'hermes_cli.main', ...dashboardArgs],
+        args: ['-m', 'hermes_cli_entry', ...dashboardArgs],
         bootstrap: false,
         env: {},
         shell: false
@@ -5641,7 +5641,7 @@ async function getUninstallSummary() {
       resolve(value)
     }
     try {
-      const child = spawn(py, ['-m', 'hermes_cli.main', 'uninstall', '--gui-summary'], {
+      const child = spawn(py, ['-m', 'hermes_cli_entry', 'uninstall', '--gui-summary'], {
         cwd: agentRoot,
         env: { ...process.env, HERMES_HOME, NO_COLOR: '1' },
         stdio: ['ignore', 'pipe', 'ignore']

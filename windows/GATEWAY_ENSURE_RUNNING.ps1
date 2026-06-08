@@ -38,14 +38,14 @@ if ($pids.Count -gt 0) {
     $pids = Get-HermesGatewayPids -Python $py -ProbeScript $probe
     if ($pids.Count -eq 0) {
         Write-Host 'Fallback: hermes gateway start...' -ForegroundColor Yellow
-        'y' | & $py -m hermes_cli.main gateway start 2>&1 | Out-Host
+        'y' | & $py -m hermes_cli_entry gateway start 2>&1 | Out-Host
         Start-Sleep -Seconds 6
     }
 }
 
 Write-Host ''
 Write-Host '=== Gateway status ===' -ForegroundColor Cyan
-& $py -m hermes_cli.main gateway status
+& $py -m hermes_cli_entry gateway status
 
 $pids = Get-HermesGatewayPids -Python $py -ProbeScript $probe
 if ($pids.Count -gt 0) {

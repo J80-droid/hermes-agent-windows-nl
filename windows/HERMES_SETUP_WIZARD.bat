@@ -28,7 +28,7 @@ pause
 exit /b 1
 
 :run_wizard
-"%CONDA_EXE%" run -n hermes-env --no-capture-output hermes setup %*
+"%CONDA_EXE%" run -n hermes-env --no-capture-output python -m hermes_cli_entry setup %*
 set ERR=%ERRORLEVEL%
 echo.
 if %ERR% neq 0 (

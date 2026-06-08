@@ -193,7 +193,7 @@ function Get-CondaDashboardRunArgs {
     # Geen ``conda run -e`` — veel Windows-conda builds ondersteunen dat niet.
     # Zet HERMES_BUNDLED_PLUGINS / CODEBASE_VIZ_PYGOUNT_TIMEOUT op $env: vóór aanroep;
     # ``conda run`` erft de shell-omgeving.
-    $runArgs = @('run', '-n', 'hermes-env', '--no-capture-output', 'python', '-m', 'hermes_cli.main')
+    $runArgs = @('run', '-n', 'hermes-env', '--no-capture-output', 'python', '-m', 'hermes_cli_entry')
     $runArgs += $PythonArgs
     return $runArgs
 }
@@ -218,7 +218,7 @@ function Get-DashboardPythonExe {
 
 function Get-HermesDashboardCliArgs {
     param([string[]]$PythonArgs)
-    $cli = @('-m', 'hermes_cli.main')
+    $cli = @('-m', 'hermes_cli_entry')
     $cli += $PythonArgs
     return $cli
 }
@@ -238,7 +238,7 @@ function Stop-HermesDashboardProcess {
     $py = Get-DashboardPythonExe -RepoRoot $RepoRoot
     if ($py) {
         try {
-            $null = & $py -m hermes_cli.main dashboard --stop 2>&1
+            $null = & $py -m hermes_cli_entry dashboard --stop 2>&1
         } catch {
             $null = $_.Exception.Message
         }

@@ -20,3 +20,11 @@ def test_prepare_and_chat_clear_term() -> None:
     assert 'set "TERM="' in chat or "set TERM=" in chat
     assert "Clear-HermesUnixTerminalEnv" in common
     assert "set TERM=" in common  # Invoke-HermesCliInCmdConsole bat vangnet
+    assert "hermes_cli_entry" in chat
+    assert "hermes_cli_entry" in common
+
+
+def test_open_setup_uses_overlay_entrypoint() -> None:
+    setup_bat = (REPO / "scripts/windows/OPEN_SETUP.bat").read_text(encoding="utf-8")
+    assert "hermes_cli_entry" in setup_bat
+    assert "-m hermes_cli.main setup" not in setup_bat

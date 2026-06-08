@@ -142,7 +142,9 @@ def build_relaunch_argv(
     if bin_path:
         argv = [bin_path]
     else:
-        argv = [sys.executable, "-m", "hermes_cli.main"]
+        from overlay.hermes_cli.launcher import module_cli_argv
+
+        argv = module_cli_argv()
 
     src = list(original_argv) if original_argv is not None else list(sys.argv[1:])
 

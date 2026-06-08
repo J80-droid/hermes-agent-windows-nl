@@ -66,11 +66,11 @@ FROM Win32_Process
 WHERE Name = 'python.exe' OR Name = 'pythonw.exe'
 "@ -ErrorAction Stop
     foreach ($p in $pythonProcs) {
-        if (-not $p.CommandLine -or $p.CommandLine -notmatch 'hermes_cli\.main') {
+        if (-not $p.CommandLine -or $p.CommandLine -notmatch 'hermes_cli\.(main|entry)') {
             continue
         }
         $procId = [int]$p.ProcessId
-        if (Stop-HermesProcessIfAllowed -ProcessId $procId -Label 'python hermes_cli.main') {
+        if (Stop-HermesProcessIfAllowed -ProcessId $procId -Label 'python hermes_cli') {
             $stopped++
         }
     }

@@ -21,5 +21,5 @@ if not defined HERMES_PYTHON (
 
 echo [INFO] Resume sessie %~1 via %HERMES_PYTHON%
 echo [INFO] Tip: -c met ^< of ^> niet via .bat — typ die prompt in de TUI na resume.
-"%HERMES_PYTHON%" -m hermes_cli.main --resume %1
+"%HERMES_PYTHON%" -m hermes_cli_entry --resume %1
 exit /b %ERRORLEVEL%

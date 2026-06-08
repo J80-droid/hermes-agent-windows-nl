@@ -157,6 +157,7 @@ def _apply_runtime_patches() -> None:
     from overlay.hermes_cli.cli_profile_fork_patch import apply_cli_profile_fork_patch
     from overlay.hermes_cli.config_fork_patch import apply_config_fork_patch
     from overlay.hermes_cli.doctor_fork_patch import apply_doctor_fork_patch
+    from overlay.hermes_cli.launcher_fork_patch import apply_launcher_fork_patch
     from overlay.hermes_cli.main_fork_patch import apply_main_fork_patch
     from overlay.hermes_cli.models_fork_patch import apply_models_fork_patch
     from overlay.hermes_cli.profiles_fork_patch import apply_profiles_fork_patch
@@ -174,6 +175,7 @@ def _apply_runtime_patches() -> None:
     apply_banner_fork_patch()
     apply_clipboard_fork_patch()
     apply_main_fork_patch()
+    apply_launcher_fork_patch()
     apply_profiles_fork_patch()
     apply_process_registry_fork_patch()
     apply_pricing_fork_patch()

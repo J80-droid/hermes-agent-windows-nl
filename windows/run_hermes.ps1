@@ -99,12 +99,12 @@ if ((-not $repoEnvExists) -and (-not $userHermesEnvExists)) {
     Write-RunLog "First run detected: Launching Setup Wizard..."
     # Note: once ~/.hermes/.env or repo .env exists, this block is skipped and chat starts directly —
     # run scripts/windows/OPEN_SETUP.bat or windows/OPEN_SETUP.bat from cmd for the full wizard, or windows/setup_hermes_windows.bat --full-setup.
-    & $condaExe run -n hermes-env --no-capture-output python -m hermes_cli.main setup
+    & $condaExe run -n hermes-env --no-capture-output python -m hermes_cli_entry setup
 
     $haveEnvAfterSetup = (Test-Path -LiteralPath $envFile) -or (Test-Path -LiteralPath $standardEnvFile)
     if ($haveEnvAfterSetup) {
         Write-RunLog "Setup finished. Launching Hermes Agent Chat..."
-        & $condaExe run -n hermes-env --no-capture-output python -m hermes_cli.main
+        & $condaExe run -n hermes-env --no-capture-output python -m hermes_cli_entry
     }
 } else {
     $cliArgs = @(Get-HermesCliArgs)
@@ -112,7 +112,7 @@ if ((-not $repoEnvExists) -and (-not $userHermesEnvExists)) {
     if ($cliArgs.Count -gt 0) {
         Write-RunLog ("CLI args: " + ($cliArgs -join ' '))
     }
-    & $condaExe run -n hermes-env --no-capture-output python -m hermes_cli.main @cliArgs
+    & $condaExe run -n hermes-env --no-capture-output python -m hermes_cli_entry @cliArgs
 }
 
 $exitCode = $LASTEXITCODE

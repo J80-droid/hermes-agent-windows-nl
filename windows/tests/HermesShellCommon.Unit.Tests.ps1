@@ -93,6 +93,8 @@ Assert-True ($commonText -match 'function Test-HermesWin32Console') 'Test-Hermes
 Assert-True ($commonText -match 'function Clear-HermesUnixTerminalEnv') 'Clear-HermesUnixTerminalEnv defined'
 Assert-True ($commonText -match 'function Set-HermesWin32ChatEnv') 'Set-HermesWin32ChatEnv defined'
 Assert-True ($commonText -match 'function Invoke-HermesCliInCmdConsole') 'Invoke-HermesCliInCmdConsole defined'
+Assert-True ($commonText -match 'function Get-HermesCliModuleName') 'Get-HermesCliModuleName defined'
+Assert-True ($commonText -match 'hermes_cli_entry') 'overlay CLI module referenced'
 Assert-True ($commonText -match 'function Write-HermesLaunchState') 'Write-HermesLaunchState defined'
 Assert-True ($commonText -match 'function Invoke-HermesLaunchPhase') 'Invoke-HermesLaunchPhase defined'
 Assert-True ($commonText -match 'function Invoke-HermesCapturedProcess') 'Invoke-HermesCapturedProcess defined'

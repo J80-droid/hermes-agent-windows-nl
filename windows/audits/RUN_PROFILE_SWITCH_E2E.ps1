@@ -53,7 +53,7 @@ Write-Host '[OK]active_profile=legal' -ForegroundColor Green
 Write-Host '=== 4/5 subprocess -p legal overrides stale HERMES_HOME ===' -ForegroundColor Cyan
 $coreHome = Join-Path $root 'profiles\core'
 $env:HERMES_HOME = $coreHome
-& $python -m hermes_cli.main -p legal doctor --help 2>&1 | Out-Null
+& $python -m hermes_cli_entry -p legal doctor --help 2>&1 | Out-Null
 if (Test-NativeCommandFailed) {
     Write-Host '[FAIL] hermes -p legal doctor --help' -ForegroundColor Red
     exit 1

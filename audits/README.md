@@ -1,3 +1,17 @@
+# Terminal CWD migration E2E
+
+Geïsoleerde E2E voor migratie van deprecated `TERMINAL_CWD` / `MESSAGING_CWD` in profiel-`.env` naar `terminal.cwd` in `config.yaml`. Geen mutatie van live `%LOCALAPPDATA%\hermes`.
+
+| ID | Scenario | Verwachting |
+|----|----------|-------------|
+| T1–T4 | Zie `audits/TERMINAL_CWD_MIGRATION_E2E_README.md` | Artefacten, geïsoleerde migratie, deprecatie-waarschuwing, pytest |
+
+```bat
+audits\RUN_TERMINAL_CWD_MIGRATION_E2E.bat
+```
+
+---
+
 # Launch UI Sink E2E
 
 Geïsoleerde E2E voor console-overlap-fix, capture-contract en startketen `launch_hermes.bat` → `launch_hermes.ps1` → orchestrator. Geen live WT, geen chat.

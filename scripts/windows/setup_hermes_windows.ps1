@@ -189,6 +189,23 @@ function Write-HermesUpdateCmdBat {
     }
 }
 
+function Sync-HermesEditableConsoleScript {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory = $true)][string]$RepoRoot,
+        [Parameter(Mandatory = $true)][string]$PythonExe
+    )
+    if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot 'pyproject.toml'))) { return }
+    if (-not $PSCmdlet.ShouldProcess($RepoRoot, 'Run', 'pip install -e (hermes_cli_entry shim)')) { return }
+    Write-Host '[INFO] Console-script hermes aligneren (pip install -e)...' -ForegroundColor Cyan
+    Push-Location $RepoRoot
+    try {
+        & $PythonExe -m pip install -e $RepoRoot -q
+    } finally {
+        Pop-Location
+    }
+}
+
 function Invoke-HermesFullSetupWizard {
     [CmdletBinding(SupportsShouldProcess)]
     param(
@@ -197,37 +214,26 @@ function Invoke-HermesFullSetupWizard {
     if (-not $PSCmdlet.ShouldProcess($RepoRoot, 'Run', 'hermes setup')) { return 0 }
     $policy = Join-Path $RepoRoot (Join-Path 'windows' 'HermesPythonPolicy.ps1')
     if (Test-Path -LiteralPath $policy) { . $policy }
+    $cliModule = 'hermes_cli_entry'
     $py = if (Get-Command Get-HermesPreferredPython -ErrorAction SilentlyContinue) {
         Get-HermesPreferredPython -RepoRoot $RepoRoot
     } else { $null }
-    $invokeArgs = @()
-    if ($py -and (Test-Path -LiteralPath $py)) {
-        $invokeTarget = $py
-        $invokeArgs = @('-m', 'hermes_cli.main', 'setup')
-    } else {
-        $hermesExe = $null
-        foreach ($name in @('hermes.exe', 'hermes.cmd')) {
+    if (-not $py -or -not (Test-Path -LiteralPath $py)) {
+        foreach ($name in @('python.exe', 'python')) {
             $p = Join-Path $RepoRoot (Join-Path '.venv\Scripts' $name)
             if (Test-Path -LiteralPath $p) {
-                $hermesExe = $p
+                $py = $p
                 break
             }
         }
-        if (-not $hermesExe) {
-            try {
-                $cmd = Get-Command hermes -ErrorAction Stop
-                if ($cmd.Path) { $hermesExe = $cmd.Path }
-            } catch {
-                $null = $_.Exception.Message
-            }
-        }
-        if (-not $hermesExe -or -not (Test-Path -LiteralPath $hermesExe)) {
-            Write-Host "[ERROR] Geen Python/hermes-CLI. conda hermes-env of: windows\OPEN_SETUP.bat" -ForegroundColor Red
-            return 1
-        }
-        $invokeTarget = $hermesExe
-        $invokeArgs = @('setup')
     }
+    if (-not $py -or -not (Test-Path -LiteralPath $py)) {
+        Write-Host "[ERROR] Geen Python gevonden. conda hermes-env of: windows\OPEN_SETUP.bat" -ForegroundColor Red
+        return 1
+    }
+    Sync-HermesEditableConsoleScript -RepoRoot $RepoRoot -PythonExe $py
+    $invokeTarget = $py
+    $invokeArgs = @('-m', $cliModule, 'setup')
     Write-Host ""
     Write-Host "[Hermes] Start installatiewizard (hermes setup) ..." -ForegroundColor Cyan
     Push-Location $RepoRoot
