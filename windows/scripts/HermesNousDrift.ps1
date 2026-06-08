@@ -128,7 +128,8 @@ function Invoke-HermesTestNousTreeIdentical {
     if ($Quiet) { $params.Quiet = $true }
     if (Test-HermesNousDriftSkipFetch) { $params.SkipFetch = $true }
     & $driftPs1 @params
-    return [int]$LASTEXITCODE
+    $rc = if ($null -ne $LASTEXITCODE) { [int]$LASTEXITCODE } else { 0 }
+    return $rc
 }
 
 function Save-HermesNousTierAForkIntentionalFromHead {

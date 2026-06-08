@@ -137,8 +137,8 @@ Add-Step '8/8 verify_windows_script_chain' -Ok $chainOk
 
 # 9/9 ui-tui vitest (statusBarThroughput / usageCostBar) — skip zonder npm; anders npm ci + vitest
 $vitestRc = Invoke-HermesUiTuiVitest -RepoRoot $RepoRoot -CopyOverlay -TestPaths @(
-    'src/domain/statusBarThroughput.test.ts',
-    'src/domain/usageCostBar.test.ts'
+    'src/__tests__/statusBarThroughput.test.ts',
+    'src/__tests__/usageCostBar.test.ts'
 )
 if ($vitestRc -eq 2) {
     Write-Host '[SKIP] 9/9 ui-tui vitest — npm of ui-tui ontbreekt' -ForegroundColor Yellow
