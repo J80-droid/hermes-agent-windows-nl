@@ -2,7 +2,7 @@
 
 ## Focus
 
-**Tier A drift + CI groen (2026-06-08):** Fork Windows Institutional **PASS** (run `27112154891`, `8ea65a712`). Fixes: `pyproject.toml` fork-intentional; `HERMES_NOUS_UPSTREAM_SHA` pinned drift; `Restore-HermesUiTuiTierASrc` na vitest; institutional vitest-paden `src/__tests__/`; `config_snapshot` mtime-test via mock. Fork pytest gate **854 passed**; targeted catch-up blijft nodig bij snelle upstream (`SYNC_NOUS_DRIFT_CATCHUP.bat`); volledige merge ~500 commits via `UPDATE_HERMES.bat -Yes` periodiek.
+**Tier A drift + CI groen (2026-06-08):** Fork Windows Institutional **PASS** ([run 27112119896](https://github.com/J80-droid/hermes-agent-windows-nl/actions/runs/27112119896), `8ea65a712`). Fixes: `pyproject.toml` fork-intentional; `HERMES_NOUS_UPSTREAM_SHA` pinned drift; `Restore-HermesUiTuiTierASrc` na vitest; institutional vitest-paden `src/__tests__/`; `config_snapshot` mtime-test via mock. Fork pytest gate **854 passed**; targeted catch-up blijft nodig bij snelle upstream (`SYNC_NOUS_DRIFT_CATCHUP.bat`); volledige merge ~500 commits via `UPDATE_HERMES.bat -Yes` periodiek.
 
 **Ty fork gate + setuptools cap (2026-06-08):** `pyproject.toml` `[tool.ty.src]` = overlay + fork scripts/tests (geen volledige upstream ~10k diagnostics/panics); `windows/tests/RUN_TY_FORK_GATE.bat` exit 0; `setuptools>=77,<82` in `[dev]` + `guard_forbidden_packages.py` (torch 2.12+ metadata); docs `RAG_INSTITUTIONAL_ENV.md` § setuptools.
 
