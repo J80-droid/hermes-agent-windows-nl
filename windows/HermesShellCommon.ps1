@@ -111,13 +111,14 @@ function Invoke-HermesTierAPostAuditClean {
     }
     Invoke-HermesTierASrcClean -RepoRoot $RepoRoot
     if ($Phase -eq 'Postflight') {
-        $drift = Join-Path $script:HermesWindowsRoot 'scripts\Test-NousTreeIdentical.ps1'
-        if (-not (Test-Path -LiteralPath $drift)) {
-            Write-HermesErr ('missing ' + $drift)
+        $driftMod = Join-Path $script:HermesWindowsRoot 'scripts/HermesNousDrift.ps1'
+        if (-not (Test-Path -LiteralPath $driftMod)) {
+            Write-HermesErr ('missing ' + $driftMod)
             $global:LASTEXITCODE = 1
             return
         }
-        & $drift -RepoRoot $RepoRoot
+        . $driftMod
+        $null = Invoke-HermesTestNousTreeIdentical -RepoRoot $RepoRoot
     }
     $global:LASTEXITCODE = if ($null -eq $LASTEXITCODE) { 0 } else { [int]$LASTEXITCODE }
 }

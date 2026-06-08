@@ -98,6 +98,39 @@ function Get-HermesNousTierADriftReport {
     }
 }
 
+function Get-HermesNousDriftUpstreamRef {
+    if ($env:HERMES_NOUS_UPSTREAM_SHA -and $env:HERMES_NOUS_UPSTREAM_SHA.Trim()) {
+        return $env:HERMES_NOUS_UPSTREAM_SHA.Trim()
+    }
+    return 'upstream/main'
+}
+
+function Test-HermesNousDriftSkipFetch {
+    return [bool]($env:HERMES_NOUS_UPSTREAM_SHA -and $env:HERMES_NOUS_UPSTREAM_SHA.Trim())
+}
+
+function Invoke-HermesTestNousTreeIdentical {
+    <#
+    .SYNOPSIS
+        Run Test-NousTreeIdentical.ps1; in CI gebruikt HERMES_NOUS_UPSTREAM_SHA + SkipFetch.
+    #>
+    param(
+        [string]$RepoRoot = '',
+        [switch]$AllowTransitional,
+        [switch]$Quiet
+    )
+    $driftPs1 = Join-Path $PSScriptRoot 'Test-NousTreeIdentical.ps1'
+    $params = @{
+        UpstreamRef = (Get-HermesNousDriftUpstreamRef)
+    }
+    if ($RepoRoot) { $params.RepoRoot = $RepoRoot }
+    if ($AllowTransitional) { $params.AllowTransitional = $true }
+    if ($Quiet) { $params.Quiet = $true }
+    if (Test-HermesNousDriftSkipFetch) { $params.SkipFetch = $true }
+    & $driftPs1 @params
+    return [int]$LASTEXITCODE
+}
+
 function Save-HermesNousTierAForkIntentionalFromHead {
     param(
         [Parameter(Mandatory)][string]$RepoRoot,

@@ -67,11 +67,8 @@ Add-Step '1/8 SYNC_NOUS E2E entrypoints' (
 )
 
 # 2/8 Tier A strict drift
-$driftPs1 = Join-Path $RepoRoot 'windows/scripts/Test-NousTreeIdentical.ps1'
-$driftOk = Invoke-AuditExe -Exe 'powershell' -ArgumentList @(
-    '-NoProfile', '-ExecutionPolicy', 'Bypass',
-    '-File', $driftPs1, '-RepoRoot', $RepoRoot
-)
+. (Join-Path $RepoRoot 'windows/scripts/HermesNousDrift.ps1')
+$driftOk = (Invoke-HermesTestNousTreeIdentical -RepoRoot $RepoRoot) -eq 0
 Add-Step '2/8 Test-NousTreeIdentical (strict)' -Ok $driftOk
 
 # 3/8 Python harness (overlay runtime + Tier A untouched)
