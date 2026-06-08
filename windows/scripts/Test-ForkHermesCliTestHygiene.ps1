@@ -9,7 +9,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot 'HermesShellCommon.ps1')
+. (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
 
 if (-not $RepoRoot) {
     . (Join-Path $PSScriptRoot 'HermesNousDrift.ps1')
