@@ -66,7 +66,7 @@ def main() -> int:
     if "apply_cli_fork_patch" not in bootstrap_py:
         errors.append("overlay/bootstrap.py roept apply_cli_fork_patch niet aan")
 
-    cost_tests = repo / "tests" / "hermes_cli" / "test_status_bar_cost.py"
+    cost_tests = repo / "tests" / "overlay" / "test_status_bar_cost.py"
     if not cost_tests.is_file():
         errors.append("tests/overlay/test_status_bar_cost.py ontbreekt")
 

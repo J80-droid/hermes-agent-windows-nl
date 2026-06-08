@@ -215,6 +215,10 @@ if (-not (Test-Path -LiteralPath $perf)) {
 
 Write-Host '[INFO] Python-policy (conda hermes-env)...' -ForegroundColor Cyan
 . (Join-Path $winDir 'HermesPythonPolicy.ps1')
+$auditPy = $env:HERMES_AUDIT_PYTHON
+if ($auditPy -and (Test-Path -LiteralPath $auditPy)) {
+    Write-Host "  [OK] CI audit Python: $auditPy" -ForegroundColor Green
+} else {
 $condaPy = Get-HermesCondaPython
 if (-not $condaPy) {
     [void]$failures.Add('Geen conda hermes-env (windows/REPAIR_PYTHON.bat)')
@@ -224,6 +228,7 @@ if (-not $condaPy) {
     Write-Host '  [FAIL] pip in hermes-env' -ForegroundColor Red
 } else {
     Write-Host "  [OK] Canoniek: $condaPy" -ForegroundColor Green
+}
 }
 $brokenVenv = Join-Path $repo '.venv'
 if ((Test-Path -LiteralPath $brokenVenv) -and -not (Test-HermesVenvUsable -RepoRoot $repo)) {

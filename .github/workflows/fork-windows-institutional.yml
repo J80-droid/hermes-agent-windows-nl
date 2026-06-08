@@ -100,13 +100,17 @@ jobs:
       - name: SYNC_NOUS overlay E2E
         run: windows\audits\RUN_SYNC_NOUS_E2E.bat
 
+      - name: Build fork TUI assets (SkipWeb)
+        run: powershell -NoProfile -File windows/scripts/build_fork_ui_assets.ps1 -SkipWeb
+
       - name: Nous overlay institutional E2E
+        env:
+          HERMES_AUDIT_PYTHON: ${{ env.pythonLocation }}\python.exe
+          PYTEST_ADDOPTS: '--timeout-method=thread'
         run: audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat
 
-      - name: Build fork TUI assets (SkipWeb) + drift gate
-        run: |
-          powershell -NoProfile -File windows/scripts/build_fork_ui_assets.ps1 -SkipWeb
-          powershell -NoProfile -File windows/scripts/Test-NousTreeIdentical.ps1
+      - name: Nous Tier A drift after TUI build
+        run: powershell -NoProfile -File windows/scripts/Test-NousTreeIdentical.ps1
 
       - name: Institutional hardening E2E (H1–H14, incl. legal pytest)
         env:
