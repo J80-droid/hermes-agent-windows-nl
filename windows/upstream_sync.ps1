@@ -247,16 +247,31 @@ function Invoke-UpstreamPreflight {
             $hygieneStrict = ($env:HERMES_FORK_CLI_TEST_STRICT -eq '1')
             $hygieneParams = @{ RepoRoot = $Repo; PreMerge = $true; UpstreamRef = $upstreamRef }
             if ($hygieneStrict) { $hygieneParams['Strict'] = $true }
-            & $forkCliHygiene @hygieneParams 2>&1 | ForEach-Object { Write-Host $_ }
-            if ($null -ne $LASTEXITCODE -and [int]$LASTEXITCODE -ne 0) {
+            $hygieneCode = 0
+            $prevHygieneEap = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            try {
+                & $forkCliHygiene @hygieneParams
+                if ($null -ne $LASTEXITCODE) { $hygieneCode = [int]$LASTEXITCODE }
+            } finally {
+                $ErrorActionPreference = $prevHygieneEap
+            }
+            if ($hygieneCode -ne 0) {
                 Write-HermesErr 'Fork tests/hermes_cli/ hygiene (strict) — zie docs/FORK_MERGE_POLICY.md'
                 return 5
             }
         }
         $forkCliStaged = Join-Path $PSScriptRoot 'scripts\check_fork_hermes_cli_tests.py'
         if (Test-Path -LiteralPath $forkCliStaged) {
-            & python $forkCliStaged --repo $Repo --staged 2>&1 | ForEach-Object { Write-Host $_ }
-            if ($null -ne $LASTEXITCODE -and [int]$LASTEXITCODE -ne 0) {
+            $stagedPy = if ($env:HERMES_AUDIT_PYTHON -and (Test-Path -LiteralPath $env:HERMES_AUDIT_PYTHON)) {
+                $env:HERMES_AUDIT_PYTHON
+            } else {
+                'python'
+            }
+            $stagedCode = Invoke-HermesNativeCommand -FilePath $stagedPy -ArgumentList @(
+                $forkCliStaged, '--repo', $Repo, '--staged'
+            )
+            if ($stagedCode -ne 0) {
                 Write-HermesErr 'Staged fork-tests in tests/hermes_cli/ — verplaats naar tests/overlay/'
                 return 5
             }

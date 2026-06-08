@@ -10,6 +10,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '..\HermesShellCommon.ps1')
+. (Join-Path $PSScriptRoot '..\HermesNativeInvoke.ps1')
+. (Join-Path $PSScriptRoot '..\HermesPythonPolicy.ps1')
 
 if (-not $RepoRoot) {
     . (Join-Path $PSScriptRoot 'HermesNousDrift.ps1')
@@ -22,6 +24,15 @@ if (-not (Test-Path -LiteralPath $py)) {
     exit 1
 }
 
+$pythonExe = Resolve-HermesPythonExe -RepoRoot $RepoRoot
+if (-not $pythonExe) {
+    if ($env:HERMES_AUDIT_PYTHON -and (Test-Path -LiteralPath $env:HERMES_AUDIT_PYTHON)) {
+        $pythonExe = $env:HERMES_AUDIT_PYTHON
+    } else {
+        $pythonExe = 'python'
+    }
+}
+
 $doPre = $PreMerge -or (-not $PreMerge -and -not $Staged)
 $doStaged = $Staged
 
@@ -31,6 +42,6 @@ if ($doStaged) { $pyArgs += '--staged' }
 if ($Strict) { $pyArgs += '--strict' }
 if ($Json) { $pyArgs += '--json' }
 
-& python @pyArgs 2>&1 | ForEach-Object { Write-Host $_ }
-if ($null -eq $LASTEXITCODE) { exit 0 }
-exit [int]$LASTEXITCODE
+# Python schrijft pre-merge WARN naar stderr; onder EAP Stop wordt 2>&1 een NativeCommandError.
+$code = Invoke-HermesNativeCommand -FilePath $pythonExe -ArgumentList $pyArgs
+exit $code

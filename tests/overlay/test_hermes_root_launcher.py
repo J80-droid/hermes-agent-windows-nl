@@ -1,23 +1,25 @@
-"""Tests for the top-level `./hermes` launcher script."""
+"""Fork: repo-root ``hermes`` launcher delegates to ``hermes_cli_entry``."""
+from __future__ import annotations
 
 import runpy
 import sys
 import types
 from pathlib import Path
 
+REPO = Path(__file__).resolve().parents[2]
 
-def test_launcher_delegates_to_argparse_entrypoint(monkeypatch):
-    """`./hermes` should use `hermes_cli.main`, not the legacy Fire wrapper."""
-    launcher_path = Path(__file__).resolve().parents[2] / "hermes"
-    called = []
 
-    fake_main_module = types.ModuleType("hermes_cli.main")
+def test_launcher_delegates_to_overlay_entrypoint(monkeypatch):
+    launcher_path = REPO / "hermes"
+    called: list[str] = []
+
+    fake_entry_module = types.ModuleType("hermes_cli_entry")
 
     def fake_main():
-        called.append("hermes_cli.main")
+        called.append("hermes_cli_entry")
 
-    fake_main_module.main = fake_main
-    monkeypatch.setitem(sys.modules, "hermes_cli.main", fake_main_module)
+    fake_entry_module.main = fake_main
+    monkeypatch.setitem(sys.modules, "hermes_cli_entry", fake_entry_module)
 
     fake_cli_module = types.ModuleType("cli")
 
@@ -36,7 +38,5 @@ def test_launcher_delegates_to_argparse_entrypoint(monkeypatch):
     monkeypatch.setitem(sys.modules, "fire", fake_fire_module)
 
     monkeypatch.setattr(sys, "argv", [str(launcher_path), "gateway", "status"])
-
     runpy.run_path(str(launcher_path), run_name="__main__")
-
-    assert called == ["hermes_cli.main"]
+    assert called == ["hermes_cli_entry"]
