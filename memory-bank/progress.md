@@ -14,7 +14,8 @@
 - [x] Tier A catch-up `gateway/run.py` + `tools/todo_tool.py` (drift 0 lokaal)
 - [x] `Invoke-HermesUiTuiVitest -CopyOverlay`: `Restore-HermesUiTuiTierASrc` na vitest (fix post-build drift appChrome/usage op CI)
 - [x] CI drift gates: `HERMES_NOUS_UPSTREAM_SHA` + `-SkipFetch` (geen mid-job upstream race)
-- [ ] Volledige CI **Fork Windows Institutional** groen (institutional E2E + hardening H1–H14 + platform gate na push)
+- [x] `Invoke-HermesTestNousTreeIdentical` — E2E harnesses respecteren pinned SHA
+- [x] Volledige CI **Fork Windows Institutional** groen (run `27112154891`, commit `8ea65a712`, 2026-06-08)
 - [ ] Upstream merge groot (~496 commits) — `UPDATE_HERMES.bat -Yes` (targeted catch-up volstaat voor drift-gate; volledige merge periodiek)
 
 ## Pytest fork gate + RUN_PRODUCTION_GATE (2026-06-02)

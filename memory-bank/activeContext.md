@@ -2,7 +2,7 @@
 
 ## Focus
 
-**Tier A drift + overlay pytest gate + CI (2026-06-08):** `pyproject.toml` op fork-intentional allowlist (ty gate + setuptools cap); catch-up `gateway/run.py` + `tools/todo_tool.py`; drift gate lokaal **0 must-upstream**. Overlay Tier B-patches voor 35 gemigreerde tests (`217d9e574`); upstream-pariteit `tests/hermes_cli` + CI-workflow (TUI vóór institutional E2E, `HERMES_AUDIT_PYTHON`, `HermesNousDrift` scope-fix). Fork pytest gate lokaal **854 passed**; CI `27110566360` bereikte institutional E2E — faalde op post-vitest drift (`appChrome.tsx`/`usage.ts`); fix: `Restore-HermesUiTuiTierASrc` in `Invoke-HermesUiTuiVitest`. Hardening H1–H14 + platform gate nog verifiëren na push; upstream ~496 commits achter — periodiek `UPDATE_HERMES.bat -Yes`.
+**Tier A drift + CI groen (2026-06-08):** Fork Windows Institutional **PASS** (run `27112154891`, `8ea65a712`). Fixes: `pyproject.toml` fork-intentional; `HERMES_NOUS_UPSTREAM_SHA` pinned drift; `Restore-HermesUiTuiTierASrc` na vitest; institutional vitest-paden `src/__tests__/`; `config_snapshot` mtime-test via mock. Fork pytest gate **854 passed**; targeted catch-up blijft nodig bij snelle upstream (`SYNC_NOUS_DRIFT_CATCHUP.bat`); volledige merge ~500 commits via `UPDATE_HERMES.bat -Yes` periodiek.
 
 **Ty fork gate + setuptools cap (2026-06-08):** `pyproject.toml` `[tool.ty.src]` = overlay + fork scripts/tests (geen volledige upstream ~10k diagnostics/panics); `windows/tests/RUN_TY_FORK_GATE.bat` exit 0; `setuptools>=77,<82` in `[dev]` + `guard_forbidden_packages.py` (torch 2.12+ metadata); docs `RAG_INSTITUTIONAL_ENV.md` § setuptools.
 
