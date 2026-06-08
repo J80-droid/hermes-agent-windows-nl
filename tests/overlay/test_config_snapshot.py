@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -84,5 +85,8 @@ class TestGetConfigSnapshot:
         ), patch("hermes_cli.config.load_config_readonly", return_value={}):
             first = cs.get_config_snapshot()
             cfg.write_text("v2", encoding="utf-8")
+            # Rapid writes on Windows CI may not advance mtime_ns — bump explicitly.
+            new_ns = max(cfg.stat().st_mtime_ns, first.mtime_ns + 1)
+            os.utime(cfg, ns=(new_ns, new_ns))
             second = cs.get_config_snapshot()
         assert first is not second
