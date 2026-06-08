@@ -168,7 +168,13 @@ def _apply_runtime_patches() -> None:
     from overlay.hermes_cli.web_server_fork_patch import apply_web_server_fork_patch
     from overlay.tools.file_tools_fork_patch import apply_file_tools_fork_patch
     from overlay.tools.process_registry_fork_patch import apply_process_registry_fork_patch
+    from overlay.hermes_cli.model_switch_persist_fork_patch import (
+        apply_model_switch_persist_fork_patch,
+    )
     from overlay.tui_gateway.gateway_config_fork_patch import apply_gateway_config_fork_patch
+    from overlay.tui_gateway.model_switch_fork_patch import (
+        apply_gateway_model_switch_fork_patch,
+    )
 
     apply_argparse_fork_patch()
     apply_cli_bron_fork_patch()
@@ -187,9 +193,11 @@ def _apply_runtime_patches() -> None:
     apply_prompt_builder_fork_patch()
     apply_agent_throughput_fork_patch()
     apply_cli_fork_patch()
+    apply_model_switch_persist_fork_patch()
     apply_cli_profile_fork_patch()
     apply_cli_command_patches()
     apply_gateway_config_fork_patch()
+    apply_gateway_model_switch_fork_patch()
     apply_file_tools_fork_patch()
     apply_runtime_provider_fork_patch()
     apply_setup_fork_patch()

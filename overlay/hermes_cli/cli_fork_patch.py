@@ -29,7 +29,7 @@ class CliForkStatusBarMixin:
             )
 
         def _get_status_bar_snapshot(self) -> Dict[str, Any]:
-            # Prefer the agent's model name â€” it updates on fallback.
+            # Prefer the agent's model name — it updates on fallback.
             # self.model reflects the originally configured model and never
             # changes mid-session, so the TUI would show a stale name after
             # _try_activate_fallback() switches provider/model.
@@ -104,7 +104,7 @@ class CliForkStatusBarMixin:
                 # last_prompt_tokens is parked at the -1 sentinel right after a
                 # compression, until the next real API call reports a prompt count
                 # (awaiting_real_usage_after_compression). The status bar must not
-                # render that sentinel verbatim â€” it produced "-1/200K" / "-1%".
+                # render that sentinel verbatim — it produced "-1/200K" / "-1%".
                 # Clamp it to 0 so the one transitional turn reads as empty context.
                 context_tokens = getattr(compressor, "last_prompt_tokens", 0) or 0
                 if context_tokens < 0:
@@ -202,7 +202,7 @@ class CliForkStatusBarMixin:
             snapshot: Dict[str, Any],
             terminal_width: int,
             *,
-            separator: str = " â”‚ ",
+            separator: str = " │ ",
         ) -> None:
             label = self._resolve_status_bar_cost_label(snapshot, terminal_width)
             if not label:
@@ -242,7 +242,7 @@ class CliForkStatusBarMixin:
             snapshot: Dict[str, Any],
             terminal_width: int,
             *,
-            separator: str = " â”‚ ",
+            separator: str = " │ ",
         ) -> None:
             label = self._resolve_status_bar_throughput_label(snapshot, terminal_width)
             if not label:
@@ -276,7 +276,7 @@ class CliForkStatusBarMixin:
             frags: list,
             snapshot: Dict[str, Any],
             *,
-            separator: str = " â”‚ ",
+            separator: str = " │ ",
         ) -> None:
             label = snapshot.get("jatevo_quota_label")
             if not label:
@@ -302,7 +302,7 @@ class CliForkStatusBarMixin:
             frags: list,
             snapshot: Dict[str, Any],
             *,
-            separator: str = " â”‚ ",
+            separator: str = " │ ",
         ) -> None:
             self._append_status_bar_jatevo_quota_fragments(frags, snapshot, separator=separator)
             label = snapshot.get("venice_quota_label")
@@ -364,38 +364,38 @@ class CliForkStatusBarMixin:
 
                 yolo_active = self._is_session_yolo_active()
                 if width < 52:
-                    text = f"âš• {snapshot['model_short']}"
+                    text = f"⚕ {snapshot['model_short']}"
                     if snapshot.get("jatevo_quota_label"):
-                        text += f" Â· {snapshot['jatevo_quota_label']}"
+                        text += f" · {snapshot['jatevo_quota_label']}"
                     if snapshot.get("venice_quota_label"):
-                        text += f" Â· {snapshot['venice_quota_label']}"
-                    text += f" Â· {duration_label}"
+                        text += f" · {snapshot['venice_quota_label']}"
+                    text += f" · {duration_label}"
                     parts_narrow = []
                     self._append_pending_queue_status_part(parts_narrow)
                     if parts_narrow:
-                        text += f" Â· {parts_narrow[0]}"
+                        text += f" · {parts_narrow[0]}"
                     if yolo_active:
-                        text += " Â· âš  YOLO"
+                        text += " · ⚠ YOLO"
                     return self._trim_status_bar_text(text, width)
                 if width < 76:
-                    parts = [f"âš• {snapshot['model_short']}"]
+                    parts = [f"⚕ {snapshot['model_short']}"]
                     self._append_status_bar_provider_quota_text_part(parts, snapshot)
                     parts.append(percent_label)
                     compressions = snapshot.get("compressions", 0)
                     if compressions:
-                        parts.append(f"ðŸ—œï¸� {compressions}")
+                        parts.append(f"🗜️ {compressions}")
                     bg_count = snapshot.get("active_background_tasks", 0)
                     if bg_count:
-                        parts.append(f"â–¶ {bg_count}")
+                        parts.append(f"▶ {bg_count}")
                     bg_proc_count = snapshot.get("active_background_processes", 0)
                     if bg_proc_count:
-                        parts.append(f"âš™ {bg_proc_count}")
+                        parts.append(f"⚙ {bg_proc_count}")
                     parts.append(duration_label)
                     self._append_status_bar_cost_text_part(parts, snapshot, width)
                     self._append_pending_queue_status_part(parts)
                     if yolo_active:
-                        parts.append("âš  YOLO")
-                    return self._trim_status_bar_text(" Â· ".join(parts), width)
+                        parts.append("⚠ YOLO")
+                    return self._trim_status_bar_text(" · ".join(parts), width)
 
                 if snapshot["context_length"]:
                     ctx_total = _format_context_length(snapshot["context_length"])
@@ -405,17 +405,17 @@ class CliForkStatusBarMixin:
                     context_label = "ctx --"
 
                 compressions = snapshot.get("compressions", 0)
-                parts = [f"âš• {snapshot['model_short']}"]
+                parts = [f"⚕ {snapshot['model_short']}"]
                 self._append_status_bar_provider_quota_text_part(parts, snapshot)
                 parts.extend([context_label, percent_label])
                 if compressions:
-                    parts.append(f"ðŸ—œï¸� {compressions}")
+                    parts.append(f"🗜️ {compressions}")
                 bg_count = snapshot.get("active_background_tasks", 0)
                 if bg_count:
-                    parts.append(f"â–¶ {bg_count}")
+                    parts.append(f"▶ {bg_count}")
                 bg_proc_count = snapshot.get("active_background_processes", 0)
                 if bg_proc_count:
-                    parts.append(f"âš™ {bg_proc_count}")
+                    parts.append(f"⚙ {bg_proc_count}")
                 parts.append(duration_label)
                 prompt_elapsed = snapshot.get("prompt_elapsed")
                 if prompt_elapsed:
@@ -424,10 +424,10 @@ class CliForkStatusBarMixin:
                 self._append_status_bar_throughput_text_part(parts, snapshot, width)
                 self._append_pending_queue_status_part(parts)
                 if yolo_active:
-                    parts.append("âš  YOLO")
-                return self._trim_status_bar_text(" â”‚ ".join(parts), width)
+                    parts.append("⚠ YOLO")
+                return self._trim_status_bar_text(" │ ".join(parts), width)
             except Exception:
-                return f"âš• {self.model if getattr(self, 'model', None) else 'Hermes'}"
+                return f"⚕ {self.model if getattr(self, 'model', None) else 'Hermes'}"
 
         def _get_status_bar_fragments(self):
             if not self._status_bar_visible or getattr(self, '_model_picker_state', None):
@@ -436,7 +436,7 @@ class CliForkStatusBarMixin:
                 self._status_bar_layout_lines = 1
                 snapshot = self._get_status_bar_snapshot()
                 # Use prompt_toolkit's own terminal width when running inside the
-                # TUI â€” shutil.get_terminal_size() can return stale or fallback
+                # TUI — shutil.get_terminal_size() can return stale or fallback
                 # values (especially on SSH) that differ from what prompt_toolkit
                 # actually renders, causing the fragments to overflow to a second
                 # line and produce duplicated status bar rows over long sessions.
@@ -446,20 +446,20 @@ class CliForkStatusBarMixin:
 
                 if width < 52:
                     frags = [
-                        ("class:status-bar", " âš• "),
+                        ("class:status-bar", " ⚕ "),
                         ("class:status-bar-strong", snapshot["model_short"]),
                     ]
                     self._append_status_bar_provider_quota_fragments(
-                        frags, snapshot, separator=" Â· "
+                        frags, snapshot, separator=" · "
                     )
                     frags.extend([
-                        ("class:status-bar-dim", " Â· "),
+                        ("class:status-bar-dim", " · "),
                         ("class:status-bar-dim", duration_label),
                     ])
-                    self._append_pending_queue_status_fragments(frags, separator=" Â· ")
+                    self._append_pending_queue_status_fragments(frags, separator=" · ")
                     if yolo_active:
-                        frags.append(("class:status-bar-dim", " Â· "))
-                        frags.append(("class:status-bar-yolo", "âš  YOLO"))
+                        frags.append(("class:status-bar-dim", " · "))
+                        frags.append(("class:status-bar-yolo", "⚠ YOLO"))
                     frags.append(("class:status-bar", " "))
                 else:
                     percent = snapshot["context_percent"]
@@ -469,39 +469,39 @@ class CliForkStatusBarMixin:
                         bg_count = snapshot.get("active_background_tasks", 0)
                         bg_proc_count = snapshot.get("active_background_processes", 0)
                         frags = [
-                            ("class:status-bar", " âš• "),
+                            ("class:status-bar", " ⚕ "),
                             ("class:status-bar-strong", snapshot["model_short"]),
                         ]
                         self._append_status_bar_provider_quota_fragments(
-                            frags, snapshot, separator=" Â· "
+                            frags, snapshot, separator=" · "
                         )
                         frags.extend([
-                            ("class:status-bar-dim", " Â· "),
+                            ("class:status-bar-dim", " · "),
                             (self._status_bar_context_style(percent), percent_label),
                         ])
                         if compressions:
-                            frags.append(("class:status-bar-dim", " Â· "))
-                            frags.append((self._compression_count_style(compressions), f"ðŸ—œï¸� {compressions}"))
+                            frags.append(("class:status-bar-dim", " · "))
+                            frags.append((self._compression_count_style(compressions), f"🗜️ {compressions}"))
                         if bg_count:
-                            frags.append(("class:status-bar-dim", " Â· "))
-                            frags.append(("class:status-bar-strong", f"â–¶ {bg_count}"))
+                            frags.append(("class:status-bar-dim", " · "))
+                            frags.append(("class:status-bar-strong", f"▶ {bg_count}"))
                         if bg_proc_count:
-                            frags.append(("class:status-bar-dim", " Â· "))
-                            frags.append(("class:status-bar-strong", f"âš™ {bg_proc_count}"))
+                            frags.append(("class:status-bar-dim", " · "))
+                            frags.append(("class:status-bar-strong", f"⚙ {bg_proc_count}"))
                         frags.extend([
-                            ("class:status-bar-dim", " Â· "),
+                            ("class:status-bar-dim", " · "),
                             ("class:status-bar-dim", duration_label),
                         ])
                         self._append_status_bar_cost_fragments(
-                            frags, snapshot, width, separator=" Â· "
+                            frags, snapshot, width, separator=" · "
                         )
                         self._append_status_bar_throughput_fragments(
-                            frags, snapshot, width, separator=" Â· "
+                            frags, snapshot, width, separator=" · "
                         )
-                        self._append_pending_queue_status_fragments(frags, separator=" Â· ")
+                        self._append_pending_queue_status_fragments(frags, separator=" · ")
                         if yolo_active:
-                            frags.append(("class:status-bar-dim", " Â· "))
-                            frags.append(("class:status-bar-yolo", "âš  YOLO"))
+                            frags.append(("class:status-bar-dim", " · "))
+                            frags.append(("class:status-bar-yolo", "⚠ YOLO"))
                         frags.append(("class:status-bar", " "))
                     else:
                         if snapshot["context_length"]:
@@ -516,44 +516,44 @@ class CliForkStatusBarMixin:
                         bg_count = snapshot.get("active_background_tasks", 0)
                         bg_proc_count = snapshot.get("active_background_processes", 0)
                         header_frags = [
-                            ("class:status-bar", " âš• "),
+                            ("class:status-bar", " ⚕ "),
                             ("class:status-bar-strong", snapshot["model_short"]),
                         ]
                         self._append_status_bar_provider_quota_fragments(
-                            header_frags, snapshot, separator=" â”‚ "
+                            header_frags, snapshot, separator=" │ "
                         )
                         metric_frags = [
-                            ("class:status-bar-dim", " â”‚ "),
+                            ("class:status-bar-dim", " │ "),
                             ("class:status-bar-dim", context_label),
-                            ("class:status-bar-dim", " â”‚ "),
+                            ("class:status-bar-dim", " │ "),
                             (bar_style, self._build_context_bar(percent)),
                             ("class:status-bar-dim", " "),
                             (bar_style, percent_label),
                         ]
                         if compressions:
-                            metric_frags.append(("class:status-bar-dim", " â”‚ "))
-                            metric_frags.append((self._compression_count_style(compressions), f"ðŸ—œï¸� {compressions}"))
+                            metric_frags.append(("class:status-bar-dim", " │ "))
+                            metric_frags.append((self._compression_count_style(compressions), f"🗜️ {compressions}"))
                         if bg_count:
-                            metric_frags.append(("class:status-bar-dim", " â”‚ "))
-                            metric_frags.append(("class:status-bar-strong", f"â–¶ {bg_count}"))
+                            metric_frags.append(("class:status-bar-dim", " │ "))
+                            metric_frags.append(("class:status-bar-strong", f"▶ {bg_count}"))
                         if bg_proc_count:
-                            metric_frags.append(("class:status-bar-dim", " â”‚ "))
-                            metric_frags.append(("class:status-bar-strong", f"âš™ {bg_proc_count}"))
+                            metric_frags.append(("class:status-bar-dim", " │ "))
+                            metric_frags.append(("class:status-bar-strong", f"⚙ {bg_proc_count}"))
                         metric_frags.extend([
-                            ("class:status-bar-dim", " â”‚ "),
+                            ("class:status-bar-dim", " │ "),
                             ("class:status-bar-dim", duration_label),
                         ])
                         # Per-prompt elapsed timer (live or frozen) before cost segment
                         prompt_elapsed = snapshot.get("prompt_elapsed")
                         if prompt_elapsed:
-                            metric_frags.append(("class:status-bar-dim", " â”‚ "))
+                            metric_frags.append(("class:status-bar-dim", " │ "))
                             metric_frags.append(("class:status-bar-dim", prompt_elapsed))
                         self._append_status_bar_cost_fragments(metric_frags, snapshot, width)
                         self._append_status_bar_throughput_fragments(metric_frags, snapshot, width)
-                        self._append_pending_queue_status_fragments(metric_frags, separator=" â”‚ ")
+                        self._append_pending_queue_status_fragments(metric_frags, separator=" │ ")
                         if yolo_active:
-                            metric_frags.append(("class:status-bar-dim", " â”‚ "))
-                            metric_frags.append(("class:status-bar-yolo", "âš  YOLO"))
+                            metric_frags.append(("class:status-bar-dim", " │ "))
+                            metric_frags.append(("class:status-bar-yolo", "⚠ YOLO"))
                         metric_frags.append(("class:status-bar", " "))
                         return self._pack_status_bar_fragment_rows(header_frags, metric_frags, width)
 
