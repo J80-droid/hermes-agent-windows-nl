@@ -1,5 +1,18 @@
 # Progress
 
+## Tier A drift + overlay gate + CI (2026-06-08)
+
+- [x] 35 fork-only tests migratie `tests/hermes_cli/` → `tests/overlay/` / `tests/windows/`
+- [x] Overlay Tier B-patches (`banner`, `web_server`, `setup`, `runtime_provider`, `skin_engine`, …) — `217d9e574`
+- [x] Tier A drift catch-up: 13 + 8 gateway + `yuanbao.py` (`833fb7d8f`, `2ccb1c302`)
+- [x] `tests/hermes_cli` upstream-pariteit (`test_kanban_db`, `test_web_server`) — `11e4bc724`
+- [x] CI: `HermesNousDrift.ps1` scope + git stderr; TUI-build vóór institutional E2E; `verify_usage_cost_bar` overlay-pad
+- [x] Fork pytest gate lokaal 854 passed; CI fork gate groen na `faster_whisper`-mock + `config_snapshot` mtime-fix
+- [x] Ty fork gate: `[tool.ty.src]` + overrides; `RUN_TY_FORK_GATE.bat` exit 0
+- [x] setuptools `<82` cap: `pyproject` dev, `guard_forbidden_packages`, `RAG_INSTITUTIONAL_ENV.md`
+- [ ] Volledige CI **Fork Windows Institutional** groen (hardening E2E + platform gate nog verifiëren na laatste push)
+- [ ] Upstream merge groot (~487 commits) — `UPDATE_HERMES.bat -Yes` (niet alleen targeted checkout)
+
 ## Pytest fork gate + RUN_PRODUCTION_GATE (2026-06-02)
 
 - [x] `pytest_fork_gate.yaml` + `load_pytest_fork_gate.py` + manifest unit test

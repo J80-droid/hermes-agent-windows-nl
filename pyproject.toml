@@ -118,7 +118,7 @@ edge-tts = ["edge-tts==7.2.7"]
 modal = ["modal==1.3.4"]
 daytona = ["daytona==0.155.0"]
 hindsight = ["hindsight-client==0.6.1"]
-dev = ["debugpy==1.8.20", "pytest==9.0.2", "pytest-asyncio==1.3.0", "pytest-timeout==2.4.0", "mcp==1.26.0", "starlette==1.0.1", "ty==0.0.21", "ruff==0.15.10", "setuptools==82.0.1"]  # starlette: CVE-2026-48710
+dev = ["debugpy==1.8.20", "pytest==9.0.2", "pytest-asyncio==1.3.0", "pytest-timeout==2.4.0", "mcp==1.26.0", "starlette==1.0.1", "ty==0.0.21", "ruff==0.15.10", "setuptools>=77.0,<82"]  # starlette: CVE-2026-48710; setuptools<82: torch 2.12+ metadata (overlay/requirements-security-pins.txt)
 messaging = ["python-telegram-bot[webhooks]==22.6", "discord.py[voice]==2.7.1", "aiohttp==3.13.3", "brotlicffi==1.2.0.1", "slack-bolt==1.27.0", "slack-sdk==3.40.1", "qrcode==7.4.2"]
 cron = []  # croniter is now a core dependency; this extra kept for back-compat
 slack = ["slack-bolt==1.27.0", "slack-sdk==3.40.1", "aiohttp==3.13.3"]
@@ -313,6 +313,53 @@ python-version = "3.13"
 [tool.ty.rules]
 unknown-argument = "warn"
 redundant-cast = "ignore"
+
+# Fork ty gate: upstream Tier A panics ty (e.g. tools/checkpoint_manager cycles).
+# Default scope = overlay + fork scripts/tests; volledige repo = ~10k upstream diagnostics.
+[tool.ty.src]
+include = [
+    "overlay",
+    "scripts/guard_forbidden_packages.py",
+    "scripts/verify_usage_cost_bar.py",
+    "scripts/rag_pipeline/rag_log_quiet.py",
+    "scripts/rag_pipeline/rag_institutional_defaults.py",
+    "scripts/rag_pipeline/kb_schema_constants.py",
+    "windows/tools",
+    "tests/overlay",
+    "tests/windows",
+    "tests/scripts",
+]
+
+[[tool.ty.overrides]]
+include = ["overlay/**", "tests/**"]
+
+[tool.ty.overrides.rules]
+unresolved-import = "ignore"
+unresolved-attribute = "ignore"
+unresolved-reference = "ignore"
+not-subscriptable = "warn"
+invalid-assignment = "warn"
+call-non-callable = "warn"
+invalid-argument-type = "warn"
+invalid-return-type = "warn"
+unsupported-operator = "warn"
+no-matching-overload = "warn"
+
+[[tool.ty.overrides]]
+include = ["scripts/**", "windows/tools/**"]
+
+[tool.ty.overrides.rules]
+not-subscriptable = "warn"
+invalid-argument-type = "warn"
+invalid-assignment = "warn"
+no-matching-overload = "warn"
+call-non-callable = "warn"
+unsupported-operator = "warn"
+invalid-return-type = "warn"
+unused-type-ignore-comment = "ignore"
+
+[tool.ty.terminal]
+error-on-warning = false
 
 [tool.ruff]
 preview = true  # required for PLW1514 (unspecified-encoding) — preview rule

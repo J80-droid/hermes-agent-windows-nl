@@ -6,7 +6,8 @@
 - **Tier B** = `overlay/`, `windows/`, `scripts/rag_pipeline/`, skills, runtime.
 - **Bootstrap:** `overlay/bootstrap.py` + `PYTHONSTARTUP` via `Invoke-HermesOverlayBootstrap.ps1` (launch + SYNC_NOUS).
 - **Sync:** `windows/SYNC_NOUS.bat` → merge → `Invoke-ApplyHermesOverlay` → drift-test → post-merge.
-- **Gate:** `Test-NousTreeIdentical.ps1` (strict in CI `fork-windows-institutional.yml` + `RUN_AUDITS` postflight).
+- **Gate:** `Test-NousTreeIdentical.ps1` (strict in CI `fork-windows-institutional.yml` + `RUN_AUDITS` postflight). Catch-up: `Invoke-SyncNousDriftCatchUp.ps1` / `SYNC_NOUS_DRIFT_CATCHUP.bat` (niet volledige `UPDATE_HERMES` voor kleine drift).
+- **Ty fork gate:** `[tool.ty.src]` beperkt scope; `overlay/**` + `tests/**` overrides voor runtime-patch import graph; `RUN_TY_FORK_GATE.bat`.
 - **File-tools sandbox:** `overlay/tools/file_tools_fork_patch.py` na `bootstrap.install()` — alleen wanneer `is_sandbox_enforced()`.
 - **Bootstrap modules (overlay):** o.a. `filesystem_sandbox`, `hardware_backend`, `config_snapshot` in `_OVERLAY_HERMES_CLI_MODULES`.
 

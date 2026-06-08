@@ -57,6 +57,16 @@ Bij `--mcp-test` of ingest kan één regel op stderr verschijnen:
 - **Oplossing niet nodig** voor productie; standaard `HERMES_RAG_QUIET_TORCH=1` dempt veel ruis bij ingest.
 - Later: torch/sentence-transformers updaten wanneer upstream het oplost.
 
+## setuptools &lt; 82 (torch/RAG-stack)
+
+| Package | Pin | Reden |
+|---------|-----|--------|
+| `setuptools` | `>=77.0,<82` | `torch` 2.12+ metadata conflict bij `>=82` (PEP 639 build-backend blijft `>=77,<83`) |
+
+- **Toepassing:** `overlay/requirements-security-pins.txt` + `windows/REPAIR_SECURITY_PINS.bat` + `scripts/guard_forbidden_packages.py --fix`
+- **Dev-install:** `pyproject.toml` `[dev]` gebruikt dezelfde cap (niet `==82.0.1`)
+- **Controle:** `python scripts/guard_forbidden_packages.py` na RAG-extras of `hermes update`
+
 ## Dependency-pinning na `UPDATE_HERMES` (bewust)
 
 | Fase | Package | Versie |

@@ -56,6 +56,32 @@ def test_run_guard_fix_uninstalls_forbidden(monkeypatch):
     assert set(report["forbidden_removed"]) <= set(FORBIDDEN)
 
 
+def test_run_guard_setuptools_cap_detected(monkeypatch):
+    monkeypatch.setattr(
+        "scripts.guard_forbidden_packages._pip_list_versions",
+        lambda _py: {"torch": "2.6.0", "setuptools": "82.0.1"},
+    )
+    report = run_guard(sys.executable, fix=False)
+    assert report["setuptools_ok"] is False
+
+
+def test_run_guard_setuptools_cap_fix(monkeypatch):
+    calls = 0
+
+    def _versions(_py):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return {"sentence-transformers": "5.5.0", "setuptools": "82.0.1"}
+        return {"sentence-transformers": "5.5.0", "setuptools": "81.0.0"}
+
+    monkeypatch.setattr("scripts.guard_forbidden_packages._pip_list_versions", _versions)
+    with patch("scripts.guard_forbidden_packages._ensure_setuptools_cap", return_value=True) as cap:
+        report = run_guard(sys.executable, fix=True)
+    cap.assert_called_once()
+    assert report["setuptools_ok"] is True
+
+
 def test_run_guard_transformers_floor_fix(monkeypatch):
     monkeypatch.setattr(
         "scripts.guard_forbidden_packages._pip_list_versions",

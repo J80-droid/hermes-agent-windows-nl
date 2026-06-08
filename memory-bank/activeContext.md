@@ -2,6 +2,10 @@
 
 ## Focus
 
+**Tier A drift + overlay pytest gate + CI (2026-06-08):** Targeted `Invoke-SyncNousDriftCatchUp` (21 Tier A-bestanden + `yuanbao.py`); overlay Tier B-patches voor 35 gemigreerde tests (`217d9e574`); upstream-pariteit `tests/hermes_cli` + CI-workflow (TUI vóór institutional E2E, `HERMES_AUDIT_PYTHON`, `HermesNousDrift` scope-fix). Fork pytest gate lokaal **854 passed**; CI institutional pipeline deels groen (drift, hygiene, fork gate, SYNC_NOUS); upstream ~487 commits achter — periodiek `UPDATE_HERMES.bat -Yes`.
+
+**Ty fork gate + setuptools cap (2026-06-08):** `pyproject.toml` `[tool.ty.src]` = overlay + fork scripts/tests (geen volledige upstream ~10k diagnostics/panics); `windows/tests/RUN_TY_FORK_GATE.bat` exit 0; `setuptools>=77,<82` in `[dev]` + `guard_forbidden_packages.py` (torch 2.12+ metadata); docs `RAG_INSTITUTIONAL_ENV.md` § setuptools.
+
 **Pytest fork gate + productie-poort (2026-06-07):** Runner-hardening: `Get-HermesPytestArgsFromConfig`, hashtable-splat `ExtraArgs`, stderr-`Continue`, `$global:LASTEXITCODE` na Tee; E2E `RUN_PYTEST_RUNNER_HARDENING_E2E.bat` (10/10). Drift-export split fork-intentional vs must-upstream. PSSA 0.
 
 **Pad 1 SYNC_NOUS + lean overlay (2026-06-06):** Upstream merge ~199 commits (`d4f196072`); Tier A drift **0** (`Test-NousTreeIdentical` PASS). Toolset dashboard volledig upstream Tier A (`ToolsetConfigDrawer`, `web_server` env/post-setup routes, `main.py post-setup`). Overlay opgeschoond: verwijderd `web_server_fork_patch`, overlay web toolset-duplicaten; `tools_config_fork_patch` alleen MCP-sentinel + `_user_customized`; `argparse_fork_patch` alleen `config get` + profile flags. E2E: `RUN_TOOLSET_DASHBOARD_E2E` 9/9, `RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E` PASS, fork gates 8/8. Open P3: bronmappen `raw_source_files` handmatig vullen.

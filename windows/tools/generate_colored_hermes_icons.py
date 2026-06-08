@@ -50,6 +50,14 @@ except ImportError as e:
     print("Installeer Pillow: pip install pillow", file=sys.stderr)
     raise SystemExit(1) from e
 
+
+def _pixels(im: Image.Image):
+    px = im.load()
+    if px is None:
+        raise RuntimeError("PIL PixelAccess unavailable")
+    return px
+
+
 # Felle doelkleuren (RGB) → hue voor HSV-recolor
 VARIANTS: dict[str, tuple[int, int, int]] = {
     "hermes_logo_backup.ico": (255, 32, 140),
@@ -131,6 +139,7 @@ def _synthetic_base_rgba(size: int = 256) -> Image.Image:
             continue
     if font is None:
         font = ImageFont.load_default()
+    assert font is not None
     bbox = draw.textbbox((0, 0), ch, font=font)
     tw = bbox[2] - bbox[0]
     th = bbox[3] - bbox[1]
@@ -370,7 +379,7 @@ def _recolor_hue_rgba(
     out = im.copy()
     trn, tgn, tbn = tr / 255.0, tg / 255.0, tb / 255.0
     target_h, _, _ = colorsys.rgb_to_hsv(trn, tgn, tbn)
-    px = out.load()
+    px = _pixels(out)
     w, h = out.size
     for y in range(h):
         for x in range(w):
@@ -394,7 +403,7 @@ def _recolor_hue_rgba(
 def _brighten_desaturate_rgba(im: Image.Image) -> Image.Image:
     """Zilver/wit monogram (geen hue-shift naar wit — dat wordt blauw in Explorer)."""
     out = im.copy()
-    px = out.load()
+    px = _pixels(out)
     w, h = out.size
     for y in range(h):
         for x in range(w):
