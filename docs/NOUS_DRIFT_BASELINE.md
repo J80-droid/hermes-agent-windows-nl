@@ -1,6 +1,6 @@
 # NOUS drift baseline
 
-Generated: **2026-06-08 03:36:38**
+Generated: **2026-06-08 03:43:22**
 Compare: `HEAD` vs `upstream/main`
 
 ## Summary
@@ -8,15 +8,15 @@ Compare: `HEAD` vs `upstream/main`
 | Metric | Count |
 |--------|------:|
 | All changed paths | 1277 |
-| Tier A changed (must -> upstream) | 1 |
+| Tier A changed (must -> upstream) | 0 |
 | Tier A changed (fork-intentional allowlist) | 2 |
 | Tier A extra files (fork-only in Nous dirs) | 0 |
-| Tier B / excluded | 1274 |
+| Tier B / excluded | 1275 |
 | Transitional (planned migration) | 0 |
 
 ## Tier A changed files (must -> upstream)
 
-- `website/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex.md`
+_None._
 
 ## Tier A changed files (fork-intentional allowlist)
 

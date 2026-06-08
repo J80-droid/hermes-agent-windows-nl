@@ -48,13 +48,17 @@ jobs:
           echo "HERMES_HOME=$hermesHome" >> $env:GITHUB_ENV
 
       - name: Configure upstream remote
+        shell: pwsh
         run: |
           git remote add upstream https://github.com/NousResearch/hermes-agent.git
           git fetch upstream main --depth=1
+          $sha = (git rev-parse upstream/main).Trim()
+          echo "HERMES_NOUS_UPSTREAM_SHA=$sha" >> $env:GITHUB_ENV
+          Write-Host "Pinned upstream/main at $sha for drift gates (no mid-job re-fetch)."
 
       # Volledige RUN_LEGAL_DOMAIN_E2E vereist %LOCALAPPDATA%\hermes runtime — lokaal vóór release (zie docs/LEGAL_PRODUCTION_GATE.md).
       - name: Nous Tier A drift gate (strict)
-        run: powershell -NoProfile -File windows/scripts/Test-NousTreeIdentical.ps1
+        run: powershell -NoProfile -File windows/scripts/Test-NousTreeIdentical.ps1 -UpstreamRef ${{ env.HERMES_NOUS_UPSTREAM_SHA }} -SkipFetch
 
       - name: Fork tests/hermes_cli/ hygiene (strict)
         run: python windows/scripts/check_fork_hermes_cli_tests.py --pre-merge --strict
@@ -110,7 +114,7 @@ jobs:
         run: audits\RUN_NOUS_OVERLAY_INSTITUTIONAL_E2E.bat
 
       - name: Nous Tier A drift after TUI build
-        run: powershell -NoProfile -File windows/scripts/Test-NousTreeIdentical.ps1
+        run: powershell -NoProfile -File windows/scripts/Test-NousTreeIdentical.ps1 -UpstreamRef ${{ env.HERMES_NOUS_UPSTREAM_SHA }} -SkipFetch
 
       - name: Institutional hardening E2E (H1–H14, incl. legal pytest)
         env:

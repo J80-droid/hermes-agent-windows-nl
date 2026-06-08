@@ -3,6 +3,7 @@ param(
     [string]$RepoRoot = '',
     [string]$UpstreamRef = 'upstream/main',
     [switch]$AllowTransitional,
+    [switch]$SkipFetch,
     [switch]$Quiet
 )
 
@@ -23,7 +24,7 @@ function Write-DriftLine {
 
 $repo = if ($RepoRoot) { (Resolve-Path -LiteralPath $RepoRoot).Path } else { Get-HermesRepoRootFromNousScripts -Start $PSScriptRoot }
 
-$report = Get-HermesNousTierADriftReport -RepoRoot $repo -UpstreamRef $UpstreamRef -AllowTransitional:$AllowTransitional
+$report = Get-HermesNousTierADriftReport -RepoRoot $repo -UpstreamRef $UpstreamRef -AllowTransitional:$AllowTransitional -SkipFetch:$SkipFetch
 
 foreach ($w in $report.Warnings) {
     if (Test-HermesPathTierAForkIntentional -Path $w) {
