@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import sys
+import types
+
 from hermes_cli import hardware_backend as hb
 
 
@@ -81,8 +84,11 @@ def test_load_faster_whisper_auto_falls_back_to_cpu(monkeypatch):
             raise RuntimeError("cannot be loaded")
         return FakeWhisper(model_name, device, compute_type)
 
-    monkeypatch.setattr("faster_whisper.WhisperModel", fake_ctor)
+    fake_fw = types.ModuleType("faster_whisper")
+    fake_fw.WhisperModel = fake_ctor
+    monkeypatch.setitem(sys.modules, "faster_whisper", fake_fw)
     hb._selections.clear()
+    hb.clear_faster_whisper_model_cache()
     model = hb.load_faster_whisper_model("tiny", preferred_device="auto")
     assert model.device == "cpu"
     assert len(calls) == 2
