@@ -10,8 +10,10 @@
 - [x] Fork pytest gate lokaal 854 passed; CI fork gate groen na `faster_whisper`-mock + `config_snapshot` mtime-fix
 - [x] Ty fork gate: `[tool.ty.src]` + overrides; `RUN_TY_FORK_GATE.bat` exit 0
 - [x] setuptools `<82` cap: `pyproject` dev, `guard_forbidden_packages`, `RAG_INSTITUTIONAL_ENV.md`
-- [ ] Volledige CI **Fork Windows Institutional** groen (hardening E2E + platform gate nog verifiëren na laatste push)
-- [ ] Upstream merge groot (~487 commits) — `UPDATE_HERMES.bat -Yes` (niet alleen targeted checkout)
+- [x] `pyproject.toml` fork-intentional allowlist (`HermesNousTierPaths.ps1`) — deblokkeert CI drift na ty/setuptools fork-delta
+- [x] Tier A catch-up `gateway/run.py` + `tools/todo_tool.py` (drift 0 lokaal)
+- [ ] Volledige CI **Fork Windows Institutional** groen (institutional E2E + hardening H1–H14 + platform gate na push)
+- [ ] Upstream merge groot (~496 commits) — `UPDATE_HERMES.bat -Yes` (targeted catch-up volstaat voor drift-gate; volledige merge periodiek)
 
 ## Pytest fork gate + RUN_PRODUCTION_GATE (2026-06-02)
 

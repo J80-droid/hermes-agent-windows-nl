@@ -2,7 +2,7 @@
 
 ## Focus
 
-**Tier A drift + overlay pytest gate + CI (2026-06-08):** Targeted `Invoke-SyncNousDriftCatchUp` (21 Tier A-bestanden + `yuanbao.py`); overlay Tier B-patches voor 35 gemigreerde tests (`217d9e574`); upstream-pariteit `tests/hermes_cli` + CI-workflow (TUI vóór institutional E2E, `HERMES_AUDIT_PYTHON`, `HermesNousDrift` scope-fix). Fork pytest gate lokaal **854 passed**; CI institutional pipeline deels groen (drift, hygiene, fork gate, SYNC_NOUS); upstream ~487 commits achter — periodiek `UPDATE_HERMES.bat -Yes`.
+**Tier A drift + overlay pytest gate + CI (2026-06-08):** `pyproject.toml` op fork-intentional allowlist (ty gate + setuptools cap); catch-up `gateway/run.py` + `tools/todo_tool.py`; drift gate lokaal **0 must-upstream**. Overlay Tier B-patches voor 35 gemigreerde tests (`217d9e574`); upstream-pariteit `tests/hermes_cli` + CI-workflow (TUI vóór institutional E2E, `HERMES_AUDIT_PYTHON`, `HermesNousDrift` scope-fix). Fork pytest gate lokaal **854 passed**; CI run `27109654735` bereikte fork gate + institutional guard — institutional E2E/hardening/platform gate na `pyproject`-fix opnieuw verifiëren; upstream ~496 commits achter — periodiek `UPDATE_HERMES.bat -Yes`.
 
 **Ty fork gate + setuptools cap (2026-06-08):** `pyproject.toml` `[tool.ty.src]` = overlay + fork scripts/tests (geen volledige upstream ~10k diagnostics/panics); `windows/tests/RUN_TY_FORK_GATE.bat` exit 0; `setuptools>=77,<82` in `[dev]` + `guard_forbidden_packages.py` (torch 2.12+ metadata); docs `RAG_INSTITUTIONAL_ENV.md` § setuptools.
 

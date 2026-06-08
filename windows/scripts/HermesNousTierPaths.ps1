@@ -56,6 +56,7 @@ $script:HermesNousTierATransitional = @()
 # Permanent fork deltas in Tier A paths (documented; prefer overlay patch long-term).
 $script:HermesNousTierAForkIntentional = @(
     'hermes_cli/gateway_windows.py'  # conda VIRTUAL_ENV in _build_gateway_cmd_script (#fork)
+    'pyproject.toml'  # fork ty gate ([tool.ty.src]) + setuptools<82 dev cap (torch 2.12+ metadata)
 )
 
 function Test-HermesPathTierAForkIntentional {
