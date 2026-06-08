@@ -47,7 +47,7 @@ function Invoke-HermesPostUpdateUpstreamReport {
     Write-Host '=== Post-update: upstream pytest ReportOnly ===' -ForegroundColor Cyan
     $upstreamBat = Join-Path $Root 'windows/tests/RUN_PYTEST_UPSTREAM.bat'
     if (-not (Test-Path -LiteralPath $upstreamBat)) {
-        Write-HermesWarn "Ontbreekt: $upstreamBat — overgeslagen."
+        Write-HermesWarn "Ontbreekt: $upstreamBat - overgeslagen."
         return 0
     }
     cmd /c "`"$upstreamBat`" -ReportOnly"
@@ -58,14 +58,14 @@ function Invoke-HermesPostUpdateUpstreamReport {
 
     $summaryPath = Join-Path $Root 'windows/tests/pytest_upstream_summary.json'
     if (-not (Test-Path -LiteralPath $summaryPath)) {
-        Write-HermesWarn "Geen $summaryPath — controleer RUN_PYTEST_UPSTREAM handmatig."
+        Write-HermesWarn "Geen $summaryPath - controleer RUN_PYTEST_UPSTREAM handmatig."
         return 0
     }
     $summary = Get-Content -LiteralPath $summaryPath -Raw -Encoding utf8 | ConvertFrom-Json
     $newCount = [int]$summary.new_failures_count
     Write-Host ("  upstream parity: new_failures_count={0} (failed={1})" -f $newCount, $summary.failed) -ForegroundColor DarkGray
     if ($newCount -gt 0) {
-        $msg = "Nieuwe upstream-parity failures: $newCount — zie windows/tests/pytest_upstream_summary.json"
+        $msg = "Nieuwe upstream-parity failures: $newCount - zie windows/tests/pytest_upstream_summary.json"
         if ($StrictNewFailures) {
             Write-HermesErr $msg
             return 1
@@ -88,7 +88,7 @@ function Invoke-HermesPostUpdateGitPush {
         }
         $branch = (git rev-parse --abbrev-ref HEAD 2>$null | Select-Object -First 1).ToString().Trim()
         if ($branch -ne 'main') {
-            Write-HermesWarn ("Branch is '$branch' — push alleen naar origin/main ondersteund; overgeslagen.")
+            Write-HermesWarn ("Branch is '$branch' - push alleen naar origin/main ondersteund; overgeslagen.")
             return 0
         }
         $ahead = git rev-list --count origin/main..HEAD 2>$null
