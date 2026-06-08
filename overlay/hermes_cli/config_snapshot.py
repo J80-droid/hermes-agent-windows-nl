@@ -44,10 +44,7 @@ def get_config_snapshot(*, force_reload: bool = False) -> ConfigSnapshot:
     from hermes_cli.config import get_config_path, load_config_readonly, read_raw_config
 
     path = get_config_path()
-    try:
-        mtime_ns = path.stat().st_mtime_ns if path.is_file() else 0
-    except OSError:
-        mtime_ns = 0
+    mtime_ns = config_path_mtime_ns()
     if (
         not force_reload
         and _snapshot is not None

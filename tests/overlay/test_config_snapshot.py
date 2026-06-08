@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -80,13 +79,15 @@ class TestGetConfigSnapshot:
     def test_reload_when_mtime_changes(self, tmp_path):
         cfg = tmp_path / "hermes.yaml"
         cfg.write_text("v1", encoding="utf-8")
+        mtime_values = iter([1_000_000_000, 2_000_000_000])
         with patch("hermes_cli.config.get_config_path", return_value=cfg), patch(
             "hermes_cli.config.read_raw_config", return_value={"n": 1}
-        ), patch("hermes_cli.config.load_config_readonly", return_value={}):
+        ), patch("hermes_cli.config.load_config_readonly", return_value={}), patch.object(
+            cs, "config_path_mtime_ns", side_effect=lambda: next(mtime_values)
+        ):
             first = cs.get_config_snapshot()
             cfg.write_text("v2", encoding="utf-8")
-            # Rapid writes on Windows CI may not advance mtime_ns — bump explicitly.
-            new_ns = max(cfg.stat().st_mtime_ns, first.mtime_ns + 1)
-            os.utime(cfg, ns=(new_ns, new_ns))
             second = cs.get_config_snapshot()
         assert first is not second
+        assert first.mtime_ns == 1_000_000_000
+        assert second.mtime_ns == 2_000_000_000
